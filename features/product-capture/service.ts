@@ -18,10 +18,12 @@ import { createClient } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { readAllRows } from "@ai-matrx/data/db";
 import { folderForProductCaptureItem } from "@/features/files/utils/folder-conventions";
+import { isJsonObject } from "@/types/json";
 
 import type {
   CaptureFile,
   CaptureItem,
+  CaptureVideoFacts,
   ProductCaptureCodeSource,
   ProductCaptureFileKind,
   ProductCaptureFileRow,
@@ -30,7 +32,7 @@ import type {
 
 const ITEM_COLUMNS =
   "id, organization_id, code, code_source, notes, folder_path, status, created_at, version";
-const FILE_COLUMNS = "id, item_id, file_id, kind, created_at";
+const FILE_COLUMNS = "id, item_id, file_id, kind, metadata, created_at";
 
 function items() {
   return createClient().schema("workbench").from("product_capture_item");
@@ -72,15 +74,47 @@ function toItem(row: ItemRow): CaptureItem {
 
 type FileRow = Pick<
   ProductCaptureFileRow,
-  "id" | "item_id" | "file_id" | "kind" | "created_at"
+  "id" | "item_id" | "file_id" | "kind" | "metadata" | "created_at"
 >;
 
-function toFile(row: FileRow): CaptureFile {
+function readVideoFacts(
+  kind: ProductCaptureFileKind,
+  metadata: unknown,
+): CaptureVideoFacts | null {
+  if (!isJsonObject(metadata) || metadata.video === undefined) return null;
+  if (kind !== "video") {
+    throw new Error(
+      "[product-capture] non-video file link cannot carry metadata.video.",
+    );
+  }
+  if (!isJsonObject(metadata.video)) {
+    throw new Error(
+      "[product-capture] file-link metadata.video must be an object.",
+    );
+  }
+  const mime = metadata.video.mime;
+  const durationMs = metadata.video.duration_ms;
+  if (
+    typeof mime !== "string" ||
+    !mime.startsWith("video/") ||
+    typeof durationMs !== "number" ||
+    !Number.isInteger(durationMs) ||
+    durationMs <= 0
+  ) {
+    throw new Error(
+      "[product-capture] file-link video metadata requires a video MIME and positive integer duration_ms.",
+    );
+  }
+  return { mime, durationMs };
+}
+
+export function toCaptureFile(row: FileRow): CaptureFile {
   return {
     id: row.id,
     itemId: row.item_id,
     fileId: row.file_id,
     kind: row.kind as ProductCaptureFileKind,
+    video: readVideoFacts(row.kind as ProductCaptureFileKind, row.metadata),
     createdAt: row.created_at,
   };
 }
@@ -182,7 +216,7 @@ export async function listAllFiles(
   const map = new Map<string, CaptureFile[]>();
   for (const row of rows) {
     const list = map.get(row.item_id) ?? [];
-    list.push(toFile(row));
+    list.push(toCaptureFile(row));
     map.set(row.item_id, list);
   }
   return map;
@@ -324,18 +358,39 @@ export async function linkFile(args: {
   organizationId: string;
   fileId: string;
   kind: ProductCaptureFileKind;
+  video?: CaptureVideoFacts;
 }): Promise<CaptureFile> {
+  if (args.kind === "video" && !args.video) {
+    throw new Error(
+      "[product-capture] video links require normalized MIME and duration.",
+    );
+  }
+  if (args.kind !== "video" && args.video) {
+    throw new Error(
+      "[product-capture] video metadata cannot be attached to a non-video link.",
+    );
+  }
   const { data, error } = await files()
     .insert({
       item_id: args.itemId,
       organization_id: args.organizationId,
       file_id: args.fileId,
       kind: args.kind,
+      ...(args.video
+        ? {
+            metadata: {
+              video: {
+                mime: args.video.mime,
+                duration_ms: args.video.durationMs,
+              },
+            },
+          }
+        : {}),
     })
     .select(FILE_COLUMNS)
     .single();
   if (error) throw error;
-  return toFile(data as FileRow);
+  return toCaptureFile(data as FileRow);
 }
 
 /** Files of one item, in capture order. */
@@ -345,7 +400,7 @@ export async function listItemFiles(itemId: string): Promise<CaptureFile[]> {
     .eq("item_id", itemId)
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return ((data ?? []) as FileRow[]).map(toFile);
+  return ((data ?? []) as FileRow[]).map(toCaptureFile);
 }
 
 /** Number of product-capture relations that currently reference one file.
@@ -386,7 +441,7 @@ export async function listFilesForItems(
   if (error) throw error;
   for (const row of (data ?? []) as FileRow[]) {
     const list = map.get(row.item_id) ?? [];
-    list.push(toFile(row));
+    list.push(toCaptureFile(row));
     map.set(row.item_id, list);
   }
   return map;

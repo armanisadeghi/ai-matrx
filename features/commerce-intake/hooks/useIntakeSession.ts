@@ -46,6 +46,7 @@ import {
   createTrackedObjectUrl,
   revokeTrackedObjectUrl,
 } from "@/lib/media/object-url-registry";
+import { inspectVideoFile } from "@/features/media-capture/core/video-file-inspection";
 import { toast } from "@/lib/toast";
 import { toAudioFile } from "@ai-matrx/browser-audio/core";
 
@@ -150,32 +151,6 @@ export interface UseIntakeSessionOptions {
  * requires `duration_ms` on non-photo kinds). A file whose metadata cannot be
  * read resolves to 1 ms — the capture is never blocked on a probe.
  */
-function probeVideoDurationMs(file: File): Promise<number> {
-  return new Promise((resolve) => {
-    const url = createTrackedObjectUrl(file);
-    const video = document.createElement("video");
-    const done = (ms: number) => {
-      revokeTrackedObjectUrl(url);
-      video.removeAttribute("src");
-      resolve(Math.max(1, Math.round(ms)));
-    };
-    video.preload = "metadata";
-    // Some codecs never fire loadedmetadata OR error (seen on iOS) — without
-    // a deadline the promise hangs and the upload silently never starts.
-    const deadline = setTimeout(() => done(1), 10_000);
-    video.onloadedmetadata = () => {
-      clearTimeout(deadline);
-      const seconds = video.duration;
-      done(Number.isFinite(seconds) ? seconds * 1000 : 1);
-    };
-    video.onerror = () => {
-      clearTimeout(deadline);
-      done(1);
-    };
-    video.src = url;
-  });
-}
-
 export function useIntakeSession(
   options: UseIntakeSessionOptions = {},
 ): UseIntakeSessionResult {
@@ -250,30 +225,34 @@ export function useIntakeSession(
     if (!organizationId) {
       throw new Error("No organization resolved yet — try again in a moment.");
     }
-    const forMode = modeRef.current;
-    const create = ensureOpenBatch({
-      organizationId,
-      captureMode: forMode,
-    })
-      .then(async (b) => {
+    const create = (async () => {
+      while (true) {
+        const forMode = modeRef.current;
+        const b = await ensureOpenBatch({
+          organizationId,
+          captureMode: forMode,
+        });
         if (modeRef.current !== forMode) {
           // The mode toggled while this batch was being opened — never adopt
-          // it; resolve the caller onto the batch for the CURRENT mode.
-          return ensureBatch();
+          // it. Retry inside this single shared in-flight operation so callers
+          // cannot resolve the promise onto itself.
+          continue;
         }
         batchRef.current = b;
         setBatch(b);
         sequenceRef.current = await maxSequenceIndex(b.id);
         persistResume({ batchId: b.id, mode: b.captureMode });
         return b;
-      })
-      .finally(() => {
-        if (ensureBatchPromiseRef.current === create) {
-          ensureBatchPromiseRef.current = null;
-        }
-      });
+      }
+    })();
     ensureBatchPromiseRef.current = create;
-    return create;
+    try {
+      return await create;
+    } finally {
+      if (ensureBatchPromiseRef.current === create) {
+        ensureBatchPromiseRef.current = null;
+      }
+    }
   }, [organizationId, persistResume]);
 
   // ── Notes autosave (policy 1: ONE writer for visible text) ────────────────
@@ -983,7 +962,7 @@ export function useIntakeSession(
           // Non-photo artifact rows must carry duration_ms (live CHECK) —
           // probe the uploaded video's metadata before the row is written.
           const durationMs =
-            kind === "video" ? await probeVideoDurationMs(file) : null;
+            kind === "video" ? (await inspectVideoFile(file)).durationMs : null;
           await startArtifact(file, kind, { previewUrl, durationMs });
         })().catch(() => {
           // Surfaced on the artifact chip.

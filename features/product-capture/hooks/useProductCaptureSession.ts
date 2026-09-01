@@ -30,9 +30,11 @@ import {
 import { toast } from "@/lib/toast";
 import { toAudioFile } from "@ai-matrx/browser-audio/core";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
+import { inspectVideoFile } from "@/features/media-capture/core/video-file-inspection";
 
 import type {
   CaptureItem,
+  CaptureVideoFacts,
   PendingArtifact,
   ProductCaptureCodeSource,
   ProductCaptureFileKind,
@@ -74,7 +76,7 @@ export interface UseProductCaptureSessionResult {
   notesSaving: boolean;
 
   addPhoto: (blob: Blob) => void;
-  addVideo: (blob: Blob, fileName: string) => void;
+  addVideo: (blob: Blob, fileName: string, durationMs: number) => void;
   /** Files the user picked from their own device (gallery / files app).
    *  Images and videos land as normal artifacts of the current item; the
    *  count of accepted files is returned so the caller can report skips. */
@@ -361,6 +363,7 @@ export function useProductCaptureSession(
           itemId: f.itemId,
           kind: f.kind,
           fileId: f.fileId,
+          ...(f.video ? { video: f.video } : {}),
           status: "uploaded" as const,
         })),
       );
@@ -477,13 +480,7 @@ export function useProductCaptureSession(
       );
       return transition;
     },
-    [
-      isCurrentItemEmpty,
-      applyCode,
-      ensureItem,
-      finishCurrentItem,
-      resumeReady,
-    ],
+    [isCurrentItemEmpty, applyCode, ensureItem, finishCurrentItem, resumeReady],
   );
 
   // ── Artifacts ─────────────────────────────────────────────────────────────
@@ -498,7 +495,16 @@ export function useProductCaptureSession(
   );
 
   const startArtifact = useCallback(
-    async (file: File, kind: ProductCaptureFileKind, previewUrl?: string) => {
+    async (
+      file: File,
+      kind: ProductCaptureFileKind,
+      previewUrl?: string,
+      video?: CaptureVideoFacts,
+    ) => {
+      const normalizedVideo =
+        kind === "video"
+          ? (video ?? (await inspectVideoFile(file)))
+          : undefined;
       const localId = crypto.randomUUID();
       let item: CaptureItem;
       try {
@@ -513,10 +519,22 @@ export function useProductCaptureSession(
       if (previewUrl) previewUrlsRef.current.set(localId, previewUrl);
       setArtifacts((prev) => [
         ...prev,
-        { localId, itemId: item.id, kind, previewUrl, status: "uploading" },
+        {
+          localId,
+          itemId: item.id,
+          kind,
+          previewUrl,
+          ...(normalizedVideo ? { video: normalizedVideo } : {}),
+          status: "uploading",
+        },
       ]);
       try {
-        const { link } = await uploadItemFile({ item, file, kind });
+        const { link } = await uploadItemFile({
+          item,
+          file,
+          kind,
+          ...(normalizedVideo ? { video: normalizedVideo } : {}),
+        });
         patchArtifact(localId, { fileId: link.fileId, status: "uploaded" });
         return { item, fileId: link.fileId };
       } catch (err) {
@@ -548,10 +566,11 @@ export function useProductCaptureSession(
   );
 
   const addVideo = useCallback(
-    (blob: Blob, fileName: string) => {
+    (blob: Blob, fileName: string, durationMs: number) => {
       const file = new File([blob], fileName, { type: blob.type });
+      const video = { mime: file.type, durationMs };
       const previewUrl = createTrackedObjectUrl(file);
-      void startArtifact(file, "video", previewUrl).catch(() => {
+      void startArtifact(file, "video", previewUrl, video).catch(() => {
         // Surfaced on the artifact chip.
       });
     },

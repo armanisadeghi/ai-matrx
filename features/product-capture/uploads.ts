@@ -16,7 +16,11 @@
 import { fileHandler } from "@/features/files/handler/handler";
 import type { NormalizedFile } from "@/features/files/handler/types";
 
-import type { CaptureItem, ProductCaptureFileKind } from "./types";
+import type {
+  CaptureItem,
+  CaptureVideoFacts,
+  ProductCaptureFileKind,
+} from "./types";
 import {
   countFileLinks,
   isActiveCloudFile,
@@ -36,9 +40,27 @@ export async function uploadItemFile(args: {
   item: CaptureItem;
   file: File;
   kind: ProductCaptureFileKind;
+  video?: CaptureVideoFacts;
   onProgress?: (loaded: number, total: number) => void;
 }): Promise<UploadItemFileResult> {
   const { item, file, kind } = args;
+  if (kind === "video" && !args.video) {
+    throw new Error(
+      "[product-capture] video upload requires normalized MIME and duration.",
+    );
+  }
+  if (args.video) {
+    if (
+      kind !== "video" ||
+      args.video.mime !== file.type ||
+      !Number.isInteger(args.video.durationMs) ||
+      args.video.durationMs <= 0
+    ) {
+      throw new Error(
+        "[product-capture] video upload facts must match the file MIME and carry a positive integer duration.",
+      );
+    }
+  }
   const uploaded = await fileHandler.upload(
     { kind: "file", file },
     {
@@ -50,6 +72,14 @@ export async function uploadItemFile(args: {
           item_id: item.id,
           code: item.code,
           kind,
+          ...(args.video
+            ? {
+                video: {
+                  mime: args.video.mime,
+                  duration_ms: args.video.durationMs,
+                },
+              }
+            : {}),
         },
       },
       inheritActiveScope: true,
@@ -67,6 +97,7 @@ export async function uploadItemFile(args: {
     organizationId: item.organizationId,
     fileId: uploaded.fileId,
     kind,
+    ...(args.video ? { video: args.video } : {}),
   });
   return { uploaded, link };
 }

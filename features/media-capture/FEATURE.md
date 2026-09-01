@@ -48,6 +48,7 @@ The 13 enforced invariants live in [docs/media-capture-plan.md](../../docs/media
 - `geometry.ts` — `sourceRect(...)`: identity for full-frame; exact object-cover crop for viewport-crop; throws on degenerate dims. Header documents the three-sizes separation rule.
 - `constraints.ts` — `buildVideoConstraints` (profiles; maximum-available over-asks ideal 4096, no aspectRatio), `summarizeTrackState` (requested/capability/effective, no device identifiers), `isCompatibleQualityChange` (reacquire only on deviceId/facingMode change).
 - `mime-selection.ts` — concrete-string recording ladders (`selectRecordingMime`, null = browser default) + `extensionForMime` (audio types delegate to `features/audio/utils/audio-mime.ts` — never fork that map).
+- `video-file-inspection.ts` — the ONE metadata probe for user-picked video files. It returns the file's video MIME plus a finite positive integer duration, with a bounded 10-second fallback for codecs that never settle metadata; captured recordings bypass the probe and keep their engine-owned facts.
 
 ## Phase 3 — camera runtime (live)
 
@@ -124,6 +125,8 @@ The studio matches the audio recorder's bar. Three rules:
 `useStreamAudioLevel` (`features/audio/useStreamAudioLevel.ts`) is the canonical level-meter hook — shared `AudioContext`, analysis-only, disconnect on every exit. Five modules still carry inline analyser copies (see FOUND_DEFECTS D-level meter); new code consumes the hook.
 
 ## Change log
+
+- 2026-09-01 — Centralized user-picked video metadata inspection in `core/video-file-inspection.ts`; commerce intake and Product Capture now share the bounded MIME/duration probe while recorded video keeps the stronger capture-engine terminal contract.
 
 - 2026-08-30 — **Embedded-recorder isolation.** `LiveCaptureIndicator` now requires owning-surface `LiveCaptureControls` before it renders or guards navigation; product capture video no longer gets a duplicate global pill whose `/camera` fallback could pull the user out of the item and strand the clip in recovery. Regression coverage pins low-level identity-without-controls as hidden.
 - 2026-08-30 — **C9 `@ai-matrx/capture` host adoption census.** Product-capture's `CaptureScreen` moved off the hand-built chrome (and off `CaptureModeBar`) onto `CameraCapture` + `features/capture-camera/host/useCameraCaptureHost` — the runtime here (lease manager, recorder, chunk journal, uploader) is UNCHANGED and stays host-side this major (package law: no getUserMedia inside `@ai-matrx/capture`). `CaptureModeBar`'s last importer is intake v1 (chrome swap gated on Arman's v2/v3 approval — delete it with that swap). Census ruling for the rest: `CaptureStudio`/`CaptureControls`/`CaptureDeviceRail`/`RecordingHud`/`CaptureReview` (the `/camera` desktop studio — device rail + audio-only mode, out of the package's iPhone-chrome scope), `CameraPreview` (the preview hosts inject INTO the chrome), `CaptureThumb` (persisted media), the PDF scanner `CaptureView` (becomes a SCAN `extraModes` entry in the ratified-but-unbuilt scanner unification) all STAY.

@@ -25,7 +25,7 @@ importers:
         version: 0.3.2(react@19.2.7)
       '@ai-matrx/capture':
         specifier: latest
-        version: 0.5.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.5.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/content-ir':
         specifier: latest
         version: 0.10.4
@@ -843,8 +843,8 @@ packages:
       react:
         optional: true
 
-  '@ai-matrx/capture@0.5.4':
-    resolution: {integrity: sha512-JuT9gdAWU1XX7woudtjuaYKY2dA14CY9jzKVCFe8o/1N6hwqw7utBgQyHzbHJb0FLneACdcRODqpWThdPmXbbw==}
+  '@ai-matrx/capture@0.5.6':
+    resolution: {integrity: sha512-MH9vyiGeYQ1n60WGIOEVBvsm4sZPNbNjPde+aKwOpZ5SJx+nroXR3WEJFd+GxBY1TjJF5QSdLnShCgJ1tYlPkw==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -13164,7 +13164,7 @@ snapshots:
     optionalDependencies:
       react: 19.2.7
 
-  '@ai-matrx/capture@0.5.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@ai-matrx/capture@0.5.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       react: 19.2.7
       tailwind-merge: 3.6.0

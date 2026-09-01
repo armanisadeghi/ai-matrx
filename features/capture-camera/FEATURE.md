@@ -8,6 +8,7 @@ The opinionated iPhone-style camera chrome: full-bleed feed under semi-transpare
 
 - 🚨 **THE CLOUD LAW: cloud integration is WHAT this system does, never an option.** `CameraCapture` requires `cloud: CaptureCloudPort` (recents thumb → tiled cloud library, save-edited persistence). The host injects HOW, never WHETHER. Enforced by the package `laws.test.ts` (a `cloud?:` is a test failure).
 - 🚨 **The engine is injected HERE — this app has a runtime.** Since 0.5.0 the package ships a production default engine (`useDefaultCaptureEngine`, `src/engine/` — permission pre-check, combined prompt, warm-mic with the four iOS branches, flip, clock) for runtime-less hosts; THIS app instead adapts the ONE camera runtime (`features/media-capture`) via `host/useCameraCaptureHost.ts`, which per C22 injects identity only and imports the package's quirk helpers (`cropBlobToAspect`, `classifyCameraBlockReason`, `nextCameraDevice`) instead of carrying twins.
+- **Terminal video facts stay package-owned.** `prepareHostCapturedVideo` passes the app recorder's final Blob MIME and elapsed duration through `@ai-matrx/capture`'s `finalizeCapturedVideo`; the callback receives a file whose MIME, extension, and positive integer duration cannot diverge.
 - **Honest capabilities only.** Torch/zoom/exposure render ONLY when `MediaTrackCapabilities` reports them (`hooks/useTrackControls.ts`). Never a fake toggle. Aspect (full/4:3/1:1/16:9) is a REAL center-crop of the full-sensor frame (the package's `cropBlobToAspect`).
 
 ## Layout
@@ -42,6 +43,8 @@ Domain features attach via `CaptureCameraSlots`: `topBarCenter/Trailing`, `statu
 - Edit for persisted-only slides (fileId → blob fetch) — today Edit shows only when local pixels (`previewUrl`) exist.
 
 ## Change Log
+
+- 2026-09-01 — Q28 video-contract repair: the injected host now finalizes app-recorder output through the package-owned emitted-MIME/duration primitive before any feature callback receives it; exact host coverage pins MIME authority, extension, and positive integer duration.
 
 - 2026-08-30 — Q28 repair: the deterministic image-stream seam is explicitly QR-only (`qaQrOnly`); hosts disable photo/video capture and label the constraint instead of presenting a lease-less shutter.
 

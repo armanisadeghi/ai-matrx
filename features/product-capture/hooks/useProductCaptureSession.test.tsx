@@ -4,6 +4,7 @@ const mockCreateItem = jest.fn();
 const mockCloseItem = jest.fn();
 const mockLoadItem = jest.fn();
 const mockSetItemCode = jest.fn();
+const mockUploadItemFile = jest.fn();
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => "org-q28",
@@ -39,7 +40,7 @@ jest.mock("../service", () => ({
 }));
 jest.mock("../uploads", () => ({
   removeItemFile: jest.fn(),
-  uploadItemFile: jest.fn(),
+  uploadItemFile: (...args: unknown[]) => mockUploadItemFile(...args),
 }));
 
 import type { CaptureItem } from "../types";
@@ -64,12 +65,14 @@ describe("useProductCaptureSession QR adoption", () => {
     jest.clearAllMocks();
     window.localStorage.clear();
     mockCloseItem.mockImplementation(async (value: CaptureItem) => value);
-    mockSetItemCode.mockImplementation(async (value: CaptureItem, code: string) => ({
-      ...value,
-      code,
-      codeSource: "manual",
-      version: value.version + 1,
-    }));
+    mockSetItemCode.mockImplementation(
+      async (value: CaptureItem, code: string) => ({
+        ...value,
+        code,
+        codeSource: "manual",
+        version: value.version + 1,
+      }),
+    );
   });
 
   it("waits for the persisted current item before applying a decoded QR", async () => {
@@ -201,6 +204,49 @@ describe("useProductCaptureSession QR adoption", () => {
       expect.objectContaining({ id: "item-current", version: 7 }),
       "SKU-AFTER-RESUME",
       "manual",
+    );
+    await hook.unmount();
+  });
+
+  it("preserves the host-normalized video MIME and duration through upload", async () => {
+    mockCreateItem.mockResolvedValueOnce(item("item-video", "QR-VIDEO"));
+    mockUploadItemFile.mockResolvedValueOnce({
+      link: {
+        id: "link-video",
+        itemId: "item-video",
+        fileId: "file-video",
+        kind: "video",
+        video: {
+          mime: "video/webm;codecs=vp8,opus",
+          durationMs: 1_235,
+        },
+        createdAt: "2026-09-01T00:00:00.000Z",
+      },
+    });
+    const hook = await renderHook(() => useProductCaptureSession());
+    await hook.act(async () => {
+      await hook.current.onQrCode("QR-VIDEO");
+      hook.current.addVideo(
+        new Blob(["video"], { type: "video/webm;codecs=vp8,opus" }),
+        "product-video-42.webm",
+        1_235,
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockUploadItemFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "video",
+        file: expect.objectContaining({
+          name: "product-video-42.webm",
+          type: "video/webm;codecs=vp8,opus",
+        }),
+        video: {
+          mime: "video/webm;codecs=vp8,opus",
+          durationMs: 1_235,
+        },
+      }),
     );
     await hook.unmount();
   });

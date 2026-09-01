@@ -53,8 +53,8 @@ import { capturePhotoFromVideo } from "@/features/media-capture/hooks/usePhotoCa
 import {
   startVideoRecording,
   type CaptureRecordingHandle,
+  type CaptureRecordingResult,
 } from "@/features/media-capture/recording/video-recorder";
-import { extensionForMime } from "@/features/media-capture/core/mime-selection";
 import { toast } from "@/lib/toast";
 
 import type {
@@ -65,9 +65,25 @@ import type {
 import {
   classifyCameraBlockReason,
   cropBlobToAspect,
+  finalizeCapturedVideo,
   nextCameraDevice,
   PHOTO_JPEG_QUALITY,
 } from "@ai-matrx/capture/react";
+import type { CapturedVideoResult } from "@ai-matrx/capture/react";
+
+/** Thin identity adapter over the package-owned terminal video contract. */
+export function prepareHostCapturedVideo(
+  result: Pick<CaptureRecordingResult, "blob" | "mime" | "durationMs">,
+  fileNamePrefix: string,
+): CapturedVideoResult {
+  return finalizeCapturedVideo({
+    parts: [result.blob],
+    emittedMime: result.mime,
+    recorderMime: result.blob.type,
+    durationMs: result.durationMs,
+    fileNamePrefix,
+  });
+}
 
 export interface CameraCaptureHostOptions {
   /** Filename prefix for shutter captures (host feature vocabulary). */
@@ -358,12 +374,8 @@ export function useCameraCaptureHost(
         void handle.done
           .then((result) => {
             if (result) {
-              const ext = extensionForMime(result.mime);
-              onVideo(
-                result.blob,
-                `${fileNamePrefix}-video-${Date.now()}.${ext}`,
-                result.durationMs,
-              );
+              const captured = prepareHostCapturedVideo(result, fileNamePrefix);
+              onVideo(captured.file, captured.file.name, captured.durationMs);
             }
           })
           .catch((err: unknown) => {

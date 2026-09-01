@@ -205,8 +205,8 @@ export function CaptureScreen({
       [session],
     ),
     onVideo: useCallback(
-      (blob: Blob, fileName: string) => {
-        session.addVideo(blob, fileName);
+      (blob: Blob, fileName: string, durationMs: number) => {
+        session.addVideo(blob, fileName, durationMs);
       },
       [session],
     ),

@@ -11,6 +11,7 @@
  */
 
 import type { Database } from "@/types/database.types";
+import type { CapturedVideoResult } from "@ai-matrx/capture/react";
 
 type WorkbenchTables = Database["workbench"]["Tables"];
 
@@ -21,6 +22,10 @@ export type ProductCaptureFileRow =
 
 export type ProductCaptureFileKind = "photo" | "video" | "audio";
 export type ProductCaptureCodeSource = "qr" | "manual";
+export type CaptureVideoFacts = Pick<
+  CapturedVideoResult,
+  "mime" | "durationMs"
+>;
 
 /** The item as the UI holds it (camelCase, version carried for CAS writes). */
 export interface CaptureItem {
@@ -43,6 +48,8 @@ export interface CaptureFile {
   itemId: string;
   fileId: string;
   kind: ProductCaptureFileKind;
+  /** Exact normalized terminal recording facts; null on legacy/non-video rows. */
+  video: CaptureVideoFacts | null;
   createdAt: string;
 }
 
@@ -55,6 +62,7 @@ export interface PendingArtifact {
   /** Tracked object URL for instant preview (photos/videos). */
   previewUrl?: string;
   fileId?: string;
+  video?: CaptureVideoFacts;
   status: "uploading" | "uploaded" | "error";
   error?: string;
 }
