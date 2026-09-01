@@ -20818,6 +20818,48 @@
         }
       }
     },
+    "/hirevue/public/status": {
+      "get": {
+        "tags": [
+          "HireVue Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_hirevue_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HireVueServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/phenom/public/status": {
+      "get": {
+        "tags": [
+          "Phenom Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_phenom_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhenomServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -21448,6 +21490,48 @@
         }
       }
     },
+    "/freshbooks/public/status": {
+      "get": {
+        "tags": [
+          "FreshBooks Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_freshbooks_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FreshBooksServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chargebee/public/status": {
+      "get": {
+        "tags": [
+          "Chargebee Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_chargebee_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargebeeServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -21504,6 +21588,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ShareFileServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/paperlesspost/public/status": {
+      "get": {
+        "tags": [
+          "Paperless Post Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_paperlesspost_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperlessPostServiceStatus"
                 }
               }
             }
@@ -97425,6 +97530,50 @@
         "title": "ChannelSpec",
         "description": "Declarative spec for a channel in a workflow definition.\n\nChannels hold JSON-serializable values only. Pydantic models are dumped at\nwrite time via .model_dump(mode='json'). This rule is enforced in the\nchannel manager and makes checkpoints round-trip losslessly."
       },
+      "ChargebeeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "chargebee_public_service_status",
+            "title": "Kind",
+            "default": "chargebee_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Chargebee",
+            "title": "Provider",
+            "default": "Chargebee"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.chargebee.com",
+            "title": "Status Page",
+            "default": "https://status.chargebee.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ChargebeeServiceStatus"
+      },
       "ChatConversationPreview": {
         "properties": {
           "key": {
@@ -122605,9 +122754,9 @@
           },
           "status_page": {
             "type": "string",
-            "const": "https://status.elevio.io",
+            "const": "https://status.elev.io",
             "title": "Status Page",
-            "default": "https://status.elevio.io"
+            "default": "https://status.elev.io"
           }
         },
         "additionalProperties": false,
@@ -133523,6 +133672,50 @@
         "title": "FramerServiceStatus",
         "description": "Safe aggregate status projection for Framer's fixed status page."
       },
+      "FreshBooksServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "freshbooks_public_service_status",
+            "title": "Kind",
+            "default": "freshbooks_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "FreshBooks",
+            "title": "Provider",
+            "default": "FreshBooks"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.freshbooks.com",
+            "title": "Status Page",
+            "default": "https://status.freshbooks.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "FreshBooksServiceStatus"
+      },
       "FrontierInvocation": {
         "properties": {
           "node_id": {
@@ -137770,6 +137963,55 @@
         "type": "object",
         "title": "HindsightCostsOut",
         "description": "Platform-wide Hindsight spend — what this system costs to run."
+      },
+      "HireVueServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "hirevue_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "hirevue_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "HireVue",
+            "title": "Provider",
+            "default": "HireVue"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.hirevue.com",
+            "title": "Status Page",
+            "default": "https://status.hirevue.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "HireVueServiceStatus"
       },
       "HiveStatusResult": {
         "properties": {
@@ -168740,6 +168982,46 @@
         ],
         "title": "PantheonServiceStatus"
       },
+      "PaperlessPostServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "paperlesspost_public_content_status",
+            "title": "Kind",
+            "default": "paperlesspost_public_content_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Paperless Post",
+            "title": "Provider",
+            "default": "Paperless Post"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.paperlesspost.com",
+            "title": "Status Page",
+            "default": "https://status.paperlesspost.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PaperlessPostServiceStatus"
+      },
       "ParadoxServiceStatus": {
         "properties": {
           "__kind": {
@@ -170758,6 +171040,55 @@
           "operational"
         ],
         "title": "PersonioServiceStatus"
+      },
+      "PhenomServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "phenom_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "phenom_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Phenom",
+            "title": "Provider",
+            "default": "Phenom"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.phenom.com",
+            "title": "Status Page",
+            "default": "https://status.phenom.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "PhenomServiceStatus"
       },
       "PicklistBinding": {
         "properties": {

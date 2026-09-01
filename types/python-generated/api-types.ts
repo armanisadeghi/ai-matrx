@@ -9542,6 +9542,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hirevue/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_hirevue_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/phenom/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_phenom_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10052,6 +10086,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/freshbooks/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_freshbooks_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chargebee/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_chargebee_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -10095,6 +10163,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_sharefile_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/paperlesspost/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_paperlesspost_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -41097,6 +41182,38 @@ export interface components {
             /** Default */
             default?: unknown;
         };
+        /** ChargebeeServiceStatus */
+        ChargebeeServiceStatus: {
+            /**
+             * Kind
+             * @default chargebee_public_service_status
+             * @constant
+             */
+            __kind?: "chargebee_public_service_status";
+            /**
+             * Provider
+             * @default Chargebee
+             * @constant
+             */
+            provider?: "Chargebee";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.chargebee.com
+             * @constant
+             */
+            status_page?: "https://status.chargebee.com";
+        };
         /** ChatConversationPreview */
         ChatConversationPreview: {
             /** Key */
@@ -51079,10 +51196,10 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /**
              * Status Page
-             * @default https://status.elevio.io
+             * @default https://status.elev.io
              * @constant
              */
-            status_page?: "https://status.elevio.io";
+            status_page?: "https://status.elev.io";
         };
         /** EligibilityBlock */
         EligibilityBlock: {
@@ -55584,6 +55701,38 @@ export interface components {
              */
             status_page?: "https://www.framerstatus.com/";
         };
+        /** FreshBooksServiceStatus */
+        FreshBooksServiceStatus: {
+            /**
+             * Kind
+             * @default freshbooks_public_service_status
+             * @constant
+             */
+            __kind?: "freshbooks_public_service_status";
+            /**
+             * Provider
+             * @default FreshBooks
+             * @constant
+             */
+            provider?: "FreshBooks";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.freshbooks.com
+             * @constant
+             */
+            status_page?: "https://status.freshbooks.com";
+        };
         /** FrontierInvocation */
         FrontierInvocation: {
             /** Node Id */
@@ -57625,6 +57774,40 @@ export interface components {
             replay_count?: number;
             /** By Enrollment */
             by_enrollment?: components["schemas"]["EnrollmentCostRow"][];
+        };
+        /** HireVueServiceStatus */
+        HireVueServiceStatus: {
+            /**
+             * Kind
+             * @default hirevue_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "hirevue_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default HireVue
+             * @constant
+             */
+            provider?: "HireVue";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.hirevue.com
+             * @constant
+             */
+            status_page?: "https://status.hirevue.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * HiveStatusResult
@@ -71190,6 +71373,35 @@ export interface components {
              */
             status_page?: "https://status.pantheon.io";
         };
+        /** PaperlessPostServiceStatus */
+        PaperlessPostServiceStatus: {
+            /**
+             * Kind
+             * @default paperlesspost_public_content_status
+             * @constant
+             */
+            __kind?: "paperlesspost_public_content_status";
+            /**
+             * Provider
+             * @default Paperless Post
+             * @constant
+             */
+            provider?: "Paperless Post";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.paperlesspost.com
+             * @constant
+             */
+            status_page?: "https://status.paperlesspost.com";
+        };
         /** ParadoxServiceStatus */
         ParadoxServiceStatus: {
             /**
@@ -72076,6 +72288,40 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.personio.de";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /** PhenomServiceStatus */
+        PhenomServiceStatus: {
+            /**
+             * Kind
+             * @default phenom_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "phenom_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Phenom
+             * @constant
+             */
+            provider?: "Phenom";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.phenom.com
+             * @constant
+             */
+            status_page?: "https://status.phenom.com";
             /**
              * Indicator
              * @enum {string}
@@ -112867,6 +113113,46 @@ export interface operations {
             };
         };
     };
+    public_status_hirevue_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HireVueServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_phenom_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhenomServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -113467,6 +113753,46 @@ export interface operations {
             };
         };
     };
+    public_status_freshbooks_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreshBooksServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_chargebee_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargebeeServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -113523,6 +113849,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShareFileServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_paperlesspost_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaperlessPostServiceStatus"];
                 };
             };
         };
