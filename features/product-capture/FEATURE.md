@@ -86,7 +86,7 @@ app/(core)/tools/product-capture/item/[id]/  view mode
 app/(core)/tools/product-capture/admin/    FeatureAdminPage map — add every new route/component here
 ```
 
-**Gesture contract (mobile-first, iOS conventions):** every list row — the in-capture ItemsSheet and the /all mobile card list, both on `ItemSwipeRow` — answers tap (host primary: resume in capture, view on /all), swipe RIGHT (positive: Details in capture, Capture on /all), swipe LEFT (Delete, confirmed), and long-press (`ItemActionsDrawer` with all four actions). Media tiles on the detail page: tap → `MediaPager`, long-press → delete confirm. The pager swipes ← → between files, ↓ dismisses (iOS Photos), with counter + dots and desktop chevrons/arrow keys.
+**Gesture contract (mobile-first, iOS conventions):** every list row — the in-capture ItemsSheet and the /all mobile card list, both on `ItemSwipeRow` — answers tap (host primary: resume in capture, view on /all), swipe RIGHT (positive: Details in capture, Capture on /all), swipe LEFT (Delete, confirmed), and long-press (`ItemActionsDrawer` with all four actions). `ItemSwipeRow` keeps the thumbnail/error-remedy region as a sibling of the primary selection button; **never wrap `CaptureThumb` in that button** because `InlineMediaRef` fallbacks own interactive remedy actions. Media tiles on the detail page: tap → `MediaPager`, long-press → delete confirm. The pager swipes ← → between files, ↓ dismisses (iOS Photos), with counter + dots and desktop chevrons/arrow keys.
 
 Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPreview` / `capturePhotoFromVideo` canvas path / `startVideoRecording`), `lib/qr/decode.ts` (THE decoder), `useSimpleRecorder` + `toAudioFile` + `transcribeCloudFile` (the audio invariants: captureLock, shared mic, one controller), `fileHandler`, `CaptureThumb`/`InlineMediaRef`, `SelectableFileThumbnail`, `guardedUpdate`, `ConfirmDialog`, Drawer, `@/lib/toast`. ONE `ssr:false` boundary at the route client (Fragmentation Law); everything beneath is static.
 
@@ -100,6 +100,8 @@ Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPrevi
 6. **The `capturing → captured` transition IS the workflow handoff.** Items are born `capturing`; `service.closeItem` flips to `captured` when the photographer moves on (`finishCurrentItem` — Next, QR-advance, item switch — plus the manage/detail "Mark ready" action), and that DB transition fires the table's workflow event trigger (`workflow.watch_table` attached `workflow.emit_trigger_events`; matrx-graph event triggers, aidream `packages/matrx-graph/matrx_graph/workers/FEATURE.md` § Trigger watchers). `reopenItem` (capture surface adopting an existing item) flips back to `capturing`, so closing again re-fires — more photos mean a reprocess; likewise "Reprocess" on a `processed` item is just `closeItem`. Never fire workflows from client code — the status write is the only trigger path, so agents/SQL/imports behave identically to the UI.
 
 ## Change log
+
+- 2026-09-01 — Q28 Items/Resume repair: separated `CaptureThumb` and its interactive error remedies from `ItemSwipeRow`'s primary selection button, preserving thumbnail/row selection while eliminating nested-button runtime errors; added the exact error-fallback regression.
 
 - 2026-08-31 — Q28 live re-verification repair: QR decoding now waits for the
   persisted current-item restore to settle before it can create or switch an

@@ -55,6 +55,22 @@ export function ItemSwipeRow({
 }) {
   const longPress = useLongPress(onLongPress);
 
+  const selectFromThumbnail = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (disabled) return;
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest(
+        "button, a, input, select, textarea, [role='button'], [role='link']",
+      )
+    ) {
+      // InlineMediaRef's informative fallback owns its remedy actions. Those
+      // controls must stay clickable without also selecting the capture item.
+      return;
+    }
+    onTap();
+  };
+
   return (
     <SwipeableRow
       className="rounded-lg"
@@ -66,18 +82,17 @@ export function ItemSwipeRow({
         onTrigger: onDelete,
       }}
     >
-      <button
-        type="button"
-        onClick={onTap}
-        disabled={disabled}
-        {...longPress}
+      <div
         className={cn(
           "flex w-full select-none items-center gap-3 rounded-lg border border-border bg-card p-2 text-left",
           isCurrent && "ring-2 ring-primary",
         )}
         style={{ WebkitTouchCallout: "none" }}
       >
-        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
+        <div
+          className="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted"
+          onClick={selectFromThumbnail}
+        >
           {row.firstPhotoFileId ? (
             <CaptureThumb
               fileId={row.firstPhotoFileId}
@@ -89,51 +104,59 @@ export function ItemSwipeRow({
             </div>
           )}
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">
-            {row.code ?? "No product number"}
-            {isCurrent && (
-              <span className="ml-2 text-xs font-normal text-primary">
-                current
-              </span>
-            )}
-          </p>
-          <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-0.5">
-              <Camera className="h-3 w-3" /> {row.photoCount}
-            </span>
-            {row.videoCount > 0 && (
-              <span className="flex items-center gap-0.5">
-                <Video className="h-3 w-3" /> {row.videoCount}
-              </span>
-            )}
-            {row.audioCount > 0 && (
-              <span className="flex items-center gap-0.5">
-                <FileAudio className="h-3 w-3" /> {row.audioCount}
-              </span>
-            )}
-            <span>
-              {new Date(row.createdAt).toLocaleTimeString([], {
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </span>
-            {row.statusLabel && (
-              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium">
-                {row.statusLabel}
-              </span>
-            )}
-          </p>
-          {row.notes && (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
-              {row.notes}
+        <button
+          type="button"
+          onClick={onTap}
+          disabled={disabled}
+          {...longPress}
+          className="flex min-w-0 flex-1 items-center self-stretch text-left disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">
+              {row.code ?? "No product number"}
+              {isCurrent && (
+                <span className="ml-2 text-xs font-normal text-primary">
+                  current
+                </span>
+              )}
             </p>
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-0.5">
+                <Camera className="h-3 w-3" /> {row.photoCount}
+              </span>
+              {row.videoCount > 0 && (
+                <span className="flex items-center gap-0.5">
+                  <Video className="h-3 w-3" /> {row.videoCount}
+                </span>
+              )}
+              {row.audioCount > 0 && (
+                <span className="flex items-center gap-0.5">
+                  <FileAudio className="h-3 w-3" /> {row.audioCount}
+                </span>
+              )}
+              <span>
+                {new Date(row.createdAt).toLocaleTimeString([], {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </span>
+              {row.statusLabel && (
+                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+                  {row.statusLabel}
+                </span>
+              )}
+            </p>
+            {row.notes && (
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                {row.notes}
+              </p>
+            )}
+          </div>
+          {busy && (
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
           )}
-        </div>
-        {busy && (
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-        )}
-      </button>
+        </button>
+      </div>
     </SwipeableRow>
   );
 }
