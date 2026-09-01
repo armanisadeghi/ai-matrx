@@ -98,8 +98,11 @@ Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPrevi
 4. Voice note and video recording never run together (the app-wide capture lock would take over) — the UI disables the other control.
 5. Downstream consumers read items by `organization_id` + `status='captured'` and flip `status` to `processed` — never delete to consume.
 6. **The `capturing → captured` transition IS the workflow handoff.** Items are born `capturing`; `service.closeItem` flips to `captured` when the photographer moves on (`finishCurrentItem` — Next, QR-advance, item switch — plus the manage/detail "Mark ready" action), and that DB transition fires the table's workflow event trigger (`workflow.watch_table` attached `workflow.emit_trigger_events`; matrx-graph event triggers, aidream `packages/matrx-graph/matrx_graph/workers/FEATURE.md` § Trigger watchers). `reopenItem` (capture surface adopting an existing item) flips back to `capturing`, so closing again re-fires — more photos mean a reprocess; likewise "Reprocess" on a `processed` item is just `closeItem`. Never fire workflows from client code — the status write is the only trigger path, so agents/SQL/imports behave identically to the UI.
+7. **Deleting an artifact owns the relation first, not the deduplicated file.** `removeItemFile` counts live `workbench.product_capture_file` links: a shared file is only unlinked from the selected item; a sole active file is removed before its link; a stale link to an already-deleted file is unlinked idempotently. Never unlink first and then report a storage-delete failure—the durable relation and visible UI would disagree.
 
 ## Change log
+
+- 2026-09-01 — Q28 shared-file lifecycle repair: artifact deletion now preserves deduplicated files still linked to another item, deletes sole active files before unlinking, treats already-deleted file cleanup as idempotent, and keeps failed-media remedy buttons outside interactive tile ancestors; permanent regressions cover every rejected failure mode.
 
 - 2026-09-01 — Q28 video-contract repair: Product Capture now carries the package-normalized final video MIME and duration through the host callback, upload metadata, link metadata, pending artifact, and resumed link projection; malformed stored facts fail loudly and exact boundary regressions pin every hop.
 
