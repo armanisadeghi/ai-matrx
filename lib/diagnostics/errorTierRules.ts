@@ -116,6 +116,31 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
   // pinned annotation IS the "critical platform violation" classification.)
   // ══════════════════════════════════════════════════════════════════════
   {
+    id: "handled-auth-token-refusal",
+    tier: "yellow",
+    persist: false,
+    reason:
+      "A 401 token_required response is the backend half of the shell's handled session cutoff. The caller still receives the refusal and AuthSessionWatcher blocks or redirects the signed-out tab; keep the diagnostic local instead of filing an incident for an expected expired session.",
+    addedAt: "2026-08-31",
+    match: {
+      source: "api-http",
+      code: "token_required",
+      status: 401,
+    },
+  },
+  {
+    id: "handled-session-expired-toast",
+    tier: "yellow",
+    persist: false,
+    reason:
+      "This toast is the user-facing copy for the same handled authentication cutoff. AuthSessionWatcher removes client authority and presents the recovery path, so the duplicate toast remains local and never becomes a repair-queue row.",
+    addedAt: "2026-08-31",
+    match: {
+      source: "user-toast",
+      messagePattern: "^Your session expired\\.?$",
+    },
+  },
+  {
     id: "organization-admission-refusal",
     tier: "red",
     reason:

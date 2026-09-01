@@ -30,6 +30,36 @@ describe("captureApiError", () => {
     expect(getSnapshot()).toEqual([]);
   });
 
+  it("keeps a handled token_required session cutoff visible but non-durable", () => {
+    window.history.replaceState({}, "", "/mandates");
+
+    captureApiError(
+      {
+        type: "validation_error",
+        status: 401,
+        message: "Authentication required. Please sign in.",
+        serverDetail: {
+          error: "token_required",
+          user_message: "Authentication required. Please sign in.",
+        },
+      },
+      {
+        url: "https://server.app.matrxserver.com/mandates/coverage/states",
+        method: "GET",
+        path: "/mandates/coverage/states",
+      },
+    );
+
+    expect(getSnapshot()[0]).toMatchObject({
+      source: "api-http",
+      code: "token_required",
+      status: 401,
+      tier: "yellow",
+      tierRuleId: "handled-auth-token-refusal",
+      durable: false,
+    });
+  });
+
   it.each([
     "/audio/transcribe",
     "/audio/transcribe-url",

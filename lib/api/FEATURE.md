@@ -175,6 +175,13 @@ payload's `message`, often as a stringified upstream service payload
 whose `details.retryable` is exactly true; the caller still receives the error
 for retry messaging, and every other backend failure remains captured.
 
+**Handled authentication cutoffs stay local.** A structured HTTP 401
+`token_required` response and the exact `Your session expired` toast remain in
+the Error Inspector as yellow diagnostics with `durable=false`. The caller
+still receives the refusal, while `AuthSessionWatcher` removes Redux authority
+and presents the recovery path; neither half files an expected expired session
+as a production incident. Other 401 codes and authentication messages stay red.
+
 **Rules for any surface that reports a backend failure:**
 
 1. Never headline a raw `user_message`. Run the error through
@@ -262,6 +269,10 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 `features/files/api/*`. Streaming stays blocked on the backend handoff.
 
 ## Change Log
+
+- 2026-08-31 — Kept handled `token_required` 401 responses and the matching
+  session-expired toast visible locally but non-durable; unrelated auth failures
+  remain red and enter the repair queue.
 
 - 2026-08-29 — **`matrx-transport.ts`: the host `MatrxTransport` port for `@ai-matrx/agents/matrx`.**
   One factory pipeline (`createMatrxTransportFromTarget`) reusing callApi's own machinery —

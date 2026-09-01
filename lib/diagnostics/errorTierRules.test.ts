@@ -354,6 +354,62 @@ describe("classifyTier", () => {
     expect(c.ruleId).toBe("cms-unavailable-capability-refusal");
   });
 
+  it("keeps the handled backend auth cutoff local and non-durable", () => {
+    const c = classifyTier(
+      captured({
+        source: "api-http",
+        relation: "GET /mandates/coverage/states",
+        code: "token_required",
+        status: 401,
+        message: "Authentication required. Please sign in.",
+      }),
+    );
+
+    expect(c).toMatchObject({
+      tier: "yellow",
+      ruleId: "handled-auth-token-refusal",
+      persist: false,
+    });
+  });
+
+  it("keeps the handled session-expired toast local and non-durable", () => {
+    const c = classifyTier(
+      captured({
+        source: "user-toast",
+        route: "/administration/users/agent-review",
+        message: "Your session expired",
+      }),
+    );
+
+    expect(c).toMatchObject({
+      tier: "yellow",
+      ruleId: "handled-session-expired-toast",
+      persist: false,
+    });
+  });
+
+  it("keeps unrelated authentication failures red and durable", () => {
+    const wrongCode = classifyTier(
+      captured({
+        source: "api-http",
+        code: "invalid_token_signature",
+        status: 401,
+        message: "Token validation failed",
+      }),
+    );
+    const wrongToast = classifyTier(
+      captured({
+        source: "user-toast",
+        message: "Your session could not be validated",
+      }),
+    );
+
+    expect(wrongCode.tier).toBe("red");
+    expect(wrongCode.persist).toBeUndefined();
+    expect(wrongToast.tier).toBe("red");
+    expect(wrongToast.persist).toBeUndefined();
+  });
+
   it.each([
     ["cms_unavailable", 500],
     ["request_crash", 400],
