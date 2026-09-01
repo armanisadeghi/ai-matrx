@@ -155,7 +155,9 @@ describe("the frozen shape — validating", () => {
         ],
       }),
     );
-    expect(problems.join(" ")).toContain("roster");
+    // R5-1: the refusal names the value the way the offered rail does.
+    expect(problems.join(" ")).toContain("Roster");
+    expect(problems.join(" ")).not.toContain("\"roster\"");
     expect(problems.join(" ")).toContain("input of its own");
   });
 
@@ -169,7 +171,7 @@ describe("the frozen shape — validating", () => {
         ],
       }),
     );
-    expect(problems.join(" ")).toContain("cover");
+    expect(problems.join(" ")).toContain("Cover");
   });
 
   it("allows a structured value ALONE on a context slot (D18.3)", () => {
@@ -205,7 +207,7 @@ describe("the frozen shape — validating", () => {
       }),
     );
     expect(problems.join(" ")).toContain("optional");
-    expect(problems.join(" ")).toContain("outputs");
+    expect(problems.join(" ")).toContain("Outputs");
   });
 });
 

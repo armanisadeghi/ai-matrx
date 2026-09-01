@@ -27,6 +27,14 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
+import {
+  consumptionMapProblems,
+  describeSource,
+  parseConsumptionMapWithDrops,
+  type ConsumptionMap,
+  type OfferedValue,
+} from "@/features/mandates/provision-shapes";
+
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 
 /**
@@ -292,5 +300,199 @@ describe("no mandate screen speaks the old system's nouns", () => {
     expect(
       copyStringsOf(withComment).some((s) => OLD_SYSTEM_NOUNS.test(s.text)),
     ).toBe(false);
+  });
+});
+
+/**
+ * ── THE SIBLING CLASS: THE MACHINE'S KEYS INSIDE A PERSON'S SENTENCE ─────────
+ * (V2 round 5, R5-1.)
+ *
+ * The noun guard above closed "surface"/"shortcut". It could never have caught
+ * what round 5 found, because the offending words are not IN the source at all
+ * — they are INTERPOLATED at render time:
+ *
+ *   `"task_overview" asks the person for this input but has no question`
+ *
+ * Ten sentences, one function (`consumptionMapProblems`), rendered by BOTH
+ * modes on BOTH hosts as the one-binding UI's whole pre-flight refusal voice —
+ * in prose type, one line under the very label the screen already renders
+ * correctly ("Task Overview"). Two of them also spoke a raw kind token.
+ *
+ * So this half of the guard is by BEHAVIOUR, not by source text: it DRIVES the
+ * refusal voice with the snake_case keys a real provision uses and demands that
+ * nothing it says back contains one. A sentence assembled from three template
+ * holes is only readable by running it, and that is what this does.
+ *
+ * 🔶 WHY NOT A SOURCE SCAN, said plainly. The same `looksLikeCopy` predicate
+ * pointed at source literals across the two trees was measured before this was
+ * written: **103 hits**, and essentially none of them a defect — `console.error`
+ * strings (`[provisions] consumption_map entry …`), `select("id, agent_id,
+ * version_number")` column lists, the raw table browser's SQL, and the admin
+ * console's agent-facing prompts, which name DB columns because that is their
+ * subject. A guard whose allow-list is a hundred lines long is a guard nobody
+ * keeps. The rendered sentence is where the defect lives, so the rendered
+ * sentence is what is swept — and this half runs the real writers, so it cannot
+ * pass because it looked in the wrong place.
+ */
+
+/** An identifier in the machine's register: `task_overview`, `file_list`. */
+const SNAKE_CASE = /\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/;
+
+/** The keys a real provision and a real agent use — snake_case, every one. */
+const OFFERED: OfferedValue[] = [
+  {
+    name: "task_overview",
+    kind: "text",
+    guaranteed: true,
+    lazy: false,
+    description: "What the job is for.",
+  },
+  {
+    name: "prior_clean_text",
+    kind: "text",
+    guaranteed: false,
+    lazy: false,
+    description: "Optional earlier draft.",
+  },
+  {
+    name: "rulebook_document",
+    kind: "rulebook_document",
+    guaranteed: true,
+    lazy: false,
+    description: "A structured rulebook.",
+  },
+  {
+    name: "source_files",
+    kind: "file_list",
+    guaranteed: true,
+    lazy: false,
+    description: "Files that came with the call.",
+  },
+];
+
+const HOLDER_TARGETS = [
+  { name: "task_overview", label: undefined },
+  { name: "system_prompt", label: undefined },
+  { name: "run_notes", label: "Run Notes" },
+];
+
+/**
+ * Every branch of the pre-flight, driven at once — one map that trips each of
+ * the ten sentences. `as never` nowhere: these are the real stored shapes.
+ */
+function everyRefusal(): string[] {
+  const map: ConsumptionMap = {
+    // structured literal, joined with another source → two sentences
+    task_overview: [
+      { mapType: "direct_value", target: { a: 1 }, deliver: "variable" },
+      { mapType: "offered_value", target: "rulebook_document", deliver: "variable" },
+    ],
+    // structured literal delivered as a variable
+    system_prompt: [
+      { mapType: "direct_value", target: { a: 1 }, deliver: "variable" },
+    ],
+    // a question with no words
+    run_notes: [{ mapType: "prompt_user", prompt: "  ", deliver: "variable" }],
+    // consumes something not offered
+    missing_input: [
+      { mapType: "offered_value", target: "no_such_value", deliver: "variable" },
+    ],
+    // optional with no absence answer
+    optional_input: [
+      { mapType: "offered_value", target: "prior_clean_text", deliver: "variable" },
+    ],
+    // "use a default" with no default set
+    defaulted_input: [
+      {
+        mapType: "offered_value",
+        target: "prior_clean_text",
+        deliver: "variable",
+        when_absent: "use_default",
+      },
+    ],
+    // a file joined with another source
+    joined_files: [
+      { mapType: "offered_value", target: "source_files", deliver: "variable" },
+      { mapType: "offered_value", target: "task_overview", deliver: "variable" },
+    ],
+    // two sources going to different places
+    split_channels: [
+      { mapType: "offered_value", target: "task_overview", deliver: "variable" },
+      { mapType: "direct_value", target: "a literal", deliver: "context" },
+    ],
+  };
+  return consumptionMapProblems({ values: OFFERED }, map, {
+    targets: HOLDER_TARGETS,
+  });
+}
+
+describe("the one-binding UI's refusals speak the person's words, not the machine's keys", () => {
+  it("says nothing in snake_case, across every branch of the one pre-flight", () => {
+    const problems = everyRefusal();
+    // Anti-vacuity: a pre-flight that refused nothing would pass this trivially.
+    expect(problems.length).toBeGreaterThanOrEqual(8);
+    const speaking = problems.filter(
+      (p) => looksLikeCopy(p) && SNAKE_CASE.test(p),
+    );
+    expect(speaking).toEqual([]);
+  });
+
+  it("names the input by the label the row above it renders", () => {
+    const problems = everyRefusal();
+    expect(
+      problems.some((p) => p.includes("Task Overview")),
+    ).toBe(true);
+    // An explicit label (a context slot carries one) wins over the derivation.
+    expect(problems.some((p) => p.includes("Run Notes"))).toBe(true);
+  });
+
+  it("the other sentence-writers on the same screens are clean too", () => {
+    const sentences: string[] = [
+      describeSource({
+        mapType: "offered_value",
+        target: "task_overview",
+        deliver: "variable",
+      }),
+      describeSource({
+        mapType: "direct_value",
+        target: "a literal",
+        deliver: "variable",
+      }),
+      describeSource({
+        mapType: "prompt_user",
+        prompt: "What should this run be about?",
+        deliver: "variable",
+      }),
+      ...parseConsumptionMapWithDrops({
+        task_overview: { mapType: "surface_ref", target: "x" },
+        run_notes: { mapType: "prompt_user", prompt: "  " },
+        prior_clean_text: { mapType: "direct_value", target: null },
+        system_prompt: ["not-an-object"],
+      }).dropped,
+    ];
+    expect(sentences.length).toBeGreaterThanOrEqual(7);
+    expect(
+      sentences.filter((s) => looksLikeCopy(s) && SNAKE_CASE.test(s)),
+    ).toEqual([]);
+  });
+
+  it("would still catch the exact V2 round-5 sentence", () => {
+    // RED-THEN-GREEN, kept executable: the sentence as it shipped on v0.4.1622.
+    const shipped =
+      '"task_overview" asks the person for this input but has no question — write what the run form should say';
+    expect(looksLikeCopy(shipped)).toBe(true);
+    expect(SNAKE_CASE.test(shipped)).toBe(true);
+    // …and its kind-token sibling.
+    const kindShipped =
+      '"brief" has structured kind "file_list" — deliver it as context, never as a blob variable';
+    expect(SNAKE_CASE.test(kindShipped)).toBe(true);
+  });
+
+  it("does not fire on the platform's own address forms or on code", () => {
+    // A mandate key is the platform's address form and rides a mono line; the
+    // predicate only ever sees SENTENCES, so these must not read as copy.
+    expect(looksLikeCopy("mandate.goal_writer")).toBe(false);
+    expect(looksLikeCopy("surface_value")).toBe(false);
+    expect(looksLikeCopy("features/mandates/provision-shapes.ts")).toBe(false);
   });
 });

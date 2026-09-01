@@ -34,6 +34,7 @@
 import type { Json } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import type { ValueMapping } from "@/features/surfaces/types";
+import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 
 // ── Kind vocabulary (mirrors aidream provisions.py — the one law) ────────────
 
@@ -78,6 +79,37 @@ export const ALLOWED_PIN_KEYS: ReadonlySet<string> = new Set([
   "reasoning",
   "streaming",
 ]);
+
+/**
+ * 🚨 A VALUE KIND, AS A PERSON READS IT (V2 round 5, R5-1).
+ *
+ * `file_list` / `rulebook_document` are the machine's slugs. They belong on the
+ * mono chip the offered rail already prints them on — never inside a refusal
+ * sentence, where two of the pre-flight's ten used to say *has structured kind
+ * "file_list"* to a Subject Matter Expert.
+ *
+ * The four generic slugs get the plain words they actually mean; a registered
+ * content_ir kind is title-cased by the SAME derivation every label on these
+ * screens uses, so `rulebook_document` reads "a Rulebook Document" — a
+ * derivation of the declared name, never an invented one. A slug with nothing
+ * to derive from says what is certain and no more.
+ */
+export function kindPhrase(kind: string): string {
+  switch (kind) {
+    case "json":
+      return "a structured shape";
+    case "string_list":
+      return "a list of text";
+    case "file":
+      return "a file";
+    case "file_list":
+      return "a list of files";
+    default: {
+      const human = displayLabelForKey(kind);
+      return human && human !== kind ? `a ${human}` : "a structured shape";
+    }
+  }
+}
 
 // ── Offered values ───────────────────────────────────────────────────────────
 
@@ -193,7 +225,11 @@ export function sourceChannel(
 export function describeSource(entry: ConsumptionEntry): string {
   switch (entry.mapType) {
     case "offered_value":
-      return `the offered value "${entry.target}"`;
+      // R5-1: the offered rail prints "Task Overview"; this sentence used to
+      // print `"task_overview"` beside it. One thing, one name.
+      return entry.target
+        ? `the offered value “${displayLabelForKey(entry.target)}”`
+        : "an offered value you have not picked yet";
     case "direct_value":
       return typeof entry.target === "string"
         ? `a fixed value: "${entry.target}"`
@@ -287,7 +323,9 @@ export function parseConsumptionMapWithDrops(raw: Json | unknown): {
     for (const entry of elements) {
       if (!isJsonObject(entry)) {
         console.error("[provisions] dropping malformed consumption entry", name);
-        dropped.push(`${name}: one stored source is malformed and was ignored.`);
+        dropped.push(
+          `“${displayLabelForKey(name)}”: one stored source is malformed and was ignored — open this input and pick its source again.`,
+        );
         continue;
       }
       const mapType = entry.mapType;
@@ -300,7 +338,7 @@ export function parseConsumptionMapWithDrops(raw: Json | unknown): {
             `[provisions] consumption_map entry ${name} is a fixed value with nothing in it — dropping`,
           );
           dropped.push(
-            `${name}: a fixed value with nothing in it was ignored.`,
+            `“${displayLabelForKey(name)}”: a fixed value with nothing in it was ignored — type the value it should hold, or pick another source.`,
           );
           continue;
         }
@@ -315,7 +353,7 @@ export function parseConsumptionMapWithDrops(raw: Json | unknown): {
             `[provisions] consumption_map entry ${name} asks the person with no question — dropping`,
           );
           dropped.push(
-            `${name}: a question with no words was ignored — nobody could have answered it.`,
+            `“${displayLabelForKey(name)}”: a question with no words was ignored — nobody could have answered it. Write what the run form should ask.`,
           );
           continue;
         }
@@ -339,7 +377,7 @@ export function parseConsumptionMapWithDrops(raw: Json | unknown): {
           `[provisions] consumption_map entry ${name} has mapType ${String(mapType)} — not consumable, dropping`,
         );
         dropped.push(
-          `${name}: a stored source of kind "${String(mapType)}" is not something this screen can feed an input, and was ignored.`,
+          `“${displayLabelForKey(name)}”: one stored source is of a kind this screen cannot feed an input from, so it was ignored — pick a source for this input again. (The browser console names the stored kind for a developer.)`,
         );
         continue;
       }
@@ -519,13 +557,58 @@ export interface OfferLike {
   values: readonly OfferedValue[];
 }
 
-/** Problems that would 422 at the server — surfaced instantly in the editor.
- * The server's bind-time verdict remains the authority. */
+/**
+ * The HOLDER's declared inputs, carrying the label each row prints. Structurally
+ * a subset of `BindingTarget` so every caller can pass what it already holds —
+ * the workspace its `holderInputs.targets`, the row its own `target`, batch
+ * mode the place's targets — without a shape conversion.
+ */
+export interface PreflightTarget {
+  name: string;
+  label?: string | null;
+}
+
+/**
+ * Context the pre-flight needs to speak in the PERSON'S words rather than the
+ * machine's (V2 round 5, R5-1). Optional so no caller can be broken by adding
+ * it, and honest when omitted: without targets an input is still named by the
+ * derivation every label on these screens uses, never by its bare key.
+ */
+export interface PreflightContext {
+  targets?: readonly PreflightTarget[];
+}
+
+/**
+ * Problems that would 422 at the server — surfaced instantly in the editor.
+ * The server's bind-time verdict remains the authority.
+ *
+ * 🚨 THE REFUSAL VOICE OF THE WHOLE ONE-BINDING UI (V2 round 5, R5-1). This one
+ * function is the pre-flight for both modes on both hosts
+ * (`OneBindingWorkspace`, `BindingMiddle`, `batch/batch-model`), precisely so
+ * the two modes can never disagree — which also means every sentence it writes
+ * is read by a Subject Matter Expert. All ten used to interpolate the raw key
+ * (`"task_overview" asks the person for this input…`) directly under the row
+ * that renders the same thing correctly as **Task Overview**, and two spoke the
+ * raw kind slug as well. Nothing here says a key or a slug any more: an input
+ * and an offered value are named by `displayLabelForKey`, a kind by
+ * `kindPhrase`. The keys keep their honest home — the mono sub-line the offered
+ * rail and the row header already print them on.
+ */
 export function consumptionMapProblems(
   offer: OfferLike,
   map: ConsumptionMap,
+  context: PreflightContext = {},
 ): string[] {
   const offered = new Map(offer.values.map((v) => [v.name, v]));
+  const targetLabels = new Map(
+    (context.targets ?? []).map((t) => [t.name, displayLabelForKey(t.name, t.label)]),
+  );
+  /** The holder input, said the way the row above the refusal says it. */
+  const inputName = (key: string): string =>
+    targetLabels.get(key) ?? displayLabelForKey(key);
+  /** An offered value, said the way the offered rail says it (`offered-adapter`
+   * derives the picker's label from the same name by the same rule). */
+  const valueName = (key: string): string => displayLabelForKey(key);
   const problems: string[] = [];
   for (const [name, sources] of Object.entries(map)) {
     const multi = sources.length > 1;
@@ -541,11 +624,11 @@ export function consumptionMapProblems(
           typeof entry.target === "object" && entry.target !== null;
         if (structured && multi) {
           problems.push(
-            `"${name}" has a structured fixed value, which has no text form — it can't be joined with other values; give it an input of its own`,
+            `“${inputName(name)}” has a structured fixed value, which has no text form — it can't be joined with other values; give it an input of its own`,
           );
         } else if (structured && sourceChannel(entry) === "variable") {
           problems.push(
-            `"${name}" has a structured fixed value — deliver it as context, never as a blob variable`,
+            `“${inputName(name)}” has a structured fixed value — deliver it as context, never as a blob variable`,
           );
         }
         continue;
@@ -553,7 +636,7 @@ export function consumptionMapProblems(
       if (entry.mapType === "prompt_user") {
         if (!entry.prompt.trim()) {
           problems.push(
-            `"${name}" asks the person for this input but has no question — write what the run form should say`,
+            `“${inputName(name)}” asks the person for this input but has no question — write what the run form should say`,
           );
         }
         continue;
@@ -562,18 +645,18 @@ export function consumptionMapProblems(
       const value = offered.get(source);
       if (!value) {
         problems.push(
-          `"${name}" consumes "${source}", which this job does not offer`,
+          `“${inputName(name)}” consumes “${valueName(source)}”, which this job does not offer`,
         );
         continue;
       }
       if (!value.guaranteed && !entry.when_absent) {
         problems.push(
-          `"${name}" takes "${source}", which is optional — choose what happens when it is absent (skip, use a default, or fail)`,
+          `“${inputName(name)}” takes “${valueName(source)}”, which is optional — choose what happens when it is absent (skip, use a default, or fail)`,
         );
       }
       if (entry.when_absent === "use_default" && entry.default == null) {
         problems.push(
-          `"${name}" says "use a default" for "${source}" but no default is set`,
+          `“${inputName(name)}” says “use a default” for “${valueName(source)}” but no default is set`,
         );
       }
       if (
@@ -582,7 +665,7 @@ export function consumptionMapProblems(
         !MEDIA_VALUE_KINDS.has(value.kind)
       ) {
         problems.push(
-          `"${name}" has structured kind "${value.kind}" — deliver it as context, never as a blob variable`,
+          `“${inputName(name)}” is fed “${valueName(source)}”, which is ${kindPhrase(value.kind)} — deliver it as context, never as a blob variable`,
         );
       }
       // D18.2 — MANY-TO-ONE IS A TEXT OPERATION. Several values become one
@@ -591,17 +674,17 @@ export function consumptionMapProblems(
       // becomes a turn block) and a structured shape has none either.
       if (multi && MEDIA_VALUE_KINDS.has(value.kind)) {
         problems.push(
-          `"${source}" is a file and can't be joined with other values — give it an input of its own`,
+          `“${valueName(source)}” is a file and can't be joined with other values — give it an input of its own`,
         );
       } else if (multi && !SCALAR_VALUE_KINDS.has(value.kind)) {
         problems.push(
-          `"${source}" is structured ("${value.kind}") and can't be joined with other values — give it an input of its own`,
+          `“${valueName(source)}” is ${kindPhrase(value.kind)} and can't be joined with other values — give it an input of its own`,
         );
       }
     }
     if (channels.size > 1) {
       problems.push(
-        `"${name}" has sources going to different places — everything feeding one input lands the same way`,
+        `“${inputName(name)}” has sources going to different places — everything feeding one input lands the same way`,
       );
     }
   }

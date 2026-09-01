@@ -58,7 +58,13 @@ Four rules batch mode keeps, each proven in `__tests__/batch-model.test.ts`:
 
 1. **The same validation.** A row is red exactly when map mode would refuse to
    save it — `consumptionMapProblems` is the judge in both, so a dot and a
-   sentence one screen apart can never disagree.
+   sentence one screen apart can never disagree. **It is therefore the refusal
+   VOICE of the whole one-binding UI, and it speaks the person's words** (V2
+   round 5): every sentence names an input or an offered value by
+   `displayLabelForKey` and a kind by `kindPhrase` — never the raw key or slug,
+   which keep their mono sub-line. Callers pass their own `targets` so an
+   author-written label wins; `mandate-screen-vocabulary.test.ts` drives all ten
+   sentences and fails on any snake_case.
 2. **A copied mapping is reconciled against THAT place** — keep · re-bind on a
    name match · clear and go red (`reconcileCopiedTarget`, the same function the
    shortcut cell calls). An extra source of a many-to-one target is never

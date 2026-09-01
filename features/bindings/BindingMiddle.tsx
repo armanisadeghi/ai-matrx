@@ -181,6 +181,9 @@ export function BindingMiddleRow({
   const rowProblems = consumptionMapProblems(
     { values: offered },
     chosen.length > 0 ? { [target.name]: chosen } : {},
+    // R5-1: this row's own label, so the refusal under the header says the same
+    // words the header does.
+    { targets: [target] },
   );
   const unfedRequired =
     target.required === true &&

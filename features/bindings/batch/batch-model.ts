@@ -205,7 +205,10 @@ export function placeHealth({
     suppliedByCaller,
   });
 
-  const problems = consumptionMapProblems({ values: offered }, chosenMap);
+  const problems = consumptionMapProblems({ values: offered }, chosenMap, {
+    // R5-1: batch is the middle transposed, so it refuses in the same words.
+    targets,
+  });
   // A source chosen with no value picked is RED whether or not the input is
   // required, because it is an UNFINISHED CHOICE and the server refuses the
   // whole map over it — which is exactly what map mode's Save says too. Colour

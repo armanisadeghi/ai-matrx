@@ -577,7 +577,10 @@ function BindingDraft({
   );
   const mapProblems =
     offer && holderChosen
-      ? consumptionMapProblems(offer, withoutUnpicked(draftMap))
+      ? consumptionMapProblems(offer, withoutUnpicked(draftMap), {
+          // R5-1: the refusal names the input the way its own row does.
+          targets: holderInputs.targets,
+        })
       : [];
   // 🚨 H1, at its class and in BOTH modes (P17 — batch is the middle
   // transposed, so a map that cannot be written in one may not be written in

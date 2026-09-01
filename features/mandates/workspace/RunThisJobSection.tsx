@@ -50,7 +50,12 @@ import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSele
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
-import { MEDIA_VALUE_KINDS, SCALAR_VALUE_KINDS } from "../provision-shapes";
+import {
+  MEDIA_VALUE_KINDS,
+  SCALAR_VALUE_KINDS,
+  kindPhrase,
+} from "../provision-shapes";
+import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 import type { ServedInput } from "@/features/workflow-runtime/served-form/served-input";
 import { isUserTextOnly, useMandateInputSurface } from "../input-surface";
 import { Section } from "./Section";
@@ -80,6 +85,9 @@ import { ProTextarea } from "@/components/official/ProTextarea";
  */
 interface RunField {
   name: string;
+  /** The label its author wrote, when there is one — what a REFUSAL about this
+   * field must say (R5-1). The mono `name` keeps its own line on screen. */
+  label: string;
   kind: string;
   /** `require`/`ask` — a value the job needs before it can run. */
   required: boolean;
@@ -124,6 +132,7 @@ function componentForKind(kind: string): VariableCustomComponent | undefined {
 function fieldsFromSurface(inputs: readonly ServedInput[]): RunField[] {
   return inputs.map((input) => ({
     name: input.name,
+    label: input.label,
     kind: input.kind,
     required: input.sourcing !== "optional" && !input.pinned,
     description: input.help || (input.label !== input.name ? input.label : ""),
@@ -198,7 +207,7 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
       if (isBlank(raw)) {
         if (field.required) {
           toast.error(
-            `"${field.name}" is required for this job — fill it in before running.`,
+            `“${displayLabelForKey(field.name, field.label)}” is required for this job — fill it in before running.`,
           );
           return null;
         }
@@ -211,7 +220,7 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
           out[field.name] = JSON.parse(raw) as JsonValue;
         } catch (error: unknown) {
           toast.error(
-            `"${field.name}" is a ${field.kind} value and must be valid JSON: ${describeError(error)}`,
+            `“${displayLabelForKey(field.name, field.label)}” is ${kindPhrase(field.kind)} and must be valid JSON: ${describeError(error)}`,
           );
           return null;
         }
@@ -221,7 +230,9 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
         const json = toJsonValue(raw);
         if (json !== undefined) out[field.name] = json;
       } catch (error: unknown) {
-        toast.error(`"${field.name}" can't be sent: ${describeError(error)}`);
+        toast.error(
+          `“${displayLabelForKey(field.name, field.label)}” can't be sent: ${describeError(error)}`,
+        );
         return null;
       }
     }

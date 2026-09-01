@@ -88,6 +88,31 @@ export const formatVariableDisplayName = (name: string): string =>
     .trim();
 
 /**
+ * 🚨 THE ONE DISPLAY-LABEL RULE FOR A NAMED KEY (V2 round 5, R5-1).
+ *
+ * A declared thing — an agent variable, a context slot, an offered value, a
+ * served input — has a machine name (`task_overview`) and, sometimes, a label
+ * its author wrote (`Run Notes`). Every screen that prints one of these to a
+ * person resolves it the same way, and until this function existed that rule
+ * was copy-pasted (`target.label ?? formatVariableDisplayName(target.name)`)
+ * while the REFUSAL sentences beside it printed the raw key instead — so one
+ * line read "Task Overview" and the line under it read `"task_overview"`.
+ *
+ * The author's label wins; otherwise the name is title-cased, which is a
+ * DERIVATION of what the author wrote, never an invention. A name with nothing
+ * to derive from (`"___"`) falls back to the name itself: still better said as
+ * itself than as an empty pair of quotes, and nothing is made up.
+ */
+export const displayLabelForKey = (
+  name: string,
+  explicitLabel?: string | null,
+): string => {
+  const explicit = typeof explicitLabel === "string" ? explicitLabel.trim() : "";
+  if (explicit) return explicit;
+  return formatVariableDisplayName(name) || name;
+};
+
+/**
  * Renders a variable value for human display. Picklist selections show their public
  * LABEL(s) (never the secret description, which the client never has) — read from the
  * canonical ```matrx reference fence string (the only picklist encoding); arrays render
