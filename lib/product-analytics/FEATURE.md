@@ -27,6 +27,11 @@ values are never overwritten, so later navigation cannot rewrite acquisition
 history. Collection predating this feature stays **Historical — not collected**;
 a captured request without a referrer is **Direct / browser withheld**.
 
+Browser enrichment retries engine-specific transport rejection (`Load failed`,
+`Failed to fetch`, and equivalents) without reporting durable first-touch loss:
+Proxy's server capture remains authoritative, and a later document load retries
+enrichment. HTTP/persistence failures and implementation exceptions stay loud.
+
 Localhost and loopback landing hosts or referrers are `local_test`. The admin
 surface retains those rows but excludes them and bots from headline people,
 account, conversion, and cost totals.
@@ -48,6 +53,8 @@ Keywords, and Settings page titles.
 
 ## Change log
 
+- 2026-09-01 — Retried browser-only acquisition transport loss without
+  misreporting it as durable first-touch failure; retained loud HTTP failures.
 - 2026-08-20 — Added zero-blocking server first-request capture, atomic browser
   enrichment, first-party guest identity, signup/OAuth account association, and
   non-poisoning localhost/bot acquisition totals.

@@ -35,6 +35,25 @@ export type FirstTouchPayload = z.infer<typeof FirstTouchPayloadSchema>;
 export type AcquisitionTrafficKind =
   "browser" | "bot" | "local_test" | "unknown";
 
+const RETRYABLE_TRANSPORT_MESSAGES = new Set([
+  "Failed to fetch",
+  "Load failed",
+  "Network request failed",
+]);
+
+/** Browser fetch uses engine-specific TypeError messages for a transport loss.
+ * These failures are retryable and do not mean the server-side first touch was
+ * lost; malformed payloads and HTTP persistence failures remain hard errors. */
+export function isRetryableAcquisitionTransportFailure(
+  error: unknown,
+): boolean {
+  return (
+    error instanceof TypeError &&
+    (RETRYABLE_TRANSPORT_MESSAGES.has(error.message) ||
+      error.message.startsWith("NetworkError"))
+  );
+}
+
 const BOT_USER_AGENT =
   /\b([a-z0-9_-]*bot|crawler|spider|slurp|bingpreview|facebookexternalhit|headlesschrome|lighthouse|semrush|ahrefs|bytespider)\b/i;
 

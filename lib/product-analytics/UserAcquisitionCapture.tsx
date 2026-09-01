@@ -8,6 +8,7 @@ import {
   FirstTouchPayloadSchema,
   isLocalAcquisitionHost,
   isLocalAcquisitionReferrer,
+  isRetryableAcquisitionTransportFailure,
   safeObservedUrl,
   type FirstTouchPayload,
 } from "./user-acquisition";
@@ -93,6 +94,7 @@ export function UserAcquisitionCapture() {
     }
 
     let cancelled = false;
+    const retryDelaysMs = [750, 2_500];
     void (async () => {
       const guestFingerprint = await getFingerprint();
       if (cancelled) return;
@@ -124,12 +126,31 @@ export function UserAcquisitionCapture() {
         // Persistence is an optimization; the request still carries the data.
       }
 
-      const response = await fetch("/api/acquisition/first-touch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      });
+      let response: Response | null = null;
+      for (let attempt = 0; attempt <= retryDelaysMs.length; attempt += 1) {
+        try {
+          response = await fetch("/api/acquisition/first-touch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            keepalive: true,
+          });
+          break;
+        } catch (error) {
+          if (!isRetryableAcquisitionTransportFailure(error)) throw error;
+          if (attempt === retryDelaysMs.length) {
+            console.warn(
+              "[user-acquisition] Browser enrichment deferred after transport loss; server first-touch capture remains authoritative",
+            );
+            return;
+          }
+          await new Promise((resolve) =>
+            window.setTimeout(resolve, retryDelaysMs[attempt]),
+          );
+          if (cancelled) return;
+        }
+      }
+      if (!response) return;
       if (!response.ok) {
         console.error(
           "[user-acquisition] First-touch persistence failed",

@@ -2,6 +2,7 @@ import {
   classifyAcquisitionTraffic,
   describeAcquisitionClient,
   isLocalAcquisitionHost,
+  isRetryableAcquisitionTransportFailure,
   safeObservedUrl,
 } from "./user-acquisition";
 
@@ -51,5 +52,22 @@ describe("user acquisition telemetry", () => {
     expect(
       safeObservedUrl("https://example.com/landing?token=secret#private"),
     ).toBe("https://example.com/landing");
+  });
+
+  test.each(["Load failed", "Failed to fetch", "Network request failed"])(
+    "classifies browser transport rejection %s for retry without claiming persistence loss",
+    (message) => {
+      expect(
+        isRetryableAcquisitionTransportFailure(new TypeError(message)),
+      ).toBe(true);
+    },
+  );
+
+  test("keeps implementation exceptions out of transport recovery", () => {
+    expect(
+      isRetryableAcquisitionTransportFailure(
+        new TypeError("Cannot read properties of undefined"),
+      ),
+    ).toBe(false);
   });
 });
