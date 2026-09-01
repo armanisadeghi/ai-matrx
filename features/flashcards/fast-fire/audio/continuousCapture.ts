@@ -366,9 +366,12 @@ async function startContinuousCaptureInner(
     Math.round(ctx.sampleRate * INITIAL_CAPACITY_SEC),
   );
   store.sampleCount = 0;
-  // The audio-clock time base: every card boundary is measured against this, so
-  // it is set the instant before the graph starts pumping samples.
-  store.baseTime = ctx.currentTime;
+  // Set below at the exact graph-connect boundary. In particular, do not stamp
+  // it before `ensureWorkletModule`: first-load module setup can consume
+  // seconds of AudioContext time while the PCM buffer still has zero samples.
+  // That permanent clock/write-head offset can make the first card's slice
+  // empty even though its microphone track is live.
+  store.baseTime = 0;
   bufferCapWarned = false;
   store.cards.clear();
   store.cardOrder = [];
@@ -394,6 +397,9 @@ async function startContinuousCaptureInner(
       });
       node.port.onmessage = (e: MessageEvent<Float32Array>) =>
         appendFrame(e.data);
+      // ONE clock begins with ONE buffer: stamp immediately before the source
+      // can emit the first frame, after every awaited setup step is complete.
+      store.baseTime = ctx.currentTime;
       store.source.connect(node);
       node.connect(store.sinkGain);
       store.workletNode = node;
@@ -417,6 +423,9 @@ async function startContinuousCaptureInner(
     node.onaudioprocess = (e: AudioProcessingEvent) => {
       appendFrame(new Float32Array(e.inputBuffer.getChannelData(0)));
     };
+    // Same boundary as the worklet path. Keeping these twins aligned prevents
+    // the fallback from reintroducing a first-card dead window.
+    store.baseTime = ctx.currentTime;
     store.source.connect(node);
     node.connect(store.sinkGain);
     store.scriptNode = node;
