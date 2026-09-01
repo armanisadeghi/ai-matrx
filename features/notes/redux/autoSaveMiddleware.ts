@@ -38,6 +38,29 @@ import { serverMatchesAttempt } from "../utils/saveVerification";
 // Timer map — one debounce timer per note
 const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
+/**
+ * Resolve an optional materialized folder for a first-save note.
+ * A folder name can legitimately exist only on the note: default folders and
+ * older rows are materialized lazily, so zero rows is not an error.
+ */
+export async function resolveMaterializedFolderId(
+  userId: string,
+  folderName: string,
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .schema("workbench")
+    .from("note_folders")
+    .select("id")
+    .eq("created_by", userId)
+    .eq("name", folderName)
+    .is("deleted_at", null)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.id ?? null;
+}
+
 function snapshotDirtyFields(
   record: NoteRecord,
 ): Partial<Record<NoteUndoableField, Note[NoteUndoableField]>> {
@@ -180,16 +203,10 @@ export const autoSaveMiddleware: Middleware =
           // Resolve folder_id if not already set
           let folderId = recordAfterLabel.folder_id;
           if (!folderId && recordAfterLabel.folder_name) {
-            const { data: folderData } = await supabase
-              .schema("workbench")
-              .from("note_folders")
-              .select("id")
-              .eq("created_by", userId)
-              .eq("name", recordAfterLabel.folder_name)
-              .is("deleted_at", null)
-              .limit(1)
-              .single();
-            folderId = folderData?.id ?? null;
+            folderId = await resolveMaterializedFolderId(
+              userId,
+              recordAfterLabel.folder_name,
+            );
           }
 
           const { data, error } = await supabase
