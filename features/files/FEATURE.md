@@ -93,7 +93,11 @@ in the same change.
     revoked. `migrations/restore_get_user_file_tree_client_door.sql` asserts both halves.
 22. **File Copy for AI starts with `<file_ref>`.** `fileInfoAgentPayload` carries `file_id` plus a
     permanent `durable_url` or `null`; `mediaSafe` replaces signed URLs and raw storage paths with
-    explicit omission notes. Human Copy remains `fileInfoHumanSummary`.
+   explicit omission notes. Human Copy remains `fileInfoHumanSummary`.
+23. **Duplicate decisions are durable intents.** `Use existing` returns the canonical id,
+    `Overwrite` targets the existing path, `Skip` writes nothing, and `Make a copy` sends
+    `force_new_copy` plus its reason. A renamed optimistic row backed by the original id is never a
+    copy.
 
 ## Local commands
 
@@ -105,6 +109,9 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-09-01 — Make a copy creates a durable duplicate row.** The duplicate dialog carries a
+  per-file `force_new_copy` decision through the thunk and multipart API; checksum-identical bytes
+  now produce a distinct id linked to the canonical row instead of renaming an optimistic alias.
 - **2026-08-31 — Organization admission lives at the files transport.** `POST /files/session`
   and every other authenticated files request is organization-admitted, but the mint fires at boot
   (`AuthSessionWatcher`, the moment an authenticated identity exists) and again on every
