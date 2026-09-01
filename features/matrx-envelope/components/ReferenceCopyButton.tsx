@@ -5,6 +5,7 @@ import { Bookmark, BookmarkCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
+import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
 
 interface ReferenceCopyButtonProps {
   /** Reference `type` on the wire (e.g. `"task"`, `"note"`). */
@@ -35,18 +36,16 @@ export function ReferenceCopyButton({
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    try {
-      await navigator.clipboard.writeText(
-        buildRecordReferenceFence({ type: referenceType, id, label }),
-      );
+    const didCopy = await copyReferenceFence(
+      buildRecordReferenceFence({ type: referenceType, id, label }),
+    );
+    if (didCopy) {
       setCopied(true);
       toast.success("Reference copied to clipboard", {
         description: toastLabel,
         duration: 2500,
       });
       setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Failed to copy reference");
     }
   };
 

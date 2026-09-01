@@ -10,6 +10,7 @@ import {
   type RecordReferenceGroup,
 } from "@/features/matrx-envelope/recordReference";
 import { Button } from "@/components/ui/button";
+import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
 
 interface ReferencesBulkCopyButtonSingleProps {
   /** Reference `type` shared by every item (e.g. `"project"`, `"transcript"`). */
@@ -63,16 +64,13 @@ export function ReferencesBulkCopyButton({
       ? buildGroupedRecordReferenceFences(groups)
       : buildMultiRecordReferenceFence(referenceType!, records!);
     if (!fence) return;
-    try {
-      await navigator.clipboard.writeText(fence);
+    if (await copyReferenceFence(fence)) {
       setCopied(true);
       toast.success("References copied to clipboard", {
         description: toastLabel,
         duration: 2500,
       });
       setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Failed to copy references");
     }
   };
 

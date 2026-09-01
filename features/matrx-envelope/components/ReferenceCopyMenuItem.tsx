@@ -5,6 +5,7 @@ import { toast } from "@/lib/toast";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { buildFileReferenceFence } from "@/features/matrx-envelope/fileReference";
+import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
 
 interface ReferenceCopyMenuItemBase {
   toastLabel: string;
@@ -25,33 +26,29 @@ interface FileReferenceCopyMenuItemProps extends ReferenceCopyMenuItemBase {
 }
 
 export type ReferenceCopyMenuItemProps =
-  | RecordReferenceCopyMenuItemProps
-  | FileReferenceCopyMenuItemProps;
+  RecordReferenceCopyMenuItemProps | FileReferenceCopyMenuItemProps;
 
 /** Dropdown / action-sheet item — copies a matrx reference fence to clipboard. */
 export function ReferenceCopyMenuItem(props: ReferenceCopyMenuItemProps) {
   const handleSelect = async (e: Event) => {
     e.preventDefault();
-    try {
-      const fence =
-        props.kind === "file"
-          ? buildFileReferenceFence({
-              fileId: props.fileId,
-              label: props.label,
-            })
-          : buildRecordReferenceFence({
-              type: props.referenceType,
-              id: props.id,
-              label: props.label,
-            });
-      await navigator.clipboard.writeText(fence);
+    const fence =
+      props.kind === "file"
+        ? buildFileReferenceFence({
+            fileId: props.fileId,
+            label: props.label,
+          })
+        : buildRecordReferenceFence({
+            type: props.referenceType,
+            id: props.id,
+            label: props.label,
+          });
+    if (await copyReferenceFence(fence)) {
       toast.success("Reference copied to clipboard", {
         description: props.toastLabel,
         duration: 2500,
       });
       props.onCopied?.();
-    } catch {
-      toast.error("Failed to copy reference");
     }
   };
 

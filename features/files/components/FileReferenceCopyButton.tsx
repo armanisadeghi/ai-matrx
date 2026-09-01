@@ -5,6 +5,7 @@ import { Bookmark, BookmarkCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { buildFileReferenceFence } from "@/features/matrx-envelope/fileReference";
+import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
 
 /** Icon button — copies a `file` matrx reference fence (`{ file_id }`). */
 export function FileReferenceCopyButton({
@@ -24,18 +25,16 @@ export function FileReferenceCopyButton({
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    try {
-      await navigator.clipboard.writeText(
-        buildFileReferenceFence({ fileId, label }),
-      );
+    const didCopy = await copyReferenceFence(
+      buildFileReferenceFence({ fileId, label }),
+    );
+    if (didCopy) {
       setCopied(true);
       toast.success("Reference copied to clipboard", {
         description: toastLabel,
         duration: 2500,
       });
       setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Failed to copy reference");
     }
   };
 

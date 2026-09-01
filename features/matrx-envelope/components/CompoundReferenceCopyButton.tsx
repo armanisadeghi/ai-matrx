@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
 
 interface CompoundReferenceCopyButtonProps {
   /** Builds the canonical ```matrx``` fence at click time. */
@@ -38,16 +39,13 @@ export function CompoundReferenceCopyButton({
       toast.error("Cannot copy reference — selection incomplete");
       return;
     }
-    try {
-      await navigator.clipboard.writeText(fence);
+    if (await copyReferenceFence(fence)) {
       setCopied(true);
       toast.success("Reference copied to clipboard", {
         description: toastLabel,
         duration: 2500,
       });
       setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Failed to copy reference");
     }
   };
 
@@ -59,10 +57,7 @@ export function CompoundReferenceCopyButton({
       type="button"
       onClick={handleCopy}
       disabled={disabled}
-      title={
-        title ??
-        (copied ? "Copied!" : `Copy reference — ${toastLabel}`)
-      }
+      title={title ?? (copied ? "Copied!" : `Copy reference — ${toastLabel}`)}
       aria-label={copied ? "Copied!" : `Copy reference for ${toastLabel}`}
       className={cn(
         "inline-flex items-center justify-center rounded-md",

@@ -260,6 +260,12 @@ silently drops items the server would have happily applied.
 
 ## Change Log
 
+- 2026-09-01 — **Reference copy has a non-dead-end clipboard fallback.** All record,
+  file, compound, menu, and bulk reference-copy controls now route through the canonical
+  clipboard primitive. When browser clipboard access is blocked, the global manual-copy
+  dialog presents and selects the exact fence instead of emitting a terminal failure toast;
+  copied state and success feedback remain reserved for confirmed clipboard writes.
+
 - 2026-08-26 — **THE DIRECTIVE⇄KIND SEAM + the side-effect card.** `itemKind.ts` /
   `itemSummary.ts`, `SideEffectDirectiveCard` registered for all four side-effect classes,
   and `DirectiveItemWindow` (Pretty = the item's own kind component, Raw = JSON, plus
