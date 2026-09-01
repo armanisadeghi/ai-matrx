@@ -17,7 +17,13 @@ import { fileHandler } from "@/features/files/handler/handler";
 import type { NormalizedFile } from "@/features/files/handler/types";
 
 import type { CaptureItem, ProductCaptureFileKind } from "./types";
-import { linkFile, listItemFiles, unlinkFile } from "./service";
+import {
+  countFileLinks,
+  isActiveCloudFile,
+  linkFile,
+  listItemFiles,
+  unlinkFile,
+} from "./service";
 import type { CaptureFile } from "./types";
 
 export interface UploadItemFileResult {
@@ -66,10 +72,12 @@ export async function uploadItemFile(args: {
 }
 
 /**
- * Delete one of an item's files for good: unlink the row and hard-delete the
- * cloud file (the link row also cascades if the file row goes first). Pass
- * `linkId` when the caller already holds the link row; otherwise it is looked
- * up from the item.
+ * Remove one file from this item without destroying another item's capture.
+ * Upload deduplication can return one canonical file id to several item links:
+ * shared files are therefore unlinked only. A sole live file is deleted
+ * BEFORE its relation, so a storage failure cannot commit a half-delete and
+ * make the caller roll back to a relation that no longer exists. A stale link
+ * to an already-deleted file is cleaned idempotently.
  */
 export async function removeItemFile(args: {
   itemId: string;
@@ -81,6 +89,22 @@ export async function removeItemFile(args: {
     const files = await listItemFiles(args.itemId);
     linkId = files.find((f) => f.fileId === args.fileId)?.id;
   }
-  if (linkId) await unlinkFile(linkId);
+  if (!linkId) return;
+
+  const linkCount = await countFileLinks(args.fileId);
+  if (linkCount === 0) return;
+  if (linkCount > 1) {
+    await unlinkFile(linkId);
+    return;
+  }
+
+  if (!(await isActiveCloudFile(args.fileId))) {
+    await unlinkFile(linkId);
+    return;
+  }
+
+  // Delete first. The FK may cascade the link; the explicit unlink is safe
+  // and keeps this correct in deployments where the relation does not cascade.
   await fileHandler.remove(args.fileId, { hard: true });
+  await unlinkFile(linkId);
 }

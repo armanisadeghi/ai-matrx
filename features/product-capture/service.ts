@@ -348,6 +348,31 @@ export async function listItemFiles(itemId: string): Promise<CaptureFile[]> {
   return ((data ?? []) as FileRow[]).map(toFile);
 }
 
+/** Number of product-capture relations that currently reference one file.
+ *  Upload deduplication may legitimately make this greater than one. */
+export async function countFileLinks(fileId: string): Promise<number> {
+  const { count, error } = await files()
+    .select("id", { count: "exact", head: true })
+    .eq("file_id", fileId);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+/** Whether the canonical cloud-file row is still live. A stale capture link
+ *  can outlive a previously deleted file; cleanup of that relation is an
+ *  idempotent success, not another attempt to delete missing storage. */
+export async function isActiveCloudFile(fileId: string): Promise<boolean> {
+  const { data, error } = await createClient()
+    .schema("files")
+    .from("files")
+    .select("id")
+    .eq("id", fileId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  return data !== null;
+}
+
 /** Files of many items at once (the review sheet's thumbnails/counts). */
 export async function listFilesForItems(
   itemIds: string[],

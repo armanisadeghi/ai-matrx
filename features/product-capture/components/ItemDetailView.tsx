@@ -503,7 +503,7 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
 
 /** Grid tile — tap opens the pager, long-press asks to delete (iOS Photos).
  *  Own component so the long-press hook isn't created inside a loop. */
-function MediaTile({
+export function MediaTile({
   fileId,
   kind,
   alt,
@@ -517,11 +517,37 @@ function MediaTile({
   onLongPress: () => void;
 }) {
   const longPress = useLongPress(onLongPress);
+  const ownsTarget = (
+    currentTarget: HTMLElement,
+    target: EventTarget | null,
+  ) => {
+    if (!(target instanceof Element)) return true;
+    const interactive = target.closest(
+      "button, a, input, select, textarea, [role='button'], [role='link']",
+    );
+    return interactive === null || interactive === currentTarget;
+  };
+
   return (
-    <button
-      type="button"
-      onClick={onOpen}
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={(event) => {
+        if (ownsTarget(event.currentTarget, event.target)) onOpen();
+      }}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
       {...longPress}
+      onPointerDown={(event) => {
+        if (ownsTarget(event.currentTarget, event.target)) {
+          longPress.onPointerDown(event);
+        }
+      }}
       aria-label="View file"
       className="relative aspect-square select-none overflow-hidden rounded-lg bg-muted"
       style={{ WebkitTouchCallout: "none" }}
@@ -532,7 +558,7 @@ function MediaTile({
           <Play className="h-6 w-6 text-white drop-shadow" />
         </span>
       )}
-    </button>
+    </div>
   );
 }
 
