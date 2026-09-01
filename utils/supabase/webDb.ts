@@ -43,6 +43,22 @@ export class WebAuthenticationRequiredError extends Error {
 export async function requireAuthenticatedSupabaseSession<
   C extends SupabaseClient<Database>,
 >(client: C) {
+  const claimsResult = await client.auth
+    .getClaims()
+    .catch((error: unknown) => {
+      throw new WebAuthenticationRequiredError(
+        "Your sign-in session could not be verified. Refresh and try again.",
+        error,
+      );
+    });
+
+  if (claimsResult.error || !claimsResult.data?.claims) {
+    throw new WebAuthenticationRequiredError(
+      "Your sign-in session could not be verified. Refresh and try again.",
+      claimsResult.error ?? undefined,
+    );
+  }
+
   const sessionResult = await client.auth
     .getSession()
     .catch((error: unknown) => {

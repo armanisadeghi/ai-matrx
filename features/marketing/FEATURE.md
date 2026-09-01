@@ -203,6 +203,11 @@ from Supabase.
 through to the workspace. Registered in `MODULE_LANDING_DIRECTORY` so it appears
 on `/features`. See `.claude/skills/module-landing-pages`.
 
+Client-side `web` reads pass through `authenticatedWebDb`, which validates and
+refreshes the JWT with `getClaims()` before reading the raw session or building
+a PostgREST query. An expired cookie becomes an honest sign-in error, never an
+anonymous request misreported as a table/view permission failure.
+
 ## Purpose
 
 Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) — a company an organization manages (their own, or an agency client's). A website is ONE brand property; social accounts and other presences are peers (`web.property`). Machine discovery writes candidates to `web.discovered_item`; humans promote them to confirmed `web.property` / `web.brand_asset` / `web.business_fact` — machine writes never touch confirmed truth. Below the brand layer sit the site verticals: canonical URLs, immutable snapshots, crawl sessions, run URL outcomes, durable run events, prioritized analysis, finding lifecycle evidence, screenshots, links, sharing, batch operations, and cost attribution.
@@ -659,6 +664,10 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-09-01 — **Marketing reads validate the JWT before reaching PostgREST.**
+  `authenticatedWebDb` calls `getClaims()` before `getSession()`, so expired or
+  invalid browser state cannot issue anonymous requests to authenticated-only
+  `web` views and surface misleading `permission denied` system errors.
 - 2026-08-30 — **Google read-only operations resolve organization identity at
   the deliberate action boundary.** Calendar, Tasks, YouTube Analytics, and
   Tag Manager keep an organization-owned connection's stored tenant. A

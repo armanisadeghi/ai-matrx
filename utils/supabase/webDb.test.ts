@@ -6,13 +6,19 @@ import {
   WebAuthenticationRequiredError,
 } from "@/utils/supabase/webDb";
 
-function testClient(getSession: jest.Mock) {
+function testClient(
+  getSession: jest.Mock,
+  getClaims: jest.Mock = jest.fn().mockResolvedValue({
+    data: { claims: { sub: "signed-user" } },
+    error: null,
+  }),
+) {
   const schema = jest.fn().mockReturnValue({ marker: "web-db" });
   const client = {
-    auth: { getSession },
+    auth: { getClaims, getSession },
     schema,
   } as unknown as SupabaseClient<Database>;
-  return { client, schema };
+  return { client, getClaims, schema };
 }
 
 describe("authenticatedWebDb", () => {
@@ -21,12 +27,16 @@ describe("authenticatedWebDb", () => {
       data: { session: { access_token: "signed-user-token" } },
       error: null,
     });
-    const { client, schema } = testClient(getSession);
+    const { client, getClaims, schema } = testClient(getSession);
 
     await expect(authenticatedWebDb(client)).resolves.toEqual({
       marker: "web-db",
     });
+    expect(getClaims).toHaveBeenCalledTimes(1);
     expect(getSession).toHaveBeenCalledTimes(1);
+    expect(getClaims.mock.invocationCallOrder[0]).toBeLessThan(
+      getSession.mock.invocationCallOrder[0],
+    );
     expect(schema).toHaveBeenCalledWith("web");
     expect(getSession.mock.invocationCallOrder[0]).toBeLessThan(
       schema.mock.invocationCallOrder[0],
@@ -56,6 +66,41 @@ describe("authenticatedWebDb", () => {
     await expect(authenticatedWebDb(client)).rejects.toBeInstanceOf(
       WebAuthenticationRequiredError,
     );
+    expect(schema).not.toHaveBeenCalled();
+  });
+
+  it("does not read a stale session when JWT validation fails", async () => {
+    const claimsError = new Error("access token expired");
+    const getSession = jest.fn();
+    const { client, schema } = testClient(
+      getSession,
+      jest.fn().mockResolvedValue({
+        data: { claims: null },
+        error: claimsError,
+      }),
+    );
+
+    await expect(authenticatedWebDb(client)).rejects.toMatchObject({
+      name: "WebAuthenticationRequiredError",
+      cause: claimsError,
+    });
+    expect(getSession).not.toHaveBeenCalled();
+    expect(schema).not.toHaveBeenCalled();
+  });
+
+  it("does not read a stale session when JWT validation rejects", async () => {
+    const claimsError = new Error("claim validation unavailable");
+    const getSession = jest.fn();
+    const { client, schema } = testClient(
+      getSession,
+      jest.fn().mockRejectedValue(claimsError),
+    );
+
+    await expect(authenticatedWebDb(client)).rejects.toMatchObject({
+      name: "WebAuthenticationRequiredError",
+      cause: claimsError,
+    });
+    expect(getSession).not.toHaveBeenCalled();
     expect(schema).not.toHaveBeenCalled();
   });
 
