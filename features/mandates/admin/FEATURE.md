@@ -119,7 +119,7 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
-- 2026-08-31 — Protected console and code-truth reads now refuse at the client auth boundary before issuing either mandate-table query or the aidream request, preventing one guest/hydration state from fanning out into backend 401, table 42501, and duplicate toast incidents.
+- 2026-08-31 — **Console bootstrap waits for both authorities.** `MandatesConsole` starts no Supabase, agent-list, coverage, catalogue, or code-truth lane until Redux holds the authenticated access token, then waits for organization bootstrap independently. A cold tab cannot fan one hydration race into `token_required` plus the mandate table's session-required failure; a settled no-org session still stops loading and names the remedy.
 
 - 2026-08-30 — Output-kind pills now keep the secondary foreground/background pair on hover instead of swapping only the purple background for the pale accent surface and making their white text unreadable. A focused regression test holds the contrast classes.
 

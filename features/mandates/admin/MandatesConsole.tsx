@@ -55,6 +55,10 @@ import {
   selectOrganizationId,
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectAccessToken,
+  selectAuthReady,
+} from "@/lib/redux/selectors/userSelectors";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectAgentLineageIndex,
@@ -233,6 +237,8 @@ export function MandatesConsole() {
   );
   const selectedOrganizationId = useAppSelector(selectOrganizationId);
   const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  const accessToken = useAppSelector(selectAccessToken);
+  const authReady = useAppSelector(selectAuthReady);
   const [data, setData] = useState<MandateConsoleData | null>(null);
   const [codeTruthByMandateKey, setCodeTruthByMandateKey] = useState<
     Record<string, MandateCodeTruth>
@@ -241,7 +247,9 @@ export function MandatesConsole() {
   // Coverage + the code declarations. Both come from aidream and BOTH degrade
   // honestly: a failure names itself instead of rendering an empty board or a
   // blank Goal column that reads as "no goal declared".
-  const [coverage, setCoverage] = useState<MandateCoverageResponse | null>(null);
+  const [coverage, setCoverage] = useState<MandateCoverageResponse | null>(
+    null,
+  );
   const [coverageError, setCoverageError] = useState<string | null>(null);
   const [catalogue, setCatalogue] = useState<MandateCatalogue | null>(null);
   const [catalogueError, setCatalogueError] = useState<string | null>(null);
@@ -354,8 +362,9 @@ export function MandatesConsole() {
   }, [fetchData]);
 
   useEffect(() => {
+    if (!accessToken) return;
     dispatch(fetchAgentsListFull());
-  }, [dispatch]);
+  }, [accessToken, dispatch]);
 
   // `callApi` requires the explicitly selected organization. On a cold tab,
   // the console can mount before app-context hydration finishes; firing here
@@ -377,6 +386,12 @@ export function MandatesConsole() {
   // fact about this session: stop loading and say it, with the action that
   // fixes it.
   useEffect(() => {
+    // Organization context and browser authentication hydrate independently.
+    // Starting either the direct Supabase reads or callApi without the token
+    // turns one cold-tab race into both a session-required DB failure and a
+    // token_required API failure. The protected shell owns the signed-out
+    // state; this surface waits until its Redux auth authority is settled.
+    if (!authReady || !accessToken) return;
     if (!selectedOrganizationId) {
       if (orgBootstrapResolved) {
         setLoading(false);
@@ -389,7 +404,13 @@ export function MandatesConsole() {
     }
     setNoOrganization(null);
     fetchData();
-  }, [fetchData, orgBootstrapResolved, selectedOrganizationId]);
+  }, [
+    accessToken,
+    authReady,
+    fetchData,
+    orgBootstrapResolved,
+    selectedOrganizationId,
+  ]);
 
   // Any mandate write anywhere — including a rebind made from the Linked Agent
   // Sync window (updateMandateDefinition fires the invalidation bus) — reloads
@@ -826,11 +847,7 @@ export function MandatesConsole() {
         header: "Feature",
         filter: "select",
         width: 150,
-        cell: (r) => (
-          <span className="font-mono text-xs">
-            {r.feature}
-          </span>
-        ),
+        cell: (r) => <span className="font-mono text-xs">{r.feature}</span>,
       },
       {
         id: "mandateName",
@@ -1219,70 +1236,70 @@ export function MandatesConsole() {
             resolveContextOnOpen={resolveMandateMenuTarget}
             extraSections={mandateMenuSections}
           >
-          <MatrxDataTable
-            urlState={{ id: MANDATES_TABLE_ID }}
-            data={rows}
-            columns={columns}
-            getRowId={(r) => r.id}
-            searchText={(r) => r.mandateKey}
-            isLoading={loading}
-            isFetching={fetching}
-            pageSize={50}
-            emptyState={{
-              title: "No mandates yet",
-              description:
-                "Mandates seed from aidream code declarations on server boot.",
-            }}
-            toolbar={{
-              search: true,
-              searchPlaceholder: "Search mandates, agents…",
-              actions: (
-                <>
-                  {/* Declaring a job is admin work, so the New button lives
+            <MatrxDataTable
+              urlState={{ id: MANDATES_TABLE_ID }}
+              data={rows}
+              columns={columns}
+              getRowId={(r) => r.id}
+              searchText={(r) => r.mandateKey}
+              isLoading={loading}
+              isFetching={fetching}
+              pageSize={50}
+              emptyState={{
+                title: "No mandates yet",
+                description:
+                  "Mandates seed from aidream code declarations on server boot.",
+              }}
+              toolbar={{
+                search: true,
+                searchPlaceholder: "Search mandates, agents…",
+                actions: (
+                  <>
+                    {/* Declaring a job is admin work, so the New button lives
                       here — the user route has none. */}
-                  <Button asChild size="sm">
-                    <Link href="/administration/mandates/new">
-                      <Plus className="w-4 h-4" />
-                      New Mandate
-                    </Link>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={reload}
-                    disabled={fetching}
-                  >
-                    {fetching ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-4 h-4" />
-                    )}
-                  </Button>
-                </>
-              ),
-            }}
-            copy={{
-              label: "Agent mandate",
-              listLabel: "Agent mandates (this view)",
-              location: "/administration/mandates",
-              rowKind: "agent-mandate",
-              listKind: "mandates",
-              humanRow,
-              rowAttributes: (r) => ({
-                id: r.id,
-                mandate_key: r.mandateKey,
-                feature: r.feature,
-                mandate: r.mandateName,
-                health: r.health,
-                enabled: r.isEnabled,
-              }),
-            }}
-            // ONE MANDATE UI: a row opens the mandate's PAGE. No side-panel
-            // drawer, no table-owned window — this console is the LIST, and
-            // the page is the mandate. (`MandateDetailPanel` still exists and
-            // still renders the admin controls; it lives on that page now.)
-            onRowOpen={(r) => openMandatePage(r.mandateKey)}
-          />
+                    <Button asChild size="sm">
+                      <Link href="/administration/mandates/new">
+                        <Plus className="w-4 h-4" />
+                        New Mandate
+                      </Link>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={reload}
+                      disabled={fetching}
+                    >
+                      {fetching ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </>
+                ),
+              }}
+              copy={{
+                label: "Agent mandate",
+                listLabel: "Agent mandates (this view)",
+                location: "/administration/mandates",
+                rowKind: "agent-mandate",
+                listKind: "mandates",
+                humanRow,
+                rowAttributes: (r) => ({
+                  id: r.id,
+                  mandate_key: r.mandateKey,
+                  feature: r.feature,
+                  mandate: r.mandateName,
+                  health: r.health,
+                  enabled: r.isEnabled,
+                }),
+              }}
+              // ONE MANDATE UI: a row opens the mandate's PAGE. No side-panel
+              // drawer, no table-owned window — this console is the LIST, and
+              // the page is the mandate. (`MandateDetailPanel` still exists and
+              // still renders the admin controls; it lives on that page now.)
+              onRowOpen={(r) => openMandatePage(r.mandateKey)}
+            />
           </NonEditableContextMenu>
         </div>
       </div>

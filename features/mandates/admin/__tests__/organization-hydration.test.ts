@@ -24,6 +24,17 @@ const source = readFileSync(join(__dirname, "../MandatesConsole.tsx"), "utf8");
  * correct fix look like a regression.
  */
 describe("MandatesConsole organization hydration boundary", () => {
+  it("waits for the authenticated Redux authority before starting any console lane", () => {
+    expect(source).toContain("useAppSelector(selectAccessToken)");
+    expect(source).toContain("useAppSelector(selectAuthReady)");
+    expect(source).toMatch(
+      /useEffect\(\(\) => \{[\s\S]*?if \(!authReady \|\| !accessToken\) return;[\s\S]*?fetchData\(\);/,
+    );
+    expect(source).toMatch(
+      /useEffect\(\(\) => \{\s*if \(!accessToken\) return;\s*dispatch\(fetchAgentsListFull\(\)\);/,
+    );
+  });
+
   it("reads the organization from the app-context authority the transport uses", () => {
     expect(source).toMatch(/selectOrganizationId[\s\S]{0,120}appContextSlice/);
     expect(source).toContain(
@@ -33,7 +44,7 @@ describe("MandatesConsole organization hydration boundary", () => {
 
   it("waits for explicit organization context and refetches when it changes", () => {
     expect(source).toMatch(
-      /useEffect\(\(\) => \{[\s\S]*?if \(!selectedOrganizationId\) \{[\s\S]*?fetchData\(\);[\s\S]*?\}, \[fetchData, orgBootstrapResolved, selectedOrganizationId\]\);/,
+      /useEffect\(\(\) => \{[\s\S]*?if \(!selectedOrganizationId\) \{[\s\S]*?fetchData\(\);[\s\S]*?\}, \[[\s\S]*?accessToken,[\s\S]*?authReady,[\s\S]*?fetchData,[\s\S]*?orgBootstrapResolved,[\s\S]*?selectedOrganizationId,[\s\S]*?\]\);/,
     );
   });
 
