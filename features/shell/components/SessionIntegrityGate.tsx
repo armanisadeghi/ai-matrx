@@ -7,9 +7,9 @@
  *
  * Resolves the server's own view of the user (request-cached, so this costs no
  * extra round-trip) and reads the one signal the proxy stamps when it saw the
- * auth cookie at two Domain scopes (`x-matrx-split-jar`, set from
- * `MiddlewareSession.splitCookieJar` in `utils/supabase/middleware.ts`), then
- * hands both to the client banner that compares them.
+ * auth cookie at two Domain scopes (`x-matrx-split-jar`, stamped by
+ * `@ai-matrx/data/next` on every healed response), then hands both to the
+ * client banner that compares them.
  *
  * See `SessionIntegrityBanner.tsx` for what this exists to stop.
  */
