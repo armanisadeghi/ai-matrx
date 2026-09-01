@@ -340,6 +340,10 @@ export function useProductCaptureSession(
       const alreadyCurrent = currentItemRef.current?.id === itemId;
       const item = await loadItem(itemId);
       if (!item) {
+        // A deleted item can remain in the per-org resume slot indefinitely.
+        // Clear it at the authoritative not-found boundary so every later
+        // route load starts clean instead of replaying the same dead UUID.
+        if (organizationId) clearResumeKey(organizationId);
         toast.error("That item no longer exists.");
         return;
       }
@@ -361,7 +365,7 @@ export function useProductCaptureSession(
         })),
       );
     },
-    [finishCurrentItem, adoptItem],
+    [finishCurrentItem, adoptItem, organizationId, clearResumeKey],
   );
 
   // Resume on mount (once per org resolution): an explicit `?item=` deep

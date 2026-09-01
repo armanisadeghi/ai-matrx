@@ -108,6 +108,21 @@ describe("useProductCaptureSession QR adoption", () => {
     await hook.unmount();
   });
 
+  it("forgets a persisted item id after the row no longer exists", async () => {
+    const key = "product-capture:current-item:org-q28";
+    window.localStorage.setItem(key, "item-deleted");
+    mockLoadItem.mockResolvedValueOnce(null);
+
+    const hook = await renderHook(() => useProductCaptureSession());
+    await hook.act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(mockLoadItem).toHaveBeenCalledWith("item-deleted");
+    expect(window.localStorage.getItem(key)).toBeNull();
+    await hook.unmount();
+  });
+
   it("serializes sequential scans and leaves the latest created item current", async () => {
     let resolveFirst!: (value: CaptureItem) => void;
     const firstCreate = new Promise<CaptureItem>((resolve) => {

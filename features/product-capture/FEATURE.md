@@ -101,6 +101,8 @@ Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPrevi
 
 ## Change log
 
+- 2026-09-01 — Q28 stale-resume repair: when the per-org localStorage resume id points to a deleted item, the authoritative not-found load now clears that dead id before reporting it, so fresh route loads do not replay the same toast and Error Inspector issue; added the exact mount/resume regression.
+
 - 2026-09-01 — Q28 Items/Resume repair: separated `CaptureThumb` and its interactive error remedies from `ItemSwipeRow`'s primary selection button, preserving thumbnail/row selection while eliminating nested-button runtime errors; added the exact error-fallback regression.
 
 - 2026-08-31 — Q28 live re-verification repair: QR decoding now waits for the
