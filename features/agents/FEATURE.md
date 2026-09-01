@@ -818,6 +818,8 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 
 ## Change log
 
+- `2026-08-31` — **A stream failure has one diagnostics owner.** `runAiStream` captures the canonical `agent-stream-client-error`; the Redux diagnostics middleware suppresses only the immediate `execute` / `executeManual` / `smartExecute` wrapper rejections with the same message. Unrelated dead-turn rejections remain red.
+
 - `2026-08-30` — **Assistant responses can continue in full Chat without losing the current surface.** The shared `AssistantActionBar` adds a chat-bubble/up-right-arrow link on Builder, Runner, windows, and widgets; it opens the canonical conversation route in a new tab with the tooltip **Continue in chat mode**, hides across all `/chat` routes, and resolves Builder manual turns through the server-reserved wire conversation ID rather than their browser-local test-panel key.
 
 - `2026-08-28` — **The canonical agent picker sweep now covers every generic selection surface.** The output-schema apply dialog, Agent App binding, Code workspace chat, CX chat sheet and sidebar, Advanced Agent Editor fallback, Orchestra conductor selection, and both Research admin wiring editors now render `AgentListDropdown` or `AgentListInlinePicker` instead of partial local rosters. Operation-specific boundaries are expressed through the canonical core (`visibleTabs`, `includeSystemInAll`, and the new `excludeAgentIds`) rather than by pre-filtering an agent array, so search, tabs, sort, favorites, category/tag filters, reset, origin badges, detail peek, and complete Redux-backed inventory remain identical to the Chat header.

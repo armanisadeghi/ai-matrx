@@ -22,7 +22,10 @@
  */
 
 import type { Middleware } from "@reduxjs/toolkit";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  captureError,
+  getSnapshot,
+} from "@/lib/diagnostics/errorCaptureStore";
 
 interface RejectedAction {
   type: string;
@@ -49,6 +52,32 @@ function messageOf(a: RejectedAction): string {
   return "Rejected thunk";
 }
 
+const STREAM_WRAPPER_RELATIONS = new Set([
+  "instances/execute",
+  "instances/executeManual",
+  "instances/smartExecute",
+]);
+
+/**
+ * runAiStream owns stream-phase capture before its rejection propagates through
+ * execute -> smartExecute. Those wrapper actions describe the same dead turn,
+ * not two additional incidents. Keep every unrelated AI rejection red.
+ */
+export function isStreamWrapperDuplicate(
+  action: RejectedAction,
+  now = Date.now(),
+): boolean {
+  const relation = action.type.slice(0, -"/rejected".length);
+  if (!STREAM_WRAPPER_RELATIONS.has(relation)) return false;
+  const message = messageOf(action);
+  return getSnapshot().some(
+    (captured) =>
+      captured.source === "agent-stream-client-error" &&
+      captured.message === message &&
+      now - captured.lastAt <= 5_000,
+  );
+}
+
 export const reduxErrorCaptureMiddleware: Middleware =
   () => (next) => (action) => {
     const result = next(action);
@@ -60,6 +89,7 @@ export const reduxErrorCaptureMiddleware: Middleware =
         if (a.error?.name === "AbortError" || a.error?.name === "ConditionError") {
           return result;
         }
+        if (isStreamWrapperDuplicate(a)) return result;
         captureError({
           source: "redux-rejected",
           relation: a.type.slice(0, -"/rejected".length),
