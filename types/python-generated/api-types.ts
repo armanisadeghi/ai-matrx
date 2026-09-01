@@ -9151,6 +9151,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/kinsta/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_kinsta_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/alpha-serve/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_alpha_serve_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/productplan/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_productplan_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cronofy/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_cronofy_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -9279,6 +9347,91 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_incident_io_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mailgun/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_mailgun_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/smtp2go/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_smtp2go_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/beehiiv/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_beehiiv_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/umbraco/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_umbraco_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/servebolt/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_servebolt_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -32924,6 +33077,40 @@ export interface components {
              */
             status_page?: "https://www.akamaistatus.com";
         };
+        /** AlphaServeServiceStatus */
+        AlphaServeServiceStatus: {
+            /**
+             * Kind
+             * @default alpha_serve_official_bi_connector_platform_status
+             * @constant
+             */
+            __kind?: "alpha_serve_official_bi_connector_platform_status";
+            /**
+             * Provider
+             * @default Alpha Serve
+             * @constant
+             */
+            provider?: "Alpha Serve";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.alphaservesp.com/
+             * @constant
+             */
+            status_page?: "https://status.alphaservesp.com/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** AnalysisPreferencesBody */
         AnalysisPreferencesBody: {
             /**
@@ -35423,6 +35610,38 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** BeehiivServiceStatus */
+        BeehiivServiceStatus: {
+            /**
+             * Kind
+             * @default beehiiv_public_service_status
+             * @constant
+             */
+            __kind?: "beehiiv_public_service_status";
+            /**
+             * Provider
+             * @default beehiiv
+             * @constant
+             */
+            provider?: "beehiiv";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://www.beehiivstatus.com
+             * @constant
+             */
+            status_page?: "https://www.beehiivstatus.com";
         };
         /**
          * BettermodeServiceStatus
@@ -45580,6 +45799,40 @@ export interface components {
             updated_by?: string | null;
             /** Updated At */
             updated_at?: string | null;
+        };
+        /** CronofyServiceStatus */
+        CronofyServiceStatus: {
+            /**
+             * Kind
+             * @default cronofy_official_calendar_connectivity_platform_status
+             * @constant
+             */
+            __kind?: "cronofy_official_calendar_connectivity_platform_status";
+            /**
+             * Provider
+             * @default Cronofy
+             * @constant
+             */
+            provider?: "Cronofy";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.cronofy.com
+             * @constant
+             */
+            status_page?: "https://status.cronofy.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** CropPagesRequest */
         CropPagesRequest: {
@@ -59698,6 +59951,35 @@ export interface components {
             /** Is Active */
             is_active: boolean;
         };
+        /** KinstaServiceStatus */
+        KinstaServiceStatus: {
+            /**
+             * Kind
+             * @default kinsta_public_content_hosting_status
+             * @constant
+             */
+            __kind?: "kinsta_public_content_hosting_status";
+            /**
+             * Provider
+             * @default Kinsta
+             * @constant
+             */
+            provider?: "Kinsta";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.kinsta.com
+             * @constant
+             */
+            status_page?: "https://status.kinsta.com";
+        };
         /**
          * KitServiceStatus
          * @description Safe aggregate status projection for Kit's fixed status page.
@@ -62000,6 +62282,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.mailersend.com/";
+        };
+        /** MailgunServiceStatus */
+        MailgunServiceStatus: {
+            /**
+             * Kind
+             * @default mailgun_public_service_status
+             * @constant
+             */
+            __kind?: "mailgun_public_service_status";
+            /**
+             * Provider
+             * @default Mailgun
+             * @constant
+             */
+            provider?: "Mailgun";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.mailgun.com
+             * @constant
+             */
+            status_page?: "https://status.mailgun.com";
         };
         /**
          * MailjetServiceStatus
@@ -72739,6 +73053,40 @@ export interface components {
             /** Cost Per Accepted Usd */
             cost_per_accepted_usd?: number | null;
         };
+        /** ProductPlanServiceStatus */
+        ProductPlanServiceStatus: {
+            /**
+             * Kind
+             * @default productplan_official_product_planning_platform_status
+             * @constant
+             */
+            __kind?: "productplan_official_product_planning_platform_status";
+            /**
+             * Provider
+             * @default ProductPlan
+             * @constant
+             */
+            provider?: "ProductPlan";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.productplan.com
+             * @constant
+             */
+            status_page?: "https://status.productplan.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * ProductboardStatusResult
          * @description Safe projection of Productboard's high-level service status.
@@ -80727,6 +81075,35 @@ export interface components {
             /** Dropped */
             dropped?: string[];
         };
+        /** ServeboltServiceStatus */
+        ServeboltServiceStatus: {
+            /**
+             * Kind
+             * @default servebolt_public_content_hosting_status
+             * @constant
+             */
+            __kind?: "servebolt_public_content_hosting_status";
+            /**
+             * Provider
+             * @default Servebolt
+             * @constant
+             */
+            provider?: "Servebolt";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://serveboltstatus.com
+             * @constant
+             */
+            status_page?: "https://serveboltstatus.com";
+        };
         /**
          * ServedInput
          * @description One entry of the SERVED compiled input surface (INPUT-SURFACE.md) —
@@ -82729,6 +83106,38 @@ export interface components {
             action_digest: string;
             /** Expires At */
             expires_at: string;
+        };
+        /** Smtp2GoServiceStatus */
+        Smtp2GoServiceStatus: {
+            /**
+             * Kind
+             * @default smtp2go_public_service_status
+             * @constant
+             */
+            __kind?: "smtp2go_public_service_status";
+            /**
+             * Provider
+             * @default SMTP2GO
+             * @constant
+             */
+            provider?: "SMTP2GO";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://smtp2gostatus.com
+             * @constant
+             */
+            status_page?: "https://smtp2gostatus.com";
         };
         /**
          * SmugMugServiceStatus
@@ -88714,6 +89123,35 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.uxcam.com";
+        };
+        /** UmbracoServiceStatus */
+        UmbracoServiceStatus: {
+            /**
+             * Kind
+             * @default umbraco_public_content_platform_status
+             * @constant
+             */
+            __kind?: "umbraco_public_content_platform_status";
+            /**
+             * Provider
+             * @default Umbraco
+             * @constant
+             */
+            provider?: "Umbraco";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.umbraco.io/
+             * @constant
+             */
+            status_page?: "https://status.umbraco.io/";
         };
         /** UnarchiveWorkflowResponse */
         UnarchiveWorkflowResponse: {
@@ -109471,6 +109909,86 @@ export interface operations {
             };
         };
     };
+    public_status_kinsta_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KinstaServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_alpha_serve_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlphaServeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_productplan_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPlanServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_cronofy_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CronofyServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -109627,6 +110145,106 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IncidentIoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_mailgun_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailgunServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_smtp2go_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Smtp2GoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_beehiiv_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BeehiivServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_umbraco_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UmbracoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_servebolt_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServeboltServiceStatus"];
                 };
             };
         };

@@ -20335,6 +20335,90 @@
         }
       }
     },
+    "/kinsta/public/status": {
+      "get": {
+        "tags": [
+          "Kinsta Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_kinsta_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KinstaServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alpha-serve/public/status": {
+      "get": {
+        "tags": [
+          "Alpha Serve Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_alpha_serve_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlphaServeServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/productplan/public/status": {
+      "get": {
+        "tags": [
+          "ProductPlan Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_productplan_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPlanServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cronofy/public/status": {
+      "get": {
+        "tags": [
+          "Cronofy Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_cronofy_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CronofyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -20496,6 +20580,111 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IncidentIoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mailgun/public/status": {
+      "get": {
+        "tags": [
+          "Mailgun Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_mailgun_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailgunServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/smtp2go/public/status": {
+      "get": {
+        "tags": [
+          "SMTP2GO Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_smtp2go_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Smtp2GoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/beehiiv/public/status": {
+      "get": {
+        "tags": [
+          "beehiiv Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_beehiiv_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeehiivServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/umbraco/public/status": {
+      "get": {
+        "tags": [
+          "Umbraco Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_umbraco_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UmbracoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/servebolt/public/status": {
+      "get": {
+        "tags": [
+          "Servebolt Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_servebolt_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServeboltServiceStatus"
                 }
               }
             }
@@ -80191,6 +80380,55 @@
         ],
         "title": "AkamaiServiceStatus"
       },
+      "AlphaServeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "alpha_serve_official_bi_connector_platform_status",
+            "title": "Kind",
+            "default": "alpha_serve_official_bi_connector_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Alpha Serve",
+            "title": "Provider",
+            "default": "Alpha Serve"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.alphaservesp.com/",
+            "title": "Status Page",
+            "default": "https://status.alphaservesp.com/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "AlphaServeServiceStatus"
+      },
       "AnalysisPreferencesBody": {
         "properties": {
           "per_detector_enabled": {
@@ -85681,6 +85919,50 @@
         ],
         "title": "BeautifulAIStatusResult",
         "description": "Safe projection of Beautiful.ai's high-level service status."
+      },
+      "BeehiivServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "beehiiv_public_service_status",
+            "title": "Kind",
+            "default": "beehiiv_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "beehiiv",
+            "title": "Provider",
+            "default": "beehiiv"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://www.beehiivstatus.com",
+            "title": "Status Page",
+            "default": "https://www.beehiivstatus.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "BeehiivServiceStatus"
       },
       "BettermodeServiceStatus": {
         "properties": {
@@ -110873,6 +111155,55 @@
         "type": "object",
         "title": "CrmFoldSettings",
         "description": "Per-site control over the SEO → CRM bridge."
+      },
+      "CronofyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "cronofy_official_calendar_connectivity_platform_status",
+            "title": "Kind",
+            "default": "cronofy_official_calendar_connectivity_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Cronofy",
+            "title": "Provider",
+            "default": "Cronofy"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.cronofy.com",
+            "title": "Status Page",
+            "default": "https://status.cronofy.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "CronofyServiceStatus"
       },
       "CropPagesRequest": {
         "properties": {
@@ -143750,6 +144081,46 @@
         "title": "KindSurfaceDescriptor",
         "description": "One kind_surface row — the detection list (fence_lang / xml_tag /\njson_root_key / tool_name token → this kind)."
       },
+      "KinstaServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "kinsta_public_content_hosting_status",
+            "title": "Kind",
+            "default": "kinsta_public_content_hosting_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Kinsta",
+            "title": "Provider",
+            "default": "Kinsta"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.kinsta.com",
+            "title": "Status Page",
+            "default": "https://status.kinsta.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "KinstaServiceStatus"
+      },
       "KitServiceStatus": {
         "properties": {
           "__kind": {
@@ -149954,6 +150325,50 @@
         ],
         "title": "MailerSendServiceStatus",
         "description": "Safe aggregate status projection for MailerSend's fixed status page."
+      },
+      "MailgunServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mailgun_public_service_status",
+            "title": "Kind",
+            "default": "mailgun_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Mailgun",
+            "title": "Provider",
+            "default": "Mailgun"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.mailgun.com",
+            "title": "Status Page",
+            "default": "https://status.mailgun.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MailgunServiceStatus"
       },
       "MailjetServiceStatus": {
         "properties": {
@@ -174211,6 +174626,55 @@
         "type": "object",
         "title": "ProducerYieldTotals"
       },
+      "ProductPlanServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "productplan_official_product_planning_platform_status",
+            "title": "Kind",
+            "default": "productplan_official_product_planning_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "ProductPlan",
+            "title": "Provider",
+            "default": "ProductPlan"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.productplan.com",
+            "title": "Status Page",
+            "default": "https://status.productplan.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "ProductPlanServiceStatus"
+      },
       "ProductboardStatusResult": {
         "properties": {
           "__kind": {
@@ -193373,6 +193837,46 @@
         ],
         "title": "SerpProspectingPreview"
       },
+      "ServeboltServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "servebolt_public_content_hosting_status",
+            "title": "Kind",
+            "default": "servebolt_public_content_hosting_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Servebolt",
+            "title": "Provider",
+            "default": "Servebolt"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://serveboltstatus.com",
+            "title": "Status Page",
+            "default": "https://serveboltstatus.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ServeboltServiceStatus"
+      },
       "ServedInput": {
         "properties": {
           "name": {
@@ -197981,6 +198485,50 @@
           "expires_at"
         ],
         "title": "SmsActionAuthorizationResponse"
+      },
+      "Smtp2GoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "smtp2go_public_service_status",
+            "title": "Kind",
+            "default": "smtp2go_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "SMTP2GO",
+            "title": "Provider",
+            "default": "SMTP2GO"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://smtp2gostatus.com",
+            "title": "Status Page",
+            "default": "https://smtp2gostatus.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "Smtp2GoServiceStatus"
       },
       "SmugMugServiceStatus": {
         "properties": {
@@ -211879,6 +212427,46 @@
           "indicator"
         ],
         "title": "UXCamServiceStatus"
+      },
+      "UmbracoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "umbraco_public_content_platform_status",
+            "title": "Kind",
+            "default": "umbraco_public_content_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Umbraco",
+            "title": "Provider",
+            "default": "Umbraco"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.umbraco.io/",
+            "title": "Status Page",
+            "default": "https://status.umbraco.io/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "UmbracoServiceStatus"
       },
       "UnarchiveWorkflowResponse": {
         "properties": {
