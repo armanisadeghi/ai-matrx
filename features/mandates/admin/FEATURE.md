@@ -9,7 +9,7 @@ Cross-repo proposed plan: `/Users/armanisadeghi/code/common-docs/projects/mandat
 Routes: `/administration/mandates` (the LIST — `MandatesConsole.tsx`) ·
 `/administration/mandates/[mandateKey]` (ONE mandate — `AdminMandateWorkspacePage.tsx`) ·
 `/administration/mandates/new` (creation — `features/mandates/authoring/NewMandatePage.tsx`).
-Code: `service.ts` (direct supabase reads/writes on `agent.mandate` / `agent.mandate_binding`; super-admin writes ride RLS via `has_access` editor on system-org rows — no bespoke RPC). **Every protected console/code-truth read establishes a usable browser session before constructing a Supabase query or `callApi` request**; proxy admission alone cannot prevent a client-hydration/session-loss fan-out.
+Code: `service.ts` (direct supabase reads/writes on `agent.mandate` / `agent.mandate_binding`; super-admin writes ride RLS via `has_access` editor on system-org rows — no bespoke RPC). **Every protected console/code-truth read and authoring mutation establishes a usable browser session before constructing a Supabase query or `callApi` request**; proxy admission alone cannot prevent a client-hydration/session-loss fan-out.
 
 🚨 **ONE MANDATE UI (Arman, 2026-08-29) — the console is the LIST, the page is the mandate.**
 Arman lives on this route and kept seeing an experience that had diverged from the rebuilt
@@ -118,6 +118,8 @@ The page is the `matrx-admin/mandates` surface (`features/surfaces/manifests/man
 The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate` (`ui`, handled on the console's own provider, which owns `selectedId`) and `mandate_exemplar_draft` (`draft`, registered by `MandateTestBench` via `useSurfaceWriteHandlers`). Both are `applyPolicy: "ask"`. Read the JUDGMENT BAR block at the top of the manifest before adding a third: rebind, enable/disable, the per-principal overrides, Run all, and every health/roll-up value are deliberately NOT writable, and each has its reason written down there.
 
 ## Change Log
+
+- 2026-09-01 — Protected create/goal/draft-input mutations now establish the browser Supabase session before dispatching `callApi`; a lost or still-hydrating client session cannot reach `POST /mandates` as `token_required`.
 
 - 2026-08-31 — **Console bootstrap waits for both authorities.** `MandatesConsole` starts no Supabase, agent-list, coverage, catalogue, or code-truth lane until Redux holds the authenticated access token, then waits for organization bootstrap independently. A cold tab cannot fan one hydration race into `token_required` plus the mandate table's session-required failure; a settled no-org session still stops loading and names the remedy.
 

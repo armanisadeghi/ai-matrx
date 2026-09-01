@@ -15,6 +15,8 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
 import { parseCallApiError } from "@/lib/api/errors";
+import { createClient } from "@/utils/supabase/client";
+import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { invalidateMandateCache } from "../service";
 
 /** One descriptive input: description is the only required field. */
@@ -66,6 +68,10 @@ export async function createMandate(
   dispatch: AppDispatch,
   input: CreateMandateInput,
 ): Promise<CreatedMandate> {
+  // Proxy admission cannot prove that the browser client still holds the
+  // session when this protected mutation starts. Refuse locally before
+  // `callApi` can send an anonymous POST and persist a token_required incident.
+  await requireAuthenticatedSupabaseSession(createClient());
   const result = await dispatch(
     callApi({
       path: "/mandates",
@@ -94,6 +100,7 @@ export async function patchMandateGoal(
   mandateKey: string,
   goal: string,
 ): Promise<void> {
+  await requireAuthenticatedSupabaseSession(createClient());
   const result = await dispatch(
     callApi({
       path: "/mandates/{mandate_key}/goal",
@@ -112,6 +119,7 @@ export async function patchMandateDraftInputs(
   mandateKey: string,
   draftInputs: DraftInput[],
 ): Promise<void> {
+  await requireAuthenticatedSupabaseSession(createClient());
   const result = await dispatch(
     callApi({
       path: "/mandates/{mandate_key}/draft-inputs",
