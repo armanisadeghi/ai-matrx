@@ -334,6 +334,7 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
   {
     id: "request-aborted",
     tier: "yellow",
+    persist: false,
     reason:
       "Request cancelled by navigation / unmount / superseding fetch — expected control flow, not a failure.",
     addedAt: "2026-06-28",

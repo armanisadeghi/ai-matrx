@@ -89,6 +89,21 @@ describe("captured error persistence settlement", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it("keeps rule-classified Supabase request cancellation out of system_error", async () => {
+    captureError({
+      source: "supabase-postgrest",
+      relation: "integration_connections",
+      operation: "select",
+      name: "AbortError",
+      status: 0,
+      message: "AbortError: signal is aborted without reason",
+    });
+
+    await jest.advanceTimersByTimeAsync(1_500);
+
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("keeps a denial local when AccessGate resolves during the grace window", async () => {
     const error = recordUnavailable({
       entity: "brand",
