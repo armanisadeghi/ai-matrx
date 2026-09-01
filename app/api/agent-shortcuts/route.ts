@@ -4,51 +4,15 @@ import { applyScopeToInsertPayload } from "../_lib/apply-scope-to-insert";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { shortcutTable } from "@/lib/supabase/shortcutStorage";
 import { toGlobalOwnershipWire, toGlobalOwnershipWireList } from "@/lib/organizations/globalOwnership";
+import { pickWritableShortcutFields } from "./writable-fields";
 
-const SHORTCUT_FIELDS = [
-  "id",
-  "category_id",
-  "label",
-  "description",
-  "icon_name",
-  "keyboard_shortcut",
-  "sort_order",
-  "scope_mappings",
-  "context_mappings",
-  "enabled_features",
-  "agent_id",
-  "agent_version_id",
-  "use_latest",
-  "is_active",
-  "created_by",
-  "organization_id",
-  // project/task scoping is platform.associations edges, not columns
-  // AgentExecutionConfig bundle
-  "display_mode",
-  "show_variable_panel",
-  "variables_panel_style",
-  "auto_run",
-  "allow_chat",
-  "show_definition_messages",
-  "show_definition_message_content",
-  "hide_reasoning",
-  "hide_tool_results",
-  "show_pre_execution_gate",
-  "pre_execution_message",
-  "bypass_gate_seconds",
-  "default_user_input",
-  "default_variables",
-  "context_overrides",
-  "llm_overrides",
-] as const;
-
-function pickShortcutFields(body: Record<string, unknown>) {
-  const out: Record<string, unknown> = {};
-  for (const key of SHORTCUT_FIELDS) {
-    if (key in body) out[key] = body[key];
-  }
-  return out;
-}
+/**
+ * Keys the CREATE body legitimately carries that are not columns: the scope
+ * request, which `applyScopeToInsertPayload` resolves into ownership, and the
+ * project/task ids it hands back as association edges rather than columns.
+ * Named here so the picker can tell "handled elsewhere" from "silently lost".
+ */
+const CREATE_ONLY_BODY_KEYS = new Set(["scope", "project_id", "task_id"]);
 
 export async function GET(request: NextRequest) {
   try {
@@ -197,7 +161,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const insertPayload = pickShortcutFields(body);
+    // W11-1's class: the create list had the same four holes as the update
+    // list (`value_mappings`, `write_policies`, `surface_name`,
+    // `json_extraction`). Both routes read ONE list now.
+    const { payload: insertPayload, rejected } = pickWritableShortcutFields(
+      body as Record<string, unknown>,
+      { allowId: true },
+    );
+    const unexpected = rejected.filter((k) => !CREATE_ONLY_BODY_KEYS.has(k));
+    if (unexpected.length > 0) {
+      console.error(
+        "[agent-shortcuts] POST carried fields this route cannot write",
+        { rejected: unexpected },
+      );
+    }
     const scoped = await applyScopeToInsertPayload({
       body,
       payload: insertPayload,

@@ -3,50 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { shortcutTable } from "@/lib/supabase/shortcutStorage";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { toGlobalOwnershipWire } from "@/lib/organizations/globalOwnership";
-
-const SHORTCUT_UPDATE_FIELDS = [
-  "category_id",
-  "label",
-  "description",
-  "icon_name",
-  "keyboard_shortcut",
-  "sort_order",
-  "scope_mappings",
-  "context_mappings",
-  "enabled_features",
-  "agent_id",
-  "agent_version_id",
-  "use_latest",
-  "is_active",
-  "created_by",
-  "organization_id",
-  // project/task scoping is platform.associations edges, not columns
-  // AgentExecutionConfig bundle
-  "display_mode",
-  "show_variable_panel",
-  "variables_panel_style",
-  "auto_run",
-  "allow_chat",
-  "show_definition_messages",
-  "show_definition_message_content",
-  "hide_reasoning",
-  "hide_tool_results",
-  "show_pre_execution_gate",
-  "pre_execution_message",
-  "bypass_gate_seconds",
-  "default_user_input",
-  "default_variables",
-  "context_overrides",
-  "llm_overrides",
-] as const;
-
-function pickUpdateFields(body: Record<string, unknown>) {
-  const out: Record<string, unknown> = {};
-  for (const key of SHORTCUT_UPDATE_FIELDS) {
-    if (key in body) out[key] = body[key];
-  }
-  return out;
-}
+import {
+  pickWritableShortcutFields,
+  rejectedFieldsMessage,
+} from "../writable-fields";
 
 export async function GET(
   _request: NextRequest,
@@ -128,7 +88,25 @@ export async function PATCH(
       );
     }
 
-    const updatePayload = pickUpdateFields(body);
+    // 🚨 W11-1 — REFUSE, NEVER DROP. This route used to filter the body through
+    // a hand-kept allow-list and discard the rest in silence; `value_mappings`,
+    // `write_policies`, `surface_name` and `json_extraction` were never on it,
+    // so editing a shortcut's bindings answered 200 with the row unchanged and
+    // the person's work reverted on reload.
+    const { payload: updatePayload, rejected } = pickWritableShortcutFields(
+      body as Record<string, unknown>,
+    );
+
+    if (rejected.length > 0) {
+      console.error(
+        "[agent-shortcuts] PATCH refused — unwritable fields in body",
+        { id, rejected },
+      );
+      return NextResponse.json(
+        { error: rejectedFieldsMessage(rejected), fields: rejected },
+        { status: 400 },
+      );
+    }
 
     if (Object.keys(updatePayload).length === 0) {
       return NextResponse.json(
