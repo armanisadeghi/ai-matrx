@@ -20713,6 +20713,111 @@
         }
       }
     },
+    "/tellent/public/status": {
+      "get": {
+        "tags": [
+          "Tellent Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_tellent_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TellentServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/homerun/public/status": {
+      "get": {
+        "tags": [
+          "Homerun Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_homerun_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomerunServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/manatal/public/status": {
+      "get": {
+        "tags": [
+          "Manatal Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_manatal_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManatalServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fountain/public/status": {
+      "get": {
+        "tags": [
+          "Fountain Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_fountain_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FountainServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/paradox/public/status": {
+      "get": {
+        "tags": [
+          "Paradox Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_paradox_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParadoxServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -21238,6 +21343,111 @@
         }
       }
     },
+    "/kayako/public/status": {
+      "get": {
+        "tags": [
+          "Kayako Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_kayako_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KayakoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tidio/public/status": {
+      "get": {
+        "tags": [
+          "Tidio Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_tidio_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TidioServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/formassembly/public/status": {
+      "get": {
+        "tags": [
+          "FormAssembly Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_formassembly_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormAssemblyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/helpwise/public/status": {
+      "get": {
+        "tags": [
+          "Helpwise Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_helpwise_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HelpwiseServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/elevio/public/status": {
+      "get": {
+        "tags": [
+          "Elevio Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_elevio_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ElevioServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -21252,6 +21462,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ZightServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lucidlink/public/status": {
+      "get": {
+        "tags": [
+          "LucidLink Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_lucidlink_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LucidLinkServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sharefile/public/status": {
+      "get": {
+        "tags": [
+          "ShareFile Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_sharefile_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareFileServiceStatus"
                 }
               }
             }
@@ -122321,6 +122573,50 @@
         "title": "EgnyteServiceStatus",
         "description": "Safe aggregate status projection for Egnyte's fixed status page."
       },
+      "ElevioServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "elevio_public_service_status",
+            "title": "Kind",
+            "default": "elevio_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Elevio",
+            "title": "Provider",
+            "default": "Elevio"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.elevio.io",
+            "title": "Status Page",
+            "default": "https://status.elevio.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ElevioServiceStatus"
+      },
       "EligibilityBlock": {
         "properties": {
           "code": {
@@ -133000,6 +133296,51 @@
         "title": "ForkRequest",
         "description": "Payload for forking a conversation.\n\nSelectors (provide at most one; default copies everything):\n- ``up_to_position`` — copy messages with ``position <= N``.\n- ``from_message_id`` — copy messages up to and including this\n  message. Set ``exclusive=True`` to fork up to but NOT including it\n  (i.e. \"fork the conversation before this message\" — the natural\n  shape for \"edit this message\").\n\n``title`` — optional title for the forked conversation. Defaults to\nthe source conversation's title prefixed with ``\"Fork: \"``."
       },
+      "FormAssemblyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "formassembly_public_service_status",
+            "title": "Kind",
+            "default": "formassembly_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "FormAssembly",
+            "title": "Provider",
+            "default": "FormAssembly"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical",
+              "maintenance"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.formassembly.com",
+            "title": "Status Page",
+            "default": "https://status.formassembly.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "FormAssemblyServiceStatus"
+      },
       "FormBuilderServiceStatus": {
         "properties": {
           "__kind": {
@@ -133043,6 +133384,55 @@
           "indicator"
         ],
         "title": "FormBuilderServiceStatus"
+      },
+      "FountainServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "fountain_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "fountain_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Fountain",
+            "title": "Provider",
+            "default": "Fountain"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.fountain.com",
+            "title": "Status Page",
+            "default": "https://status.fountain.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "FountainServiceStatus"
       },
       "FrameIoServiceStatus": {
         "properties": {
@@ -137101,6 +137491,50 @@
         ],
         "title": "HelpshiftServiceStatus"
       },
+      "HelpwiseServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "helpwise_public_service_status",
+            "title": "Kind",
+            "default": "helpwise_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Helpwise",
+            "title": "Provider",
+            "default": "Helpwise"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.helpwise.io",
+            "title": "Status Page",
+            "default": "https://status.helpwise.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "HelpwiseServiceStatus"
+      },
       "HexPackageMetadata": {
         "properties": {
           "__kind": {
@@ -137493,6 +137927,55 @@
         ],
         "title": "HomebrewPublicFormula",
         "description": "Safe bounded projection of one public Homebrew/core formula."
+      },
+      "HomerunServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "homerun_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "homerun_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Homerun",
+            "title": "Provider",
+            "default": "Homerun"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.homerun.co",
+            "title": "Status Page",
+            "default": "https://status.homerun.co"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "HomerunServiceStatus"
       },
       "HoneybadgerServiceStatus": {
         "properties": {
@@ -143439,6 +143922,50 @@
         ],
         "title": "KalturaServiceStatus",
         "description": "Safe aggregate status projection for Kaltura's fixed status page."
+      },
+      "KayakoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "kayako_public_service_status",
+            "title": "Kind",
+            "default": "kayako_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Kayako",
+            "title": "Provider",
+            "default": "Kayako"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.kayako.com",
+            "title": "Status Page",
+            "default": "https://status.kayako.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "KayakoServiceStatus"
       },
       "KeyFindingEntry": {
         "properties": {
@@ -151659,6 +152186,46 @@
         "title": "LoopsServiceStatus",
         "description": "Safe aggregate status projection for Loops' fixed status page."
       },
+      "LucidLinkServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lucidlink_public_cloud_file_status",
+            "title": "Kind",
+            "default": "lucidlink_public_cloud_file_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "LucidLink",
+            "title": "Provider",
+            "default": "LucidLink"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.lucidlink.com",
+            "title": "Status Page",
+            "default": "https://status.lucidlink.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "LucidLinkServiceStatus"
+      },
       "LucidStatusResult": {
         "properties": {
           "__kind": {
@@ -152044,6 +152611,55 @@
         ],
         "title": "MailjetServiceStatus",
         "description": "Safe aggregate status projection for Mailjet's fixed status page."
+      },
+      "ManatalServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "manatal_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "manatal_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Manatal",
+            "title": "Provider",
+            "default": "Manatal"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.manatal.com",
+            "title": "Status Page",
+            "default": "https://status.manatal.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "ManatalServiceStatus"
       },
       "MandateBindingDeleteRequest": {
         "properties": {
@@ -168123,6 +168739,55 @@
           "indicator"
         ],
         "title": "PantheonServiceStatus"
+      },
+      "ParadoxServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "paradox_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "paradox_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Paradox",
+            "title": "Provider",
+            "default": "Paradox"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.paradox.ai",
+            "title": "Status Page",
+            "default": "https://status.paradox.ai"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "ParadoxServiceStatus"
       },
       "PatchFolderRequest": {
         "properties": {
@@ -197290,6 +197955,46 @@
         "title": "ShapeConformanceRow",
         "description": "One Shape's state. Open shape — the view owns the column list."
       },
+      "ShareFileServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "sharefile_public_cloud_file_status",
+            "title": "Kind",
+            "default": "sharefile_public_cloud_file_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "ShareFile",
+            "title": "Provider",
+            "default": "ShareFile"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.sharefile.com",
+            "title": "Status Page",
+            "default": "https://status.sharefile.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ShareFileServiceStatus"
+      },
       "ShareLinkInfo": {
         "properties": {
           "token": {
@@ -208962,6 +209667,55 @@
         "title": "TeamworkStatusResult",
         "description": "Safe projection of Teamwork.com's official high-level service status."
       },
+      "TellentServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "tellent_official_recruiting_collaboration_platform_status",
+            "title": "Kind",
+            "default": "tellent_official_recruiting_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Tellent",
+            "title": "Provider",
+            "default": "Tellent"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.tellent.com",
+            "title": "Status Page",
+            "default": "https://status.tellent.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "TellentServiceStatus"
+      },
       "TemplateCreate": {
         "properties": {
           "name": {
@@ -209785,6 +210539,50 @@
           "body"
         ],
         "title": "ThreadMessageView"
+      },
+      "TidioServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "tidio_public_service_status",
+            "title": "Kind",
+            "default": "tidio_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Tidio",
+            "title": "Provider",
+            "default": "Tidio"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.tidio.com",
+            "title": "Status Page",
+            "default": "https://status.tidio.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "TidioServiceStatus"
       },
       "TikTokPublicMetadata": {
         "properties": {

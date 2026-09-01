@@ -9457,6 +9457,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tellent/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_tellent_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/homerun/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_homerun_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manatal/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_manatal_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fountain/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_fountain_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/paradox/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_paradox_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -9882,6 +9967,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/kayako/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_kayako_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tidio/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_tidio_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/formassembly/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_formassembly_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/helpwise/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_helpwise_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/elevio/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_elevio_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -9891,6 +10061,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_zight_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lucidlink/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_lucidlink_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sharefile/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_sharefile_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -50848,6 +51052,38 @@ export interface components {
              */
             status_page?: "https://status.egnyte.com/";
         };
+        /** ElevioServiceStatus */
+        ElevioServiceStatus: {
+            /**
+             * Kind
+             * @default elevio_public_service_status
+             * @constant
+             */
+            __kind?: "elevio_public_service_status";
+            /**
+             * Provider
+             * @default Elevio
+             * @constant
+             */
+            provider?: "Elevio";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.elevio.io
+             * @constant
+             */
+            status_page?: "https://status.elevio.io";
+        };
         /** EligibilityBlock */
         EligibilityBlock: {
             /** Code */
@@ -55184,6 +55420,38 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** FormAssemblyServiceStatus */
+        FormAssemblyServiceStatus: {
+            /**
+             * Kind
+             * @default formassembly_public_service_status
+             * @constant
+             */
+            __kind?: "formassembly_public_service_status";
+            /**
+             * Provider
+             * @default FormAssembly
+             * @constant
+             */
+            provider?: "FormAssembly";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical" | "maintenance";
+            /**
+             * Status Page
+             * @default https://status.formassembly.com
+             * @constant
+             */
+            status_page?: "https://status.formassembly.com";
+        };
         /** FormBuilderServiceStatus */
         FormBuilderServiceStatus: {
             /**
@@ -55215,6 +55483,40 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.123formbuilder.com";
+        };
+        /** FountainServiceStatus */
+        FountainServiceStatus: {
+            /**
+             * Kind
+             * @default fountain_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "fountain_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Fountain
+             * @constant
+             */
+            provider?: "Fountain";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.fountain.com
+             * @constant
+             */
+            status_page?: "https://status.fountain.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * FrameIoServiceStatus
@@ -57176,6 +57478,38 @@ export interface components {
              */
             status_page?: "https://status.helpshift.com";
         };
+        /** HelpwiseServiceStatus */
+        HelpwiseServiceStatus: {
+            /**
+             * Kind
+             * @default helpwise_public_service_status
+             * @constant
+             */
+            __kind?: "helpwise_public_service_status";
+            /**
+             * Provider
+             * @default Helpwise
+             * @constant
+             */
+            provider?: "Helpwise";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.helpwise.io
+             * @constant
+             */
+            status_page?: "https://status.helpwise.io";
+        };
         /**
          * HexPackageMetadata
          * @description Safe bounded projection of one public Hex.pm package.
@@ -57372,6 +57706,40 @@ export interface components {
             deprecated: boolean;
             /** Disabled */
             disabled: boolean;
+        };
+        /** HomerunServiceStatus */
+        HomerunServiceStatus: {
+            /**
+             * Kind
+             * @default homerun_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "homerun_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Homerun
+             * @constant
+             */
+            provider?: "Homerun";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.homerun.co
+             * @constant
+             */
+            status_page?: "https://status.homerun.co";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** HoneybadgerServiceStatus */
         HoneybadgerServiceStatus: {
@@ -60160,6 +60528,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.kaltura.com";
+        };
+        /** KayakoServiceStatus */
+        KayakoServiceStatus: {
+            /**
+             * Kind
+             * @default kayako_public_service_status
+             * @constant
+             */
+            __kind?: "kayako_public_service_status";
+            /**
+             * Provider
+             * @default Kayako
+             * @constant
+             */
+            provider?: "Kayako";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.kayako.com
+             * @constant
+             */
+            status_page?: "https://status.kayako.com";
         };
         /** KeyFindingEntry */
         KeyFindingEntry: {
@@ -63318,6 +63718,35 @@ export interface components {
              */
             status_page?: "https://status.loops.so";
         };
+        /** LucidLinkServiceStatus */
+        LucidLinkServiceStatus: {
+            /**
+             * Kind
+             * @default lucidlink_public_cloud_file_status
+             * @constant
+             */
+            __kind?: "lucidlink_public_cloud_file_status";
+            /**
+             * Provider
+             * @default LucidLink
+             * @constant
+             */
+            provider?: "LucidLink";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.lucidlink.com
+             * @constant
+             */
+            status_page?: "https://status.lucidlink.com";
+        };
         /**
          * LucidStatusResult
          * @description Safe projection of Lucid Software's high-level service status.
@@ -63590,6 +64019,40 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.mailjet.com/";
+        };
+        /** ManatalServiceStatus */
+        ManatalServiceStatus: {
+            /**
+             * Kind
+             * @default manatal_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "manatal_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Manatal
+             * @constant
+             */
+            provider?: "Manatal";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.manatal.com
+             * @constant
+             */
+            status_page?: "https://status.manatal.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** MandateBindingDeleteRequest */
         MandateBindingDeleteRequest: {
@@ -70726,6 +71189,40 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.pantheon.io";
+        };
+        /** ParadoxServiceStatus */
+        ParadoxServiceStatus: {
+            /**
+             * Kind
+             * @default paradox_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "paradox_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Paradox
+             * @constant
+             */
+            provider?: "Paradox";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.paradox.ai
+             * @constant
+             */
+            status_page?: "https://status.paradox.ai";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** PatchFolderRequest */
         PatchFolderRequest: {
@@ -83239,6 +83736,35 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** ShareFileServiceStatus */
+        ShareFileServiceStatus: {
+            /**
+             * Kind
+             * @default sharefile_public_cloud_file_status
+             * @constant
+             */
+            __kind?: "sharefile_public_cloud_file_status";
+            /**
+             * Provider
+             * @default ShareFile
+             * @constant
+             */
+            provider?: "ShareFile";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.sharefile.com
+             * @constant
+             */
+            status_page?: "https://status.sharefile.com";
+        };
         /**
          * ShareLinkInfo
          * @description Share-link info returned in combined-op envelopes.
@@ -88376,6 +88902,40 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** TellentServiceStatus */
+        TellentServiceStatus: {
+            /**
+             * Kind
+             * @default tellent_official_recruiting_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "tellent_official_recruiting_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Tellent
+             * @constant
+             */
+            provider?: "Tellent";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.tellent.com
+             * @constant
+             */
+            status_page?: "https://status.tellent.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** TemplateCreate */
         TemplateCreate: {
             /** Name */
@@ -88786,6 +89346,38 @@ export interface components {
             body: string;
             /** Label */
             label?: string | null;
+        };
+        /** TidioServiceStatus */
+        TidioServiceStatus: {
+            /**
+             * Kind
+             * @default tidio_public_service_status
+             * @constant
+             */
+            __kind?: "tidio_public_service_status";
+            /**
+             * Provider
+             * @default Tidio
+             * @constant
+             */
+            provider?: "Tidio";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.tidio.com
+             * @constant
+             */
+            status_page?: "https://status.tidio.com";
         };
         /**
          * TikTokPublicMetadata
@@ -112175,6 +112767,106 @@ export interface operations {
             };
         };
     };
+    public_status_tellent_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TellentServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_homerun_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomerunServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_manatal_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManatalServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_fountain_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FountainServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_paradox_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParadoxServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -112675,6 +113367,106 @@ export interface operations {
             };
         };
     };
+    public_status_kayako_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KayakoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_tidio_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TidioServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_formassembly_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormAssemblyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_helpwise_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpwiseServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_elevio_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ElevioServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -112691,6 +113483,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ZightServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_lucidlink_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LucidLinkServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_sharefile_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareFileServiceStatus"];
                 };
             };
         };
