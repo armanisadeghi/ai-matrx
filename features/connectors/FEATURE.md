@@ -25,7 +25,7 @@ The user-facing catalogue of external systems a person can attach to their accou
 - `features/connectors/useLiveConnectors.ts` — the ONE container for connection state and actions across the strip and full list. Google uses the Google connect window; MCP entries use the canonical route selector and OAuth/no-auth/GitHub/configure path.
 - `features/connectors/live-connectors.ts` — merges seeded Google/Gmail/Notion definitions with the usable MCP catalogue and enforces the live boundary.
 - `features/connectors/rotation.ts` — pure randomized-bag selection and persisted-state parser.
-- `features/marketing/google/hooks.ts` — the shared Google inventory query is **auth-gated**. Core routes mount before async auth hydration; querying `users.integration_connections` while anonymous is a producer bug because the table is intentionally granted only to `authenticated`.
+- `features/marketing/google/hooks.ts` and `service.ts` — the shared Google inventory query is **auth-gated twice**: Redux prevents pre-hydration scheduling, and the service requires a live Supabase session immediately before PostgREST. Redux identity can briefly outlive a signed-out client; querying `users.integration_connections` while anonymous is a producer bug because the table is intentionally granted only to `authenticated`.
 
 **Config**
 
@@ -136,6 +136,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-01` — Added a live-session guard at the shared Google inventory service boundary, preventing logout/session-expiry races from issuing anonymous reads against authenticated-only integration tables.
 - `2026-08-31` — The Settings directory's Google connector cards now retain 44pt action targets on phones and render contextual loading plus an explicit retryable failure state instead of disappearing while account status is unavailable.
 - `2026-08-30` — Made chat connector visibility fail closed on the catalog's sanitized `connection_ready` proof and stopped generic OAuth from inventing a CIMD client id unless provider metadata explicitly supports it; Figma now remains hidden while its MCP client admission is pending.
 - `2026-08-30` — Completed dynamic-provider artwork fallback: each entry now tries its website favicon, known brand glyph, catalogue art, and cached 128px favicon before any branded initial, eliminating anonymous letter tiles whenever provider identity is available.

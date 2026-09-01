@@ -182,6 +182,11 @@ export async function listGoogleConnectionInventory(
   signal?: AbortSignal,
 ): Promise<GoogleConnectionInventory> {
   const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return { connections: [], resources: [] };
+
   const connections = await supabase
     .schema("users")
     .from("integration_connections")
