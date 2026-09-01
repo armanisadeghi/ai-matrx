@@ -147,6 +147,7 @@ instead of fanning out through both services.
 
 ## Change log
 
+- `2026-09-01` — **Realtime outage capture now agrees with the 30-second connection-health window.** A 1006 close that survives only the 1s+2s+4s reconnects is still a routine laptop wake, tab resume, or wifi handoff, not proof that live sync is broken. The producer now warns through five failed attempts (~31s cumulative backoff) and captures only a sixth consecutive failure; the same healthy-window timer still resets the counter after 30 stable seconds. A forcing test proves attempts 1-5 stay out of `system_error` while the sustained sixth failure remains loud.
 - `2026-09-01` — **First-save folder lookup accepts an unmaterialized folder.** Autosave uses `.maybeSingle()` through `resolveMaterializedFolderId`, so a valid folder name with no `note_folders` row no longer emits `PGRST116`; forcing tests cover absent, present, and genuine-error results.
 - `2026-09-01` — **Expired `/notes` sessions stop at one lifecycle boundary.** List hydration verifies live Supabase identity around the notes read, retries the shared `PGRST301` session spelling once through `@ai-matrx/data`, and refuses association hydration after logout/account switch. An unrecoverable expiry returns the list to idle and is classified as an auth pause, not three independent incidents.
 

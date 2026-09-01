@@ -40,10 +40,12 @@ let reconnectAttempt = 0;
 const BACKOFF_RESET_AFTER_MS = 30_000;
 let backoffResetTimer: ReturnType<typeof setTimeout> | null = null;
 // Reconnect attempts before a dropped channel stops being routine and becomes a
-// captured error. Attempts 1-3 span ~7s of backoff — the window a sleep, a tab
-// backgrounding, or a wifi handoff heals inside. Past it, live sync is genuinely
-// broken and the user needs the alarm. CAPS constant, never an env var.
-const RECONNECT_ALARM_ATTEMPT = 3;
+// captured error. The alarm must not fire inside the same 30s stability window
+// used to decide whether a connection is healthy: attempts 1-5 span ~31s of
+// backoff (1+2+4+8+16), covering ordinary laptop wake and network handoff. A
+// sixth consecutive failure is a sustained outage and still screams. CAPS
+// constant, never an env var.
+const RECONNECT_ALARM_ATTEMPT = 5;
 
 // ── Live-editor attribution ─────────────────────────────────────────────
 // `workbench.notes._stamp_actor` (DB trigger) writes `updated_by` on every

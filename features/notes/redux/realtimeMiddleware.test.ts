@@ -48,7 +48,7 @@ describe("notes realtime disconnect logging", () => {
     jest.useRealTimers();
   });
 
-  it("keeps a self-healing socket close out of error capture until reconnects repeatedly fail", () => {
+  it("keeps socket closes quiet through the 30s recovery window, then captures a sustained outage", () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
     const error = jest.spyOn(console, "error").mockImplementation(() => undefined);
     const dispatched: unknown[] = [];
@@ -83,11 +83,13 @@ describe("notes realtime disconnect logging", () => {
 
     subscriptionCallbacks[0]("CHANNEL_ERROR", socketClosed);
     subscriptionCallbacks[0]("CHANNEL_ERROR", socketClosed);
+    subscriptionCallbacks[0]("CHANNEL_ERROR", socketClosed);
+    subscriptionCallbacks[0]("CHANNEL_ERROR", socketClosed);
     expect(error).not.toHaveBeenCalled();
 
     subscriptionCallbacks[0]("CHANNEL_ERROR", socketClosed);
     expect(error).toHaveBeenCalledWith(
-      "[Notes RT] realtime still down after 3 reconnect attempts — live note sync is broken for this session:",
+      "[Notes RT] realtime still down after 5 reconnect attempts — live note sync is broken for this session:",
       socketClosed,
     );
 
