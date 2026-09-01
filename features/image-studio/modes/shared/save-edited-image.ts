@@ -37,6 +37,7 @@ export async function saveEditedImage(args: {
   });
 
   let filePath: string | undefined;
+  let metadata = args.metadata;
   if (args.fileId) {
     // Resolve by durable identity instead of reading Redux directly. A newly
     // generated image can be opened before the global file-tree hydration has
@@ -53,6 +54,27 @@ export async function saveEditedImage(args: {
       );
     }
     filePath = existing.filePath;
+
+    // A path-targeted upload is a version write, not a new-file upload. The
+    // upload gate normally binds ambient organization context, but that can
+    // differ from the organization that already owns this durable path (for
+    // example, generated personal media opened while a team workspace is
+    // active). Preserve the target row's organization explicitly so the
+    // backend never sees a version write as an attempted ownership transfer.
+    if (existing.scope.organizationId) {
+      const existingMetadataScope =
+        args.metadata?.scope && typeof args.metadata.scope === "object"
+          ? (args.metadata.scope as Record<string, unknown>)
+          : {};
+      metadata = {
+        ...(args.metadata ?? {}),
+        organization_id: existing.scope.organizationId,
+        scope: {
+          ...existingMetadataScope,
+          organization_id: existing.scope.organizationId,
+        },
+      };
+    }
   }
 
   const normalized = await fileHandler.upload(
@@ -60,7 +82,7 @@ export async function saveEditedImage(args: {
     {
       ...(filePath ? { filePath } : { folderPath: args.folderPath }),
       visibility: "personal",
-      metadata: args.metadata,
+      metadata,
       changeSummary: args.changeSummary,
       createShareLink: true,
       shareLinkPermissionLevel: "viewer",

@@ -13,7 +13,10 @@ jest.mock("@/features/files/handler/handler", () => ({
 const mockedResolve = jest.mocked(fileHandler.resolve);
 const mockedUpload = jest.mocked(fileHandler.upload);
 
-function resolvedFile(filePath?: string): NormalizedFile {
+function resolvedFile(
+  filePath?: string,
+  organizationId?: string,
+): NormalizedFile {
   return {
     fileId: "generated-file-id",
     filePath,
@@ -29,7 +32,7 @@ function resolvedFile(filePath?: string): NormalizedFile {
     },
     meta: classify({ fileName: "generated.png", mime: "image/png" }),
     lifecycle: { refreshable: true, persisted: true },
-    scope: {},
+    scope: organizationId ? { organizationId } : {},
     __source: { kind: "file_id", fileId: "generated-file-id" },
   };
 }
@@ -87,5 +90,49 @@ describe("saveEditedImage", () => {
     ).rejects.toThrow("could not resolve the existing path");
 
     expect(mockedUpload).not.toHaveBeenCalled();
+  });
+
+  it("preserves the existing organization when writing a new version", async () => {
+    mockedResolve.mockResolvedValue(
+      resolvedFile(
+        "Images/Generated/run/generated.png",
+        "source-organization-id",
+      ),
+    );
+    mockedUpload.mockResolvedValue({
+      ...resolvedFile(
+        "Images/Generated/run/generated.png",
+        "source-organization-id",
+      ),
+      fileId: "generated-file-id",
+      shareToken: "share-token",
+      url: "https://files.example/share-token",
+    });
+
+    await saveEditedImage({
+      blob: new Blob(["png"], { type: "image/png" }),
+      filename: "generated-edited.png",
+      folderPath: "Images/Edited",
+      mime: "image/png",
+      fileId: "generated-file-id",
+      metadata: {
+        kind: "ai-edit",
+        scope: { organization_id: "ambient-organization-id" },
+      },
+    });
+
+    expect(mockedUpload).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "file" }),
+      expect.objectContaining({
+        filePath: "Images/Generated/run/generated.png",
+        metadata: expect.objectContaining({
+          kind: "ai-edit",
+          organization_id: "source-organization-id",
+          scope: expect.objectContaining({
+            organization_id: "source-organization-id",
+          }),
+        }),
+      }),
+    );
   });
 });
