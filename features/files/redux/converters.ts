@@ -89,6 +89,7 @@ export function dbRowToCloudFile(row: CloudFileReadRow): CloudFile {
     // `files.files` is canonical now: owner lives in `created_by` (trigger-
     // stamped), not the old `owner_id`. Domain keeps the `ownerId` field name.
     ownerId: row.created_by,
+    organizationId: row.organization_id,
     filePath: row.file_path,
     fileName: row.file_name,
     mimeType: row.mime_type,
@@ -145,6 +146,7 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
   // Once the OpenAPI types ship the new fields, this cast becomes a
   // no-op and the values flow through unchanged.
   const extras = row as unknown as {
+    organization_id?: string | null;
     duplicate_of_file_id?: string | null;
     canonical_processed_document_id?: string | null;
     parent_file_id?: string | null;
@@ -154,6 +156,7 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
   return {
     id: row.id,
     ownerId: row.owner_id,
+    organizationId: extras.organization_id ?? null,
     filePath: row.file_path,
     fileName: row.file_name,
     mimeType: row.mime_type ?? null,

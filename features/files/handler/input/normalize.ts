@@ -20,12 +20,7 @@ import {
 } from "../intelligence/access";
 import type { FileSource, NormalizedFile } from "../types";
 
-const STREAM_RENDER_TYPES = new Set([
-  "image",
-  "audio",
-  "video",
-  "document",
-]);
+const STREAM_RENDER_TYPES = new Set(["image", "audio", "video", "document"]);
 
 export function normalize(source: FileSource): NormalizedFile {
   switch (source.kind) {
@@ -64,7 +59,9 @@ export function normalize(source: FileSource): NormalizedFile {
 // Ephemeral / raw bytes
 // ---------------------------------------------------------------------------
 
-function fromBlob(source: Extract<FileSource, { kind: "blob" }>): NormalizedFile {
+function fromBlob(
+  source: Extract<FileSource, { kind: "blob" }>,
+): NormalizedFile {
   const url = createTrackedObjectUrl(source.blob);
   const meta = classify({
     fileName: source.fileName,
@@ -82,7 +79,9 @@ function fromBlob(source: Extract<FileSource, { kind: "blob" }>): NormalizedFile
   };
 }
 
-function fromFile(source: Extract<FileSource, { kind: "file" }>): NormalizedFile {
+function fromFile(
+  source: Extract<FileSource, { kind: "file" }>,
+): NormalizedFile {
   const url = createTrackedObjectUrl(source.file);
   const meta = classify({
     fileName: source.file.name,
@@ -183,7 +182,10 @@ function fromExternalUrl(
     url: source.url,
     origin: "external",
     capabilities: EXTERNAL_CAPS,
-    meta: classify({ mime: source.mime, fileName: filenameFromUrl(source.url) }),
+    meta: classify({
+      mime: source.mime,
+      fileName: filenameFromUrl(source.url),
+    }),
     lifecycle: { refreshable: false, persisted: true },
     scope: {},
     __source: source,
@@ -256,7 +258,7 @@ export function fromCloudFile(
     },
     scope: {
       ownerId: cloudFile.ownerId,
-      organizationId: readOrgScope(cloudFile),
+      organizationId: cloudFile.organizationId ?? readOrgScope(cloudFile),
       projectId: readProjectScope(cloudFile),
       taskId: readTaskScope(cloudFile),
     },
@@ -319,7 +321,10 @@ function fromPublicCdn(
     url: source.url,
     origin: "public",
     capabilities: { ...PUBLIC_CAPS, transportSafeForFetch: true },
-    meta: classify({ mime: source.mime, fileName: filenameFromUrl(source.url) }),
+    meta: classify({
+      mime: source.mime,
+      fileName: filenameFromUrl(source.url),
+    }),
     lifecycle: { refreshable: !!source.fileId, persisted: true },
     scope: {},
     __source: source,
@@ -343,12 +348,14 @@ function fromUploadResult(
       transportSafeForFetch: true,
     },
     meta: classify({
-      mime: typeof r.metadata?.mimetype === "string"
-        ? (r.metadata.mimetype as string)
-        : undefined,
-      fileName: typeof r.metadata?.name === "string"
-        ? (r.metadata.name as string)
-        : undefined,
+      mime:
+        typeof r.metadata?.mimetype === "string"
+          ? (r.metadata.mimetype as string)
+          : undefined,
+      fileName:
+        typeof r.metadata?.name === "string"
+          ? (r.metadata.name as string)
+          : undefined,
     }),
     lifecycle: { refreshable: !!r.fileId, persisted: true },
     scope: {},
@@ -376,7 +383,11 @@ function fromStreamEvent(
   let url: string | undefined;
   let mime: string | undefined;
 
-  if (type === "image_output" || type === "audio_output" || type === "video_output") {
+  if (
+    type === "image_output" ||
+    type === "audio_output" ||
+    type === "video_output"
+  ) {
     url = payload.url as string | undefined;
     mime = payload.mime_type as string | undefined;
   } else if (STREAM_RENDER_TYPES.has(type)) {
@@ -389,8 +400,7 @@ function fromStreamEvent(
   const fileId =
     (payload.file_id as string | undefined) ??
     ((payload.metadata as Record<string, unknown> | undefined)?.file_id as
-      | string
-      | undefined);
+      string | undefined);
 
   return {
     fileId,

@@ -51,3 +51,24 @@ export const FILES_TABLE_COLUMNS =
  */
 export const FILE_VERSIONS_TABLE_COLUMNS =
   "id, file_id, version_number, size_bytes, checksum, created_by, created_at, change_summary, organization_id, metadata";
+
+/**
+ * Read one complete, RLS-authorized file row by durable identity.
+ *
+ * REST `FileRecord` is a render/navigation envelope and historically omitted
+ * the owning organization. Mutation preparation must use this canonical DB
+ * row so a path-targeted version write can preserve ownership exactly.
+ */
+export async function readFileRowById<C extends SupabaseClient<Database>>(
+  client: C,
+  fileId: string,
+) {
+  const { data, error } = await filesDb(client)
+    .from("files")
+    .select(FILES_TABLE_COLUMNS)
+    .eq("id", fileId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}

@@ -22,7 +22,12 @@
 import type { RootState } from "@/lib/redux/store";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import * as Files from "@/features/files/api/files";
-import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
+import {
+  apiFileRecordToCloudFile,
+  dbRowToCloudFile,
+} from "@/features/files/redux/converters";
+import { readFileRowById } from "@/features/files/filesDb";
+import { supabase } from "@/utils/supabase/client";
 import {
   selectFileById,
   selectPermissionsForResource,
@@ -110,6 +115,27 @@ async function hydrateFromFileId(
       }
       throw err;
     }
+  }
+
+  // REST FileRecord is optimized for rendering and older deployed servers do
+  // not expose `organization_id`. A version write cannot infer ownership from
+  // ambient UI context: the existing row is authoritative. Hydrate the one
+  // canonical DB row whenever organization identity is absent, retaining any
+  // server-computed URL fields already present on the REST/cache envelope.
+  if (!cloudFile.organizationId) {
+    const row = await readFileRowById(supabase, file.fileId);
+    if (!row) {
+      throw new FileNotFoundError(undefined, { fileId: file.fileId });
+    }
+    const canonical = dbRowToCloudFile(row);
+    cloudFile = {
+      ...canonical,
+      publicUrl: cloudFile.publicUrl ?? canonical.publicUrl,
+      url: cloudFile.url ?? canonical.url,
+      cdnUrl: cloudFile.cdnUrl ?? canonical.cdnUrl,
+      downloadUrl: cloudFile.downloadUrl ?? canonical.downloadUrl,
+      thumbnailUrl: cloudFile.thumbnailUrl ?? canonical.thumbnailUrl,
+    };
   }
 
   if (cloudFile.deletedAt) {

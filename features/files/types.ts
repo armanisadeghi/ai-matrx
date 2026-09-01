@@ -220,6 +220,8 @@ export type FileSource =
 export interface CloudFile {
   id: string;
   ownerId: string;
+  /** Canonical owning workspace from `files.files.organization_id`. */
+  organizationId?: string | null;
   filePath: string;
   fileName: string;
   mimeType: string | null;
