@@ -29,13 +29,14 @@ export function useMandate(
   mandateKey: string,
   options: UseMandateOptions = {},
 ): MandateState {
+  const hasMandateKey = mandateKey.trim().length > 0;
   const [state, setState] = useState<
     MandateState & { key: string; epoch: number }
   >({
     key: mandateKey,
     epoch: 0,
     mandate: null,
-    loading: true,
+    loading: hasMandateKey,
     error: null,
   });
 
@@ -46,7 +47,7 @@ export function useMandate(
       key: mandateKey,
       epoch: 0,
       mandate: null,
-      loading: true,
+      loading: hasMandateKey,
       error: null,
     });
   }
@@ -63,6 +64,11 @@ export function useMandate(
 
   const epoch = state.epoch;
   useEffect(() => {
+    // Callers with an optional resolution lane still invoke hooks
+    // unconditionally. The empty key is their disabled sentinel, not a
+    // mandate identity: never turn it into a zero-row database read.
+    if (!hasMandateKey) return;
+
     let cancelled = false;
     const resolution = options.optional
       ? resolveMandate(mandateKey, { optional: true })
@@ -97,7 +103,7 @@ export function useMandate(
     return () => {
       cancelled = true;
     };
-  }, [mandateKey, epoch, options.optional]);
+  }, [mandateKey, epoch, options.optional, hasMandateKey]);
 
   return { mandate: state.mandate, loading: state.loading, error: state.error };
 }
