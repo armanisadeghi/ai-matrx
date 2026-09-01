@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { FolderOpen, ImageIcon, Play, Radio } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -52,9 +52,11 @@ import type { SnapshotMediaAsset } from "@/features/marketing/lib/snapshot-media
  * comes from `?view=` — the shape every other mount uses.
  */
 export function SiteMediaWorkspace({ view: fixedView }: { view?: string } = {}) {
-  const { site, crawlActivity } = useMarketingSite();
-  const params = useParams<{ brandId: string }>();
-  const brandId = params.brandId;
+  // Route addresses are deliberately readable slugs. Database hooks require
+  // the resolved UUID that the server layout already placed in this context.
+  // Feeding the slug to `useBrandAssets` caused a red 22P02 on every readable
+  // marketing media URL.
+  const { site, crawlActivity, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const router = useRouter();
