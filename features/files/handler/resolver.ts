@@ -92,7 +92,11 @@ async function hydrateFromFileId(
   let cloudFile: import("@/features/files/types").CloudFile | null =
     cached ?? null;
 
-  if (!cloudFile) {
+  // Newly-created files can reach a consumer before the file-tree hydration
+  // fills the placeholder's durable path. An id-bearing placeholder is not a
+  // complete cache hit: versioned writes require the canonical path so the
+  // backend updates the existing row instead of creating a sibling.
+  if (!cloudFile?.filePath) {
     try {
       const { data } = await Files.getFile(file.fileId);
       cloudFile = apiFileRecordToCloudFile(data);
@@ -180,4 +184,3 @@ async function sniffIfPossible(file: NormalizedFile): Promise<NormalizedFile> {
     return file;
   }
 }
-
