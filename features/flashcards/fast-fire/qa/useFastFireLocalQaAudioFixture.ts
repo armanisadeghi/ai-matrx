@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 export const FASTFIRE_QA_AUDIO_QUERY_KEY = "matrxQaAudio";
 export const FASTFIRE_QA_AUDIO_QUERY_VALUE =
-  "fastfire-browser-audio-fixture-v1";
+  "fastfire-browser-spoken-answer-fixture-v2";
 
 interface QaAudioActivationInput {
   nodeEnv: string | undefined;
@@ -26,7 +26,24 @@ export function shouldInstallFastFireLocalQaAudioFixture({
 }
 
 interface QaAudioController {
+  version: string;
+  playNextAnswer: () => Promise<void>;
   restore: () => Promise<void>;
+}
+
+type QaAudioWindow = Window & {
+  __matrxFastFireBrowserAudioFixture?: QaAudioController;
+};
+
+/** Feed the next bounded spoken answer into the already-warm QA microphone.
+ * Ordinary sessions have no controller and take this no-op path. */
+export function playNextFastFireQaAnswer(): void {
+  const controller = (window as QaAudioWindow)
+    .__matrxFastFireBrowserAudioFixture;
+  if (controller?.version !== FASTFIRE_QA_AUDIO_QUERY_VALUE) return;
+  void controller.playNextAnswer().catch((error: unknown) => {
+    console.error("[fastfire.qa-audio] spoken answer failed:", error);
+  });
 }
 
 export function useFastFireLocalQaAudioFixture(): void {

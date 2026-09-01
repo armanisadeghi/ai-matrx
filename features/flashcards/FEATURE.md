@@ -162,6 +162,8 @@ own fresh conversation):
 
 ## Change log
 
+- 2026-09-01 — FastFire's local QA audio fixture now preloads and sequences real bounded spoken answers through the production capture/grading path instead of untranscribable oscillator tones.
+
 - 2026-08-31 — **FastFire Coach review waits for every launched card grade to
   settle before snapshotting Redux.** Card progression remains concurrent, but
   the terminal batch review can no longer describe a partial deck while the
@@ -180,10 +182,12 @@ own fresh conversation):
   isolated Browser certification can replace only the physical audio source at
   `getUserMedia` with the canonical FastFire QA fixture. Activation requires a
   development build, a `localhost` or `127.0.0.1` origin, and the exact
-  `matrxQaAudio=fastfire-browser-audio-fixture-v1` query value; production,
+  `matrxQaAudio=fastfire-browser-spoken-answer-fixture-v2` query value; production,
   non-local origins, and ordinary local sessions keep native media permissions.
-  The real capture, clip, upload, grading, persistence, and terminal-result
-  paths remain.
+  The fixture preloads bounded spoken-answer WAVs before granting the microphone and
+  feeds one through the same warm `MediaStream` after each card clip begins, so the
+  real capture, clip, upload, transcription, grading, persistence, and terminal-result
+  paths remain under test without a first-card decode or capture race.
 
 - 2026-08-30 — FastFire's React 19 audit is clean: card-local help now resets
   through a keyed card boundary, the deadline loop updates committed refs in an

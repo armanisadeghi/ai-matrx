@@ -67,6 +67,7 @@ import { gradeCard } from "../agents/gradeCard.thunk";
 import { reviewSession } from "../agents/reviewSession.thunk";
 import { studyService } from "@/features/education/study/service/studyService";
 import { reviewAfterPendingGrades } from "./pending-grades";
+import { playNextFastFireQaAnswer } from "../qa/useFastFireLocalQaAudioFixture";
 
 const COUNTDOWN_SECONDS = 3;
 /** SKIP path: the brief beat between cards (buzzer + slice), then the next arms.
@@ -166,6 +167,10 @@ export function useFastFireDrill(): UseFastFireDrillResult {
     awaitingAudioRef.current = null;
     playBuzzer("start");
     startCardClip(cardId);
+    // Local-development certification only: the exact QA fixture feeds a real
+    // spoken WAV through the same warm MediaStream and PCM capture graph. In an
+    // ordinary session no fixture is installed, so this is a strict no-op.
+    playNextFastFireQaAnswer();
     setDeadlineTs(Date.now() + answerSeconds * 1000);
   };
 

@@ -5,6 +5,8 @@ import { installFastFireBrowserAudioFixture } from "./fastfire-browser-audio-fix
 
 function fixtureScope() {
   const calls = [];
+  const fetchCalls = [];
+  const startedAnswers = [];
   const sourceTrack = {
     clone: () => ({ kind: "audio", fixture: true, stop() {} }),
     stop() {},
@@ -26,12 +28,16 @@ function fixtureScope() {
         connect() {},
       };
     }
-    createOscillator() {
+    async decodeAudioData(bytes) {
+      return { answer: new TextDecoder().decode(bytes) };
+    }
+    createBufferSource() {
       return {
-        type: "sine",
-        frequency: { value: 0, setValueAtTime() {} },
+        buffer: null,
         connect() {},
-        start() {},
+        start() {
+          startedAnswers.push(this.buffer?.answer);
+        },
         stop() {},
       };
     }
@@ -59,6 +65,15 @@ function fixtureScope() {
         },
       },
     },
+    async fetch(url) {
+      fetchCalls.push(url);
+      return {
+        ok: true,
+        async arrayBuffer() {
+          return new TextEncoder().encode(String(url)).buffer;
+        },
+      };
+    },
     setInterval() {
       nextTimer += 1;
       timers.add(nextTimer);
@@ -68,11 +83,11 @@ function fixtureScope() {
       timers.delete(timer);
     },
   };
-  return { calls, scope, timers };
+  return { calls, fetchCalls, scope, startedAnswers, timers };
 }
 
-test("intercepts audio-only capture but delegates video and restores exactly", async () => {
-  const { calls, scope, timers } = fixtureScope();
+test("intercepts audio-only capture, plays the two spoken answers in order, delegates video, and restores exactly", async () => {
+  const { calls, fetchCalls, scope, startedAnswers, timers } = fixtureScope();
   const original = scope.navigator.mediaDevices.getUserMedia;
   const controller = installFastFireBrowserAudioFixture(scope);
 
@@ -82,6 +97,17 @@ test("intercepts audio-only capture but delegates video and restores exactly", a
   assert.equal(audio.getAudioTracks()[0].fixture, true);
   assert.deepEqual(calls, []);
 
+  await controller.playNextAnswer();
+  await controller.playNextAnswer();
+  assert.deepEqual(fetchCalls, [
+    "/qa/fastfire-answer-paris.wav",
+    "/qa/fastfire-answer-fifty-six.wav",
+  ]);
+  assert.deepEqual(startedAnswers, [
+    "/qa/fastfire-answer-paris.wav",
+    "/qa/fastfire-answer-fifty-six.wav",
+  ]);
+
   const combinedConstraints = Object.fromEntries([
     ["audio", true],
     ["video", true],
@@ -90,7 +116,7 @@ test("intercepts audio-only capture but delegates video and restores exactly", a
     await scope.navigator.mediaDevices.getUserMedia(combinedConstraints);
   assert.deepEqual(video, { original: true });
   assert.deepEqual(calls, [{ audio: true, video: true }]);
-  assert.equal(timers.size, 2);
+  assert.equal(timers.size, 0);
 
   await controller.restore();
   assert.equal(scope.navigator.mediaDevices.getUserMedia, original);
