@@ -34,17 +34,11 @@ import {
   normalizeCodeLanguage,
   SPECIAL_CODE_LANGUAGES,
 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import {
-  disposeParseSession,
-  openParseSession,
-} from "@ai-matrx/content-ir";
+import { disposeParseSession, openParseSession } from "@ai-matrx/content-ir";
 import type { ParseSession } from "@ai-matrx/content-ir";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
-import {
-  IR_ENVELOPE_KEY,
-  type CanonicalBlockIR,
-} from "@ai-matrx/content-ir";
+import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { envelopeMatchesParsedSource } from "@/features/content-ir/redux/render-block-envelope";
 import {
   envelopeForCompletedFenceRegion,
@@ -82,6 +76,45 @@ function countStructuralObjectBraces(source: string): {
     else if (char === "}") closes++;
   }
   return { opens, closes };
+}
+
+/**
+ * Return the exclusive end of the first complete root JSON object.
+ *
+ * Models can emit several structured answers without whitespace (`}{`). The
+ * stream host must close the first parser region at its structural boundary
+ * and feed the remainder back through ordinary classification; otherwise the
+ * kind parser completes one lawful root while the block/parity path treats
+ * several roots as one invalid JSON document.
+ */
+function firstCompleteRootObjectEnd(
+  source: string,
+  initialDepth = 0,
+): number | null {
+  let depth = initialDepth;
+  let sawRoot = initialDepth > 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = 0; index < source.length; index++) {
+    const char = source[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+    } else if (char === "{") {
+      depth++;
+      sawRoot = true;
+    } else if (char === "}") {
+      depth--;
+      if (sawRoot && depth === 0) return index + 1;
+    }
+  }
+  return null;
 }
 
 type BlockSubState =
@@ -466,6 +499,25 @@ export class StreamBlockAccumulator {
     // text until finalize. Detect the object's start in the trailing fragment
     // and open the bare_json region NOW, so the kind resolves live.
     this.maybeOpenBareJsonFromFragment(dispatch);
+
+    // A provider may concatenate multiple root objects on one physical line.
+    // Drain every complete prefix that has a non-whitespace remainder through
+    // processLine so each root owns one parser session and one render block.
+    // The final root stays fragment-driven for live partial rendering.
+    while (this.subState.kind === "bare_json") {
+      const rootEnd = firstCompleteRootObjectEnd(
+        this.pendingLineFragment,
+        this.subState.openBraces - this.subState.closeBraces,
+      );
+      if (rootEnd === null) break;
+      const remainder = this.pendingLineFragment.slice(rootEnd);
+      if (!remainder.trim()) break;
+
+      const completeRoot = this.pendingLineFragment.slice(0, rootEnd);
+      this.pendingLineFragment = remainder.trimStart();
+      this.processLine(completeRoot, dispatch);
+      this.maybeOpenBareJsonFromFragment(dispatch);
+    }
 
     // Same live-open, one level in: the JSON BODY of an attr-XML wrapper
     // (`<artifact …>` + minified payload) never completes a line until the
@@ -1095,6 +1147,26 @@ export class StreamBlockAccumulator {
       }
 
       case "bare_json": {
+        const completionEnd = firstCompleteRootObjectEnd(
+          rawLine,
+          this.subState.openBraces - this.subState.closeBraces,
+        );
+        if (
+          completionEnd !== null &&
+          rawLine.slice(completionEnd).trim().length > 0
+        ) {
+          // One physical line contains the end of this root and the beginning
+          // of another (`}{`). Close exactly at the structural boundary, then
+          // classify the remainder as fresh source instead of poisoning this
+          // parser region with a second root.
+          this.processSubStateLine(
+            rawLine.slice(0, completionEnd),
+            rawLine.slice(0, completionEnd).trim(),
+            dispatch,
+          );
+          this.processLine(rawLine.slice(completionEnd).trimStart(), dispatch);
+          return;
+        }
         const { opens: lineOpens, closes: lineCloses } =
           countStructuralObjectBraces(trimmed);
         const willBalance =
@@ -1336,7 +1408,10 @@ export class StreamBlockAccumulator {
    * `part` is a whole body line (isLineComplete) or the streaming fragment of
    * one, so a minified single-line body parses live instead of at the close.
    */
-  private maybeOpenXmlBodyIrRegion(part: string, isLineComplete: boolean): void {
+  private maybeOpenXmlBodyIrRegion(
+    part: string,
+    isLineComplete: boolean,
+  ): void {
     if (this.irSession || this.irEnvelope) return;
     if (this.subState.kind !== "xml_tag" || !this.subState.isAttrXml) return;
     if (!BARE_JSON_OPEN_RE.test(part.trimStart())) return;
@@ -1506,7 +1581,9 @@ export class StreamBlockAccumulator {
     const recoveredXmlContainer =
       this.currentBlockType === "text" &&
       isCompleteUnrecognizedXmlContainer(recoverySource);
-    const containerType = recoveredXmlContainer ? "code" : this.currentBlockType;
+    const containerType = recoveredXmlContainer
+      ? "code"
+      : this.currentBlockType;
     const containerData = recoveredXmlContainer
       ? { language: "xml" }
       : this.buildBlockData();
@@ -1523,9 +1600,7 @@ export class StreamBlockAccumulator {
         status: "complete",
         content: piece.content,
         data: isKind ? { language: "json" } : containerData,
-        metadata: isKind
-          ? withIrEnvelope(piece.content, undefined)
-          : undefined,
+        metadata: isKind ? withIrEnvelope(piece.content, undefined) : undefined,
       };
       dispatch(this.upsertAction({ requestId: this.requestId, block }));
       emitted++;
@@ -1659,7 +1734,8 @@ export class StreamBlockAccumulator {
       return base;
     }
     const envelope =
-      this.irEnvelope ?? (this.irSession ? this.irSession.buildEnvelope() : null);
+      this.irEnvelope ??
+      (this.irSession ? this.irSession.buildEnvelope() : null);
     if (envelope) {
       return { ...(base ?? {}), [IR_ENVELOPE_KEY]: envelope };
     }

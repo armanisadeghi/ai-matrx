@@ -110,6 +110,45 @@ describe("accumulator shadow delegation (fenced JSON)", () => {
 });
 
 describe("accumulator shadow delegation (bare JSON)", () => {
+  it("splits adjacent root objects into independent parser regions", () => {
+    const { accumulator, upserts, dispatch } =
+      makeAccumulator("req-adjacent-roots");
+    const roots = [
+      {
+        verdict: "organization",
+        rationale: "Company account",
+        confidence: "high",
+      },
+      { verdict: "person", rationale: "Named individual", confidence: "high" },
+      {
+        verdict: "organization",
+        rationale: "Team account",
+        confidence: "medium",
+      },
+    ];
+    const stream = roots.map((root) => JSON.stringify(root, null, 2)).join("");
+
+    for (const chunk of chunkText(stream, 17, 13)) {
+      accumulator.ingest(chunk, dispatch);
+    }
+    accumulator.finalize(dispatch);
+
+    const completed = upserts
+      .map(({ block }) => block)
+      .filter((block) => block.status === "complete" && block.content?.trim());
+    expect(completed).toHaveLength(3);
+    expect(completed.map((block) => JSON.parse(block.content ?? ""))).toEqual(
+      roots,
+    );
+    expect(
+      completed.map((block) =>
+        (envelopeOf(block)?.root.residue?.notices ?? []).filter(
+          (notice) => notice.code === "parse_error",
+        ),
+      ),
+    ).toEqual([[], [], []]);
+  });
+
   it("parses a bare multi-line JSON object and attaches the envelope", () => {
     const { accumulator, upserts, dispatch } = makeAccumulator("req-bare");
     const stream = `Result:\n${FLASHCARD_JSON}\nDone.\n`;
@@ -215,7 +254,10 @@ describe("accumulator shadow delegation (bare JSON)", () => {
 
   it("a truncated region ends with a status:error envelope, never breaking the block", () => {
     const { accumulator, upserts, dispatch } = makeAccumulator("req-truncated");
-    accumulator.ingest('{\n"__kind": "flashcard_set",\n"title": "Cut', dispatch);
+    accumulator.ingest(
+      '{\n"__kind": "flashcard_set",\n"title": "Cut',
+      dispatch,
+    );
     accumulator.finalize(dispatch);
 
     const withEnvelope = upserts
