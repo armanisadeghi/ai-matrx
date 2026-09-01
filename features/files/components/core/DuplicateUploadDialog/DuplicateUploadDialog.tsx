@@ -215,6 +215,7 @@ function ConflictRow({
   const isIdenticalContent =
     match.kind === "identical_content_same_folder" ||
     match.kind === "identical_content_other_folder";
+  const hasInlineMediaPreview = isInlineMediaMimeType(existing.mimeType);
 
   return (
     <li
@@ -230,16 +231,26 @@ function ConflictRow({
       <div className="flex items-start gap-3">
         {/* Existing file thumbnail — InlineMediaRef handles every mime,
             falls back to a sized icon for non-renderables (PDF, doc). */}
-        <InlineMediaRef
-          ref={existing.id}
-          size="md"
-          fit="cover"
-          rounded="md"
-          border="subtle"
-          fallback="icon"
-          alt={existing.fileName}
-          className="shrink-0"
-        />
+        {hasInlineMediaPreview ? (
+          <InlineMediaRef
+            ref={existing.id}
+            size="md"
+            fit="cover"
+            rounded="md"
+            border="subtle"
+            fallback="icon"
+            alt={existing.fileName}
+            className="shrink-0"
+          />
+        ) : (
+          <div
+            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted/30"
+            data-testid="duplicate-file-icon"
+            aria-label={`${existing.fileName} file icon`}
+          >
+            <FileIcon fileName={existing.fileName} size={28} />
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <FileIcon fileName={file.name} size={14} className="shrink-0" />
@@ -338,6 +349,16 @@ function ConflictRow({
         />
       </div>
     </li>
+  );
+}
+
+/** Only mount a browser media element when the MIME type can render in one. */
+export function isInlineMediaMimeType(mimeType: string | null): boolean {
+  if (!mimeType) return false;
+  return (
+    mimeType.startsWith("image/") ||
+    mimeType.startsWith("video/") ||
+    mimeType.startsWith("audio/")
   );
 }
 

@@ -189,6 +189,7 @@ function GoogleConnectWindowBody({
       const accessToken = await google.signIn(
         [...GOOGLE_WORKSPACE_FILE_SCOPES],
         connection.account_email ?? undefined,
+        { interactive: true },
       );
       if (!accessToken) {
         throw new Error("Google did not grant access to choose a file.");

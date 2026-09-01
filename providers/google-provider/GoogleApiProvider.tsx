@@ -119,6 +119,7 @@ interface GoogleAPIContextType {
   signIn: (
     scopesToRequest: string[],
     loginHint?: string,
+    options?: GoogleTokenRequestOptions,
   ) => Promise<string | null>;
   requestAuthorizationCode: (
     scopesToRequest: string[],
@@ -129,6 +130,23 @@ interface GoogleAPIContextType {
   getGrantedScopes: () => string[];
   requestScopes: (scopes: string[]) => Promise<boolean>;
   resetError: () => void;
+}
+
+export interface GoogleTokenRequestOptions {
+  /**
+   * The caller is handling an explicit user gesture and needs a fresh browser
+   * token now (for example, opening Google Picker).  A durable server-side
+   * connection does not imply that GIS can silently mint a browser token in a
+   * new session, so this opts into the consent prompt instead of failing with
+   * an opaque null token.
+   */
+  interactive?: boolean;
+}
+
+export function googleTokenPrompt(
+  options?: GoogleTokenRequestOptions,
+): "" | "consent" {
+  return options?.interactive ? "consent" : "";
 }
 
 const GoogleAPIContext = createContext<GoogleAPIContextType | null>(null);
@@ -249,7 +267,11 @@ export default function GoogleAPIProvider({
     loadGoogleIdentityServices();
   }, [clientId]);
 
-  const signIn = async (scopesToRequest: string[], loginHint?: string) => {
+  const signIn = async (
+    scopesToRequest: string[],
+    loginHint?: string,
+    options?: GoogleTokenRequestOptions,
+  ) => {
     if (!isGoogleLoaded || !window.google?.accounts) {
       setError("Google auth not initialized.");
       return null;
@@ -281,7 +303,7 @@ export default function GoogleAPIProvider({
         // Picker receives a drive.file-only browser token even if this Google
         // account later grants gmail.send to the same Cloud project.
         include_granted_scopes: true,
-        prompt: "",
+        prompt: googleTokenPrompt(options),
         ...(loginHint ? { login_hint: loginHint } : {}),
         callback: (response: TokenResponse) => {
           const accessToken = handleCredentialResponse(response);
