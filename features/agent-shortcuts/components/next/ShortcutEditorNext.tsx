@@ -85,10 +85,34 @@ export function ShortcutEditorNext({
   const existing = useAppSelector((s) =>
     !isNew ? selectShortcutById(s, shortcutId) : null,
   );
+  /**
+   * 🚨 A READ THAT FAILED IS NOT A BLANK FORM (FIX-11b).
+   *
+   * This was a bare `void dispatch(...)`. When the row is gone or unreadable
+   * the fetch 404s, `existing` stays null, and the editor falls straight
+   * through to `freshDraft()` — blank Category, blank Version, no message
+   * anywhere — so a person edits a PHANTOM record and presses Save on it.
+   * Proven live: `GET /api/agent-shortcuts/<id>` → 404 with the editor sitting
+   * there looking perfectly healthy. A screen is absent or honest.
+   */
+  const [loadFailure, setLoadFailure] = useState<string | null>(null);
   useEffect(() => {
-    if (!isNew) {
-      void dispatch(fetchFullShortcut(shortcutId));
+    if (isNew) {
+      setLoadFailure(null);
+      return;
     }
+    let live = true;
+    void dispatch(fetchFullShortcut(shortcutId))
+      .unwrap()
+      .then(() => {
+        if (live) setLoadFailure(null);
+      })
+      .catch((e: unknown) => {
+        if (live) setLoadFailure(extractErrorMessage(e));
+      });
+    return () => {
+      live = false;
+    };
   }, [dispatch, shortcutId, isNew]);
 
   // ── Category tree ─────────────────────────────────────────────────────
@@ -292,6 +316,27 @@ export function ShortcutEditorNext({
 
   const onCancel = () => router.back();
 
+  // The read failed and nothing arrived: say so instead of painting a blank
+  // draft over a record that could not be opened. A Back control only — there
+  // is nothing here to edit, so there is nothing here to press Save on.
+  if (loadFailure && !existing) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-3 bg-background px-6 pt-[var(--shell-header-h)] text-center">
+        <AlertTriangle className="h-6 w-6 text-destructive" />
+        <p className="max-w-md text-sm text-foreground">
+          This shortcut could not be opened, so there is nothing to edit here
+          yet — nothing has been changed.
+        </p>
+        <p className="max-w-md text-[12px] leading-relaxed text-muted-foreground">
+          {loadFailure}
+        </p>
+        <Button variant="outline" size="sm" onClick={onCancel}>
+          Back
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col bg-background pt-[var(--shell-header-h)]">
       {/* Scrollable body */}
@@ -376,14 +421,21 @@ export function ShortcutEditorNext({
             )}
           </Section>
 
-          {form.surfaceName &&
-            (getManifest(form.surfaceName)?.writeTargets?.length ?? 0) > 0 && (
+          {/* 🚨 `Boolean(...)`, deliberately (FIX-11b). This is the only
+              conditionally-mounted COMPOSITE in this column's child list, which
+              is the exact shape the recorded `insertBefore` crashes were placing
+              (`commitPlacement` case 5 → `insertOrAppendPlacementNode` recursing
+              into a composite's host children). A bare `&&` on a string also
+              renders a text node when the left side is `""`. Neither is proven
+              to be the crash; both are cheap to make impossible. */}
+          {Boolean(form.surfaceName) &&
+            (getManifest(form.surfaceName ?? "")?.writeTargets?.length ?? 0) > 0 && (
               <Section
                 title="Agent write access"
                 hint="What the agent may change on this surface, and whether it must ask. The shortcut is the strongest override layer — it merges over the agent's surface bindings at launch."
               >
                 <WritePolicyEditor
-                  surfaceName={form.surfaceName}
+                  surfaceName={form.surfaceName ?? ""}
                   value={form.writePolicies ?? {}}
                   onChange={(next) => update("writePolicies", next)}
                   disabled={busy}

@@ -148,8 +148,16 @@ export function SurfacePicker({
           disabled={disabled || loading || !client}
         >
           <SelectTrigger className="h-9 text-sm">
+            {/* 🚨 `null`, NEVER `""` (FIX-11b). An empty string is a real DOM
+                text node and `null` is nothing at all, so returning `""` makes
+                this slot's child list change SHAPE — and Radix clones this
+                child into its own trigger. React commits a different number of
+                host nodes than the previous render believed, which is one of
+                the documented ways a later placement asks a parent to
+                `insertBefore` a node it does not own. Nothing renders either
+                way; only one of them is honest about it. */}
             <SelectValue placeholder="Pick a surface">
-              {surfaceName ? getSurfaceDisplayLabel(surfaceName) : ""}
+              {surfaceName ? getSurfaceDisplayLabel(surfaceName) : null}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
