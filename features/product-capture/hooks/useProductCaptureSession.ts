@@ -83,7 +83,8 @@ export interface UseProductCaptureSessionResult {
   addAudioNote: (blob: Blob) => void;
   setNotes: (text: string) => void;
   /** Type/edit the SKU / product number on the current item. */
-  setCode: (code: string) => void;
+  /** Resolves true only after the code is durably saved. */
+  setCode: (code: string) => Promise<boolean>;
   /** QR scanned: assign to the (empty) current item or auto-switch to a new
    *  item carrying the code. Returns "assigned" | "switched". */
   onQrCode: (code: string) => Promise<"assigned" | "switched">;
@@ -336,12 +337,18 @@ export function useProductCaptureSession(
 
   const resumeItem = useCallback(
     async (itemId: string) => {
+      const alreadyCurrent = currentItemRef.current?.id === itemId;
       const item = await loadItem(itemId);
       if (!item) {
         toast.error("That item no longer exists.");
         return;
       }
-      finishCurrentItem();
+      // The Items sheet includes the item already on screen. Finishing that
+      // row and immediately re-adopting the copy loaded before the finish is
+      // a self-race: closeItem advances its version asynchronously while the
+      // UI keeps the stale pre-close version for SKU/notes CAS writes. A
+      // same-item Resume is a refresh, not an item transition.
+      if (!alreadyCurrent) finishCurrentItem();
       const files = await listItemFiles(item.id);
       adoptItem(
         item,
@@ -392,31 +399,34 @@ export function useProductCaptureSession(
   // ── Codes ─────────────────────────────────────────────────────────────────
 
   const applyCode = useCallback(
-    async (code: string, source: ProductCaptureCodeSource) => {
+    async (
+      code: string,
+      source: ProductCaptureCodeSource,
+    ): Promise<boolean> => {
       const item = currentItemRef.current;
-      if (!item) {
-        await ensureItem({ code, source });
-        return;
-      }
       try {
+        if (!item) {
+          await ensureItem({ code, source });
+          return true;
+        }
         const saved = await setItemCode(item, code, source);
         if (currentItemRef.current?.id === saved.id) {
           // Keep the freshest version for the next CAS; notes stay local.
           currentItemRef.current = { ...saved, notes: notesRef.current };
           setCurrentItem(currentItemRef.current);
         }
+        return true;
       } catch (err) {
         console.error("[product-capture] code save failed", err);
         toast.error("Could not save the product number.");
+        return false;
       }
     },
     [ensureItem],
   );
 
   const setCode = useCallback(
-    (code: string) => {
-      void applyCode(code, "manual");
-    },
+    (code: string) => applyCode(code, "manual"),
     [applyCode],
   );
 

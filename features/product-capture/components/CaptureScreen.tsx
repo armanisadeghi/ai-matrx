@@ -654,30 +654,42 @@ export function CaptureScreen({
   );
 }
 
-function SkuQuickEntry({
+export function SkuQuickEntry({
   initialCode,
   onCommit,
 }: {
   initialCode: string;
-  onCommit: (code: string) => void;
+  onCommit: (code: string) => Promise<boolean>;
 }) {
   const [draft, setDraft] = useState(initialCode);
+  const lastSubmittedRef = useRef(initialCode);
 
-  const commit = () => {
+  const commit = async () => {
     const trimmed = draft.trim();
     if (trimmed === initialCode) return;
     if (!trimmed && !initialCode) return;
-    onCommit(trimmed);
+    // Enter deliberately blurs the field, which synchronously fires onBlur.
+    // Mark the value before awaiting persistence so the blur cannot launch a
+    // duplicate guarded write from the same stale item version.
+    if (trimmed === lastSubmittedRef.current) return;
+    lastSubmittedRef.current = trimmed;
+    const saved = await onCommit(trimmed);
+    if (!saved) {
+      // A failed autosave must not leave the field claiming the unsaved SKU.
+      lastSubmittedRef.current = initialCode;
+      setDraft(initialCode);
+    }
   };
 
   return (
     <input
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
+      onBlur={() => void commit()}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
-          commit();
+          e.preventDefault();
+          void commit();
           (e.target as HTMLInputElement).blur();
         }
       }}

@@ -3,6 +3,7 @@ import { renderHook } from "@/test-utils/renderHook";
 const mockCreateItem = jest.fn();
 const mockCloseItem = jest.fn();
 const mockLoadItem = jest.fn();
+const mockSetItemCode = jest.fn();
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => "org-q28",
@@ -33,7 +34,7 @@ jest.mock("../service", () => ({
   listItemFiles: jest.fn().mockResolvedValue([]),
   loadItem: (...args: unknown[]) => mockLoadItem(...args),
   reopenItem: jest.fn(),
-  setItemCode: jest.fn(),
+  setItemCode: (...args: unknown[]) => mockSetItemCode(...args),
   setItemNotes: jest.fn(),
 }));
 jest.mock("../uploads", () => ({
@@ -63,6 +64,12 @@ describe("useProductCaptureSession QR adoption", () => {
     jest.clearAllMocks();
     window.localStorage.clear();
     mockCloseItem.mockImplementation(async (value: CaptureItem) => value);
+    mockSetItemCode.mockImplementation(async (value: CaptureItem, code: string) => ({
+      ...value,
+      code,
+      codeSource: "manual",
+      version: value.version + 1,
+    }));
   });
 
   it("waits for the persisted current item before applying a decoded QR", async () => {
@@ -157,6 +164,29 @@ describe("useProductCaptureSession QR adoption", () => {
     expect(hook.current.nextItem()).toBe(false);
     expect(mockCloseItem).not.toHaveBeenCalled();
     expect(hook.current.currentItem?.id).toBe("item-empty");
+    await hook.unmount();
+  });
+
+  it("refreshes the already-current item without closing it before the next guarded write", async () => {
+    mockCreateItem.mockResolvedValueOnce(item("item-current", "QR-CURRENT"));
+    mockLoadItem.mockResolvedValueOnce({
+      ...item("item-current", "QR-CURRENT"),
+      version: 7,
+    });
+
+    const hook = await renderHook(() => useProductCaptureSession());
+    await hook.act(async () => {
+      await hook.current.onQrCode("QR-CURRENT");
+      await hook.current.resumeItem("item-current");
+      await hook.current.setCode("SKU-AFTER-RESUME");
+    });
+
+    expect(mockCloseItem).not.toHaveBeenCalled();
+    expect(mockSetItemCode).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "item-current", version: 7 }),
+      "SKU-AFTER-RESUME",
+      "manual",
+    );
     await hook.unmount();
   });
 });
