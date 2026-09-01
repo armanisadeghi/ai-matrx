@@ -57,7 +57,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { CameraPreview } from "@/features/media-capture/components/CameraPreview";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
-import { fetchFileBlobUrl } from "@/features/files/hooks/useFileBlob";
+import {
+  fetchFileBlob,
+  fetchFileBlobUrl,
+} from "@/features/files/hooks/useFileBlob";
 import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
 
 import { CameraCapture } from "@ai-matrx/capture/react";
@@ -315,6 +318,10 @@ export function CaptureScreen({
           resolve:
             !a.previewUrl && fileId
               ? () => fetchFileBlobUrl(fileId)
+              : undefined,
+          resolveEditBlob:
+            fileId && a.status === "uploaded"
+              ? () => fetchFileBlob(fileId)
               : undefined,
           status:
             a.status === "uploading"

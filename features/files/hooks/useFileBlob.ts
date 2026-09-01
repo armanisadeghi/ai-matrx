@@ -55,11 +55,13 @@ const inflightDownloads = new Map<
  * tiers, same in-flight dedup map, same cache-owned URL contract (callers
  * must NEVER revoke the returned URL — the cache does, on eviction).
  */
-export async function fetchFileBlobUrl(fileId: string): Promise<string> {
+async function fetchFileBlobEntry(
+  fileId: string,
+): Promise<{ blob: Blob; url: string }> {
   const cached = getCached(fileId);
-  if (cached) return cached.url;
+  if (cached) return cached;
   const idbHit = await hydrateFromIdb(fileId);
-  if (idbHit) return idbHit.url;
+  if (idbHit) return idbHit;
   let download = inflightDownloads.get(fileId);
   if (!download) {
     download = Files.downloadFileWithProgress(fileId, () => {}).then(
@@ -78,10 +80,20 @@ export async function fetchFileBlobUrl(fileId: string): Promise<string> {
   }
   const { blob } = await download;
   const already = getCached(fileId);
-  if (already) return already.url;
+  if (already) return already;
   const url = URL.createObjectURL(blob);
   setCached(fileId, blob, url, { mimeType: blob.type });
-  return url;
+  return { blob, url };
+}
+
+/** Fresh authenticated bytes for consumers that must own their derived URL
+ * (for example the capture package's pixel editor). */
+export async function fetchFileBlob(fileId: string): Promise<Blob> {
+  return (await fetchFileBlobEntry(fileId)).blob;
+}
+
+export async function fetchFileBlobUrl(fileId: string): Promise<string> {
+  return (await fetchFileBlobEntry(fileId)).url;
 }
 
 export interface UseFileBlobResult {
