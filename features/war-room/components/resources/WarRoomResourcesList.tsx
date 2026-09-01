@@ -51,7 +51,7 @@ import type {
 import {
   CONTENT_ROLES,
   getContentRoleMeta,
-  curatedTokens,
+  listableTokens,
   tryGetEntityInfo,
   type ContentRole,
   type EntityInfo,
@@ -162,7 +162,13 @@ export function WarRoomResourcesList({
   const attachedKeys = new Set(
     rows.map((r) => attachedKey(r.token, r.resourceId)),
   );
-  const attachableTokens = tokenFilter ?? curatedTokens();
+  // Search/attach is a reference-picker boundary, not a content-display
+  // boundary. `curatedTokens()` also includes role-bearing entities that the
+  // DB has explicitly marked non-pickable; passing those explicitly bypasses
+  // UniversalAssociationPicker's safe default and produces one failing RPC
+  // per token. Keep an explicit caller filter intact, otherwise use only the
+  // registry's reference-pickable set.
+  const attachableTokens = tokenFilter ?? listableTokens();
   const grouped = groupRows(visibleRows);
   const isLoading = adapter.status === "loading" || adapter.status === "idle";
   const detachLabel =

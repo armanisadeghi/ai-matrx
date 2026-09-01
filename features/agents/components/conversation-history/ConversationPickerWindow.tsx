@@ -23,11 +23,23 @@
  */
 
 import { useCallback } from "react";
+import dynamic from "next/dynamic";
 import { MessagesSquare } from "lucide-react";
 
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+
+// WindowPanel is an intentionally heavy shell and a guarded lazy boundary.
+// ConversationPickerWindow is imported by route-visible war-room components,
+// so a static WindowPanel import here eagerly pulled the full window fleet into
+// initial route boot even while the picker was closed.
+const WindowPanel = dynamic(
+  () =>
+    import("@/features/window-panels/WindowPanel").then(
+      (module) => module.WindowPanel,
+    ),
+  { ssr: false },
+);
 
 /** Stable empty array — `agentIds: []` = every accessible agent. */
 const ALL_AGENTS: string[] = [];
