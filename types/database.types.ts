@@ -29812,6 +29812,45 @@ export type Database = {
         }
         Relationships: []
       }
+      row_versions_2028_02: {
+        Row: {
+          actor_id: string | null
+          actor_tier: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_tier?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          actor_tier?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       row_versions_default: {
         Row: {
           actor_id: string | null
