@@ -56,6 +56,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { openAfterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
 import {
   Tooltip,
   TooltipContent,
@@ -615,9 +616,10 @@ export function ConversationContextRail({
               return (
                 <DropdownMenuItem
                   key={item.id}
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    item.onOpen();
+                  onSelect={() => {
+                    // Let the overflow menu release its Radix body lock before
+                    // ContextPolicyDetailSheet / TaskPanel takes ownership.
+                    void openAfterCurrentLayerCloses(item.onOpen);
                   }}
                   className="gap-2"
                 >

@@ -33,3 +33,15 @@ export function afterCurrentLayerCloses(
     schedule(check);
   });
 }
+
+/**
+ * Shared producer boundary for a menu/select action that opens another layer.
+ * The caller must allow the current Radix item to close normally, then hand
+ * the next layer's intent here instead of opening it inside `onSelect`.
+ */
+export async function openAfterCurrentLayerCloses(
+  open: () => void,
+): Promise<void> {
+  await afterCurrentLayerCloses();
+  open();
+}
