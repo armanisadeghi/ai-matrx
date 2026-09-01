@@ -446,7 +446,10 @@ export function holderNotExecutableMessage(
     `mandate "${mandateKey}": ${where}${which} names a '${holderType}' Holder — ` +
     "this browser path can only launch an agent Holder directly. " +
     "Workflow Holders run on the server; call this mandate through the " +
-    "server run path, or bind an agent for surfaces that resolve in the browser."
+    // The remedy in the job's own words (V2 round 4 vocabulary sweep): this
+    // used to end "…for surfaces that resolve in the browser", which named the
+    // old system on a mandate refusal a person reads.
+    "server run path, or bind an agent so this job can run in the browser."
   );
 }
 

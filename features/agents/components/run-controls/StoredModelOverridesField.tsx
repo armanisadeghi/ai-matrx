@@ -55,6 +55,7 @@ import {
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { Label } from "@/components/ui/label";
 import {
+  DEFAULT_MODEL_EMPTY_CHOICE_LABEL,
   RunConfigOverrides,
   type RunConfigOverridesWords,
 } from "./RunConfigOverrides";
@@ -108,6 +109,10 @@ export function StoredModelOverridesField({
 }: StoredModelOverridesFieldProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+  // The picker's "no override" choice, in the host's noun. See
+  // `RunConfigOverridesWords.modelEmptyChoiceLabel`.
+  const emptyChoiceLabel =
+    words?.modelEmptyChoiceLabel ?? DEFAULT_MODEL_EMPTY_CHOICE_LABEL;
   // Subscribe to the RAW entry — a stable reference that changes only when this
   // field's own draft changes. `selectSettingsOverridesForApi` builds a fresh
   // object on every call, so subscribing to IT would re-render this field on
@@ -187,12 +192,17 @@ export function StoredModelOverridesField({
             )
           }
           // "No override" is a FIRST-CLASS choice, not the absence of one: it
-          // is what hands the decision back to the holder's own configuration.
-          emptyOptionLabel="Use the holder's own model"
+          // is what hands the decision back to the runner's own configuration.
+          // 🚨 IN THIS HOST'S NOUN (V1 round 4, O3). This was hardcoded
+          // "the holder's own model" on every door, including the shortcut
+          // editor whose own two neighbouring sentences say "the agent's own
+          // model". The word now comes from the host's words, defaulting to
+          // the agent noun.
+          emptyOptionLabel={emptyChoiceLabel}
           onClear={() =>
             dispatch(resetOverride({ conversationId: instanceKey, key: "model" }))
           }
-          placeholder="Use the holder's own model"
+          placeholder={emptyChoiceLabel}
           inputModalities={[]}
           outputModalities={["text"]}
           disabled={disabled}

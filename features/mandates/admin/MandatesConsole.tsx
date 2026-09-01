@@ -810,7 +810,10 @@ export function MandatesConsole() {
       // mounts no surface runtime. So this target cannot be served from here
       // at all — it is not "not yet open".
       throw new Error(
-        "This console no longer hosts the test-case composer. The bench moved to the mandate's own page — /administration/mandates/<mandate_key>, under Admin controls — and that page is not an agent surface, so an exemplar cannot be staged from here. Tell the admin to open the mandate and compose it there.",
+        // "…is not an agent surface" named the old system on a mandate screen
+        // (V2 round 4 vocabulary sweep). What the reader needs is WHY it cannot
+        // be staged here, which the mandate's own words say better.
+        "This console no longer hosts the test-case composer. The bench moved to the mandate's own page — /administration/mandates/<mandate_key>, under Admin controls — and that page does not run this console's write targets, so an exemplar cannot be staged from here. Tell the admin to open the mandate and compose it there.",
       );
     },
   });

@@ -99,7 +99,17 @@ export function MandateContextGate({
                   ? `Off — the Holder (${row.agentName}) refuses automatic context. This Mandate cannot reopen it; a gate may only narrow.`
                   : gateClosed
                     ? "Off — this Mandate cuts context off even though its Holder would accept it. Only the Holder's declared context policies deliver."
-                    : "On — the Holder decides. Scope values and Surface values reach it under its own context policies."}
+                    : // 🚨 THE MANDATE VOCABULARY, NOT THE OLD SYSTEM'S (V2 round 4).
+                      // This said "Surface values" — the last "surface" noun on
+                      // a mandate screen, and the third source of a noun Arman
+                      // rejected by name. The job's own word for that source is
+                      // "Offered Value" (`SOURCE_LABELS` in
+                      // `features/bindings/words.ts`), so it is the word used
+                      // here. `mandate-screen-vocabulary.test.ts` now sweeps the
+                      // rendered copy of every mandate-screen component, not
+                      // just the drawer's words objects, so a fourth source
+                      // cannot appear quietly.
+                      "On — the Holder decides. Scope values and Offered values reach it under its own context policies."}
             </span>
           </span>
         </span>

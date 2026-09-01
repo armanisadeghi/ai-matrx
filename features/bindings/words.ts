@@ -251,6 +251,10 @@ export const JOB_OVERRIDE_WORDS = {
     "These are stored on this binding and applied by the server on every run of this job, for everyone this rung covers — not to one conversation. Resetting a value hands it back to the holder's own default.",
   noModelNote:
     "No model resolved for this holder yet — its settings appear once it is read.",
+  // The job vocabulary's own word for the picker's "no override" choice. The
+  // shared default says "the agent's own model", which is right on an agent
+  // door and wrong here: a job's runner is its HOLDER, agent or workflow.
+  modelEmptyChoiceLabel: "Use the holder's own model",
 };
 
 /**
@@ -267,4 +271,5 @@ export const JOB_TREATMENT_OVERRIDE_WORDS = {
     "These are stored with this job's options and used when it is launched from a menu or from a place in the app. One answer for everyone — options have no per-person rung. Resetting a value hands it back to the holder's own default.",
   noModelNote:
     "No model chosen — this job runs on its holder's own model unless you pick one.",
+  modelEmptyChoiceLabel: "Use the holder's own model",
 };

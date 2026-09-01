@@ -75,7 +75,21 @@ export interface RunConfigOverridesWords {
   scopeNote: string;
   /** Said when no model has been resolved for this host yet. */
   noModelNote: string;
+  /**
+   * THE MODEL PICKER'S "no override" CHOICE, in this host's noun (V1 round 4,
+   * O3). `StoredModelOverridesField` hardcoded *"Use the holder's own model"*
+   * on every door — including the shortcut editor, whose two neighbouring
+   * sentences both say *"the agent's own model"*. Two nouns for one thing on
+   * one screen is a screen a non-technical person cannot read.
+   *
+   * Omitted = the agent noun, which is right on every door whose subject IS an
+   * agent. A mandate/job door passes the job vocabulary's own word.
+   */
+  modelEmptyChoiceLabel?: string;
 }
+
+/** The default for the picker's "no override" choice — see the field above. */
+export const DEFAULT_MODEL_EMPTY_CHOICE_LABEL = "Use the agent's own model";
 
 export const CONVERSATION_OVERRIDE_WORDS: RunConfigOverridesWords = {
   heading: "Advanced settings",

@@ -120,11 +120,29 @@ DialogContentPrimitive.displayName = "DialogContentPrimitive";
  * Opt out with `mobileSheet={false}` only for the rare surface that must stay centered
  * on mobile (e.g. a tiny centered spinner). Everything else should keep the default.
  */
+/**
+ * 🚨 THE DESKTOP DIALOG IS CLAMPED TO THE VIEWPORT AND SCROLLS INSIDE ITSELF
+ * (V1 round 4, R4-1). The mobile sheet below has carried this law since it was
+ * written — "a short viewport can never hide a dialog's confirm/submit control
+ * off-screen" — and the DESKTOP path never got it. Proven live: the admin
+ * Create Category dialog rendered 851px tall in a 657px viewport with
+ * `overflow-y: visible`, so its Create button sat below the fold, unreachable;
+ * the only way out was a backdrop click, which dismisses WITHOUT writing and is
+ * indistinguishable from a silent save failure.
+ *
+ * `max-h-[85dvh] overflow-y-auto` is the cap; `DialogFooter` is sticky, so the
+ * primary action stays pressable while the body scrolls. `--dialog-pad` carries
+ * this shell's padding to that footer so it can bleed to the card's edges
+ * instead of leaving scrolled content showing beneath it.
+ *
+ * A caller's own `className` still wins (tailwind-merge, applied after) — a
+ * dialog that manages its own scrolling is unaffected.
+ */
 const DIALOG_DESKTOP_CLASSES =
-  "fixed left-[50%] top-[50%] z-[10000] grid min-w-0 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 overflow-x-clip border bg-background p-6 shadow-lg [overflow-wrap:anywhere] [&>*]:min-w-0 [&>*]:max-w-full duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg";
+  "fixed left-[50%] top-[50%] z-[10000] grid min-w-0 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 max-h-[85dvh] overflow-y-auto overscroll-contain [--dialog-pad:1.5rem] overflow-x-clip border bg-background p-6 shadow-lg [overflow-wrap:anywhere] [&>*]:min-w-0 [&>*]:max-w-full duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg";
 
 const DIALOG_MOBILE_SHEET_CLASSES =
-  "fixed inset-x-0 bottom-0 left-0 right-0 top-auto z-[10000] flex min-w-0 flex-col w-full max-w-full max-h-[90dvh] translate-x-0 translate-y-0 gap-4 overflow-x-clip border-t bg-background p-4 pb-safe shadow-lg [overflow-wrap:anywhere] [&>*]:min-w-0 [&>*]:max-w-full duration-200 rounded-t-2xl rounded-b-none overflow-y-auto overscroll-contain data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom";
+  "fixed inset-x-0 bottom-0 left-0 right-0 top-auto z-[10000] flex min-w-0 flex-col w-full max-w-full max-h-[90dvh] translate-x-0 translate-y-0 gap-4 [--dialog-pad:1rem] overflow-x-clip border-t bg-background p-4 pb-safe shadow-lg [overflow-wrap:anywhere] [&>*]:min-w-0 [&>*]:max-w-full duration-200 rounded-t-2xl rounded-b-none overflow-y-auto overscroll-contain data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom";
 
 // Re-asserted LAST so the sheet geometry always wins over any caller `className`
 // (e.g. a desktop `max-w-2xl` must not un-fullscreen the mobile sheet).
@@ -238,13 +256,24 @@ const DialogHeader = ({
 );
 DialogHeader.displayName = "DialogHeader";
 
+/**
+ * 🚨 THE PRIMARY ACTION IS ALWAYS PRESSABLE (V1 round 4, R4-1). The footer
+ * sticks to the bottom of the (now clamped, now scrolling) dialog card, and
+ * bleeds to its edges using the shell's `--dialog-pad`, so scrolled content
+ * never shows through beneath it. Outside a DialogContent the variable is
+ * unset, the padding falls back to `0px`, and this is the plain row it always
+ * was.
+ */
 const DialogFooter = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
+    data-slot="dialog-footer"
     className={cn(
       "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      "sticky bottom-0 z-10 bg-background pt-3",
+      "mx-[calc(var(--dialog-pad,0px)*-1)] mb-[calc(var(--dialog-pad,0px)*-1)] px-[var(--dialog-pad,0px)] pb-[var(--dialog-pad,0px)]",
       className,
     )}
     {...props}
