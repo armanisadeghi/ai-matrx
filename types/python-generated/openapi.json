@@ -20188,6 +20188,90 @@
         }
       }
     },
+    "/digitalocean/public/status": {
+      "get": {
+        "tags": [
+          "DigitalOcean Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_digitalocean_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DigitalOceanServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/linode/public/status": {
+      "get": {
+        "tags": [
+          "Linode Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_linode_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinodeServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/axiom/public/status": {
+      "get": {
+        "tags": [
+          "Axiom Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_axiom_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AxiomServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/geckoboard/public/status": {
+      "get": {
+        "tags": [
+          "Geckoboard Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_geckoboard_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeckoboardServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/databox/public/status": {
       "get": {
         "tags": [
@@ -20517,6 +20601,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GenesysCloudServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/float/public/status": {
+      "get": {
+        "tags": [
+          "Float Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_float_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FloatServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/harvest/public/status": {
+      "get": {
+        "tags": [
+          "Harvest Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_harvest_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HarvestServiceStatus"
                 }
               }
             }
@@ -84103,6 +84229,50 @@
         "title": "AwsPriceListOffer",
         "description": "Safe projection of one AWS Price List service offer."
       },
+      "AxiomServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "axiom_public_service_status",
+            "title": "Kind",
+            "default": "axiom_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Axiom",
+            "title": "Provider",
+            "default": "Axiom"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.axiom.co/",
+            "title": "Status Page",
+            "default": "https://status.axiom.co/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "AxiomServiceStatus"
+      },
       "BLSPublicLatestObservation": {
         "properties": {
           "__kind": {
@@ -116096,6 +116266,46 @@
         "title": "DigitalNzPublicRecord",
         "description": "Safe descriptive projection of one public DigitalNZ record."
       },
+      "DigitalOceanServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "digitalocean_public_cloud_status",
+            "title": "Kind",
+            "default": "digitalocean_public_cloud_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "DigitalOcean",
+            "title": "Provider",
+            "default": "DigitalOcean"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.digitalocean.com",
+            "title": "Status Page",
+            "default": "https://status.digitalocean.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "DigitalOceanServiceStatus"
+      },
       "DirectChatRequest": {
         "properties": {
           "chat_config": {
@@ -129651,6 +129861,56 @@
         "type": "object",
         "title": "FlattenAnnotationsRequest"
       },
+      "FloatServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "float_official_resource_management_platform_status",
+            "title": "Kind",
+            "default": "float_official_resource_management_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Float",
+            "title": "Provider",
+            "default": "Float"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.float.com",
+            "title": "Status Page",
+            "default": "https://status.float.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "FloatServiceStatus",
+        "description": "Safe aggregate status projection for Float's fixed status page."
+      },
       "FlockStatusResult": {
         "properties": {
           "__kind": {
@@ -131205,6 +131465,50 @@
         ],
         "title": "GbifPublicOccurrence",
         "description": "Safe bounded projection of one indexed biodiversity occurrence."
+      },
+      "GeckoboardServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "geckoboard_public_service_status",
+            "title": "Kind",
+            "default": "geckoboard_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Geckoboard",
+            "title": "Provider",
+            "default": "Geckoboard"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.geckoboard.com",
+            "title": "Status Page",
+            "default": "https://status.geckoboard.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "GeckoboardServiceStatus"
       },
       "GenerateImageRequest": {
         "properties": {
@@ -134287,6 +134591,56 @@
         ],
         "title": "HarvardDataversePublicDataset",
         "description": "Safe factual projection of one public released dataset."
+      },
+      "HarvestServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "harvest_official_time_tracking_platform_status",
+            "title": "Kind",
+            "default": "harvest_official_time_tracking_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Harvest",
+            "title": "Provider",
+            "default": "Harvest"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://www.harveststatus.com",
+            "title": "Status Page",
+            "default": "https://www.harveststatus.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "HarvestServiceStatus",
+        "description": "Safe projection of Harvest's aggregate platform status."
       },
       "HeldOutOutcome": {
         "properties": {
@@ -147032,6 +147386,46 @@
         ],
         "title": "LinkfireServiceStatus",
         "description": "Safe aggregate status projection for Linkfire's fixed status page."
+      },
+      "LinodeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "linode_public_cloud_status",
+            "title": "Kind",
+            "default": "linode_public_cloud_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Linode",
+            "title": "Provider",
+            "default": "Linode"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.linode.com",
+            "title": "Status Page",
+            "default": "https://status.linode.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "LinodeServiceStatus"
       },
       "ListConversationsResponse": {
         "properties": {

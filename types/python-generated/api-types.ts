@@ -9032,6 +9032,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/digitalocean/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_digitalocean_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/linode/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_linode_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/axiom/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_axiom_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/geckoboard/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_geckoboard_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/databox/public/status": {
         parameters: {
             query?: never;
@@ -9296,6 +9364,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_genesys_cloud_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/float/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_float_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/harvest/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_harvest_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -34523,6 +34625,38 @@ export interface components {
             /** Current Region Index Path */
             current_region_index_path: string;
         };
+        /** AxiomServiceStatus */
+        AxiomServiceStatus: {
+            /**
+             * Kind
+             * @default axiom_public_service_status
+             * @constant
+             */
+            __kind?: "axiom_public_service_status";
+            /**
+             * Provider
+             * @default Axiom
+             * @constant
+             */
+            provider?: "Axiom";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.axiom.co/
+             * @constant
+             */
+            status_page?: "https://status.axiom.co/";
+        };
         /**
          * BLSPublicLatestObservation
          * @description Safe factual projection of one latest published BLS series point.
@@ -47455,6 +47589,35 @@ export interface components {
             /** Source Url */
             source_url?: string | null;
         };
+        /** DigitalOceanServiceStatus */
+        DigitalOceanServiceStatus: {
+            /**
+             * Kind
+             * @default digitalocean_public_cloud_status
+             * @constant
+             */
+            __kind?: "digitalocean_public_cloud_status";
+            /**
+             * Provider
+             * @default DigitalOcean
+             * @constant
+             */
+            provider?: "DigitalOcean";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.digitalocean.com
+             * @constant
+             */
+            status_page?: "https://status.digitalocean.com";
+        };
         /** DirectChatRequest */
         DirectChatRequest: {
             /**
@@ -52960,6 +53123,43 @@ export interface components {
             widgets?: boolean;
         };
         /**
+         * FloatServiceStatus
+         * @description Safe aggregate status projection for Float's fixed status page.
+         */
+        FloatServiceStatus: {
+            /**
+             * Kind
+             * @default float_official_resource_management_platform_status
+             * @constant
+             */
+            __kind?: "float_official_resource_management_platform_status";
+            /**
+             * Provider
+             * @default Float
+             * @constant
+             */
+            provider?: "Float";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.float.com
+             * @constant
+             */
+            status_page?: "https://status.float.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * FlockStatusResult
          * @description Safe projection of Flock's high-level service status.
          */
@@ -53717,6 +53917,38 @@ export interface components {
             issues: string[];
             /** Occurrence Page */
             occurrence_page: string;
+        };
+        /** GeckoboardServiceStatus */
+        GeckoboardServiceStatus: {
+            /**
+             * Kind
+             * @default geckoboard_public_service_status
+             * @constant
+             */
+            __kind?: "geckoboard_public_service_status";
+            /**
+             * Provider
+             * @default Geckoboard
+             * @constant
+             */
+            provider?: "Geckoboard";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.geckoboard.com
+             * @constant
+             */
+            status_page?: "https://status.geckoboard.com";
         };
         /**
          * GenerateImageRequest
@@ -55077,6 +55309,43 @@ export interface components {
             release_time: string;
             /** File Count */
             file_count: number;
+        };
+        /**
+         * HarvestServiceStatus
+         * @description Safe projection of Harvest's aggregate platform status.
+         */
+        HarvestServiceStatus: {
+            /**
+             * Kind
+             * @default harvest_official_time_tracking_platform_status
+             * @constant
+             */
+            __kind?: "harvest_official_time_tracking_platform_status";
+            /**
+             * Provider
+             * @default Harvest
+             * @constant
+             */
+            provider?: "Harvest";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://www.harveststatus.com
+             * @constant
+             */
+            status_page?: "https://www.harveststatus.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * HeldOutOutcome
@@ -60433,6 +60702,35 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.linkfire.com";
+        };
+        /** LinodeServiceStatus */
+        LinodeServiceStatus: {
+            /**
+             * Kind
+             * @default linode_public_cloud_status
+             * @constant
+             */
+            __kind?: "linode_public_cloud_status";
+            /**
+             * Provider
+             * @default Linode
+             * @constant
+             */
+            provider?: "Linode";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.linode.com
+             * @constant
+             */
+            status_page?: "https://status.linode.com";
         };
         /** ListConversationsResponse */
         ListConversationsResponse: {
@@ -108354,6 +108652,86 @@ export interface operations {
             };
         };
     };
+    public_status_digitalocean_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DigitalOceanServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_linode_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinodeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_axiom_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AxiomServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_geckoboard_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeckoboardServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_databox_public_status_get: {
         parameters: {
             query?: never;
@@ -108670,6 +109048,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GenesysCloudServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_float_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FloatServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_harvest_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HarvestServiceStatus"];
                 };
             };
         };
