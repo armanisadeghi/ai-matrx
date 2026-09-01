@@ -453,6 +453,15 @@ export async function GET(request: Request) {
           maxAge: 0,
           domain: ".aimatrx.com",
         });
+        // ...and its HOST-ONLY twin, which `response.cookies` cannot also
+        // reach: ResponseCookies keeps one entry per NAME, so a second set for
+        // the other scope would replace the first. Same class as the
+        // 2026-09-01 split auth jar. Raw append is safe here only because
+        // nothing reads `response.cookies` after this point.
+        response.headers.append(
+          "Set-Cookie",
+          `${verifierAliasFrom}=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=Lax`,
+        );
       }
       return response;
     }

@@ -24,6 +24,7 @@ import MobileMenuPathSync from "@/features/shell/components/MobileMenuPathSync";
 import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
 import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
+import SessionIntegrityGate from "@/features/shell/components/SessionIntegrityGate";
 import { ElevatedShellUserMenuRoot } from "@/components/matrx/resizable/ElevatedShellUserMenu";
 import type { UserData } from "@/utils/userDataMapper";
 import type { BaseReduxState } from "@/types/reduxTypes";
@@ -74,7 +75,13 @@ export default function AppShell({
         <Sidebar pathname={pathname} isAuthenticated={isAuthenticated} />
         <Header userData={userData} isAuthenticated={isAuthenticated} />
 
-        <main className="shell-main">{children}</main>
+        <main className="shell-main">
+          {/* A shell that shows an identity the server could not read must
+              SAY so — never paint "Mine 0" and a Retry that can only fail.
+              Renders nothing on a healthy session. */}
+          <SessionIntegrityGate serverAuthenticated={isAuthenticated} />
+          {children}
+        </main>
 
         <MobileSideSheet
           isAuthenticated={isAuthenticated}

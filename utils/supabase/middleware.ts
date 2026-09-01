@@ -135,6 +135,14 @@ export async function updateSession(
   // half of the destination (`/administration/users?tab=invites` came back as
   // `/administration/users`).
   session.response.headers.set("x-search-params", request.nextUrl.search);
+  // The auth cookie arrived at two Domain scopes on this request. The pass has
+  // already expired the losing scope (@ai-matrx/data/next heals it), but THIS
+  // render may have resolved anonymous under a shell that still holds an
+  // identity — the shell must say so rather than paint a lying screen.
+  // Read by `features/shell/components/SessionIntegrityGate.tsx`.
+  if (session.splitCookieJar) {
+    session.response.headers.set("x-matrx-split-jar", "1");
+  }
 
   return session.response;
 }
