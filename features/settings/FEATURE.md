@@ -4,6 +4,8 @@
 **Tier:** `1`
 **Last updated:** 2026-08-15
 
+> Active campaign — Unified Settings & Configuration Platform: /Users/armanisadeghi/code/common-docs/projects/unified-settings-platform/PLAN.md — read it before adding, moving, or migrating ANY setting in ANY repo (register: REGISTER.md, ruling ledger: DECISIONS.md).
+
 ---
 
 ## Purpose
