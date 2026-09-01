@@ -20419,6 +20419,27 @@
         }
       }
     },
+    "/moxo/public/status": {
+      "get": {
+        "tags": [
+          "Moxo Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_moxo_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoxoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -20643,6 +20664,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BeehiivServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memberful/public/status": {
+      "get": {
+        "tags": [
+          "Memberful Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_memberful_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberfulServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/laserfiche/public/status": {
+      "get": {
+        "tags": [
+          "Laserfiche Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_laserfiche_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaserficheServiceStatus"
                 }
               }
             }
@@ -145813,6 +145876,46 @@
         ],
         "title": "LandscapeBriefRulingBody"
       },
+      "LaserficheServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "laserfiche_public_document_platform_status",
+            "title": "Kind",
+            "default": "laserfiche_public_document_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Laserfiche",
+            "title": "Provider",
+            "default": "Laserfiche"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.laserfiche.com",
+            "title": "Status Page",
+            "default": "https://status.laserfiche.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "LaserficheServiceStatus"
+      },
       "LaterServiceStatus": {
         "properties": {
           "__kind": {
@@ -154282,6 +154385,50 @@
         ],
         "title": "MemberRefresh"
       },
+      "MemberfulServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "memberful_public_service_status",
+            "title": "Kind",
+            "default": "memberful_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Memberful",
+            "title": "Provider",
+            "default": "Memberful"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.memberful.com",
+            "title": "Status Page",
+            "default": "https://status.memberful.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MemberfulServiceStatus"
+      },
       "MemoryCostByEventType": {
         "properties": {
           "count": {
@@ -156468,6 +156615,55 @@
         },
         "type": "object",
         "title": "MoveArgs"
+      },
+      "MoxoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "moxo_official_client_collaboration_platform_status",
+            "title": "Kind",
+            "default": "moxo_official_client_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Moxo",
+            "title": "Provider",
+            "default": "Moxo"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.moxo.com",
+            "title": "Status Page",
+            "default": "https://status.moxo.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "MoxoServiceStatus"
       },
       "MuralStatusResult": {
         "properties": {

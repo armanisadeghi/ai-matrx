@@ -9219,6 +9219,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/moxo/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_moxo_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -9398,6 +9415,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_beehiiv_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/memberful/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_memberful_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/laserfiche/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_laserfiche_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -60451,6 +60502,35 @@ export interface components {
             /** Brief Markdown */
             brief_markdown?: string | null;
         };
+        /** LaserficheServiceStatus */
+        LaserficheServiceStatus: {
+            /**
+             * Kind
+             * @default laserfiche_public_document_platform_status
+             * @constant
+             */
+            __kind?: "laserfiche_public_document_platform_status";
+            /**
+             * Provider
+             * @default Laserfiche
+             * @constant
+             */
+            provider?: "Laserfiche";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.laserfiche.com
+             * @constant
+             */
+            status_page?: "https://status.laserfiche.com";
+        };
         /**
          * LaterServiceStatus
          * @description Safe aggregate status projection for Later's fixed status page.
@@ -64027,6 +64107,38 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** MemberfulServiceStatus */
+        MemberfulServiceStatus: {
+            /**
+             * Kind
+             * @default memberful_public_service_status
+             * @constant
+             */
+            __kind?: "memberful_public_service_status";
+            /**
+             * Provider
+             * @default Memberful
+             * @constant
+             */
+            provider?: "Memberful";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.memberful.com
+             * @constant
+             */
+            status_page?: "https://status.memberful.com";
+        };
         /** MemoryCostByEventType */
         MemoryCostByEventType: {
             /**
@@ -65044,6 +65156,40 @@ export interface components {
             new_parent_id?: string | null;
             /** Expected Updated At */
             expected_updated_at?: string | null;
+        };
+        /** MoxoServiceStatus */
+        MoxoServiceStatus: {
+            /**
+             * Kind
+             * @default moxo_official_client_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "moxo_official_client_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Moxo
+             * @constant
+             */
+            provider?: "Moxo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.moxo.com
+             * @constant
+             */
+            status_page?: "https://status.moxo.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * MuralStatusResult
@@ -109989,6 +110135,26 @@ export interface operations {
             };
         };
     };
+    public_status_moxo_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoxoServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -110205,6 +110371,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BeehiivServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_memberful_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberfulServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_laserfiche_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LaserficheServiceStatus"];
                 };
             };
         };

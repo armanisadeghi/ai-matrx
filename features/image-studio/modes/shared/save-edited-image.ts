@@ -62,15 +62,18 @@ export async function saveEditedImage(args: {
     // active). Preserve the target row's organization explicitly so the
     // backend never sees a version write as an attempted ownership transfer.
     if (existing.scope.organizationId) {
-      const existingMetadataScope =
-        args.metadata?.scope && typeof args.metadata.scope === "object"
-          ? (args.metadata.scope as Record<string, unknown>)
-          : {};
+      const existingMetadataScope = args.metadata?.scope;
+      const inheritedMetadataScope =
+        existingMetadataScope !== null &&
+        typeof existingMetadataScope === "object" &&
+        !Array.isArray(existingMetadataScope)
+          ? existingMetadataScope
+          : undefined;
       metadata = {
-        ...(args.metadata ?? {}),
+        ...args.metadata,
         organization_id: existing.scope.organizationId,
         scope: {
-          ...existingMetadataScope,
+          ...inheritedMetadataScope,
           organization_id: existing.scope.organizationId,
         },
       };
