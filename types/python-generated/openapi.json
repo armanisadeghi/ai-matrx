@@ -20587,6 +20587,48 @@
         }
       }
     },
+    "/rainfocus/public/status": {
+      "get": {
+        "tags": [
+          "RainFocus Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_rainfocus_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RainFocusServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/event-temple/public/status": {
+      "get": {
+        "tags": [
+          "Event Temple Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_event_temple_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventTempleServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -21000,6 +21042,69 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ContentsquareServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/baremetrics/public/status": {
+      "get": {
+        "tags": [
+          "Baremetrics Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_baremetrics_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaremetricsServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jottacloud/public/status": {
+      "get": {
+        "tags": [
+          "Jottacloud Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_jottacloud_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JottacloudServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tresorit/public/status": {
+      "get": {
+        "tags": [
+          "Tresorit Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_tresorit_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TresoritServiceStatus"
                 }
               }
             }
@@ -86028,6 +86133,50 @@
         "type": "object",
         "title": "BacklinkRefreshBody"
       },
+      "BaremetricsServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "baremetrics_public_service_status",
+            "title": "Kind",
+            "default": "baremetrics_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Baremetrics",
+            "title": "Provider",
+            "default": "Baremetrics"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.baremetrics.com",
+            "title": "Status Page",
+            "default": "https://status.baremetrics.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "BaremetricsServiceStatus"
+      },
       "BatchDeleteRequest": {
         "properties": {
           "organization_id": {
@@ -124164,6 +124313,55 @@
         "title": "EventSourceSpec",
         "description": "kind='event' config — what data change fires this trigger.\n\nMatching happens in the DB capture function (workflow.emit_trigger_events,\nmigration 0111): a write on the watched ``table`` with the matching\n``operation`` — and, when ``when_column`` is set, a TRANSITION into\n``when_value`` — enqueues a durable workflow.trigger_event row. A table\nonly produces events after ``workflow.watch_table(...)`` attached the\ncapture trigger; the trigger's organization_id must equal the row's.\n\n``input_map`` maps run input names to columns of the watched row; the\nfull event also rides the run inputs under the reserved key ``event``.\n``debounce_seconds`` is the settle window: while an event for the same\nentity is still pending, a newer change replaces it and pushes the fire\ntime forward instead of firing once per write."
       },
+      "EventTempleServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "event_temple_official_event_planning_collaboration_platform_status",
+            "title": "Kind",
+            "default": "event_temple_official_event_planning_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Event Temple",
+            "title": "Provider",
+            "default": "Event Temple"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.eventtemple.com",
+            "title": "Status Page",
+            "default": "https://status.eventtemple.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "EventTempleServiceStatus"
+      },
       "EvidenceReference": {
         "properties": {
           "source_kind": {
@@ -142135,6 +142333,46 @@
         "type": "object",
         "title": "JoplinCloudHealthResult",
         "description": "Safe projection of the official Joplin Cloud ping response."
+      },
+      "JottacloudServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "jottacloud_public_cloud_file_status",
+            "title": "Kind",
+            "default": "jottacloud_public_cloud_file_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Jottacloud",
+            "title": "Provider",
+            "default": "Jottacloud"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.jottacloud.com",
+            "title": "Status Page",
+            "default": "https://status.jottacloud.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "JottacloudServiceStatus"
       },
       "JournalChunk": {
         "properties": {
@@ -180178,6 +180416,55 @@
         ],
         "title": "RagKindsRequest"
       },
+      "RainFocusServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "rainfocus_official_event_collaboration_platform_status",
+            "title": "Kind",
+            "default": "rainfocus_official_event_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "RainFocus",
+            "title": "Provider",
+            "default": "RainFocus"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.rainfocus.com",
+            "title": "Status Page",
+            "default": "https://status.rainfocus.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "RainFocusServiceStatus"
+      },
       "RankKindsRequest": {
         "properties": {
           "organization_id": {
@@ -212828,6 +213115,46 @@
           "list_id"
         ],
         "title": "TrelloPublicCard"
+      },
+      "TresoritServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "tresorit_public_cloud_file_status",
+            "title": "Kind",
+            "default": "tresorit_public_cloud_file_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Tresorit",
+            "title": "Provider",
+            "default": "Tresorit"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.tresorit.com",
+            "title": "Status Page",
+            "default": "https://status.tresorit.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "TresoritServiceStatus"
       },
       "TriggerCreate": {
         "properties": {

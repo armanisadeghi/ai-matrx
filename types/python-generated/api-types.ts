@@ -9355,6 +9355,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rainfocus/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_rainfocus_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/event-temple/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_event_temple_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -9687,6 +9721,57 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_contentsquare_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/baremetrics/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_baremetrics_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jottacloud/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_jottacloud_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tresorit/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_tresorit_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -35846,6 +35931,38 @@ export interface components {
              */
             enrichment_limit?: number;
         };
+        /** BaremetricsServiceStatus */
+        BaremetricsServiceStatus: {
+            /**
+             * Kind
+             * @default baremetrics_public_service_status
+             * @constant
+             */
+            __kind?: "baremetrics_public_service_status";
+            /**
+             * Provider
+             * @default Baremetrics
+             * @constant
+             */
+            provider?: "Baremetrics";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.baremetrics.com
+             * @constant
+             */
+            status_page?: "https://status.baremetrics.com";
+        };
         /** BatchDeleteRequest */
         BatchDeleteRequest: {
             /**
@@ -51461,6 +51578,40 @@ export interface components {
              */
             include_event?: boolean;
         };
+        /** EventTempleServiceStatus */
+        EventTempleServiceStatus: {
+            /**
+             * Kind
+             * @default event_temple_official_event_planning_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "event_temple_official_event_planning_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Event Temple
+             * @constant
+             */
+            provider?: "Event Temple";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.eventtemple.com
+             * @constant
+             */
+            status_page?: "https://status.eventtemple.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** EvidenceReference */
         EvidenceReference: {
             /**
@@ -59380,6 +59531,35 @@ export interface components {
              * @constant
              */
             healthy?: true;
+        };
+        /** JottacloudServiceStatus */
+        JottacloudServiceStatus: {
+            /**
+             * Kind
+             * @default jottacloud_public_cloud_file_status
+             * @constant
+             */
+            __kind?: "jottacloud_public_cloud_file_status";
+            /**
+             * Provider
+             * @default Jottacloud
+             * @constant
+             */
+            provider?: "Jottacloud";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.jottacloud.com
+             * @constant
+             */
+            status_page?: "https://status.jottacloud.com";
         };
         /** JournalChunk */
         JournalChunk: {
@@ -75901,6 +76081,40 @@ export interface components {
              */
             synthesize?: boolean;
         };
+        /** RainFocusServiceStatus */
+        RainFocusServiceStatus: {
+            /**
+             * Kind
+             * @default rainfocus_official_event_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "rainfocus_official_event_collaboration_platform_status";
+            /**
+             * Provider
+             * @default RainFocus
+             * @constant
+             */
+            provider?: "RainFocus";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.rainfocus.com
+             * @constant
+             */
+            status_page?: "https://status.rainfocus.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** RankKindsRequest */
         RankKindsRequest: {
             /**
@@ -89737,6 +89951,35 @@ export interface components {
             closed: boolean;
             /** List Id */
             list_id: string;
+        };
+        /** TresoritServiceStatus */
+        TresoritServiceStatus: {
+            /**
+             * Kind
+             * @default tresorit_public_cloud_file_status
+             * @constant
+             */
+            __kind?: "tresorit_public_cloud_file_status";
+            /**
+             * Provider
+             * @default Tresorit
+             * @constant
+             */
+            provider?: "Tresorit";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.tresorit.com
+             * @constant
+             */
+            status_page?: "https://status.tresorit.com";
         };
         /**
          * TriggerCreate
@@ -111366,6 +111609,46 @@ export interface operations {
             };
         };
     };
+    public_status_rainfocus_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RainFocusServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_event_temple_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventTempleServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -111762,6 +112045,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContentsquareServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_baremetrics_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BaremetricsServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_jottacloud_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JottacloudServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_tresorit_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TresoritServiceStatus"];
                 };
             };
         };
