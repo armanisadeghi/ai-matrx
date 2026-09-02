@@ -10120,6 +10120,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/usertesting/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_usertesting_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -11208,6 +11225,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/justcall/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_justcall_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -11659,6 +11693,23 @@ export interface paths {
         };
         /** Public Card */
         get: operations["public_card_scryfall_public_card_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tcgdex/public/card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Card */
+        get: operations["public_card_tcgdex_public_card_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -42235,39 +42286,6 @@ export interface components {
              */
             face?: "front" | "back";
         };
-        /** CardMetadata */
-        CardMetadata: {
-            /**
-             * Kind
-             * @default scryfall_card_metadata
-             * @constant
-             */
-            __kind?: "scryfall_card_metadata";
-            /**
-             * Provider
-             * @default Scryfall
-             * @constant
-             */
-            provider?: "Scryfall";
-            /** Card Id */
-            card_id: string;
-            /** Name */
-            name: string;
-            /** Language */
-            language: string;
-            /** Released At */
-            released_at: string;
-            /** Layout */
-            layout: string;
-            /** Set Code */
-            set_code: string;
-            /** Set Name */
-            set_name: string;
-            /** Collector Number */
-            collector_number: string;
-            /** Rarity */
-            rarity: string;
-        };
         /**
          * CarryoverCalcResponse
          * @description E-06's 200.
@@ -63415,6 +63433,38 @@ export interface components {
             scored_by_authority?: {
                 [key: string]: number;
             };
+        };
+        /** JustCallServiceStatus */
+        JustCallServiceStatus: {
+            /**
+             * Kind
+             * @default justcall_public_service_status
+             * @constant
+             */
+            __kind?: "justcall_public_service_status";
+            /**
+             * Provider
+             * @default JustCall
+             * @constant
+             */
+            provider?: "JustCall";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.justcall.io
+             * @constant
+             */
+            status_page?: "https://status.justcall.io";
         };
         /**
          * JustworksServiceStatus
@@ -97159,6 +97209,40 @@ export interface components {
             /** Inject Into Sandbox */
             inject_into_sandbox?: boolean | null;
         };
+        /** UserTestingServiceStatus */
+        UserTestingServiceStatus: {
+            /**
+             * Kind
+             * @default usertesting_official_research_collaboration_status
+             * @constant
+             */
+            __kind?: "usertesting_official_research_collaboration_status";
+            /**
+             * Provider
+             * @default UserTesting
+             * @constant
+             */
+            provider?: "UserTesting";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.usertesting.com
+             * @constant
+             */
+            status_page?: "https://status.usertesting.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** UserVideoMediaPart */
         UserVideoMediaPart: {
             /** Metadata */
@@ -102372,6 +102456,39 @@ export interface components {
             /** Size Bytes */
             size_bytes: number;
         };
+        /** CardMetadata */
+        aidream__services__scryfall_integrations__service__CardMetadata: {
+            /**
+             * Kind
+             * @default scryfall_card_metadata
+             * @constant
+             */
+            __kind?: "scryfall_card_metadata";
+            /**
+             * Provider
+             * @default Scryfall
+             * @constant
+             */
+            provider?: "Scryfall";
+            /** Card Id */
+            card_id: string;
+            /** Name */
+            name: string;
+            /** Language */
+            language: string;
+            /** Released At */
+            released_at: string;
+            /** Layout */
+            layout: string;
+            /** Set Code */
+            set_code: string;
+            /** Set Name */
+            set_name: string;
+            /** Collector Number */
+            collector_number: string;
+            /** Rarity */
+            rarity: string;
+        };
         /**
          * ReadinessResponse
          * @description Answer to "may a campaign use this mailbox right now?" — the campaign-side
@@ -102473,6 +102590,37 @@ export interface components {
              * @default 0
              */
             excluded_low_quality_inputs?: number;
+        };
+        /** CardMetadata */
+        aidream__services__tcgdex_integrations__service__CardMetadata: {
+            /**
+             * Kind
+             * @default tcgdex_card_metadata
+             * @constant
+             */
+            __kind?: "tcgdex_card_metadata";
+            /**
+             * Provider
+             * @default TCGdex
+             * @constant
+             */
+            provider?: "TCGdex";
+            /** Card Id */
+            card_id: string;
+            /** Name */
+            name: string;
+            /** Category */
+            category: string;
+            /** Illustrator */
+            illustrator: string | null;
+            /** Rarity */
+            rarity: string | null;
+            /** Set Id */
+            set_id: string;
+            /** Set Name */
+            set_name: string;
+            /** Official Set Card Count */
+            official_set_card_count: number;
         };
         /** ExtractRequest */
         aidream__services__workflow_extract__materialize__ExtractRequest: {
@@ -118269,6 +118417,26 @@ export interface operations {
             };
         };
     };
+    public_status_usertesting_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserTestingServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -119549,6 +119717,26 @@ export interface operations {
             };
         };
     };
+    public_status_justcall_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JustCallServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -120163,7 +120351,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CardMetadata"];
+                    "application/json": components["schemas"]["aidream__services__scryfall_integrations__service__CardMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_card_tcgdex_public_card_get: {
+        parameters: {
+            query: {
+                card_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__tcgdex_integrations__service__CardMetadata"];
                 };
             };
             /** @description Validation Error */

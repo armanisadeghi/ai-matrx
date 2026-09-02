@@ -21532,6 +21532,27 @@
         }
       }
     },
+    "/usertesting/public/status": {
+      "get": {
+        "tags": [
+          "UserTesting Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_usertesting_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserTestingServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22876,6 +22897,27 @@
         }
       }
     },
+    "/justcall/public/status": {
+      "get": {
+        "tags": [
+          "JustCall Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_justcall_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JustCallServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -23599,7 +23641,51 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CardMetadata"
+                  "$ref": "#/components/schemas/aidream__services__scryfall_integrations__service__CardMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tcgdex/public/card": {
+      "get": {
+        "tags": [
+          "TCGdex Integrations"
+        ],
+        "summary": "Public Card",
+        "operationId": "public_card_tcgdex_public_card_get",
+        "parameters": [
+          {
+            "name": "card_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 100,
+              "title": "Card Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__tcgdex_integrations__service__CardMetadata"
                 }
               }
             }
@@ -98106,72 +98192,6 @@
         ],
         "title": "CardImageRequest"
       },
-      "CardMetadata": {
-        "properties": {
-          "__kind": {
-            "type": "string",
-            "const": "scryfall_card_metadata",
-            "title": "Kind",
-            "default": "scryfall_card_metadata"
-          },
-          "provider": {
-            "type": "string",
-            "const": "Scryfall",
-            "title": "Provider",
-            "default": "Scryfall"
-          },
-          "card_id": {
-            "type": "string",
-            "title": "Card Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "language": {
-            "type": "string",
-            "title": "Language"
-          },
-          "released_at": {
-            "type": "string",
-            "title": "Released At"
-          },
-          "layout": {
-            "type": "string",
-            "title": "Layout"
-          },
-          "set_code": {
-            "type": "string",
-            "title": "Set Code"
-          },
-          "set_name": {
-            "type": "string",
-            "title": "Set Name"
-          },
-          "collector_number": {
-            "type": "string",
-            "title": "Collector Number"
-          },
-          "rarity": {
-            "type": "string",
-            "title": "Rarity"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "card_id",
-          "name",
-          "language",
-          "released_at",
-          "layout",
-          "set_code",
-          "set_name",
-          "collector_number",
-          "rarity"
-        ],
-        "title": "CardMetadata"
-      },
       "CarryoverCalcResponse": {
         "properties": {
           "snapshot_id": {
@@ -148078,6 +148098,50 @@
         ],
         "title": "JudgeAccuracyReport",
         "description": "One judge's calibration against human labels, plus its raw counts."
+      },
+      "JustCallServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "justcall_public_service_status",
+            "title": "Kind",
+            "default": "justcall_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "JustCall",
+            "title": "Provider",
+            "default": "JustCall"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.justcall.io",
+            "title": "Status Page",
+            "default": "https://status.justcall.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "JustCallServiceStatus"
       },
       "JustworksServiceStatus": {
         "properties": {
@@ -225057,6 +225121,55 @@
         "type": "object",
         "title": "UserSecretUpdateRequest"
       },
+      "UserTestingServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "usertesting_official_research_collaboration_status",
+            "title": "Kind",
+            "default": "usertesting_official_research_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "UserTesting",
+            "title": "Provider",
+            "default": "UserTesting"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.usertesting.com",
+            "title": "Status Page",
+            "default": "https://status.usertesting.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "UserTestingServiceStatus"
+      },
       "UserVideoMediaPart": {
         "allOf": [
           {
@@ -237235,6 +237348,72 @@
         ],
         "title": "DogImage"
       },
+      "aidream__services__scryfall_integrations__service__CardMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "scryfall_card_metadata",
+            "title": "Kind",
+            "default": "scryfall_card_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Scryfall",
+            "title": "Provider",
+            "default": "Scryfall"
+          },
+          "card_id": {
+            "type": "string",
+            "title": "Card Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "released_at": {
+            "type": "string",
+            "title": "Released At"
+          },
+          "layout": {
+            "type": "string",
+            "title": "Layout"
+          },
+          "set_code": {
+            "type": "string",
+            "title": "Set Code"
+          },
+          "set_name": {
+            "type": "string",
+            "title": "Set Name"
+          },
+          "collector_number": {
+            "type": "string",
+            "title": "Collector Number"
+          },
+          "rarity": {
+            "type": "string",
+            "title": "Rarity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "card_id",
+          "name",
+          "language",
+          "released_at",
+          "layout",
+          "set_code",
+          "set_name",
+          "collector_number",
+          "rarity"
+        ],
+        "title": "CardMetadata"
+      },
       "aidream__services__sending_identity__models__ReadinessResponse": {
         "properties": {
           "identity_id": {
@@ -237405,6 +237584,81 @@
         "additionalProperties": false,
         "type": "object",
         "title": "EvidenceCoverage"
+      },
+      "aidream__services__tcgdex_integrations__service__CardMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "tcgdex_card_metadata",
+            "title": "Kind",
+            "default": "tcgdex_card_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "TCGdex",
+            "title": "Provider",
+            "default": "TCGdex"
+          },
+          "card_id": {
+            "type": "string",
+            "title": "Card Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "illustrator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Illustrator"
+          },
+          "rarity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rarity"
+          },
+          "set_id": {
+            "type": "string",
+            "title": "Set Id"
+          },
+          "set_name": {
+            "type": "string",
+            "title": "Set Name"
+          },
+          "official_set_card_count": {
+            "type": "integer",
+            "title": "Official Set Card Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "card_id",
+          "name",
+          "category",
+          "illustrator",
+          "rarity",
+          "set_id",
+          "set_name",
+          "official_set_card_count"
+        ],
+        "title": "CardMetadata"
       },
       "aidream__services__workflow_extract__materialize__ExtractRequest": {
         "properties": {
