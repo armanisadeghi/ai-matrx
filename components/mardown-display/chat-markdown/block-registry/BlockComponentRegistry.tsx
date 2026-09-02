@@ -22,6 +22,7 @@ import KeywordClassificationBatchBlock from "../../blocks/keyword-research/Keywo
 import KeywordSerpIntentAnalysisBlock from "../../blocks/keyword-research/KeywordSerpIntentAnalysisBlock";
 import SeoKeywordResearchResultBlock from "../../blocks/keyword-research/SeoKeywordResearchResultBlock";
 import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
+import CmsHtmlPageResultBlock from "../../blocks/cms-html-page-result/CmsHtmlPageResultBlock";
 import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import MasterworkCheckupFindingBlock from "../../blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
 import AgentResultBlock from "../../blocks/agent-result/AgentResultBlock";
@@ -387,6 +388,13 @@ export const BlockComponents = {
   PageBriefBlock: (props: React.ComponentProps<typeof PageBriefBlock>) => (
     <LazyBlockWrapper>
       <PageBriefBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  CmsHtmlPageResultBlock: (
+    props: React.ComponentProps<typeof CmsHtmlPageResultBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <CmsHtmlPageResultBlock {...props} />
     </LazyBlockWrapper>
   ),
   PlanPageResearchBlock: (

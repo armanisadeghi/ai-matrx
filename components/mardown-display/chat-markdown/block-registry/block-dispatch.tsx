@@ -415,6 +415,7 @@ export type FeSynthesizedBlockType =
   | "plan_page_draft"
   | "plan_page_review"
   | "cms_page_build"
+  | "cms_html_page_result"
   | "ingested_sources"
   | "study_notes"
   | "lesson_scripts"
@@ -578,6 +579,7 @@ export type ShapeBlockType =
   | "plan_page_draft"
   | "plan_page_review"
   | "cms_page_build"
+  | "cms_html_page_result"
   | "ingested_sources"
   | "study_notes"
   | "lesson_scripts"
@@ -1692,6 +1694,18 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
+    return renderJsonFallback(block, index);
+  },
+  cms_html_page_result: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.CmsHtmlPageResultBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) return <MatrxMiniLoader key={index} />;
     return renderJsonFallback(block, index);
   },
 

@@ -89,6 +89,7 @@ import { PLAN_PAGE_DRAFT_KIND_DEFINITIONS } from "../kinds/plan-page-draft";
 import { PLAN_PAGE_REVIEW_KIND_DEFINITIONS } from "../kinds/plan-page-review";
 import { PLAN_SHAPE_RECOMMENDATION_KIND_DEFINITIONS } from "../kinds/plan-shape-recommendation";
 import { CMS_PAGE_BUILD_KIND_DEFINITIONS } from "../kinds/cms-page-build";
+import { CMS_HTML_PAGE_RESULT_KIND_DEFINITIONS } from "../kinds/cms-html-page-result";
 import { INGESTED_SOURCES_KIND_DEFINITIONS } from "../kinds/ingested-sources";
 import { STUDY_NOTES_KIND_DEFINITIONS } from "../kinds/study-notes";
 import { LESSON_SCRIPTS_KIND_DEFINITIONS } from "../kinds/lesson-scripts";
@@ -157,6 +158,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // component receive the recommendation instead of a degraded raw object.
   ...PLAN_SHAPE_RECOMMENDATION_KIND_DEFINITIONS,
   ...CMS_PAGE_BUILD_KIND_DEFINITIONS,
+  ...CMS_HTML_PAGE_RESULT_KIND_DEFINITIONS,
   ...INGESTED_SOURCES_KIND_DEFINITIONS,
   ...STUDY_NOTES_KIND_DEFINITIONS,
   // study_pack_v2 (2026-08-22): the spoken-lesson artifact + the composed

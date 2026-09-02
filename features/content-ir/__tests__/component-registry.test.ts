@@ -138,6 +138,7 @@ describe("compiled bootstrap (system-components)", () => {
         plan_page_draft: "plan_page_draft",
         plan_page_review: "plan_page_review",
         cms_page_build: "cms_page_build",
+        cms_html_page_result: "cms_html_page_result",
         // Workflow run surfaces — a node's outcome and a run's result render
         // through the registry like any other kind, never as a JSON dump.
         node_outcome: "node_outcome",

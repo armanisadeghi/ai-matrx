@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 508 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 509 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "e35c71173378";
+export const KIND_REGISTRY_FINGERPRINT = "cf7a70cacaf4";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2400,7 +2400,7 @@ export interface ItemSpecific {
 }
 
 /**
- * * Shared by 63 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
+ * * Shared by 64 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
  */
 export type JsonValue = unknown;
 
@@ -7302,6 +7302,40 @@ export interface CmsAlignResult {
   web_site_id: string;
   cms_site_slug: string;
   statuses_advanced?: string[];
+}
+
+/**
+ * Kind `cms_html_page_result` (registry v2).
+ */
+export interface CmsHtmlPageResult {
+  page?: Record<string, unknown> | null;
+  count?: number | null;
+  pages?: (Record<string, unknown>)[] | null;
+  total?: number | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "cms_html_page_result";
+  fields?: string[] | null;
+  reused?: boolean | null;
+  source?: Record<string, unknown> | null;
+  deleted?: boolean | null;
+  dry_run?: boolean | null;
+  page_id?: string | null;
+  preview?: Record<string, unknown> | null;
+  version?: Record<string, unknown> | null;
+  promoted?: boolean | null;
+  versions?: (Record<string, unknown>)[] | null;
+  diff_stats?: Record<string, unknown> | null;
+  preview_url?: string | null;
+  would_apply?: boolean | null;
+  original_url?: string | null;
+  would_create?: boolean | null;
+  would_delete?: boolean | null;
+  would_update?: boolean | null;
+  validation_report?: JsonValue | null;
+  was_full_document?: boolean | null;
+  conversion_warnings?: string[] | null;
 }
 
 /**
@@ -20977,6 +21011,7 @@ export type GeneratedKindSlug =
   | "claim_evidence"
   | "client_site_audit"
   | "cms_align_result"
+  | "cms_html_page_result"
   | "cms_page_build"
   | "cms_publish_result"
   | "cms_reconcile_report"
@@ -21488,6 +21523,7 @@ export interface KindPayloadBySlug {
   "claim_evidence": ClaimEvidence;
   "client_site_audit": ClientSiteAudit;
   "cms_align_result": CmsAlignResult;
+  "cms_html_page_result": CmsHtmlPageResult;
   "cms_page_build": CmsPageBuild;
   "cms_publish_result": CmsPublishResult;
   "cms_reconcile_report": CmsReconcileReport;
@@ -22003,6 +22039,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "claim_evidence",
   "client_site_audit",
   "cms_align_result",
+  "cms_html_page_result",
   "cms_page_build",
   "cms_publish_result",
   "cms_reconcile_report",
