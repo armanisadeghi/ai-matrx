@@ -10103,6 +10103,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/genially/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_genially_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -11174,6 +11191,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/infobip/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_infobip_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -11591,6 +11625,40 @@ export interface paths {
         };
         /** Public Anime */
         get: operations["public_anime_anilist_public_anime_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openfda/public/drug-label-identity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Drug Label Identity */
+        get: operations["public_drug_label_identity_openfda_public_drug_label_identity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scryfall/public/card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Card */
+        get: operations["public_card_scryfall_public_card_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -42167,6 +42235,39 @@ export interface components {
              */
             face?: "front" | "back";
         };
+        /** CardMetadata */
+        CardMetadata: {
+            /**
+             * Kind
+             * @default scryfall_card_metadata
+             * @constant
+             */
+            __kind?: "scryfall_card_metadata";
+            /**
+             * Provider
+             * @default Scryfall
+             * @constant
+             */
+            provider?: "Scryfall";
+            /** Card Id */
+            card_id: string;
+            /** Name */
+            name: string;
+            /** Language */
+            language: string;
+            /** Released At */
+            released_at: string;
+            /** Layout */
+            layout: string;
+            /** Set Code */
+            set_code: string;
+            /** Set Name */
+            set_name: string;
+            /** Collector Number */
+            collector_number: string;
+            /** Rarity */
+            rarity: string;
+        };
         /**
          * CarryoverCalcResponse
          * @description E-06's 200.
@@ -52784,6 +52885,31 @@ export interface components {
              */
             file_ref: string;
         };
+        /** DrugLabelIdentity */
+        DrugLabelIdentity: {
+            /**
+             * Kind
+             * @default openfda_drug_label_identity
+             * @constant
+             */
+            __kind?: "openfda_drug_label_identity";
+            /**
+             * Provider
+             * @default openFDA
+             * @constant
+             */
+            provider?: "openFDA";
+            /** Set Id */
+            set_id: string;
+            /** Effective Date */
+            effective_date: string | null;
+            /** Brand Names */
+            brand_names: string[];
+            /** Generic Names */
+            generic_names: string[];
+            /** Manufacturers */
+            manufacturers: string[];
+        };
         /** DryRunEdgeReport */
         DryRunEdgeReport: {
             /**
@@ -58557,6 +58683,40 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** GeniallyServiceStatus */
+        GeniallyServiceStatus: {
+            /**
+             * Kind
+             * @default genially_official_visual_collaboration_status
+             * @constant
+             */
+            __kind?: "genially_official_visual_collaboration_status";
+            /**
+             * Provider
+             * @default Genially
+             * @constant
+             */
+            provider?: "Genially";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.genially.com
+             * @constant
+             */
+            status_page?: "https://status.genially.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** GetConversationResponse */
         GetConversationResponse: {
             conversation: components["schemas"]["ConversationRecord"];
@@ -61732,6 +61892,38 @@ export interface components {
              * @default
              */
             claim?: string;
+        };
+        /** InfobipServiceStatus */
+        InfobipServiceStatus: {
+            /**
+             * Kind
+             * @default infobip_public_service_status
+             * @constant
+             */
+            __kind?: "infobip_public_service_status";
+            /**
+             * Provider
+             * @default Infobip
+             * @constant
+             */
+            provider?: "Infobip";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.infobip.com
+             * @constant
+             */
+            status_page?: "https://status.infobip.com";
         };
         /**
          * IngestChatRequest
@@ -118057,6 +118249,26 @@ export interface operations {
             };
         };
     };
+    public_status_genially_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeniallyServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -119317,6 +119529,26 @@ export interface operations {
             };
         };
     };
+    public_status_infobip_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InfobipServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -119870,6 +120102,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnimeMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_drug_label_identity_openfda_public_drug_label_identity_get: {
+        parameters: {
+            query: {
+                set_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DrugLabelIdentity"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_card_scryfall_public_card_get: {
+        parameters: {
+            query: {
+                card_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardMetadata"];
                 };
             };
             /** @description Validation Error */
