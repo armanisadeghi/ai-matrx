@@ -2240,6 +2240,14 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
   {
+    slug: "share-link-dialog",
+    overlayId: "shareLinkDialog",
+    kind: "modal",
+    label: "Manage Share Links",
+    defaultData: { resourceId: null },
+    ephemeral: true,
+  },
+  {
     slug: "share-modal-bridge",
     overlayId: "shareModal",
     kind: "modal",

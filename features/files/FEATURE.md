@@ -172,7 +172,9 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
   `ShareLinkDialog` behind `manageLinks` and `AccessSummaryPanel` in the `AccessSummary`
   slot; `image/ImageSharePopover.tsx` + `video/VideoSharePopover.tsx` DELETED. The host
   `MediaActionsPort.SharePopover` slot is filled (lazily, `media-client/share-slot*.tsx`)
-  so package toolbars/lightboxes open the same share body. `MediaClient.shareableUrl` now
+  so package toolbars/lightboxes open the same share body. Their `Manage all links`
+  action dispatches the app-level `shareLinkDialog` overlay, whose durable owner survives
+  the transient package popover closing. `MediaClient.shareableUrl` now
   implements the full public-link door: permanent CDN URL for public files, else
   reuse-or-mint a no-expiry read-only share link (the retired popovers' exact two paths);
   the quick COPY port action uses the new no-mint variant. The image lightbox is the

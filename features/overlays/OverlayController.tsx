@@ -992,6 +992,13 @@ const ShareModal = lazyOverlay(
     })),
   { ssr: false },
 );
+const ShareLinkDialog = lazyOverlay(
+  () =>
+    import("@/features/files/components/core/ShareLinkDialog/ShareLinkDialog").then(
+      (m) => ({ default: m.ShareLinkDialog }),
+    ),
+  { ssr: false },
+);
 const ShareModalWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ShareModalWindow"),
   { ssr: false },
@@ -1457,6 +1464,9 @@ export default function OverlayController() {
     scraperWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "scraperWindow"),
     ),
+    shareLinkDialog: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "shareLinkDialog"),
+    ),
     shareModalWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "shareModalWindow"),
     ),
@@ -1834,6 +1844,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     scraperWindow: useAppSelector((s) =>
       selectOverlayData(s, "scraperWindow"),
+    ) as Record<string, unknown> | null,
+    shareLinkDialog: useAppSelector((s) =>
+      selectOverlayData(s, "shareLinkDialog"),
     ) as Record<string, unknown> | null,
     shareModalWindow: useAppSelector((s) =>
       selectOverlayData(s, "shareModalWindow"),
@@ -6497,6 +6510,34 @@ export default function OverlayController() {
             }
             isEditable={data?.isEditable === true}
             preferRuntime={data?.preferRuntime === true}
+          />
+        );
+      })()}
+
+      {/* shareLinkDialog — durable owner for transient media share popovers */}
+      {(() => {
+        const isOpen = isOpenById.shareLinkDialog;
+        const data = dataById.shareLinkDialog as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const resourceId =
+          typeof data?.resourceId === "string" ? data.resourceId : "";
+        if (!resourceId) {
+          console.error(
+            "[overlays] Refused to render shareLinkDialog without a file id.",
+          );
+          return null;
+        }
+        return (
+          <ShareLinkDialog
+            open
+            onOpenChange={(open) => {
+              if (!open) {
+                dispatch(closeOverlay({ overlayId: "shareLinkDialog" }));
+              }
+            }}
+            resourceId={resourceId}
+            resourceType="file"
           />
         );
       })()}

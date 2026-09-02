@@ -176,6 +176,7 @@ export const OVERLAY_IDS = [
   "matcherReviewWindow",
   "serpAnalyzerWindow",
   "setContextValueWindow",
+  "shareLinkDialog",
   "shareModal",
   "shareModalWindow",
   "singleMessageWindow",

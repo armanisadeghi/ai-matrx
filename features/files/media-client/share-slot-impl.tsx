@@ -6,30 +6,52 @@
  * graph (package body + AccessSummaryPanel) never rides the app-boot
  * ports graph. See `ports.tsx`.
  *
- * `manageLinks` is deliberately unbound here: the port slot serves package
- * shells (MediaActionToolbar / MediaLightbox) that have no dialog owner to
- * keep a ShareLinkDialog alive past the popover; the "Manage all links" row
- * hides when unbound (package contract). The block renderers' share surfaces
- * bind it via `features/files/blocks/BlockSharePopover.tsx`.
+ * `manageLinks` dispatches to the app-level ShareLinkDialog overlay. That
+ * durable owner survives this transient package popover closing, so toolbar
+ * and lightbox shells expose the same complete link-management path as the
+ * block renderers.
  */
 
 "use client";
 
-import type { ComponentType } from "react";
-import type { MediaSharePopoverProps } from "@ai-matrx/media";
-import { createMediaSharePopover } from "@ai-matrx/media/share";
+import { useCallback } from "react";
+import type {
+  MediaActionContext,
+  MediaSharePopoverProps,
+} from "@ai-matrx/media";
+import { MediaSharePopover } from "@ai-matrx/media/share";
 import {
   MediaShareAccessSummary,
   mediaShareNotifier,
 } from "@/features/files/blocks/BlockSharePopover";
+import { useOpenShareLinkDialog } from "@/features/overlays/openers/shareLinkDialog";
 
-// The slot type returns `unknown` (framework-agnostic package contract);
-// narrow it to a React component for the lazy() boundary — the package's own
-// shells perform the same narrowing.
-const ConfiguredSharePopover = createMediaSharePopover({
-  AccessSummary: MediaShareAccessSummary,
-  notify: mediaShareNotifier,
-  entityToken: "file",
-}) as ComponentType<MediaSharePopoverProps>;
+function fileIdOf(context: MediaActionContext): string | null {
+  return typeof context.ref === "string"
+    ? null
+    : (context.ref.file_id ?? null);
+}
+
+function ConfiguredSharePopover(props: MediaSharePopoverProps) {
+  const openShareLinkDialog = useOpenShareLinkDialog();
+  const manageLinks = useCallback(
+    (context: MediaActionContext) => {
+      const resourceId = fileIdOf(context);
+      if (resourceId) openShareLinkDialog({ resourceId });
+    },
+    [openShareLinkDialog],
+  );
+
+  return (
+    <MediaSharePopover
+      context={props.context}
+      onClose={props.onClose}
+      manageLinks={manageLinks}
+      AccessSummary={MediaShareAccessSummary}
+      notify={mediaShareNotifier}
+      entityToken="file"
+    />
+  );
+}
 
 export default ConfiguredSharePopover;

@@ -825,6 +825,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  shareLinkDialog: {
+    label: "Manage Share Links",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   shareModal: {
     label: "Share Modal",
     instanceMode: "multi",

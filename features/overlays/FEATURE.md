@@ -367,6 +367,10 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-09-01** — Added the singleton `shareLinkDialog` overlay as the durable
+  owner for app-level share-link management launched from transient package
+  media popovers. The media lightbox may close its Share popover immediately
+  while the canonical `ShareLinkDialog` stays mounted with the exact file id.
 - **2026-08-30** — **`agentRunWindow` is fully multi-instance.** Its opener now mints and returns an exact instance id, every controller render/close is instance-scoped, and the window carries that identity into Window Manager, URL, and agent-execution surface keys. Quick Actions and Monaco use the typed opener, so all ordinary launch paths open independent chat windows.
 - **2026-08-28** — `googleConnectWindow` became callback-aware for selected-file Drive import. The
   opener stores only `mode` and `callbackGroupId` in Redux; the window returns materialized
