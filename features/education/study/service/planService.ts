@@ -13,6 +13,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { requireUserId } from "@/utils/auth/getUserId";
 import type { StudyResult } from "../types";
 import type {
   PlanDraft,
@@ -107,7 +108,12 @@ export const planService = {
   /** The current user's plans (RLS-scoped), newest-first, optionally by status. */
   async listPlans(status?: string): Promise<StudyResult<StudyPlanRow[]>> {
     try {
-      let q = EDU().from("study_plan").select("*").is("deleted_at", null);
+      const userId = requireUserId();
+      let q = EDU()
+        .from("study_plan")
+        .select("*")
+        .eq("created_by", userId)
+        .is("deleted_at", null);
       if (status) q = q.eq("status", status);
       q = q.order("created_at", { ascending: false });
       const { data, error } = await q;
@@ -136,9 +142,11 @@ export const planService = {
    */
   async getActiveDailyItemCap(): Promise<number | null> {
     try {
+      const userId = requireUserId();
       const { data, error } = await EDU()
         .from("study_plan")
         .select("daily_item_cap")
+        .eq("created_by", userId)
         .eq("status", "active")
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
@@ -155,10 +163,12 @@ export const planService = {
   /** One plan hydrated with its days + ordered blocks. */
   async getPlan(planId: string): Promise<StudyResult<PlanWithDays | null>> {
     try {
+      const userId = requireUserId();
       const { data: plan, error: pErr } = await EDU()
         .from("study_plan")
         .select("*")
         .eq("id", planId)
+        .eq("created_by", userId)
         .is("deleted_at", null)
         .maybeSingle();
       if (pErr) return fail("getPlan", pErr);
@@ -169,12 +179,14 @@ export const planService = {
           .from("study_plan_day")
           .select("*")
           .eq("plan_id", planId)
+          .eq("created_by", userId)
           .is("deleted_at", null)
           .order("day_date", { ascending: true }),
         EDU()
           .from("study_plan_block")
           .select("*")
           .eq("plan_id", planId)
+          .eq("created_by", userId)
           .is("deleted_at", null)
           .order("day_date", { ascending: true })
           .order("ordering", { ascending: true }),
