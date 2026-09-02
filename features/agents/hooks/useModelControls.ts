@@ -242,13 +242,16 @@ export function useModelControls(
   const selectedModel = models.find((m) => m.id === selectedModelId);
 
   if (!selectedModel) {
-    // Only log error if we have models loaded but still can't find the ID
+    // A persisted agent/conversation can legitimately reference a model that
+    // is no longer in this user's current catalog (retired, unshared, or
+    // tier-restricted). Keep the explicit return error so owning surfaces can
+    // reconcile it, but do not promote catalog drift to a system_error. In
+    // particular, never dump the model records: they are unrelated catalog
+    // data and made this expected state both noisy and needlessly sensitive.
     if (models.length > 0) {
-      // access-errors: ok — dev console log; the id was checked against the already-loaded browser-local models array
-      console.error("Model not found:", {
+      console.warn("Selected model is unavailable in the current catalog", {
         selectedModelId,
-        availableModelIds: models.map((m) => m.id),
-        models,
+        availableModelCount: models.length,
       });
     }
     return {
