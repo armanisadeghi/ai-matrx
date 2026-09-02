@@ -21343,6 +21343,27 @@
         }
       }
     },
+    "/gong/public/status": {
+      "get": {
+        "tags": [
+          "Gong Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_gong_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GongServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22498,6 +22519,27 @@
         }
       }
     },
+    "/temporal-status/public/status": {
+      "get": {
+        "tags": [
+          "Temporal Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_temporal_status_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemporalServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -23079,6 +23121,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SpaceflightArticle"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jokeapi/safe-joke": {
+      "get": {
+        "tags": [
+          "JokeAPI Integrations"
+        ],
+        "summary": "Safe Joke",
+        "operationId": "safe_joke_jokeapi_safe_joke_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SafeJoke"
                 }
               }
             }
@@ -137689,6 +137752,55 @@
         "title": "GoToStatusResult",
         "description": "Safe projection of GoTo's high-level service status."
       },
+      "GongServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "gong_official_revenue_productivity_status",
+            "title": "Kind",
+            "default": "gong_official_revenue_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Gong",
+            "title": "Provider",
+            "default": "Gong"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.gong.io/",
+            "title": "Status Page",
+            "default": "https://status.gong.io/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "GongServiceStatus"
+      },
       "GoogleAdsCampaignMetric": {
         "properties": {
           "campaign_id": {
@@ -196388,6 +196500,42 @@
         ],
         "title": "RuntimeSettleResponse"
       },
+      "SafeJoke": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "jokeapi_safe_joke",
+            "title": "Kind",
+            "default": "jokeapi_safe_joke"
+          },
+          "provider": {
+            "type": "string",
+            "const": "JokeAPI",
+            "title": "Provider",
+            "default": "JokeAPI"
+          },
+          "joke_id": {
+            "type": "integer",
+            "title": "Joke Id"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "joke": {
+            "type": "string",
+            "title": "Joke"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "joke_id",
+          "category",
+          "joke"
+        ],
+        "title": "SafeJoke"
+      },
       "SandboxBindRequest": {
         "properties": {
           "organization_id": {
@@ -214471,6 +214619,50 @@
           "operational"
         ],
         "title": "TempoServiceStatus"
+      },
+      "TemporalServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "temporal_public_service_status",
+            "title": "Kind",
+            "default": "temporal_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Temporal",
+            "title": "Provider",
+            "default": "Temporal"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.temporal.io",
+            "title": "Status Page",
+            "default": "https://status.temporal.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "TemporalServiceStatus"
       },
       "TerraformRegistryPublicModuleVersion": {
         "properties": {

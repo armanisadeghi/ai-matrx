@@ -9967,6 +9967,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/gong/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_gong_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10902,6 +10919,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/temporal-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_temporal_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -11285,6 +11319,23 @@ export interface paths {
         };
         /** Latest Article */
         get: operations["latest_article_spaceflight_news_latest_article_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jokeapi/safe-joke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Safe Joke */
+        get: operations["safe_joke_jokeapi_safe_joke_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -58257,6 +58308,40 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** GongServiceStatus */
+        GongServiceStatus: {
+            /**
+             * Kind
+             * @default gong_official_revenue_productivity_status
+             * @constant
+             */
+            __kind?: "gong_official_revenue_productivity_status";
+            /**
+             * Provider
+             * @default Gong
+             * @constant
+             */
+            provider?: "Gong";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.gong.io/
+             * @constant
+             */
+            status_page?: "https://status.gong.io/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** GoogleAdsCampaignMetric */
         GoogleAdsCampaignMetric: {
             /** Campaign Id */
@@ -84195,6 +84280,27 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** SafeJoke */
+        SafeJoke: {
+            /**
+             * Kind
+             * @default jokeapi_safe_joke
+             * @constant
+             */
+            __kind?: "jokeapi_safe_joke";
+            /**
+             * Provider
+             * @default JokeAPI
+             * @constant
+             */
+            provider?: "JokeAPI";
+            /** Joke Id */
+            joke_id: number;
+            /** Category */
+            category: string;
+            /** Joke */
+            joke: string;
+        };
         /** SandboxBindRequest */
         SandboxBindRequest: {
             /**
@@ -92247,6 +92353,38 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** TemporalServiceStatus */
+        TemporalServiceStatus: {
+            /**
+             * Kind
+             * @default temporal_public_service_status
+             * @constant
+             */
+            __kind?: "temporal_public_service_status";
+            /**
+             * Provider
+             * @default Temporal
+             * @constant
+             */
+            provider?: "Temporal";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.temporal.io
+             * @constant
+             */
+            status_page?: "https://status.temporal.io";
         };
         /**
          * TerraformRegistryPublicModuleVersion
@@ -116778,6 +116916,26 @@ export interface operations {
             };
         };
     };
+    public_status_gong_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GongServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -117878,6 +118036,26 @@ export interface operations {
             };
         };
     };
+    public_status_temporal_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemporalServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -118389,6 +118567,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SpaceflightArticle"];
+                };
+            };
+        };
+    };
+    safe_joke_jokeapi_safe_joke_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafeJoke"];
                 };
             };
         };
