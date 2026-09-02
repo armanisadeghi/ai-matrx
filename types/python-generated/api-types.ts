@@ -9695,6 +9695,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/oyster/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_oyster_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10358,6 +10375,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/pluvo/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_pluvo_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -10469,6 +10503,23 @@ export interface paths {
         };
         /** Initials */
         get: operations["initials_dicebear_initials_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/placeholdco/placeholder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Placeholder */
+        get: operations["placeholder_placeholdco_placeholder_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -71133,6 +71184,40 @@ export interface components {
              */
             instance_page?: "https://watch.owncast.online/";
         };
+        /** OysterServiceStatus */
+        OysterServiceStatus: {
+            /**
+             * Kind
+             * @default oyster_official_global_employment_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "oyster_official_global_employment_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Oyster
+             * @constant
+             */
+            provider?: "Oyster";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.oysterhr.com/
+             * @constant
+             */
+            status_page?: "https://status.oysterhr.com/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * PackagistReleaseResult
          * @description Safe bounded projection of the latest tagged release for one package.
@@ -73356,6 +73441,43 @@ export interface components {
              */
             status_page?: "https://status.pixieset.com";
         };
+        /** PlaceholdCoPng */
+        PlaceholdCoPng: {
+            /**
+             * Kind
+             * @default placeholdco_placeholder_png
+             * @constant
+             */
+            __kind?: "placeholdco_placeholder_png";
+            /**
+             * Provider
+             * @default Placehold.co
+             * @constant
+             */
+            provider?: "Placehold.co";
+            /** Text */
+            text: string;
+            /**
+             * Width
+             * @default 128
+             * @constant
+             */
+            width?: 128;
+            /**
+             * Height
+             * @default 128
+             * @constant
+             */
+            height?: 128;
+            /**
+             * Media Type
+             * @default image/png
+             * @constant
+             */
+            media_type?: "image/png";
+            /** Png Base64 */
+            png_base64: string;
+        };
         /**
          * PlacementPassResult
          * @description What one pass actually did. Every field is measured, never assumed.
@@ -74085,6 +74207,38 @@ export interface components {
             publication_date: string;
             /** Article Type */
             article_type: string;
+        };
+        /** PluvoServiceStatus */
+        PluvoServiceStatus: {
+            /**
+             * Kind
+             * @default pluvo_public_service_status
+             * @constant
+             */
+            __kind?: "pluvo_public_service_status";
+            /**
+             * Provider
+             * @default Pluvo
+             * @constant
+             */
+            provider?: "Pluvo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://pluvo.statuspage.io
+             * @constant
+             */
+            status_page?: "https://pluvo.statuspage.io";
         };
         /**
          * PodcastAudioProvider
@@ -114155,6 +114309,26 @@ export interface operations {
             };
         };
     };
+    public_status_oyster_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OysterServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -114935,6 +115109,26 @@ export interface operations {
             };
         };
     };
+    public_status_pluvo_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluvoServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -115095,6 +115289,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiceBearInitialsPng"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    placeholder_placeholdco_placeholder_get: {
+        parameters: {
+            query: {
+                text: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceholdCoPng"];
                 };
             };
             /** @description Validation Error */

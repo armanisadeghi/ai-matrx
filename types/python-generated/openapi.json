@@ -21007,6 +21007,27 @@
         }
       }
     },
+    "/oyster/public/status": {
+      "get": {
+        "tags": [
+          "Oyster Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_oyster_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OysterServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -21826,6 +21847,27 @@
         }
       }
     },
+    "/pluvo/public/status": {
+      "get": {
+        "tags": [
+          "Pluvo Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_pluvo_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluvoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -22019,6 +22061,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DiceBearInitialsPng"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/placeholdco/placeholder": {
+      "get": {
+        "tags": [
+          "Placehold.co Integrations"
+        ],
+        "summary": "Placeholder",
+        "operationId": "placeholder_placeholdco_placeholder_get",
+        "parameters": [
+          {
+            "name": "text",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Text"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceholdCoPng"
                 }
               }
             }
@@ -167793,6 +167877,55 @@
         "title": "OwncastInstanceStatistics",
         "description": "Safe factual projection of Owncast's fixed official demo instance."
       },
+      "OysterServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "oyster_official_global_employment_collaboration_platform_status",
+            "title": "Kind",
+            "default": "oyster_official_global_employment_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Oyster",
+            "title": "Provider",
+            "default": "Oyster"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.oysterhr.com/",
+            "title": "Status Page",
+            "default": "https://status.oysterhr.com/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "OysterServiceStatus"
+      },
       "PackagistReleaseResult": {
         "properties": {
           "__kind": {
@@ -172834,6 +172967,55 @@
         "title": "PixiesetServiceStatus",
         "description": "Safe aggregate status projection for Pixieset's fixed status page."
       },
+      "PlaceholdCoPng": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "placeholdco_placeholder_png",
+            "title": "Kind",
+            "default": "placeholdco_placeholder_png"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Placehold.co",
+            "title": "Provider",
+            "default": "Placehold.co"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "width": {
+            "type": "integer",
+            "const": 128,
+            "title": "Width",
+            "default": 128
+          },
+          "height": {
+            "type": "integer",
+            "const": 128,
+            "title": "Height",
+            "default": 128
+          },
+          "media_type": {
+            "type": "string",
+            "const": "image/png",
+            "title": "Media Type",
+            "default": "image/png"
+          },
+          "png_base64": {
+            "type": "string",
+            "title": "Png Base64"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "png_base64"
+        ],
+        "title": "PlaceholdCoPng"
+      },
       "PlacementPassResult": {
         "properties": {
           "result_kind": {
@@ -174184,6 +174366,50 @@
         ],
         "title": "PlosPublicArticle",
         "description": "Safe factual projection of one PLOS article record."
+      },
+      "PluvoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pluvo_public_service_status",
+            "title": "Kind",
+            "default": "pluvo_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Pluvo",
+            "title": "Provider",
+            "default": "Pluvo"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://pluvo.statuspage.io",
+            "title": "Status Page",
+            "default": "https://pluvo.statuspage.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PluvoServiceStatus"
       },
       "PodcastAudioProvider": {
         "type": "string",
