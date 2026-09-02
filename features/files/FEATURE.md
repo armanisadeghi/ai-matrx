@@ -92,7 +92,9 @@ in the same change.
 20. **A selectable file thumbnail is `SelectableFileThumbnail`.** Its thumbnail opens the canonical File Preview WindowPanel, its independent 44px control changes selection, and `FileRightClickMenu` supplies the universal menu. Hosts provide labels/icons and the selection callback; they never rebuild any of those three behaviors.
 21. **`get_user_file_tree` is an authenticated Data API door.** Keep its exact signature in
     `platform.client_callable_door` before granting `authenticated`; keep `anon` and `PUBLIC`
-    revoked. `migrations/restore_get_user_file_tree_client_door.sql` asserts both halves.
+    revoked. `migrations/restore_get_user_file_tree_client_door.sql` asserts both halves. Every
+    page runs through `runFileTreeSessionOperation`; a post-preflight auth loss retries once or
+    becomes `SessionUnavailableError`, never a false file incident.
 22. **File Copy for AI starts with `<file_ref>`.** `fileInfoAgentPayload` carries `file_id` plus a
     permanent `durable_url` or `null`; `mediaSafe` replaces signed URLs and raw storage paths with
    explicit omission notes. Human Copy remains `fileInfoHumanSummary`.
@@ -111,6 +113,9 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-09-01 — File-tree auth covers the RPC await.** The matching-session preflight remains;
+  each page now also uses the shared one-retry session boundary, closing the auth-loss race between
+  preflight and `get_user_file_tree`.
 - **2026-09-01 — Newly persisted private media self-heals a revoked first object URL.** The
   package-owned element recovery asks data/files to invalidate only that file and re-read its
   durable ref once; a second failure is terminal and reaches Error Inspector. The host's blob

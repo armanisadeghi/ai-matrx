@@ -78,7 +78,10 @@ import {
 import { toast } from "@/lib/toast";
 import { buildTreeState } from "./tree-utils";
 import { isHiddenFromUserTree } from "@/features/files/utils/folder-conventions";
-import { hasMatchingFileTreeSession } from "./file-tree-auth-boundary";
+import {
+  hasMatchingFileTreeSession,
+  runFileTreeSessionOperation,
+} from "./file-tree-auth-boundary";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
 import { invalidateOfficeExtraction } from "@/features/files/hooks/office-extraction-cache";
 import {
@@ -288,13 +291,15 @@ export const loadUserFileTree = createAsyncThunk<
     // same connection.
     const rows: ReturnType<typeof parseCloudTreeRows> = [];
     for (let page = 0; page < TREE_MAX_PAGES; page += 1) {
-      const { data, error } = await supabase.rpc("get_user_file_tree", {
-        p_user_id: userId,
-        p_limit: TREE_PAGE_SIZE,
-        p_offset: page * TREE_PAGE_SIZE,
-        p_include_folders: true,
-        p_include_deleted: false,
-      });
+      const { data, error } = await runFileTreeSessionOperation(() =>
+        supabase.rpc("get_user_file_tree", {
+          p_user_id: userId,
+          p_limit: TREE_PAGE_SIZE,
+          p_offset: page * TREE_PAGE_SIZE,
+          p_include_folders: true,
+          p_include_deleted: false,
+        }),
+      );
 
       if (error) {
         dispatch(setTreeStatus({ status: "error", error: error.message }));
