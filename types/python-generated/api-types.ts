@@ -9933,6 +9933,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/fathom-video/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_fathom_video_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/read-ai/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_read_ai_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10834,6 +10868,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/honeycomb/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_honeycomb_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/render-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_render_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -11183,6 +11251,40 @@ export interface paths {
         };
         /** Random Question */
         get: operations["random_question_open_trivia_db_random_question_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bored-api/random-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Random Activity */
+        get: operations["random_activity_bored_api_random_activity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/spaceflight-news/latest-article": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest Article */
+        get: operations["latest_article_spaceflight_news_latest_article_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -38588,6 +38690,39 @@ export interface components {
              */
             instance_page?: "https://bookwyrm.social/";
         };
+        /** BoredActivity */
+        BoredActivity: {
+            /**
+             * Kind
+             * @default bored_activity
+             * @constant
+             */
+            __kind?: "bored_activity";
+            /**
+             * Provider
+             * @default Bored API
+             * @constant
+             */
+            provider?: "Bored API";
+            /** Activity Id */
+            activity_id: string;
+            /** Activity */
+            activity: string;
+            /** Activity Type */
+            activity_type: string;
+            /** Participants */
+            participants: number;
+            /** Availability */
+            availability: number;
+            /** Price */
+            price: number;
+            /** Accessibility */
+            accessibility: string;
+            /** Duration */
+            duration: string;
+            /** Kid Friendly */
+            kid_friendly: boolean;
+        };
         /** BoundAgentTruth */
         BoundAgentTruth: {
             /** Id */
@@ -54991,6 +55126,40 @@ export interface components {
              */
             verdict?: string;
         };
+        /** FathomVideoServiceStatus */
+        FathomVideoServiceStatus: {
+            /**
+             * Kind
+             * @default fathom_video_official_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "fathom_video_official_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Fathom Video
+             * @constant
+             */
+            provider?: "Fathom Video";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.fathom.video
+             * @constant
+             */
+            status_page?: "https://status.fathom.video";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** FaultDomainCount */
         FaultDomainCount: {
             /** Fault Domain */
@@ -59591,6 +59760,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.honeybadger.io";
+        };
+        /** HoneycombServiceStatus */
+        HoneycombServiceStatus: {
+            /**
+             * Kind
+             * @default honeycomb_public_service_status
+             * @constant
+             */
+            __kind?: "honeycomb_public_service_status";
+            /**
+             * Provider
+             * @default Honeycomb
+             * @constant
+             */
+            provider?: "Honeycomb";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.honeycomb.io
+             * @constant
+             */
+            status_page?: "https://status.honeycomb.io";
         };
         /**
          * HootsuiteServiceStatus
@@ -79663,6 +79864,40 @@ export interface components {
              */
             created_at: string;
         };
+        /** ReadAIServiceStatus */
+        ReadAIServiceStatus: {
+            /**
+             * Kind
+             * @default read_ai_official_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "read_ai_official_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Read AI
+             * @constant
+             */
+            provider?: "Read AI";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.read.ai
+             * @constant
+             */
+            status_page?: "https://status.read.ai";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** ReadDocumentRequest */
         ReadDocumentRequest: {
             /** Connection Id */
@@ -81023,6 +81258,38 @@ export interface components {
             width_px: number;
             /** Height Px */
             height_px: number;
+        };
+        /** RenderServiceStatus */
+        RenderServiceStatus: {
+            /**
+             * Kind
+             * @default render_public_service_status
+             * @constant
+             */
+            __kind?: "render_public_service_status";
+            /**
+             * Provider
+             * @default Render
+             * @constant
+             */
+            provider?: "Render";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.render.com
+             * @constant
+             */
+            status_page?: "https://status.render.com";
         };
         /** RenderThumbnailRequest */
         RenderThumbnailRequest: {
@@ -88467,6 +88734,43 @@ export interface components {
             is_stale?: boolean | null;
             /** Scrape Status */
             scrape_status?: ("pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated" | "ignored" | "content_mismatch") | null;
+        };
+        /** SpaceflightArticle */
+        SpaceflightArticle: {
+            /**
+             * Kind
+             * @default spaceflight_news_article
+             * @constant
+             */
+            __kind?: "spaceflight_news_article";
+            /**
+             * Provider
+             * @default Spaceflight News API
+             * @constant
+             */
+            provider?: "Spaceflight News API";
+            /** Article Id */
+            article_id: number;
+            /** Title */
+            title: string;
+            /** News Site */
+            news_site: string;
+            /** Authors */
+            authors: string[];
+            /** Summary */
+            summary: string;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Featured */
+            featured: boolean;
         };
         /** SparkHireServiceStatus */
         SparkHireServiceStatus: {
@@ -116434,6 +116738,46 @@ export interface operations {
             };
         };
     };
+    public_status_fathom_video_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FathomVideoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_read_ai_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadAIServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -117494,6 +117838,46 @@ export interface operations {
             };
         };
     };
+    public_status_honeycomb_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HoneycombServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_render_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RenderServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -117965,6 +118349,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TriviaQuestion"];
+                };
+            };
+        };
+    };
+    random_activity_bored_api_random_activity_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoredActivity"];
+                };
+            };
+        };
+    };
+    latest_article_spaceflight_news_latest_article_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpaceflightArticle"];
                 };
             };
         };

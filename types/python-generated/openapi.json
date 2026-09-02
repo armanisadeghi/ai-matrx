@@ -21301,6 +21301,48 @@
         }
       }
     },
+    "/fathom-video/public/status": {
+      "get": {
+        "tags": [
+          "Fathom Video Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_fathom_video_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FathomVideoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/read-ai/public/status": {
+      "get": {
+        "tags": [
+          "Read AI Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_read_ai_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadAIServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22414,6 +22456,48 @@
         }
       }
     },
+    "/honeycomb/public/status": {
+      "get": {
+        "tags": [
+          "Honeycomb Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_honeycomb_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HoneycombServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/render-status/public/status": {
+      "get": {
+        "tags": [
+          "Render Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_render_status_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -22953,6 +23037,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TriviaQuestion"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bored-api/random-activity": {
+      "get": {
+        "tags": [
+          "Bored API Integrations"
+        ],
+        "summary": "Random Activity",
+        "operationId": "random_activity_bored_api_random_activity_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoredActivity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spaceflight-news/latest-article": {
+      "get": {
+        "tags": [
+          "Spaceflight News API Integrations"
+        ],
+        "summary": "Latest Article",
+        "operationId": "latest_article_spaceflight_news_latest_article_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpaceflightArticle"
                 }
               }
             }
@@ -90559,6 +90685,72 @@
         "title": "BookWyrmInstanceStatistics",
         "description": "Safe factual projection of the fixed public BookWyrm instance."
       },
+      "BoredActivity": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "bored_activity",
+            "title": "Kind",
+            "default": "bored_activity"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Bored API",
+            "title": "Provider",
+            "default": "Bored API"
+          },
+          "activity_id": {
+            "type": "string",
+            "title": "Activity Id"
+          },
+          "activity": {
+            "type": "string",
+            "title": "Activity"
+          },
+          "activity_type": {
+            "type": "string",
+            "title": "Activity Type"
+          },
+          "participants": {
+            "type": "integer",
+            "title": "Participants"
+          },
+          "availability": {
+            "type": "number",
+            "title": "Availability"
+          },
+          "price": {
+            "type": "number",
+            "title": "Price"
+          },
+          "accessibility": {
+            "type": "string",
+            "title": "Accessibility"
+          },
+          "duration": {
+            "type": "string",
+            "title": "Duration"
+          },
+          "kid_friendly": {
+            "type": "boolean",
+            "title": "Kid Friendly"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "activity_id",
+          "activity",
+          "activity_type",
+          "participants",
+          "availability",
+          "price",
+          "accessibility",
+          "duration",
+          "kid_friendly"
+        ],
+        "title": "BoredActivity"
+      },
       "BoundAgentTruth": {
         "properties": {
           "id": {
@@ -130543,6 +130735,55 @@
         "title": "FalseReapRuling",
         "description": "A human's verdict on a reap. `why` is REQUIRED — a ruling with no stated reason is\nnot usable by the next person (or agent) who reads the event log."
       },
+      "FathomVideoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "fathom_video_official_collaboration_platform_status",
+            "title": "Kind",
+            "default": "fathom_video_official_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Fathom Video",
+            "title": "Provider",
+            "default": "Fathom Video"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.fathom.video",
+            "title": "Status Page",
+            "default": "https://status.fathom.video"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "FathomVideoServiceStatus"
+      },
       "FaultDomainCount": {
         "properties": {
           "fault_domain": {
@@ -140513,6 +140754,50 @@
           "indicator"
         ],
         "title": "HoneybadgerServiceStatus"
+      },
+      "HoneycombServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "honeycomb_public_service_status",
+            "title": "Kind",
+            "default": "honeycomb_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Honeycomb",
+            "title": "Provider",
+            "default": "Honeycomb"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.honeycomb.io",
+            "title": "Status Page",
+            "default": "https://status.honeycomb.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "HoneycombServiceStatus"
       },
       "HootsuiteServiceStatus": {
         "properties": {
@@ -185760,6 +186045,55 @@
         ],
         "title": "RawPayloadEvidenceOut"
       },
+      "ReadAIServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "read_ai_official_collaboration_platform_status",
+            "title": "Kind",
+            "default": "read_ai_official_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Read AI",
+            "title": "Provider",
+            "default": "Read AI"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.read.ai",
+            "title": "Status Page",
+            "default": "https://status.read.ai"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "ReadAIServiceStatus"
+      },
       "ReadDocumentRequest": {
         "properties": {
           "connection_id": {
@@ -189005,6 +189339,50 @@
           "height_px"
         ],
         "title": "RenderResponse"
+      },
+      "RenderServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "render_public_service_status",
+            "title": "Kind",
+            "default": "render_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Render",
+            "title": "Provider",
+            "default": "Render"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.render.com",
+            "title": "Status Page",
+            "default": "https://status.render.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "RenderServiceStatus"
       },
       "RenderThumbnailRequest": {
         "properties": {
@@ -206366,6 +206744,72 @@
         },
         "type": "object",
         "title": "SourceUpdate"
+      },
+      "SpaceflightArticle": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "spaceflight_news_article",
+            "title": "Kind",
+            "default": "spaceflight_news_article"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Spaceflight News API",
+            "title": "Provider",
+            "default": "Spaceflight News API"
+          },
+          "article_id": {
+            "type": "integer",
+            "title": "Article Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "news_site": {
+            "type": "string",
+            "title": "News Site"
+          },
+          "authors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Authors"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "published_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Published At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "featured": {
+            "type": "boolean",
+            "title": "Featured"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "article_id",
+          "title",
+          "news_site",
+          "authors",
+          "summary",
+          "published_at",
+          "updated_at",
+          "featured"
+        ],
+        "title": "SpaceflightArticle"
       },
       "SparkHireServiceStatus": {
         "properties": {
