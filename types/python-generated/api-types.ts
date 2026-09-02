@@ -9984,6 +9984,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/salesloft/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_salesloft_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10936,6 +10953,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/prefect-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_prefect_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -11336,6 +11370,23 @@ export interface paths {
         };
         /** Safe Joke */
         get: operations["safe_joke_jokeapi_safe_joke_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nobel-prize/latest-award": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest Award */
+        get: operations["latest_award_nobel_prize_latest_award_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -69825,6 +69876,43 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** NobelAward */
+        NobelAward: {
+            /**
+             * Kind
+             * @default nobel_prize_award
+             * @constant
+             */
+            __kind?: "nobel_prize_award";
+            /**
+             * Provider
+             * @default Nobel Prize API
+             * @constant
+             */
+            provider?: "Nobel Prize API";
+            /** Award Year */
+            award_year: number;
+            /** Category */
+            category: string;
+            /**
+             * Date Awarded
+             * Format: date
+             */
+            date_awarded: string;
+            /** Laureates */
+            laureates: components["schemas"]["NobelLaureate"][];
+        };
+        /** NobelLaureate */
+        NobelLaureate: {
+            /** Laureate Id */
+            laureate_id: string;
+            /** Name */
+            name: string;
+            /** Motivation */
+            motivation: string;
+            /** Portion */
+            portion: string;
+        };
         /**
          * NodeAgentChatContext
          * @description Everything the studio needs to open a Node Agent chat for one node:
@@ -76410,6 +76498,38 @@ export interface components {
             charCount?: number | null;
         } & {
             [key: string]: unknown;
+        };
+        /** PrefectServiceStatus */
+        PrefectServiceStatus: {
+            /**
+             * Kind
+             * @default prefect_public_service_status
+             * @constant
+             */
+            __kind?: "prefect_public_service_status";
+            /**
+             * Provider
+             * @default Prefect
+             * @constant
+             */
+            provider?: "Prefect";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.prefect.io/
+             * @constant
+             */
+            status_page?: "https://status.prefect.io/";
         };
         /** PreferencesWriteResponse */
         PreferencesWriteResponse: {
@@ -84300,6 +84420,40 @@ export interface components {
             category: string;
             /** Joke */
             joke: string;
+        };
+        /** SalesloftServiceStatus */
+        SalesloftServiceStatus: {
+            /**
+             * Kind
+             * @default salesloft_official_revenue_productivity_status
+             * @constant
+             */
+            __kind?: "salesloft_official_revenue_productivity_status";
+            /**
+             * Provider
+             * @default Salesloft
+             * @constant
+             */
+            provider?: "Salesloft";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.salesloft.com
+             * @constant
+             */
+            status_page?: "https://status.salesloft.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** SandboxBindRequest */
         SandboxBindRequest: {
@@ -116936,6 +117090,26 @@ export interface operations {
             };
         };
     };
+    public_status_salesloft_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalesloftServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -118056,6 +118230,26 @@ export interface operations {
             };
         };
     };
+    public_status_prefect_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrefectServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -118587,6 +118781,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SafeJoke"];
+                };
+            };
+        };
+    };
+    latest_award_nobel_prize_latest_award_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NobelAward"];
                 };
             };
         };

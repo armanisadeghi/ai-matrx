@@ -21364,6 +21364,27 @@
         }
       }
     },
+    "/salesloft/public/status": {
+      "get": {
+        "tags": [
+          "Salesloft Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_salesloft_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesloftServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22540,6 +22561,27 @@
         }
       }
     },
+    "/prefect-status/public/status": {
+      "get": {
+        "tags": [
+          "Prefect Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_prefect_status_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrefectServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -23142,6 +23184,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SafeJoke"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nobel-prize/latest-award": {
+      "get": {
+        "tags": [
+          "Nobel Prize API Integrations"
+        ],
+        "summary": "Latest Award",
+        "operationId": "latest_award_nobel_prize_latest_award_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NobelAward"
                 }
               }
             }
@@ -163369,6 +163432,80 @@
         "title": "NextivaStatusResult",
         "description": "Safe projection of Nextiva's high-level service status."
       },
+      "NobelAward": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "nobel_prize_award",
+            "title": "Kind",
+            "default": "nobel_prize_award"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Nobel Prize API",
+            "title": "Provider",
+            "default": "Nobel Prize API"
+          },
+          "award_year": {
+            "type": "integer",
+            "title": "Award Year"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "date_awarded": {
+            "type": "string",
+            "format": "date",
+            "title": "Date Awarded"
+          },
+          "laureates": {
+            "items": {
+              "$ref": "#/components/schemas/NobelLaureate"
+            },
+            "type": "array",
+            "title": "Laureates"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "award_year",
+          "category",
+          "date_awarded",
+          "laureates"
+        ],
+        "title": "NobelAward"
+      },
+      "NobelLaureate": {
+        "properties": {
+          "laureate_id": {
+            "type": "string",
+            "title": "Laureate Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "motivation": {
+            "type": "string",
+            "title": "Motivation"
+          },
+          "portion": {
+            "type": "string",
+            "title": "Portion"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "laureate_id",
+          "name",
+          "motivation",
+          "portion"
+        ],
+        "title": "NobelLaureate"
+      },
       "NodeAgentChatContext": {
         "properties": {
           "mandate_key": {
@@ -177731,6 +177868,50 @@
         ],
         "title": "PreFetchedUrl",
         "description": "A webpage entry that has already been scraped by the client.\n\nWhen the frontend has already fetched a page (e.g. via /scraper/quick-scrape)\nit can embed the content here instead of a plain URL string. The server will\nuse this content directly and skip re-scraping."
+      },
+      "PrefectServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "prefect_public_service_status",
+            "title": "Kind",
+            "default": "prefect_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Prefect",
+            "title": "Provider",
+            "default": "Prefect"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.prefect.io/",
+            "title": "Status Page",
+            "default": "https://status.prefect.io/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PrefectServiceStatus"
       },
       "PreferencesWriteResponse": {
         "properties": {
@@ -196535,6 +196716,55 @@
           "joke"
         ],
         "title": "SafeJoke"
+      },
+      "SalesloftServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "salesloft_official_revenue_productivity_status",
+            "title": "Kind",
+            "default": "salesloft_official_revenue_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Salesloft",
+            "title": "Provider",
+            "default": "Salesloft"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.salesloft.com",
+            "title": "Status Page",
+            "default": "https://status.salesloft.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SalesloftServiceStatus"
       },
       "SandboxBindRequest": {
         "properties": {
