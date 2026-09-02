@@ -7,6 +7,11 @@ export function routeRequiresAuthentication(pathname: string): boolean {
     pathname.startsWith("/dashboard/") ||
     pathname === "/chat" ||
     pathname.startsWith("/chat/") ||
+    // The authenticated Flashcards tool mounts owned-deck, category, and
+    // study-data clients. Anonymous decks have their own `/p/e/fc_set/*`
+    // surface, so guests must stop here before any of those clients mount.
+    pathname === "/education/flashcards" ||
+    pathname.startsWith("/education/flashcards/") ||
     // Agent authoring is an account workspace. The public acquisition page is
     // `/agents`, but builders must never mount their data clients as `anon`.
     /^\/agents\/(?:new\/(?:builder|customizer|instant|tabs)|[^/]+\/build)(?:\/|$)/.test(
