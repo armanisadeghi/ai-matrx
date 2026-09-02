@@ -9797,6 +9797,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/eloomi/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_eloomi_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10562,6 +10579,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/courier/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_courier_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -10775,6 +10809,23 @@ export interface paths {
         };
         /** Random Image */
         get: operations["random_image_dogceo_random_image_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/thecatapi/random-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Random Image */
+        get: operations["random_image_thecatapi_random_image_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -41311,6 +41362,29 @@ export interface components {
              */
             cost_usd?: number;
         };
+        /** CatImage */
+        CatImage: {
+            /**
+             * Kind
+             * @default thecatapi_random_image
+             * @constant
+             */
+            __kind?: "thecatapi_random_image";
+            /**
+             * Provider
+             * @default The Cat API
+             * @constant
+             */
+            provider?: "The Cat API";
+            /** Id */
+            id: string;
+            /** Image Url */
+            image_url: string;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+        };
         /** CataasImage */
         CataasImage: {
             /**
@@ -46850,6 +46924,38 @@ export interface components {
             /** Total Tax */
             total_tax?: string | null;
         };
+        /** CourierServiceStatus */
+        CourierServiceStatus: {
+            /**
+             * Kind
+             * @default courier_public_service_status
+             * @constant
+             */
+            __kind?: "courier_public_service_status";
+            /**
+             * Provider
+             * @default Courier
+             * @constant
+             */
+            provider?: "Courier";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.courier.com
+             * @constant
+             */
+            status_page?: "https://status.courier.com";
+        };
         /**
          * CourseraPublicCourse
          * @description Safe bounded projection of one public Coursera course.
@@ -52085,6 +52191,40 @@ export interface components {
             resolved?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /** EloomiServiceStatus */
+        EloomiServiceStatus: {
+            /**
+             * Kind
+             * @default eloomi_official_learning_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "eloomi_official_learning_collaboration_platform_status";
+            /**
+             * Provider
+             * @default eloomi
+             * @constant
+             */
+            provider?: "eloomi";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.eloomi.com
+             * @constant
+             */
+            status_page?: "https://status.eloomi.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * EmailOctopusServiceStatus
@@ -115167,6 +115307,26 @@ export interface operations {
             };
         };
     };
+    public_status_eloomi_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EloomiServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -116067,6 +116227,26 @@ export interface operations {
             };
         };
     };
+    public_status_courier_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourierServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -116378,6 +116558,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DogImage"];
+                };
+            };
+        };
+    };
+    random_image_thecatapi_random_image_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatImage"];
                 };
             };
         };
