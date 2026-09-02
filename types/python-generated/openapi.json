@@ -21259,6 +21259,48 @@
         }
       }
     },
+    "/mindtickle/public/status": {
+      "get": {
+        "tags": [
+          "MindTickle Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_mindtickle_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MindTickleServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seismic/public/status": {
+      "get": {
+        "tags": [
+          "Seismic Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_seismic_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeismicServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22330,6 +22372,48 @@
         }
       }
     },
+    "/svix/public/status": {
+      "get": {
+        "tags": [
+          "Svix Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_svix_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SvixServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inngest/public/status": {
+      "get": {
+        "tags": [
+          "Inngest Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_inngest_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InngestServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -22827,6 +22911,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/XkcdComic"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/advice-slip/random-advice": {
+      "get": {
+        "tags": [
+          "Advice Slip Integrations"
+        ],
+        "summary": "Random Advice",
+        "operationId": "random_advice_advice_slip_random_advice_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdviceSlipRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/open-trivia-db/random-question": {
+      "get": {
+        "tags": [
+          "Open Trivia DB Integrations"
+        ],
+        "summary": "Random Question",
+        "operationId": "random_question_open_trivia_db_random_question_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriviaQuestion"
                 }
               }
             }
@@ -78314,6 +78440,37 @@
           "quota_updates"
         ],
         "title": "AdoptIntentResponse"
+      },
+      "AdviceSlipRecord": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "advice_slip_record",
+            "title": "Kind",
+            "default": "advice_slip_record"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Advice Slip",
+            "title": "Provider",
+            "default": "Advice Slip"
+          },
+          "advice_id": {
+            "type": "integer",
+            "title": "Advice Id"
+          },
+          "advice": {
+            "type": "string",
+            "title": "Advice"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "advice_id",
+          "advice"
+        ],
+        "title": "AdviceSlipRecord"
       },
       "AgentAppInputPart": {
         "properties": {
@@ -143844,6 +144001,50 @@
         ],
         "title": "InlineToolSpec"
       },
+      "InngestServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "inngest_public_service_status",
+            "title": "Kind",
+            "default": "inngest_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Inngest",
+            "title": "Provider",
+            "default": "Inngest"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.inngest.com/",
+            "title": "Status Page",
+            "default": "https://status.inngest.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "InngestServiceStatus"
+      },
       "InpaintParams": {
         "properties": {
           "method": {
@@ -160181,6 +160382,55 @@
         ],
         "title": "MilanoteStatusResult",
         "description": "Safe projection of Milanote's high-level service status."
+      },
+      "MindTickleServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mindtickle_official_learning_collaboration_platform_status",
+            "title": "Kind",
+            "default": "mindtickle_official_learning_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "MindTickle",
+            "title": "Provider",
+            "default": "MindTickle"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.mindtickle.com",
+            "title": "Status Page",
+            "default": "https://status.mindtickle.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "MindTickleServiceStatus"
       },
       "MintControlRequest": {
         "properties": {
@@ -198125,6 +198375,55 @@
         "title": "SeededCompetitor",
         "description": "One competitor that made it into the request, and why it qualified."
       },
+      "SeismicServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "seismic_official_collaboration_platform_status",
+            "title": "Kind",
+            "default": "seismic_official_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Seismic",
+            "title": "Provider",
+            "default": "Seismic"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.seismic.com",
+            "title": "Status Page",
+            "default": "https://status.seismic.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SeismicServiceStatus"
+      },
       "SelectOptionCommand": {
         "properties": {
           "command": {
@@ -210058,6 +210357,50 @@
         ],
         "title": "SurvicateServiceStatus"
       },
+      "SvixServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "svix_public_service_status",
+            "title": "Kind",
+            "default": "svix_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Svix",
+            "title": "Provider",
+            "default": "Svix"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.svix.com",
+            "title": "Status Page",
+            "default": "https://status.svix.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SvixServiceStatus"
+      },
       "SweepRequest": {
         "properties": {
           "change_type": {
@@ -218886,6 +219229,70 @@
         "type": "object",
         "title": "TriggerReviewRequest",
         "description": "Optional body for a manual review.\n\n``example_ids`` is the \"review THIS conversation\" door: the automatic window\nfilters ``updated_at <= settle_cutoff`` so a session someone is still using\nis never reviewed mid-thought — correct for the drain, and exactly wrong for\na person staring at a bad conversation right now. Naming ids reviews those\nand only those, and never advances the watermark."
+      },
+      "TriviaQuestion": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "open_trivia_question",
+            "title": "Kind",
+            "default": "open_trivia_question"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Open Trivia DB",
+            "title": "Provider",
+            "default": "Open Trivia DB"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "easy",
+              "medium",
+              "hard"
+            ],
+            "title": "Difficulty"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "correct_answer": {
+            "type": "string",
+            "title": "Correct Answer"
+          },
+          "incorrect_answers": {
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 3,
+            "title": "Incorrect Answers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "category",
+          "difficulty",
+          "question",
+          "correct_answer",
+          "incorrect_answers"
+        ],
+        "title": "TriviaQuestion"
       },
       "TtsDialogueTurn": {
         "properties": {

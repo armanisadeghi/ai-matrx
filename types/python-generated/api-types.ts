@@ -9899,6 +9899,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mindtickle/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_mindtickle_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seismic/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_seismic_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10766,6 +10800,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/svix/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_svix_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inngest/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_inngest_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -11081,6 +11149,40 @@ export interface paths {
         };
         /** Latest Comic */
         get: operations["latest_comic_xkcd_latest_comic_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/advice-slip/random-advice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Random Advice */
+        get: operations["random_advice_advice_slip_random_advice_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/open-trivia-db/random-question": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Random Question */
+        get: operations["random_question_open_trivia_db_random_question_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -33010,6 +33112,25 @@ export interface components {
             quota_updates: {
                 [key: string]: number;
             };
+        };
+        /** AdviceSlipRecord */
+        AdviceSlipRecord: {
+            /**
+             * Kind
+             * @default advice_slip_record
+             * @constant
+             */
+            __kind?: "advice_slip_record";
+            /**
+             * Provider
+             * @default Advice Slip
+             * @constant
+             */
+            provider?: "Advice Slip";
+            /** Advice Id */
+            advice_id: number;
+            /** Advice */
+            advice: string;
         };
         /** AgentAppInputPart */
         AgentAppInputPart: {
@@ -61128,6 +61249,38 @@ export interface components {
             description?: string;
             input_schema?: components["schemas"]["CustomToolInputSchema"];
         };
+        /** InngestServiceStatus */
+        InngestServiceStatus: {
+            /**
+             * Kind
+             * @default inngest_public_service_status
+             * @constant
+             */
+            __kind?: "inngest_public_service_status";
+            /**
+             * Provider
+             * @default Inngest
+             * @constant
+             */
+            provider?: "Inngest";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.inngest.com/
+             * @constant
+             */
+            status_page?: "https://status.inngest.com/";
+        };
         /** InpaintParams */
         InpaintParams: {
             /**
@@ -68010,6 +68163,40 @@ export interface components {
              * @constant
              */
             status_url?: "https://status.milanote.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /** MindTickleServiceStatus */
+        MindTickleServiceStatus: {
+            /**
+             * Kind
+             * @default mindtickle_official_learning_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "mindtickle_official_learning_collaboration_platform_status";
+            /**
+             * Provider
+             * @default MindTickle
+             * @constant
+             */
+            provider?: "MindTickle";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.mindtickle.com
+             * @constant
+             */
+            status_page?: "https://status.mindtickle.com";
             /**
              * Indicator
              * @enum {string}
@@ -84943,6 +85130,40 @@ export interface components {
              */
             explicitly_enabled?: boolean;
         };
+        /** SeismicServiceStatus */
+        SeismicServiceStatus: {
+            /**
+             * Kind
+             * @default seismic_official_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "seismic_official_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Seismic
+             * @constant
+             */
+            provider?: "Seismic";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.seismic.com
+             * @constant
+             */
+            status_page?: "https://status.seismic.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** SelectOptionCommand */
         SelectOptionCommand: {
             /**
@@ -90199,6 +90420,38 @@ export interface components {
              */
             status_page?: "https://status.survicate.com/";
         };
+        /** SvixServiceStatus */
+        SvixServiceStatus: {
+            /**
+             * Kind
+             * @default svix_public_service_status
+             * @constant
+             */
+            __kind?: "svix_public_service_status";
+            /**
+             * Provider
+             * @default Svix
+             * @constant
+             */
+            provider?: "Svix";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.svix.com
+             * @constant
+             */
+            status_page?: "https://status.svix.com";
+        };
         /** SweepRequest */
         SweepRequest: {
             /**
@@ -93886,6 +94139,38 @@ export interface components {
             task_id?: string | null;
             /** Example Ids */
             example_ids?: string[] | null;
+        };
+        /** TriviaQuestion */
+        TriviaQuestion: {
+            /**
+             * Kind
+             * @default open_trivia_question
+             * @constant
+             */
+            __kind?: "open_trivia_question";
+            /**
+             * Provider
+             * @default Open Trivia DB
+             * @constant
+             */
+            provider?: "Open Trivia DB";
+            /** Category */
+            category: string;
+            /**
+             * Difficulty
+             * @enum {string}
+             */
+            difficulty: "easy" | "medium" | "hard";
+            /** Question */
+            question: string;
+            /** Correct Answer */
+            correct_answer: string;
+            /** Incorrect Answers */
+            incorrect_answers: [
+                string,
+                string,
+                string
+            ];
         };
         /**
          * TtsDialogueTurn
@@ -116109,6 +116394,46 @@ export interface operations {
             };
         };
     };
+    public_status_mindtickle_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MindTickleServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_seismic_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeismicServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -117129,6 +117454,46 @@ export interface operations {
             };
         };
     };
+    public_status_svix_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SvixServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_inngest_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InngestServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -117560,6 +117925,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["XkcdComic"];
+                };
+            };
+        };
+    };
+    random_advice_advice_slip_random_advice_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdviceSlipRecord"];
+                };
+            };
+        };
+    };
+    random_question_open_trivia_db_random_question_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriviaQuestion"];
                 };
             };
         };
