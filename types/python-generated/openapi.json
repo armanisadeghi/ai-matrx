@@ -20965,6 +20965,48 @@
         }
       }
     },
+    "/gusto/public/status": {
+      "get": {
+        "tags": [
+          "Gusto Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_gusto_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GustoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/when-i-work/public/status": {
+      "get": {
+        "tags": [
+          "When I Work Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_when_i_work_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhenIWorkServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -21742,6 +21784,48 @@
         }
       }
     },
+    "/storyxpress/public/status": {
+      "get": {
+        "tags": [
+          "StoryXpress Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_storyxpress_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryXpressServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workcast/public/status": {
+      "get": {
+        "tags": [
+          "WorkCast Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_workcast_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCastServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -21851,6 +21935,90 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RoboHashAvatar"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uiavatars/avatar": {
+      "get": {
+        "tags": [
+          "UI Avatars Integrations"
+        ],
+        "summary": "Avatar",
+        "operationId": "avatar_uiavatars_avatar_get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UIAvatarsAvatar"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dicebear/initials": {
+      "get": {
+        "tags": [
+          "DiceBear Integrations"
+        ],
+        "summary": "Initials",
+        "operationId": "initials_dicebear_initials_get",
+        "parameters": [
+          {
+            "name": "seed",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Seed"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiceBearInitialsPng"
                 }
               }
             }
@@ -118595,6 +118763,55 @@
         "title": "DialpadStatusResult",
         "description": "Safe projection of Dialpad's high-level service status."
       },
+      "DiceBearInitialsPng": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dicebear_initials_png",
+            "title": "Kind",
+            "default": "dicebear_initials_png"
+          },
+          "provider": {
+            "type": "string",
+            "const": "DiceBear",
+            "title": "Provider",
+            "default": "DiceBear"
+          },
+          "seed": {
+            "type": "string",
+            "title": "Seed"
+          },
+          "width": {
+            "type": "integer",
+            "const": 128,
+            "title": "Width",
+            "default": 128
+          },
+          "height": {
+            "type": "integer",
+            "const": 128,
+            "title": "Height",
+            "default": 128
+          },
+          "media_type": {
+            "type": "string",
+            "const": "image/png",
+            "title": "Media Type",
+            "default": "image/png"
+          },
+          "png_base64": {
+            "type": "string",
+            "title": "Png Base64"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "seed",
+          "png_base64"
+        ],
+        "title": "DiceBearInitialsPng"
+      },
       "DictionaryConfig": {
         "properties": {
           "entries": {
@@ -137305,6 +137522,55 @@
         ],
         "title": "GuruServiceStatus",
         "description": "Safe aggregate status projection for Guru's fixed status page."
+      },
+      "GustoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "gusto_official_hr_payroll_collaboration_platform_status",
+            "title": "Kind",
+            "default": "gusto_official_hr_payroll_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Gusto",
+            "title": "Provider",
+            "default": "Gusto"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.gusto.com",
+            "title": "Status Page",
+            "default": "https://status.gusto.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "GustoServiceStatus"
       },
       "HEPDataPublicRecord": {
         "properties": {
@@ -206222,6 +206488,50 @@
         "title": "StoryAngleRulingResult",
         "description": "The human-owned status written to one story angle."
       },
+      "StoryXpressServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "storyxpress_public_service_status",
+            "title": "Kind",
+            "default": "storyxpress_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "StoryXpress",
+            "title": "Provider",
+            "default": "StoryXpress"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://storyxpress.statuspage.io",
+            "title": "Status Page",
+            "default": "https://storyxpress.statuspage.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "StoryXpressServiceStatus"
+      },
       "StovaStatusResult": {
         "properties": {
           "__kind": {
@@ -216619,6 +216929,55 @@
         "title": "TypeformServiceStatus",
         "description": "Safe aggregate status projection for Typeform's fixed status page."
       },
+      "UIAvatarsAvatar": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "uiavatars_initials_png",
+            "title": "Kind",
+            "default": "uiavatars_initials_png"
+          },
+          "provider": {
+            "type": "string",
+            "const": "UI Avatars",
+            "title": "Provider",
+            "default": "UI Avatars"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "width": {
+            "type": "integer",
+            "const": 128,
+            "title": "Width",
+            "default": 128
+          },
+          "height": {
+            "type": "integer",
+            "const": 128,
+            "title": "Height",
+            "default": 128
+          },
+          "media_type": {
+            "type": "string",
+            "const": "image/png",
+            "title": "Media Type",
+            "default": "image/png"
+          },
+          "png_base64": {
+            "type": "string",
+            "title": "Png Base64"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "png_base64"
+        ],
+        "title": "UIAvatarsAvatar"
+      },
       "UXCamServiceStatus": {
         "properties": {
           "__kind": {
@@ -226198,6 +226557,55 @@
         "title": "WellcomePublicWork",
         "description": "Safe bounded projection of one public Wellcome catalogue work."
       },
+      "WhenIWorkServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "when_i_work_official_workforce_scheduling_collaboration_platform_status",
+            "title": "Kind",
+            "default": "when_i_work_official_workforce_scheduling_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "When I Work",
+            "title": "Provider",
+            "default": "When I Work"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.wheniwork.com",
+            "title": "Status Page",
+            "default": "https://status.wheniwork.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "WhenIWorkServiceStatus"
+      },
       "WhimsicalStatusResult": {
         "properties": {
           "__kind": {
@@ -227207,6 +227615,50 @@
         ],
         "title": "WordPressOrgPlugin",
         "description": "Safe factual projection of one WordPress.org plugin-directory entry."
+      },
+      "WorkCastServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "workcast_public_service_status",
+            "title": "Kind",
+            "default": "workcast_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "WorkCast",
+            "title": "Provider",
+            "default": "WorkCast"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://workcast.statuspage.io",
+            "title": "Status Page",
+            "default": "https://workcast.statuspage.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "WorkCastServiceStatus"
       },
       "WorkbookInputPart": {
         "properties": {

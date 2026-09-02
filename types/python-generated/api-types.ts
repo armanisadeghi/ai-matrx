@@ -9661,6 +9661,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/gusto/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_gusto_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/when-i-work/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_when_i_work_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10290,6 +10324,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/storyxpress/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_storyxpress_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workcast/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_workcast_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -10367,6 +10435,40 @@ export interface paths {
         };
         /** Avatar */
         get: operations["avatar_robohash_avatar__seed__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uiavatars/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Avatar */
+        get: operations["avatar_uiavatars_avatar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dicebear/initials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Initials */
+        get: operations["initials_dicebear_initials_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -49514,6 +49616,43 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** DiceBearInitialsPng */
+        DiceBearInitialsPng: {
+            /**
+             * Kind
+             * @default dicebear_initials_png
+             * @constant
+             */
+            __kind?: "dicebear_initials_png";
+            /**
+             * Provider
+             * @default DiceBear
+             * @constant
+             */
+            provider?: "DiceBear";
+            /** Seed */
+            seed: string;
+            /**
+             * Width
+             * @default 128
+             * @constant
+             */
+            width?: 128;
+            /**
+             * Height
+             * @default 128
+             * @constant
+             */
+            height?: 128;
+            /**
+             * Media Type
+             * @default image/png
+             * @constant
+             */
+            media_type?: "image/png";
+            /** Png Base64 */
+            png_base64: string;
+        };
         /** DictionaryConfig */
         DictionaryConfig: {
             /**
@@ -57528,6 +57667,40 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.getguru.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /** GustoServiceStatus */
+        GustoServiceStatus: {
+            /**
+             * Kind
+             * @default gusto_official_hr_payroll_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "gusto_official_hr_payroll_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Gusto
+             * @constant
+             */
+            provider?: "Gusto";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.gusto.com
+             * @constant
+             */
+            status_page?: "https://status.gusto.com";
             /**
              * Indicator
              * @enum {string}
@@ -87755,6 +87928,38 @@ export interface components {
              */
             status: "accepted" | "developing" | "pitched" | "landed" | "dismissed";
         };
+        /** StoryXpressServiceStatus */
+        StoryXpressServiceStatus: {
+            /**
+             * Kind
+             * @default storyxpress_public_service_status
+             * @constant
+             */
+            __kind?: "storyxpress_public_service_status";
+            /**
+             * Provider
+             * @default StoryXpress
+             * @constant
+             */
+            provider?: "StoryXpress";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://storyxpress.statuspage.io
+             * @constant
+             */
+            status_page?: "https://storyxpress.statuspage.io";
+        };
         /**
          * StovaStatusResult
          * @description Safe projection of Stova's high-level service status.
@@ -92231,6 +92436,43 @@ export interface components {
              */
             status_page?: "https://status.typeform.com/";
         };
+        /** UIAvatarsAvatar */
+        UIAvatarsAvatar: {
+            /**
+             * Kind
+             * @default uiavatars_initials_png
+             * @constant
+             */
+            __kind?: "uiavatars_initials_png";
+            /**
+             * Provider
+             * @default UI Avatars
+             * @constant
+             */
+            provider?: "UI Avatars";
+            /** Name */
+            name: string;
+            /**
+             * Width
+             * @default 128
+             * @constant
+             */
+            width?: 128;
+            /**
+             * Height
+             * @default 128
+             * @constant
+             */
+            height?: 128;
+            /**
+             * Media Type
+             * @default image/png
+             * @constant
+             */
+            media_type?: "image/png";
+            /** Png Base64 */
+            png_base64: string;
+        };
         /** UXCamServiceStatus */
         UXCamServiceStatus: {
             /**
@@ -96204,6 +96446,40 @@ export interface components {
             /** Record Page */
             record_page: string;
         };
+        /** WhenIWorkServiceStatus */
+        WhenIWorkServiceStatus: {
+            /**
+             * Kind
+             * @default when_i_work_official_workforce_scheduling_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "when_i_work_official_workforce_scheduling_collaboration_platform_status";
+            /**
+             * Provider
+             * @default When I Work
+             * @constant
+             */
+            provider?: "When I Work";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.wheniwork.com
+             * @constant
+             */
+            status_page?: "https://status.wheniwork.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * WhimsicalStatusResult
          * @description Safe projection of Whimsical's high-level service status.
@@ -96749,6 +97025,38 @@ export interface components {
             last_updated: string;
             /** Directory Page */
             directory_page: string;
+        };
+        /** WorkCastServiceStatus */
+        WorkCastServiceStatus: {
+            /**
+             * Kind
+             * @default workcast_public_service_status
+             * @constant
+             */
+            __kind?: "workcast_public_service_status";
+            /**
+             * Provider
+             * @default WorkCast
+             * @constant
+             */
+            provider?: "WorkCast";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://workcast.statuspage.io
+             * @constant
+             */
+            status_page?: "https://workcast.statuspage.io";
         };
         /** WorkbookInputPart */
         WorkbookInputPart: {
@@ -113807,6 +114115,46 @@ export interface operations {
             };
         };
     };
+    public_status_gusto_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GustoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_when_i_work_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhenIWorkServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -114547,6 +114895,46 @@ export interface operations {
             };
         };
     };
+    public_status_storyxpress_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryXpressServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_workcast_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkCastServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -114645,6 +115033,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoboHashAvatar"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    avatar_uiavatars_avatar_get: {
+        parameters: {
+            query: {
+                name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UIAvatarsAvatar"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    initials_dicebear_initials_get: {
+        parameters: {
+            query: {
+                seed: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiceBearInitialsPng"];
                 };
             };
             /** @description Validation Error */
