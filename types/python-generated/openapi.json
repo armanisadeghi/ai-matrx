@@ -21070,6 +21070,69 @@
         }
       }
     },
+    "/learnworlds/public/status": {
+      "get": {
+        "tags": [
+          "LearnWorlds Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_learnworlds_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearnWorldsServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/northpass/public/status": {
+      "get": {
+        "tags": [
+          "Northpass Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_northpass_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NorthpassServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/thought-industries/public/status": {
+      "get": {
+        "tags": [
+          "Thought Industries Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_thought_industries_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThoughtIndustriesServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -21952,6 +22015,69 @@
         }
       }
     },
+    "/audioboom/public/status": {
+      "get": {
+        "tags": [
+          "Audioboom Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_audioboom_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioboomServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/disco/public/status": {
+      "get": {
+        "tags": [
+          "Disco Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_disco_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/knock/public/status": {
+      "get": {
+        "tags": [
+          "Knock Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_knock_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnockServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -22260,6 +22386,69 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PicsumCatalog"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/placecats/cat": {
+      "get": {
+        "tags": [
+          "Place Cats Integrations"
+        ],
+        "summary": "Cat",
+        "operationId": "cat_placecats_cat_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceCatsJpeg"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cataas/cat": {
+      "get": {
+        "tags": [
+          "CATAAS Integrations"
+        ],
+        "summary": "Cat",
+        "operationId": "cat_cataas_cat_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CataasImage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dogceo/random-image": {
+      "get": {
+        "tags": [
+          "Dog CEO Integrations"
+        ],
+        "summary": "Random Image",
+        "operationId": "random_image_dogceo_random_image_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DogImage"
                 }
               }
             }
@@ -85499,6 +85688,50 @@
         ],
         "title": "AudioStyle"
       },
+      "AudioboomServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "audioboom_public_service_status",
+            "title": "Kind",
+            "default": "audioboom_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Audioboom",
+            "title": "Provider",
+            "default": "Audioboom"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.audioboom.com",
+            "title": "Status Page",
+            "default": "https://status.audioboom.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "AudioboomServiceStatus"
+      },
       "AuditRow": {
         "properties": {
           "id": {
@@ -96774,6 +97007,53 @@
           "case_id"
         ],
         "title": "CaseOutcome"
+      },
+      "CataasImage": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "cataas_cat_image",
+            "title": "Kind",
+            "default": "cataas_cat_image"
+          },
+          "provider": {
+            "type": "string",
+            "const": "CATAAS",
+            "title": "Provider",
+            "default": "CATAAS"
+          },
+          "width": {
+            "type": "integer",
+            "const": 128,
+            "title": "Width",
+            "default": 128
+          },
+          "height": {
+            "type": "integer",
+            "const": 128,
+            "title": "Height",
+            "default": 128
+          },
+          "media_type": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png"
+            ],
+            "title": "Media Type"
+          },
+          "image_base64": {
+            "type": "string",
+            "title": "Image Base64"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "media_type",
+          "image_base64"
+        ],
+        "title": "CataasImage"
       },
       "CatalogEntryResponse": {
         "properties": {
@@ -119863,6 +120143,50 @@
         ],
         "title": "DiscardResponse"
       },
+      "DiscoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "disco_public_service_status",
+            "title": "Kind",
+            "default": "disco_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Disco",
+            "title": "Provider",
+            "default": "Disco"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.disco.co",
+            "title": "Status Page",
+            "default": "https://status.disco.co"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "DiscoServiceStatus"
+      },
       "DiscoursePublicSite": {
         "properties": {
           "__kind": {
@@ -121617,6 +121941,32 @@
         "type": "object",
         "title": "DocumentSpec",
         "description": "Canonical AI-authorable shape for a Word document (.docx)."
+      },
+      "DogImage": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dogceo_random_image",
+            "title": "Kind",
+            "default": "dogceo_random_image"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Dog CEO",
+            "title": "Provider",
+            "default": "Dog CEO"
+          },
+          "image_url": {
+            "type": "string",
+            "title": "Image Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "image_url"
+        ],
+        "title": "DogImage"
       },
       "DomainFoldReport": {
         "properties": {
@@ -147628,6 +147978,50 @@
         "title": "KixieServiceStatus",
         "description": "Safe aggregate status projection for Kixie's fixed status page."
       },
+      "KnockServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "knock_public_service_status",
+            "title": "Kind",
+            "default": "knock_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Knock",
+            "title": "Provider",
+            "default": "Knock"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.knock.app/",
+            "title": "Status Page",
+            "default": "https://status.knock.app/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "KnockServiceStatus"
+      },
       "KontentAIServiceStatus": {
         "properties": {
           "__kind": {
@@ -149382,6 +149776,55 @@
         ],
         "title": "LeakRule",
         "description": "Why a branch of a contract is considered untyped."
+      },
+      "LearnWorldsServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "learnworlds_official_learning_collaboration_platform_status",
+            "title": "Kind",
+            "default": "learnworlds_official_learning_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "LearnWorlds",
+            "title": "Provider",
+            "default": "LearnWorlds"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.learnworlds.com/",
+            "title": "Status Page",
+            "default": "https://status.learnworlds.com/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "LearnWorldsServiceStatus"
       },
       "LeaveAccrualCalcResponse": {
         "properties": {
@@ -162711,6 +163154,55 @@
         "title": "NormalizedCitation",
         "description": "The canonical cross-provider citation shape — the FE contract.\n\nOffsets come in two flavours and are never conflated:\n  - ``source_start`` / ``source_end``: char/block offsets INTO THE SOURCE\n    document (Anthropic char/content_block locations).\n  - ``answer_start`` / ``answer_end``: char offsets INTO THE ANSWER TEXT\n    (OpenAI url_citation annotations, Gemini grounding segment offsets).\n``page`` / ``end_page`` are 1-based (Anthropic page_location)."
       },
+      "NorthpassServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "northpass_official_learning_collaboration_platform_status",
+            "title": "Kind",
+            "default": "northpass_official_learning_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Northpass",
+            "title": "Provider",
+            "default": "Northpass"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.northpass.com",
+            "title": "Status Page",
+            "default": "https://status.northpass.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "NorthpassServiceStatus"
+      },
       "NotesInputPart": {
         "properties": {
           "metadata": {
@@ -173269,6 +173761,50 @@
         ],
         "title": "PixiesetServiceStatus",
         "description": "Safe aggregate status projection for Pixieset's fixed status page."
+      },
+      "PlaceCatsJpeg": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "placecats_cat_jpeg",
+            "title": "Kind",
+            "default": "placecats_cat_jpeg"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Place Cats",
+            "title": "Provider",
+            "default": "Place Cats"
+          },
+          "width": {
+            "type": "integer",
+            "const": 128,
+            "title": "Width",
+            "default": 128
+          },
+          "height": {
+            "type": "integer",
+            "const": 128,
+            "title": "Height",
+            "default": 128
+          },
+          "media_type": {
+            "type": "string",
+            "const": "image/jpeg",
+            "title": "Media Type",
+            "default": "image/jpeg"
+          },
+          "jpeg_base64": {
+            "type": "string",
+            "title": "Jpeg Base64"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "jpeg_base64"
+        ],
+        "title": "PlaceCatsJpeg"
       },
       "PlaceholdCoPng": {
         "properties": {
@@ -212454,6 +212990,55 @@
           "type"
         ],
         "title": "ThinkingPart"
+      },
+      "ThoughtIndustriesServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "thought_industries_official_learning_collaboration_platform_status",
+            "title": "Kind",
+            "default": "thought_industries_official_learning_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Thought Industries",
+            "title": "Provider",
+            "default": "Thought Industries"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.thoughtindustries.com",
+            "title": "Status Page",
+            "default": "https://status.thoughtindustries.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "ThoughtIndustriesServiceStatus"
       },
       "ThreadMessageOut": {
         "properties": {

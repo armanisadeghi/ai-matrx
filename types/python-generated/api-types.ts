@@ -9746,6 +9746,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/learnworlds/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_learnworlds_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/northpass/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_northpass_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/thought-industries/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_thought_industries_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10460,6 +10511,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/audioboom/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_audioboom_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/disco/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_disco_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/knock/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_knock_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -10622,6 +10724,57 @@ export interface paths {
         };
         /** Catalog */
         get: operations["catalog_lorem_picsum_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/placecats/cat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cat */
+        get: operations["cat_placecats_cat_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cataas/cat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cat */
+        get: operations["cat_cataas_cat_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dogceo/random-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Random Image */
+        get: operations["random_image_dogceo_random_image_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -35967,6 +36120,38 @@ export interface components {
          * @enum {string}
          */
         AudioStyle: "Podcast Interview" | "Educational Podcast" | "پادکست خبری ایران";
+        /** AudioboomServiceStatus */
+        AudioboomServiceStatus: {
+            /**
+             * Kind
+             * @default audioboom_public_service_status
+             * @constant
+             */
+            __kind?: "audioboom_public_service_status";
+            /**
+             * Provider
+             * @default Audioboom
+             * @constant
+             */
+            provider?: "Audioboom";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.audioboom.com
+             * @constant
+             */
+            status_page?: "https://status.audioboom.com";
+        };
         /** AuditRow */
         AuditRow: {
             /** Id */
@@ -41125,6 +41310,40 @@ export interface components {
              * @default 0
              */
             cost_usd?: number;
+        };
+        /** CataasImage */
+        CataasImage: {
+            /**
+             * Kind
+             * @default cataas_cat_image
+             * @constant
+             */
+            __kind?: "cataas_cat_image";
+            /**
+             * Provider
+             * @default CATAAS
+             * @constant
+             */
+            provider?: "CATAAS";
+            /**
+             * Width
+             * @default 128
+             * @constant
+             */
+            width?: 128;
+            /**
+             * Height
+             * @default 128
+             * @constant
+             */
+            height?: 128;
+            /**
+             * Media Type
+             * @enum {string}
+             */
+            media_type: "image/jpeg" | "image/png";
+            /** Image Base64 */
+            image_base64: string;
         };
         /** CatalogEntryResponse */
         CatalogEntryResponse: {
@@ -50186,6 +50405,38 @@ export interface components {
             /** Deleted */
             deleted: number;
         };
+        /** DiscoServiceStatus */
+        DiscoServiceStatus: {
+            /**
+             * Kind
+             * @default disco_public_service_status
+             * @constant
+             */
+            __kind?: "disco_public_service_status";
+            /**
+             * Provider
+             * @default Disco
+             * @constant
+             */
+            provider?: "Disco";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.disco.co
+             * @constant
+             */
+            status_page?: "https://status.disco.co";
+        };
         /**
          * DiscoursePublicSite
          * @description Safe factual projection of the official Discourse community site.
@@ -50838,6 +51089,23 @@ export interface components {
              * @description Ordered content blocks (headings, paragraphs, lists, tables, quotes, page breaks) rendered top to bottom.
              */
             blocks?: components["schemas"]["DocBlock"][];
+        };
+        /** DogImage */
+        DogImage: {
+            /**
+             * Kind
+             * @default dogceo_random_image
+             * @constant
+             */
+            __kind?: "dogceo_random_image";
+            /**
+             * Provider
+             * @default Dog CEO
+             * @constant
+             */
+            provider?: "Dog CEO";
+            /** Image Url */
+            image_url: string;
         };
         /** DomainFoldReport */
         DomainFoldReport: {
@@ -62539,6 +62807,38 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** KnockServiceStatus */
+        KnockServiceStatus: {
+            /**
+             * Kind
+             * @default knock_public_service_status
+             * @constant
+             */
+            __kind?: "knock_public_service_status";
+            /**
+             * Provider
+             * @default Knock
+             * @constant
+             */
+            provider?: "Knock";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.knock.app/
+             * @constant
+             */
+            status_page?: "https://status.knock.app/";
+        };
         /** KontentAIServiceStatus */
         KontentAIServiceStatus: {
             /**
@@ -63078,6 +63378,40 @@ export interface components {
          * @enum {string}
          */
         LeakRule: "any" | "object" | "bare_container" | "extra_allow" | "unbound_typevar" | "unknown_type" | "acknowledged_dynamic";
+        /** LearnWorldsServiceStatus */
+        LearnWorldsServiceStatus: {
+            /**
+             * Kind
+             * @default learnworlds_official_learning_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "learnworlds_official_learning_collaboration_platform_status";
+            /**
+             * Provider
+             * @default LearnWorlds
+             * @constant
+             */
+            provider?: "LearnWorlds";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.learnworlds.com/
+             * @constant
+             */
+            status_page?: "https://status.learnworlds.com/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * LeaveAccrualCalcResponse
          * @description E-05's 200. ``snapshot_id`` is always present — computing without freezing is a defect.
@@ -68947,6 +69281,40 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** NorthpassServiceStatus */
+        NorthpassServiceStatus: {
+            /**
+             * Kind
+             * @default northpass_official_learning_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "northpass_official_learning_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Northpass
+             * @constant
+             */
+            provider?: "Northpass";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.northpass.com
+             * @constant
+             */
+            status_page?: "https://status.northpass.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** NotesInputPart */
         NotesInputPart: {
             /** Metadata */
@@ -73641,6 +74009,41 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.pixieset.com";
+        };
+        /** PlaceCatsJpeg */
+        PlaceCatsJpeg: {
+            /**
+             * Kind
+             * @default placecats_cat_jpeg
+             * @constant
+             */
+            __kind?: "placecats_cat_jpeg";
+            /**
+             * Provider
+             * @default Place Cats
+             * @constant
+             */
+            provider?: "Place Cats";
+            /**
+             * Width
+             * @default 128
+             * @constant
+             */
+            width?: 128;
+            /**
+             * Height
+             * @default 128
+             * @constant
+             */
+            height?: 128;
+            /**
+             * Media Type
+             * @default image/jpeg
+             * @constant
+             */
+            media_type?: "image/jpeg";
+            /** Jpeg Base64 */
+            jpeg_base64: string;
         };
         /** PlaceholdCoPng */
         PlaceholdCoPng: {
@@ -90718,6 +91121,40 @@ export interface components {
             signature_encoding?: "base64" | null;
             /** Summary */
             summary?: unknown[];
+        };
+        /** ThoughtIndustriesServiceStatus */
+        ThoughtIndustriesServiceStatus: {
+            /**
+             * Kind
+             * @default thought_industries_official_learning_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "thought_industries_official_learning_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Thought Industries
+             * @constant
+             */
+            provider?: "Thought Industries";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.thoughtindustries.com
+             * @constant
+             */
+            status_page?: "https://status.thoughtindustries.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * ThreadMessageOut
@@ -114670,6 +115107,66 @@ export interface operations {
             };
         };
     };
+    public_status_learnworlds_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearnWorldsServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_northpass_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NorthpassServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_thought_industries_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtIndustriesServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -115510,6 +116007,66 @@ export interface operations {
             };
         };
     };
+    public_status_audioboom_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioboomServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_disco_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_knock_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnockServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -115761,6 +116318,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PicsumCatalog"];
+                };
+            };
+        };
+    };
+    cat_placecats_cat_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceCatsJpeg"];
+                };
+            };
+        };
+    };
+    cat_cataas_cat_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CataasImage"];
+                };
+            };
+        };
+    };
+    random_image_dogceo_random_image_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DogImage"];
                 };
             };
         };
