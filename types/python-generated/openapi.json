@@ -21217,6 +21217,48 @@
         }
       }
     },
+    "/go1/public/status": {
+      "get": {
+        "tags": [
+          "Go1 Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_go1_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Go1ServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/degreed/public/status": {
+      "get": {
+        "tags": [
+          "Degreed Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_degreed_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DegreedServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22246,6 +22288,48 @@
         }
       }
     },
+    "/ably/public/status": {
+      "get": {
+        "tags": [
+          "Ably Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_ably_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AblyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pusher/public/status": {
+      "get": {
+        "tags": [
+          "Pusher Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_pusher_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PusherServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -22701,6 +22785,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CoffeeImage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/foodish/random-image": {
+      "get": {
+        "tags": [
+          "Foodish API Integrations"
+        ],
+        "summary": "Random Image",
+        "operationId": "random_image_foodish_random_image_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoodishImage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/xkcd/latest-comic": {
+      "get": {
+        "tags": [
+          "XKCD Integrations"
+        ],
+        "summary": "Latest Comic",
+        "operationId": "latest_comic_xkcd_latest_comic_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/XkcdComic"
                 }
               }
             }
@@ -76518,6 +76644,50 @@
         "title": "AWeberServiceStatus",
         "description": "Safe aggregate status projection for AWeber's fixed status page."
       },
+      "AblyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "ably_public_service_status",
+            "title": "Kind",
+            "default": "ably_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Ably",
+            "title": "Provider",
+            "default": "Ably"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.ably.com",
+            "title": "Status Page",
+            "default": "https://status.ably.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "AblyServiceStatus"
+      },
       "AcceptBriefResult": {
         "properties": {
           "node_id": {
@@ -117512,6 +117682,55 @@
         "title": "DefinitionSlotsResponse",
         "description": "Per-node slot map for a whole definition — the studio's bulk fetch\nfor design-time edge-Satisfied derivation."
       },
+      "DegreedServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "degreed_official_learning_collaboration_platform_status",
+            "title": "Kind",
+            "default": "degreed_official_learning_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Degreed",
+            "title": "Provider",
+            "default": "Degreed"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.degreed.com",
+            "title": "Status Page",
+            "default": "https://status.degreed.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "DegreedServiceStatus"
+      },
       "DeleteAllMessagesResponse": {
         "properties": {
           "deleted": {
@@ -134342,6 +134561,32 @@
         ],
         "title": "FolderRecord"
       },
+      "FoodishImage": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "foodish_random_image",
+            "title": "Kind",
+            "default": "foodish_random_image"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Foodish API",
+            "title": "Provider",
+            "default": "Foodish API"
+          },
+          "image_url": {
+            "type": "string",
+            "title": "Image Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "image_url"
+        ],
+        "title": "FoodishImage"
+      },
       "ForceDisableResponse": {
         "properties": {
           "disabled": {
@@ -136946,6 +137191,55 @@
         ],
         "title": "GiteaApplicationCompatibility",
         "description": "Safe compatibility projection for the fixed official Gitea host."
+      },
+      "Go1ServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "go1_official_learning_collaboration_platform_status",
+            "title": "Kind",
+            "default": "go1_official_learning_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Go1",
+            "title": "Provider",
+            "default": "Go1"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.go1.com",
+            "title": "Status Page",
+            "default": "https://status.go1.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "Go1ServiceStatus"
       },
       "GoToStatusResult": {
         "properties": {
@@ -183442,6 +183736,50 @@
         ],
         "title": "PushIngestResult",
         "description": "What one Pub/Sub push produced. The router returns this verbatim."
+      },
+      "PusherServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pusher_public_service_status",
+            "title": "Kind",
+            "default": "pusher_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Pusher",
+            "title": "Provider",
+            "default": "Pusher"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.pusher.com",
+            "title": "Status Page",
+            "default": "https://status.pusher.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PusherServiceStatus"
       },
       "PutDeclaredSampleRequest": {
         "properties": {
@@ -230242,6 +230580,52 @@
           "indicator"
         ],
         "title": "WufooServiceStatus"
+      },
+      "XkcdComic": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "xkcd_latest_comic",
+            "title": "Kind",
+            "default": "xkcd_latest_comic"
+          },
+          "provider": {
+            "type": "string",
+            "const": "XKCD",
+            "title": "Provider",
+            "default": "XKCD"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "alt_text": {
+            "type": "string",
+            "title": "Alt Text"
+          },
+          "image_url": {
+            "type": "string",
+            "title": "Image Url"
+          },
+          "comic_url": {
+            "type": "string",
+            "title": "Comic Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "number",
+          "title",
+          "alt_text",
+          "image_url",
+          "comic_url"
+        ],
+        "title": "XkcdComic"
       },
       "YieldBreachOut": {
         "properties": {

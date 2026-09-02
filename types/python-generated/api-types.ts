@@ -9865,6 +9865,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/go1/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_go1_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/degreed/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_degreed_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10698,6 +10732,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ably/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_ably_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pusher/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_pusher_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -10979,6 +11047,40 @@ export interface paths {
         };
         /** Random Image */
         get: operations["random_image_coffeeapi_random_image_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/foodish/random-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Random Image */
+        get: operations["random_image_foodish_random_image_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/xkcd/latest-comic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest Comic */
+        get: operations["latest_comic_xkcd_latest_comic_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -32149,6 +32251,38 @@ export interface components {
              */
             status_page?: "https://status.aweber.com/";
         };
+        /** AblyServiceStatus */
+        AblyServiceStatus: {
+            /**
+             * Kind
+             * @default ably_public_service_status
+             * @constant
+             */
+            __kind?: "ably_public_service_status";
+            /**
+             * Provider
+             * @default Ably
+             * @constant
+             */
+            provider?: "Ably";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.ably.com
+             * @constant
+             */
+            status_page?: "https://status.ably.com";
+        };
         /** AcceptBriefResult */
         AcceptBriefResult: {
             /** Node Id */
@@ -49382,6 +49516,40 @@ export interface components {
                 [key: string]: components["schemas"]["NodeSlotsMapEntry"];
             };
         };
+        /** DegreedServiceStatus */
+        DegreedServiceStatus: {
+            /**
+             * Kind
+             * @default degreed_official_learning_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "degreed_official_learning_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Degreed
+             * @constant
+             */
+            provider?: "Degreed";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.degreed.com
+             * @constant
+             */
+            status_page?: "https://status.degreed.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** DeleteAllMessagesResponse */
         DeleteAllMessagesResponse: {
             /** Deleted */
@@ -56438,6 +56606,23 @@ export interface components {
             /** Deleted At */
             deleted_at?: string | null;
         };
+        /** FoodishImage */
+        FoodishImage: {
+            /**
+             * Kind
+             * @default foodish_random_image
+             * @constant
+             */
+            __kind?: "foodish_random_image";
+            /**
+             * Provider
+             * @default Foodish API
+             * @constant
+             */
+            provider?: "Foodish API";
+            /** Image Url */
+            image_url: string;
+        };
         /** ForceDisableResponse */
         ForceDisableResponse: {
             /** Disabled */
@@ -57710,6 +57895,40 @@ export interface components {
              * @constant
              */
             instance_page?: "https://gitea.com";
+        };
+        /** Go1ServiceStatus */
+        Go1ServiceStatus: {
+            /**
+             * Kind
+             * @default go1_official_learning_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "go1_official_learning_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Go1
+             * @constant
+             */
+            provider?: "Go1";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.go1.com
+             * @constant
+             */
+            status_page?: "https://status.go1.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * GoToStatusResult
@@ -78411,6 +78630,38 @@ export interface components {
             /** Note */
             note?: string | null;
         };
+        /** PusherServiceStatus */
+        PusherServiceStatus: {
+            /**
+             * Kind
+             * @default pusher_public_service_status
+             * @constant
+             */
+            __kind?: "pusher_public_service_status";
+            /**
+             * Provider
+             * @default Pusher
+             * @constant
+             */
+            provider?: "Pusher";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.pusher.com
+             * @constant
+             */
+            status_page?: "https://status.pusher.com";
+        };
         /** PutDeclaredSampleRequest */
         PutDeclaredSampleRequest: {
             /**
@@ -98732,6 +98983,31 @@ export interface components {
              */
             status_page?: "https://status.wufoo.com";
         };
+        /** XkcdComic */
+        XkcdComic: {
+            /**
+             * Kind
+             * @default xkcd_latest_comic
+             * @constant
+             */
+            __kind?: "xkcd_latest_comic";
+            /**
+             * Provider
+             * @default XKCD
+             * @constant
+             */
+            provider?: "XKCD";
+            /** Number */
+            number: number;
+            /** Title */
+            title: string;
+            /** Alt Text */
+            alt_text: string;
+            /** Image Url */
+            image_url: string;
+            /** Comic Url */
+            comic_url: string;
+        };
         /** YieldBreachOut */
         YieldBreachOut: {
             /** Producer Key */
@@ -115793,6 +116069,46 @@ export interface operations {
             };
         };
     };
+    public_status_go1_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Go1ServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_degreed_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DegreedServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -116773,6 +117089,46 @@ export interface operations {
             };
         };
     };
+    public_status_ably_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AblyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_pusher_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PusherServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -117164,6 +117520,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CoffeeImage"];
+                };
+            };
+        };
+    };
+    random_image_foodish_random_image_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoodishImage"];
+                };
+            };
+        };
+    };
+    latest_comic_xkcd_latest_comic_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["XkcdComic"];
                 };
             };
         };
