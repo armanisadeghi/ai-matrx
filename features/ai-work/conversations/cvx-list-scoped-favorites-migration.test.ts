@@ -9,6 +9,14 @@ const migration = readFileSync(
   "utf8",
 );
 
+const privilegeMigration = readFileSync(
+  join(
+    process.cwd(),
+    "migrations/cvx_list_scoped_revoke_anon_execute.sql",
+  ),
+  "utf8",
+);
+
 describe("cvx_list_scoped canonical favorites migration", () => {
   it("reads, filters, projects, and sorts the caller's user_entity_state favorite", () => {
     expect(migration).toContain(
@@ -38,5 +46,10 @@ describe("cvx_list_scoped canonical favorites migration", () => {
     // alias would silently split the read from the canonical ues_set write.
     expect(migration).not.toMatch(/\bj\.is_favorite\b/);
     expect(migration).not.toMatch(/\bc\.is_favorite\b/);
+  });
+
+  it("removes anonymous access retained by CREATE OR REPLACE", () => {
+    expect(privilegeMigration).toMatch(/from public, anon;/);
+    expect(privilegeMigration).toMatch(/to authenticated;/);
   });
 });
