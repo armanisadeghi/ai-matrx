@@ -21154,6 +21154,27 @@
         }
       }
     },
+    "/schoox/public/status": {
+      "get": {
+        "tags": [
+          "Schoox Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_schoox_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchooxServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22120,6 +22141,27 @@
         }
       }
     },
+    "/sparkpost/public/status": {
+      "get": {
+        "tags": [
+          "SparkPost Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_sparkpost_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SparkPostServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -22512,6 +22554,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CatImage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/randomfox/random-image": {
+      "get": {
+        "tags": [
+          "Random Fox Integrations"
+        ],
+        "summary": "Random Image",
+        "operationId": "random_image_randomfox_random_image_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoxImage"
                 }
               }
             }
@@ -134977,6 +135040,37 @@
         ],
         "title": "FountainServiceStatus"
       },
+      "FoxImage": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "randomfox_image",
+            "title": "Kind",
+            "default": "randomfox_image"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Random Fox",
+            "title": "Provider",
+            "default": "Random Fox"
+          },
+          "image_url": {
+            "type": "string",
+            "title": "Image Url"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "image_url",
+          "source_url"
+        ],
+        "title": "FoxImage"
+      },
       "FrameIoServiceStatus": {
         "properties": {
           "__kind": {
@@ -196280,6 +196374,55 @@
         "title": "SchemaTypesResponse",
         "description": "Map of ``field_name -> data_type``."
       },
+      "SchooxServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "schoox_official_learning_collaboration_platform_status",
+            "title": "Kind",
+            "default": "schoox_official_learning_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Schoox",
+            "title": "Provider",
+            "default": "Schoox"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.schoox.com",
+            "title": "Status Page",
+            "default": "https://status.schoox.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SchooxServiceStatus"
+      },
       "ScopeContext": {
         "properties": {
           "user_id": {
@@ -205416,6 +205559,50 @@
           "operational"
         ],
         "title": "SparkHireServiceStatus"
+      },
+      "SparkPostServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "sparkpost_public_service_status",
+            "title": "Kind",
+            "default": "sparkpost_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "SparkPost",
+            "title": "Provider",
+            "default": "SparkPost"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.sparkpost.com",
+            "title": "Status Page",
+            "default": "https://status.sparkpost.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SparkPostServiceStatus"
       },
       "SpeakerSpec": {
         "properties": {

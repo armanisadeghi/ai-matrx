@@ -9814,6 +9814,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/schoox/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_schoox_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10596,6 +10613,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sparkpost/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_sparkpost_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -10826,6 +10860,23 @@ export interface paths {
         };
         /** Random Image */
         get: operations["random_image_thecatapi_random_image_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/randomfox/random-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Random Image */
+        get: operations["random_image_randomfox_random_image_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -56627,6 +56678,25 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** FoxImage */
+        FoxImage: {
+            /**
+             * Kind
+             * @default randomfox_image
+             * @constant
+             */
+            __kind?: "randomfox_image";
+            /**
+             * Provider
+             * @default Random Fox
+             * @constant
+             */
+            provider?: "Random Fox";
+            /** Image Url */
+            image_url: string;
+            /** Source Url */
+            source_url: string;
+        };
         /**
          * FrameIoServiceStatus
          * @description Safe aggregate status projection for Frame.io's fixed status page.
@@ -83787,6 +83857,40 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** SchooxServiceStatus */
+        SchooxServiceStatus: {
+            /**
+             * Kind
+             * @default schoox_official_learning_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "schoox_official_learning_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Schoox
+             * @constant
+             */
+            provider?: "Schoox";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.schoox.com
+             * @constant
+             */
+            status_page?: "https://status.schoox.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * ScopeContext
          * @description Snapshot of who is asking and at what scope.
@@ -87757,6 +87861,38 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** SparkPostServiceStatus */
+        SparkPostServiceStatus: {
+            /**
+             * Kind
+             * @default sparkpost_public_service_status
+             * @constant
+             */
+            __kind?: "sparkpost_public_service_status";
+            /**
+             * Provider
+             * @default SparkPost
+             * @constant
+             */
+            provider?: "SparkPost";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.sparkpost.com
+             * @constant
+             */
+            status_page?: "https://status.sparkpost.com";
         };
         /**
          * SpeakerSpec
@@ -115327,6 +115463,26 @@ export interface operations {
             };
         };
     };
+    public_status_schoox_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchooxServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -116247,6 +116403,26 @@ export interface operations {
             };
         };
     };
+    public_status_sparkpost_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SparkPostServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -116578,6 +116754,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatImage"];
+                };
+            };
+        };
+    };
+    random_image_randomfox_random_image_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoxImage"];
                 };
             };
         };
