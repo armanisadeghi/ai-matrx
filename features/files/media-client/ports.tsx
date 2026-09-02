@@ -30,12 +30,12 @@ import { NextMediaImage } from "@ai-matrx/media/next";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import type { AudioSessionSource } from "@/features/audio/session/types";
-import { fileHandler } from "@/features/files/handler/handler";
 import { openFilePreview } from "@/features/files/components/preview/openFilePreview";
 import { mediaClient, mediaFilesClient } from "./client";
 import { MediaSharePopoverSlot } from "./share-slot";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
+import { downloadMediaSource } from "./download";
 
 const playbackSession: PlaybackSessionPort = {
   useMediaElementSink(forward) {
@@ -82,9 +82,7 @@ const actions: MediaHostPorts["actions"] = {
           ? ({ kind: "external_url", url: ctx.ref.url } as const)
           : null;
     if (!source) return;
-    await fileHandler
-      .use(source)
-      .as({ kind: "anchor_download", suggestedName: ctx.fileName });
+    await downloadMediaSource(source, ctx.fileName);
   },
   async copy(ctx) {
     // Copy a durable link — the public URL when one already exists,
