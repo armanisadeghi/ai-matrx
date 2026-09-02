@@ -9712,6 +9712,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/skilljar/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_skilljar_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/360learning/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_360learning_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10392,6 +10426,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/landr/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_landr_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/riverside/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_riverside_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -10520,6 +10588,40 @@ export interface paths {
         };
         /** Placeholder */
         get: operations["placeholder_placeholdco_placeholder_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dummyimage/placeholder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Placeholder */
+        get: operations["placeholder_dummyimage_placeholder_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lorem-picsum/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Catalog */
+        get: operations["catalog_lorem_picsum_catalog_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -51266,6 +51368,43 @@ export interface components {
              */
             status_page?: "https://status.duda.co";
         };
+        /** DummyImagePng */
+        DummyImagePng: {
+            /**
+             * Kind
+             * @default dummyimage_placeholder_png
+             * @constant
+             */
+            __kind?: "dummyimage_placeholder_png";
+            /**
+             * Provider
+             * @default DummyImage
+             * @constant
+             */
+            provider?: "DummyImage";
+            /** Text */
+            text: string;
+            /**
+             * Width
+             * @default 128
+             * @constant
+             */
+            width?: 128;
+            /**
+             * Height
+             * @default 128
+             * @constant
+             */
+            height?: 128;
+            /**
+             * Media Type
+             * @default image/png
+             * @constant
+             */
+            media_type?: "image/png";
+            /** Png Base64 */
+            png_base64: string;
+        };
         /**
          * DumpResource
          * @description One resource inside a dump ingest — a platform entity (token + id) or a
@@ -62729,6 +62868,38 @@ export interface components {
              */
             status_page?: "https://status.landingi.com";
         };
+        /** LandrServiceStatus */
+        LandrServiceStatus: {
+            /**
+             * Kind
+             * @default landr_public_service_status
+             * @constant
+             */
+            __kind?: "landr_public_service_status";
+            /**
+             * Provider
+             * @default LANDR
+             * @constant
+             */
+            provider?: "LANDR";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.landr.com
+             * @constant
+             */
+            status_page?: "https://status.landr.com";
+        };
         /** LandscapeBrief */
         LandscapeBrief: {
             /** Id */
@@ -73147,6 +73318,36 @@ export interface components {
             /** Public Read */
             public_read?: boolean | null;
         };
+        /** PicsumCatalog */
+        PicsumCatalog: {
+            /**
+             * Kind
+             * @default lorem_picsum_catalog
+             * @constant
+             */
+            __kind?: "lorem_picsum_catalog";
+            /**
+             * Provider
+             * @default Lorem Picsum
+             * @constant
+             */
+            provider?: "Lorem Picsum";
+            /** Images */
+            images: components["schemas"]["PicsumImage"][];
+        };
+        /** PicsumImage */
+        PicsumImage: {
+            /** Id */
+            id: string;
+            /** Author */
+            author: string;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Source Url */
+            source_url: string;
+        };
         /** PinpointServiceStatus */
         PinpointServiceStatus: {
             /**
@@ -81260,6 +81461,38 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** RiversideServiceStatus */
+        RiversideServiceStatus: {
+            /**
+             * Kind
+             * @default riverside_public_service_status
+             * @constant
+             */
+            __kind?: "riverside_public_service_status";
+            /**
+             * Provider
+             * @default Riverside
+             * @constant
+             */
+            provider?: "Riverside";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.riverside.fm
+             * @constant
+             */
+            status_page?: "https://status.riverside.fm";
+        };
         /**
          * RoadmunkStatusResult
          * @description Safe projection of Roadmunk's high-level service status.
@@ -86056,6 +86289,40 @@ export interface components {
             /** Project Id */
             project_id?: string | null;
         };
+        /** SkilljarServiceStatus */
+        SkilljarServiceStatus: {
+            /**
+             * Kind
+             * @default skilljar_official_learning_collaboration_platform_status
+             * @constant
+             */
+            __kind?: "skilljar_official_learning_collaboration_platform_status";
+            /**
+             * Provider
+             * @default Skilljar
+             * @constant
+             */
+            provider?: "Skilljar";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.skilljar.com
+             * @constant
+             */
+            status_page?: "https://status.skilljar.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** SkillsList */
         SkillsList: {
             /** Count */
@@ -90505,6 +90772,40 @@ export interface components {
             body: string;
             /** Label */
             label?: string | null;
+        };
+        /** ThreeSixtyLearningServiceStatus */
+        ThreeSixtyLearningServiceStatus: {
+            /**
+             * Kind
+             * @default 360learning_official_collaborative_learning_platform_status
+             * @constant
+             */
+            __kind?: "360learning_official_collaborative_learning_platform_status";
+            /**
+             * Provider
+             * @default 360Learning
+             * @constant
+             */
+            provider?: "360Learning";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.360learning.com
+             * @constant
+             */
+            status_page?: "https://status.360learning.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** TidioServiceStatus */
         TidioServiceStatus: {
@@ -114329,6 +114630,46 @@ export interface operations {
             };
         };
     };
+    public_status_skilljar_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkilljarServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_360learning_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThreeSixtyLearningServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -115129,6 +115470,46 @@ export interface operations {
             };
         };
     };
+    public_status_landr_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandrServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_riverside_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiversideServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -115329,6 +115710,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    placeholder_dummyimage_placeholder_get: {
+        parameters: {
+            query: {
+                text: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DummyImagePng"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    catalog_lorem_picsum_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PicsumCatalog"];
                 };
             };
         };

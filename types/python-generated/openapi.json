@@ -21028,6 +21028,48 @@
         }
       }
     },
+    "/skilljar/public/status": {
+      "get": {
+        "tags": [
+          "Skilljar Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_skilljar_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkilljarServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/360learning/public/status": {
+      "get": {
+        "tags": [
+          "360Learning Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_360learning_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreeSixtyLearningServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -21868,6 +21910,48 @@
         }
       }
     },
+    "/landr/public/status": {
+      "get": {
+        "tags": [
+          "LANDR Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_landr_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandrServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/riverside/public/status": {
+      "get": {
+        "tags": [
+          "Riverside Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_riverside_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiversideServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -22113,6 +22197,69 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dummyimage/placeholder": {
+      "get": {
+        "tags": [
+          "DummyImage Integrations"
+        ],
+        "summary": "Placeholder",
+        "operationId": "placeholder_dummyimage_placeholder_get",
+        "parameters": [
+          {
+            "name": "text",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Text"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DummyImagePng"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/lorem-picsum/catalog": {
+      "get": {
+        "tags": [
+          "Lorem Picsum Integrations"
+        ],
+        "summary": "Catalog",
+        "operationId": "catalog_lorem_picsum_catalog_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PicsumCatalog"
                 }
               }
             }
@@ -122635,6 +122782,55 @@
         ],
         "title": "DudaServiceStatus"
       },
+      "DummyImagePng": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dummyimage_placeholder_png",
+            "title": "Kind",
+            "default": "dummyimage_placeholder_png"
+          },
+          "provider": {
+            "type": "string",
+            "const": "DummyImage",
+            "title": "Provider",
+            "default": "DummyImage"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "width": {
+            "type": "integer",
+            "const": 128,
+            "title": "Width",
+            "default": 128
+          },
+          "height": {
+            "type": "integer",
+            "const": 128,
+            "title": "Height",
+            "default": 128
+          },
+          "media_type": {
+            "type": "string",
+            "const": "image/png",
+            "title": "Media Type",
+            "default": "image/png"
+          },
+          "png_base64": {
+            "type": "string",
+            "title": "Png Base64"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "png_base64"
+        ],
+        "title": "DummyImagePng"
+      },
       "DumpResource": {
         "properties": {
           "kind": {
@@ -148773,6 +148969,50 @@
         ],
         "title": "LandingiServiceStatus"
       },
+      "LandrServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "landr_public_service_status",
+            "title": "Kind",
+            "default": "landr_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "LANDR",
+            "title": "Provider",
+            "default": "LANDR"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.landr.com",
+            "title": "Status Page",
+            "default": "https://status.landr.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "LandrServiceStatus"
+      },
       "LandscapeBrief": {
         "properties": {
           "id": {
@@ -172591,6 +172831,69 @@
         "type": "object",
         "title": "PicklistUpdate"
       },
+      "PicsumCatalog": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "lorem_picsum_catalog",
+            "title": "Kind",
+            "default": "lorem_picsum_catalog"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Lorem Picsum",
+            "title": "Provider",
+            "default": "Lorem Picsum"
+          },
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/PicsumImage"
+            },
+            "type": "array",
+            "title": "Images"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "images"
+        ],
+        "title": "PicsumCatalog"
+      },
+      "PicsumImage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "author": {
+            "type": "string",
+            "title": "Author"
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "author",
+          "width",
+          "height",
+          "source_url"
+        ],
+        "title": "PicsumImage"
+      },
       "PinpointServiceStatus": {
         "properties": {
           "__kind": {
@@ -191236,6 +191539,50 @@
         "title": "RipplingServiceStatus",
         "description": "Safe aggregate status projection for Rippling's fixed status page."
       },
+      "RiversideServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "riverside_public_service_status",
+            "title": "Kind",
+            "default": "riverside_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Riverside",
+            "title": "Provider",
+            "default": "Riverside"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.riverside.fm",
+            "title": "Status Page",
+            "default": "https://status.riverside.fm"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "RiversideServiceStatus"
+      },
       "RoadmunkStatusResult": {
         "properties": {
           "__kind": {
@@ -202415,6 +202762,55 @@
         "title": "SkillRow",
         "description": "Wire shape for skill responses. Mirrors the active fields on\nskill.definition rows that the agent / FE consumes."
       },
+      "SkilljarServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "skilljar_official_learning_collaboration_platform_status",
+            "title": "Kind",
+            "default": "skilljar_official_learning_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Skilljar",
+            "title": "Provider",
+            "default": "Skilljar"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.skilljar.com",
+            "title": "Status Page",
+            "default": "https://status.skilljar.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SkilljarServiceStatus"
+      },
       "SkillsList": {
         "properties": {
           "count": {
@@ -212172,6 +212568,55 @@
           "body"
         ],
         "title": "ThreadMessageView"
+      },
+      "ThreeSixtyLearningServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "360learning_official_collaborative_learning_platform_status",
+            "title": "Kind",
+            "default": "360learning_official_collaborative_learning_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "360Learning",
+            "title": "Provider",
+            "default": "360Learning"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.360learning.com",
+            "title": "Status Page",
+            "default": "https://status.360learning.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "ThreeSixtyLearningServiceStatus"
       },
       "TidioServiceStatus": {
         "properties": {
