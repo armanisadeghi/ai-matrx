@@ -10001,6 +10001,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/highspot/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_highspot_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -10970,6 +10987,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/circleci/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_circleci_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -11387,6 +11421,23 @@ export interface paths {
         };
         /** Latest Award */
         get: operations["latest_award_nobel_prize_latest_award_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/poetrydb/random-metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Random Metadata */
+        get: operations["random_metadata_poetrydb_random_metadata_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -43314,6 +43365,38 @@ export interface components {
             /** Section Subtype */
             section_subtype?: string | null;
         };
+        /** CircleCIServiceStatus */
+        CircleCIServiceStatus: {
+            /**
+             * Kind
+             * @default circleci_public_service_status
+             * @constant
+             */
+            __kind?: "circleci_public_service_status";
+            /**
+             * Provider
+             * @default CircleCI
+             * @constant
+             */
+            provider?: "CircleCI";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.circleci.com
+             * @constant
+             */
+            status_page?: "https://status.circleci.com";
+        };
         /**
          * CircleServiceStatus
          * @description Safe aggregate status projection for Circle's fixed status page.
@@ -59616,6 +59699,40 @@ export interface components {
             compaction_group_id: string;
             /** Hidden Message Ids */
             hidden_message_ids: string[];
+        };
+        /** HighspotServiceStatus */
+        HighspotServiceStatus: {
+            /**
+             * Kind
+             * @default highspot_official_revenue_productivity_status
+             * @constant
+             */
+            __kind?: "highspot_official_revenue_productivity_status";
+            /**
+             * Provider
+             * @default Highspot
+             * @constant
+             */
+            provider?: "Highspot";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.highspot.com
+             * @constant
+             */
+            status_page?: "https://status.highspot.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * HindsightCostsOut
@@ -76342,6 +76459,27 @@ export interface components {
          * @enum {string}
          */
         PodcastType: "educational" | "news" | "persian";
+        /** PoemMetadata */
+        PoemMetadata: {
+            /**
+             * Kind
+             * @default poetrydb_poem_metadata
+             * @constant
+             */
+            __kind?: "poetrydb_poem_metadata";
+            /**
+             * Provider
+             * @default PoetryDB
+             * @constant
+             */
+            provider?: "PoetryDB";
+            /** Title */
+            title: string;
+            /** Author */
+            author: string;
+            /** Line Count */
+            line_count: number;
+        };
         /**
          * PokeAPIPublicSpecies
          * @description Safe factual projection for one public PokéAPI species record.
@@ -117110,6 +117248,26 @@ export interface operations {
             };
         };
     };
+    public_status_highspot_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HighspotServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -118250,6 +118408,26 @@ export interface operations {
             };
         };
     };
+    public_status_circleci_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CircleCIServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -118801,6 +118979,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NobelAward"];
+                };
+            };
+        };
+    };
+    random_metadata_poetrydb_random_metadata_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoemMetadata"];
                 };
             };
         };

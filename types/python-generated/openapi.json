@@ -21385,6 +21385,27 @@
         }
       }
     },
+    "/highspot/public/status": {
+      "get": {
+        "tags": [
+          "Highspot Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_highspot_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HighspotServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22582,6 +22603,27 @@
         }
       }
     },
+    "/circleci/public/status": {
+      "get": {
+        "tags": [
+          "CircleCI Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_circleci_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CircleCIServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -23205,6 +23247,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NobelAward"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/poetrydb/random-metadata": {
+      "get": {
+        "tags": [
+          "PoetryDB Integrations"
+        ],
+        "summary": "Random Metadata",
+        "operationId": "random_metadata_poetrydb_random_metadata_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoemMetadata"
                 }
               }
             }
@@ -101972,6 +102035,50 @@
         ],
         "title": "ChunkRow"
       },
+      "CircleCIServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "circleci_public_service_status",
+            "title": "Kind",
+            "default": "circleci_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "CircleCI",
+            "title": "Provider",
+            "default": "CircleCI"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.circleci.com",
+            "title": "Status Page",
+            "default": "https://status.circleci.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "CircleCIServiceStatus"
+      },
       "CircleServiceStatus": {
         "properties": {
           "__kind": {
@@ -140498,6 +140605,55 @@
         ],
         "title": "HideResponse"
       },
+      "HighspotServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "highspot_official_revenue_productivity_status",
+            "title": "Kind",
+            "default": "highspot_official_revenue_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Highspot",
+            "title": "Provider",
+            "default": "Highspot"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.highspot.com",
+            "title": "Status Page",
+            "default": "https://status.highspot.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "HighspotServiceStatus"
+      },
       "HindsightCostsOut": {
         "properties": {
           "review_cost": {
@@ -177573,6 +177729,42 @@
           "persian"
         ],
         "title": "PodcastType"
+      },
+      "PoemMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "poetrydb_poem_metadata",
+            "title": "Kind",
+            "default": "poetrydb_poem_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "PoetryDB",
+            "title": "Provider",
+            "default": "PoetryDB"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "author": {
+            "type": "string",
+            "title": "Author"
+          },
+          "line_count": {
+            "type": "integer",
+            "title": "Line Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "author",
+          "line_count"
+        ],
+        "title": "PoemMetadata"
       },
       "PokeAPIPublicSpecies": {
         "properties": {
