@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
 import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
+import { mirrorCapturedErrorToConsole } from "@/lib/diagnostics/structuredConsoleMirror";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -389,7 +390,6 @@ export function ErrorBoundaryView({
   const isChunkFailure = isChunkLoadError(error);
 
   useEffect(() => {
-    console.error(`[ErrorBoundary${context ? ` — ${context}` : ""}]`, error);
     if (!isChunkFailure) {
       // Feed the systemwide Error Inspector. One place here covers every
       // route-level error.tsx (they all delegate to ErrorBoundaryView).
@@ -399,6 +399,13 @@ export function ErrorBoundaryView({
         componentStack: error.digest ? `digest: ${error.digest}` : null,
       });
     }
+    // Keep the boundary loud in DevTools without letting the production
+    // console adapter persist a second, lower-fidelity console-error row for
+    // the same caught render failure.
+    mirrorCapturedErrorToConsole(
+      `[ErrorBoundary${context ? ` — ${context}` : ""}]`,
+      error,
+    );
   }, [error, context, isChunkFailure]);
 
   // A required chunk failed to load. The user refreshes on THEIR terms — an
