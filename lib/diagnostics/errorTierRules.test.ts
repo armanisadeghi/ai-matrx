@@ -292,6 +292,26 @@ describe("classifyTier", () => {
     },
   );
 
+  it.each([
+    "GET /sending-identities/3489a446-1356-4dae-824f-90c65267732f",
+    "GET /sending-identities/3489a446-1356-4dae-824f-90c65267732f/events",
+  ])("keeps expected cross-org mailbox refusal local for %s", (relation) => {
+    const c = classifyTier(
+      captured({
+        source: "api-http",
+        route: "/crm/sending-identities/3489a446-1356-4dae-824f-90c65267732f",
+        relation,
+        code: "forbidden",
+        status: 403,
+        name: "BackendApiError",
+        message: "You do not have permission to access this resource.",
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("sending-identity-cross-org-refusal");
+  });
+
   it.each(["Failed to fetch", "Connection timed out after 15000ms"])(
     "keeps recoverable Mandate code-truth transport loss local: %s",
     (message) => {

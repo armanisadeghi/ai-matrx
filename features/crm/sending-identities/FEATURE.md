@@ -72,6 +72,10 @@ contract via `@/lib/api/typed-client` so a backend rename is a compile error.
   tier required, and one click there — so a user learns the cost BEFORE spending
   an afternoon on DNS records, and the setup work stays fully usable. Gating the
   teaching is how a non-technical expert's outreach ends on day one.
+- **Mailbox ownership refusals stay on the page, not in the repair queue.** The
+  detail and event-history reads both expect the server's `403` when a stale or
+  shared link names another organization's mailbox; the refusal copy remains
+  visible, while neither parallel read creates a `system_error` incident.
 
 ## Traps
 
@@ -145,3 +149,4 @@ DB.
   find it yet" vs verified). Live-verified as super-admin AND as the non-admin
   `test@test.com` against a seeded draft probe (deleted after).
 - 2026-08-16 — ConnectMailboxDialog dead end fixed: "Connect a different Google account" is now ALWAYS offered (inline GIS popup via LazyGoogleAPIProvider + gmail.send scopes, exchange, list reload) — previously the door existed only in the empty state, so a user with existing connections could never add a third account.
+- 2026-09-01 — Expected cross-organization mailbox `403` responses remain visible on the detail screen but no longer create duplicate repair-queue incidents from its parallel detail and event reads.

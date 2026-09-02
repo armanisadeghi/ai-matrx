@@ -225,6 +225,21 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "sending-identity-cross-org-refusal",
+    tier: "yellow",
+    reason:
+      "A stale or shared sending-identity link can lawfully name another organization's mailbox. The server's 403 remains visible on the page, but the parallel detail and event-history refusals are expected authorization outcomes rather than repair incidents.",
+    addedAt: "2026-09-01",
+    match: {
+      source: "api-http",
+      code: "forbidden",
+      status: 403,
+      relationPattern:
+        "^GET /sending-identities/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}(?:/events)?$",
+      routeIncludes: "/crm/sending-identities/",
+    },
+  },
+  {
     id: "sending-identities-read-transport-loss",
     tier: "yellow",
     reason:
