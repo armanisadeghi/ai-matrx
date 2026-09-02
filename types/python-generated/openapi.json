@@ -21175,6 +21175,48 @@
         }
       }
     },
+    "/learn-amp/public/status": {
+      "get": {
+        "tags": [
+          "Learn Amp Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_learn_amp_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearnAmpServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trainual/public/status": {
+      "get": {
+        "tags": [
+          "Trainual Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_trainual_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainualServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22162,6 +22204,48 @@
         }
       }
     },
+    "/stream-status/public/status": {
+      "get": {
+        "tags": [
+          "Stream Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_stream_status_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pubnub/public/status": {
+      "get": {
+        "tags": [
+          "PubNub Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_pubnub_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PubNubServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -22532,7 +22616,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DogImage"
+                  "$ref": "#/components/schemas/aidream__services__dogceo_integrations__service__DogImage"
                 }
               }
             }
@@ -22575,6 +22659,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FoxImage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/randomdog/random-image": {
+      "get": {
+        "tags": [
+          "Random Dog Integrations"
+        ],
+        "summary": "Random Image",
+        "operationId": "random_image_randomdog_random_image_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__randomdog_integrations__service__DogImage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coffeeapi/random-image": {
+      "get": {
+        "tags": [
+          "Coffee API Integrations"
+        ],
+        "summary": "Random Image",
+        "operationId": "random_image_coffeeapi_random_image_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoffeeImage"
                 }
               }
             }
@@ -106331,6 +106457,32 @@
         ],
         "title": "CodingSessionIdentityList"
       },
+      "CoffeeImage": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "coffeeapi_image",
+            "title": "Kind",
+            "default": "coffeeapi_image"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Coffee API",
+            "title": "Provider",
+            "default": "Coffee API"
+          },
+          "image_url": {
+            "type": "string",
+            "title": "Image Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "image_url"
+        ],
+        "title": "CoffeeImage"
+      },
       "CognitoFormsServiceStatus": {
         "properties": {
           "__kind": {
@@ -122152,32 +122304,6 @@
         "type": "object",
         "title": "DocumentSpec",
         "description": "Canonical AI-authorable shape for a Word document (.docx)."
-      },
-      "DogImage": {
-        "properties": {
-          "__kind": {
-            "type": "string",
-            "const": "dogceo_random_image",
-            "title": "Kind",
-            "default": "dogceo_random_image"
-          },
-          "provider": {
-            "type": "string",
-            "const": "Dog CEO",
-            "title": "Provider",
-            "default": "Dog CEO"
-          },
-          "image_url": {
-            "type": "string",
-            "title": "Image Url"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "image_url"
-        ],
-        "title": "DogImage"
       },
       "DomainFoldReport": {
         "properties": {
@@ -150067,6 +150193,55 @@
         ],
         "title": "LeakRule",
         "description": "Why a branch of a contract is considered untyped."
+      },
+      "LearnAmpServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "learn_amp_official_learning_collaboration_platform_status",
+            "title": "Kind",
+            "default": "learn_amp_official_learning_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Learn Amp",
+            "title": "Provider",
+            "default": "Learn Amp"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.learnamp.com",
+            "title": "Status Page",
+            "default": "https://status.learnamp.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "LearnAmpServiceStatus"
       },
       "LearnWorldsServiceStatus": {
         "properties": {
@@ -182717,6 +182892,50 @@
         "title": "PubMedPublicSummary",
         "description": "Safe bounded projection of one public PubMed citation summary."
       },
+      "PubNubServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pubnub_public_service_status",
+            "title": "Kind",
+            "default": "pubnub_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "PubNub",
+            "title": "Provider",
+            "default": "PubNub"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.pubnub.com",
+            "title": "Status Page",
+            "default": "https://status.pubnub.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PubNubServiceStatus"
+      },
       "PublicAiVisibilityBody": {
         "properties": {
           "organization_id": {
@@ -208165,6 +208384,50 @@
         "title": "StrapiServiceStatus",
         "description": "Safe aggregate status projection for Strapi's fixed status page."
       },
+      "StreamServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "stream_public_service_status",
+            "title": "Kind",
+            "default": "stream_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Stream",
+            "title": "Provider",
+            "default": "Stream"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.getstream.io",
+            "title": "Status Page",
+            "default": "https://status.getstream.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "StreamServiceStatus"
+      },
       "StreamYardServiceStatus": {
         "properties": {
           "__kind": {
@@ -216625,6 +216888,55 @@
           "declared_by"
         ],
         "title": "TrackerView"
+      },
+      "TrainualServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "trainual_official_learning_collaboration_platform_status",
+            "title": "Kind",
+            "default": "trainual_official_learning_collaboration_platform_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Trainual",
+            "title": "Provider",
+            "default": "Trainual"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.trainual.com",
+            "title": "Status Page",
+            "default": "https://status.trainual.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "TrainualServiceStatus"
       },
       "Trajectory": {
         "properties": {
@@ -233146,6 +233458,32 @@
         "type": "object",
         "title": "ResumeRequest"
       },
+      "aidream__services__dogceo_integrations__service__DogImage": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dogceo_random_image",
+            "title": "Kind",
+            "default": "dogceo_random_image"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Dog CEO",
+            "title": "Provider",
+            "default": "Dog CEO"
+          },
+          "image_url": {
+            "type": "string",
+            "title": "Image Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "image_url"
+        ],
+        "title": "DogImage"
+      },
       "aidream__services__hindsight__enrollment__EnrollRequest": {
         "properties": {
           "organization_id": {
@@ -233605,6 +233943,37 @@
           "source_id"
         ],
         "title": "IngestRequest"
+      },
+      "aidream__services__randomdog_integrations__service__DogImage": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "randomdog_image",
+            "title": "Kind",
+            "default": "randomdog_image"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Random Dog",
+            "title": "Provider",
+            "default": "Random Dog"
+          },
+          "image_url": {
+            "type": "string",
+            "title": "Image Url"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "image_url",
+          "size_bytes"
+        ],
+        "title": "DogImage"
       },
       "aidream__services__sending_identity__models__ReadinessResponse": {
         "properties": {
