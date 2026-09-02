@@ -11,6 +11,29 @@
 
 import { fileHandler } from "@/features/files/handler/handler";
 import type { FileSource } from "@/features/files/handler/types";
+import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
+import type { MediaRefLike } from "@ai-matrx/media";
+
+/**
+ * Recover owned identity before downloading bytes.
+ *
+ * A permanent Matrx CDN URL is excellent for playback, but its response does
+ * not opt into browser CORS. Treating it as an arbitrary external URL makes a
+ * `fetch()`-backed download fail even though the URL renders in `<video>`.
+ * The canonical recognizer knows the CDN key scheme and returns the owned
+ * `file_id`, which lets the file handler use the authenticated byte client.
+ */
+export function mediaRefToDownloadSource(
+  ref: MediaRefLike,
+): FileSource | null {
+  if (typeof ref !== "string" && ref.file_id) {
+    return { kind: "file_id", fileId: ref.file_id };
+  }
+
+  const url = typeof ref === "string" ? ref : ref.url;
+  if (!url) return null;
+  return recognizeOurFileUrl(url)?.source ?? { kind: "external_url", url };
+}
 
 export async function downloadMediaSource(
   source: FileSource,

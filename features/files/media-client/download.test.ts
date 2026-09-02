@@ -5,7 +5,30 @@ jest.mock("@/features/files/handler/handler", () => ({
   fileHandler: { use: mockUse },
 }));
 
-import { downloadMediaSource } from "./download";
+import { downloadMediaSource, mediaRefToDownloadSource } from "./download";
+
+describe("mediaRefToDownloadSource", () => {
+  it("recovers owned identity from a permanent Matrx CDN URL", () => {
+    expect(
+      mediaRefToDownloadSource(
+        "https://cdn.matrxserver.com/4cf62e4e-2679-484f-b652-034e697418df/cbbfa63b-5617-4982-ad08-e2596b0811cd?v=0df21a0a",
+      ),
+    ).toEqual({
+      kind: "file_id",
+      fileId: "cbbfa63b-5617-4982-ad08-e2596b0811cd",
+      mime: undefined,
+    });
+  });
+
+  it("leaves a genuinely external URL on the external lane", () => {
+    expect(
+      mediaRefToDownloadSource("https://media.example/video.mp4"),
+    ).toEqual({
+      kind: "external_url",
+      url: "https://media.example/video.mp4",
+    });
+  });
+});
 
 describe("downloadMediaSource", () => {
   let clickedHref = "";

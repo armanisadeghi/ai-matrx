@@ -35,7 +35,7 @@ import { mediaClient, mediaFilesClient } from "./client";
 import { MediaSharePopoverSlot } from "./share-slot";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
-import { downloadMediaSource } from "./download";
+import { downloadMediaSource, mediaRefToDownloadSource } from "./download";
 
 const playbackSession: PlaybackSessionPort = {
   useMediaElementSink(forward) {
@@ -73,14 +73,7 @@ async function copyText(text: string): Promise<boolean> {
 
 const actions: MediaHostPorts["actions"] = {
   async download(ctx) {
-    const fileId = ctxFileId(ctx);
-    const source = fileId
-      ? ({ kind: "file_id", fileId } as const)
-      : typeof ctx.ref === "string"
-        ? ({ kind: "external_url", url: ctx.ref } as const)
-        : ctx.ref.url
-          ? ({ kind: "external_url", url: ctx.ref.url } as const)
-          : null;
+    const source = mediaRefToDownloadSource(ctx.ref);
     if (!source) return;
     await downloadMediaSource(source, ctx.fileName);
   },
