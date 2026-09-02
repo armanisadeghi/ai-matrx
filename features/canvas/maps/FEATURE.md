@@ -190,6 +190,10 @@ AI drafts, the person refines. Neither half needed a new system.
 16. **Prose has a useful default measure.** An ordinary box without a manually
     chosen width caps at 280px and wraps long words. A width set with the XYFlow
     resize handles remains authoritative and is never capped by the default.
+17. **List reads wait for browser auth.** `MapsListPage` mounts
+    `EntityListPage` only after `authReady`, `userId`, and `accessToken` exist;
+    the server-authenticated shell may paint before Supabase adopts its cookie
+    session, and that gap must never launch count or row reads as `anon`.
 
 ---
 
@@ -258,6 +262,8 @@ sees the standard in-place confirmation before the canonical save path runs.
 
 ## Change Log
 
+- **2026-09-02** — Gated `/maps` list and scope-count reads on the usable
+  browser session, eliminating the server-shell-to-client-auth cold-start race.
 - **2026-08-15** — Replaced the map-only icon dropdown/renderer with the
   canonical `IconInputWithValidation` picker and `IconResolver`, preserving any
   Lucide, custom, or Matrx SVG id while normalizing historical diagram ids.

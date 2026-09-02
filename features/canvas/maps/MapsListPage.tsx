@@ -10,11 +10,29 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectAccessToken,
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import { mapListConfig } from "./listConfig";
 import { NewMapDialog } from "./NewMapDialog";
 
+export function canLoadMaps(input: {
+  authReady: boolean;
+  userId: string | null;
+  accessToken: string | null;
+}): boolean {
+  return Boolean(input.authReady && input.userId && input.accessToken);
+}
+
 export function MapsListPage() {
   const [creating, setCreating] = useState(false);
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const accessToken = useAppSelector(selectAccessToken);
+  const mayLoad = canLoadMaps({ authReady, userId, accessToken });
 
   const newButton = (
     <Button size="sm" className="h-11 lg:h-7" onClick={() => setCreating(true)}>
@@ -33,12 +51,23 @@ export function MapsListPage() {
           </span>
         </div>
       </PageHeader>
-      <EntityListPage
-        config={mapListConfig}
-        headerActions={newButton}
-        emptyAction={newButton}
-      />
-      <NewMapDialog open={creating} onOpenChange={setCreating} />
+      {mayLoad ? (
+        <>
+          <EntityListPage
+            config={mapListConfig}
+            headerActions={newButton}
+            emptyAction={newButton}
+          />
+          <NewMapDialog open={creating} onOpenChange={setCreating} />
+        </>
+      ) : (
+        <div
+          className="flex min-h-40 items-center justify-center text-sm text-muted-foreground"
+          role="status"
+        >
+          Loading your maps…
+        </div>
+      )}
     </>
   );
 }
