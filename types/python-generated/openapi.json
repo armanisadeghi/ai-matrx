@@ -21406,6 +21406,27 @@
         }
       }
     },
+    "/close-crm/public/status": {
+      "get": {
+        "tags": [
+          "Close CRM Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_close_crm_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloseCRMServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22624,6 +22645,27 @@
         }
       }
     },
+    "/sinch/public/status": {
+      "get": {
+        "tags": [
+          "Sinch Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_sinch_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SinchServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -23268,6 +23310,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PoemMetadata"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/useless-facts/random-fact": {
+      "get": {
+        "tags": [
+          "Useless Facts API Integrations"
+        ],
+        "summary": "Random Fact",
+        "operationId": "random_fact_useless_facts_random_fact_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntertainmentFact"
                 }
               }
             }
@@ -103627,6 +103690,55 @@
         ],
         "title": "CloneTemplateResponse"
       },
+      "CloseCRMServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "close_crm_official_revenue_productivity_status",
+            "title": "Kind",
+            "default": "close_crm_official_revenue_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Close",
+            "title": "Provider",
+            "default": "Close"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.close.com",
+            "title": "Status Page",
+            "default": "https://status.close.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "CloseCRMServiceStatus"
+      },
       "ClosePageCommand": {
         "properties": {
           "command": {
@@ -126601,6 +126713,53 @@
           "stage"
         ],
         "title": "EnterStageRequest"
+      },
+      "EntertainmentFact": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "useless_facts_entertainment",
+            "title": "Kind",
+            "default": "useless_facts_entertainment"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Useless Facts API",
+            "title": "Provider",
+            "default": "Useless Facts API"
+          },
+          "fact_id": {
+            "type": "string",
+            "title": "Fact Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "permalink": {
+            "type": "string",
+            "title": "Permalink"
+          },
+          "content_notice": {
+            "type": "string",
+            "const": "unverified entertainment fact",
+            "title": "Content Notice",
+            "default": "unverified entertainment fact"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fact_id",
+          "text",
+          "source",
+          "permalink"
+        ],
+        "title": "EntertainmentFact"
       },
       "EntitiesPage": {
         "properties": {
@@ -203623,6 +203782,50 @@
         },
         "type": "object",
         "title": "SimulateProviderRetryRequest"
+      },
+      "SinchServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "sinch_public_service_status",
+            "title": "Kind",
+            "default": "sinch_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Sinch",
+            "title": "Provider",
+            "default": "Sinch"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.sinch.com",
+            "title": "Status Page",
+            "default": "https://status.sinch.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SinchServiceStatus"
       },
       "SiteCredentialRequest": {
         "properties": {

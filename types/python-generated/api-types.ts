@@ -10018,6 +10018,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/close-crm/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_close_crm_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -11004,6 +11021,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sinch/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_sinch_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -11438,6 +11472,23 @@ export interface paths {
         };
         /** Random Metadata */
         get: operations["random_metadata_poetrydb_random_metadata_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/useless-facts/random-fact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Random Fact */
+        get: operations["random_fact_useless_facts_random_fact_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -43985,6 +44036,40 @@ export interface components {
             /** Workflow Id */
             workflow_id: string;
         };
+        /** CloseCRMServiceStatus */
+        CloseCRMServiceStatus: {
+            /**
+             * Kind
+             * @default close_crm_official_revenue_productivity_status
+             * @constant
+             */
+            __kind?: "close_crm_official_revenue_productivity_status";
+            /**
+             * Provider
+             * @default Close
+             * @constant
+             */
+            provider?: "Close";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.close.com
+             * @constant
+             */
+            status_page?: "https://status.close.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** ClosePageCommand */
         ClosePageCommand: {
             /**
@@ -53531,6 +53616,35 @@ export interface components {
             stage: components["schemas"]["LoopStage"];
             pipe?: components["schemas"]["Pipe"] | null;
             ref?: components["schemas"]["StageRef"] | null;
+        };
+        /** EntertainmentFact */
+        EntertainmentFact: {
+            /**
+             * Kind
+             * @default useless_facts_entertainment
+             * @constant
+             */
+            __kind?: "useless_facts_entertainment";
+            /**
+             * Provider
+             * @default Useless Facts API
+             * @constant
+             */
+            provider?: "Useless Facts API";
+            /** Fact Id */
+            fact_id: string;
+            /** Text */
+            text: string;
+            /** Source */
+            source: string;
+            /** Permalink */
+            permalink: string;
+            /**
+             * Content Notice
+             * @default unverified entertainment fact
+             * @constant
+             */
+            content_notice?: "unverified entertainment fact";
         };
         /** EntitiesPage */
         EntitiesPage: {
@@ -87509,6 +87623,38 @@ export interface components {
              */
             event_spacing_ms?: number;
         };
+        /** SinchServiceStatus */
+        SinchServiceStatus: {
+            /**
+             * Kind
+             * @default sinch_public_service_status
+             * @constant
+             */
+            __kind?: "sinch_public_service_status";
+            /**
+             * Provider
+             * @default Sinch
+             * @constant
+             */
+            provider?: "Sinch";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.sinch.com
+             * @constant
+             */
+            status_page?: "https://status.sinch.com";
+        };
         /** SiteCredentialRequest */
         SiteCredentialRequest: {
             /**
@@ -117268,6 +117414,26 @@ export interface operations {
             };
         };
     };
+    public_status_close_crm_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloseCRMServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -118428,6 +118594,26 @@ export interface operations {
             };
         };
     };
+    public_status_sinch_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SinchServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -118999,6 +119185,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PoemMetadata"];
+                };
+            };
+        };
+    };
+    random_fact_useless_facts_random_fact_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntertainmentFact"];
                 };
             };
         };
