@@ -20,9 +20,10 @@ system: text layers (`helper`/`example`/`hint`/…), audio (`spoken_front` and
 ([fast-fire/helper-audio/generateHelperAudio.thunk.ts](./fast-fire/helper-audio/generateHelperAudio.thunk.ts))
 is its consumer.
 
-The authenticated set-detail route gates with `getServerAuth` before mounting
-`SetDetailView`. Guests redirect through `loginHref` with the set destination intact;
-they never reach `fcService` as the anonymous PostgREST role. Public decks use the
+The authenticated `/education/flashcards/**` tool family stops guests in the global
+route boundary before any owned-deck, category, scope, or study-data client mounts.
+Guests redirect through `loginHref` with the requested destination intact. Set detail
+also gates with `getServerAuth` before mounting `SetDetailView`. Public decks use the
 separate `/p/e/fc_set/[id]` lane and its purpose-built RPC.
 
 ## Agent-generated decks — the single-writer contract (D-WP3-4)
@@ -161,6 +162,10 @@ own fresh conversation):
   print) carry the URL and alt text but not the credit caption.
 
 ## Change log
+
+- 2026-09-02 — The authenticated `/education/flashcards/**` tool family now stops
+  guests at the global route boundary before owned-deck, category, scope, or study-data
+  clients mount. The anonymous deck funnel remains `/p/e/fc_set/[id]`.
 
 - 2026-09-01 — FastFire spoken-front variation selection keeps its FNV-1a
   hash unsigned while decorrelating each style lane. Cards whose hash has the
