@@ -10035,6 +10035,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/copper-crm/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_copper_crm_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nutshell-crm/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_nutshell_crm_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pipeline-crm/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_pipeline_crm_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tettra/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_tettra_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -11038,6 +11106,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/plivo/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_plivo_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bandwidth-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_bandwidth_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clicksend/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_clicksend_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bird-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_bird_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zight/public/status": {
         parameters: {
             query?: never;
@@ -11446,6 +11582,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/anilist/public/anime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Anime */
+        get: operations["public_anime_anilist_public_anime_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/nobel-prize/latest-award": {
         parameters: {
             query?: never;
@@ -11489,6 +11642,40 @@ export interface paths {
         };
         /** Random Fact */
         get: operations["random_fact_useless_facts_random_fact_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-gutenberg/latest-ebook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest Ebook */
+        get: operations["latest_ebook_project_gutenberg_latest_ebook_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rick-and-morty/character": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Character */
+        get: operations["character_rick_and_morty_character_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -35584,6 +35771,33 @@ export interface components {
              */
             error?: string | null;
         };
+        /** AnimeMetadata */
+        AnimeMetadata: {
+            /**
+             * Kind
+             * @default anilist_anime_metadata
+             * @constant
+             */
+            __kind?: "anilist_anime_metadata";
+            /**
+             * Provider
+             * @default AniList
+             * @constant
+             */
+            provider?: "AniList";
+            /** Media Id */
+            media_id: number;
+            /** Romaji Title */
+            romaji_title: string;
+            /** English Title */
+            english_title: string | null;
+            /** Media Format */
+            media_format: string | null;
+            /** Status */
+            status: string | null;
+            /** Episodes */
+            episodes: number | null;
+        };
         /** AnnotationCreateBody */
         AnnotationCreateBody: {
             /** Page Number */
@@ -37765,6 +37979,38 @@ export interface components {
              */
             enrichment_limit?: number;
         };
+        /** BandwidthServiceStatus */
+        BandwidthServiceStatus: {
+            /**
+             * Kind
+             * @default bandwidth_public_service_status
+             * @constant
+             */
+            __kind?: "bandwidth_public_service_status";
+            /**
+             * Provider
+             * @default Bandwidth
+             * @constant
+             */
+            provider?: "Bandwidth";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.bandwidth.com
+             * @constant
+             */
+            status_page?: "https://status.bandwidth.com";
+        };
         /** BaremetricsServiceStatus */
         BaremetricsServiceStatus: {
             /**
@@ -38298,6 +38544,38 @@ export interface components {
             connection_id: string;
             /** Resource Ref */
             resource_ref: string;
+        };
+        /** BirdServiceStatus */
+        BirdServiceStatus: {
+            /**
+             * Kind
+             * @default bird_public_service_status
+             * @constant
+             */
+            __kind?: "bird_public_service_status";
+            /**
+             * Provider
+             * @default Bird
+             * @constant
+             */
+            provider?: "Bird";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.bird.com
+             * @constant
+             */
+            status_page?: "https://status.bird.com";
         };
         /**
          * BitbucketPublicPipeline
@@ -42664,6 +42942,43 @@ export interface components {
             /** Default */
             default?: unknown;
         };
+        /** CharacterMetadata */
+        CharacterMetadata: {
+            /**
+             * Kind
+             * @default rick_and_morty_character
+             * @constant
+             */
+            __kind?: "rick_and_morty_character";
+            /**
+             * Provider
+             * @default Rick and Morty API
+             * @constant
+             */
+            provider?: "Rick and Morty API";
+            /** Character Id */
+            character_id: number;
+            /** Name */
+            name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "Alive" | "Dead" | "unknown";
+            /** Species */
+            species: string;
+            /** Character Type */
+            character_type: string | null;
+            /**
+             * Gender
+             * @enum {string}
+             */
+            gender: "Female" | "Male" | "Genderless" | "unknown";
+            /** Origin Name */
+            origin_name: string;
+            /** Location Name */
+            location_name: string;
+        };
         /** ChargebeeServiceStatus */
         ChargebeeServiceStatus: {
             /**
@@ -43963,6 +44278,38 @@ export interface components {
             title?: string | null;
             /** Text Preview */
             text_preview?: string | null;
+        };
+        /** ClickSendServiceStatus */
+        ClickSendServiceStatus: {
+            /**
+             * Kind
+             * @default clicksend_public_service_status
+             * @constant
+             */
+            __kind?: "clicksend_public_service_status";
+            /**
+             * Provider
+             * @default ClickSend
+             * @constant
+             */
+            provider?: "ClickSend";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.clicksend.com
+             * @constant
+             */
+            status_page?: "https://status.clicksend.com";
         };
         /**
          * ClientContext
@@ -47596,6 +47943,40 @@ export interface components {
              * @description Optional maximum number of coordinated rows to materialize.
              */
             limit?: number | null;
+        };
+        /** CopperCRMServiceStatus */
+        CopperCRMServiceStatus: {
+            /**
+             * Kind
+             * @default copper_crm_official_revenue_productivity_status
+             * @constant
+             */
+            __kind?: "copper_crm_official_revenue_productivity_status";
+            /**
+             * Provider
+             * @default Copper
+             * @constant
+             */
+            provider?: "Copper";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.copper.com
+             * @constant
+             */
+            status_page?: "https://status.copper.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** CopyFileRequest */
         CopyFileRequest: {
@@ -59321,6 +59702,34 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** GutenbergEbook */
+        GutenbergEbook: {
+            /**
+             * Kind
+             * @default project_gutenberg_ebook
+             * @constant
+             */
+            __kind?: "project_gutenberg_ebook";
+            /**
+             * Provider
+             * @default Project Gutenberg
+             * @constant
+             */
+            provider?: "Project Gutenberg";
+            /** Ebook Id */
+            ebook_id: number;
+            /** Title */
+            title: string;
+            /** Language */
+            language: string;
+            /** Record Url */
+            record_url: string;
+            /**
+             * Feed Updated At
+             * Format: date-time
+             */
+            feed_updated_at: string;
+        };
         /**
          * HEPDataPublicRecord
          * @description Safe factual projection of one finished public HEPData record.
@@ -70795,6 +71204,40 @@ export interface components {
              */
             healthy?: true;
         };
+        /** NutshellCRMServiceStatus */
+        NutshellCRMServiceStatus: {
+            /**
+             * Kind
+             * @default nutshell_crm_official_revenue_productivity_status
+             * @constant
+             */
+            __kind?: "nutshell_crm_official_revenue_productivity_status";
+            /**
+             * Provider
+             * @default Nutshell
+             * @constant
+             */
+            provider?: "Nutshell";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.nutshell.com
+             * @constant
+             */
+            status_page?: "https://status.nutshell.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * OAuthTokenPersistRequest
          * @description The FE OAuth callback's hand-off: the raw token-endpoint response plus
@@ -75186,6 +75629,40 @@ export interface components {
              */
             status_page?: "https://status.pipedream.com";
         };
+        /** PipelineCRMServiceStatus */
+        PipelineCRMServiceStatus: {
+            /**
+             * Kind
+             * @default pipeline_crm_official_revenue_productivity_status
+             * @constant
+             */
+            __kind?: "pipeline_crm_official_revenue_productivity_status";
+            /**
+             * Provider
+             * @default Pipeline
+             * @constant
+             */
+            provider?: "Pipeline";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.pipelinecrm.com
+             * @constant
+             */
+            status_page?: "https://status.pipelinecrm.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** PipelineProgress */
         PipelineProgress: {
             /**
@@ -76132,6 +76609,38 @@ export interface components {
             pages?: components["schemas"]["PlannedPageResult"][];
             /** Problems */
             problems?: string[];
+        };
+        /** PlivoServiceStatus */
+        PlivoServiceStatus: {
+            /**
+             * Kind
+             * @default plivo_public_service_status
+             * @constant
+             */
+            __kind?: "plivo_public_service_status";
+            /**
+             * Provider
+             * @default Plivo
+             * @constant
+             */
+            provider?: "Plivo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.plivo.com
+             * @constant
+             */
+            status_page?: "https://status.plivo.com";
         };
         /**
          * PlosPublicArticle
@@ -92893,6 +93402,40 @@ export interface components {
             variables?: {
                 [key: string]: unknown;
             };
+        };
+        /** TettraServiceStatus */
+        TettraServiceStatus: {
+            /**
+             * Kind
+             * @default tettra_official_knowledge_collaboration_status
+             * @constant
+             */
+            __kind?: "tettra_official_knowledge_collaboration_status";
+            /**
+             * Provider
+             * @default Tettra
+             * @constant
+             */
+            provider?: "Tettra";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.tettra.co
+             * @constant
+             */
+            status_page?: "https://status.tettra.co";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** TextPart */
         TextPart: {
@@ -117434,6 +117977,86 @@ export interface operations {
             };
         };
     };
+    public_status_copper_crm_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopperCRMServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_nutshell_crm_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NutshellCRMServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_pipeline_crm_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineCRMServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_tettra_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TettraServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -118614,6 +119237,86 @@ export interface operations {
             };
         };
     };
+    public_status_plivo_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlivoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_bandwidth_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BandwidthServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_clicksend_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClickSendServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_bird_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BirdServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_zight_public_status_get: {
         parameters: {
             query?: never;
@@ -119149,6 +119852,37 @@ export interface operations {
             };
         };
     };
+    public_anime_anilist_public_anime_get: {
+        parameters: {
+            query: {
+                media_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnimeMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     latest_award_nobel_prize_latest_award_get: {
         parameters: {
             query?: never;
@@ -119205,6 +119939,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntertainmentFact"];
+                };
+            };
+        };
+    };
+    latest_ebook_project_gutenberg_latest_ebook_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GutenbergEbook"];
+                };
+            };
+        };
+    };
+    character_rick_and_morty_character_get: {
+        parameters: {
+            query: {
+                character_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

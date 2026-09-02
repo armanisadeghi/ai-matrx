@@ -21427,6 +21427,90 @@
         }
       }
     },
+    "/copper-crm/public/status": {
+      "get": {
+        "tags": [
+          "Copper CRM Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_copper_crm_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopperCRMServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nutshell-crm/public/status": {
+      "get": {
+        "tags": [
+          "Nutshell CRM Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_nutshell_crm_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NutshellCRMServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pipeline-crm/public/status": {
+      "get": {
+        "tags": [
+          "Pipeline CRM Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_pipeline_crm_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineCRMServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tettra/public/status": {
+      "get": {
+        "tags": [
+          "Tettra Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_tettra_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TettraServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22666,6 +22750,90 @@
         }
       }
     },
+    "/plivo/public/status": {
+      "get": {
+        "tags": [
+          "Plivo Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_plivo_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlivoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bandwidth-status/public/status": {
+      "get": {
+        "tags": [
+          "Bandwidth Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_bandwidth_status_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BandwidthServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clicksend/public/status": {
+      "get": {
+        "tags": [
+          "ClickSend Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_clicksend_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClickSendServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bird-status/public/status": {
+      "get": {
+        "tags": [
+          "Bird Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_bird_status_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BirdServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zight/public/status": {
       "get": {
         "tags": [
@@ -23275,6 +23443,50 @@
         }
       }
     },
+    "/anilist/public/anime": {
+      "get": {
+        "tags": [
+          "AniList Integrations"
+        ],
+        "summary": "Public Anime",
+        "operationId": "public_anime_anilist_public_anime_get",
+        "parameters": [
+          {
+            "name": "media_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Media Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimeMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/nobel-prize/latest-award": {
       "get": {
         "tags": [
@@ -23331,6 +23543,71 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EntertainmentFact"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/project-gutenberg/latest-ebook": {
+      "get": {
+        "tags": [
+          "Project Gutenberg Integrations"
+        ],
+        "summary": "Latest Ebook",
+        "operationId": "latest_ebook_project_gutenberg_latest_ebook_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GutenbergEbook"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rick-and-morty/character": {
+      "get": {
+        "tags": [
+          "Rick and Morty API Integrations"
+        ],
+        "summary": "Character",
+        "operationId": "character_rick_and_morty_character_get",
+        "parameters": [
+          {
+            "name": "character_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 10000,
+              "minimum": 1,
+              "title": "Character Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -83737,6 +84014,85 @@
         "title": "AncillaryItem",
         "description": "One decorative asset that needs attention — and how to fix it.\n\nNever a reason to hold a run out of completion. This is the \"your episode is\nready, this one cover needs a redo\" channel."
       },
+      "AnimeMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "anilist_anime_metadata",
+            "title": "Kind",
+            "default": "anilist_anime_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "AniList",
+            "title": "Provider",
+            "default": "AniList"
+          },
+          "media_id": {
+            "type": "integer",
+            "title": "Media Id"
+          },
+          "romaji_title": {
+            "type": "string",
+            "title": "Romaji Title"
+          },
+          "english_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "English Title"
+          },
+          "media_format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Format"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "episodes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episodes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "media_id",
+          "romaji_title",
+          "english_title",
+          "media_format",
+          "status",
+          "episodes"
+        ],
+        "title": "AnimeMetadata"
+      },
       "AnnotationCreateBody": {
         "properties": {
           "page_number": {
@@ -88520,6 +88876,50 @@
         "type": "object",
         "title": "BacklinkRefreshBody"
       },
+      "BandwidthServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "bandwidth_public_service_status",
+            "title": "Kind",
+            "default": "bandwidth_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Bandwidth",
+            "title": "Provider",
+            "default": "Bandwidth"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.bandwidth.com",
+            "title": "Status Page",
+            "default": "https://status.bandwidth.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "BandwidthServiceStatus"
+      },
       "BaremetricsServiceStatus": {
         "properties": {
           "__kind": {
@@ -89642,6 +90042,50 @@
           "resource_ref"
         ],
         "title": "BingSiteBindingRequest"
+      },
+      "BirdServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "bird_public_service_status",
+            "title": "Kind",
+            "default": "bird_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Bird",
+            "title": "Provider",
+            "default": "Bird"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.bird.com",
+            "title": "Status Page",
+            "default": "https://status.bird.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "BirdServiceStatus"
       },
       "BitbucketPublicPipeline": {
         "properties": {
@@ -99525,6 +99969,85 @@
         "title": "ChannelSpec",
         "description": "Declarative spec for a channel in a workflow definition.\n\nChannels hold JSON-serializable values only. Pydantic models are dumped at\nwrite time via .model_dump(mode='json'). This rule is enforced in the\nchannel manager and makes checkpoints round-trip losslessly."
       },
+      "CharacterMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "rick_and_morty_character",
+            "title": "Kind",
+            "default": "rick_and_morty_character"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Rick and Morty API",
+            "title": "Provider",
+            "default": "Rick and Morty API"
+          },
+          "character_id": {
+            "type": "integer",
+            "title": "Character Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Alive",
+              "Dead",
+              "unknown"
+            ],
+            "title": "Status"
+          },
+          "species": {
+            "type": "string",
+            "title": "Species"
+          },
+          "character_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Type"
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "Female",
+              "Male",
+              "Genderless",
+              "unknown"
+            ],
+            "title": "Gender"
+          },
+          "origin_name": {
+            "type": "string",
+            "title": "Origin Name"
+          },
+          "location_name": {
+            "type": "string",
+            "title": "Location Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "character_id",
+          "name",
+          "status",
+          "species",
+          "character_type",
+          "gender",
+          "origin_name",
+          "location_name"
+        ],
+        "title": "CharacterMetadata"
+      },
       "ChargebeeServiceStatus": {
         "properties": {
           "__kind": {
@@ -103555,6 +104078,50 @@
           "success"
         ],
         "title": "ClickResult"
+      },
+      "ClickSendServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "clicksend_public_service_status",
+            "title": "Kind",
+            "default": "clicksend_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "ClickSend",
+            "title": "Provider",
+            "default": "ClickSend"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.clicksend.com",
+            "title": "Status Page",
+            "default": "https://status.clicksend.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ClickSendServiceStatus"
       },
       "ClientContext": {
         "properties": {
@@ -112376,6 +112943,55 @@
           "rows"
         ],
         "title": "CoordinatedRowsPlan"
+      },
+      "CopperCRMServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "copper_crm_official_revenue_productivity_status",
+            "title": "Kind",
+            "default": "copper_crm_official_revenue_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Copper",
+            "title": "Provider",
+            "default": "Copper"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.copper.com",
+            "title": "Status Page",
+            "default": "https://status.copper.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "CopperCRMServiceStatus"
       },
       "CopyFileRequest": {
         "properties": {
@@ -139752,6 +140368,53 @@
         ],
         "title": "GustoServiceStatus"
       },
+      "GutenbergEbook": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "project_gutenberg_ebook",
+            "title": "Kind",
+            "default": "project_gutenberg_ebook"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Project Gutenberg",
+            "title": "Provider",
+            "default": "Project Gutenberg"
+          },
+          "ebook_id": {
+            "type": "integer",
+            "title": "Ebook Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "record_url": {
+            "type": "string",
+            "title": "Record Url"
+          },
+          "feed_updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Feed Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ebook_id",
+          "title",
+          "language",
+          "record_url",
+          "feed_updated_at"
+        ],
+        "title": "GutenbergEbook"
+      },
       "HEPDataPublicRecord": {
         "properties": {
           "__kind": {
@@ -165279,6 +165942,55 @@
         "title": "NtfyHealthResult",
         "description": "Safe projection of the official ntfy.sh health response."
       },
+      "NutshellCRMServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "nutshell_crm_official_revenue_productivity_status",
+            "title": "Kind",
+            "default": "nutshell_crm_official_revenue_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Nutshell",
+            "title": "Provider",
+            "default": "Nutshell"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.nutshell.com",
+            "title": "Status Page",
+            "default": "https://status.nutshell.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "NutshellCRMServiceStatus"
+      },
       "OAuthTokenPersistRequest": {
         "properties": {
           "tokens": {
@@ -175403,6 +176115,55 @@
         ],
         "title": "PipedreamServiceStatus"
       },
+      "PipelineCRMServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pipeline_crm_official_revenue_productivity_status",
+            "title": "Kind",
+            "default": "pipeline_crm_official_revenue_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Pipeline",
+            "title": "Provider",
+            "default": "Pipeline"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.pipelinecrm.com",
+            "title": "Status Page",
+            "default": "https://status.pipelinecrm.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "PipelineCRMServiceStatus"
+      },
       "PipelineProgress": {
         "properties": {
           "total_keywords": {
@@ -176994,6 +177755,50 @@
           "web_site_id"
         ],
         "title": "PlannedPagesResult"
+      },
+      "PlivoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "plivo_public_service_status",
+            "title": "Kind",
+            "default": "plivo_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Plivo",
+            "title": "Provider",
+            "default": "Plivo"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.plivo.com",
+            "title": "Status Page",
+            "default": "https://status.plivo.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PlivoServiceStatus"
       },
       "PlosPublicArticle": {
         "properties": {
@@ -215419,6 +216224,55 @@
         },
         "type": "object",
         "title": "TestNodeRequest"
+      },
+      "TettraServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "tettra_official_knowledge_collaboration_status",
+            "title": "Kind",
+            "default": "tettra_official_knowledge_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Tettra",
+            "title": "Provider",
+            "default": "Tettra"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.tettra.co",
+            "title": "Status Page",
+            "default": "https://status.tettra.co"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "TettraServiceStatus"
       },
       "TextPart": {
         "properties": {
