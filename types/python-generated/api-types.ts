@@ -7808,6 +7808,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stonly/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_stonly_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12934,6 +12951,23 @@ export interface paths {
         };
         /** Public Entity */
         get: operations["public_entity_wikidata_public_entity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikimedia-incubator/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_wikimedia_incubator_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -93868,6 +93902,38 @@ export interface components {
             /** Status */
             status: string;
         };
+        /**
+         * StonlyServiceStatus
+         * @description Safe aggregate status projection for Stonly's fixed status page.
+         */
+        StonlyServiceStatus: {
+            /**
+             * Kind
+             * @default stonly_public_service_status
+             * @constant
+             */
+            __kind?: "stonly_public_service_status";
+            /**
+             * Provider
+             * @default Stonly
+             * @constant
+             */
+            provider?: "Stonly";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.stonly.com/
+             * @constant
+             */
+            status_page?: "https://status.stonly.com/";
+        };
         /** StopRunResponse */
         StopRunResponse: {
             /** Run Id */
@@ -105865,6 +105931,31 @@ export interface components {
              * @constant
              */
             provider?: "Wikimania";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
+        aidream__services__wikimedia_incubator_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default wikimedia_incubator_page_metadata
+             * @constant
+             */
+            __kind?: "wikimedia_incubator_page_metadata";
+            /**
+             * Provider
+             * @default Wikimedia Incubator
+             * @constant
+             */
+            provider?: "Wikimedia Incubator";
             /** Page Id */
             page_id: number;
             /** Title */
@@ -119101,6 +119192,26 @@ export interface operations {
             };
         };
     };
+    public_status_stonly_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StonlyServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -125494,6 +125605,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntityMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_wikimedia_incubator_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__wikimedia_incubator_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */

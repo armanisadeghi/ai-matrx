@@ -18676,6 +18676,27 @@
         }
       }
     },
+    "/stonly/public/status": {
+      "get": {
+        "tags": [
+          "Stonly Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_stonly_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StonlyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -25767,6 +25788,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EntityMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wikimedia-incubator/public/page": {
+      "get": {
+        "tags": [
+          "Wikimedia Incubator Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_wikimedia_incubator_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__wikimedia_incubator_integrations__service__PageMetadata"
                 }
               }
             }
@@ -215345,6 +215409,47 @@
         ],
         "title": "StatusResponse"
       },
+      "StonlyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "stonly_public_service_status",
+            "title": "Kind",
+            "default": "stonly_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Stonly",
+            "title": "Provider",
+            "default": "Stonly"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.stonly.com/",
+            "title": "Status Page",
+            "default": "https://status.stonly.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "StonlyServiceStatus",
+        "description": "Safe aggregate status projection for Stonly's fixed status page."
+      },
       "StopRunResponse": {
         "properties": {
           "run_id": {
@@ -242788,6 +242893,52 @@
             "const": "Wikimania",
             "title": "Provider",
             "default": "Wikimania"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__wikimedia_incubator_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wikimedia_incubator_page_metadata",
+            "title": "Kind",
+            "default": "wikimedia_incubator_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wikimedia Incubator",
+            "title": "Provider",
+            "default": "Wikimedia Incubator"
           },
           "page_id": {
             "type": "integer",
