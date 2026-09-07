@@ -7893,6 +7893,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/plain/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_plain_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12211,6 +12228,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/khoros/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_khoros_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -13189,6 +13223,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_wikimedia_outreach_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikimedia-strategy/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_wikimedia_strategy_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -66514,6 +66565,40 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** KhorosServiceStatus */
+        KhorosServiceStatus: {
+            /**
+             * Kind
+             * @default khoros_official_community_collaboration_status
+             * @constant
+             */
+            __kind?: "khoros_official_community_collaboration_status";
+            /**
+             * Provider
+             * @default Khoros
+             * @constant
+             */
+            provider?: "Khoros";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.khoros.com
+             * @constant
+             */
+            status_page?: "https://status.khoros.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * KindActionEntry
          * @description One Kind Action — the `action` class of the grammar.
@@ -79036,6 +79121,38 @@ export interface components {
             error?: string | null;
             /** Top Phrases */
             top_phrases?: string[];
+        };
+        /**
+         * PlainServiceStatus
+         * @description Safe aggregate status projection for Plain's fixed status page.
+         */
+        PlainServiceStatus: {
+            /**
+             * Kind
+             * @default plain_public_service_status
+             * @constant
+             */
+            __kind?: "plain_public_service_status";
+            /**
+             * Provider
+             * @default Plain
+             * @constant
+             */
+            provider?: "Plain";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.plain.com/
+             * @constant
+             */
+            status_page?: "https://status.plain.com/";
         };
         /**
          * PlanAiRunDetail
@@ -106566,6 +106683,31 @@ export interface components {
             language: string;
         };
         /** PageMetadata */
+        aidream__services__wikimedia_strategy_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default wikimedia_strategy_page_metadata
+             * @constant
+             */
+            __kind?: "wikimedia_strategy_page_metadata";
+            /**
+             * Provider
+             * @default Wikimedia Strategy
+             * @constant
+             */
+            provider?: "Wikimedia Strategy";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
         aidream__services__wikinews_integrations__service__PageMetadata: {
             /**
              * Kind
@@ -119915,6 +120057,26 @@ export interface operations {
             };
         };
     };
+    public_status_plain_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlainServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -124995,6 +125157,26 @@ export interface operations {
             };
         };
     };
+    public_status_khoros_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KhorosServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -126563,6 +126745,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__wikimedia_outreach_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_wikimedia_strategy_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__wikimedia_strategy_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
