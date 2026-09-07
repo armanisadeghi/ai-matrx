@@ -18571,6 +18571,48 @@
         }
       }
     },
+    "/productlane/public/status": {
+      "get": {
+        "tags": [
+          "Productlane Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_productlane_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductlaneServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sleekplan/public/status": {
+      "get": {
+        "tags": [
+          "Sleekplan Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_sleekplan_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SleekplanServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -23695,6 +23737,48 @@
         }
       }
     },
+    "/workleap/public/status": {
+      "get": {
+        "tags": [
+          "Workleap Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_workleap_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkleapServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/officernd/public/status": {
+      "get": {
+        "tags": [
+          "OfficeRnD Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_officernd_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRnDServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -25342,6 +25426,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__wikispecies_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wikivoyage/public/page": {
+      "get": {
+        "tags": [
+          "Wikivoyage Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_wikivoyage_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__wikivoyage_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wikifunctions/public/object": {
+      "get": {
+        "tags": [
+          "Wikifunctions Integrations"
+        ],
+        "summary": "Public Object",
+        "operationId": "public_object_wikifunctions_public_object_get",
+        "parameters": [
+          {
+            "name": "object_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 13,
+              "title": "Object Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectMetadata"
                 }
               }
             }
@@ -169646,6 +169816,47 @@
         ],
         "title": "OauthStartResponse"
       },
+      "ObjectMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wikifunctions_object_metadata",
+            "title": "Kind",
+            "default": "wikifunctions_object_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wikifunctions",
+            "title": "Provider",
+            "default": "Wikifunctions"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "object_id": {
+            "type": "string",
+            "title": "Object Id"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "object_id",
+          "content_model",
+          "language"
+        ],
+        "title": "ObjectMetadata"
+      },
       "ObserveTurnBody": {
         "properties": {
           "organization_id": {
@@ -170258,6 +170469,55 @@
         ],
         "title": "OfficePortionOut",
         "description": "One slide / sheet / section of an extracted document (FE-facing)."
+      },
+      "OfficeRnDServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "officernd_official_workplace_collaboration_status",
+            "title": "Kind",
+            "default": "officernd_official_workplace_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "OfficeRnD",
+            "title": "Provider",
+            "default": "OfficeRnD"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.officernd.com",
+            "title": "Status Page",
+            "default": "https://status.officernd.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "OfficeRnDServiceStatus"
       },
       "OkResponse": {
         "properties": {
@@ -185829,6 +186089,47 @@
         ],
         "title": "ProductboardStatusResult",
         "description": "Safe projection of Productboard's high-level service status."
+      },
+      "ProductlaneServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "productlane_public_service_status",
+            "title": "Kind",
+            "default": "productlane_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Productlane",
+            "title": "Provider",
+            "default": "Productlane"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.productlane.com/",
+            "title": "Status Page",
+            "default": "https://status.productlane.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ProductlaneServiceStatus",
+        "description": "Safe aggregate status projection for Productlane' fixed status page."
       },
       "ProfileView": {
         "properties": {
@@ -210453,6 +210754,47 @@
         ],
         "title": "SkippedRow",
         "description": "An opportunity row we deliberately did NOT fold, in the words a user reads."
+      },
+      "SleekplanServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "sleekplan_public_service_status",
+            "title": "Kind",
+            "default": "sleekplan_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Sleekplan",
+            "title": "Provider",
+            "default": "Sleekplan"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.sleekplan.com/",
+            "title": "Status Page",
+            "default": "https://status.sleekplan.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SleekplanServiceStatus",
+        "description": "Safe aggregate status projection for Sleekplan' fixed status page."
       },
       "SlideSpec": {
         "properties": {
@@ -237116,6 +237458,55 @@
         "title": "WorkflowCostRollup",
         "description": "Aggregated cost for one definition across a time window."
       },
+      "WorkleapServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "workleap_official_employee_collaboration_status",
+            "title": "Kind",
+            "default": "workleap_official_employee_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Workleap",
+            "title": "Provider",
+            "default": "Workleap"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.workleap.com/",
+            "title": "Status Page",
+            "default": "https://status.workleap.com/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "WorkleapServiceStatus"
+      },
       "WorkvivoStatusResult": {
         "properties": {
           "__kind": {
@@ -241963,6 +242354,52 @@
             "const": "Wikiversity",
             "title": "Provider",
             "default": "Wikiversity"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__wikivoyage_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wikivoyage_page_metadata",
+            "title": "Kind",
+            "default": "wikivoyage_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wikivoyage",
+            "title": "Provider",
+            "default": "Wikivoyage"
           },
           "page_id": {
             "type": "integer",

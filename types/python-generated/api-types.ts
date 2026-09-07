@@ -7723,6 +7723,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/productlane/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_productlane_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sleekplan/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_sleekplan_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -11871,6 +11905,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workleap/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_workleap_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/officernd/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_officernd_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -12679,6 +12747,40 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_wikispecies_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikivoyage/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_wikivoyage_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikifunctions/public/object": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Object */
+        get: operations["public_object_wikifunctions_public_object_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -73484,6 +73586,29 @@ export interface components {
             /** State */
             state: string;
         };
+        /** ObjectMetadata */
+        ObjectMetadata: {
+            /**
+             * Kind
+             * @default wikifunctions_object_metadata
+             * @constant
+             */
+            __kind?: "wikifunctions_object_metadata";
+            /**
+             * Provider
+             * @default Wikifunctions
+             * @constant
+             */
+            provider?: "Wikifunctions";
+            /** Page Id */
+            page_id: number;
+            /** Object Id */
+            object_id: string;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /**
          * ObserveTurnBody
          * @description POST body for /vision-interview/sessions/{id}/observe.
@@ -73827,6 +73952,40 @@ export interface components {
              * @default
              */
             markdown?: string;
+        };
+        /** OfficeRnDServiceStatus */
+        OfficeRnDServiceStatus: {
+            /**
+             * Kind
+             * @default officernd_official_workplace_collaboration_status
+             * @constant
+             */
+            __kind?: "officernd_official_workplace_collaboration_status";
+            /**
+             * Provider
+             * @default OfficeRnD
+             * @constant
+             */
+            provider?: "OfficeRnD";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.officernd.com
+             * @constant
+             */
+            status_page?: "https://status.officernd.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** OkResponse */
         OkResponse: {
@@ -80775,6 +80934,38 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * ProductlaneServiceStatus
+         * @description Safe aggregate status projection for Productlane' fixed status page.
+         */
+        ProductlaneServiceStatus: {
+            /**
+             * Kind
+             * @default productlane_public_service_status
+             * @constant
+             */
+            __kind?: "productlane_public_service_status";
+            /**
+             * Provider
+             * @default Productlane
+             * @constant
+             */
+            provider?: "Productlane";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.productlane.com/
+             * @constant
+             */
+            status_page?: "https://status.productlane.com/";
         };
         /**
          * ProfileView
@@ -91371,6 +91562,38 @@ export interface components {
             row_id: string;
             /** Reason */
             reason: string;
+        };
+        /**
+         * SleekplanServiceStatus
+         * @description Safe aggregate status projection for Sleekplan' fixed status page.
+         */
+        SleekplanServiceStatus: {
+            /**
+             * Kind
+             * @default sleekplan_public_service_status
+             * @constant
+             */
+            __kind?: "sleekplan_public_service_status";
+            /**
+             * Provider
+             * @default Sleekplan
+             * @constant
+             */
+            provider?: "Sleekplan";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.sleekplan.com/
+             * @constant
+             */
+            status_page?: "https://status.sleekplan.com/";
         };
         /**
          * SlideSpec
@@ -103234,6 +103457,40 @@ export interface components {
             /** Runs Per Day */
             runs_per_day?: components["schemas"]["DailyCostBreakdown"][];
         };
+        /** WorkleapServiceStatus */
+        WorkleapServiceStatus: {
+            /**
+             * Kind
+             * @default workleap_official_employee_collaboration_status
+             * @constant
+             */
+            __kind?: "workleap_official_employee_collaboration_status";
+            /**
+             * Provider
+             * @default Workleap
+             * @constant
+             */
+            provider?: "Workleap";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.workleap.com/
+             * @constant
+             */
+            status_page?: "https://status.workleap.com/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * WorkvivoStatusResult
          * @description Safe projection of Workvivo's high-level service status.
@@ -105304,6 +105561,31 @@ export interface components {
              * @constant
              */
             provider?: "Wikiversity";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
+        aidream__services__wikivoyage_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default wikivoyage_page_metadata
+             * @constant
+             */
+            __kind?: "wikivoyage_page_metadata";
+            /**
+             * Provider
+             * @default Wikivoyage
+             * @constant
+             */
+            provider?: "Wikivoyage";
             /** Page Id */
             page_id: number;
             /** Title */
@@ -118290,6 +118572,46 @@ export interface operations {
             };
         };
     };
+    public_status_productlane_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductlaneServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_sleekplan_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SleekplanServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -123170,6 +123492,46 @@ export interface operations {
             };
         };
     };
+    public_status_workleap_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkleapServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_officernd_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfficeRnDServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -124428,6 +124790,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__wikispecies_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_wikivoyage_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__wikivoyage_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_object_wikifunctions_public_object_get: {
+        parameters: {
+            query: {
+                object_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObjectMetadata"];
                 };
             };
             /** @description Validation Error */
