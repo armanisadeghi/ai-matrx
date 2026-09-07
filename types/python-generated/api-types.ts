@@ -7706,6 +7706,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/featurebase/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_featurebase_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -11837,6 +11854,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/employment-hero/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_employment_hero_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -12628,6 +12662,23 @@ export interface paths {
         };
         /** Public Entry */
         get: operations["public_entry_wiktionary_public_entry_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikispecies/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_wikispecies_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -54993,6 +55044,40 @@ export interface components {
              */
             status_page?: "https://status.emplifi.io/";
         };
+        /** EmploymentHeroServiceStatus */
+        EmploymentHeroServiceStatus: {
+            /**
+             * Kind
+             * @default employment_hero_official_workforce_management_status
+             * @constant
+             */
+            __kind?: "employment_hero_official_workforce_management_status";
+            /**
+             * Provider
+             * @default EmploymentHero
+             * @constant
+             */
+            provider?: "EmploymentHero";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.employmenthero.com
+             * @constant
+             */
+            status_page?: "https://status.employmenthero.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * EndOfLifeDatePublicRelease
          * @description Safe bounded projection of one public product release lifecycle.
@@ -57350,6 +57435,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.feature.fm";
+        };
+        /**
+         * FeaturebaseServiceStatus
+         * @description Safe aggregate status projection for Featurebase' fixed status page.
+         */
+        FeaturebaseServiceStatus: {
+            /**
+             * Kind
+             * @default featurebase_public_service_status
+             * @constant
+             */
+            __kind?: "featurebase_public_service_status";
+            /**
+             * Provider
+             * @default Featurebase
+             * @constant
+             */
+            provider?: "Featurebase";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.featurebase.app/
+             * @constant
+             */
+            status_page?: "https://status.featurebase.app/";
         };
         /**
          * FederalRegisterPublicDocument
@@ -105149,6 +105266,31 @@ export interface components {
             language: string;
         };
         /** PageMetadata */
+        aidream__services__wikispecies_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default wikispecies_page_metadata
+             * @constant
+             */
+            __kind?: "wikispecies_page_metadata";
+            /**
+             * Provider
+             * @default Wikispecies
+             * @constant
+             */
+            provider?: "Wikispecies";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
         aidream__services__wikiversity_integrations__service__PageMetadata: {
             /**
              * Kind
@@ -118128,6 +118270,26 @@ export interface operations {
             };
         };
     };
+    public_status_featurebase_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeaturebaseServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -122988,6 +123150,26 @@ export interface operations {
             };
         };
     };
+    public_status_employment_hero_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmploymentHeroServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -124215,6 +124397,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntryMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_wikispecies_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__wikispecies_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
