@@ -8063,6 +8063,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dock/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_dock_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12551,6 +12568,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/codefresh/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_codefresh_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -13699,6 +13733,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_reactos_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/xen-project-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_xen_project_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -48324,6 +48375,40 @@ export interface components {
              */
             updated_at: string;
         };
+        /** CodefreshServiceStatus */
+        CodefreshServiceStatus: {
+            /**
+             * Kind
+             * @default codefresh_official_developer_productivity_status
+             * @constant
+             */
+            __kind?: "codefresh_official_developer_productivity_status";
+            /**
+             * Provider
+             * @default Codefresh
+             * @constant
+             */
+            provider?: "Codefresh";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.codefresh.io
+             * @constant
+             */
+            status_page?: "https://status.codefresh.io";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** CoderPadServiceStatus */
         CoderPadServiceStatus: {
             /**
@@ -54728,6 +54813,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.dochub.com";
+        };
+        /**
+         * DockServiceStatus
+         * @description Safe aggregate status projection for Dock's fixed status page.
+         */
+        DockServiceStatus: {
+            /**
+             * Kind
+             * @default dock_public_service_status
+             * @constant
+             */
+            __kind?: "dock_public_service_status";
+            /**
+             * Provider
+             * @default Dock
+             * @constant
+             */
+            provider?: "Dock";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.dock.us/
+             * @constant
+             */
+            status_page?: "https://status.dock.us/";
         };
         /**
          * Docket
@@ -108187,6 +108304,31 @@ export interface components {
              */
             dry_run?: boolean;
         };
+        /** PageMetadata */
+        aidream__services__xen_project_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default xen_project_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "xen_project_wiki_page_metadata";
+            /**
+             * Provider
+             * @default Xen Project Wiki
+             * @constant
+             */
+            provider?: "Xen Project Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /**
          * PresetsResponse
          * @description Response from GET /assets/presets — drives the FE preset picker.
@@ -121539,6 +121681,26 @@ export interface operations {
             };
         };
     };
+    public_status_dock_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DockServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -126819,6 +126981,26 @@ export interface operations {
             };
         };
     };
+    public_status_codefresh_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodefreshServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -128697,6 +128879,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__reactos_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_xen_project_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__xen_project_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
