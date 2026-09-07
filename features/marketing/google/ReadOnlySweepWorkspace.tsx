@@ -175,10 +175,25 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
       if (!allDisclosuresAccepted) {
         throw new Error("Confirm all five read-only disclosures first.");
       }
+      if (reviewMode) {
+        if (!activeOrganizationId) {
+          throw new Error("Choose an organization before connecting Google.");
+        }
+        await google.startAuthorizationCodeRedirect(
+          [...GOOGLE_READ_ONLY_SWEEP_SCOPES],
+          {
+            returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+            owner: { type: "user" },
+            organizationContextId: activeOrganizationId,
+            connectionPurpose: "read_only_sweep",
+            forceConsent: true,
+          },
+        );
+        return;
+      }
       const code = await google.requestAuthorizationCode(
         [...GOOGLE_READ_ONLY_SWEEP_SCOPES],
         undefined,
-        { forceConsent: reviewMode },
       );
       const result = await connect.mutateAsync({
         code,
