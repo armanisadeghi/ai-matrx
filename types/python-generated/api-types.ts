@@ -7757,6 +7757,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/memberstack/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_memberstack_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/memberspace/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_memberspace_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -11939,6 +11973,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/robin/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_robin_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/envoy/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_envoy_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -12781,6 +12849,40 @@ export interface paths {
         };
         /** Public Object */
         get: operations["public_object_wikifunctions_public_object_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikimania/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_wikimania_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mediawiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_mediawiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -55792,6 +55894,40 @@ export interface components {
              */
             attribution?: "This uses Environment Agency flood and river level data from the real-time data API (Beta).";
         };
+        /** EnvoyServiceStatus */
+        EnvoyServiceStatus: {
+            /**
+             * Kind
+             * @default envoy_official_workplace_collaboration_status
+             * @constant
+             */
+            __kind?: "envoy_official_workplace_collaboration_status";
+            /**
+             * Provider
+             * @default Envoy
+             * @constant
+             */
+            provider?: "Envoy";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.envoy.com
+             * @constant
+             */
+            status_page?: "https://status.envoy.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** EscrowRecoverBody */
         EscrowRecoverBody: {
             /** Session Id */
@@ -70844,6 +70980,38 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /**
+         * MemberSpaceServiceStatus
+         * @description Safe aggregate status projection for MemberSpace' fixed status page.
+         */
+        MemberSpaceServiceStatus: {
+            /**
+             * Kind
+             * @default memberspace_public_service_status
+             * @constant
+             */
+            __kind?: "memberspace_public_service_status";
+            /**
+             * Provider
+             * @default MemberSpace
+             * @constant
+             */
+            provider?: "MemberSpace";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.memberspace.com/
+             * @constant
+             */
+            status_page?: "https://status.memberspace.com/";
+        };
         /** MemberfulServiceStatus */
         MemberfulServiceStatus: {
             /**
@@ -70875,6 +71043,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.memberful.com";
+        };
+        /**
+         * MemberstackServiceStatus
+         * @description Safe aggregate status projection for Memberstack' fixed status page.
+         */
+        MemberstackServiceStatus: {
+            /**
+             * Kind
+             * @default memberstack_public_service_status
+             * @constant
+             */
+            __kind?: "memberstack_public_service_status";
+            /**
+             * Provider
+             * @default Memberstack
+             * @constant
+             */
+            provider?: "Memberstack";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.memberstack.com/
+             * @constant
+             */
+            status_page?: "https://status.memberstack.com/";
         };
         /** MemoryCostByEventType */
         MemoryCostByEventType: {
@@ -86478,6 +86678,40 @@ export interface components {
              * @constant
              */
             status_url?: "https://status.roadmunk.com/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /** RobinServiceStatus */
+        RobinServiceStatus: {
+            /**
+             * Kind
+             * @default robin_official_workplace_collaboration_status
+             * @constant
+             */
+            __kind?: "robin_official_workplace_collaboration_status";
+            /**
+             * Provider
+             * @default Robin
+             * @constant
+             */
+            provider?: "Robin";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.robinpowered.com
+             * @constant
+             */
+            status_page?: "https://status.robinpowered.com";
             /**
              * Indicator
              * @enum {string}
@@ -105204,6 +105438,31 @@ export interface components {
             /** Offset */
             offset: number;
         };
+        /** PageMetadata */
+        aidream__services__mediawiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default mediawiki_page_metadata
+             * @constant
+             */
+            __kind?: "mediawiki_page_metadata";
+            /**
+             * Provider
+             * @default MediaWiki
+             * @constant
+             */
+            provider?: "MediaWiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /** HealthResponse */
         aidream__services__rag__library_status__HealthResponse: {
             /** Schema Ok */
@@ -105436,6 +105695,31 @@ export interface components {
              * @constant
              */
             provider?: "Wikibooks";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
+        aidream__services__wikimania_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default wikimania_page_metadata
+             * @constant
+             */
+            __kind?: "wikimania_page_metadata";
+            /**
+             * Provider
+             * @default Wikimania
+             * @constant
+             */
+            provider?: "Wikimania";
             /** Page Id */
             page_id: number;
             /** Title */
@@ -118612,6 +118896,46 @@ export interface operations {
             };
         };
     };
+    public_status_memberstack_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberstackServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_memberspace_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberSpaceServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -123532,6 +123856,46 @@ export interface operations {
             };
         };
     };
+    public_status_robin_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RobinServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_envoy_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvoyServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -124852,6 +125216,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ObjectMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_wikimania_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__wikimania_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_mediawiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__mediawiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */

@@ -18613,6 +18613,48 @@
         }
       }
     },
+    "/memberstack/public/status": {
+      "get": {
+        "tags": [
+          "Memberstack Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_memberstack_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberstackServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memberspace/public/status": {
+      "get": {
+        "tags": [
+          "MemberSpace Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_memberspace_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberSpaceServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -23779,6 +23821,48 @@
         }
       }
     },
+    "/robin/public/status": {
+      "get": {
+        "tags": [
+          "Robin Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_robin_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RobinServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/envoy/public/status": {
+      "get": {
+        "tags": [
+          "Envoy Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_envoy_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvoyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -25512,6 +25596,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ObjectMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wikimania/public/page": {
+      "get": {
+        "tags": [
+          "Wikimania Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_wikimania_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__wikimania_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mediawiki/public/page": {
+      "get": {
+        "tags": [
+          "MediaWiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_mediawiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__mediawiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -130499,6 +130669,55 @@
         "title": "EnvironmentAgencyPublicStation",
         "description": "Safe factual identity projection of one active public station."
       },
+      "EnvoyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "envoy_official_workplace_collaboration_status",
+            "title": "Kind",
+            "default": "envoy_official_workplace_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Envoy",
+            "title": "Provider",
+            "default": "Envoy"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.envoy.com",
+            "title": "Status Page",
+            "default": "https://status.envoy.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "EnvoyServiceStatus"
+      },
       "EscrowRecoverBody": {
         "properties": {
           "session_id": {
@@ -164152,6 +164371,47 @@
         ],
         "title": "MemberRefresh"
       },
+      "MemberSpaceServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "memberspace_public_service_status",
+            "title": "Kind",
+            "default": "memberspace_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "MemberSpace",
+            "title": "Provider",
+            "default": "MemberSpace"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.memberspace.com/",
+            "title": "Status Page",
+            "default": "https://status.memberspace.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MemberSpaceServiceStatus",
+        "description": "Safe aggregate status projection for MemberSpace' fixed status page."
+      },
       "MemberfulServiceStatus": {
         "properties": {
           "__kind": {
@@ -164195,6 +164455,47 @@
           "indicator"
         ],
         "title": "MemberfulServiceStatus"
+      },
+      "MemberstackServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "memberstack_public_service_status",
+            "title": "Kind",
+            "default": "memberstack_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Memberstack",
+            "title": "Provider",
+            "default": "Memberstack"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.memberstack.com/",
+            "title": "Status Page",
+            "default": "https://status.memberstack.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MemberstackServiceStatus",
+        "description": "Safe aggregate status projection for Memberstack' fixed status page."
       },
       "MemoryCostByEventType": {
         "properties": {
@@ -199128,6 +199429,55 @@
         ],
         "title": "RoadmunkStatusResult",
         "description": "Safe projection of Roadmunk's high-level service status."
+      },
+      "RobinServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "robin_official_workplace_collaboration_status",
+            "title": "Kind",
+            "default": "robin_official_workplace_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Robin",
+            "title": "Provider",
+            "default": "Robin"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.robinpowered.com",
+            "title": "Status Page",
+            "default": "https://status.robinpowered.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "RobinServiceStatus"
       },
       "RoboHashAvatar": {
         "properties": {
@@ -241687,6 +242037,52 @@
         ],
         "title": "MentionsPage"
       },
+      "aidream__services__mediawiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mediawiki_page_metadata",
+            "title": "Kind",
+            "default": "mediawiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "MediaWiki",
+            "title": "Provider",
+            "default": "MediaWiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
       "aidream__services__rag__library_status__HealthResponse": {
         "properties": {
           "schema_ok": {
@@ -242124,6 +242520,52 @@
             "const": "Wikibooks",
             "title": "Provider",
             "default": "Wikibooks"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__wikimania_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wikimania_page_metadata",
+            "title": "Kind",
+            "default": "wikimania_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wikimania",
+            "title": "Provider",
+            "default": "Wikimania"
           },
           "page_id": {
             "type": "integer",
