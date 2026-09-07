@@ -7791,6 +7791,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/userflow/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_userflow_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12007,6 +12024,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/skedda/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_skedda_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -12883,6 +12917,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_mediawiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikidata/public/entity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Entity */
+        get: operations["public_entity_wikidata_public_entity_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -55755,6 +55806,34 @@ export interface components {
             /** Source Annotation Id */
             source_annotation_id?: string | null;
         };
+        /** EntityMetadata */
+        EntityMetadata: {
+            /**
+             * Kind
+             * @default wikidata_entity_metadata
+             * @constant
+             */
+            __kind?: "wikidata_entity_metadata";
+            /**
+             * Provider
+             * @default Wikidata
+             * @constant
+             */
+            provider?: "Wikidata";
+            /** Entity Id */
+            entity_id: string;
+            /** Entity Type */
+            entity_type: string;
+            /** Page Id */
+            page_id: number;
+            /** Revision Id */
+            revision_id: number;
+            /**
+             * Modified At
+             * Format: date-time
+             */
+            modified_at: string;
+        };
         /** EntityOut */
         EntityOut: {
             /** Id */
@@ -91461,6 +91540,40 @@ export interface components {
              */
             status_page?: "https://status.sitefinity.com";
         };
+        /** SkeddaServiceStatus */
+        SkeddaServiceStatus: {
+            /**
+             * Kind
+             * @default skedda_official_workplace_scheduling_status
+             * @constant
+             */
+            __kind?: "skedda_official_workplace_scheduling_status";
+            /**
+             * Provider
+             * @default Skedda
+             * @constant
+             */
+            provider?: "Skedda";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.skedda.com
+             * @constant
+             */
+            status_page?: "https://status.skedda.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * SkeduloServiceStatus
          * @description Safe aggregate status projection for Skedulo's fixed status page.
@@ -100204,6 +100317,38 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * UserflowServiceStatus
+         * @description Safe aggregate status projection for Userflow' fixed status page.
+         */
+        UserflowServiceStatus: {
+            /**
+             * Kind
+             * @default userflow_public_service_status
+             * @constant
+             */
+            __kind?: "userflow_public_service_status";
+            /**
+             * Provider
+             * @default Userflow
+             * @constant
+             */
+            provider?: "Userflow";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.userflow.com/
+             * @constant
+             */
+            status_page?: "https://status.userflow.com/";
         };
         /**
          * UsgsPublicEarthquakeEvent
@@ -118936,6 +119081,26 @@ export interface operations {
             };
         };
     };
+    public_status_userflow_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserflowServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -123896,6 +124061,26 @@ export interface operations {
             };
         };
     };
+    public_status_skedda_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkeddaServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -125278,6 +125463,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__mediawiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_entity_wikidata_public_entity_get: {
+        parameters: {
+            query: {
+                entity_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMetadata"];
                 };
             };
             /** @description Validation Error */
