@@ -7587,6 +7587,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ghost/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_ghost_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -11599,6 +11616,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/staffbase/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_staffbase_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -12271,6 +12305,23 @@ export interface paths {
         };
         /** Public Module */
         get: operations["public_module_metacpan_public_module_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hackage/public/preferred-versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Preferred Versions */
+        get: operations["public_preferred_versions_hackage_public_preferred_versions_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -59788,6 +59839,38 @@ export interface components {
             /** Broader Concepts */
             broader_concepts?: components["schemas"]["GettyAatBroaderConcept"][];
         };
+        /**
+         * GhostServiceStatus
+         * @description Safe aggregate status projection for Ghost' fixed status page.
+         */
+        GhostServiceStatus: {
+            /**
+             * Kind
+             * @default ghost_public_service_status
+             * @constant
+             */
+            __kind?: "ghost_public_service_status";
+            /**
+             * Provider
+             * @default Ghost
+             * @constant
+             */
+            provider?: "Ghost";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://ghoststatus.org/
+             * @constant
+             */
+            status_page?: "https://ghoststatus.org/";
+        };
         /** GitHubConnectionResponse */
         GitHubConnectionResponse: {
             /** Connection Id */
@@ -78750,6 +78833,27 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** PreferredVersions */
+        PreferredVersions: {
+            /**
+             * Kind
+             * @default hackage_preferred_versions
+             * @constant
+             */
+            __kind?: "hackage_preferred_versions";
+            /**
+             * Provider
+             * @default Hackage
+             * @constant
+             */
+            provider?: "Hackage";
+            /** Package */
+            package: string;
+            /** Normal Versions */
+            normal_versions: string[];
+            /** Deprecated Versions */
+            deprecated_versions: string[];
+        };
         /**
          * PresencePoint
          * @description One bucket of the trend. Rates are None when nothing was measured.
@@ -92014,6 +92118,40 @@ export interface components {
             quota_max: number;
             /** Backoff Seconds */
             backoff_seconds?: number | null;
+        };
+        /** StaffbaseServiceStatus */
+        StaffbaseServiceStatus: {
+            /**
+             * Kind
+             * @default staffbase_official_employee_collaboration_status
+             * @constant
+             */
+            __kind?: "staffbase_official_employee_collaboration_status";
+            /**
+             * Provider
+             * @default Staffbase
+             * @constant
+             */
+            provider?: "Staffbase";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.staffbase.com/
+             * @constant
+             */
+            status_page?: "https://status.staffbase.com/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * StagePipeConfig
@@ -116998,6 +117136,26 @@ export interface operations {
             };
         };
     };
+    public_status_ghost_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GhostServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -121718,6 +121876,26 @@ export interface operations {
             };
         };
     };
+    public_status_staffbase_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffbaseServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -122728,6 +122906,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModuleMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_preferred_versions_hackage_public_preferred_versions_get: {
+        parameters: {
+            query: {
+                package: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferredVersions"];
                 };
             };
             /** @description Validation Error */
