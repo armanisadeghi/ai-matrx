@@ -18865,6 +18865,27 @@
         }
       }
     },
+    "/navattic/public/status": {
+      "get": {
+        "tags": [
+          "Navattic Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_navattic_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NavatticServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -24283,6 +24304,27 @@
         }
       }
     },
+    "/front/public/status": {
+      "get": {
+        "tags": [
+          "Front Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_front_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrontServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -26532,6 +26574,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__osgeo_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kde-community-wiki/public/page": {
+      "get": {
+        "tags": [
+          "KDE Community Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_kde_community_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__kde_community_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -141143,6 +141228,55 @@
         ],
         "title": "FreshBooksServiceStatus"
       },
+      "FrontServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "front_official_collaboration_inbox_status",
+            "title": "Kind",
+            "default": "front_official_collaboration_inbox_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Front",
+            "title": "Provider",
+            "default": "Front"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://www.frontstatus.com",
+            "title": "Status Page",
+            "default": "https://www.frontstatus.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "FrontServiceStatus"
+      },
       "FrontierInvocation": {
         "properties": {
           "node_id": {
@@ -169011,6 +169145,47 @@
           "href"
         ],
         "title": "NavLink"
+      },
+      "NavatticServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "navattic_public_service_status",
+            "title": "Kind",
+            "default": "navattic_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Navattic",
+            "title": "Provider",
+            "default": "Navattic"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.navattic.com/",
+            "title": "Status Page",
+            "default": "https://status.navattic.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "NavatticServiceStatus",
+        "description": "Safe aggregate status projection for Navattic's fixed status page."
       },
       "NavigateCommand": {
         "properties": {
@@ -243735,6 +243910,52 @@
           "runtime_compatibility"
         ],
         "title": "PackageMetadata"
+      },
+      "aidream__services__kde_community_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "kde_community_wiki_page_metadata",
+            "title": "Kind",
+            "default": "kde_community_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "KDE Community Wiki",
+            "title": "Provider",
+            "default": "KDE Community Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
       },
       "aidream__services__knowledge_graph__graph__MentionRow": {
         "properties": {

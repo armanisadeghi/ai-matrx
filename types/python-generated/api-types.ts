@@ -7961,6 +7961,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/navattic/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_navattic_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12347,6 +12364,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/front/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_front_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -13393,6 +13427,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_osgeo_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kde-community-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_kde_community_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -60580,6 +60631,40 @@ export interface components {
              */
             status_page?: "https://status.freshbooks.com";
         };
+        /** FrontServiceStatus */
+        FrontServiceStatus: {
+            /**
+             * Kind
+             * @default front_official_collaboration_inbox_status
+             * @constant
+             */
+            __kind?: "front_official_collaboration_inbox_status";
+            /**
+             * Provider
+             * @default Front
+             * @constant
+             */
+            provider?: "Front";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://www.frontstatus.com
+             * @constant
+             */
+            status_page?: "https://www.frontstatus.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** FrontierInvocation */
         FrontierInvocation: {
             /** Node Id */
@@ -73437,6 +73522,38 @@ export interface components {
             href: string;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * NavatticServiceStatus
+         * @description Safe aggregate status projection for Navattic's fixed status page.
+         */
+        NavatticServiceStatus: {
+            /**
+             * Kind
+             * @default navattic_public_service_status
+             * @constant
+             */
+            __kind?: "navattic_public_service_status";
+            /**
+             * Provider
+             * @default Navattic
+             * @constant
+             */
+            provider?: "Navattic";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.navattic.com/
+             * @constant
+             */
+            status_page?: "https://status.navattic.com/";
         };
         /** NavigateCommand */
         NavigateCommand: {
@@ -106595,6 +106712,31 @@ export interface components {
                 [key: string]: boolean;
             };
         };
+        /** PageMetadata */
+        aidream__services__kde_community_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default kde_community_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "kde_community_wiki_page_metadata";
+            /**
+             * Provider
+             * @default KDE Community Wiki
+             * @constant
+             */
+            provider?: "KDE Community Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /** MentionRow */
         aidream__services__knowledge_graph__graph__MentionRow: {
             /**
@@ -120567,6 +120709,26 @@ export interface operations {
             };
         };
     };
+    public_status_navattic_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NavatticServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -125727,6 +125889,26 @@ export interface operations {
             };
         };
     };
+    public_status_front_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrontServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -127419,6 +127601,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__osgeo_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_kde_community_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__kde_community_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
