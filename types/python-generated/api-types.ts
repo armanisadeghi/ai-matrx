@@ -8097,6 +8097,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coda/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_coda_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12619,6 +12636,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/semaphore-ci/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_semaphore_ci_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -13801,6 +13835,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_qemu_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/alpine-linux-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_alpine_linux_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -48156,6 +48207,38 @@ export interface components {
             /** Allowed */
             allowed: boolean;
             report: components["schemas"]["CmsValidationReport"];
+        };
+        /**
+         * CodaServiceStatus
+         * @description Safe aggregate status projection for Coda's fixed status page.
+         */
+        CodaServiceStatus: {
+            /**
+             * Kind
+             * @default coda_public_service_status
+             * @constant
+             */
+            __kind?: "coda_public_service_status";
+            /**
+             * Provider
+             * @default Coda
+             * @constant
+             */
+            provider?: "Coda";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.coda.io/
+             * @constant
+             */
+            status_page?: "https://status.coda.io/";
         };
         /**
          * CodeAgentUsage
@@ -90966,6 +91049,40 @@ export interface components {
             /** Is Open Access */
             is_open_access: boolean;
         };
+        /** SemaphoreCIServiceStatus */
+        SemaphoreCIServiceStatus: {
+            /**
+             * Kind
+             * @default semaphore_ci_official_developer_productivity_status
+             * @constant
+             */
+            __kind?: "semaphore_ci_official_developer_productivity_status";
+            /**
+             * Provider
+             * @default Semaphore CI
+             * @constant
+             */
+            provider?: "Semaphore CI";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.semaphore.io
+             * @constant
+             */
+            status_page?: "https://status.semaphore.io";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** SendResponse */
         SendResponse: {
             draft: components["schemas"]["DraftResponse"];
@@ -107152,6 +107269,31 @@ export interface components {
             /** Offset */
             offset: number;
         };
+        /** PageMetadata */
+        aidream__services__alpine_linux_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default alpine_linux_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "alpine_linux_wiki_page_metadata";
+            /**
+             * Provider
+             * @default Alpine Linux Wiki
+             * @constant
+             */
+            provider?: "Alpine Linux Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /** PackageMetadata */
         aidream__services__arch_linux_integrations__service__PackageMetadata: {
             /**
@@ -121863,6 +122005,26 @@ export interface operations {
             };
         };
     };
+    public_status_coda_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodaServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -127183,6 +127345,26 @@ export interface operations {
             };
         };
     };
+    public_status_semaphore_ci_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SemaphoreCIServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -129123,6 +129305,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__qemu_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_alpine_linux_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__alpine_linux_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */

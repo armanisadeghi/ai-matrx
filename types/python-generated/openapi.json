@@ -19033,6 +19033,27 @@
         }
       }
     },
+    "/coda/public/status": {
+      "get": {
+        "tags": [
+          "Coda Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_coda_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodaServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -24619,6 +24640,27 @@
         }
       }
     },
+    "/semaphore-ci/public/status": {
+      "get": {
+        "tags": [
+          "Semaphore CI Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_semaphore_ci_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SemaphoreCIServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -27212,6 +27254,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__qemu_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alpine-linux-wiki/public/page": {
+      "get": {
+        "tags": [
+          "Alpine Linux Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_alpine_linux_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__alpine_linux_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -111339,6 +111424,47 @@
           "report"
         ],
         "title": "CmsValidationResponse"
+      },
+      "CodaServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "coda_public_service_status",
+            "title": "Kind",
+            "default": "coda_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Coda",
+            "title": "Provider",
+            "default": "Coda"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.coda.io/",
+            "title": "Status Page",
+            "default": "https://status.coda.io/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "CodaServiceStatus",
+        "description": "Safe aggregate status projection for Coda's fixed status page."
       },
       "CodeAgentUsage": {
         "properties": {
@@ -207583,6 +207709,55 @@
         "title": "SemanticScholarPaperResult",
         "description": "Safe bounded projection of one public Semantic Scholar paper record."
       },
+      "SemaphoreCIServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "semaphore_ci_official_developer_productivity_status",
+            "title": "Kind",
+            "default": "semaphore_ci_official_developer_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Semaphore CI",
+            "title": "Provider",
+            "default": "Semaphore CI"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.semaphore.io",
+            "title": "Status Page",
+            "default": "https://status.semaphore.io"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SemaphoreCIServiceStatus"
+      },
       "SendResponse": {
         "properties": {
           "draft": {
@@ -244233,6 +244408,52 @@
           "offset"
         ],
         "title": "SystemErrorListResponse"
+      },
+      "aidream__services__alpine_linux_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "alpine_linux_wiki_page_metadata",
+            "title": "Kind",
+            "default": "alpine_linux_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Alpine Linux Wiki",
+            "title": "Provider",
+            "default": "Alpine Linux Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
       },
       "aidream__services__arch_linux_integrations__service__PackageMetadata": {
         "properties": {
