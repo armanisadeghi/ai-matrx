@@ -347,6 +347,7 @@
     "@radix-ui/react-tooltip": "latest",
     "@react-email/components": "^1.0.8",
     "@react-email/render": "^2.0.9",
+    "@react-email/tailwind": "^2.0.7",
     "@react-oauth/google": "^0.13.5",
     "@react-three/fiber": "latest",
     "@reduxjs/toolkit": "latest",
