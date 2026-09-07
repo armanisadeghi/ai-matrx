@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Input, BasicInput, EnterInput, InputWithPrefix } from "@ai-matrx/design-system";
-import { CopyInput } from "@/components/ui/input";
+import { CopyInput, DeleteInput } from "@/components/ui/input";
 import {
   Textarea,
   BasicTextarea,
@@ -39,7 +39,9 @@ export default function InputTextareaLabPage() {
   const [input, setInput] = useState("");
   const [basicInput, setBasicInput] = useState("");
   const [enterInput, setEnterInput] = useState("");
+  const [lastEnteredInput, setLastEnteredInput] = useState("");
   const [copyInput, setCopyInput] = useState("copy me");
+  const [deleteInput, setDeleteInput] = useState("delete me");
   const [prefixInput, setPrefixInput] = useState("");
   const [proInput, setProInput] = useState("");
 
@@ -73,8 +75,26 @@ export default function InputTextareaLabPage() {
             <EnterInput
               value={enterInput}
               onChange={(e) => setEnterInput(e.target.value)}
+              onEnter={() => setLastEnteredInput(enterInput)}
               placeholder="EnterInput"
             />
+            <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
+              {lastEnteredInput
+                ? `Enter handled: ${lastEnteredInput}`
+                : "Press Enter to submit this value."}
+            </p>
+          </LabCell>
+
+          <LabCell name="DeleteInput" path="@/components/ui/input · DeleteInput">
+            <DeleteInput
+              value={deleteInput}
+              onChange={(e) => setDeleteInput(e.target.value)}
+              onDelete={() => setDeleteInput("")}
+              placeholder="DeleteInput"
+            />
+            <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
+              {deleteInput ? "Delete clears this field." : "Field deleted."}
+            </p>
           </LabCell>
 
           <LabCell name="CopyInput" path="@/components/ui/input · CopyInput">
