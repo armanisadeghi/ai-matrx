@@ -7859,6 +7859,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/raycast/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_raycast_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12143,6 +12160,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/daily/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_daily_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -13087,6 +13121,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_meta_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikitech/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_wikitech_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -51133,6 +51184,40 @@ export interface components {
             /** Output Tokens */
             output_tokens: number;
         };
+        /** DailyServiceStatus */
+        DailyServiceStatus: {
+            /**
+             * Kind
+             * @default daily_official_video_collaboration_status
+             * @constant
+             */
+            __kind?: "daily_official_video_collaboration_status";
+            /**
+             * Provider
+             * @default Daily
+             * @constant
+             */
+            provider?: "Daily";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.daily.co
+             * @constant
+             */
+            status_page?: "https://status.daily.co";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** DailySpendPoint */
         DailySpendPoint: {
             /**
@@ -83779,6 +83864,40 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * RaycastServiceStatus
+         * @description Safe aggregate status projection for Raycast's fixed status page.
+         */
+        RaycastServiceStatus: {
+            /**
+             * Kind
+             * @default raycast_public_service_status
+             * @constant
+             */
+            __kind?: "raycast_public_service_status";
+            /**
+             * Provider
+             * @default Raycast
+             * @constant
+             */
+            provider?: "Raycast";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** State */
+            state: string;
+            /** Operational */
+            operational: boolean;
+            /**
+             * Status Page
+             * @default https://status.raycast.com/
+             * @constant
+             */
+            status_page?: "https://status.raycast.com/";
+        };
         /** ReadAIServiceStatus */
         ReadAIServiceStatus: {
             /**
@@ -106405,6 +106524,31 @@ export interface components {
             language: string;
         };
         /** PageMetadata */
+        aidream__services__wikitech_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default wikitech_page_metadata
+             * @constant
+             */
+            __kind?: "wikitech_page_metadata";
+            /**
+             * Provider
+             * @default Wikitech
+             * @constant
+             */
+            provider?: "Wikitech";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
         aidream__services__wikiversity_integrations__service__PageMetadata: {
             /**
              * Kind
@@ -119589,6 +119733,26 @@ export interface operations {
             };
         };
     };
+    public_status_raycast_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RaycastServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -124629,6 +124793,26 @@ export interface operations {
             };
         };
     };
+    public_status_daily_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -126135,6 +126319,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__meta_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_wikitech_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__wikitech_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
