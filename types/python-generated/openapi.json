@@ -18529,6 +18529,27 @@
         }
       }
     },
+    "/chatwoot/public/status": {
+      "get": {
+        "tags": [
+          "Chatwoot Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_chatwoot_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatwootServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -23611,6 +23632,27 @@
         }
       }
     },
+    "/factorial/public/status": {
+      "get": {
+        "tags": [
+          "Factorial Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_factorial_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactorialServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -25172,6 +25214,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__wikiversity_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wiktionary/public/entry": {
+      "get": {
+        "tags": [
+          "Wiktionary Integrations"
+        ],
+        "summary": "Public Entry",
+        "operationId": "public_entry_wiktionary_public_entry_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryMetadata"
                 }
               }
             }
@@ -104048,6 +104133,47 @@
         "title": "ChatToolCallInput",
         "description": "One tool-call entry inside an assistant message.\n\nDifferent providers carry slightly different keys (OpenAI uses\n``function.name`` + ``function.arguments``; Anthropic uses ``name`` +\n``input``). All keys are optional so either shape validates."
       },
+      "ChatwootServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "chatwoot_public_service_status",
+            "title": "Kind",
+            "default": "chatwoot_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Chatwoot",
+            "title": "Provider",
+            "default": "Chatwoot"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.chatwoot.com/",
+            "title": "Status Page",
+            "default": "https://status.chatwoot.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ChatwootServiceStatus",
+        "description": "Safe aggregate status projection for Chatwoot' fixed status page."
+      },
       "CheckRecord": {
         "properties": {
           "id": {
@@ -129915,6 +130041,52 @@
         ],
         "title": "EntryFidelity"
       },
+      "EntryMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wiktionary_entry_metadata",
+            "title": "Kind",
+            "default": "wiktionary_entry_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wiktionary",
+            "title": "Provider",
+            "default": "Wiktionary"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "EntryMetadata"
+      },
       "EnvironmentAgencyPublicStation": {
         "properties": {
           "__kind": {
@@ -133590,6 +133762,55 @@
         ],
         "title": "ExtractionProposal",
         "description": "The typed proposal riding on the assist's ``navigate`` action.\n\nParsed, never re-derived — the sweep already did the detection and had the\nmandated namer agent title it."
+      },
+      "FactorialServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "factorial_official_workforce_scheduling_status",
+            "title": "Kind",
+            "default": "factorial_official_workforce_scheduling_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Factorial",
+            "title": "Provider",
+            "default": "Factorial"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.factorialhr.com",
+            "title": "Status Page",
+            "default": "https://status.factorialhr.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "FactorialServiceStatus"
       },
       "FailStageRequest": {
         "properties": {

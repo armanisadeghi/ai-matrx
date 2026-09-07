@@ -7689,6 +7689,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/chatwoot/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_chatwoot_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -11803,6 +11820,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/factorial/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_factorial_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -12577,6 +12611,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_wikiversity_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wiktionary/public/entry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Entry */
+        get: operations["public_entry_wiktionary_public_entry_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -44732,6 +44783,38 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * ChatwootServiceStatus
+         * @description Safe aggregate status projection for Chatwoot' fixed status page.
+         */
+        ChatwootServiceStatus: {
+            /**
+             * Kind
+             * @default chatwoot_public_service_status
+             * @constant
+             */
+            __kind?: "chatwoot_public_service_status";
+            /**
+             * Provider
+             * @default Chatwoot
+             * @constant
+             */
+            provider?: "Chatwoot";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.chatwoot.com/
+             * @constant
+             */
+            status_page?: "https://status.chatwoot.com/";
+        };
         /** CheckRecord */
         CheckRecord: {
             /** Id */
@@ -55447,6 +55530,31 @@ export interface components {
          * @enum {string}
          */
         EntryFidelity: "event_mirror" | "native";
+        /** EntryMetadata */
+        EntryMetadata: {
+            /**
+             * Kind
+             * @default wiktionary_entry_metadata
+             * @constant
+             */
+            __kind?: "wiktionary_entry_metadata";
+            /**
+             * Provider
+             * @default Wiktionary
+             * @constant
+             */
+            provider?: "Wiktionary";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /**
          * EnvironmentAgencyPublicStation
          * @description Safe factual identity projection of one active public station.
@@ -56995,6 +57103,40 @@ export interface components {
             reasoning?: string;
             /** Confidence */
             confidence?: number | null;
+        };
+        /** FactorialServiceStatus */
+        FactorialServiceStatus: {
+            /**
+             * Kind
+             * @default factorial_official_workforce_scheduling_status
+             * @constant
+             */
+            __kind?: "factorial_official_workforce_scheduling_status";
+            /**
+             * Provider
+             * @default Factorial
+             * @constant
+             */
+            provider?: "Factorial";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.factorialhr.com
+             * @constant
+             */
+            status_page?: "https://status.factorialhr.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** FailStageRequest */
         FailStageRequest: {
@@ -117966,6 +118108,26 @@ export interface operations {
             };
         };
     };
+    public_status_chatwoot_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatwootServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -122806,6 +122968,26 @@ export interface operations {
             };
         };
     };
+    public_status_factorial_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FactorialServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -124002,6 +124184,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__wikiversity_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_entry_wiktionary_public_entry_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryMetadata"];
                 };
             };
             /** @description Validation Error */
