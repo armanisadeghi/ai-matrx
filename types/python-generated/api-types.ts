@@ -8046,6 +8046,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/clueso/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_clueso_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12517,6 +12534,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bitrise/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_bitrise_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -13648,6 +13682,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_videolan_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reactos-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_reactos_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -41002,6 +41053,40 @@ export interface components {
             /** Html Url */
             html_url: string;
         };
+        /** BitriseServiceStatus */
+        BitriseServiceStatus: {
+            /**
+             * Kind
+             * @default bitrise_official_developer_productivity_status
+             * @constant
+             */
+            __kind?: "bitrise_official_developer_productivity_status";
+            /**
+             * Provider
+             * @default Bitrise
+             * @constant
+             */
+            provider?: "Bitrise";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.bitrise.io
+             * @constant
+             */
+            status_page?: "https://status.bitrise.io";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * BizzaboStatusResult
          * @description Safe projection of Bizzabo's high-level service status.
@@ -47057,6 +47142,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.cloudways.com";
+        };
+        /**
+         * CluesoServiceStatus
+         * @description Safe aggregate status projection for Clueso's fixed status page.
+         */
+        CluesoServiceStatus: {
+            /**
+             * Kind
+             * @default clueso_public_service_status
+             * @constant
+             */
+            __kind?: "clueso_public_service_status";
+            /**
+             * Provider
+             * @default Clueso
+             * @constant
+             */
+            provider?: "Clueso";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.clueso.io/
+             * @constant
+             */
+            status_page?: "https://status.clueso.io/";
         };
         /** ClusterDetailResponse */
         ClusterDetailResponse: {
@@ -107481,6 +107598,31 @@ export interface components {
             /** Size Bytes */
             size_bytes: number;
         };
+        /** PageMetadata */
+        aidream__services__reactos_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default reactos_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "reactos_wiki_page_metadata";
+            /**
+             * Provider
+             * @default ReactOS Wiki
+             * @constant
+             */
+            provider?: "ReactOS Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /** CardMetadata */
         aidream__services__scryfall_integrations__service__CardMetadata: {
             /**
@@ -121377,6 +121519,26 @@ export interface operations {
             };
         };
     };
+    public_status_clueso_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CluesoServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -126637,6 +126799,26 @@ export interface operations {
             };
         };
     };
+    public_status_bitrise_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BitriseServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -128484,6 +128666,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__videolan_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_reactos_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__reactos_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
