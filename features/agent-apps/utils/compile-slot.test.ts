@@ -3,6 +3,42 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { compileSlotComponent } from "./compile-slot";
 
 describe("compileSlotComponent", () => {
+  it("renders with the extracted input, sheet, popover, and skeleton imports", () => {
+    const result = compileSlotComponent({
+      code: `
+        import { Input } from "@/components/ui/input";
+        import { Sheet, SheetContent } from "@/components/ui/sheet";
+        import { Popover, PopoverContent } from "@/components/ui/popover";
+        import { Skeleton } from "@/components/ui/skeleton";
+
+        export default function ExtractedUiImports() {
+          const importsReady = [Sheet, SheetContent, Popover, PopoverContent].every(Boolean);
+          return (
+            <div data-imports-ready={String(importsReady)}>
+              <Input defaultValue="renderer alive" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+          );
+        }
+      `,
+      allowedImports: [
+        "react",
+        "@/components/ui/input",
+        "@/components/ui/sheet",
+        "@/components/ui/popover",
+        "@/components/ui/skeleton",
+      ],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the slot component to compile");
+    const markup = renderToStaticMarkup(createElement(Component, {}));
+    expect(markup).toContain('data-imports-ready="true"');
+    expect(markup).toContain("renderer alive");
+    expect(markup).toContain("animate-pulse");
+  });
+
   it("removes multiline allowlisted imports before evaluating sandbox code", () => {
     const result = compileSlotComponent({
       code: `
