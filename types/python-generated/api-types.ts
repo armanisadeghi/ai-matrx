@@ -8114,6 +8114,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/zenhub/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_zenhub_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12653,6 +12670,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/buildkite/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_buildkite_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -13852,6 +13886,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_alpine_linux_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/samba-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_samba_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -43492,6 +43543,40 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.builder.io";
+        };
+        /** BuildkiteServiceStatus */
+        BuildkiteServiceStatus: {
+            /**
+             * Kind
+             * @default buildkite_official_developer_productivity_status
+             * @constant
+             */
+            __kind?: "buildkite_official_developer_productivity_status";
+            /**
+             * Provider
+             * @default Buildkite
+             * @constant
+             */
+            provider?: "Buildkite";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://www.buildkitestatus.com
+             * @constant
+             */
+            status_page?: "https://www.buildkitestatus.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** BuiltinPromptCatalogResponse */
         BuiltinPromptCatalogResponse: {
@@ -106623,6 +106708,38 @@ export interface components {
             privacy_status: string | null;
         };
         /**
+         * ZenhubServiceStatus
+         * @description Safe aggregate status projection for Zenhub's fixed status page.
+         */
+        ZenhubServiceStatus: {
+            /**
+             * Kind
+             * @default zenhub_public_service_status
+             * @constant
+             */
+            __kind?: "zenhub_public_service_status";
+            /**
+             * Provider
+             * @default Zenhub
+             * @constant
+             */
+            provider?: "Zenhub";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.zenhub.com/
+             * @constant
+             */
+            status_page?: "https://status.zenhub.com/";
+        };
+        /**
          * ZenodoPublicRecord
          * @description Safe bounded projection of one public Zenodo record.
          */
@@ -108013,6 +108130,31 @@ export interface components {
              * @constant
              */
             provider?: "ReactOS Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
+        aidream__services__samba_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default samba_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "samba_wiki_page_metadata";
+            /**
+             * Provider
+             * @default Samba Wiki
+             * @constant
+             */
+            provider?: "Samba Wiki";
             /** Page Id */
             page_id: number;
             /** Title */
@@ -122025,6 +122167,26 @@ export interface operations {
             };
         };
     };
+    public_status_zenhub_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZenhubServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -127365,6 +127527,26 @@ export interface operations {
             };
         };
     };
+    public_status_buildkite_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuildkiteServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -129336,6 +129518,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__alpine_linux_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_samba_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__samba_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */

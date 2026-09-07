@@ -19054,6 +19054,27 @@
         }
       }
     },
+    "/zenhub/public/status": {
+      "get": {
+        "tags": [
+          "Zenhub Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_zenhub_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZenhubServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -24661,6 +24682,27 @@
         }
       }
     },
+    "/buildkite/public/status": {
+      "get": {
+        "tags": [
+          "Buildkite Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_buildkite_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuildkiteServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -27297,6 +27339,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__alpine_linux_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/samba-wiki/public/page": {
+      "get": {
+        "tags": [
+          "Samba Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_samba_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__samba_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -99580,6 +99665,55 @@
         ],
         "title": "BuilderIoServiceStatus",
         "description": "Safe aggregate status projection for Builder.io's fixed status page."
+      },
+      "BuildkiteServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "buildkite_official_developer_productivity_status",
+            "title": "Kind",
+            "default": "buildkite_official_developer_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Buildkite",
+            "title": "Provider",
+            "default": "Buildkite"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://www.buildkitestatus.com",
+            "title": "Status Page",
+            "default": "https://www.buildkitestatus.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "BuildkiteServiceStatus"
       },
       "BuiltinPromptCatalogResponse": {
         "properties": {
@@ -242941,6 +243075,47 @@
         ],
         "title": "YouTubeVideoPreview"
       },
+      "ZenhubServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "zenhub_public_service_status",
+            "title": "Kind",
+            "default": "zenhub_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Zenhub",
+            "title": "Provider",
+            "default": "Zenhub"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.zenhub.com/",
+            "title": "Status Page",
+            "default": "https://status.zenhub.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ZenhubServiceStatus",
+        "description": "Safe aggregate status projection for Zenhub's fixed status page."
+      },
       "ZenodoPublicRecord": {
         "properties": {
           "__kind": {
@@ -246014,6 +246189,52 @@
             "const": "ReactOS Wiki",
             "title": "Provider",
             "default": "ReactOS Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__samba_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "samba_wiki_page_metadata",
+            "title": "Kind",
+            "default": "samba_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Samba Wiki",
+            "title": "Provider",
+            "default": "Samba Wiki"
           },
           "page_id": {
             "type": "integer",
