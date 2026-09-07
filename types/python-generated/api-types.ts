@@ -10188,6 +10188,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sprig/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_sprig_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/great-question/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_great_question_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -11327,6 +11361,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mintlify-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_mintlify_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/calendly-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_calendly_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -11863,6 +11931,40 @@ export interface paths {
         };
         /** Public Npm Package */
         get: operations["public_npm_package_jsdelivr_public_npm_package_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jsr/public/package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Package */
+        get: operations["public_package_jsr_public_package_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sourceforge/public/project": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Project */
+        get: operations["public_project_sourceforge_public_project_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -42023,6 +42125,38 @@ export interface components {
              */
             days?: number;
         };
+        /** CalendlyServiceStatus */
+        CalendlyServiceStatus: {
+            /**
+             * Kind
+             * @default calendly_public_service_status
+             * @constant
+             */
+            __kind?: "calendly_public_service_status";
+            /**
+             * Provider
+             * @default Calendly
+             * @constant
+             */
+            provider?: "Calendly";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://calendlystatus.com/
+             * @constant
+             */
+            status_page?: "https://calendlystatus.com/";
+        };
         /**
          * Calibration
          * @description What the ledger says about one judge (optionally one subject class).
@@ -59860,6 +59994,40 @@ export interface components {
             /** Truncated */
             truncated: boolean;
         };
+        /** GreatQuestionServiceStatus */
+        GreatQuestionServiceStatus: {
+            /**
+             * Kind
+             * @default great_question_official_research_collaboration_status
+             * @constant
+             */
+            __kind?: "great_question_official_research_collaboration_status";
+            /**
+             * Provider
+             * @default Great Question
+             * @constant
+             */
+            provider?: "Great Question";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://greatquestionstatus.com/
+             * @constant
+             */
+            status_page?: "https://greatquestionstatus.com/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** GreenhouseServiceStatus */
         GreenhouseServiceStatus: {
             /**
@@ -69806,6 +69974,38 @@ export interface components {
             /** Scopes */
             scopes?: string[];
         };
+        /** MintlifyServiceStatus */
+        MintlifyServiceStatus: {
+            /**
+             * Kind
+             * @default mintlify_public_service_status
+             * @constant
+             */
+            __kind?: "mintlify_public_service_status";
+            /**
+             * Provider
+             * @default Mintlify
+             * @constant
+             */
+            provider?: "Mintlify";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.mintlify.com/
+             * @constant
+             */
+            status_page?: "https://status.mintlify.com/";
+        };
         /** MissingBinding */
         MissingBinding: {
             /**
@@ -74105,29 +74305,6 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
-        };
-        /** PackageMetadata */
-        PackageMetadata: {
-            /**
-             * Kind
-             * @default jsdelivr_npm_package_metadata
-             * @constant
-             */
-            __kind?: "jsdelivr_npm_package_metadata";
-            /**
-             * Provider
-             * @default jsDelivr
-             * @constant
-             */
-            provider?: "jsDelivr";
-            /** Package Name */
-            package_name: string;
-            /** Latest Version */
-            latest_version: string;
-            /** Beta Version */
-            beta_version: string | null;
-            /** Version Count */
-            version_count: number;
         };
         /**
          * PackagistReleaseResult
@@ -79199,6 +79376,29 @@ export interface components {
             type: "input_project";
             /** Project Ids */
             project_ids: string[];
+        };
+        /** ProjectMetadata */
+        ProjectMetadata: {
+            /**
+             * Kind
+             * @default sourceforge_project_metadata
+             * @constant
+             */
+            __kind?: "sourceforge_project_metadata";
+            /**
+             * Provider
+             * @default SourceForge
+             * @constant
+             */
+            provider?: "SourceForge";
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Project Url */
+            project_url: string;
+            /** Short Description */
+            short_description: string | null;
         };
         /**
          * ProjectionResponse
@@ -90753,6 +90953,40 @@ export interface components {
              * @description Worksheets of the workbook, one tab per entry, in tab order.
              */
             sheets?: components["schemas"]["SheetSpec"][];
+        };
+        /** SprigServiceStatus */
+        SprigServiceStatus: {
+            /**
+             * Kind
+             * @default sprig_official_product_research_status
+             * @constant
+             */
+            __kind?: "sprig_official_product_research_status";
+            /**
+             * Provider
+             * @default Sprig
+             * @constant
+             */
+            provider?: "Sprig";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.sprig.com
+             * @constant
+             */
+            status_page?: "https://status.sprig.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * SproutSocialServiceStatus
@@ -102782,6 +103016,54 @@ export interface components {
              * Format: date-time
              */
             submitted_at: string;
+        };
+        /** PackageMetadata */
+        aidream__services__jsdelivr_integrations__service__PackageMetadata: {
+            /**
+             * Kind
+             * @default jsdelivr_npm_package_metadata
+             * @constant
+             */
+            __kind?: "jsdelivr_npm_package_metadata";
+            /**
+             * Provider
+             * @default jsDelivr
+             * @constant
+             */
+            provider?: "jsDelivr";
+            /** Package Name */
+            package_name: string;
+            /** Latest Version */
+            latest_version: string;
+            /** Beta Version */
+            beta_version: string | null;
+            /** Version Count */
+            version_count: number;
+        };
+        /** PackageMetadata */
+        aidream__services__jsr_integrations__service__PackageMetadata: {
+            /**
+             * Kind
+             * @default jsr_package_metadata
+             * @constant
+             */
+            __kind?: "jsr_package_metadata";
+            /**
+             * Provider
+             * @default JSR
+             * @constant
+             */
+            provider?: "JSR";
+            /** Scope */
+            scope: string;
+            /** Package */
+            package: string;
+            /** Description */
+            description: string | null;
+            /** Runtime Compatibility */
+            runtime_compatibility: {
+                [key: string]: boolean;
+            };
         };
         /** MentionRow */
         aidream__services__knowledge_graph__graph__MentionRow: {
@@ -118925,6 +119207,46 @@ export interface operations {
             };
         };
     };
+    public_status_sprig_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SprigServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_great_question_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GreatQuestionServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -120265,6 +120587,46 @@ export interface operations {
             };
         };
     };
+    public_status_mintlify_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MintlifyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_calendly_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendlyServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -121024,7 +121386,70 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PackageMetadata"];
+                    "application/json": components["schemas"]["aidream__services__jsdelivr_integrations__service__PackageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_package_jsr_public_package_get: {
+        parameters: {
+            query: {
+                scope: string;
+                package: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__jsr_integrations__service__PackageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_project_sourceforge_public_project_get: {
+        parameters: {
+            query: {
+                slug: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMetadata"];
                 };
             };
             /** @description Validation Error */
