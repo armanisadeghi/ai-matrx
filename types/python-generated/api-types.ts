@@ -7655,6 +7655,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dorik/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_dorik_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -11735,6 +11752,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/zoomshift/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_zoomshift_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -12475,6 +12509,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_wikiquote_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikinews/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_wikinews_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -53602,6 +53653,38 @@ export interface components {
              * @default datacenter
              */
             proxy_type?: string;
+        };
+        /**
+         * DorikServiceStatus
+         * @description Safe aggregate status projection for Dorik' fixed status page.
+         */
+        DorikServiceStatus: {
+            /**
+             * Kind
+             * @default dorik_public_service_status
+             * @constant
+             */
+            __kind?: "dorik_public_service_status";
+            /**
+             * Provider
+             * @default Dorik
+             * @constant
+             */
+            provider?: "Dorik";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.dorik.com/
+             * @constant
+             */
+            status_page?: "https://status.dorik.com/";
         };
         /** DownloadResult */
         DownloadResult: {
@@ -103480,6 +103563,40 @@ export interface components {
              */
             status_page?: "https://status.zight.com";
         };
+        /** ZoomShiftServiceStatus */
+        ZoomShiftServiceStatus: {
+            /**
+             * Kind
+             * @default zoomshift_official_workforce_scheduling_status
+             * @constant
+             */
+            __kind?: "zoomshift_official_workforce_scheduling_status";
+            /**
+             * Provider
+             * @default ZoomShift
+             * @constant
+             */
+            provider?: "ZoomShift";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.zoomshift.com
+             * @constant
+             */
+            status_page?: "https://status.zoomshift.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** ZoteroCreator */
         ZoteroCreator: {
             /** Creator Type */
@@ -104686,6 +104803,31 @@ export interface components {
              * @constant
              */
             provider?: "Wikibooks";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
+        aidream__services__wikinews_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default wikinews_page_metadata
+             * @constant
+             */
+            __kind?: "wikinews_page_metadata";
+            /**
+             * Provider
+             * @default Wikinews
+             * @constant
+             */
+            provider?: "Wikinews";
             /** Page Id */
             page_id: number;
             /** Title */
@@ -117642,6 +117784,26 @@ export interface operations {
             };
         };
     };
+    public_status_dorik_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DorikServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -122442,6 +122604,26 @@ export interface operations {
             };
         };
     };
+    public_status_zoomshift_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZoomShiftServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -123576,6 +123758,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__wikiquote_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_wikinews_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__wikinews_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */

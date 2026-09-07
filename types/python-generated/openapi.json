@@ -18487,6 +18487,27 @@
         }
       }
     },
+    "/dorik/public/status": {
+      "get": {
+        "tags": [
+          "Dorik Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_dorik_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DorikServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -23527,6 +23548,27 @@
         }
       }
     },
+    "/zoomshift/public/status": {
+      "get": {
+        "tags": [
+          "ZoomShift Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_zoomshift_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZoomShiftServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -25002,6 +25044,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__wikiquote_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wikinews/public/page": {
+      "get": {
+        "tags": [
+          "Wikinews Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_wikinews_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__wikinews_integrations__service__PageMetadata"
                 }
               }
             }
@@ -125824,6 +125909,47 @@
           "url"
         ],
         "title": "DomainUpsertRequest"
+      },
+      "DorikServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dorik_public_service_status",
+            "title": "Kind",
+            "default": "dorik_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Dorik",
+            "title": "Provider",
+            "default": "Dorik"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.dorik.com/",
+            "title": "Status Page",
+            "default": "https://status.dorik.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "DorikServiceStatus",
+        "description": "Safe aggregate status projection for Dorik' fixed status page."
       },
       "DownloadResult": {
         "properties": {
@@ -238227,6 +238353,55 @@
         ],
         "title": "ZightServiceStatus"
       },
+      "ZoomShiftServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "zoomshift_official_workforce_scheduling_status",
+            "title": "Kind",
+            "default": "zoomshift_official_workforce_scheduling_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "ZoomShift",
+            "title": "Provider",
+            "default": "ZoomShift"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.zoomshift.com",
+            "title": "Status Page",
+            "default": "https://status.zoomshift.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "ZoomShiftServiceStatus"
+      },
       "ZoteroCreator": {
         "properties": {
           "creator_type": {
@@ -240987,6 +241162,52 @@
             "const": "Wikibooks",
             "title": "Provider",
             "default": "Wikibooks"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__wikinews_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wikinews_page_metadata",
+            "title": "Kind",
+            "default": "wikinews_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wikinews",
+            "title": "Provider",
+            "default": "Wikinews"
           },
           "page_id": {
             "type": "integer",
