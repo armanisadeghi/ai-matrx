@@ -7995,6 +7995,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/walnut/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_walnut_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/userlane/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_userlane_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12415,6 +12449,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rotageek/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_rotageek_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/papershift/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_papershift_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -13495,6 +13563,40 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_opensuse_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mozilla-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_mozilla_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/libreoffice-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_libreoffice_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -77899,6 +78001,40 @@ export interface components {
              */
             status_page?: "https://status.paperlesspost.com";
         };
+        /** PapershiftServiceStatus */
+        PapershiftServiceStatus: {
+            /**
+             * Kind
+             * @default papershift_official_workforce_collaboration_status
+             * @constant
+             */
+            __kind?: "papershift_official_workforce_collaboration_status";
+            /**
+             * Provider
+             * @default Papershift
+             * @constant
+             */
+            provider?: "Papershift";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.papershift.com
+             * @constant
+             */
+            status_page?: "https://status.papershift.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** ParabolaServiceStatus */
         ParabolaServiceStatus: {
             /**
@@ -88068,6 +88204,40 @@ export interface components {
             schema_version: string;
             /** Organization Page */
             organization_page: string;
+        };
+        /** RotaGeekServiceStatus */
+        RotaGeekServiceStatus: {
+            /**
+             * Kind
+             * @default rotageek_official_workforce_collaboration_status
+             * @constant
+             */
+            __kind?: "rotageek_official_workforce_collaboration_status";
+            /**
+             * Provider
+             * @default RotaGeek
+             * @constant
+             */
+            provider?: "RotaGeek";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.rotageek.com
+             * @constant
+             */
+            status_page?: "https://status.rotageek.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** RotatePageBody */
         RotatePageBody: {
@@ -101612,6 +101782,38 @@ export interface components {
             status_page?: "https://status.userflow.com/";
         };
         /**
+         * UserlaneServiceStatus
+         * @description Safe aggregate status projection for Userlane's fixed status page.
+         */
+        UserlaneServiceStatus: {
+            /**
+             * Kind
+             * @default userlane_public_service_status
+             * @constant
+             */
+            __kind?: "userlane_public_service_status";
+            /**
+             * Provider
+             * @default Userlane
+             * @constant
+             */
+            provider?: "Userlane";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.userlane.com/
+             * @constant
+             */
+            status_page?: "https://status.userlane.com/";
+        };
+        /**
          * UsgsPublicEarthquakeEvent
          * @description Safe factual projection of one public USGS earthquake event.
          */
@@ -103785,6 +103987,38 @@ export interface components {
             note?: string | null;
             /** Snapshot Id */
             snapshot_id?: string | null;
+        };
+        /**
+         * WalnutServiceStatus
+         * @description Safe aggregate status projection for Walnut's fixed status page.
+         */
+        WalnutServiceStatus: {
+            /**
+             * Kind
+             * @default walnut_public_service_status
+             * @constant
+             */
+            __kind?: "walnut_public_service_status";
+            /**
+             * Provider
+             * @default Walnut
+             * @constant
+             */
+            provider?: "Walnut";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.walnut.io/
+             * @constant
+             */
+            status_page?: "https://status.walnut.io/";
         };
         /** WarmAgentBlocksResponse */
         WarmAgentBlocksResponse: {
@@ -106904,6 +107138,31 @@ export interface components {
             offset: number;
         };
         /** PageMetadata */
+        aidream__services__libreoffice_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default libreoffice_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "libreoffice_wiki_page_metadata";
+            /**
+             * Provider
+             * @default LibreOffice Wiki
+             * @constant
+             */
+            provider?: "LibreOffice Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
         aidream__services__mediawiki_integrations__service__PageMetadata: {
             /**
              * Kind
@@ -106942,6 +107201,31 @@ export interface components {
              * @constant
              */
             provider?: "Meta-Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
+        aidream__services__mozilla_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default mozilla_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "mozilla_wiki_page_metadata";
+            /**
+             * Provider
+             * @default Mozilla Wiki
+             * @constant
+             */
+            provider?: "Mozilla Wiki";
             /** Page Id */
             page_id: number;
             /** Title */
@@ -120891,6 +121175,46 @@ export interface operations {
             };
         };
     };
+    public_status_walnut_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalnutServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_userlane_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserlaneServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -126091,6 +126415,46 @@ export interface operations {
             };
         };
     };
+    public_status_rotageek_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotaGeekServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_papershift_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PapershiftServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -127845,6 +128209,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__opensuse_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_mozilla_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__mozilla_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_libreoffice_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__libreoffice_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */

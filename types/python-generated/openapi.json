@@ -18907,6 +18907,48 @@
         }
       }
     },
+    "/walnut/public/status": {
+      "get": {
+        "tags": [
+          "Walnut Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_walnut_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalnutServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/userlane/public/status": {
+      "get": {
+        "tags": [
+          "Userlane Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_userlane_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserlaneServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -24367,6 +24409,48 @@
         }
       }
     },
+    "/rotageek/public/status": {
+      "get": {
+        "tags": [
+          "RotaGeek Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_rotageek_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotaGeekServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/papershift/public/status": {
+      "get": {
+        "tags": [
+          "Papershift Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_papershift_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PapershiftServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -26702,6 +26786,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__opensuse_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mozilla-wiki/public/page": {
+      "get": {
+        "tags": [
+          "Mozilla Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_mozilla_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__mozilla_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/libreoffice-wiki/public/page": {
+      "get": {
+        "tags": [
+          "LibreOffice Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_libreoffice_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__libreoffice_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -178857,6 +179027,55 @@
         ],
         "title": "PaperlessPostServiceStatus"
       },
+      "PapershiftServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "papershift_official_workforce_collaboration_status",
+            "title": "Kind",
+            "default": "papershift_official_workforce_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Papershift",
+            "title": "Provider",
+            "default": "Papershift"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.papershift.com",
+            "title": "Status Page",
+            "default": "https://status.papershift.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "PapershiftServiceStatus"
+      },
       "ParabolaServiceStatus": {
         "properties": {
           "__kind": {
@@ -201722,6 +201941,55 @@
         ],
         "title": "RorPublicOrganization",
         "description": "Safe bounded projection of one ROR organization record."
+      },
+      "RotaGeekServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "rotageek_official_workforce_collaboration_status",
+            "title": "Kind",
+            "default": "rotageek_official_workforce_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "RotaGeek",
+            "title": "Provider",
+            "default": "RotaGeek"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.rotageek.com",
+            "title": "Status Page",
+            "default": "https://status.rotageek.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "RotaGeekServiceStatus"
       },
       "RotatePageBody": {
         "properties": {
@@ -232030,6 +232298,47 @@
         "title": "UserflowServiceStatus",
         "description": "Safe aggregate status projection for Userflow' fixed status page."
       },
+      "UserlaneServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "userlane_public_service_status",
+            "title": "Kind",
+            "default": "userlane_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Userlane",
+            "title": "Provider",
+            "default": "Userlane"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.userlane.com/",
+            "title": "Status Page",
+            "default": "https://status.userlane.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "UserlaneServiceStatus",
+        "description": "Safe aggregate status projection for Userlane's fixed status page."
+      },
       "UsgsPublicEarthquakeEvent": {
         "properties": {
           "__kind": {
@@ -236929,6 +237238,47 @@
         ],
         "title": "WalkHop",
         "description": "One human answer in the walk — evidence, verbatim (D-40 typed hop)."
+      },
+      "WalnutServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "walnut_public_service_status",
+            "title": "Kind",
+            "default": "walnut_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Walnut",
+            "title": "Provider",
+            "default": "Walnut"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.walnut.io/",
+            "title": "Status Page",
+            "default": "https://status.walnut.io/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "WalnutServiceStatus",
+        "description": "Safe aggregate status projection for Walnut's fixed status page."
       },
       "WarmAgentBlocksResponse": {
         "properties": {
@@ -244250,6 +244600,52 @@
         ],
         "title": "MentionsPage"
       },
+      "aidream__services__libreoffice_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "libreoffice_wiki_page_metadata",
+            "title": "Kind",
+            "default": "libreoffice_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "LibreOffice Wiki",
+            "title": "Provider",
+            "default": "LibreOffice Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
       "aidream__services__mediawiki_integrations__service__PageMetadata": {
         "properties": {
           "__kind": {
@@ -244309,6 +244705,52 @@
             "const": "Meta-Wiki",
             "title": "Provider",
             "default": "Meta-Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__mozilla_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mozilla_wiki_page_metadata",
+            "title": "Kind",
+            "default": "mozilla_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Mozilla Wiki",
+            "title": "Provider",
+            "default": "Mozilla Wiki"
           },
           "page_id": {
             "type": "integer",
