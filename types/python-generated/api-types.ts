@@ -7910,6 +7910,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/archbee/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_archbee_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tango/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_tango_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12245,6 +12279,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/higher-logic/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_higher_logic_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vanilla-forums/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_vanilla_forums_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -13240,6 +13308,40 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_wikimedia_strategy_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/translatewiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_translatewiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openstreetmap-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_openstreetmap_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -37995,6 +38097,38 @@ export interface components {
             /** Outcomes */
             outcomes?: components["schemas"]["DraftOutcome"][];
         };
+        /**
+         * ArchbeeServiceStatus
+         * @description Safe aggregate status projection for Archbee's fixed status page.
+         */
+        ArchbeeServiceStatus: {
+            /**
+             * Kind
+             * @default archbee_public_service_status
+             * @constant
+             */
+            __kind?: "archbee_public_service_status";
+            /**
+             * Provider
+             * @default Archbee
+             * @constant
+             */
+            provider?: "Archbee";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.archbee.com/
+             * @constant
+             */
+            status_page?: "https://status.archbee.com/";
+        };
         /** ArchiveOut */
         ArchiveOut: {
             /** Status */
@@ -62699,6 +62833,40 @@ export interface components {
             compaction_group_id: string;
             /** Hidden Message Ids */
             hidden_message_ids: string[];
+        };
+        /** HigherLogicServiceStatus */
+        HigherLogicServiceStatus: {
+            /**
+             * Kind
+             * @default higher_logic_official_community_collaboration_status
+             * @constant
+             */
+            __kind?: "higher_logic_official_community_collaboration_status";
+            /**
+             * Provider
+             * @default Higher Logic
+             * @constant
+             */
+            provider?: "Higher Logic";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.higherlogic.com
+             * @constant
+             */
+            status_page?: "https://status.higherlogic.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** HighspotServiceStatus */
         HighspotServiceStatus: {
@@ -96518,6 +96686,40 @@ export interface components {
             status_page?: "https://status.tally.so/";
         };
         /**
+         * TangoServiceStatus
+         * @description Safe aggregate status projection for Tango's fixed status page.
+         */
+        TangoServiceStatus: {
+            /**
+             * Kind
+             * @default tango_public_service_status
+             * @constant
+             */
+            __kind?: "tango_public_service_status";
+            /**
+             * Provider
+             * @default Tango
+             * @constant
+             */
+            provider?: "Tango";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** State */
+            state: string;
+            /** Operational */
+            operational: boolean;
+            /**
+             * Status Page
+             * @default https://status.tango.us/
+             * @constant
+             */
+            status_page?: "https://status.tango.us/";
+        };
+        /**
          * TaskCreateRequest
          * @description Create a new sch_task (plus optional agent_task and trigger).
          */
@@ -101305,6 +101507,40 @@ export interface components {
             techniques?: string[];
             /** Official Page */
             official_page: string;
+        };
+        /** VanillaForumsServiceStatus */
+        VanillaForumsServiceStatus: {
+            /**
+             * Kind
+             * @default vanilla_forums_official_community_collaboration_status
+             * @constant
+             */
+            __kind?: "vanilla_forums_official_community_collaboration_status";
+            /**
+             * Provider
+             * @default Vanilla Forums
+             * @constant
+             */
+            provider?: "Vanilla Forums";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.vanillaforums.com
+             * @constant
+             */
+            status_page?: "https://status.vanillaforums.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** VariableAssignmentSpec */
         VariableAssignmentSpec: {
@@ -106339,6 +106575,31 @@ export interface components {
             /** Language */
             language: string;
         };
+        /** PageMetadata */
+        aidream__services__openstreetmap_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default openstreetmap_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "openstreetmap_wiki_page_metadata";
+            /**
+             * Provider
+             * @default OpenStreetMap Wiki
+             * @constant
+             */
+            provider?: "OpenStreetMap Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /** HealthResponse */
         aidream__services__rag__library_status__HealthResponse: {
             /** Schema Ok */
@@ -106556,6 +106817,31 @@ export interface components {
             set_name: string;
             /** Official Set Card Count */
             official_set_card_count: number;
+        };
+        /** PageMetadata */
+        aidream__services__translatewiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default translatewiki_page_metadata
+             * @constant
+             */
+            __kind?: "translatewiki_page_metadata";
+            /**
+             * Provider
+             * @default TranslateWiki
+             * @constant
+             */
+            provider?: "TranslateWiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
         };
         /** PageMetadata */
         aidream__services__wikibooks_integrations__service__PageMetadata: {
@@ -120077,6 +120363,46 @@ export interface operations {
             };
         };
     };
+    public_status_archbee_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArchbeeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_tango_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TangoServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -125177,6 +125503,46 @@ export interface operations {
             };
         };
     };
+    public_status_higher_logic_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HigherLogicServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_vanilla_forums_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VanillaForumsServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -126776,6 +127142,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__wikimedia_strategy_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_translatewiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__translatewiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_openstreetmap_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__openstreetmap_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */

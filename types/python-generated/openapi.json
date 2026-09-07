@@ -18802,6 +18802,48 @@
         }
       }
     },
+    "/archbee/public/status": {
+      "get": {
+        "tags": [
+          "Archbee Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_archbee_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchbeeServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tango/public/status": {
+      "get": {
+        "tags": [
+          "Tango Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_tango_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TangoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -24157,6 +24199,48 @@
         }
       }
     },
+    "/higher-logic/public/status": {
+      "get": {
+        "tags": [
+          "Higher Logic Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_higher_logic_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HigherLogicServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vanilla-forums/public/status": {
+      "get": {
+        "tags": [
+          "Vanilla Forums Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_vanilla_forums_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VanillaForumsServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -26277,6 +26361,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__wikimedia_strategy_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/translatewiki/public/page": {
+      "get": {
+        "tags": [
+          "TranslateWiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_translatewiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__translatewiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openstreetmap-wiki/public/page": {
+      "get": {
+        "tags": [
+          "OpenStreetMap Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_openstreetmap_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__openstreetmap_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -88255,6 +88425,47 @@
         "title": "ApproveDraftsResponse",
         "description": "A per-draft ledger, never a count. A batch that silently approved 9 of 10\nand reported success is worse than one that approved none."
       },
+      "ArchbeeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "archbee_public_service_status",
+            "title": "Kind",
+            "default": "archbee_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Archbee",
+            "title": "Provider",
+            "default": "Archbee"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.archbee.com/",
+            "title": "Status Page",
+            "default": "https://status.archbee.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ArchbeeServiceStatus",
+        "description": "Safe aggregate status projection for Archbee's fixed status page."
+      },
       "ArchiveOut": {
         "properties": {
           "status": {
@@ -145477,6 +145688,55 @@
           "hidden_message_ids"
         ],
         "title": "HideResponse"
+      },
+      "HigherLogicServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "higher_logic_official_community_collaboration_status",
+            "title": "Kind",
+            "default": "higher_logic_official_community_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Higher Logic",
+            "title": "Provider",
+            "default": "Higher Logic"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.higherlogic.com",
+            "title": "Status Page",
+            "default": "https://status.higherlogic.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "HigherLogicServiceStatus"
       },
       "HighspotServiceStatus": {
         "properties": {
@@ -220724,6 +220984,52 @@
         "title": "TallyServiceStatus",
         "description": "Safe aggregate status projection for Tally' fixed status page."
       },
+      "TangoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "tango_public_service_status",
+            "title": "Kind",
+            "default": "tango_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Tango",
+            "title": "Provider",
+            "default": "Tango"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "state": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "State"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.tango.us/",
+            "title": "Status Page",
+            "default": "https://status.tango.us/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "operational"
+        ],
+        "title": "TangoServiceStatus",
+        "description": "Safe aggregate status projection for Tango's fixed status page."
+      },
       "TaskCreateRequest": {
         "properties": {
           "kind": {
@@ -231747,6 +232053,55 @@
         ],
         "title": "VamPublicObject",
         "description": "Safe factual projection of one public V&A collection object."
+      },
+      "VanillaForumsServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "vanilla_forums_official_community_collaboration_status",
+            "title": "Kind",
+            "default": "vanilla_forums_official_community_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Vanilla Forums",
+            "title": "Provider",
+            "default": "Vanilla Forums"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.vanillaforums.com",
+            "title": "Status Page",
+            "default": "https://status.vanillaforums.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "VanillaForumsServiceStatus"
       },
       "VariableAssignmentSpec": {
         "properties": {
@@ -243411,6 +243766,52 @@
         ],
         "title": "PageMetadata"
       },
+      "aidream__services__openstreetmap_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "openstreetmap_wiki_page_metadata",
+            "title": "Kind",
+            "default": "openstreetmap_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "OpenStreetMap Wiki",
+            "title": "Provider",
+            "default": "OpenStreetMap Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
       "aidream__services__rag__library_status__HealthResponse": {
         "properties": {
           "schema_ok": {
@@ -243834,6 +244235,52 @@
           "official_set_card_count"
         ],
         "title": "CardMetadata"
+      },
+      "aidream__services__translatewiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "translatewiki_page_metadata",
+            "title": "Kind",
+            "default": "translatewiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "TranslateWiki",
+            "title": "Provider",
+            "default": "TranslateWiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
       },
       "aidream__services__wikibooks_integrations__service__PageMetadata": {
         "properties": {
