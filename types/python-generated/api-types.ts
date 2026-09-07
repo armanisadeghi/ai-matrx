@@ -7825,6 +7825,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tuple/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_tuple_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plausible/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_plausible_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12058,6 +12092,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/teem/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_teem_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/eptura-visitor/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_eptura_visitor_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/spacebring/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_spacebring_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -12968,6 +13053,40 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_wikimedia_incubator_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikimedia-foundation/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_wikimedia_foundation_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/meta-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_meta_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -56041,6 +56160,40 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** EpturaVisitorServiceStatus */
+        EpturaVisitorServiceStatus: {
+            /**
+             * Kind
+             * @default eptura_visitor_official_workplace_status
+             * @constant
+             */
+            __kind?: "eptura_visitor_official_workplace_status";
+            /**
+             * Provider
+             * @default Eptura Visitor
+             * @constant
+             */
+            provider?: "Eptura Visitor";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.proxyclick.com
+             * @constant
+             */
+            status_page?: "https://status.proxyclick.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** EscrowRecoverBody */
         EscrowRecoverBody: {
             /** Session Id */
@@ -79262,6 +79415,40 @@ export interface components {
             /** Problems */
             problems?: string[];
         };
+        /**
+         * PlausibleServiceStatus
+         * @description Safe aggregate status projection for Plausible Analytics' fixed status page.
+         */
+        PlausibleServiceStatus: {
+            /**
+             * Kind
+             * @default plausible_public_service_status
+             * @constant
+             */
+            __kind?: "plausible_public_service_status";
+            /**
+             * Provider
+             * @default Plausible Analytics
+             * @constant
+             */
+            provider?: "Plausible Analytics";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** State */
+            state: string;
+            /** Operational */
+            operational: boolean;
+            /**
+             * Status Page
+             * @default https://status.plausible.io/
+             * @constant
+             */
+            status_page?: "https://status.plausible.io/";
+        };
         /** PlivoServiceStatus */
         PlivoServiceStatus: {
             /**
@@ -92796,6 +92983,40 @@ export interface components {
             /** Scrape Status */
             scrape_status?: ("pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated" | "ignored" | "content_mismatch") | null;
         };
+        /** SpacebringServiceStatus */
+        SpacebringServiceStatus: {
+            /**
+             * Kind
+             * @default spacebring_official_workplace_community_status
+             * @constant
+             */
+            __kind?: "spacebring_official_workplace_community_status";
+            /**
+             * Provider
+             * @default Spacebring
+             * @constant
+             */
+            provider?: "Spacebring";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.spacebring.com
+             * @constant
+             */
+            status_page?: "https://status.spacebring.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** SpaceflightArticle */
         SpaceflightArticle: {
             /**
@@ -96274,6 +96495,40 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** TeemServiceStatus */
+        TeemServiceStatus: {
+            /**
+             * Kind
+             * @default teem_official_workplace_collaboration_status
+             * @constant
+             */
+            __kind?: "teem_official_workplace_collaboration_status";
+            /**
+             * Provider
+             * @default Teem
+             * @constant
+             */
+            provider?: "Teem";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.teem.com
+             * @constant
+             */
+            status_page?: "https://status.teem.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** TellentServiceStatus */
         TellentServiceStatus: {
             /**
@@ -98870,6 +99125,38 @@ export interface components {
              * @default
              */
             gender?: string;
+        };
+        /**
+         * TupleServiceStatus
+         * @description Safe aggregate status projection for Tuple's fixed status page.
+         */
+        TupleServiceStatus: {
+            /**
+             * Kind
+             * @default tuple_public_service_status
+             * @constant
+             */
+            __kind?: "tuple_public_service_status";
+            /**
+             * Provider
+             * @default Tuple
+             * @constant
+             */
+            provider?: "Tuple";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.tuple.app/
+             * @constant
+             */
+            status_page?: "https://status.tuple.app/";
         };
         /**
          * TurnRange
@@ -105674,6 +105961,31 @@ export interface components {
             /** Language */
             language: string;
         };
+        /** PageMetadata */
+        aidream__services__meta_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default meta_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "meta_wiki_page_metadata";
+            /**
+             * Provider
+             * @default Meta-Wiki
+             * @constant
+             */
+            provider?: "Meta-Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /** HealthResponse */
         aidream__services__rag__library_status__HealthResponse: {
             /** Schema Ok */
@@ -105931,6 +106243,31 @@ export interface components {
              * @constant
              */
             provider?: "Wikimania";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
+        aidream__services__wikimedia_foundation_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default wikimedia_foundation_page_metadata
+             * @constant
+             */
+            __kind?: "wikimedia_foundation_page_metadata";
+            /**
+             * Provider
+             * @default Wikimedia Foundation
+             * @constant
+             */
+            provider?: "Wikimedia Foundation";
             /** Page Id */
             page_id: number;
             /** Title */
@@ -119212,6 +119549,46 @@ export interface operations {
             };
         };
     };
+    public_status_tuple_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TupleServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_plausible_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlausibleServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -124192,6 +124569,66 @@ export interface operations {
             };
         };
     };
+    public_status_teem_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeemServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_eptura_visitor_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EpturaVisitorServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_spacebring_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpacebringServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -125636,6 +126073,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__wikimedia_incubator_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_wikimedia_foundation_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__wikimedia_foundation_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_meta_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__meta_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */

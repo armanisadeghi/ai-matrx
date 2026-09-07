@@ -18697,6 +18697,48 @@
         }
       }
     },
+    "/tuple/public/status": {
+      "get": {
+        "tags": [
+          "Tuple Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_tuple_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TupleServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plausible/public/status": {
+      "get": {
+        "tags": [
+          "Plausible Analytics Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_plausible_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlausibleServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -23926,6 +23968,69 @@
         }
       }
     },
+    "/teem/public/status": {
+      "get": {
+        "tags": [
+          "Teem Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_teem_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeemServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eptura-visitor/public/status": {
+      "get": {
+        "tags": [
+          "Eptura Visitor Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_eptura_visitor_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpturaVisitorServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spacebring/public/status": {
+      "get": {
+        "tags": [
+          "Spacebring Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_spacebring_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpacebringServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -25831,6 +25936,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__wikimedia_incubator_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wikimedia-foundation/public/page": {
+      "get": {
+        "tags": [
+          "Wikimedia Foundation Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_wikimedia_foundation_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__wikimedia_foundation_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meta-wiki/public/page": {
+      "get": {
+        "tags": [
+          "Meta-Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_meta_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__meta_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -130914,6 +131105,55 @@
         ],
         "title": "EnvoyServiceStatus"
       },
+      "EpturaVisitorServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "eptura_visitor_official_workplace_status",
+            "title": "Kind",
+            "default": "eptura_visitor_official_workplace_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Eptura Visitor",
+            "title": "Provider",
+            "default": "Eptura Visitor"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.proxyclick.com",
+            "title": "Status Page",
+            "default": "https://status.proxyclick.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "EpturaVisitorServiceStatus"
+      },
       "EscrowRecoverBody": {
         "properties": {
           "session_id": {
@@ -182016,6 +182256,52 @@
         ],
         "title": "PlannedPagesResult"
       },
+      "PlausibleServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "plausible_public_service_status",
+            "title": "Kind",
+            "default": "plausible_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Plausible Analytics",
+            "title": "Provider",
+            "default": "Plausible Analytics"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "state": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "State"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.plausible.io/",
+            "title": "Status Page",
+            "default": "https://status.plausible.io/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "operational"
+        ],
+        "title": "PlausibleServiceStatus",
+        "description": "Safe aggregate status projection for Plausible Analytics' fixed status page."
+      },
       "PlivoServiceStatus": {
         "properties": {
           "__kind": {
@@ -213133,6 +213419,55 @@
         "type": "object",
         "title": "SourceUpdate"
       },
+      "SpacebringServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "spacebring_official_workplace_community_status",
+            "title": "Kind",
+            "default": "spacebring_official_workplace_community_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Spacebring",
+            "title": "Provider",
+            "default": "Spacebring"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.spacebring.com",
+            "title": "Status Page",
+            "default": "https://status.spacebring.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SpacebringServiceStatus"
+      },
       "SpaceflightArticle": {
         "properties": {
           "__kind": {
@@ -220662,6 +220997,55 @@
         "title": "TeamworkStatusResult",
         "description": "Safe projection of Teamwork.com's official high-level service status."
       },
+      "TeemServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "teem_official_workplace_collaboration_status",
+            "title": "Kind",
+            "default": "teem_official_workplace_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Teem",
+            "title": "Provider",
+            "default": "Teem"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.teem.com",
+            "title": "Status Page",
+            "default": "https://status.teem.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "TeemServiceStatus"
+      },
       "TellentServiceStatus": {
         "properties": {
           "__kind": {
@@ -226578,6 +226962,47 @@
           "voice"
         ],
         "title": "TtsVoiceSpeaker"
+      },
+      "TupleServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "tuple_public_service_status",
+            "title": "Kind",
+            "default": "tuple_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Tuple",
+            "title": "Provider",
+            "default": "Tuple"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.tuple.app/",
+            "title": "Status Page",
+            "default": "https://status.tuple.app/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "TupleServiceStatus",
+        "description": "Safe aggregate status projection for Tuple's fixed status page."
       },
       "TurnRange": {
         "properties": {
@@ -242410,6 +242835,52 @@
         ],
         "title": "PageMetadata"
       },
+      "aidream__services__meta_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "meta_wiki_page_metadata",
+            "title": "Kind",
+            "default": "meta_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Meta-Wiki",
+            "title": "Provider",
+            "default": "Meta-Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
       "aidream__services__rag__library_status__HealthResponse": {
         "properties": {
           "schema_ok": {
@@ -242893,6 +243364,52 @@
             "const": "Wikimania",
             "title": "Provider",
             "default": "Wikimania"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__wikimedia_foundation_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wikimedia_foundation_page_metadata",
+            "title": "Kind",
+            "default": "wikimedia_foundation_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wikimedia Foundation",
+            "title": "Provider",
+            "default": "Wikimedia Foundation"
           },
           "page_id": {
             "type": "integer",
