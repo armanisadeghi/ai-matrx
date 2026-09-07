@@ -7604,6 +7604,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/transistor/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_transistor_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -11633,6 +11650,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/simpplr/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_simpplr_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -12322,6 +12356,23 @@ export interface paths {
         };
         /** Public Preferred Versions */
         get: operations["public_preferred_versions_hackage_public_preferred_versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikisource/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_wikisource_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -75446,6 +75497,31 @@ export interface components {
             /** Request Id */
             request_id?: string | null;
         };
+        /** PageMetadata */
+        PageMetadata: {
+            /**
+             * Kind
+             * @default wikisource_page_metadata
+             * @constant
+             */
+            __kind?: "wikisource_page_metadata";
+            /**
+             * Provider
+             * @default Wikisource
+             * @constant
+             */
+            provider?: "Wikisource";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /**
          * PagePerformanceConfig
          * @description What is wired up — so the UI can offer the fix instead of a dead end.
@@ -89768,6 +89844,40 @@ export interface components {
              */
             status_page?: "https://status.simplecast.com";
         };
+        /** SimpplrServiceStatus */
+        SimpplrServiceStatus: {
+            /**
+             * Kind
+             * @default simpplr_official_employee_collaboration_status
+             * @constant
+             */
+            __kind?: "simpplr_official_employee_collaboration_status";
+            /**
+             * Provider
+             * @default Simpplr
+             * @constant
+             */
+            provider?: "Simpplr";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.simpplr.com
+             * @constant
+             */
+            status_page?: "https://status.simpplr.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** SimulateProviderRetryRequest */
         SimulateProviderRetryRequest: {
             /**
@@ -96982,6 +97092,38 @@ export interface components {
              * @default stt-default
              */
             model?: string;
+        };
+        /**
+         * TransistorServiceStatus
+         * @description Safe aggregate status projection for Transistor' fixed status page.
+         */
+        TransistorServiceStatus: {
+            /**
+             * Kind
+             * @default transistor_public_service_status
+             * @constant
+             */
+            __kind?: "transistor_public_service_status";
+            /**
+             * Provider
+             * @default Transistor
+             * @constant
+             */
+            provider?: "Transistor";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.transistor.fm/
+             * @constant
+             */
+            status_page?: "https://status.transistor.fm/";
         };
         /**
          * TrashFileEntry
@@ -117156,6 +117298,26 @@ export interface operations {
             };
         };
     };
+    public_status_transistor_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransistorServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -121896,6 +122058,26 @@ export interface operations {
             };
         };
     };
+    public_status_simpplr_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimpplrServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -122937,6 +123119,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PreferredVersions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_wikisource_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageMetadata"];
                 };
             };
             /** @description Validation Error */
