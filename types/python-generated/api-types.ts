@@ -11412,6 +11412,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/maze-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_maze_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/jotform/public/status": {
         parameters: {
             query?: never;
@@ -11421,6 +11438,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_jotform_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ryver/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_ryver_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -12016,6 +12050,23 @@ export interface paths {
         };
         /** Public Package */
         get: operations["public_package_debian_sources_public_package_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fedora-packages/public/rpm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Rpm */
+        get: operations["public_rpm_fedora_packages_public_rpm_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -69059,6 +69110,38 @@ export interface components {
              */
             compatible?: true;
         };
+        /** MazeServiceStatus */
+        MazeServiceStatus: {
+            /**
+             * Kind
+             * @default maze_public_service_status
+             * @constant
+             */
+            __kind?: "maze_public_service_status";
+            /**
+             * Provider
+             * @default Maze
+             * @constant
+             */
+            provider?: "Maze";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.maze.co/
+             * @constant
+             */
+            status_page?: "https://status.maze.co/";
+        };
         /**
          * McpCatalogRefreshResult
          * @description Admin-triggered server catalog reconciliation without user credentials.
@@ -83606,6 +83689,29 @@ export interface components {
             /** Unattached Files */
             unattached_files: number;
         };
+        /** RepositoryMetadata */
+        RepositoryMetadata: {
+            /**
+             * Kind
+             * @default fedora_rpm_repository_metadata
+             * @constant
+             */
+            __kind?: "fedora_rpm_repository_metadata";
+            /**
+             * Provider
+             * @default Fedora Packages
+             * @constant
+             */
+            provider?: "Fedora Packages";
+            /** Package */
+            package: string;
+            /** Repository */
+            repository: string;
+            /** Description */
+            description: string | null;
+            /** Repository Url */
+            repository_url: string;
+        };
         /** RepositorySummary */
         RepositorySummary: {
             /** Repository Id */
@@ -86122,6 +86228,40 @@ export interface components {
             ok: boolean;
             /** Status */
             status: string;
+        };
+        /** RyverServiceStatus */
+        RyverServiceStatus: {
+            /**
+             * Kind
+             * @default ryver_official_team_collaboration_status
+             * @constant
+             */
+            __kind?: "ryver_official_team_collaboration_status";
+            /**
+             * Provider
+             * @default Ryver
+             * @constant
+             */
+            provider?: "Ryver";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.ryver.com
+             * @constant
+             */
+            status_page?: "https://status.ryver.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** SafeJoke */
         SafeJoke: {
@@ -120792,6 +120932,26 @@ export interface operations {
             };
         };
     };
+    public_status_maze_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MazeServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_jotform_public_status_get: {
         parameters: {
             query?: never;
@@ -120808,6 +120968,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JotformServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_ryver_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RyverServiceStatus"];
                 };
             };
         };
@@ -121666,6 +121846,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__debian_sources_integrations__service__PackageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_rpm_fedora_packages_public_rpm_get: {
+        parameters: {
+            query: {
+                package: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepositoryMetadata"];
                 };
             };
             /** @description Validation Error */
