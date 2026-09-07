@@ -18844,6 +18844,27 @@
         }
       }
     },
+    "/supademo/public/status": {
+      "get": {
+        "tags": [
+          "Supademo Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_supademo_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupademoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -24241,6 +24262,27 @@
         }
       }
     },
+    "/airtame/public/status": {
+      "get": {
+        "tags": [
+          "Airtame Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_airtame_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AirtameServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -26447,6 +26489,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__openstreetmap_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/osgeo-wiki/public/page": {
+      "get": {
+        "tags": [
+          "OSGeo Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_osgeo_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__osgeo_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -86615,6 +86700,55 @@
         ],
         "title": "AirmeetStatusResult",
         "description": "Safe projection of Airmeet's high-level service status."
+      },
+      "AirtameServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "airtame_official_collaboration_status",
+            "title": "Kind",
+            "default": "airtame_official_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Airtame",
+            "title": "Provider",
+            "default": "Airtame"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.airtame.com",
+            "title": "Status Page",
+            "default": "https://status.airtame.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "AirtameServiceStatus"
       },
       "AkamaiServiceStatus": {
         "properties": {
@@ -218158,6 +218292,52 @@
         "title": "SupabaseAuthWebhookUser",
         "description": "Subset of the Supabase ``UserRecord`` payload we actually consume."
       },
+      "SupademoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "supademo_public_service_status",
+            "title": "Kind",
+            "default": "supademo_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Supademo",
+            "title": "Provider",
+            "default": "Supademo"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "state": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "State"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.supademo.com/",
+            "title": "Status Page",
+            "default": "https://status.supademo.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "operational"
+        ],
+        "title": "SupademoServiceStatus",
+        "description": "Safe aggregate status projection for Supademo's fixed status page."
+      },
       "SuperhumanStatusResult": {
         "properties": {
           "__kind": {
@@ -243779,6 +243959,52 @@
             "const": "OpenStreetMap Wiki",
             "title": "Provider",
             "default": "OpenStreetMap Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__osgeo_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "osgeo_wiki_page_metadata",
+            "title": "Kind",
+            "default": "osgeo_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "OSGeo Wiki",
+            "title": "Provider",
+            "default": "OSGeo Wiki"
           },
           "page_id": {
             "type": "integer",
