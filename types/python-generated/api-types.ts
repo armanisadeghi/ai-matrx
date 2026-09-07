@@ -10154,6 +10154,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lyssna/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_lyssna_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -11259,6 +11276,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/parabola-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_parabola_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -11761,6 +11795,23 @@ export interface paths {
         };
         /** Public Artifact */
         get: operations["public_artifact_maven_central_public_artifact_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/flathub/public/app": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public App */
+        get: operations["public_app_flathub_public_app_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -36262,6 +36313,35 @@ export interface components {
             unclassified: number;
             /** Filter Summary */
             filter_summary: string;
+        };
+        /** AppMetadata */
+        AppMetadata: {
+            /**
+             * Kind
+             * @default flathub_app_metadata
+             * @constant
+             */
+            __kind?: "flathub_app_metadata";
+            /**
+             * Provider
+             * @default Flathub
+             * @constant
+             */
+            provider?: "Flathub";
+            /** App Id */
+            app_id: string;
+            /** Name */
+            name: string;
+            /** Summary */
+            summary: string;
+            /** Developer Name */
+            developer_name: string | null;
+            /** Project License */
+            project_license: string | null;
+            /** Is Free License */
+            is_free_license: boolean;
+            /** Latest Release */
+            latest_release: string | null;
         };
         /** AppendDocumentRequest */
         AppendDocumentRequest: {
@@ -67129,6 +67209,40 @@ export interface components {
              */
             status_page?: "https://status.lumen5.com/";
         };
+        /** LyssnaServiceStatus */
+        LyssnaServiceStatus: {
+            /**
+             * Kind
+             * @default lyssna_official_research_collaboration_status
+             * @constant
+             */
+            __kind?: "lyssna_official_research_collaboration_status";
+            /**
+             * Provider
+             * @default Lyssna
+             * @constant
+             */
+            provider?: "Lyssna";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.lyssna.com
+             * @constant
+             */
+            status_page?: "https://status.lyssna.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * MGnifyPublicStudy
          * @description Safe factual projection of one public MGnify study.
@@ -74701,6 +74815,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.paperlesspost.com";
+        };
+        /** ParabolaServiceStatus */
+        ParabolaServiceStatus: {
+            /**
+             * Kind
+             * @default parabola_public_service_status
+             * @constant
+             */
+            __kind?: "parabola_public_service_status";
+            /**
+             * Provider
+             * @default Parabola
+             * @constant
+             */
+            provider?: "Parabola";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.parabola.io
+             * @constant
+             */
+            status_page?: "https://status.parabola.io";
         };
         /** ParadoxServiceStatus */
         ParadoxServiceStatus: {
@@ -118599,6 +118745,26 @@ export interface operations {
             };
         };
     };
+    public_status_lyssna_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LyssnaServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -119899,6 +120065,26 @@ export interface operations {
             };
         };
     };
+    public_status_parabola_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParabolaServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -120597,6 +120783,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ArtifactMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_app_flathub_public_app_get: {
+        parameters: {
+            query: {
+                app_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppMetadata"];
                 };
             };
             /** @description Validation Error */
