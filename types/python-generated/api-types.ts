@@ -7536,6 +7536,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hivebrite/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_hivebrite_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/attio/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_attio_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/substack/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_substack_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -11497,6 +11548,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accelo/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_accelo_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/element/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_element_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/happeo/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_happeo_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -12118,6 +12220,57 @@ export interface paths {
         };
         /** Public Package */
         get: operations["public_package_arch_linux_public_package_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/launchpad/public/ubuntu-source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Ubuntu Source */
+        get: operations["public_ubuntu_source_launchpad_public_ubuntu_source_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gentoo-packages/public/package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Package */
+        get: operations["public_package_gentoo_packages_public_package_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/metacpan/public/module": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Module */
+        get: operations["public_module_metacpan_public_module_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -33405,6 +33558,40 @@ export interface components {
              */
             status_page?: "https://status.ably.com";
         };
+        /** AcceloServiceStatus */
+        AcceloServiceStatus: {
+            /**
+             * Kind
+             * @default accelo_official_project_collaboration_status
+             * @constant
+             */
+            __kind?: "accelo_official_project_collaboration_status";
+            /**
+             * Provider
+             * @default Accelo
+             * @constant
+             */
+            provider?: "Accelo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.accelo.com
+             * @constant
+             */
+            status_page?: "https://status.accelo.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** AcceptBriefResult */
         AcceptBriefResult: {
             /** Node Id */
@@ -37654,6 +37841,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://attentive.statuspage.io";
+        };
+        /**
+         * AttioServiceStatus
+         * @description Safe aggregate status projection for Attio' fixed status page.
+         */
+        AttioServiceStatus: {
+            /**
+             * Kind
+             * @default attio_public_service_status
+             * @constant
+             */
+            __kind?: "attio_public_service_status";
+            /**
+             * Provider
+             * @default Attio
+             * @constant
+             */
+            provider?: "Attio";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.attio.com/
+             * @constant
+             */
+            status_page?: "https://status.attio.com/";
         };
         /** AudioExtractionRequest */
         AudioExtractionRequest: Record<string, never>;
@@ -54059,6 +54278,40 @@ export interface components {
              */
             status_page?: "https://status.egnyte.com/";
         };
+        /** ElementServiceStatus */
+        ElementServiceStatus: {
+            /**
+             * Kind
+             * @default element_official_team_collaboration_status
+             * @constant
+             */
+            __kind?: "element_official_team_collaboration_status";
+            /**
+             * Provider
+             * @default Element
+             * @constant
+             */
+            provider?: "Element";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.element.io
+             * @constant
+             */
+            status_page?: "https://status.element.io";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** ElevioServiceStatus */
         ElevioServiceStatus: {
             /**
@@ -60671,6 +60924,40 @@ export interface components {
              */
             handled?: boolean;
         };
+        /** HappeoServiceStatus */
+        HappeoServiceStatus: {
+            /**
+             * Kind
+             * @default happeo_official_workplace_collaboration_status
+             * @constant
+             */
+            __kind?: "happeo_official_workplace_collaboration_status";
+            /**
+             * Provider
+             * @default Happeo
+             * @constant
+             */
+            provider?: "Happeo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.happeo.com
+             * @constant
+             */
+            status_page?: "https://status.happeo.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * HarvardDataversePublicDataset
          * @description Safe factual projection of one public released dataset.
@@ -61166,6 +61453,38 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * HivebriteServiceStatus
+         * @description Safe aggregate status projection for Hivebrite' fixed status page.
+         */
+        HivebriteServiceStatus: {
+            /**
+             * Kind
+             * @default hivebrite_public_service_status
+             * @constant
+             */
+            __kind?: "hivebrite_public_service_status";
+            /**
+             * Provider
+             * @default Hivebrite
+             * @constant
+             */
+            provider?: "Hivebrite";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.hivebrite.com/
+             * @constant
+             */
+            status_page?: "https://status.hivebrite.com/";
         };
         /** HiverServiceStatus */
         HiverServiceStatus: {
@@ -70697,6 +71016,33 @@ export interface components {
             published_at: string;
             /** Updated At */
             updated_at: string;
+        };
+        /** ModuleMetadata */
+        ModuleMetadata: {
+            /**
+             * Kind
+             * @default metacpan_module_metadata
+             * @constant
+             */
+            __kind?: "metacpan_module_metadata";
+            /**
+             * Provider
+             * @default MetaCPAN
+             * @constant
+             */
+            provider?: "MetaCPAN";
+            /** Module */
+            module: string;
+            /** Distribution */
+            distribution: string;
+            /** Version */
+            version: string;
+            /** Author */
+            author: string;
+            /** Abstract */
+            abstract: string | null;
+            /** Deprecated */
+            deprecated: boolean;
         };
         /** MolinServiceStatus */
         MolinServiceStatus: {
@@ -90709,6 +91055,29 @@ export interface components {
             /** Scraped At */
             scraped_at: string;
         };
+        /** SourcePackageMetadata */
+        SourcePackageMetadata: {
+            /**
+             * Kind
+             * @default ubuntu_source_package_metadata
+             * @constant
+             */
+            __kind?: "ubuntu_source_package_metadata";
+            /**
+             * Provider
+             * @default Ubuntu Launchpad
+             * @constant
+             */
+            provider?: "Ubuntu Launchpad";
+            /** Package */
+            package: string;
+            /** Display Name */
+            display_name: string;
+            /** Title */
+            title: string;
+            /** Web Url */
+            web_url: string;
+        };
         /**
          * SourceRequestEvaluateResult
          * @description The durable result of re-scoring one existing request row.
@@ -92748,6 +93117,38 @@ export interface components {
              * Format: uuid
              */
             id: string;
+        };
+        /**
+         * SubstackServiceStatus
+         * @description Safe aggregate status projection for Substack' fixed status page.
+         */
+        SubstackServiceStatus: {
+            /**
+             * Kind
+             * @default substack_public_service_status
+             * @constant
+             */
+            __kind?: "substack_public_service_status";
+            /**
+             * Provider
+             * @default Substack
+             * @constant
+             */
+            provider?: "Substack";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://substack.statuspage.io/
+             * @constant
+             */
+            status_page?: "https://substack.statuspage.io/";
         };
         /**
          * SuggestRequest
@@ -103325,6 +103726,29 @@ export interface components {
             provider?: "Dog CEO";
             /** Image Url */
             image_url: string;
+        };
+        /** PackageMetadata */
+        aidream__services__gentoo_packages_integrations__service__PackageMetadata: {
+            /**
+             * Kind
+             * @default gentoo_package_metadata
+             * @constant
+             */
+            __kind?: "gentoo_package_metadata";
+            /**
+             * Provider
+             * @default Gentoo Packages
+             * @constant
+             */
+            provider?: "Gentoo Packages";
+            /** Atom */
+            atom: string;
+            /** Description */
+            description: string | null;
+            /** Package Url */
+            package_url: string;
+            /** Versions */
+            versions: string[];
         };
         /** EnrollRequest */
         aidream__services__hindsight__enrollment__EnrollRequest: {
@@ -116514,6 +116938,66 @@ export interface operations {
             };
         };
     };
+    public_status_hivebrite_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HivebriteServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_attio_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttioServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_substack_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubstackServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -121174,6 +121658,66 @@ export interface operations {
             };
         };
     };
+    public_status_accelo_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceloServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_element_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ElementServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_happeo_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HappeoServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -122090,6 +122634,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__arch_linux_integrations__service__PackageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_ubuntu_source_launchpad_public_ubuntu_source_get: {
+        parameters: {
+            query: {
+                package: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourcePackageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_package_gentoo_packages_public_package_get: {
+        parameters: {
+            query: {
+                category: string;
+                package: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__gentoo_packages_integrations__service__PackageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_module_metacpan_public_module_get: {
+        parameters: {
+            query: {
+                module: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModuleMetadata"];
                 };
             };
             /** @description Validation Error */
