@@ -26,6 +26,9 @@ const getStretchClasses = (className?: string) => {
 const TEXTAREA_BASE_CLASS =
   "flex h-auto w-full border border-input bg-background text-black dark:text-white shadow-textarea rounded-md px-3 py-2 text-sm placeholder:text-neutral-500 dark:placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-[2px] focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 disabled:cursor-not-allowed disabled:opacity-50 dark:shadow-[0px_0px_1px_1px_var(--neutral-700)] transition duration-400";
 
+const TEXTAREA_CONTROL_CLASS =
+  "flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-neutral-500 dark:placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+
 const useAutoGrow = (
   ref: React.RefObject<HTMLTextAreaElement>,
   value: string | number | readonly string[] | undefined,
@@ -102,7 +105,8 @@ const BasicTextarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <textarea
         className={cn(
-          "flex h-auto w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-neutral-500 dark:placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+          TEXTAREA_CONTROL_CLASS,
+          "h-auto",
           autoGrow && "resize-none",
           className,
         )}
@@ -161,7 +165,8 @@ const TextareaWithPrefix = React.forwardRef<
         <textarea
           ref={textareaRef}
           className={cn(
-            "flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm resize-y placeholder:text-neutral-500 dark:placeholder:text-neutral-400",
+            TEXTAREA_CONTROL_CLASS,
+            "resize-y",
             prefix && "pl-10",
             autoGrow && "resize-none",
             className,
@@ -207,7 +212,8 @@ const CopyTextarea = React.forwardRef<HTMLTextAreaElement, CopyTextareaProps>(
         <textarea
           ref={textareaRef}
           className={cn(
-            "flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm resize-y pr-10 placeholder:text-neutral-500 dark:placeholder:text-neutral-400",
+            TEXTAREA_CONTROL_CLASS,
+            "resize-y pr-10",
             autoGrow && "resize-none",
             className,
           )}
@@ -220,7 +226,7 @@ const CopyTextarea = React.forwardRef<HTMLTextAreaElement, CopyTextareaProps>(
         <button
           type="button"
           onClick={handleCopy}
-          className="absolute right-2 top-2 p-1 hover:bg-muted rounded-md transition-colors z-10"
+          className="absolute right-2 top-2 z-10 rounded-md p-1 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Copy to clipboard"
         >
           {hasCopied ? (

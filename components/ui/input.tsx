@@ -45,7 +45,7 @@ const CopyInput = React.forwardRef<HTMLInputElement, InputProps>(
         <button
           type="button"
           onClick={handleCopy}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded-md transition-colors"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Copy to clipboard"
         >
           {hasCopied ? (
@@ -105,7 +105,7 @@ const FancyInput = React.forwardRef<HTMLInputElement, FancyInputProps>(
         <button
           type="button"
           onClick={handleCopy}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded-md transition-colors"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Copy to clipboard"
         >
           {hasCopied ? (
@@ -147,7 +147,7 @@ const DeleteInput = React.forwardRef<HTMLInputElement, DeleteInputProps>(
         <button
           type="button"
           onClick={handleDelete}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded-md transition-colors hover:text-destructive"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 transition-colors hover:bg-muted hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Delete field"
         >
           <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive transition-colors" />
