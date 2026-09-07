@@ -10171,6 +10171,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ballpark/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_ballpark_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -11293,6 +11310,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/make-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_make_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -11812,6 +11846,23 @@ export interface paths {
         };
         /** Public App */
         get: operations["public_app_flathub_public_app_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jsdelivr/public/npm-package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Npm Package */
+        get: operations["public_npm_package_jsdelivr_public_npm_package_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -38253,6 +38304,40 @@ export interface components {
              * @default 25
              */
             enrichment_limit?: number;
+        };
+        /** BallparkServiceStatus */
+        BallparkServiceStatus: {
+            /**
+             * Kind
+             * @default ballpark_official_research_collaboration_status
+             * @constant
+             */
+            __kind?: "ballpark_official_research_collaboration_status";
+            /**
+             * Provider
+             * @default Ballpark
+             * @constant
+             */
+            provider?: "Ballpark";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.ballparkhq.com
+             * @constant
+             */
+            status_page?: "https://status.ballparkhq.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** BandwidthServiceStatus */
         BandwidthServiceStatus: {
@@ -67412,6 +67497,38 @@ export interface components {
              */
             status_page?: "https://status.mailjet.com/";
         };
+        /** MakeServiceStatus */
+        MakeServiceStatus: {
+            /**
+             * Kind
+             * @default make_public_service_status
+             * @constant
+             */
+            __kind?: "make_public_service_status";
+            /**
+             * Provider
+             * @default Make
+             * @constant
+             */
+            provider?: "Make";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.make.com
+             * @constant
+             */
+            status_page?: "https://status.make.com";
+        };
         /** ManatalServiceStatus */
         ManatalServiceStatus: {
             /**
@@ -73988,6 +74105,29 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** PackageMetadata */
+        PackageMetadata: {
+            /**
+             * Kind
+             * @default jsdelivr_npm_package_metadata
+             * @constant
+             */
+            __kind?: "jsdelivr_npm_package_metadata";
+            /**
+             * Provider
+             * @default jsDelivr
+             * @constant
+             */
+            provider?: "jsDelivr";
+            /** Package Name */
+            package_name: string;
+            /** Latest Version */
+            latest_version: string;
+            /** Beta Version */
+            beta_version: string | null;
+            /** Version Count */
+            version_count: number;
         };
         /**
          * PackagistReleaseResult
@@ -118765,6 +118905,26 @@ export interface operations {
             };
         };
     };
+    public_status_ballpark_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BallparkServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -120085,6 +120245,26 @@ export interface operations {
             };
         };
     };
+    public_status_make_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MakeServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -120814,6 +120994,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AppMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_npm_package_jsdelivr_public_npm_package_get: {
+        parameters: {
+            query: {
+                package_name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackageMetadata"];
                 };
             };
             /** @description Validation Error */

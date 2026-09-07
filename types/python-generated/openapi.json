@@ -21595,6 +21595,27 @@
         }
       }
     },
+    "/ballpark/public/status": {
+      "get": {
+        "tags": [
+          "Ballpark Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_ballpark_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BallparkServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22981,6 +23002,27 @@
         }
       }
     },
+    "/make-status/public/status": {
+      "get": {
+        "tags": [
+          "Make Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_make_status_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MakeServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -23869,6 +23911,50 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AppMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jsdelivr/public/npm-package": {
+      "get": {
+        "tags": [
+          "jsDelivr Integrations"
+        ],
+        "summary": "Public Npm Package",
+        "operationId": "public_npm_package_jsdelivr_public_npm_package_get",
+        "parameters": [
+          {
+            "name": "package_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 214,
+              "title": "Package Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageMetadata"
                 }
               }
             }
@@ -89397,6 +89483,55 @@
         "additionalProperties": false,
         "type": "object",
         "title": "BacklinkRefreshBody"
+      },
+      "BallparkServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "ballpark_official_research_collaboration_status",
+            "title": "Kind",
+            "default": "ballpark_official_research_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Ballpark",
+            "title": "Provider",
+            "default": "Ballpark"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.ballparkhq.com",
+            "title": "Status Page",
+            "default": "https://status.ballparkhq.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "BallparkServiceStatus"
       },
       "BandwidthServiceStatus": {
         "properties": {
@@ -157546,6 +157681,50 @@
         "title": "MailjetServiceStatus",
         "description": "Safe aggregate status projection for Mailjet's fixed status page."
       },
+      "MakeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "make_public_service_status",
+            "title": "Kind",
+            "default": "make_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Make",
+            "title": "Provider",
+            "default": "Make"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.make.com",
+            "title": "Status Page",
+            "default": "https://status.make.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "MakeServiceStatus"
+      },
       "ManatalServiceStatus": {
         "properties": {
           "__kind": {
@@ -172001,6 +172180,54 @@
           "operational"
         ],
         "title": "OysterServiceStatus"
+      },
+      "PackageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "jsdelivr_npm_package_metadata",
+            "title": "Kind",
+            "default": "jsdelivr_npm_package_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "jsDelivr",
+            "title": "Provider",
+            "default": "jsDelivr"
+          },
+          "package_name": {
+            "type": "string",
+            "title": "Package Name"
+          },
+          "latest_version": {
+            "type": "string",
+            "title": "Latest Version"
+          },
+          "beta_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beta Version"
+          },
+          "version_count": {
+            "type": "integer",
+            "title": "Version Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "package_name",
+          "latest_version",
+          "beta_version",
+          "version_count"
+        ],
+        "title": "PackageMetadata"
       },
       "PackagistReleaseResult": {
         "properties": {
