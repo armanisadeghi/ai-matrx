@@ -11395,6 +11395,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/livechat-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_livechat_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jotform/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_jotform_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -11965,6 +11999,23 @@ export interface paths {
         };
         /** Public Project */
         get: operations["public_project_sourceforge_public_project_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/debian-sources/public/package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Package */
+        get: operations["public_package_debian_sources_public_package_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -63632,6 +63683,40 @@ export interface components {
              */
             healthy?: true;
         };
+        /** JotformServiceStatus */
+        JotformServiceStatus: {
+            /**
+             * Kind
+             * @default jotform_official_form_collaboration_status
+             * @constant
+             */
+            __kind?: "jotform_official_form_collaboration_status";
+            /**
+             * Provider
+             * @default Jotform
+             * @constant
+             */
+            provider?: "Jotform";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.jotform.com
+             * @constant
+             */
+            status_page?: "https://status.jotform.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** JottacloudServiceStatus */
         JottacloudServiceStatus: {
             /**
@@ -66878,6 +66963,38 @@ export interface components {
              * @constant
              */
             source_page?: "https://listenbrainz.org/";
+        };
+        /** LiveChatServiceStatus */
+        LiveChatServiceStatus: {
+            /**
+             * Kind
+             * @default livechat_public_service_status
+             * @constant
+             */
+            __kind?: "livechat_public_service_status";
+            /**
+             * Provider
+             * @default LiveChat
+             * @constant
+             */
+            provider?: "LiveChat";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.livechat.com/
+             * @constant
+             */
+            status_page?: "https://status.livechat.com/";
         };
         /**
          * LiveResourceRefInput
@@ -74305,6 +74422,15 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** PackageVersion */
+        PackageVersion: {
+            /** Version */
+            version: string;
+            /** Area */
+            area: string;
+            /** Suites */
+            suites: string[];
         };
         /**
          * PackagistReleaseResult
@@ -102882,6 +103008,25 @@ export interface components {
              */
             allow_context_create?: boolean;
         };
+        /** PackageMetadata */
+        aidream__services__debian_sources_integrations__service__PackageMetadata: {
+            /**
+             * Kind
+             * @default debian_source_package_metadata
+             * @constant
+             */
+            __kind?: "debian_source_package_metadata";
+            /**
+             * Provider
+             * @default Debian Sources
+             * @constant
+             */
+            provider?: "Debian Sources";
+            /** Package */
+            package: string;
+            /** Versions */
+            versions: components["schemas"]["PackageVersion"][];
+        };
         /** DogImage */
         aidream__services__dogceo_integrations__service__DogImage: {
             /**
@@ -120627,6 +120772,46 @@ export interface operations {
             };
         };
     };
+    public_status_livechat_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveChatServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_jotform_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JotformServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -121450,6 +121635,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_package_debian_sources_public_package_get: {
+        parameters: {
+            query: {
+                package: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__debian_sources_integrations__service__PackageMetadata"];
                 };
             };
             /** @description Validation Error */
