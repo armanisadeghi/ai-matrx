@@ -7621,6 +7621,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tally/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_tally_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -11667,6 +11684,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/talkspirit/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_talkspirit_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -12373,6 +12407,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_wikisource_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wikibooks/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_wikibooks_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -75497,31 +75548,6 @@ export interface components {
             /** Request Id */
             request_id?: string | null;
         };
-        /** PageMetadata */
-        PageMetadata: {
-            /**
-             * Kind
-             * @default wikisource_page_metadata
-             * @constant
-             */
-            __kind?: "wikisource_page_metadata";
-            /**
-             * Provider
-             * @default Wikisource
-             * @constant
-             */
-            provider?: "Wikisource";
-            /** Page Id */
-            page_id: number;
-            /** Title */
-            title: string;
-            /** Namespace */
-            namespace: number;
-            /** Content Model */
-            content_model: string;
-            /** Language */
-            language: string;
-        };
         /**
          * PagePerformanceConfig
          * @description What is wired up — so the UI can offer the fix instead of a dead end.
@@ -94639,6 +94665,72 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** TalkspiritServiceStatus */
+        TalkspiritServiceStatus: {
+            /**
+             * Kind
+             * @default talkspirit_official_team_collaboration_status
+             * @constant
+             */
+            __kind?: "talkspirit_official_team_collaboration_status";
+            /**
+             * Provider
+             * @default Talkspirit
+             * @constant
+             */
+            provider?: "Talkspirit";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.talkspirit.com
+             * @constant
+             */
+            status_page?: "https://status.talkspirit.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
+         * TallyServiceStatus
+         * @description Safe aggregate status projection for Tally' fixed status page.
+         */
+        TallyServiceStatus: {
+            /**
+             * Kind
+             * @default tally_public_service_status
+             * @constant
+             */
+            __kind?: "tally_public_service_status";
+            /**
+             * Provider
+             * @default Tally
+             * @constant
+             */
+            provider?: "Tally";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.tally.so/
+             * @constant
+             */
+            status_page?: "https://status.tally.so/";
+        };
         /**
          * TaskCreateRequest
          * @description Create a new sch_task (plus optional agent_task and trigger).
@@ -104462,6 +104554,56 @@ export interface components {
             set_name: string;
             /** Official Set Card Count */
             official_set_card_count: number;
+        };
+        /** PageMetadata */
+        aidream__services__wikibooks_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default wikibooks_page_metadata
+             * @constant
+             */
+            __kind?: "wikibooks_page_metadata";
+            /**
+             * Provider
+             * @default Wikibooks
+             * @constant
+             */
+            provider?: "Wikibooks";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
+        aidream__services__wikisource_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default wikisource_page_metadata
+             * @constant
+             */
+            __kind?: "wikisource_page_metadata";
+            /**
+             * Provider
+             * @default Wikisource
+             * @constant
+             */
+            provider?: "Wikisource";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
         };
         /** ExtractRequest */
         aidream__services__workflow_extract__materialize__ExtractRequest: {
@@ -117318,6 +117460,26 @@ export interface operations {
             };
         };
     };
+    public_status_tally_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TallyServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -122078,6 +122240,26 @@ export interface operations {
             };
         };
     };
+    public_status_talkspirit_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TalkspiritServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -123149,7 +123331,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PageMetadata"];
+                    "application/json": components["schemas"]["aidream__services__wikisource_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_wikibooks_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__wikibooks_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */

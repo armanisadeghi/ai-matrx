@@ -18445,6 +18445,27 @@
         }
       }
     },
+    "/tally/public/status": {
+      "get": {
+        "tags": [
+          "Tally Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_tally_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TallyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -23443,6 +23464,27 @@
         }
       }
     },
+    "/talkspirit/public/status": {
+      "get": {
+        "tags": [
+          "Talkspirit Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_talkspirit_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TalkspiritServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -24831,7 +24873,50 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageMetadata"
+                  "$ref": "#/components/schemas/aidream__services__wikisource_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wikibooks/public/page": {
+      "get": {
+        "tags": [
+          "Wikibooks Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_wikibooks_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__wikibooks_integrations__service__PageMetadata"
                 }
               }
             }
@@ -174741,52 +174826,6 @@
         ],
         "title": "PageLinkGapBody"
       },
-      "PageMetadata": {
-        "properties": {
-          "__kind": {
-            "type": "string",
-            "const": "wikisource_page_metadata",
-            "title": "Kind",
-            "default": "wikisource_page_metadata"
-          },
-          "provider": {
-            "type": "string",
-            "const": "Wikisource",
-            "title": "Provider",
-            "default": "Wikisource"
-          },
-          "page_id": {
-            "type": "integer",
-            "title": "Page Id"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title"
-          },
-          "namespace": {
-            "type": "integer",
-            "title": "Namespace"
-          },
-          "content_model": {
-            "type": "string",
-            "title": "Content Model"
-          },
-          "language": {
-            "type": "string",
-            "title": "Language"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "page_id",
-          "title",
-          "namespace",
-          "content_model",
-          "language"
-        ],
-        "title": "PageMetadata"
-      },
       "PagePerformanceConfig": {
         "properties": {
           "psi_has_key": {
@@ -217880,6 +217919,96 @@
         "title": "TalkdeskServiceStatus",
         "description": "Safe aggregate status projection for Talkdesk's fixed status page."
       },
+      "TalkspiritServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "talkspirit_official_team_collaboration_status",
+            "title": "Kind",
+            "default": "talkspirit_official_team_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Talkspirit",
+            "title": "Provider",
+            "default": "Talkspirit"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.talkspirit.com",
+            "title": "Status Page",
+            "default": "https://status.talkspirit.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "TalkspiritServiceStatus"
+      },
+      "TallyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "tally_public_service_status",
+            "title": "Kind",
+            "default": "tally_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Tally",
+            "title": "Provider",
+            "default": "Tally"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.tally.so/",
+            "title": "Status Page",
+            "default": "https://status.tally.so/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "TallyServiceStatus",
+        "description": "Safe aggregate status projection for Tally' fixed status page."
+      },
       "TaskCreateRequest": {
         "properties": {
           "kind": {
@@ -240669,6 +240798,98 @@
           "official_set_card_count"
         ],
         "title": "CardMetadata"
+      },
+      "aidream__services__wikibooks_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wikibooks_page_metadata",
+            "title": "Kind",
+            "default": "wikibooks_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wikibooks",
+            "title": "Provider",
+            "default": "Wikibooks"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__wikisource_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wikisource_page_metadata",
+            "title": "Kind",
+            "default": "wikisource_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wikisource",
+            "title": "Provider",
+            "default": "Wikisource"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
       },
       "aidream__services__workflow_extract__materialize__ExtractRequest": {
         "properties": {
