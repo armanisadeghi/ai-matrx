@@ -21553,6 +21553,27 @@
         }
       }
     },
+    "/userzoom/public/status": {
+      "get": {
+        "tags": [
+          "UserZoom Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_userzoom_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserZoomServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/easy-agile/public/status": {
       "get": {
         "tags": [
@@ -22897,6 +22918,27 @@
         }
       }
     },
+    "/retool-status/public/status": {
+      "get": {
+        "tags": [
+          "Retool Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_retool_status_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetoolServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -23686,6 +23728,61 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__tcgdex_integrations__service__CardMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/maven-central/public/artifact": {
+      "get": {
+        "tags": [
+          "Maven Central Integrations"
+        ],
+        "summary": "Public Artifact",
+        "operationId": "public_artifact_maven_central_public_artifact_get",
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Group Id"
+            }
+          },
+          {
+            "name": "artifact_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Artifact Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactMetadata"
                 }
               }
             }
@@ -85945,6 +86042,52 @@
         ],
         "title": "ArtifactHubPublicHelmPackage",
         "description": "Safe bounded projection of one public Helm package."
+      },
+      "ArtifactMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "maven_central_artifact_metadata",
+            "title": "Kind",
+            "default": "maven_central_artifact_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Maven Central",
+            "title": "Provider",
+            "default": "Maven Central"
+          },
+          "group_id": {
+            "type": "string",
+            "title": "Group Id"
+          },
+          "artifact_id": {
+            "type": "string",
+            "title": "Artifact Id"
+          },
+          "latest_version": {
+            "type": "string",
+            "title": "Latest Version"
+          },
+          "packaging": {
+            "type": "string",
+            "title": "Packaging"
+          },
+          "version_count": {
+            "type": "integer",
+            "title": "Version Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "group_id",
+          "artifact_id",
+          "latest_version",
+          "packaging",
+          "version_count"
+        ],
+        "title": "ArtifactMetadata"
       },
       "ArxivPublicPublication": {
         "properties": {
@@ -194639,6 +194782,50 @@
         "title": "RetentionRunResult",
         "description": "What the nightly system task did — all three duties in one envelope."
       },
+      "RetoolServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "retool_public_service_status",
+            "title": "Kind",
+            "default": "retool_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Retool",
+            "title": "Provider",
+            "default": "Retool"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.retool.com",
+            "title": "Status Page",
+            "default": "https://status.retool.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "RetoolServiceStatus"
+      },
       "RetryClaimRequest": {
         "properties": {
           "item_ids": {
@@ -225445,6 +225632,55 @@
           "kind"
         ],
         "title": "UserYouTubeMediaPart"
+      },
+      "UserZoomServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "userzoom_official_research_collaboration_status",
+            "title": "Kind",
+            "default": "userzoom_official_research_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "UserZoom",
+            "title": "Provider",
+            "default": "UserZoom"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.userzoom.com",
+            "title": "Status Page",
+            "default": "https://status.userzoom.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "UserZoomServiceStatus"
       },
       "UsgsPublicEarthquakeEvent": {
         "properties": {

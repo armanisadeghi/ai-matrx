@@ -10137,6 +10137,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/userzoom/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_userzoom_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/easy-agile/public/status": {
         parameters: {
             query?: never;
@@ -11225,6 +11242,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/retool-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_retool_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -11710,6 +11744,23 @@ export interface paths {
         };
         /** Public Card */
         get: operations["public_card_tcgdex_public_card_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/maven-central/public/artifact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Artifact */
+        get: operations["public_artifact_maven_central_public_artifact_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -36568,6 +36619,31 @@ export interface components {
             keywords: string[];
             /** Provider Page */
             provider_page: string;
+        };
+        /** ArtifactMetadata */
+        ArtifactMetadata: {
+            /**
+             * Kind
+             * @default maven_central_artifact_metadata
+             * @constant
+             */
+            __kind?: "maven_central_artifact_metadata";
+            /**
+             * Provider
+             * @default Maven Central
+             * @constant
+             */
+            provider?: "Maven Central";
+            /** Group Id */
+            group_id: string;
+            /** Artifact Id */
+            artifact_id: string;
+            /** Latest Version */
+            latest_version: string;
+            /** Packaging */
+            packaging: string;
+            /** Version Count */
+            version_count: number;
         };
         /**
          * ArxivPublicPublication
@@ -83812,6 +83888,38 @@ export interface components {
             rollup: components["schemas"]["SnapshotRollup"];
             capture_health: components["schemas"]["CaptureHealth"];
         };
+        /** RetoolServiceStatus */
+        RetoolServiceStatus: {
+            /**
+             * Kind
+             * @default retool_public_service_status
+             * @constant
+             */
+            __kind?: "retool_public_service_status";
+            /**
+             * Provider
+             * @default Retool
+             * @constant
+             */
+            provider?: "Retool";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.retool.com
+             * @constant
+             */
+            status_page?: "https://status.retool.com";
+        };
         /** RetryClaimRequest */
         RetryClaimRequest: {
             /** Item Ids */
@@ -97353,6 +97461,40 @@ export interface components {
             origin?: "external";
             /** Mime Type */
             mime_type?: string | null;
+        };
+        /** UserZoomServiceStatus */
+        UserZoomServiceStatus: {
+            /**
+             * Kind
+             * @default userzoom_official_research_collaboration_status
+             * @constant
+             */
+            __kind?: "userzoom_official_research_collaboration_status";
+            /**
+             * Provider
+             * @default UserZoom
+             * @constant
+             */
+            provider?: "UserZoom";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.userzoom.com
+             * @constant
+             */
+            status_page?: "https://status.userzoom.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * UsgsPublicEarthquakeEvent
@@ -118437,6 +118579,26 @@ export interface operations {
             };
         };
     };
+    public_status_userzoom_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserZoomServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_easy_agile_public_status_get: {
         parameters: {
             query?: never;
@@ -119717,6 +119879,26 @@ export interface operations {
             };
         };
     };
+    public_status_retool_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetoolServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -120383,6 +120565,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__tcgdex_integrations__service__CardMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_artifact_maven_central_public_artifact_get: {
+        parameters: {
+            query: {
+                group_id: string;
+                artifact_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactMetadata"];
                 };
             };
             /** @description Validation Error */
