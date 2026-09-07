@@ -11429,6 +11429,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bubble-status/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_bubble_status_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/jotform/public/status": {
         parameters: {
             query?: never;
@@ -11455,6 +11472,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_ryver_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/podio/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_podio_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -12067,6 +12101,23 @@ export interface paths {
         };
         /** Public Rpm */
         get: operations["public_rpm_fedora_packages_public_rpm_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/arch-linux/public/package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Package */
+        get: operations["public_package_arch_linux_public_package_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -41309,6 +41360,38 @@ export interface components {
             weight?: number;
             /** Label */
             label?: string | null;
+        };
+        /** BubbleServiceStatus */
+        BubbleServiceStatus: {
+            /**
+             * Kind
+             * @default bubble_public_service_status
+             * @constant
+             */
+            __kind?: "bubble_public_service_status";
+            /**
+             * Provider
+             * @default Bubble
+             * @constant
+             */
+            provider?: "Bubble";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.bubble.io/
+             * @constant
+             */
+            status_page?: "https://status.bubble.io/";
         };
         /** BudgetRejectionRow */
         BudgetRejectionRow: {
@@ -78072,6 +78155,40 @@ export interface components {
          * @enum {string}
          */
         PodcastType: "educational" | "news" | "persian";
+        /** PodioServiceStatus */
+        PodioServiceStatus: {
+            /**
+             * Kind
+             * @default podio_official_work_collaboration_status
+             * @constant
+             */
+            __kind?: "podio_official_work_collaboration_status";
+            /**
+             * Provider
+             * @default Podio
+             * @constant
+             */
+            provider?: "Podio";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.podio.com
+             * @constant
+             */
+            status_page?: "https://status.podio.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** PoemMetadata */
         PoemMetadata: {
             /**
@@ -103019,6 +103136,31 @@ export interface components {
             /** Offset */
             offset: number;
         };
+        /** PackageMetadata */
+        aidream__services__arch_linux_integrations__service__PackageMetadata: {
+            /**
+             * Kind
+             * @default arch_linux_package_metadata
+             * @constant
+             */
+            __kind?: "arch_linux_package_metadata";
+            /**
+             * Provider
+             * @default Arch Linux Packages
+             * @constant
+             */
+            provider?: "Arch Linux Packages";
+            /** Package */
+            package: string;
+            /** Repository */
+            repository: string;
+            /** Architecture */
+            architecture: string;
+            /** Version */
+            version: string;
+            /** Description */
+            description: string | null;
+        };
         /** TranscriptionResponse */
         aidream__services__audio__speech__TranscriptionResponse: {
             /**
@@ -120952,6 +121094,26 @@ export interface operations {
             };
         };
     };
+    public_status_bubble_status_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BubbleServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_jotform_public_status_get: {
         parameters: {
             query?: never;
@@ -120988,6 +121150,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RyverServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_podio_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodioServiceStatus"];
                 };
             };
         };
@@ -121877,6 +122059,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RepositoryMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_package_arch_linux_public_package_get: {
+        parameters: {
+            query: {
+                package: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__arch_linux_integrations__service__PackageMetadata"];
                 };
             };
             /** @description Validation Error */
