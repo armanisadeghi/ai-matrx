@@ -9,7 +9,29 @@ description: The canonical doctrine for ALL Supabase realtime in matrx-frontend 
 >
 > 🚨 **As of 2026-08-31 the package is PUBLISHED (0.1.0), installed here as `"latest"`, and mounted ONCE at `providers/RealtimeHost.tsx` (wired in `app/Providers.tsx`). New realtime work uses the package — writing a fresh `.channel(` in this repo is a code-review defect.** Read the package README first; `useChannel` / `usePresence` / `useTyping` come from `@ai-matrx/realtime/react`, and non-hook owners (Redux middleware, refcounted module-level subscriptions) use `useRealtimeManager()` + `manager.open(...)`.
 >
-> This page still governs the **not-yet-migrated** channels below — notes, files, transcript-studio, DM, data-tables, `features/file-analysis/hooks/usePages.ts`, `features/file-analysis/hooks/useFileAnalysis.ts`, and the rest of the `uniqueChannelTopic` call sites still importing from `@ai-matrx/data/db`. Migrating one is the same recipe every time: declare a namespace, delete the hand-written topic, replace the `.channel(...)` block, move the catch-up read into `onBackfill`, and delete the module's own echo/dedup/backoff code.
+> 🚨 **AS OF 2026-09-07 THE MIGRATION IS COMPLETE. `grep -rn "\.channel(" features lib app components hooks providers` returns ZERO call sites in this repo** — every remaining match is prose in a file header describing a body that was deleted. There is no "not-yet-migrated" list any more, and the per-feature table below is history, kept only so a reader can see what each conversion cost and gained.
+>
+> **The ONLY files allowed to touch a channel:**
+>
+> | File | Role |
+> |---|---|
+> | `providers/RealtimeHost.tsx` | THE ONE `<RealtimeProvider>` mount |
+> | `lib/realtime/sharedChannel.ts` | The ONE host-shaped refcount (`openShared`) — several surfaces sharing one pg-changes subject |
+> | `lib/extension-bridge/bridgeChannel.ts` | Identity-only spec for the foreign extension wire |
+>
+> Anything else writing `.channel(` is a code-review defect. Per-channel closure table + live proof: `../../../common-docs/projects/npm-package-extraction/DUPLICATION-CENSUS.md` § The realtime closure.
+>
+> **Which door to use:**
+>
+> | You are… | Use |
+> |---|---|
+> | a React component | `useChannel` / `usePresence` / `useTyping` from `@ai-matrx/realtime/react` |
+> | several surfaces sharing ONE pg-changes subject | `openShared(manager, topic, buildSpec)` from `lib/realtime/sharedChannel` |
+> | Redux middleware, a thunk, a plain service module | `subscribeToRealtimeManager(specFactory)` from `@ai-matrx/realtime` (0.6.0) — **never** `createRealtimeManager`, which is a second write ledger |
+> | on an RLS-authorized Database Broadcast topic | add `private: true` (0.7.0) — never hand-roll `config.private` + `realtime.setAuth()` |
+> | talking to a separately released peer that owns the payload | `wire: {mode:"raw"}` + `foreignTopic`, and buy back `isOwnMessage` / `eventKey` |
+>
+> Rules 1–5 below are the package's job now, not yours. They are kept because knowing WHY the package does what it does is what stops someone re-adding a "helpful" copy beside it.
 
 Realtime + Redux + autosave is the most freeze-prone combination in this app. Every historical browser lockup traced to one of the mechanisms below. Reference implementations: **`features/notes/redux/realtimeMiddleware.ts`** (postgres_changes, the canonical one), `features/files/redux/realtime-middleware.ts` (request-ledger id-dedup variant), `features/data-tables/collab/SupabaseYjsProvider.ts` (broadcast CRDT).
 
@@ -81,20 +103,22 @@ A subscription that compiles but receives nothing has one of these:
 - [ ] Kill the network for 30s, restore: catch-up fetch fires once, missed rows appear, no reconnect loop at 1s.
 - [ ] Table verified in the `supabase_realtime` publication + middleware registered in the store.
 
-## Current per-feature state (2026-07-15; file list re-verified 2026-08-30)
+## Per-feature state — ALL MIGRATED 2026-09-07 (history)
 
 > Two former suspects are gone, not fixed: `features/public-chat/.../SidebarChats.tsx` was deleted with the orphaned `/p/chat` surface (`d2d94ab10d`) and `features/transcripts/context/TranscriptsContext.tsx` with the app-root TranscriptsProvider (`e504edcdc8`). Every other file named on this page still exists. The *behavior* claims below carry their original 2026-07-15 date — they were not re-probed.
 
-| Feature | Transport | Echo strategy | Status |
-|---|---|---|---|
-| Notes (`features/notes/redux/realtimeMiddleware.ts`) | postgres_changes `workbench.notes` | timestamp-monotonic + content-aware + save-flag | **Canonical reference** |
-| Files (`features/files/redux/realtime-middleware.ts`) | postgres_changes ×5 tables | request-ledger id-dedup | Good — second reference |
-| Transcript studio (`features/transcript-studio/redux/realtimeMiddleware.ts`) | postgres_changes | event-split routing | Good |
-| DM (`hooks/useSupabaseMessaging.ts`, `features/messaging/MessagingInitializer.tsx`, `lib/supabase/messaging.ts`) | pg_changes + manual broadcast + 2 presence channels | id+client_message_id dedup; self-RPC skip + monotonic UPDATE guard + own-send refetch skip + debounced list reload (2026-07-15) | Improved; **open backlog:** no catch-up on reconnect; `useConversations` still subscribes per mount (5 consumers that mostly only need `createConversation`); manual broadcast doubles delivery; N+1 `get_dm_user_info` waterfalls; 3 channels per open conversation |
-| Data tables (`SupabaseYjsProvider`) | broadcast CRDT (`self:false`) | Yjs idempotence | Good |
-| **Tasks (`features/tasks/hooks/useTaskManager.ts`)** | `@ai-matrx/realtime` `useChannel` ×3 | package write ledger | **MIGRATED 2026-08-31 — the reference adoption.** Namespaces + `onBackfill` on all three channels |
-| **Annotations (`features/file-analysis/hooks/useAnnotations.ts`)** | `@ai-matrx/realtime` `manager.open` (refcounted, one channel per file) | package write ledger (`begin`/`settle`/`observe`) | **MIGRATED 2026-08-31 — the reference for a non-hook owner** |
-| **Suspicious set — still hand-rolled; migrate onto `@ai-matrx/realtime` when you touch one:** `features/file-analysis/hooks/usePages.ts` + `features/file-analysis/hooks/useFileAnalysis.ts` (static topics, no suppression, no catch-up), `features/code/hooks/useTabRealtimeWatcher.ts` (conflict detection without self-write flag), `features/agents/ui-first-tools/redux/agent-lists.thunks.ts`, `features/memory/components/MemoryManager.tsx` | | | |
+Every row below is now on `@ai-matrx/realtime`. The interesting column is the last one — what the conversion actually FIXED, because "it still works" was never the bar:
+
+| Feature | What it is now | What the conversion fixed |
+|---|---|---|
+| Notes (`features/notes/redux/realtimeMiddleware.ts`) | `subscribeToRealtimeManager` + ledger registered at `markNoteSaving`/`markNoteSaved` | Deleted its ~60-line `isOwnEcho`, its backoff ladder and its alarm constants. Gained a backfill that fires on tab wake and network restore, not only after a channel error. |
+| Files (`features/files/redux/realtime-middleware.ts`) | `subscribeToRealtimeManager`, 5 bindings | Static topic → unique instance topic. Reconcile moved from the SUBSCRIBED callback to `onBackfill`, so a slept tab now reconciles at all. Its request-id ledger STAYS (a different mechanism). |
+| Transcript studio | `subscribeToRealtimeManager` ×2 | Neither channel had a catch-up; both do now (all six lists re-read via the service, not the thunks — graph fragmentation). |
+| Data tables (`SupabaseYjsProvider`) | broadcast room, `manager` injected | Gained the ordered handler queue (it ships 200KB frames), and a CRDT catch-up: re-send `y-request-state`, because Yjs cannot know what it missed. |
+| Education game room | broadcast + presence room | Fixed GHOST PLAYERS — a crashed client's presence entry had nothing to expire it. Echo suppression is now ON (the old `self:true` only existed to paper over a missing local roster rebuild). |
+| Scheduler (`lib/scheduler-client/`) | `private: true` + raw wire | Stopped hand-rolling the `config.private` + `setAuth` dance; gained a `resync` signal its three callers now act on. |
+| Matrx Local bridge (`features/ai-work/`) | raw wire + `foreignTopic` | Deleted a channel-per-RPC and the queue that serialized every call. |
+| Everything else (file-analysis ×3, rag-job, agent-lists, transcripts, memory, code tabs, page-extraction ×2, data-tables snapshots ×2, marketing crawls, vision-interview) | namespaces + `onBackfill` | Every one of them was non-reconnecting: they went silently stale after a laptop sleep behind a screen that looked healthy. |
 
 Polling loops that should become realtime (candidates, verified 2026-07-15): `features/ai-runs/hooks/useAiTasks.ts`, `features/code/redux/codeEditHistoryThunks.ts` (its own Phase-2 comment says so), `features/cms/hooks/useCmsAdminActivity.ts`, `features/pdf/scanner/useScanSaveFlow.ts`, admin events/scanner-health/sandbox status pages.
 
