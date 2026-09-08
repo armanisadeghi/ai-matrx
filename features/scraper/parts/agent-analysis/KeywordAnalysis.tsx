@@ -14,19 +14,26 @@
  * into a string and hand-rendered it — the exact defect the streaming law bans
  * (CLAUDE.md § "Streaming/AI surfaces").
  *
+ * THE PRODUCT IS THE SHAPE (2026-09-08). `scraper.keyword_analysis` declares
+ * `output_kind: keyword_variant_set`, so the run is `expect: "json"` typed
+ * against the generated `KeywordVariantSet` — never `expect: "text"` plus a
+ * regex over the answer string (the flattening disease: the shape's
+ * component never rendered and the system said nothing). The former
+ * "Content Comparison" tab parsed a markdown table out of that string; the
+ * shape carries no table, so the tab could only ever say "bind a different
+ * agent" — a dead control. It is gone; the kind component IS the analysis.
+ *
  * The mandate wiring is unchanged: the tab gates on `useMandate` and never
  * names an agent id.
  */
 
-import React, { useEffect, useRef, useState } from "react";
-import { Columns2 } from "lucide-react";
-import { parseMarkdownTable } from "@/components/mardown-display/markdown-classification/processors/bock-processors/parse-markdown-table";
+import React, { useEffect, useRef } from "react";
 import {
   PageTemplate,
   Card,
   FileTextIcon,
 } from "@/components/official/PageTemplate";
-import MarkdownTable from "@/components/mardown-display/tables/MarkdownTable";
+import type { KeywordVariantSet } from "@/features/content-ir/kinds/generated/kinds.generated";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import {
@@ -55,8 +62,6 @@ const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
 }) => {
   const { run, isRunning, error, conversationId, hasLiveRun } =
     useLiveAgentRun();
-  /** The settled answer text — the ONLY thing this tab parses (never the live stream). */
-  const [answerText, setAnswerText] = useState<string>("");
   // Gate: the tab runs only once its mandate resolves; unresolved renders the
   // unbound state (picker + door), never a hardcoded agent.
   const {
@@ -86,25 +91,24 @@ const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
     // Cancel-on-unmount: aborting HARVESTS whatever the run produced and stops
     // the wait; `useLiveAgentRun` destroys the instance on unmount.
     const controller = new AbortController();
-    void runRef.current<string>({
+    // The extracted `keyword_variant_set` object is the run's product; the
+    // pipeline renders it through the kind's registered component inside
+    // `<LiveRunDisplay>` below, so nothing here reads the answer string.
+    void runRef.current<KeywordVariantSet>({
       mandateKey: MANDATE_KEY,
       surfaceKey: SURFACE_KEY,
       sourceFeature: "scraper",
       initiation: "auto",
-      expect: "text",
+      expect: "json",
       variables: { [SCRAPER_ANALYSIS_CONTENT_VARIABLE]: value },
       signal: controller.signal,
-      // Stale text from the previous run must never survive into this one.
-      // Cleared here (a callback fired by the run, before the stream) rather
-      // than in the effect body, which would cascade a render.
-      onConversationCreated: () => setAnswerText(""),
-    })
-      .then((text) => {
-        if (!controller.signal.aborted) setAnswerText(text ?? "");
-      })
-      .catch((err) => {
-        console.error("[KeywordAnalysis] Agent run failed:", err);
-      });
+      failureMessages: {
+        noJson:
+          "The keyword analysis finished without a keyword variant set. Run it again.",
+      },
+    }).catch((err) => {
+      console.error("[KeywordAnalysis] Agent run failed:", err);
+    });
 
     return () => {
       controller.abort();
@@ -155,45 +159,12 @@ const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
     );
   };
 
-  const renderComparison = () => {
-    const gate = renderGate();
-    if (gate) return gate;
-
-    // Parsed from the SETTLED answer only. The mandate's agent currently
-    // answers with a structured `keyword_variant_set` payload rather than a
-    // markdown comparison table, so this states plainly what it is waiting for
-    // instead of rendering an empty card.
-    const tableData = answerText ? parseMarkdownTable(answerText) : null;
-
-    return (
-      <Card title="Content Comparison">
-        {tableData?.markdown ? (
-          <MarkdownTable data={tableData.markdown} />
-        ) : (
-          <p className="text-muted-foreground text-center py-8 text-sm">
-            {isRunning
-              ? "Waiting for the analysis to finish…"
-              : answerText
-                ? "This analysis returned no comparison table. Bind a keyword agent that emits one to fill this tab."
-                : "The comparison table will appear here once the analysis runs."}
-          </p>
-        )}
-      </Card>
-    );
-  };
-
   const tabs = [
     {
       id: "analysis",
       label: "Keyword Analysis",
       icon: FileTextIcon,
       content: renderAnalysis(),
-    },
-    {
-      id: "comparison",
-      label: "Content Comparison",
-      icon: Columns2,
-      content: renderComparison(),
     },
   ];
 

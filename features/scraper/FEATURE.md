@@ -204,6 +204,12 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 
 ## Change log
 
+- `2026-09-08` — Keyword Analysis tab stopped flattening its shape: `scraper.keyword_analysis`
+  declares `output_kind: keyword_variant_set`, so the run is `expect: "json"` typed against the
+  generated `KeywordVariantSet` and renders ONLY through `<LiveRunDisplay>` → the kind's
+  registered component (`keyword_variant_set_card`). Deleted the "Content Comparison" tab, which
+  regex-parsed a markdown table out of the answer string and could only ever say "bind a
+  different agent". `scraper.fact_check` declares `text` — its prose run is correct and unchanged.
 - `2026-08-27` — Web Scraper keyword results now use the exact canonical
   `web_search_results` renderer used by `/search`. Added one pure adapter from
   the standalone scraper's flat `SearchResultItem[]` transport to the kind

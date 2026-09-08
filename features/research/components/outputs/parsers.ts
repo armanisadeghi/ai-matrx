@@ -12,17 +12,18 @@
  * research cluster's parsers previously lived inline in JSX with zero tests).
  */
 
+import type { KindPayload } from "@/features/content-ir/kinds/generated/kinds.generated";
+
 /** First H1 in a markdown doc, for an asset title. */
 export function extractMarkdownTitle(md: string): string | null {
   const m = md.match(/^#\s+(.+?)\s*$/m);
   return m ? m[1].trim() : null;
 }
 
-export interface PresentationDeck {
-  title?: string;
-  theme?: Record<string, unknown>;
-  slides?: Array<Record<string, unknown>>;
-}
+/** THE ONE-TYPE LAW: the deck's shape lives in the generated kind registry —
+ *  derived here, never re-declared. */
+export type PresentationDeck = KindPayload<"presentation_deck">;
+export type SeoPackage = KindPayload<"seo_package">;
 
 /** Narrow a run result to a renderable `presentation_deck` envelope. */
 export function coercePresentationDeck(value: unknown): PresentationDeck {
@@ -46,7 +47,7 @@ export function coercePresentationDeck(value: unknown): PresentationDeck {
 
 /** Narrow a run result to a usable `seo_package` value. `title` is the ONE
  *  key the card hard-requires (it names the persisted asset). */
-export function coerceSeoPackage(value: unknown): Record<string, unknown> {
+export function coerceSeoPackage(value: unknown): SeoPackage {
   if (
     typeof value !== "object" ||
     value === null ||
@@ -56,5 +57,5 @@ export function coerceSeoPackage(value: unknown): Record<string, unknown> {
       "The SEO generator didn't return a valid package. Try again.",
     );
   }
-  return value as Record<string, unknown>;
+  return value as SeoPackage;
 }

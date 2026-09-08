@@ -49,6 +49,7 @@ import {
   coerceSeoPackage,
   extractMarkdownTitle,
   type PresentationDeck,
+  type SeoPackage,
 } from "./parsers";
 import {
   parseOutputs,
@@ -1371,7 +1372,7 @@ function SeoOutputCard({
     setViewing(null);
     setError(null);
     try {
-      const seo = await seoRun.run<Record<string, unknown>>({
+      const seo = await seoRun.run<SeoPackage>({
         mandateKey: SEO_MANDATE,
         surfaceKey: "research-outputs-seo",
         sourceFeature: "research",
@@ -1403,7 +1404,7 @@ function SeoOutputCard({
     }
   };
 
-  const seo = (viewing?.meta?.seo as Record<string, unknown> | undefined) ?? null;
+  const seo = (viewing?.meta?.seo as SeoPackage | undefined) ?? null;
 
   return (
     <OutputCardShell

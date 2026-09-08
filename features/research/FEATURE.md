@@ -111,6 +111,10 @@ via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a rese
 
 ## Change log
 
+- 2026-09-08 — Outputs Studio's `PresentationDeck` / `SeoPackage` types are now DERIVED from
+  the generated kind registry (`KindPayload<"presentation_deck" | "seo_package">`), never
+  re-declared (One-Type Law). Flattening audit: every `research_client.output_*` mandate the
+  Context Builder and the blog card run declares `output_kind: text` — prose runs, kept.
 - 2026-08-30 — Sequenced the topic layout's access read ahead of secondary server reads, preserving
   the canonical access gate for guest, expired-session, deleted, and denied topic outcomes.
 - 2026-08-30 — The Experts surface now applies the shared 44px responsive touch floor to its
