@@ -351,7 +351,7 @@ export default function AgentReviewWorkspace({
           )}
         </section>
 
-        <aside className="overflow-y-auto bg-muted/15 p-4 lg:p-5">
+        <aside className="bg-muted/15 p-4 lg:overflow-y-auto lg:p-5">
           <h2 className="font-semibold">Your decision</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Add a note for the agent, then choose what should happen next.

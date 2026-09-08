@@ -19,7 +19,7 @@ import {
 } from "@/components/audio/micDeviceMenuShared";
 
 const SEGMENT_TOUCH =
-  "inline-flex min-h-[2.75rem] -my-[9px] touch-manipulation items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex min-h-[2.75rem] min-w-[2.75rem] -my-[9px] touch-manipulation items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-40";
 
 export interface MicWithDeviceMenuProps {
   onMicClick: () => void;

@@ -135,7 +135,9 @@ no-unapproved-schedules law.
 ## Change log
 
 - **2026-09-08** — Preserved 44px review navigation and decision targets on
-  touch-width layouts while keeping the denser desktop controls.
+  touch-width layouts while keeping the denser desktop controls; the mobile
+  decision pane now expands inside the page scroll instead of collapsing into
+  a nested scroller.
 - 2026-09-08 — Rebuilt the item workspace after a live browser failure: loaded
   the messaging package's required structural CSS, mapped it to app theme
   tokens, replaced the oversized six-card rail with a compact stepper, removed
