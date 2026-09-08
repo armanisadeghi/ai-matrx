@@ -1027,9 +1027,9 @@ button.shell-nav-flyout-item {
 }
 
 .shell-admin-domain-label {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 400;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
@@ -1057,6 +1057,10 @@ button.shell-nav-flyout-item {
 
 .shell-admin-domain[open] > summary .shell-admin-domain-caret {
   transform: rotate(180deg);
+}
+
+.shell-admin-domain:not([open]) > .shell-admin-domain-children {
+  display: none;
 }
 
 .shell-admin-route-menu .shell-nav-label,
