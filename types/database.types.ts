@@ -53409,6 +53409,17 @@ export type Database = {
           version_live: boolean
         }[]
       }
+      binding_holder_runnable: {
+        Args: {
+          p_holder_id: string
+          p_holder_type: string
+          p_holder_version_id: string
+          p_organization_id: string
+          p_principal_type: string
+          p_subject_user_id: string
+        }
+        Returns: boolean
+      }
       duplicate_mandate: {
         Args: {
           p_as_system?: boolean
@@ -66012,6 +66023,15 @@ export type Database = {
       ctx_seed_template: { Args: { p_template: Json }; Returns: string }
       curatable_processed_document_ids: { Args: never; Returns: string[] }
       current_personal_org_id: { Args: never; Returns: string }
+      cvx_audience: {
+        Args: {
+          p_conversation_type: string
+          p_origin_class: string
+          p_provider: string
+          p_source_app: string
+        }
+        Returns: string
+      }
       cvx_list_facets: {
         Args: {
           p_archived?: string
