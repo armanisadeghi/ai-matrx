@@ -3,9 +3,14 @@
 **Route:** `/administration/compute/proof-runs` (super-admin) · **Server:** aidream
 `aidream/services/proof_runs/FEATURE.md` — the system of record for everything this page shows.
 
-**Status:** LIVE (2026-08-26). Verified in the browser against the production server: the check
-tile, a streamed replay run, the attestation readout and the run history all render from real
-data, and the first click surfaced a real server-side defect (see § What the first click found).
+**Status:** LIVE, but the server it drives is **BLOCKED** (verified 2026-09-08 — the Anthropic
+account has zero credit, so every live run and every judge rule fails). The page itself was
+verified in the browser against the production server on 2026-08-26: the check tile, a streamed
+replay run, the attestation readout and the run history all render from real data, and the first
+click surfaced a real server-side defect (see § What the first click found). **Not yet verified
+from this page: running a SCENARIO, and running anything in live mode** — every API-triggered run
+in history is the four from that first session. Work order:
+[`/systems/platform/proof-runs/HANDOFF.md`](../../../common-docs/systems/platform/proof-runs/HANDOFF.md).
 
 ## What it is
 
@@ -71,6 +76,12 @@ FAIL, `check_completed` named the exact error, and the boundary proofs stayed SK
 quietly reading as passes.
 
 ## Change Log
+
+- **2026-09-08 — Claude: status audit, no code change.** The server is blocked on Anthropic
+  billing, so nothing on this page can complete a live run today; a replay still renders honestly
+  (code proofs pass, the judge rule shows SKIPPED with the reason). Confirmed the page still
+  type-checks after the `@ai-matrx/design-system` Input swap and the namespaced mandate-catalog
+  contract fix. Remaining work moved to the cross-repo handoff.
 
 - **2026-08-26 — Codex: generated scenario contracts adopted.** The scenario expectation,
   scenario-list response, mandate option, and mandate-catalog response now alias the live generated
