@@ -75,8 +75,8 @@ if (SELF_TEST) {
     'import { something } from "@/lib/thing";',
     "",
     "/** A re-grown twin of a collapsed package export. */",
-    "export function isUuid(value: unknown): value is string {",
-    '  return typeof value === "string";',
+    "export function formatRelativeTime(iso: string): string {",
+    "  return iso;",
     "}",
     "",
     "function notRegistered(x: number) {",
@@ -85,16 +85,16 @@ if (SELF_TEST) {
   ].join("\n");
 
   const found = twinsIn("planted.ts", planted);
-  if (found.length !== 1 || found[0].name !== "isUuid") {
+  if (found.length !== 1 || found[0].name !== "formatRelativeTime") {
     console.error(
-      `SELF-TEST FAILED: a re-grown \`isUuid\` twin was not reported ` +
-        `(found ${found.length}).`,
+      `SELF-TEST FAILED: a re-grown \`formatRelativeTime\` twin was not ` +
+        `reported (found ${found.length}).`,
     );
     process.exit(1);
   }
   // The allowlist must be the ONLY way past the guard, and it must be per-file.
   const allowed = twinsIn(
-    "lib/communications/voice/storage-canary-readiness.ts",
+    "features/organizations/admin/utils.ts",
     planted,
   );
   if (allowed.length !== 0) {
@@ -104,7 +104,7 @@ if (SELF_TEST) {
     process.exit(1);
   }
   // An indented (inner) definition is not a top-level twin.
-  if (twinsIn("planted.ts", "  const isUuid = (v) => true;").length !== 0) {
+  if (twinsIn("planted.ts", "  const formatRelativeTime = (v) => v;").length !== 0) {
     console.error("SELF-TEST FAILED: an inner helper was reported as a twin.");
     process.exit(1);
   }

@@ -23,12 +23,10 @@ import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { updateNoteContent } from "@/features/notes/redux/slice";
 import { selectNoteContent } from "@/features/notes/redux/selectors";
 import { useVoiceCapture } from "@/features/audio/hooks/useVoiceCapture";
-
-function formatDuration(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name, because the fleet's
+// ~35 twins variously took ms, seconds and minutes behind one signature.
+import { formatDurationSeconds as formatDuration } from "@ai-matrx/kit/format";
 
 export function LiveCaptureButton({ noteId }: { noteId: string }) {
   const dispatch = useAppDispatch();

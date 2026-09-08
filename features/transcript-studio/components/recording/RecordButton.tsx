@@ -3,21 +3,14 @@
 import { Mic, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStudioSession } from "../../hooks/useStudioSession";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name, because the fleet's
+// ~35 twins variously took ms, seconds and minutes behind one signature.
+import { formatDurationSeconds as formatDuration } from "@ai-matrx/kit/format";
 
 interface RecordButtonProps {
   sessionId: string;
   className?: string;
-}
-
-function formatDuration(totalSec: number): string {
-  if (!Number.isFinite(totalSec) || totalSec < 0) totalSec = 0;
-  const sec = Math.floor(totalSec);
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  if (m < 60) return `${m}:${s.toString().padStart(2, "0")}`;
-  const h = Math.floor(m / 60);
-  const mm = m % 60;
-  return `${h}:${mm.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 export function RecordButton({ sessionId, className }: RecordButtonProps) {

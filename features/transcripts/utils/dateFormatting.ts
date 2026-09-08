@@ -1,11 +1,23 @@
 // features/transcripts/utils/dateFormatting.ts
 
 import { parseTimestamp } from "@/utils/datetime";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name, because the fleet's
+// ~35 twins variously took ms, seconds and minutes behind one signature.
 
 /**
- * Format a date string to a relative time (e.g., "2 hours ago", "Yesterday")
+ * A transcript's age in the sidebar's own CALENDAR-INFLECTED long voice:
+ * "Just now", "5 minutes ago", "Yesterday", "3 weeks ago".
+ *
+ * Deliberately NOT `@ai-matrx/kit/format`'s `formatRelativeTime` and not named
+ * like it (census H1, 2026-09-07). The package answers "how long ago?" in a
+ * uniform elapsed-time voice — `1d ago` / `1 day ago`. This list answers it the
+ * way a person browsing their own recordings reads it, which means "Yesterday"
+ * is a word and not a number. Same distinction, same session, as
+ * `features/user-lists/calendar-age.ts`. The PARSING is still the package's,
+ * through `@/utils/datetime`.
  */
-export function formatRelativeTime(dateString: string): string {
+export function formatTranscriptAge(dateString: string): string {
   // parseTimestamp treats naive (zone-less) UTC strings correctly instead
   // of as local time. Falls back to the raw `new Date` only if unparseable.
   const date = parseTimestamp(dateString) ?? new Date(dateString);
@@ -64,19 +76,5 @@ export function formatReadableDateTime(dateString: string): string {
   });
 }
 
-/**
- * Format duration in seconds to a readable time (e.g., "1:23:45" or "12:34")
- */
-export function formatDuration(seconds?: number): string {
-  if (!seconds || seconds < 0) return "0:00";
-
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  }
-
-  return `${minutes}:${secs.toString().padStart(2, "0")}`;
-}
+/** "1:23:45" / "12:34" from seconds — THE package clock formatter. */
+export { formatDurationSeconds as formatDuration } from "@ai-matrx/kit/format";

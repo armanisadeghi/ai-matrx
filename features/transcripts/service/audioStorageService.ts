@@ -8,6 +8,7 @@
 // Deep import, NOT the `@/features/files` barrel — see the note in lib/redux/store.ts.
 import { fileHandler } from "@/features/files/handler/handler";
 import { RECORDING_LIMITS } from "../constants/recording";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   normalizeAudioType,
   audioExtensionForType,
@@ -92,11 +93,6 @@ export function generateAudioFilename(
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const randomId = Math.random().toString(36).substring(2, 8);
   return `${prefix}_${timestamp}_${randomId}.${ext}`;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

@@ -1,3 +1,4 @@
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 /**
  * HTML Source Files Architecture
  * 
@@ -319,19 +320,6 @@ export function parseJsonToMetadata(jsonString: string): HtmlMetadata {
         console.error("Error parsing JSON to metadata:", error);
         return createEmptyMetadata();
     }
-}
-
-/**
- * Simple HTML escape for meta tag content
- * Works in both browser and server environments
- */
-function escapeHtml(text: string): string {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
 }
 
 /**

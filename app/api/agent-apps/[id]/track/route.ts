@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isUuid } from "@ai-matrx/associations/core";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import type { TablesUpdate } from "@/types/database.types";
@@ -61,7 +61,7 @@ export async function POST(
   try {
     const { id: appId } = await context.params;
 
-    if (!isUuid(appId)) {
+    if (!isUuidShape(appId)) {
       return NextResponse.json({ error: "Invalid app id" }, { status: 400 });
     }
 
@@ -106,7 +106,7 @@ export async function POST(
 
     // ── Run lifecycle: completion / error update an existing row ─────────
     if (body.event === "run_complete" || body.event === "run_error") {
-      if (!isUuid(body.taskId)) {
+      if (!isUuidShape(body.taskId)) {
         return NextResponse.json(
           { error: "taskId required for run_complete/run_error" },
           { status: 400 },
@@ -147,7 +147,7 @@ export async function POST(
 
     // ── visit / run_start: INSERT new row ─────────────────────────────────
     const taskId =
-      body.event === "run_start" && isUuid(body.taskId)
+      body.event === "run_start" && isUuidShape(body.taskId)
         ? body.taskId
         : crypto.randomUUID();
 

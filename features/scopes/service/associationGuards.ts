@@ -10,7 +10,13 @@
 import { createAssociationGuards } from "@ai-matrx/associations/core";
 import { associationsErrorSink } from "@/features/scopes/host/errorSink";
 
-export { firstError, isUuid } from "@ai-matrx/associations/core";
+export { firstError } from "@ai-matrx/associations/core";
+// `isUuid` moved to `@ai-matrx/kit/uuid` as `isUuidShape` on 2026-09-07
+// (associations 0.8.0, C28). Aliased here so the ~20 host callers that speak
+// the historical `isUuid` name keep working; NEW code should import
+// `isUuidShape` (lax, "id or slug?") or `isRfc4122Uuid` (strict, a validation
+// door) from kit directly and say which question it is asking.
+export { isUuidShape as isUuid } from "@ai-matrx/kit/uuid";
 
 const guards = createAssociationGuards(associationsErrorSink);
 

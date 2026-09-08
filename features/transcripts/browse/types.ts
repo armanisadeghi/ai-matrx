@@ -7,6 +7,10 @@
 
 import type { Database } from "@/types/database.types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
+// 1h 02m. THE UNIT LAW puts the unit in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 /** One row, exactly as trx_list_scoped returns it. Never hand-mirrored. */
 export type TranscriptListRow =
@@ -55,12 +59,8 @@ export function primaryRowHref(row: TranscriptListRow): string {
   }
 }
 
+/** A zero-length transcript is an UNKNOWN length here, not "0s". */
 export function formatDuration(seconds: number | null): string {
   if (seconds == null || seconds <= 0) return "—";
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
+  return formatDurationSeconds(seconds, { style: "compact" });
 }

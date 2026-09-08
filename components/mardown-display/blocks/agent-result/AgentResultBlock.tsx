@@ -65,6 +65,10 @@ import KindInstanceRender from "@/features/content-ir/studio/components/KindInst
 import { cn } from "@/lib/utils";
 import type { AgentResultData } from "@/features/content-ir/kinds/agent-result";
 import type { AgentRunFacts } from "@/features/workflow-runtime/agent-run-output";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
+// 1h 02m. THE UNIT LAW puts the unit in the name.
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export interface AgentResultBlockProps {
   serverData?: unknown;
@@ -116,13 +120,7 @@ function safeParse(text: string): unknown {
 /** ms → the shortest honest reading. `0` means "not tracked", not "instant". */
 function formatDuration(ms: number): string | null {
   if (ms <= 0) return null;
-  if (ms < 1000) return `${ms} ms`;
-  const seconds = ms / 1000;
-  if (seconds < 60) return `${seconds.toFixed(1)}s`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}m ${Math.round(seconds % 60)
-    .toString()
-    .padStart(2, "0")}s`;
+  return formatDurationMs(ms, { style: "compact" });
 }
 
 /** Sub-cent runs are the common case, so they keep four decimals. */

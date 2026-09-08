@@ -30,6 +30,10 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/styles/themes/utils";
 import { formatUsd } from "@/lib/processing-units/units";
 import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
+// 1h 02m. THE UNIT LAW puts the unit in the name.
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import {
   listRunAiCalls,
   listRunHistory,
@@ -37,15 +41,8 @@ import {
   type RunHistoryEntry,
 } from "./runHistoryData";
 
-function formatDuration(ms: number | null): string {
-  if (ms == null || !Number.isFinite(ms)) return "—";
-  if (ms < 1000) return `${ms}ms`;
-  const s = ms / 1000;
-  if (s < 60) return `${s.toFixed(1)}s`;
-  const m = Math.floor(s / 60);
-  const rem = Math.round(s % 60);
-  return `${m}m ${rem}s`;
-}
+const formatDuration = (ms: number | null): string =>
+  formatDurationMs(ms, { style: "compact" });
 
 function formatWhen(iso: string | null): string {
   if (!iso) return "—";

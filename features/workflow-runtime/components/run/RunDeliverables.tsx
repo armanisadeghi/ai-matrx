@@ -21,7 +21,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
-import { formatDurationMs } from "@/features/agents/components/observational-memory/components/format";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { selectNodeAggregate } from "../../redux/workflow-runs.selectors";
 import type { NodeInvocationState } from "../../redux/workflow-runs.slice";
@@ -127,7 +127,7 @@ function DeliverableCard({
             {step.label} · ready
             {ready.wrapper?.duration_ms !== null &&
             ready.wrapper?.duration_ms !== undefined
-              ? ` in ${formatDurationMs(ready.wrapper.duration_ms)}`
+              ? ` in ${formatDurationMs(ready.wrapper.duration_ms, { style: "compact" })}`
               : ""}
           </p>
           {ready.wrapper?.output_kind_ok === false ? (

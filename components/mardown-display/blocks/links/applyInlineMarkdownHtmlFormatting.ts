@@ -1,11 +1,4 @@
-/** Escape the four characters that could let cell text break out of an HTML attribute/element. */
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 /**
  * Bold/italic/inline-code HTML for table cells and other lightweight inline
  * markdown surfaces. Links are handled separately via `InlineMarkdownWithLinks`

@@ -1,31 +1,23 @@
 {
   "$comment": [
-    "THE TWIN REGISTER — every capability whose logic has been COLLAPSED into an",
+    "THE TWIN REGISTER \u2014 every capability whose logic has been COLLAPSED into an",
     "@ai-matrx/* package. A local definition of one of these names in this repo is a",
     "re-grown twin: the exact failure the client-package campaign exists to kill",
     "(Arman: 'the logic of the packages is NEVER duplicated outside of the package').",
     "",
     "Add a row the same session you delete a twin. Never add an allowlist entry to",
-    "silence a NEW twin — an allowlist entry is only for a definition that is",
+    "silence a NEW twin \u2014 an allowlist entry is only for a definition that is",
     "PROVABLY not the same capability, and it must say why in `reason`.",
+    "A WRAPPER is not a twin: a local function that BINDS the package function's options (unit, style, fallback) and delegates in a line or two is the sanctioned adapter, and needs no entry. A re-implemented BODY is a twin, always.",
     "",
     "Register: /projects/npm-package-extraction/DUPLICATION-CENSUS.md (common-docs)."
   ],
   "twins": [
     {
-      "name": "isUuid",
-      "package": "@ai-matrx/associations/core",
-      "why": "Lax UUID-shape predicate. Four host copies deleted 2026-09-07 (agent-apps track route, feedback screenshot-refs, skills thunks, scopes slugify).",
-      "allow": [
-        {
-          "file": "lib/communications/voice/provider-configuration-readiness.ts",
-          "reason": "NOT the same predicate: RFC-4122 versioned/variant regex ([1-5] version, [89ab] variant). A validation door, deliberately stricter than the package's shape check."
-        },
-        {
-          "file": "lib/communications/voice/storage-canary-readiness.ts",
-          "reason": "Same RFC-4122 strict predicate as provider-configuration-readiness.ts."
-        }
-      ]
+      "name": "isUuidShape",
+      "package": "@ai-matrx/kit/uuid",
+      "why": "The LAX UUID-shape predicate ('id or slug?'). It moved out of @ai-matrx/associations/core into kit on 2026-09-07 (associations 0.8.0, C28) so a Next.js route handler could reach it without the association store. Four host copies were deleted 2026-09-07; two host re-export doors (features/scopes/{service/associationGuards,utils/slugify}) alias it as `isUuid` for ~20 historical callers.",
+      "allow": []
     },
     {
       "name": "uniqueChannelTopic",
@@ -109,6 +101,93 @@
       "name": "registerSvgIcons",
       "package": "@ai-matrx/icons",
       "why": "Icon registry injection point; the host registry was collapsed into the package.",
+      "allow": []
+    },
+    {
+      "name": "isRfc4122Uuid",
+      "package": "@ai-matrx/kit/uuid",
+      "why": "The STRICT RFC-4122 predicate (version 1-5, variant 8/9/a/b) \u2014 the right question for a validation door on a public route, and it REJECTS what isUuidShape accepts (the nil UUID, v6/v7/v8). Eight host copies collapsed 2026-09-07: six invite/notify API doors plus the two voice readiness doors that had been ALLOWLISTED here because the package shipped only the lax predicate. Never swap one predicate for the other to make a test pass.",
+      "allow": []
+    },
+    {
+      "name": "formatDurationMs",
+      "package": "@ai-matrx/kit/format",
+      "why": "THE UNIT LAW: the fleet's ~35 duration twins variously took milliseconds, seconds and minutes behind an identical `formatDuration(n)` signature, so kit ships formatDurationMs / formatDurationSeconds / formatDurationMinutes and NO bare `formatDuration`. Two host copies had already re-grown under this exact name (observational-memory format.ts, marketing crawl-session-panels.tsx) and were deleted 2026-09-07. A local `formatDuration` that BINDS unit+style+fallback and delegates is an adapter, not a twin; a local `formatDurationMs` is always a twin.",
+      "allow": []
+    },
+    {
+      "name": "formatDurationSeconds",
+      "package": "@ai-matrx/kit/format",
+      "why": "Rides formatDurationMs. See that row.",
+      "allow": []
+    },
+    {
+      "name": "formatDurationMinutes",
+      "package": "@ai-matrx/kit/format",
+      "why": "Rides formatDurationMs. See that row.",
+      "allow": []
+    },
+    {
+      "name": "durationMsBetween",
+      "package": "@ai-matrx/kit/format",
+      "why": "The 'start, maybe-end, else now' elapsed-ms pattern six surfaces had each rebuilt (marketing MarketingUi, websites/crawler in aidream's dashboard, ...). Collapsed 2026-09-07.",
+      "allow": []
+    },
+    {
+      "name": "formatRelativeTime",
+      "package": "@ai-matrx/kit/format",
+      "why": "THE relative-timestamp formatter, unified 2026-09-07 from @ai-matrx/associations (the Intl voice) and @ai-matrx/diff (the dense '2m ago' voice) plus twelve matrx-frontend copies. Three styles behind one body: short / long / intl, plus fallback and fallbackToInput.",
+      "allow": [
+        {
+          "file": "features/organizations/admin/utils.ts",
+          "reason": "A WRAPPER over the package formatter, not a reimplementation: it binds fallback:\"Never\", which is this roster's own statement (\"no activity on record\") and not the same as an em-dash. The body is one delegating line."
+        }
+      ]
+    },
+    {
+      "name": "parseTimestamp",
+      "package": "@ai-matrx/kit/format",
+      "why": "The Postgres correction: a zone-less `timestamp without time zone` is UTC, not the viewer's local time \u2014 the classic 'times are off by N hours' bug. It lived in @ai-matrx/diff and in matrx-frontend's utils/datetime.ts as byte-level twins until 2026-09-07.",
+      "allow": [
+        {
+          "file": "utils/datetime.ts",
+          "reason": "A WRAPPER over the package parser that adds this app's dev-time loud recovery (an unparseable value warns once in development instead of silently rendering an em-dash forever). App policy, not parsing logic; the body delegates in one line."
+        }
+      ]
+    },
+    {
+      "name": "formatAbsoluteDate",
+      "package": "@ai-matrx/kit/format",
+      "why": "Rides parseTimestamp. Collapsed 2026-09-07.",
+      "allow": []
+    },
+    {
+      "name": "formatFileSize",
+      "package": "@ai-matrx/kit/format",
+      "why": "THE byte-size formatter. It was hiding inside @ai-matrx/media's UploadProgressList React component, so six matrx-frontend twins could only reach it by depending on the media React bundle to print a byte count. Moved to kit 2026-09-07 with the display decisions written down (binary units, short labels, one decimal below ten in a unit, whole bytes below 1 KB, em-dash for unknown/negative \u2014 NEVER a confident '0 B').",
+      "allow": []
+    },
+    {
+      "name": "getInitials",
+      "package": "@ai-matrx/kit/format",
+      "why": "THE avatar initials formatter, duplicated between @ai-matrx/meet and @ai-matrx/messaging and in six matrx-frontend surfaces. Recorded display decision: a multi-part name takes FIRST + LAST ('Ana Maria Rivera' is AR); the six host copies printed AM.",
+      "allow": [
+        {
+          "file": "features/messaging/components/shell/MessagesThreadHeader.tsx",
+          "reason": "NOT YET COLLAPSED, and not a claim that it should not be: a concurrent messaging/DM lane owns every file under features/messaging on 2026-09-07 and this one must not be touched from two sessions at once. Tracked in the census as the one open getInitials row; delete this entry when that lane lands."
+        }
+      ]
+    },
+    {
+      "name": "avatarPaletteIndex",
+      "package": "@ai-matrx/kit/format",
+      "why": "The deterministic avatar tint, byte-identical in @ai-matrx/meet and @ai-matrx/messaging. A random colour per render is a surprisingly loud bug, so there is exactly one hash.",
+      "allow": []
+    },
+    {
+      "name": "escapeHtml",
+      "package": "@ai-matrx/kit/html-escape",
+      "why": "TEN copies were live across the fleet and THEY DID NOT ESCAPE THE SAME CHARACTERS \u2014 three did & < > only, two added \", four added ' (two as &#39;, two as &#039;), and a tenth wore the name escapeHtmlAttr while escaping only & < \" into an HTML ATTRIBUTE. A string safe through one was an attribute break-out through another. kit ships ONE decided set: & < > \" ' \u2014 all five, always. It is not in @ai-matrx/print because an HTML escaper must not require jspdf + html2canvas.",
       "allow": []
     }
   ]

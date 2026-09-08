@@ -6,6 +6,7 @@ import { Globe, Lock, Users, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserList } from "../types";
 import { getListVisibility } from "../types";
+import { listCalendarAge } from "@/features/user-lists/calendar-age";
 
 const VISIBILITY_CONFIG = {
   public: {
@@ -28,18 +29,6 @@ const VISIBILITY_CONFIG = {
   },
 };
 
-function formatRelativeTime(dateStr: string | null | undefined): string {
-  if (!dateStr) return "";
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  return `${Math.floor(days / 30)}mo ago`;
-}
 
 interface MobileListGridProps {
   lists: UserList[];
@@ -92,7 +81,7 @@ export function MobileListGrid({ lists }: MobileListGridProps) {
                 {list.item_count ?? 0} items
               </span>
               <span className="text-xs text-muted-foreground/60 ml-auto">
-                {formatRelativeTime(list.updated_at ?? list.created_at)}
+                {listCalendarAge(list.updated_at ?? list.created_at)}
               </span>
             </div>
           </Link>

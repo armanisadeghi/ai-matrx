@@ -5,6 +5,14 @@ import { isJsonObject } from "@/types/json";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 
 import { VOICE_OWNER_BETA_PROGRAM_KEY } from "./owner-beta-program";
+// THE strict RFC-4122 predicate. This door had its own copy, allowlisted in
+// the twin register on 2026-09-07 because the package only shipped a LAX one;
+// kit now ships both under names that say which is which, so the allowlist
+// entry is gone. One deliberate widening: the local regex was case-SENSITIVE
+// and this one is not — RFC-4122 hex may be either case, and an uppercase id
+// this system minted was being refused.
+import { parseTimestamp } from "@ai-matrx/kit/format";
+import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 
 export const VOICE_PROVIDER_CONFIGURATION_VERIFIED_ACTION =
   "voice.recording.provider_configuration.verified";
@@ -19,9 +27,6 @@ const VOICE_PROVIDER_CONFIGURATION_ENTITY_TYPE =
   "voice_recording_provider_configuration";
 const VOICE_PROVIDER_CONFIGURATION_EVIDENCE_VERSION = 1;
 const ALLOWED_FUTURE_SKEW_MS = 5 * 60 * 1000;
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-
 export const OWNER_BETA_VOICE_PROVIDER_CONFIGURATION_POLICY = {
   organizationId: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
   operatorId: "4cf62e4e-2679-484f-b652-034e697418df",
@@ -83,15 +88,21 @@ function unavailable(
   };
 }
 
-function isUuid(value: unknown): value is string {
-  return typeof value === "string" && UUID_PATTERN.test(value);
-}
-
-function parseTimestamp(value: unknown): { iso: string; milliseconds: number } | null {
+/**
+ * A receipt timestamp as BOTH the stored string and its instant — the
+ * comparison needs the number and the visibility result echoes the string.
+ *
+ * The parsing is `@ai-matrx/kit/format`'s, not a bare `Date.parse`: a
+ * zone-less `timestamp without time zone` reaching this door was being read as
+ * the SERVER's local time, so a receipt could be judged current or expired by
+ * the process timezone. Same correction the whole fleet inherited on
+ * 2026-09-07.
+ */
+function receiptInstant(value: unknown): { iso: string; milliseconds: number } | null {
   if (typeof value !== "string") return null;
-  const milliseconds = Date.parse(value);
-  if (!Number.isFinite(milliseconds)) return null;
-  return { iso: value, milliseconds };
+  const parsed = parseTimestamp(value);
+  if (!parsed) return null;
+  return { iso: value, milliseconds: parsed.getTime() };
 }
 
 /**
@@ -121,10 +132,10 @@ export function evaluateVoiceProviderConfigurationReceipt(
   }
 
   const metadata = row.metadata;
-  const emailVerifiedAt = parseTimestamp(
+  const emailVerifiedAt = receiptInstant(
     metadata.email_verification_completed_at,
   );
-  const configurationVerifiedAt = parseTimestamp(
+  const configurationVerifiedAt = receiptInstant(
     metadata.configuration_verified_at,
   );
   const factsMatch =
@@ -144,7 +155,7 @@ export function evaluateVoiceProviderConfigurationReceipt(
     metadata.email_verification_completed === true &&
     metadata.external_storage_enabled === true &&
     metadata.recording_capture_enabled === false &&
-    isUuid(row.entity_id) &&
+    isRfc4122Uuid(row.entity_id) &&
     metadata.verification_id === row.entity_id &&
     emailVerifiedAt !== null &&
     configurationVerifiedAt !== null &&

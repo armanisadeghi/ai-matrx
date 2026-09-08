@@ -6,6 +6,13 @@
  */
 
 import { parseTimestamp } from "@/utils/datetime";
+// `formatDurationMs` used to be re-implemented here, under the package's own
+// name (census H1). It is now imported straight from `@ai-matrx/kit/format` by
+// its callers; the one display change is that seconds under ten keep one
+// decimal instead of two (`5.2s`, not `5.23s`).
+// `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
+// census H1 2026-09-07). This surface previously carried a local copy.
+export { formatRelativeTime } from "@ai-matrx/kit/format";
 
 export function formatCostUsd(
   cost: number | null | undefined,
@@ -22,14 +29,6 @@ export function formatTokens(n: number | null | undefined): string {
   return n.toLocaleString();
 }
 
-export function formatDurationMs(ms: number | null | undefined): string {
-  if (ms == null || Number.isNaN(ms)) return "—";
-  if (ms < 1000) return `${Math.round(ms)}ms`;
-  if (ms < 60_000) return `${(ms / 1000).toFixed(2)}s`;
-  const minutes = Math.floor(ms / 60_000);
-  const seconds = Math.floor((ms % 60_000) / 1000);
-  return `${minutes}m ${seconds}s`;
-}
 
 export function formatDateTime(iso: string | null | undefined): string {
   const d = parseTimestamp(iso);
@@ -43,13 +42,3 @@ export function formatDateTime(iso: string | null | undefined): string {
   });
 }
 
-export function formatRelativeTime(iso: string | null | undefined): string {
-  const then = parseTimestamp(iso)?.getTime() ?? NaN;
-  if (Number.isNaN(then)) return "—";
-  const diff = Date.now() - then;
-  if (diff < 1000) return "just now";
-  if (diff < 60_000) return `${Math.floor(diff / 1000)}s ago`;
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return `${Math.floor(diff / 86_400_000)}d ago`;
-}

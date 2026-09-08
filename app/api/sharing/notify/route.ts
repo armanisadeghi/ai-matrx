@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
+import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -142,14 +143,9 @@ export async function POST(request: NextRequest) {
     const { recipientUserId, resourceType, resourceId, message } = body;
 
     // Validate input
-    const isUuid = (value: unknown): value is string =>
-      typeof value === "string" &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        value,
-      );
     if (
-      !isUuid(recipientUserId) ||
-      !isUuid(resourceId) ||
+      !isRfc4122Uuid(recipientUserId) ||
+      !isRfc4122Uuid(resourceId) ||
       typeof resourceType !== "string" ||
       !/^[a-z][a-z0-9_]{0,63}$/i.test(resourceType)
     ) {

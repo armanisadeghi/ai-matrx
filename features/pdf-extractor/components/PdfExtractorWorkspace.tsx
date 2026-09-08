@@ -60,6 +60,9 @@ import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBound
 import { useFile } from "@/features/files/handler/hooks/useFile";
 
 import { PDF_EXTRACTOR_SURFACE_NAME as PDF_EXTRACTOR_SURFACE } from "@/features/surfaces/manifests/pdf-extractor.manifest";
+// `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
+// census H1 2026-09-07). This surface previously carried a local copy.
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 // ─── Sub-tab type for per-extraction view ────────────────────────────────────
 
@@ -1400,25 +1403,3 @@ function EmptyState({ message }: { message: string }) {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function formatRelativeTime(isoString: string): string {
-  const now = Date.now();
-  const then = new Date(isoString).getTime();
-  const diffMs = now - then;
-
-  if (diffMs < 0) return "just now";
-
-  const seconds = Math.floor(diffMs / 1000);
-  if (seconds < 60) return "just now";
-
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-
-  const months = Math.floor(days / 30);
-  return `${months}mo ago`;
-}

@@ -96,7 +96,14 @@ export function computeTextCounterMetrics(text: string): TextCounterMetrics {
   };
 }
 
-export function formatDuration(minutes: number): string {
+/**
+ * READING TIME, which is an estimate rather than an elapsed duration: it
+ * rounds UP (a page that takes 3.1 minutes is "4 min", never "3 min"), and a
+ * text with no words is a real "0 min" rather than an unknown. The package's
+ * `coarse` style rounds to nearest and calls zero "< 1 min", so this stays
+ * local — a different question, not a re-grown twin.
+ */
+export function formatReadingTime(minutes: number): string {
   if (minutes <= 0) return "0 min";
   if (minutes < 1) return "< 1 min";
   return `${Math.ceil(minutes)} min`;

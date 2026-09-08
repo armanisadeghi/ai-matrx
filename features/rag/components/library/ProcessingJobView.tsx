@@ -52,6 +52,13 @@ import type {
 } from "./ProcessingProgressDialog";
 import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
 import { STAGE_META, StageHero } from "./StageAnimations";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
+// 1h 02m. THE UNIT LAW puts the unit in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
+
+const formatDuration = (sec: number): string =>
+  formatDurationSeconds(sec, { style: "compact" });
 
 const STAGES: ProcessingStageId[] = ["extract", "clean", "chunk", "embed"];
 
@@ -764,16 +771,6 @@ function deriveStageStates(
     out.extract = "error";
   }
   return out;
-}
-
-function formatDuration(sec: number): string {
-  if (sec < 60) return `${sec}s`;
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  if (m < 60) return s === 0 ? `${m}m` : `${m}m ${s}s`;
-  const h = Math.floor(m / 60);
-  const mm = m % 60;
-  return mm === 0 ? `${h}h` : `${h}h ${mm}m`;
 }
 
 function formatRate(perSec: number): string {

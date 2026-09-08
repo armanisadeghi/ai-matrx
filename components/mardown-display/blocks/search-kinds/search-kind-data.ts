@@ -18,6 +18,9 @@
  */
 
 import type {
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name, because the fleet's
+// ~35 twins variously took ms, seconds and minutes behind one signature.
   GeneratedKindSlug,
   PartialKind,
   PartialKindPayload,
@@ -127,12 +130,5 @@ export function dateLine(
   return text(item.age_text);
 }
 
-/** "3:47" / "1:02:07" from seconds. */
-export function formatDuration(totalSeconds: number): string {
-  const seconds = Math.max(0, Math.round(totalSeconds));
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
-  return `${h > 0 ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
-}
+/** "3:47" / "1:02:07" from seconds — THE package clock formatter. */
+export { formatDurationSeconds as formatDuration } from "@ai-matrx/kit/format";

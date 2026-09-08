@@ -14,25 +14,18 @@ import {
 } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
+// LAST, so "Ana Maria Rivera" is AR — this surface previously printed AM.
+// A caller with no name passes the email, whose single token yields its
+// first character: exactly what these copies did by hand.
+import { getInitials } from "@ai-matrx/kit/format";
 
 const SOURCE_ICON: Record<ConnectionUser["source"], typeof Users> = {
   conversation: MessageSquare,
   organization: Building2,
   invitation: Mail,
 };
-
-function getInitials(name: string | null, email: string | null): string {
-  if (name) {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  }
-  if (email) return email[0].toUpperCase();
-  return "?";
-}
 
 interface TaskAssigneePickerProps {
   assigneeId: string | null;
@@ -91,7 +84,7 @@ export default function TaskAssigneePicker({
               <Avatar className={cn(size === "sm" ? "w-4 h-4" : "w-5 h-5")}>
                 <AvatarImage src={current.avatar_url ?? undefined} />
                 <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
-                  {getInitials(current.display_name, current.email)}
+                  {getInitials(current.display_name ?? current.email)}
                 </AvatarFallback>
               </Avatar>
               <span className="flex-1 truncate text-xs font-medium text-foreground">
@@ -204,7 +197,7 @@ export default function TaskAssigneePicker({
                   <Avatar className="w-6 h-6 shrink-0">
                     <AvatarImage src={user.avatar_url ?? undefined} />
                     <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                      {getInitials(user.display_name, user.email)}
+                      {getInitials(user.display_name ?? user.email)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 text-left">

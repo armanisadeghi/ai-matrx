@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
+import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,13 +30,10 @@ export async function POST(request: NextRequest) {
     }
     const body = await request.json();
     const { invitationId } = body;
-    const isUuid =
-      typeof invitationId === "string" &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        invitationId,
-      );
+    // THE strict RFC-4122 predicate (@ai-matrx/kit/uuid) — a validation door
+    // on a public route only ever sees ids this system minted.
 
-    if (!isUuid) {
+    if (!isRfc4122Uuid(invitationId)) {
       return NextResponse.json(
         { success: false, error: "A valid invitationId is required" },
         { status: 400 },

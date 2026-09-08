@@ -2,22 +2,29 @@
  * Formatting helpers for org-admin metrics. Pure, no side effects.
  */
 
+import {
+  formatFileSize,
+  formatRelativeTime as kitFormatRelativeTime,
+} from "@ai-matrx/kit/format";
+
 /**
- * Human-readable byte size.
- *
- * A MISSING size is never a confident "0 B" — null / undefined / NaN /
- * non-finite / negative render as an em-dash, so a corrupt or not-yet-swept
- * row reads as "unknown" instead of "empty". (The defect class @ai-matrx/media
- * 0.4.0 named across the platform; a real zero still reads "0 B".)
+ * Compact relative-time label, e.g. "3d ago", "Never". The formatting is the
+ * package's (`@ai-matrx/kit/format`, census H1); the "Never" fallback is this
+ * roster's own word for "no activity on record", which is not the same
+ * statement as an em-dash.
  */
-export function formatBytes(bytes: number | null | undefined): string {
-  if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return "—";
-  if (bytes <= 0) return "0 B";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  const value = bytes / Math.pow(1024, i);
-  return `${value >= 100 || i === 0 ? Math.round(value) : value.toFixed(1)} ${units[i]}`;
+export function formatRelativeTime(iso: string | null | undefined): string {
+  return kitFormatRelativeTime(iso, { fallback: "Never" });
 }
+
+/**
+ * Human-readable byte size — a `formatFileSize` twin the 2026-09-07 census
+ * missed because it wore a different name. THE package formatter carries the
+ * same "a missing size is never a confident 0 B" guard this copy earned; the
+ * one display change is where the decimal drops (at 10 in a unit, not 100), so
+ * `50.0 KB` now reads `50 KB`.
+ */
+export const formatBytes = formatFileSize;
 
 /** Milli-cents → USD string. 3996 mcents = $0.04. */
 export function formatMcents(mcents: number | null | undefined): string {
@@ -50,24 +57,6 @@ export function bytesToGb(bytes: number | null | undefined): string {
   return (bytes / (1024 * 1024 * 1024)).toString();
 }
 
-/** Compact relative-time label, e.g. "3d ago", "just now", "Never". */
-export function formatRelativeTime(iso: string | null | undefined): string {
-  if (!iso) return "Never";
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "Never";
-  const diffMs = Date.now() - then;
-  const sec = Math.floor(diffMs / 1000);
-  if (sec < 60) return "just now";
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.floor(hr / 24);
-  if (day < 30) return `${day}d ago`;
-  const mon = Math.floor(day / 30);
-  if (mon < 12) return `${mon}mo ago`;
-  return `${Math.floor(mon / 12)}y ago`;
-}
 
 /** Coarse activity bucket used for the roster "engagement" signal. */
 export type ActivityBucket = "active" | "idle" | "dormant" | "never";

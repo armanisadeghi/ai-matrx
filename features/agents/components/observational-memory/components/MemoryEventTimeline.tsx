@@ -37,9 +37,9 @@ import type {
   MemoryEventEntry,
   MemoryEventKind,
 } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.slice";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import {
   formatCostUsd,
-  formatDurationMs,
   formatRelativeTime,
   formatTokens,
 } from "./format";
@@ -212,7 +212,7 @@ function MemoryEventRow({ event }: { event: MemoryEventEntry }) {
                     <Timer className="w-3 h-3" />
                   </span>
                 }
-                value={formatDurationMs(event.durationMs)}
+                value={formatDurationMs(event.durationMs, { style: "compact" })}
                 mono
               />
             )}

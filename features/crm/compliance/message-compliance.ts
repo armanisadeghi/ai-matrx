@@ -18,6 +18,7 @@
 // Register: /Users/armanisadeghi/code/common-docs/systems/marketing/outreach-compliance/
 
 import type { ConsentBasis } from "./types";
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 
 /** Where the unsubscribe endpoints live. Path, not host — the caller supplies the origin. */
 export const UNSUBSCRIBE_PAGE_PATH = "/unsubscribe";
@@ -65,14 +66,6 @@ export type ComplianceEnvelope = {
   /** HTML footer, appended inside the message body. */
   htmlFooter: string;
 };
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 /** "Acme Ltd, 1 High St, Suite 2, London, SW1A 1AA, GB" — omitting empty parts. */
 export function formatPostalAddress(postal: PostalAddress): string {

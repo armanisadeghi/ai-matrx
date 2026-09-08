@@ -52,8 +52,11 @@ export function isReservedSlug(s: string): boolean {
 
 /**
  * True when a route segment is a UUID (resolve by id) vs a slug (resolve by
- * name). The predicate itself lives in `@ai-matrx/associations/core`; this
- * re-export keeps the historical `@/features/scopes/utils/slugify` specifier
- * working for the scopes surfaces.
+ * name). The predicate itself lives in `@ai-matrx/kit/uuid` as `isUuidShape`
+ * (it moved out of `@ai-matrx/associations/core` on 2026-09-07 — associations
+ * 0.8.0, C28); this alias keeps the historical
+ * `@/features/scopes/utils/slugify` specifier working for the scopes surfaces.
+ * NEW code should import from kit and say whether it wants the LAX shape check
+ * or the STRICT `isRfc4122Uuid`.
  */
-export { isUuid } from "@ai-matrx/associations/core";
+export { isUuidShape as isUuid } from "@ai-matrx/kit/uuid";

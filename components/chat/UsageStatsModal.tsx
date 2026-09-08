@@ -4,6 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { 
   Clock, 
   Zap, 
@@ -64,10 +67,8 @@ interface UsageStatsModalProps {
   data: UsageStatsData | null;
 }
 
-function formatDuration(seconds: number): string {
-  if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
-  return `${seconds.toFixed(2)}s`;
-}
+const formatDuration = (seconds: number): string =>
+  formatDurationSeconds(seconds, { style: "compact" });
 
 function formatCost(cost: number | null | undefined): string {
   if (cost == null) return 'N/A';

@@ -12,6 +12,10 @@ import { buildRunRowPayload, runSummary } from "../../lib/copy";
 import { StatusPill } from "../shared/StatusPill";
 import { OutputRefLink } from "../shared/OutputRefLink";
 import type { AgendaTask, SchRunRow } from "../../types";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
+// 1h 02m. THE UNIT LAW puts the unit in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 interface Props {
   run: SchRunRow;
@@ -143,9 +147,5 @@ function computeDuration(run: SchRunRow): number | null {
   );
 }
 
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}m ${s}s`;
-}
+const formatDuration = (seconds: number): string =>
+  formatDurationSeconds(seconds, { style: "compact" });

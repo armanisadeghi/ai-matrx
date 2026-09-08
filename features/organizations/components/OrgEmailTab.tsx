@@ -10,6 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Mail, Users, Send } from "lucide-react";
 import type { OrganizationMemberWithUser } from "@/features/organizations/types";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
+// LAST, so "Ana Maria Rivera" is AR — this surface previously printed AM.
+// A caller with no name passes the email, whose single token yields its
+// first character: exactly what these copies did by hand.
+import { getInitials } from "@ai-matrx/kit/format";
 
 interface OrgEmailTabProps {
   organizationId: string;
@@ -23,21 +29,6 @@ type EmailableMember = OrganizationMemberWithUser & {
 
 function hasEmail(m: OrganizationMemberWithUser): m is EmailableMember {
   return Boolean(m.user?.email);
-}
-
-function getInitials(name?: string, email?: string): string {
-  if (name) {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  }
-  if (email) {
-    return email[0].toUpperCase();
-  }
-  return "?";
 }
 
 /**
@@ -215,7 +206,7 @@ export function OrgEmailTab({
               <Avatar className="h-7 w-7 flex-shrink-0">
                 <AvatarImage src={member.user?.avatarUrl || undefined} />
                 <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                  {getInitials(member.user?.displayName, member.user?.email)}
+                  {getInitials(member.user?.displayName ?? member.user?.email)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">

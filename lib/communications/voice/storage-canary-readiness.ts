@@ -5,6 +5,13 @@ import { isJsonObject } from "@/types/json";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 
 import { VOICE_OWNER_BETA_PROGRAM_KEY } from "./owner-beta-program";
+// THE strict RFC-4122 predicate. This door had its own copy, allowlisted in
+// the twin register on 2026-09-07 because the package only shipped a LAX one;
+// kit now ships both under names that say which is which, so the allowlist
+// entry is gone. One deliberate widening: the local regex was case-SENSITIVE
+// and this one is not — RFC-4122 hex may be either case, and an uppercase id
+// this system minted was being refused.
+import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 
 export const VOICE_STORAGE_CANARY_PASSED_ACTION =
   "voice.recording.storage_canary.passed";
@@ -16,9 +23,6 @@ const VOICE_STORAGE_CANARY_ENTITY_TYPE = "voice_recording_storage_canary";
 const VOICE_STORAGE_CANARY_EVIDENCE_VERSION = 1;
 const VOICE_RECORDING_RETENTION_POLICY = "voice_recordings_30d";
 const HASH_PATTERN = /^[0-9a-f]{64}$/;
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-
 export const OWNER_BETA_VOICE_STORAGE_POLICY = {
   organizationId: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
   bucket: "matrx-voice-recordings-prod-872515272894",
@@ -67,10 +71,6 @@ function isTrue(metadata: Record<string, unknown>, key: string): boolean {
   return metadata[key] === true;
 }
 
-function isUuid(value: unknown): value is string {
-  return typeof value === "string" && UUID_PATTERN.test(value);
-}
-
 function isHash(value: unknown): value is string {
   return typeof value === "string" && HASH_PATTERN.test(value);
 }
@@ -113,16 +113,16 @@ export function evaluateVoiceStorageCanaryReceipt(
       OWNER_BETA_VOICE_STORAGE_POLICY.writerArn &&
     metadata.writer_arn === OWNER_BETA_VOICE_STORAGE_POLICY.writerArn &&
     metadata.retention_policy === VOICE_RECORDING_RETENTION_POLICY &&
-    isUuid(row.entity_id) &&
+    isRfc4122Uuid(row.entity_id) &&
     metadata.run_id === row.entity_id &&
     isHash(metadata.writer_principal_id_hash) &&
     isHash(metadata.writer_credential_fingerprint) &&
     isHash(metadata.object_key_hash) &&
     isHash(metadata.sentinel_sha256) &&
-    isUuid(metadata.custody_receipt_id) &&
-    isUuid(metadata.adoption_receipt_id) &&
-    isUuid(metadata.read_receipt_id) &&
-    isUuid(metadata.delete_receipt_id) &&
+    isRfc4122Uuid(metadata.custody_receipt_id) &&
+    isRfc4122Uuid(metadata.adoption_receipt_id) &&
+    isRfc4122Uuid(metadata.read_receipt_id) &&
+    isRfc4122Uuid(metadata.delete_receipt_id) &&
     isTrue(metadata, "writer_identity_exact") &&
     isTrue(metadata, "writer_put_succeeded") &&
     isTrue(metadata, "writer_read_denied") &&

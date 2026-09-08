@@ -17,18 +17,18 @@ import { toast } from "@/lib/toast";
 import type { PcShow, PcEpisode } from "../../types";
 import { useShare } from "@/features/sharing/hooks/useShare";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
+
+/** An episode length reads at a glance: "45 min" / "1h 30m". */
+function formatDuration(seconds: number): string {
+  return formatDurationSeconds(seconds, { style: "coarse" });
+}
 
 interface PodcastShowPageProps {
   show: PcShow;
   episodes: PcEpisode[];
-}
-
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  if (m < 60) return `${m} min`;
-  const h = Math.floor(m / 60);
-  const rem = m % 60;
-  return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
 }
 
 export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {

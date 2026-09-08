@@ -78,6 +78,14 @@ import { definitionNodeLabels, RunSurfaceView } from "./RunSurfaceView";
 import { nodeOutputKind } from "./run/node-presentation";
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
 import { WorkflowRunBoard } from "./WorkflowRunBoard";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
+// 1h 02m. THE UNIT LAW puts the unit in the name.
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
+/** An unmeasured cell stays BLANK here rather than showing an em-dash. */
+const formatDuration = (ms: number | null): string =>
+  formatDurationMs(ms, { style: "compact", fallback: "" });
 
 /** Promotion callback bound to the readout's run by the hosting surface. */
 export type EnsureLaneFn = (
@@ -148,14 +156,6 @@ function invocationSummary(inv: NodeInvocationState): string {
         : inv.error?.message ?? "";
   if (!text) return PHASE_LABEL[inv.phase] ?? inv.phase;
   return text.length > 80 ? `${text.slice(0, 80)}…` : text;
-}
-
-function formatDuration(ms: number | null): string {
-  if (ms === null) return "";
-  if (ms < 1000) return `${Math.round(ms)}ms`;
-  const s = ms / 1000;
-  if (s < 60) return `${s.toFixed(s < 10 ? 1 : 0)}s`;
-  return `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
 }
 
 /** The real "table" multi-run mode: one canonical MatrxDataTable over the

@@ -29,24 +29,13 @@ import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useUserMarkdownSamples } from "./useUserMarkdownSamples";
 import { getBlockTypeStyle } from "./block-type-colors";
 import type { UserMarkdownSample } from "./user-samples-service";
+// `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
+// census H1 2026-09-07). This surface previously carried a local copy.
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 // Note: the trigger lives in the route header (a `HeaderAction`), so this
 // component is fully controlled from outside — no internal open state or
 // trigger button of its own.
-
-function formatRelativeTime(iso: string): string {
-  const ts = new Date(iso).getTime();
-  if (Number.isNaN(ts)) return iso;
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d`;
-  return new Date(ts).toLocaleDateString();
-}
 
 interface SampleLibrarySheetProps {
   open: boolean;
@@ -233,7 +222,9 @@ export function SampleLibrarySheet({
                           )}
                           <span className="ml-auto flex items-center gap-0.5 text-[10px] text-muted-foreground">
                             <Clock className="h-2.5 w-2.5" />
-                            {formatRelativeTime(sample.updated_at)}
+                            {formatRelativeTime(sample.updated_at, {
+                                fallbackToInput: true,
+                              })}
                           </span>
                         </div>
                       </div>

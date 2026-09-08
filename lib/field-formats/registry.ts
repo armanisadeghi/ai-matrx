@@ -5,6 +5,11 @@
  * Every `format()` returns `null` rather than throwing or returning "" when the
  * value does not fit — that is what triggers THE FALLBACK LAW in `format.ts`.
  */
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name, because the fleet's
+// ~35 twins variously took ms, seconds and minutes behind one signature.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
+
 import type {
   FieldChoice,
   FieldFormatDef,
@@ -12,6 +17,15 @@ import type {
   FieldFormatOptions,
   FieldBaseType,
 } from "./types";
+
+/**
+ * A stored `interval` is the one place a NEGATIVE duration is a real quantity
+ * rather than a clock bug, so this field format opts into the package's
+ * `signed` mode. Everything else about the reading is the package's clock.
+ */
+function formatSignedDuration(totalSeconds: number): string {
+  return formatDurationSeconds(totalSeconds, { signed: true });
+}
 
 // ─── shared helpers ──────────────────────────────────────────────────────────
 
@@ -85,20 +99,6 @@ const DURATION_TO_SECONDS: Record<
   NonNullable<FieldFormatOptions["durationUnit"]>,
   number
 > = { milliseconds: 0.001, seconds: 1, minutes: 60, hours: 3600 };
-
-function formatDuration(totalSeconds: number): string {
-  const negative = totalSeconds < 0;
-  let s = Math.abs(Math.round(totalSeconds));
-  const h = Math.floor(s / 3600);
-  s -= h * 3600;
-  const m = Math.floor(s / 60);
-  s -= m * 60;
-  const parts =
-    h > 0
-      ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-      : `${m}:${String(s).padStart(2, "0")}`;
-  return negative ? `-${parts}` : parts;
-}
 
 /**
  * Find the option a stored value corresponds to.
@@ -382,7 +382,7 @@ const DEFS: FieldFormatDef[] = [
     format: (v, o) => {
       const n = toNumber(v);
       if (n === null) return null;
-      return formatDuration(n * DURATION_TO_SECONDS[o.durationUnit ?? "seconds"]);
+      return formatSignedDuration(n * DURATION_TO_SECONDS[o.durationUnit ?? "seconds"]);
     },
     parse: (raw) => toNumber(raw),
   },

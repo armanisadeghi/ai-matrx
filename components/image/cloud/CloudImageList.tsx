@@ -4,6 +4,7 @@ import { Check, Info, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { CloudFileRecord } from "@/features/files/types";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   CloudImageThumbnail,
   isCloudImagePreviewable,
@@ -123,15 +124,6 @@ export function CloudImageList({
       })}
     </ul>
   );
-}
-
-function formatFileSize(bytes: number | null | undefined): string | null {
-  if (!bytes || bytes < 0) return null;
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024)
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
 function formatRelative(date: Date): string {

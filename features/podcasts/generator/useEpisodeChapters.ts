@@ -30,18 +30,17 @@ import type { LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWin
 import { podcastService } from "@/features/podcasts/service";
 import { parseChapters } from "@/features/podcasts/types";
 import type { PcEpisode, PcEpisodeChapter } from "@/features/podcasts/types";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 const CHAPTER_MARKER_MANDATE_KEY = "podcast.chapter_marker";
 
 /** `duration_hint` for the agent: HH:MM:SS / MM:SS from the stored runtime. */
+/** The clock reading an episode's chapter hint carries; blank when unknown. */
 function formatDurationHint(seconds: number | null): string {
   if (!seconds || seconds <= 0) return "";
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  const mm = String(m).padStart(2, "0");
-  const ss = String(s).padStart(2, "0");
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+  return formatDurationSeconds(seconds);
 }
 
 export interface UseEpisodeChapters {

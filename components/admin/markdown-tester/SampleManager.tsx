@@ -34,6 +34,9 @@ import { useMarkdownSamples } from "./useMarkdownSamples";
 import { detectRenderBlocks } from "./utils/detect-render-blocks";
 import { SampleEditor } from "./SampleEditor";
 import type { MarkdownSample } from "./samples-service";
+// `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
+// census H1 2026-09-07). This surface previously carried a local copy.
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 interface SampleManagerProps {
   /** The current textarea content. Used as the source-of-truth for saves. */
@@ -44,20 +47,6 @@ interface SampleManagerProps {
   onLoad: (sample: MarkdownSample) => void;
   /** Called when the user restores the IDB autosave buffer. */
   onLoadAutosave: () => void;
-}
-
-function formatRelativeTime(iso: string): string {
-  const ts = new Date(iso).getTime();
-  if (Number.isNaN(ts)) return iso;
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(ts).toLocaleDateString();
 }
 
 function truncatePreview(content: string, maxLen = 80): string {
@@ -368,7 +357,9 @@ export function SampleManager({
                           )}
                           <span className="text-[10px] text-muted-foreground shrink-0 flex items-center gap-0.5 ml-auto">
                             <Clock className="h-2.5 w-2.5" />
-                            {formatRelativeTime(sample.updated_at)}
+                            {formatRelativeTime(sample.updated_at, {
+                                fallbackToInput: true,
+                              })}
                           </span>
                         </div>
                         {sample.description && (

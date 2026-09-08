@@ -38,6 +38,9 @@ import AudioOutputBlock from "@/components/mardown-display/blocks/audio/AudioOut
 import { useAudioRecovery } from "../providers/AudioRecoveryProvider";
 import { SafetyRecord } from "../services/audioSafetyStore";
 import { uploadAndTranscribeFull } from "../services/audioFallbackUpload";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -50,12 +53,16 @@ function formatTimestamp(ts: number): string {
   });
 }
 
-function formatDuration(chunks: ArrayBuffer[], bytesPerSecond = 16000): string {
+/**
+ * An APPROXIMATE recovered-recording length, estimated from the raw PCM byte
+ * count — hence the leading `~`. The clock reading itself is the package's.
+ */
+function estimateChunkDuration(
+  chunks: ArrayBuffer[],
+  bytesPerSecond = 16000,
+): string {
   const totalBytes = chunks.reduce((sum, c) => sum + c.byteLength, 0);
-  const seconds = Math.round(totalBytes / bytesPerSecond);
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `~${m}:${String(s).padStart(2, "0")}`;
+  return `~${formatDurationSeconds(totalBytes / bytesPerSecond)}`;
 }
 
 // ─── Recovery Item ─────────────────────────────────────────────────────────────
@@ -186,7 +193,7 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
           </span>
           {hasAudio && (
             <span className="text-xs text-muted-foreground">
-              {formatDuration(item.audioChunks)}
+              {estimateChunkDuration(item.audioChunks)}
             </span>
           )}
           <span

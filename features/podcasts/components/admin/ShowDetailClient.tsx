@@ -36,13 +36,13 @@ import { InlineMediaRef } from "@ai-matrx/media/react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { PublicPageLink } from "./PublicPageLink";
 import { podcastEpisodeAdminHref, podcastPublicHref } from "../../utils";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
+/** An episode length reads at a glance: "45 min" / "1h 30m". */
 function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  if (m < 60) return `${m} min`;
-  const h = Math.floor(m / 60);
-  const rem = m % 60;
-  return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
+  return formatDurationSeconds(seconds, { style: "coarse" });
 }
 
 function CopyLinkButton({ slug }: { slug: string }) {

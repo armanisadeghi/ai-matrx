@@ -7,6 +7,15 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { isJsonRecord } from "@/features/marketing/types";
 import type { Json } from "@/types/database.types";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name.
+import { formatDurationMs } from "@ai-matrx/kit/format";
+
+/** A zero-length crawl is an UNMEASURED crawl here, not "0ms". */
+function crawlDuration(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "—";
+  return formatDurationMs(value, { style: "compact" });
+}
 
 const RENDER_MODE_LABELS: Record<string, string> = {
   http_first: "HTTP, browser fallback",
@@ -22,14 +31,6 @@ function formatBytes(value: number | null | undefined): string {
   if (value < 1024) return `${value} B`;
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatDurationMs(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return "—";
-  const seconds = Math.round(value / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}m ${seconds % 60}s`;
 }
 
 function boolLabel(value: unknown): string {
@@ -152,7 +153,7 @@ export function CrawlRunStatsPanel({ stats }: { stats: Json }) {
           },
           {
             label: "Duration",
-            value: formatDurationMs(jsonNumber(stats, ["duration_ms"])),
+            value: crawlDuration(jsonNumber(stats, ["duration_ms"])),
           },
           {
             label: "Pages discovered",

@@ -12,6 +12,9 @@
 
 import { humanLines } from "@/features/marketing/lib/copy-payloads";
 import type { Transcript, TranscriptSegment } from "@/features/transcripts/types";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 /** Route + surface string stamped into every transcripts payload's envelope. */
 export function transcriptLocation(surface: string): string {
@@ -25,15 +28,10 @@ export function transcriptDisplayTitle(
   return title && title.length > 0 ? title : "Untitled transcript";
 }
 
+/** Null stays null here: the fact row is OMITTED, not printed as an em-dash. */
 function formatDuration(seconds: number | undefined | null): string | null {
   if (seconds == null || !Number.isFinite(seconds)) return null;
-  const total = Math.round(seconds);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  return h > 0
-    ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-    : `${m}:${String(s).padStart(2, "0")}`;
+  return formatDurationSeconds(seconds);
 }
 
 // ── Segments ────────────────────────────────────────────────────────────────

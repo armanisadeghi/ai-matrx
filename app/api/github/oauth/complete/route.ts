@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { safeReturnUrl } from "../session";
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const connected = request.nextUrl.searchParams.get("github") === "connected";

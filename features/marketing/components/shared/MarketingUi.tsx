@@ -24,6 +24,10 @@ import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
 import { isJsonRecord } from "@/features/marketing/types";
 import type { BackendFailureExplanation } from "@/lib/api/errors";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
+// 1h 02m. THE UNIT LAW puts the unit in the name.
+import { durationMsBetween, formatDurationMs } from "@ai-matrx/kit/format";
 
 export function formatDate(value: string | null): string {
   if (!value) return "—";
@@ -72,19 +76,16 @@ export function formatCompactDate(value: string | null): string {
   }).format(date);
 }
 
+/**
+ * Elapsed time for a run: from `start` to `end`, or to NOW while it is still
+ * going. Both halves are the package's — `durationMsBetween` is the
+ * "start, maybe-end, else now" pattern six surfaces had each rebuilt.
+ */
 export function formatDuration(
   start: string | null,
   end: string | null,
 ): string {
-  if (!start) return "—";
-  const startMs = new Date(start).getTime();
-  const endMs = end ? new Date(end).getTime() : Date.now();
-  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return "—";
-  const seconds = Math.max(0, Math.round((endMs - startMs) / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
-  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+  return formatDurationMs(durationMsBetween(start, end), { style: "compact" });
 }
 
 export function displayScore(score: number | null): string {

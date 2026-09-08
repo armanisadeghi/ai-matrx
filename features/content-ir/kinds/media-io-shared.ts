@@ -31,6 +31,9 @@
 import { isRecord } from "./legacy-bridge-utils";
 import type { MaterializedKind } from "./kind-payload";
 import type { AiUsage, GeneratedImage } from "./generated/kinds.generated";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 export function stringOrEmpty(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -95,13 +98,14 @@ export function readUsage(value: unknown): MediaUsage | null {
   return { cost_usd: cost, total_tokens: tokens };
 }
 
-/** `42.5` → `0:42`; `null` → `null`. Shared by the audio and video renderers. */
+/**
+ * `42.5` → `0:42`; `null` → `null`. Shared by the audio and video renderers,
+ * which OMIT the fact rather than print an em-dash for it — so the null
+ * contract stays here while the formatting is the package's.
+ */
 export function formatDuration(seconds: number | null): string | null {
-  if (seconds === null || seconds < 0) return null;
-  const whole = Math.round(seconds);
-  const mins = Math.floor(whole / 60);
-  const secs = whole % 60;
-  return `${mins}:${String(secs).padStart(2, "0")}`;
+  if (seconds === null || !Number.isFinite(seconds) || seconds < 0) return null;
+  return formatDurationSeconds(seconds);
 }
 
 /** `$0.0400` — provider costs here are routinely sub-cent. */

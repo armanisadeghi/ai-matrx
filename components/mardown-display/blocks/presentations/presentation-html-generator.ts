@@ -62,7 +62,7 @@ export function generatePresentationHTML(presentationData: PresentationData): st
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${escapeHtml(slides[0]?.title || 'Presentation')}</title>
+    <title>${parseMarkdownAndEscape(slides[0]?.title || 'Presentation')}</title>
     <style>
         * {
             margin: 0;
@@ -465,13 +465,6 @@ function parseMarkdownAndEscape(text: string | undefined): string {
     
     // Then convert markdown bold to HTML strong tags
     return escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-}
-
-/**
- * Helper to escape HTML special characters (deprecated - use parseMarkdownAndEscape)
- */
-function escapeHtml(text: string): string {
-    return parseMarkdownAndEscape(text);
 }
 
 /**

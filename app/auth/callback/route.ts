@@ -29,6 +29,10 @@ import {
 } from "@/lib/services/guest-oauth-transfer";
 import { ACQUISITION_VISITOR_COOKIE } from "@/lib/product-analytics/user-acquisition";
 import { linkAcquisitionToUser } from "@/lib/product-analytics/server/acquisition-persistence";
+// A TENTH `escapeHtml` copy the 2026-09-07 census missed under the name
+// `escapeHtmlAttr`: it escaped only & < " — no `>` and no `'` — while
+// interpolating into an HTML attribute. kit escapes all five.
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 
 // The PKCE code-verifier cookie the login server action sets before sending
 // the browser to the provider. When it does not come back with the callback,
@@ -78,13 +82,6 @@ function clearAuthCookies(
   }
 }
 
-function escapeHtmlAttr(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/"/g, "&quot;");
-}
-
 /**
  * THE STALE-TAB ANNIHILATOR. A failed exchange usually means the tab that
  * started sign-in is running a stale bundle or carrying poisoned state — and a
@@ -98,7 +95,7 @@ function escapeHtmlAttr(value: string): string {
  */
 function staleTabRefreshResponse(loginUrl: string): NextResponse {
   const busted = `${loginUrl}${loginUrl.includes("?") ? "&" : "?"}fresh=${Date.now()}`;
-  const attrUrl = escapeHtmlAttr(busted);
+  const attrUrl = escapeHtml(busted);
   const html =
     `<!DOCTYPE html><html><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +

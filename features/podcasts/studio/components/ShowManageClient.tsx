@@ -68,18 +68,18 @@ import type {
   PcShowRssSettings,
 } from "@/features/podcasts/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
+
+/** An episode length reads at a glance: "45 min" / "1h 30m". */
+function formatDuration(seconds: number): string {
+  return formatDurationSeconds(seconds, { style: "coarse" });
+}
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://aimatrx.com"
 ).replace(/\/$/, "");
-
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  if (m < 60) return `${m} min`;
-  const h = Math.floor(m / 60);
-  const rem = m % 60;
-  return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
-}
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);

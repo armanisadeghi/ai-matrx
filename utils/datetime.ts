@@ -32,34 +32,32 @@
  * use `toLocale*` which is local by default).
  */
 
-export type TimestampInput = string | number | Date | null | undefined;
+// ─────────────────────────────────────────────────────────────────────────
+// THE PARSER AND THE TWO RELATIVE/ABSOLUTE FORMATTERS NOW LIVE IN THE PACKAGE.
+//
+// 2026-09-07, duplication census H1: this module and `@ai-matrx/diff` carried
+// byte-level twins of the same four bodies, `@ai-matrx/associations` carried a
+// third `formatRelativeTime`, and ~16 more copies were scattered across this
+// repo and four others. The whole thing — including the Postgres
+// zone-less-is-UTC correction described above, which is the entire reason this
+// module exists — is now `@ai-matrx/kit/format`, the package with no sibling
+// dependencies, so every Matrx client inherits the fix instead of re-earning
+// it. This module stays as the app's door: the historical
+// `@/utils/datetime` specifier keeps working for its ~40 callers, and
+// `parseTimestamp` keeps the dev-time loud recovery, which is app policy
+// rather than package logic.
+// ─────────────────────────────────────────────────────────────────────────
 
-/** True when a string already carries a timezone designator (Z or ±offset). */
-function hasTimezoneDesignator(s: string): boolean {
-  // Trailing Z / z.
-  if (/[zZ]$/.test(s)) return true;
-  // Trailing numeric offset: +00, -07, +0000, +00:00, -07:30.
-  if (/[+-]\d{2}(:?\d{2})?$/.test(s)) return true;
-  // Named zones occasionally arrive from non-DB sources.
-  if (/\b(GMT|UTC)\b/i.test(s)) return true;
-  return false;
-}
+import {
+  parseTimestamp as kitParseTimestamp,
+  type TimestampInput,
+} from "@ai-matrx/kit/format";
 
-/**
- * Normalize a raw timestamp string so `new Date()` parses it as an absolute
- * instant. Naive (zone-less) strings WITH a time component are assumed UTC.
- */
-function normalizeTimestampString(raw: string): string {
-  const s = raw.trim();
-  if (!s) return s;
-  // No time component → not a timestamp (date-only). Leave it alone; the
-  // caller is using the wrong helper, but we won't corrupt the value.
-  if (!/\d{1,2}:\d{2}/.test(s)) return s;
-  if (hasTimezoneDesignator(s)) return s;
-  // Naive UTC: turn the SQL space separator into 'T' (more portable across
-  // JS engines) and pin it to UTC.
-  return `${s.replace(" ", "T")}Z`;
-}
+export type { RelativeTimeOptions, TimestampInput } from "@ai-matrx/kit/format";
+export {
+  formatAbsoluteDate,
+  formatRelativeTime,
+} from "@ai-matrx/kit/format";
 
 let warnedOnce = false;
 
@@ -67,108 +65,36 @@ let warnedOnce = false;
  * Parse any backend timestamp into a `Date`, correctly handling both
  * timezone-aware and naive (assumed-UTC) strings. Returns `null` for
  * empty / unparseable input.
+ *
+ * The parsing IS `@ai-matrx/kit/format`'s. What this door adds is the loud
+ * recovery: a value that reached display code and could not be parsed says so
+ * in development, once, instead of silently rendering an em-dash forever.
  */
 export function parseTimestamp(value: TimestampInput): Date | null {
-  if (value == null) return null;
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
+  const parsed = kitParseTimestamp(value);
+  if (
+    parsed === null &&
+    value !== null &&
+    value !== undefined &&
+    value !== "" &&
+    process.env.NODE_ENV !== "production" &&
+    !warnedOnce
+  ) {
+    warnedOnce = true;
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[datetime] Unparseable timestamp passed to parseTimestamp: ${JSON.stringify(
+        value,
+      )}. Returning null. (further warnings suppressed)`,
+    );
   }
-  if (typeof value === "number") {
-    const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-  if (typeof value !== "string") return null;
-  const normalized = normalizeTimestampString(value);
-  if (!normalized) return null;
-  const d = new Date(normalized);
-  if (Number.isNaN(d.getTime())) {
-    // Loud recovery: a value reached display code that we couldn't parse.
-    if (process.env.NODE_ENV !== "production" && !warnedOnce) {
-      warnedOnce = true;
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[datetime] Unparseable timestamp passed to parseTimestamp: ${JSON.stringify(
-          value,
-        )}. Returning null. (further warnings suppressed)`,
-      );
-    }
-    return null;
-  }
-  return d;
+  return parsed;
 }
 
 /** Epoch milliseconds for a timestamp, or `NaN` when unparseable. */
 export function toEpochMs(value: TimestampInput): number {
   const d = parseTimestamp(value);
   return d ? d.getTime() : NaN;
-}
-
-const REL_UNITS: {
-  limit: number;
-  divisor: number;
-  short: string;
-  long: string;
-}[] = [
-  { limit: 60_000, divisor: 1000, short: "s", long: "second" },
-  { limit: 3_600_000, divisor: 60_000, short: "m", long: "minute" },
-  { limit: 86_400_000, divisor: 3_600_000, short: "h", long: "hour" },
-  { limit: 604_800_000, divisor: 86_400_000, short: "d", long: "day" },
-  { limit: 2_592_000_000, divisor: 604_800_000, short: "w", long: "week" },
-  { limit: 31_536_000_000, divisor: 2_592_000_000, short: "mo", long: "month" },
-];
-
-export interface RelativeTimeOptions {
-  /** "short" → "2m ago"; "long" → "2 minutes ago". Default "short". */
-  style?: "short" | "long";
-  /** Value returned for null / unparseable input. Default "—". */
-  fallback?: string;
-}
-
-/**
- * "2m ago" / "2 minutes ago". Falls back to an absolute local date after a
- * year. Timezone-agnostic (pure epoch diff), so it's never off by an offset
- * as long as the input parses to the right instant — which `parseTimestamp`
- * guarantees for naive UTC strings.
- */
-export function formatRelativeTime(
-  value: TimestampInput,
-  options: RelativeTimeOptions = {},
-): string {
-  const { style = "short", fallback = "—" } = options;
-  const d = parseTimestamp(value);
-  if (!d) return fallback;
-  const ms = Date.now() - d.getTime();
-  if (ms < 0) return "just now";
-  for (const unit of REL_UNITS) {
-    if (ms < unit.limit) {
-      const n = Math.max(1, Math.floor(ms / unit.divisor));
-      if (style === "long") {
-        return `${n} ${unit.long}${n === 1 ? "" : "s"} ago`;
-      }
-      return `${n}${unit.short} ago`;
-    }
-  }
-  return formatAbsoluteDate(d);
-}
-
-/**
- * Absolute local date+time, e.g. "Jun 13, 2026, 9:32 AM". Always renders in
- * the viewer's timezone.
- */
-export function formatAbsoluteDate(
-  value: TimestampInput,
-  options: Intl.DateTimeFormatOptions = {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  },
-  fallback = "—",
-): string {
-  const d = parseTimestamp(value);
-  if (!d) return fallback;
-  return d.toLocaleString(undefined, options);
 }
 
 /** Local date only, e.g. "Jun 13, 2026". */

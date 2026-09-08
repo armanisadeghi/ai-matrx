@@ -10,6 +10,7 @@ import { getListVisibility } from "../types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Button } from "@/components/ui/button";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
+import { listCalendarAge } from "@/features/user-lists/calendar-age";
 
 interface ListCardProps {
   list: UserList;
@@ -40,19 +41,6 @@ const VISIBILITY_CONFIG = {
   },
 };
 
-function formatRelativeTime(dateStr: string | null | undefined): string {
-  if (!dateStr) return "";
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
-  return `${Math.floor(days / 365)}y ago`;
-}
 
 export function ListCard({
   list,
@@ -154,7 +142,7 @@ export function ListCard({
               {visConfig.label}
             </span>
             <span className="text-[10px] text-muted-foreground/70">
-              {formatRelativeTime(list.updated_at ?? list.created_at)}
+              {listCalendarAge(list.updated_at ?? list.created_at)}
             </span>
           </div>
         </Link>

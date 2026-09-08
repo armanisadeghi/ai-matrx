@@ -1,6 +1,7 @@
 import { sendEmail, emailTemplates } from './client';
 import { marked } from 'marked';
 import { extractErrorMessage } from '@/utils/errors';
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 
 /**
  * Email Export Service
@@ -371,16 +372,4 @@ export const notificationTemplates = {
   },
 };
 
-/**
- * Escape HTML to prevent XSS in email templates
- */
-function escapeHtml(text: string): string {
-  const htmlEscapes: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  };
-  return text.replace(/[&<>"']/g, (char) => htmlEscapes[char] || char);
-}
+

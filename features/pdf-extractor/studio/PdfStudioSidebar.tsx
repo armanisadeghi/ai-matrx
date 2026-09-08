@@ -53,6 +53,9 @@ import { PdfStudioPagesNav } from "./PdfStudioPagesNav";
 import type { SidebarView } from "../state/types";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
+// `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
+// census H1 2026-09-07). This surface previously carried a local copy.
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 export type StudioDocsState = ReturnType<typeof usePdfStudioDocs>;
 
@@ -475,16 +478,3 @@ function SidebarSkeleton() {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function formatRelativeTime(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 0) return "just now";
-  const s = Math.floor(ms / 1000);
-  if (s < 60) return "just now";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}d ago`;
-  return `${Math.floor(d / 30)}mo ago`;
-}

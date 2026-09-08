@@ -21,6 +21,12 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
+// LAST, so "Ana Maria Rivera" is AR — this surface previously printed AM.
+// A caller with no name passes the email, whose single token yields its
+// first character: exactly what these copies did by hand.
+import { getInitials } from "@ai-matrx/kit/format";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -104,11 +110,6 @@ function parseScopes(scopeString: string): string[] {
     .trim()
     .split(/\s+/)
     .filter((s) => s.length > 0);
-}
-
-function getInitials(email: string): string {
-  const name = email.split("@")[0];
-  return name.slice(0, 2).toUpperCase();
 }
 
 function getDomain(uri: string): string {

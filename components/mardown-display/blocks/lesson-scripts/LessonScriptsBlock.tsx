@@ -39,6 +39,12 @@ import type {
 } from "@/features/content-ir/kinds/lesson-scripts";
 import { lessonScriptsMarkdownFromValue } from "@/features/content-ir/kinds/lesson-scripts";
 import { cn } from "@/lib/utils";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
+
+const formatDuration = (seconds: number): string =>
+  formatDurationSeconds(seconds, { style: "compact" });
 
 // ---------------------------------------------------------------------------
 // Readers — bridge output or raw persisted value, idempotent on purpose.
@@ -128,13 +134,6 @@ function toPlainText(data: LessonScriptsData): string {
   ]
     .filter(Boolean)
     .join("\n\n");
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  const minutes = Math.floor(seconds / 60);
-  const rest = Math.round(seconds % 60);
-  return rest > 0 ? `${minutes}m ${rest}s` : `${minutes}m`;
 }
 
 function CopyChip({

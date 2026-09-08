@@ -20,7 +20,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { isUuid } from "@ai-matrx/associations/core";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 import { callApi } from "@/lib/api/call-api";
 import { operationFailed } from "@/utils/errors";
@@ -157,7 +157,7 @@ export const fetchSkillById = createAsyncThunk<
     .schema("skill")
     .from("definition")
     .select(SKILL_SELECT)
-    .eq(isUuid(skillRef) ? "id" : "skill_id", skillRef)
+    .eq(isUuidShape(skillRef) ? "id" : "skill_id", skillRef)
     .eq("is_active", true)
     .maybeSingle();
 

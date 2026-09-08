@@ -1,4 +1,4 @@
-import { isUuid } from "@ai-matrx/associations/core";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export interface FeedbackScreenshotFields {
   image_file_ids?: string[] | null;
@@ -18,6 +18,6 @@ export function getFeedbackScreenshotRefs(
 }
 
 export function feedbackScreenshotHref(ref: string): string {
-  return isUuid(ref) ? `/files/f/${encodeURIComponent(ref)}` : ref;
+  return isUuidShape(ref) ? `/files/f/${encodeURIComponent(ref)}` : ref;
 }
 

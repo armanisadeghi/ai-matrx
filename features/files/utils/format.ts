@@ -4,30 +4,10 @@
  * Display formatters — file size, relative time, absolute time.
  */
 
-const SIZE_UNITS = ["B", "KB", "MB", "GB", "TB"] as const;
-
-export function formatFileSize(bytes: number | null | undefined): string {
-  // Null / undefined / NaN / negative / non-finite all collapse to a
-  // single em-dash. Without these guards a malformed `fileSize` from the
-  // backend (corrupt row, race-condition mid-upload) would render as
-  // "NaN B" or "Infinity GB" — visible garbage in the file table.
-  if (
-    bytes == null ||
-    !Number.isFinite(bytes) ||
-    Number.isNaN(bytes) ||
-    bytes < 0
-  )
-    return "—";
-  if (bytes === 0) return "0 B";
-  const exp = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-    SIZE_UNITS.length - 1,
-  );
-  const value = bytes / Math.pow(1024, exp);
-  // Keep a single decimal for KB+, whole numbers for B.
-  const formatted = exp === 0 ? value.toFixed(0) : value.toFixed(1);
-  return `${formatted} ${SIZE_UNITS[exp]}`;
-}
+// `formatFileSize` moved to `@ai-matrx/kit/format` (census H1, 2026-09-07).
+// This module keeps the historical specifier working for its callers; NEW
+// code should import from kit directly.
+export { formatFileSize } from "@ai-matrx/kit/format";
 
 /**
  * "2m ago", "3h ago", "5d ago", etc. Falls back to absolute date after 1 year.

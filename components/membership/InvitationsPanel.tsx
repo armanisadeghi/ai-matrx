@@ -71,6 +71,12 @@ import {
 } from "./copy";
 import type { MembershipRole, MembershipRoleOption } from "./types";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
+// THE package initials formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). Recorded display decision: a multi-part name takes FIRST +
+// LAST, so "Ana Maria Rivera" is AR — this surface previously printed AM.
+// A caller with no name passes the email, whose single token yields its
+// first character: exactly what these copies did by hand.
+import { getInitials } from "@ai-matrx/kit/format";
 
 export interface PanelInvitation {
   id: string;
@@ -92,18 +98,6 @@ const SOURCE_LABELS: Record<ConnectionUser["source"], string> = {
   organization: "Org member",
   invitation: "Invited",
 };
-
-function getInitials(name: string | null, email: string | null): string {
-  if (name)
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  if (email) return email[0].toUpperCase();
-  return "?";
-}
 
 function validateEmail(email: string): { valid: boolean; error: string } {
   if (!email || email.trim().length === 0)
@@ -309,10 +303,7 @@ export function InvitationsPanel({
                                     src={contact.avatar_url || undefined}
                                   />
                                   <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                                    {getInitials(
-                                      contact.display_name,
-                                      contact.email,
-                                    )}
+                                    {getInitials(contact.display_name ?? contact.email)}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
@@ -347,8 +338,7 @@ export function InvitationsPanel({
                   <AvatarImage src={selectedContact.avatar_url || undefined} />
                   <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
                     {getInitials(
-                      selectedContact.display_name,
-                      selectedContact.email,
+                      selectedContact.display_name ?? selectedContact.email,
                     )}
                   </AvatarFallback>
                 </Avatar>

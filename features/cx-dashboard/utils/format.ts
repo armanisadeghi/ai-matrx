@@ -1,6 +1,13 @@
 // Formatting utilities for CX Dashboard
 
 import { parseTimestamp } from "@/utils/datetime";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
+// 1h 02m. THE UNIT LAW puts the unit in the name.
+import { formatDurationMs as kitFormatDurationMs } from "@ai-matrx/kit/format";
+// `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
+// census H1 2026-09-07). This surface previously carried a local copy.
+export { formatRelativeTime } from "@ai-matrx/kit/format";
 
 export function formatCost(cost: number | null | undefined): string {
   if (cost === null || cost === undefined) return "$0.00";
@@ -16,13 +23,10 @@ export function formatTokens(tokens: number | null | undefined): string {
   return tokens.toLocaleString();
 }
 
+/** A zero here means "not measured", so it keeps this dashboard's hyphen. */
 export function formatDuration(ms: number | null | undefined): string {
-  if (!ms || ms === 0) return "-";
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
-  const mins = Math.floor(ms / 60_000);
-  const secs = Math.round((ms % 60_000) / 1000);
-  return `${mins}m ${secs}s`;
+  if (!ms) return "-";
+  return kitFormatDurationMs(ms, { style: "compact", fallback: "-" });
 }
 
 export function formatDate(dateStr: string | null | undefined): string {
@@ -49,17 +53,6 @@ export function formatDateFull(dateStr: string | null | undefined): string {
   });
 }
 
-export function formatRelativeTime(dateStr: string): string {
-  const diff = Date.now() - (parseTimestamp(dateStr)?.getTime() ?? NaN);
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return formatDate(dateStr);
-}
 
 export function computeDuration(
   startDate: string | null | undefined,

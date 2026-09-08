@@ -15,6 +15,10 @@ import type {
 import type { NodeAggregatePhase } from "../../redux/workflow-runs.selectors";
 import type { RunStepPresentation } from "../../components/run/node-presentation";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
+// 1h 02m. THE UNIT LAW puts the unit in the name.
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export interface StepView {
   step: RunStepPresentation;
@@ -105,14 +109,7 @@ export function terminalStepIds(
   return ids;
 }
 
-/** "12s" · "1m 04s" · "1h 02m" — a step duration in the reader's units. */
+/** "250ms" · "12s" · "1m 04s" · "1h 02m" — a step duration in the reader's units. */
 export function formatDuration(ms: number): string {
-  if (ms < 950) return "<1s";
-  const total = Math.max(0, Math.round(ms / 1000));
-  if (total < 60) return `${total}s`;
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  if (minutes < 60) return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
-  const hours = Math.floor(minutes / 60);
-  return `${hours}h ${String(minutes % 60).padStart(2, "0")}m`;
+  return formatDurationMs(ms, { style: "compact" });
 }

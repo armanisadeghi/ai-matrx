@@ -43,6 +43,12 @@ import {
 } from "./kind-markdown-utils";
 import type { MaterializedKind } from "./kind-payload";
 import type { LessonScriptSection as LessonScriptSectionKind } from "./generated/kinds.generated";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
+
+const formatDuration = (seconds: number): string =>
+  formatDurationSeconds(seconds, { style: "compact" });
 
 // ---------------------------------------------------------------------------
 // Schemas — the ONE source `data[]` and the emitted JSON Schemas come from.
@@ -249,13 +255,6 @@ const MD_SECTION_KNOWN_KEYS = [
 ];
 
 const MD_SET_KNOWN_KEYS = ["title", "overview", "sections", KIND_KEY];
-
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  const minutes = Math.floor(seconds / 60);
-  const rest = Math.round(seconds % 60);
-  return rest > 0 ? `${minutes}m ${rest}s` : `${minutes}m`;
-}
 
 function sectionMarkdown(
   section: Record<string, unknown>,

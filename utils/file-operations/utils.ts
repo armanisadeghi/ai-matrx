@@ -1,3 +1,4 @@
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   BucketStructureContent,
   BucketStructureWithNodes,
@@ -58,14 +59,10 @@ export const sanitizeFileName = (filename: string) => {
     .trim();
 };
 
-// Format file size
-export const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return "0 Bytes";
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-};
+// `formatFileSize` moved to `@ai-matrx/kit/format` (census H1, 2026-09-07);
+// re-exported so the historical `@/utils/file-operations/utils` specifier keeps
+// working for its callers.
+export { formatFileSize };
 
 // Get file extension from filename
 export const getFileExtension = (filename: string) => {

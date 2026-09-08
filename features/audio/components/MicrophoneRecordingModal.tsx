@@ -30,6 +30,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { AudioLevelIndicator } from './AudioLevelIndicator';
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name, because the fleet's
+// ~35 twins variously took ms, seconds and minutes behind one signature.
+import { formatDurationSeconds as formatDuration } from "@ai-matrx/kit/format";
 
 export interface MicrophoneRecordingModalProps {
   isOpen: boolean;
@@ -53,12 +57,6 @@ export interface MicrophoneRecordingModalProps {
   /** Add More: keeps current text, appends the new recording */
   onAddMore: () => void;
   onCancel: () => void;
-}
-
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 export function MicrophoneRecordingModal({

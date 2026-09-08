@@ -16,7 +16,7 @@ import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import {
   computeTextCounterMetrics,
-  formatDuration,
+  formatReadingTime,
   normalizeCounterText,
 } from "./textCounterMetrics";
 import {
@@ -302,7 +302,7 @@ export function CharacterCounter({
             Reading time
           </div>
           <div className="mt-1 text-lg font-semibold">
-            {formatDuration(metrics.readingMinutes)}
+            {formatReadingTime(metrics.readingMinutes)}
           </div>
           <div className="text-xs text-muted-foreground">
             at 225 words/minute
@@ -313,7 +313,7 @@ export function CharacterCounter({
             Speaking time
           </div>
           <div className="mt-1 text-lg font-semibold">
-            {formatDuration(metrics.speakingMinutes)}
+            {formatReadingTime(metrics.speakingMinutes)}
           </div>
           <div className="text-xs text-muted-foreground">
             at 150 words/minute
