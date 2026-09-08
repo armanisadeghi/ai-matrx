@@ -2,7 +2,7 @@
 
 **Status:** proposal awaiting Arman's decision. Nothing implemented.
 **Scope:** the `/administration` route tree and the menu registry that renders it.
-**Canonical registry today:** `features/admin/constants/admin-navigation.ts` (hierarchy + route ownership) and `features/admin/constants/admin-categories.ts` (title/description/icon only).
+**The registry that owns this today:** `features/admin/constants/admin-navigation.ts` (hierarchy + route ownership) and `features/admin/constants/admin-categories.ts` (title/description/icon only).
 
 ---
 
