@@ -94,6 +94,7 @@ import type {
   MandateTestResponse,
 } from "@/features/mandates/test-run";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 
 /**
  * 🚨 WIRE ENUM — `"mandate_pinned"` is aidream's literal, not ours, and it is NOT a
@@ -287,12 +288,14 @@ function ResultRow({
           <>
             {(structural.errors ?? []).length > 0 && (
               <div className="text-[11px] text-destructive">
-                {(structural.errors ?? []).slice(0, 4).join("; ")}
+                <TextWithDoors
+                  text={(structural.errors ?? []).slice(0, 4).join("; ")}
+                />
               </div>
             )}
             {structural.degraded_reason && (
               <div className="text-[11px] text-muted-foreground">
-                {structural.degraded_reason}
+                <TextWithDoors text={structural.degraded_reason} />
               </div>
             )}
             <OutputPreview

@@ -313,7 +313,7 @@ export function EntityRef({
               <Lightbulb className="h-3 w-3" />
             </button>
           )}
-          {showNewTab && (
+          {resolvedHref && showNewTab && (
             <Link
               href={resolvedHref}
               target="_blank"

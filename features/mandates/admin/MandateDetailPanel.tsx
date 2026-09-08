@@ -100,6 +100,7 @@ import {
   type MandateVariableVerdict,
   type MandateVersionInfo,
 } from "./service";
+import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -661,7 +662,9 @@ function UnresolvedPinPanel({
 
       {error !== null && (
         <div className="space-y-1">
-          <p className="text-rose-600">The server lookup also failed: {error}</p>
+          <p className="text-rose-600">
+            The server lookup also failed: <TextWithDoors text={error} />
+          </p>
           {row.agentId && (
             <div className="flex items-center gap-1.5">
               <span className="text-muted-foreground">Pinned agent:</span>
@@ -1426,7 +1429,7 @@ function MandateGoalBlock({
         <p className="text-xs text-muted-foreground">Reading the goal…</p>
       ) : error ? (
         <p className="text-xs text-amber-700 dark:text-amber-400">
-          The goal could not be read: {error}
+          The goal could not be read: <TextWithDoors text={error} />
         </p>
       ) : loaded ? (
         <p className="text-xs italic text-muted-foreground">
@@ -1507,7 +1510,7 @@ function MandateProvisionPanel({ row }: { row: MandateRow }) {
           <p className="text-xs text-muted-foreground">Loading the offer…</p>
         ) : error ? (
           <p className="text-xs text-rose-600">
-            The Provision could not be read: {error}
+            The Provision could not be read: <TextWithDoors text={error} />
           </p>
         ) : offer ? (
           <>
