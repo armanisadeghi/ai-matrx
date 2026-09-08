@@ -26,7 +26,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
-import type { Json } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import { onMandateCacheInvalidated } from "../service";
 
 /** A rung of the one ladder. `run` never appears here — it is not stored. */
@@ -58,32 +58,29 @@ export interface MandateLadderRow {
   fallback_mandate_key: string | null;
 }
 
-/**
- * 🚨 LOCAL RPC TYPING — `mandate.resolve` postdates `types/database.types.ts`
- * (its `mandate.Functions` block is still `never`). The same narrowly-typed
- * seam `features/mandates/browse/service.ts` uses for the `mnd_*` family, so
- * every call site stays fully typed; delete it on the next `pnpm db-types` that
- * carries the function.
- */
-interface MandateSchemaRpc {
-  rpc: (
-    fn: "resolve",
-    args: { p_mandate_key: string; p_organization_id: string | null },
-  ) => PromiseLike<{
-    data: MandateLadderRow[] | null;
-    error: { message?: string; code?: string } | null;
-  }>;
+/** Generated directly from the live `mandate.resolve` RPC contract. */
+type GeneratedLadderRow =
+  Database["mandate"]["Functions"]["resolve"]["Returns"][number];
+
+function isMandateRung(value: string): value is MandateRung {
+  return value === "system" || value === "global" || value === "org" || value === "user";
+}
+
+function toMandateLadderRow(row: GeneratedLadderRow): MandateLadderRow {
+  if (!isMandateRung(row.rung)) {
+    throw new Error(`The mandate ladder returned an unknown rung: ${row.rung}`);
+  }
+  return { ...row, rung: row.rung };
 }
 
 export async function fetchMandateLadder(
   mandateKey: string,
   organizationId: string | null,
 ): Promise<MandateLadderRow[]> {
-  const door = supabase.schema("mandate") as unknown as MandateSchemaRpc;
-  const { data, error } = await door.rpc("resolve", {
-    p_mandate_key: mandateKey,
-    p_organization_id: organizationId,
-  });
+  const args = organizationId
+    ? { p_mandate_key: mandateKey, p_organization_id: organizationId }
+    : { p_mandate_key: mandateKey };
+  const { data, error } = await supabase.schema("mandate").rpc("resolve", args);
   if (error) {
     throw new Error(
       error.message?.trim()
@@ -91,7 +88,7 @@ export async function fetchMandateLadder(
         : "The ladder could not be read — the database answered with no message.",
     );
   }
-  return data ?? [];
+  return (data ?? []).map(toMandateLadderRow);
 }
 
 export interface MandateLadderState {
