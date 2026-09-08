@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import SearchableSelect from "@/components/matrx/SearchableSelect";
 import type { Option } from "@/components/matrx/SearchableSelect";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +36,7 @@ import {
 import type { NoteVersion } from "@/features/text-diff/types";
 import type { Note } from "@/features/notes/types";
 import { selectNoteById } from "@/features/notes/redux/selectors";
+import { fetchNoteContent } from "@/features/notes/redux/thunks";
 import { analyzeDiff } from "@/features/notes/utils/diffAnalysis";
 import { NoteDiffViewer } from "./NoteDiffViewer";
 import {
@@ -72,10 +73,33 @@ export function NoteVersionHistoryPanel({
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<"compare" | "history">("compare");
 
+  const dispatch = useAppDispatch();
   const currentNote = useAppSelector(selectNoteById(noteId));
+  const [currentNoteError, setCurrentNoteError] = useState<string | null>(null);
   const isEmbedded = variant === "embedded";
   const isMobile = useIsMobile();
   const useStackedLayout = isMobile;
+
+  // The RIGHT side of the default comparison is the live note, which this
+  // panel reads out of the notes slice. Every host used to be responsible for
+  // putting it there, and the standalone `/notes/[id]/diff` route never did —
+  // a deep link or a refresh landed on "Select a version to see differences"
+  // with both versions already selected. The panel now hydrates the note it
+  // was handed; `fetchNoteContent` self-guards against duplicate fetches, so
+  // hosts that already dispatch it (NoteBody, NotesWindow) pay nothing.
+  useEffect(() => {
+    if (!noteId) return;
+    setCurrentNoteError(null);
+    void dispatch(fetchNoteContent(noteId))
+      .unwrap()
+      .catch((err: unknown) => {
+        setCurrentNoteError(
+          err instanceof Error
+            ? err.message
+            : "Could not load the current note.",
+        );
+      });
+  }, [noteId, dispatch]);
 
   useEffect(() => {
     let cancelled = false;
@@ -294,11 +318,40 @@ export function NoteVersionHistoryPanel({
     ) : (
       <div
         className={cn(
-          "flex items-center justify-center text-sm text-muted-foreground",
+          "flex flex-col items-center justify-center gap-2 px-4 text-center text-sm",
           useStackedLayout ? "min-h-[24dvh]" : "h-full",
         )}
       >
-        Select a version to see differences
+        {/*
+          Never say "select a version" while a version IS selected. The only
+          reasons a side can be missing are named here, each with its remedy.
+        */}
+        {currentNoteError ? (
+          <>
+            <span className="text-destructive">
+              Could not load the current note — {currentNoteError}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentNoteError(null);
+                void dispatch(fetchNoteContent(noteId));
+              }}
+            >
+              Try again
+            </Button>
+          </>
+        ) : !oldNote ? (
+          <span className="text-muted-foreground">
+            Select a version to see differences
+          </span>
+        ) : (
+          <span className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            Loading the current note…
+          </span>
+        )}
       </div>
     );
 
