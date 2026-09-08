@@ -94,11 +94,9 @@ export function GroundingBadge({ grounding }: { grounding: string | null }) {
           ? "Agent-written"
           : "Unknown";
   return (
-    <PropertyRow
-      label="Goal authority"
-      value={label}
-      source="Mandate definition"
-    />
+    <span className="text-xs text-foreground">
+      <span className="font-semibold">Authority:</span> {label}
+    </span>
   );
 }
 
@@ -672,26 +670,24 @@ export function TriadGoalSection({
   };
 
   return (
-    <Section
-      title="Goal"
-      actions={
-        authoring && !editing ? (
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={() => {
-              setDraft(goal ?? "");
-              setEditing(true);
-            }}
-          >
-            <Pencil className="size-3.5" />
-            Edit goal
-          </Button>
-        ) : undefined
-      }
-    >
-      <div className="space-y-2.5 rounded-xl border border-border bg-card p-4">
+    <Section title="Goal">
+      <div className="relative space-y-3 rounded-xl border border-border bg-card p-4">
+        {authoring && !editing ? (
+          <div className="absolute right-3 top-3">
+            <Button
+              size="icon"
+              variant="outline"
+              className="size-8 rounded-md"
+              aria-label="Edit goal"
+              onClick={() => {
+                setDraft(goal ?? "");
+                setEditing(true);
+              }}
+            >
+              <Pencil className="size-4" aria-hidden="true" />
+            </Button>
+          </div>
+        ) : null}
         {editing ? (
           <div className="space-y-2">
             <ProTextarea
@@ -730,41 +726,32 @@ export function TriadGoalSection({
               </FieldHelp>
             </div>
           </div>
-        ) : authoring ? (
-          <>
-            <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
-              {goal || "Not specified"}
-            </p>
-            <div className="space-y-2">
-              <GroundingBadge grounding={grounding} />
-              <AutomationButton
-                mandateKey={GOAL_WRITER_MANDATE_KEY}
-                label="Refine with AI"
-                runningLabel="Opening…"
-                running={false}
-                knownValues={refineValues}
-                onRun={(variables) => runRefine(variables)}
-              />
-            </div>
-          </>
         ) : (
-          /* Read-only: the goal is a platform definition, changed by an admin
-             on the admin route. Stated plainly, never as a disabled control. */
           <>
-            <p className="whitespace-pre-wrap text-[15px] font-medium leading-relaxed text-foreground">
+            <p className="whitespace-pre-wrap pr-12 text-base leading-relaxed text-foreground">
               {goal || "Not specified"}
             </p>
-            <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <GroundingBadge grounding={grounding} />
+              {authoring ? (
+                <AutomationButton
+                  mandateKey={GOAL_WRITER_MANDATE_KEY}
+                  label="Refine with AI"
+                  runningLabel="Opening…"
+                  running={false}
+                  knownValues={refineValues}
+                  onRun={runRefine}
+                />
+              ) : null}
             </div>
+            {data.mandate.description?.trim() &&
+            data.mandate.description.trim() !== goal?.trim() ? (
+              <FieldHelp label="Goal context">
+                {data.mandate.description}
+              </FieldHelp>
+            ) : null}
           </>
         )}
-        <PropertyRow
-          label="Description"
-          value={data.mandate.description ? "Provided" : "Not provided"}
-          help={data.mandate.description || undefined}
-          className="border-t border-border pt-2"
-        />
       </div>
     </Section>
   );

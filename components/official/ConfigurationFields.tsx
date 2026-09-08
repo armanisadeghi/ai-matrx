@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   Circle,
   CircleCheck,
@@ -25,6 +25,8 @@ import {
   TableCell,
 } from "@/components/ui/table";
 
+const FIELD_HELP_OPEN = "matrx:field-help-open";
+
 /** Field-attached help, reachable by pointer, keyboard and touch. */
 export function FieldHelp({
   label,
@@ -34,27 +36,89 @@ export function FieldHelp({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const id = useId();
   const dismissed = useRef(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const content = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hovered = useRef(false);
+  const keyboardFocus = useRef(false);
+  const pointerFocus = useRef(false);
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  };
   const changeOpen = (next: boolean) => {
+    cancelClose();
     dismissed.current = !next;
+    // A close notification coordinates independent local popovers without a
+    // second store of their open state. Opening one dismisses its siblings.
+    if (next)
+      document.dispatchEvent(new CustomEvent(FIELD_HELP_OPEN, { detail: id }));
     setOpen(next);
   };
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => {
+      if (!hovered.current && !keyboardFocus.current) changeOpen(false);
+    }, 200);
+  };
+  const leaveFocus = (next: EventTarget | null) => {
+    if (
+      next instanceof Node &&
+      (trigger.current?.contains(next) || content.current?.contains(next))
+    )
+      return;
+    keyboardFocus.current = false;
+    pointerFocus.current = false;
+    dismissed.current = false;
+    scheduleClose();
+  };
+  useEffect(() => {
+    const closeSibling = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === id) return;
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+      dismissed.current = true;
+      setOpen(false);
+    };
+    document.addEventListener(FIELD_HELP_OPEN, closeSibling);
+    return () => {
+      document.removeEventListener(FIELD_HELP_OPEN, closeSibling);
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    };
+  }, [id]);
   return (
     <Popover open={open} onOpenChange={changeOpen}>
       <PopoverTrigger asChild>
         <button
+          ref={trigger}
           type="button"
           aria-label={`Help: ${label}`}
           className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onPointerEnter={(event) => {
-            if (event.pointerType === "mouse") changeOpen(true);
+            if (event.pointerType === "mouse") {
+              hovered.current = true;
+              changeOpen(true);
+            }
+          }}
+          onPointerLeave={() => {
+            hovered.current = false;
+            scheduleClose();
+          }}
+          onPointerDown={() => {
+            pointerFocus.current = true;
+            keyboardFocus.current = false;
+          }}
+          onKeyDownCapture={(event) => {
+            if (event.key === "Tab") pointerFocus.current = false;
           }}
           onFocus={() => {
-            if (!dismissed.current) setOpen(true);
+            if (!dismissed.current) {
+              keyboardFocus.current = !pointerFocus.current;
+              changeOpen(true);
+            }
           }}
-          onBlur={() => {
-            dismissed.current = false;
-          }}
+          onBlur={(event) => leaveFocus(event.relatedTarget)}
           onClick={(event) => {
             event.preventDefault();
             changeOpen(true);
@@ -64,8 +128,36 @@ export function FieldHelp({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        ref={content}
         align="start"
-        className="w-80 max-w-[calc(100vw-2rem)] space-y-2 text-sm"
+        onPointerEnter={() => {
+          hovered.current = true;
+          cancelClose();
+        }}
+        onPointerLeave={() => {
+          hovered.current = false;
+          scheduleClose();
+        }}
+        onPointerDownCapture={() => {
+          pointerFocus.current = true;
+        }}
+        onKeyDownCapture={(event) => {
+          if (event.key === "Tab") pointerFocus.current = false;
+        }}
+        onFocusCapture={() => {
+          keyboardFocus.current = !pointerFocus.current;
+          cancelClose();
+        }}
+        onBlurCapture={(event) => leaveFocus(event.relatedTarget)}
+        onCloseAutoFocus={(event) => event.preventDefault()}
+        onEscapeKeyDown={() => {
+          changeOpen(false);
+          trigger.current?.focus({ preventScroll: true });
+        }}
+        className={cn(
+          styles.help,
+          "w-80 max-w-[calc(100vw-2rem)] space-y-2 text-sm",
+        )}
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
         <div className="flex items-center justify-between gap-3">
@@ -152,8 +244,10 @@ export function PropertyRow({
         <span className="break-words">{label}:</span>
         {help != null ? <FieldHelp label={label}>{help}</FieldHelp> : null}
       </div>
-      <div className="min-w-0 flex-1 space-y-1 font-normal">
-        <div className="break-words text-foreground">{value}</div>
+      <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-6 gap-y-1 font-normal">
+        <div className="min-w-0 flex-1 break-words text-foreground">
+          {value}
+        </div>
         {source != null || state != null ? (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground">
             {source != null ? (

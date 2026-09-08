@@ -45,7 +45,6 @@
 import React, { useMemo, useState } from "react";
 import {
   FieldHelp,
-  PropertyRow,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
 import { BrainCircuit, Loader2 } from "lucide-react";
@@ -55,11 +54,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { useMandate } from "../useMandate";
 import { useMandateInputSurface } from "../input-surface";
-import {
-  planInvocation,
-  skippedSentence,
-  type KnownValues,
-} from "../invoke/supplied-values";
+import { planInvocation, type KnownValues } from "../invoke/supplied-values";
 
 export function notifyMissingAutomationMandate(mandateKey: string): void {
   toast.info(
@@ -197,7 +192,11 @@ export function AutomationButton({
       ) : (
         <BrainCircuit className="h-3.5 w-3.5" />
       )}
-      {running ? runningLabel : label}
+      {running
+        ? runningLabel
+        : loading || surfacePending
+          ? "Preparing…"
+          : label}
     </Button>
   );
 
@@ -207,9 +206,10 @@ export function AutomationButton({
     return (
       <div className="flex flex-wrap items-center gap-1.5">
         {button}
-        <span className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+        <StatusToken status="caution" label="Unavailable" />
+        <FieldHelp label={`${label}: Unavailable`}>
           {unavailableAutomationMandateLine(mandateKey, refusedReason)}
-        </span>
+        </FieldHelp>
       </div>
     );
   }
@@ -218,9 +218,10 @@ export function AutomationButton({
     return (
       <div className="flex flex-wrap items-center gap-1.5">
         {button}
-        <span className="text-[11px] leading-snug text-muted-foreground">
+        <StatusToken status="caution" label="Not configured" />
+        <FieldHelp label={`${label}: Not configured`}>
           {missingAutomationMandateLine(mandateKey)}
-        </span>
+        </FieldHelp>
       </div>
     );
   }
@@ -229,22 +230,15 @@ export function AutomationButton({
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
         {button}
-        {surfacePending ? (
-          <span className="text-[11px] text-muted-foreground">
-            Reading what this job needs…
-          </span>
-        ) : null}
         {/* A surface that cannot be read is a REFUSAL with its reason, never a
             run fired hopefully into a job whose inputs are unknown. */}
         {surfaceBroken ? (
-          <span className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
-            {surfaceState.status === "error" ? surfaceState.message : ""} Until
-            it can be read, this cannot run — nothing else on this page is
-            blocked by it.
-          </span>
-        ) : null}
-        {plan && plan.skipped.length > 0 && unanswered.length === 0 ? (
-          <FieldHelp label="Optional inputs">{skippedSentence(plan)}</FieldHelp>
+          <>
+            <StatusToken status="error" label="Unavailable" />
+            <FieldHelp label={`${label}: Input error`}>
+              {surfaceState.status === "error" ? surfaceState.message : ""}
+            </FieldHelp>
+          </>
         ) : null}
       </div>
 
@@ -252,13 +246,6 @@ export function AutomationButton({
           be asked; before this seam that choice made the run fail instead. */}
       {plan && plan.asks.length > 0 ? (
         <div className="space-y-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-2">
-          <p className="text-[11px] leading-snug text-muted-foreground">
-            This job asks{" "}
-            {plan.asks.length === 1
-              ? "one thing"
-              : `${plan.asks.length} things`}{" "}
-            before it runs.
-          </p>
           {plan.asks.map((ask) => (
             <div key={ask.name} className="space-y-1">
               <Label
@@ -268,9 +255,9 @@ export function AutomationButton({
                 {ask.label || ask.name}
               </Label>
               {ask.help ? (
-                <p className="text-[10.5px] leading-snug text-muted-foreground">
+                <FieldHelp label={ask.label || "Required input"}>
                   {ask.help}
-                </p>
+                </FieldHelp>
               ) : null}
               {/* 🚨 A PLAIN CONTROLLED TEXTAREA, deliberately (walk, 2026-08-31).
                   This was `ProTextarea` — an authoring surface with its own
