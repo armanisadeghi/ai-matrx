@@ -253,6 +253,36 @@ how that savior page gets built.
   hook across a late-arriving organization list — RED 4 failed / 1 passed at
   `0d57acc92e`, GREEN 5 passed.
 
+- 2026-09-08 — **A REFUSAL RENDERS ONCE, CARRIES NO DEAD CONTROL, AND IS NEVER
+  CALLED A FILTER PROBLEM** (one-resolution R-O1). Measured on production
+  `https://www.aimatrx.com/mandates?scope=system` as a real non-admin: the list
+  door's one honest refusal was printed THREE times — the shell's failure
+  banner plus one toast per refetch — beside a **Retry** that could never
+  succeed and an empty state reading *"No mandates match … Clear the filters to
+  see the full registry"* with nothing filtered. Root cause: the controller held
+  the failure as a bare `string`, so the shell could not tell a REFUSAL from a
+  BREAKAGE, and announced the same event through two channels. `./failure.ts`
+  is the missing distinction — `EntityListFailure { message, retryable }`,
+  classified by duck-typing a door's `refused` / `retryable` / SQLSTATE `code`
+  so `lib/` never imports a feature's error class and every door inherits it.
+  Consequences, all in the shared shell: `EntityListController.error` is now
+  that object; `useEntityList` fires NO toast (the banner is permanent and
+  renders off the same state — a toast is a second copy, not extra volume);
+  `EntityListPage` renders Retry only when `retryable`, and its empty state has
+  a FAILURE branch that comes first, never repeats the door's sentence, never
+  mentions filters, and offers no action. Siblings censused and fixed the same
+  way: `MandatesBrowsePage`'s home notice is absent rather than describing a
+  corpus the reader was refused; `CrmListPage` and `DataStoresPage` (hand-rolled
+  list shells) no longer print their "nothing here yet" copy over their own
+  error. Found in passing and fixed: `facetSections` was required by
+  `EntityFilterPanel`/`EntityListToolbar` but optional on `EntityListConfig`, so
+  a legal config crashed the page — now defaulted to `[]`. Guard:
+  `__tests__/one-refusal-one-copy.test.tsx` drives the real `EntityListPage`
+  (real Redux store, real `MandateListDoorError` over the real 42501 payload) —
+  **RED 5 failed / 2 passed at `a04e1f92dc`** (toast fired twice, Retry present,
+  "Clear the filters…" printed on both the refusal and the breakage, failure
+  still a string), **GREEN 7 passed**.
+
 - 2026-08-29 — Inline edit drafts retain their source row across server-page
   reconciliation, preventing refresh/realtime/page movement from rejecting a save.
 
