@@ -414,7 +414,7 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
 
   const hindsightHref = receipt
     ? agentId
-      ? `/agents/${agentId}/hindsight?enrollment=${receipt.enrollment_id}&finding=${receipt.finding_id}`
+      ? `/agents/go/${agentId}/hindsight?enrollment=${receipt.enrollment_id}&finding=${receipt.finding_id}`
       : `/administration/agents/hindsight?enrollment=${receipt.enrollment_id}&finding=${receipt.finding_id}`
     : null;
 

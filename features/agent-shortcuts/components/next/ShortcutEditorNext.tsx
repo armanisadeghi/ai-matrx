@@ -281,6 +281,7 @@ export function ShortcutEditorNext({
           editableToFormData(form, agent),
         );
         toast.success("Shortcut created");
+        // agent-link-ok: shortcut editing only ever runs inside the user-shell agent route it navigates within
         router.replace(`/agents/${agentId}/shortcuts/${newId}`);
       } else {
         await crud.updateShortcut(shortcutId, editableToPatch(form));
@@ -306,6 +307,7 @@ export function ShortcutEditorNext({
     try {
       await crud.deleteShortcut(shortcutId);
       toast.success("Shortcut deleted");
+      // agent-link-ok: shortcut editing only ever runs inside the user-shell agent route it navigates within
       router.replace(`/agents/${agentId}/shortcuts`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Delete failed");

@@ -105,7 +105,7 @@ function ConversationRow({
         day: "numeric",
       })
     : null;
-  const href = `/agents/${agentId}/run?conversationId=${conv.conversationId}`;
+  const href = `/agents/go/${agentId}/run?conversationId=${conv.conversationId}`;
   const secondary = [`${conv.messageCount} msg`, date]
     .filter(Boolean)
     .join(" · ");

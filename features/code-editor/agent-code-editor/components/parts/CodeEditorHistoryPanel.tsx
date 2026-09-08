@@ -186,7 +186,7 @@ function ConversationItemRow({
         day: "numeric",
       })
     : null;
-  const href = `/agents/${row.agentId}/run?conversationId=${row.conversationId}`;
+  const href = `/agents/go/${row.agentId}/run?conversationId=${row.conversationId}`;
   const secondary = [
     `${row.messageCount} msg${row.messageCount === 1 ? "" : "s"}`,
     date,

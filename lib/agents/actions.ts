@@ -81,6 +81,7 @@ export async function createAgentFromSeed(
     .single();
 
   if (error) throw pgErrorToError(error);
+  // agent-link-ok: this action just created the agent for this user
   redirect(`/agents/${data.id}/build`);
 }
 

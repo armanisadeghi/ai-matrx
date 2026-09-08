@@ -210,7 +210,7 @@ function CreateAppWindowBody({
   if (created) {
     const editorHref = publishAsGlobal
       ? `/administration/agents/agent-apps/edit/${created.id}`
-      : `/agents/${agentId ?? ""}/apps/${created.id}`;
+      : `/agents/go/${agentId ?? ""}/apps/${created.id}`;
     return (
       // context-menu-exempt: surfaceName — no registered surface manifest for this window
       <NonEditableContextMenu

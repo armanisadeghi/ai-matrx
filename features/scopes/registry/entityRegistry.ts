@@ -212,6 +212,14 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   agent: {
     Icon: Webhook,
     labelPlural: "Agents",
+    // 🚨 NOT the address rule. An agent's real address depends on its KIND
+    // (a builtin opens ONLY under /administration/agents/system-agents/agents)
+    // and the id may be a VERSION id — neither is knowable from an id alone,
+    // so no synchronous `hrefFor` can be right. `EntityRef` resolves agents
+    // through `features/agents/addressing` and ignores this entry; it stays
+    // only as the last-resort route for non-EntityRef registry consumers that
+    // already know they hold a user agent.
+    // agent-link-ok: documented last-resort route for non-EntityRef consumers that already know they hold a user agent — EntityRef resolves agents through features/agents/addressing
     hrefFor: (id) => `/agents/${id}`,
   },
   agent_shortcut: {

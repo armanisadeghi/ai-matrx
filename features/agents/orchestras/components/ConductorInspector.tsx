@@ -100,12 +100,12 @@ export function ConductorInspector({
         <AgentIODetails agentId={conductorId} accent={accent} />
 
         <div className="flex flex-wrap gap-1.5">
-          <Link href={`/agents/${conductorId}/build`} target="_blank">
+          <Link href={`/agents/go/${conductorId}/build`} target="_blank">
             <Button variant="outline" size="sm" className="gap-1.5">
               <ExternalLink className="h-3.5 w-3.5" /> Open
             </Button>
           </Link>
-          <Link href={`/agents/${conductorId}/run`} target="_blank">
+          <Link href={`/agents/go/${conductorId}/run`} target="_blank">
             <Button variant="outline" size="sm" className="gap-1.5">
               <Play className="h-3.5 w-3.5" /> Run
             </Button>

@@ -77,6 +77,7 @@ export function useAgentSaveAction(
   const isEditMode =
     options?.editModeOverride === true ||
     isNewRoute ||
+    // agent-link-ok: save-as creates a user agent for this user; the pathname check is a route test, not a link
     !!pathname?.includes(`/agents/${agentId}/build`);
   const canSave = (isDirty || isNewRoute) && !isLoading;
   const isReadOnlySave = accessResolved && isReadOnly && !isNewRoute;
@@ -113,6 +114,7 @@ export function useAgentSaveAction(
           }),
         ).unwrap();
         toast.success("Agent created!");
+        // agent-link-ok: save-as creates a user agent for this user; the pathname check is a route test, not a link
         router.replace(`/agents/${newId}/build`);
         return;
       }

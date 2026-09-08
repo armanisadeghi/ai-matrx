@@ -144,7 +144,7 @@ export function resolveShortcutEditUrl(
   }
 
   if (row.agentId) {
-    return `/agents/${row.agentId}/shortcuts/${row.id}`;
+    return `/agents/go/${row.agentId}/shortcuts/${row.id}`;
   }
   return `/agents/shortcuts/edit/${row.id}`;
 }
@@ -167,7 +167,7 @@ export function resolveAgentUrl(
 ): string {
   return mode === "admin"
     ? `/administration/agents/system-agents/agents/${agentId}`
-    : `/agents/${agentId}`;
+    : `/agents/go/${agentId}`;
 }
 
 export function resolveShortcutDirectUrl(

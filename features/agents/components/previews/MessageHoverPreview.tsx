@@ -126,7 +126,7 @@ export function MessagePreviewContent({
       : text;
 
   const openHref = conversation
-    ? `/agents/${conversation.agentId}/run?conversationId=${conversationId}`
+    ? `/agents/go/${conversation.agentId}/run?conversationId=${conversationId}`
     : null;
 
   return (

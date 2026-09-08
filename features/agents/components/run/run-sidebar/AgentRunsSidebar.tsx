@@ -177,7 +177,7 @@ function ConversationListRow({
   const meta = `${conv.messageCount} msg${conv.messageCount === 1 ? "" : "s"}${
     date ? ` · ${date}` : ""
   }`;
-  const href = `/agents/${agentId}/run?conversationId=${conv.conversationId}`;
+  const href = `/agents/go/${agentId}/run?conversationId=${conv.conversationId}`;
 
   return (
     <ConversationHoverPreview

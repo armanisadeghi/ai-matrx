@@ -1,6 +1,6 @@
 // features/agents/browse/agentPaths.ts
 //
-// WHERE ONE AGENT ROW LIVES.
+// WHERE ONE AGENT ROW LIVES — the row-shaped door onto the one address rule.
 //
 // The canonical list shows user agents and — for a Matrx admin, in the System
 // scope — the platform's builtin corpus. Those two open in different shells: a
@@ -11,35 +11,46 @@
 // That difference is a property of the ROW, not of the page. Resolving it here
 // is what lets ONE list serve both routes: /agents/all and
 // /administration/agents/system-agents/agents render the same component and
-// still send every record to its real home. The moment this became a page-level
-// setting instead, the two would drift again — which is exactly how the
-// duplicate `SystemAgentsGrid` came to exist.
+// still send every record to its real home.
 //
-// Every per-row destination in this feature (door, run, build, view, versions,
-// copy-link, card actions) goes through `agentHref`. There is no second
-// answer to "where does this agent open?".
+// 🚨 THE RULE ITSELF NOW LIVES IN ONE PLACE: `features/agents/addressing`.
+// This file used to be one of THREE competing `agentHref` implementations
+// (with `features/hindsight/subject-doors.ts` and
+// `features/mandates/admin/mandate-health.ts`), beside ~60 hand-built
+// `/agents/${id}` literals and an entity registry that had never heard of a
+// builtin agent — which is how system agents ended up linked into the user
+// shell all over the app (Arman, 2026-09-08). Everything here delegates.
+//
+// This module's form is for a caller that ALREADY HOLDS THE ROW. A caller
+// holding only an id must use `useAgentHref` instead: the id's kind — and
+// whether it is even an agent id rather than a VERSION id — is a read, never
+// a guess.
 
-/** Where a normal user agent lives. */
-export const AGENT_BASE_PATH = "/agents";
+import {
+  AGENT_BASE_PATH,
+  SYSTEM_AGENT_BASE_PATH,
+  agentBasePathFor,
+  agentHrefFromRow,
+  isSystemAgentType,
+  newAgentHref,
+  type AgentPathRow,
+} from "@/features/agents/addressing/agentAddress";
 
-/** Where a builtin (system) agent lives — the admin shell. */
-export const SYSTEM_AGENT_BASE_PATH =
-  "/administration/agents/system-agents/agents";
-
-/** The minimum any caller needs to know to place a row. */
-export interface AgentPathRow {
-  id: string;
-  agent_type: string | null;
-}
+export {
+  AGENT_BASE_PATH,
+  SYSTEM_AGENT_BASE_PATH,
+  newAgentHref,
+  type AgentPathRow,
+};
 
 /** True when this row is part of the platform's own corpus. */
 export function isSystemAgentRow(row: AgentPathRow): boolean {
-  return row.agent_type === "builtin";
+  return isSystemAgentType(row.agent_type);
 }
 
 /** The route prefix this row's detail pages live under. */
 export function agentBasePath(row: AgentPathRow): string {
-  return isSystemAgentRow(row) ? SYSTEM_AGENT_BASE_PATH : AGENT_BASE_PATH;
+  return agentBasePathFor(row.agent_type);
 }
 
 /**
@@ -47,10 +58,5 @@ export function agentBasePath(row: AgentPathRow): string {
  * ("/run", "/build", `/v/${version}`); omit it for the record's own page.
  */
 export function agentHref(row: AgentPathRow, sub = ""): string {
-  return `${agentBasePath(row)}/${row.id}${sub}`;
-}
-
-/** Where "New agent" goes for the corpus this page is currently showing. */
-export function newAgentHref(system: boolean): string {
-  return system ? `${SYSTEM_AGENT_BASE_PATH}/new` : `${AGENT_BASE_PATH}/new`;
+  return agentHrefFromRow(row, sub);
 }

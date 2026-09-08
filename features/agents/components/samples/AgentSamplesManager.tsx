@@ -243,7 +243,7 @@ export function AgentSamplesManager({
                 asChild
               >
                 <Link
-                  href={`/agents/${agentId}/run?conversationId=${sample.source_conversation_id}`}
+                  href={`/agents/go/${agentId}/run?conversationId=${sample.source_conversation_id}`}
                   target="_blank"
                 >
                   <ExternalLink className="h-4 w-4" />
@@ -443,7 +443,7 @@ function BorrowFromRunsSection({
                       asChild
                     >
                       <Link
-                        href={`/agents/${agentId}/run?conversationId=${run.conversationId}`}
+                        href={`/agents/go/${agentId}/run?conversationId=${run.conversationId}`}
                         target="_blank"
                       >
                         <ExternalLink className="h-4 w-4" />

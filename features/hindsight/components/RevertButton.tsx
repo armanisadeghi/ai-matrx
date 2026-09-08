@@ -93,7 +93,7 @@ export function RevertButton({
           agentId ? (
             <p className="text-sm">
               <Link
-                href={`/agents/${agentId}/v/${returnsTo}`}
+                href={`/agents/go/${agentId}/v/${returnsTo}`}
                 target="_blank"
                 className="text-primary underline underline-offset-2"
               >

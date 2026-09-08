@@ -261,7 +261,7 @@ function ResultRow({
               token="agent"
               id={agentId}
               name={agentId}
-              href={`/agents/${agentId}`}
+              href={`/agents/go/${agentId}`}
               openInNewTab
               wrap
               className="min-w-0"

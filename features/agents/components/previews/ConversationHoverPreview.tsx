@@ -91,7 +91,7 @@ export function ConversationPreviewContent({
 
   const title = conv.title?.trim() || "Untitled";
   const status = (conv.status ?? "ready") as string;
-  const openHref = `/agents/${conv.agentId}/run?conversationId=${conversationId}`;
+  const openHref = `/agents/go/${conv.agentId}/run?conversationId=${conversationId}`;
 
   return (
     <div className="flex flex-col gap-2.5">

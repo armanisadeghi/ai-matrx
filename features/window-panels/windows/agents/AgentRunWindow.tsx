@@ -107,7 +107,7 @@ function AgentRunWindowSidebar({
     (conv: ConversationListItem) => {
       const targetAgentId = conv.agentId ?? agentId;
       return targetAgentId
-        ? `/agents/${targetAgentId}/run?conversationId=${conv.conversationId}`
+        ? `/agents/go/${targetAgentId}/run?conversationId=${conv.conversationId}`
         : `/chat/${conv.conversationId}`;
     },
     [agentId],

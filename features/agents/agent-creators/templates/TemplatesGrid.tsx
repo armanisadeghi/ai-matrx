@@ -55,6 +55,7 @@ export function TemplatesGrid({ templates }: TemplatesGridProps) {
       const { agentId } = await response.json();
 
       startTransition(() => {
+        // agent-link-ok: instantiating a template creates a user agent owned by this user
         router.push(`/agents/${agentId}/build`);
       });
     } catch (error) {

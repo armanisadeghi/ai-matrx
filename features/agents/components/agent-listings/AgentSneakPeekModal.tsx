@@ -943,13 +943,13 @@ export function AgentSneakPeekModal({
             >
               Close
             </Button>
-            <Link href={`/agents/${currentId}/build`} onClick={onClose}>
+            <Link href={`/agents/go/${currentId}/build`} onClick={onClose}>
               <Button variant={onSelect ? "ghost" : "outline"} size="sm">
                 <Pencil />
                 Edit
               </Button>
             </Link>
-            <Link href={`/agents/${currentId}/run`} onClick={onClose}>
+            <Link href={`/agents/go/${currentId}/run`} onClick={onClose}>
               <Button variant={onSelect ? "outline" : "default"} size="sm">
                 <Play />
                 Run

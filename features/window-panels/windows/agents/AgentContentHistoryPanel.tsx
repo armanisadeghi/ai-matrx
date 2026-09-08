@@ -157,7 +157,7 @@ function VersionConversationRow({
           isFavorite: conv.isFavorite ?? false,
           isArchived: conv.status === "archived",
           excludeFromKg: conv.excludeFromKg ?? false,
-          href: `/agents/${agentId}/run?conversationId=${conv.conversationId}`,
+          href: `/agents/go/${agentId}/run?conversationId=${conv.conversationId}`,
           dispatch,
         })
       }

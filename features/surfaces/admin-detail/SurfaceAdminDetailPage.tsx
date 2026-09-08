@@ -2440,7 +2440,7 @@ function UsageSection({
                 {usage.agents.map((a) => (
                   <li key={a.id} className="px-2 py-1.5">
                     <AppLink
-                      href={`/agents/${a.id}/surfaces?surface=${encodeURIComponent(surfaceName)}`}
+                      href={`/agents/go/${a.id}/surfaces?surface=${encodeURIComponent(surfaceName)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 min-w-0 max-w-full"

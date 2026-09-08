@@ -202,12 +202,12 @@ export function MemberInspector({ conductorId, member, accent, onClose }: Member
         <AgentIODetails agentId={member.agentId} accent={accent} />
 
         <div className="flex flex-wrap gap-1.5">
-          <Link href={`/agents/${member.agentId}/build`} target="_blank">
+          <Link href={`/agents/go/${member.agentId}/build`} target="_blank">
             <Button variant="outline" size="sm" className="gap-1.5">
               <ExternalLink className="h-3.5 w-3.5" /> Open
             </Button>
           </Link>
-          <Link href={`/agents/${member.agentId}/run`} target="_blank">
+          <Link href={`/agents/go/${member.agentId}/run`} target="_blank">
             <Button variant="outline" size="sm" className="gap-1.5">
               <Play className="h-3.5 w-3.5" /> Run
             </Button>

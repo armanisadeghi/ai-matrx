@@ -161,7 +161,7 @@ function VersionConversationRow({
 }) {
   const dispatch = useAppDispatch();
   const date = formatDate(conv.updatedAt);
-  const href = `/agents/${agentId}/run?conversationId=${conv.conversationId}`;
+  const href = `/agents/go/${agentId}/run?conversationId=${conv.conversationId}`;
 
   return (
     <ItemRow

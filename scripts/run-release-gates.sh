@@ -51,6 +51,7 @@ if $STRICT; then
         "Untracked-import breakage|bash scripts/check-untracked-imports.sh"
         "Parked route groups (a group deleted from main)|pnpm check:parked-routes:strict"
         "Cross-deployment links (a CORS preflight on every www hover)|pnpm check:cross-deployment-links:strict"
+        "Agent addresses (a system agent linked into the user shell)|pnpm check:agent-links"
         "TypeScript type-check|pnpm type-check"
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts --strict"

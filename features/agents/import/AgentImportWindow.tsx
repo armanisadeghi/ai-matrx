@@ -650,6 +650,7 @@ function AgentImportWindowInner({ onClose }: { onClose: () => void }) {
   // ── Navigate to builder
   const handleNavigate = useCallback(() => {
     if (importedAgentId) {
+      // agent-link-ok: an imported agent is created as a user agent for the importer
       router.push(`/agents/${importedAgentId}/build`);
       onClose();
     }

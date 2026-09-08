@@ -348,7 +348,7 @@ export function AgentsGrid() {
     if (!versionLookup || navigatingId) return;
     handleNavigate(
       versionLookup.versionId,
-      `/agents/${versionLookup.agentId}/v/${versionLookup.versionNumber}`,
+      `/agents/go/${versionLookup.agentId}/v/${versionLookup.versionNumber}`,
     );
   };
 

@@ -55,8 +55,8 @@ export function OrchestraRunPanel({
 }: OrchestraRunPanelProps) {
   const a = accentClasses(accent);
   const fullRunnerHref = conversationId
-    ? `/agents/${conductorId}/run?conversationId=${conversationId}`
-    : `/agents/${conductorId}/run`;
+    ? `/agents/go/${conductorId}/run?conversationId=${conversationId}`
+    : `/agents/go/${conductorId}/run`;
 
   return (
     <div className="flex h-full w-[24rem] shrink-0 flex-col border-l border-border bg-card xl:w-[28rem]">

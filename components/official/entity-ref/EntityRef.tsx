@@ -28,12 +28,13 @@
  */
 
 import React, { useState } from "react";
-import Link from "next/link";
+import { AppLink } from "@/components/navigation/AppLink";
 import { ExternalLink, Lightbulb } from "lucide-react";
 import {
   resolveEntityToken,
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
+import { useEntityHref } from "./useEntityHref";
 import { hasPeek } from "@/features/organizations/peek/kinds-list";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
@@ -196,7 +197,15 @@ export function EntityRef({
   // the raw string is how a record ends up with one door and not the other.
   const canonicalToken = resolveEntityToken(token);
   const info = tryGetEntityInfo(canonicalToken);
-  const resolvedHref = href ?? info?.hrefFor?.(id) ?? null;
+  // NOT `info.hrefFor(id)` directly: an agent's address depends on its KIND
+  // (a builtin opens only in the admin System Agents shell) and the id may be
+  // a VERSION id. See useEntityHref.ts — one seam, ~65 agent call sites fixed
+  // at once instead of ~65 chances to guess wrong.
+  const {
+    href: resolvedHref,
+    refusal,
+    resolving: hrefResolving,
+  } = useEntityHref(token, id, href);
   // The peek registry is keyed by canonical token, so there is nothing to
   // translate — `peekKeyForToken` existed only to bridge the legacy
   // catalogue vocabulary and is deleted.
@@ -233,7 +242,7 @@ export function EntityRef({
       )}
 
       {resolvedHref ? (
-        <Link
+        <AppLink
           href={resolvedHref}
           target={openInNewTab ? "_blank" : undefined}
           rel={openInNewTab ? "noopener noreferrer" : undefined}
@@ -241,7 +250,11 @@ export function EntityRef({
           // client router cache, so prefetching it is a request that can never
           // be used. `EntityRef` lives in lists; at 50 rows that is 50 wasted
           // round trips.
-          prefetch={openInNewTab ? false : undefined}
+          // Also false while an agent address is still resolving: the href is
+          // then `/agents/go/<id>`, which REDIRECTS — and an RSC prefetch of a
+          // redirect to the sibling deployment is the exact preflight the
+          // cross-deployment link door exists to prevent.
+          prefetch={openInNewTab || hrefResolving ? false : undefined}
           onClick={(e) => {
             stop(e);
             // A modified click keeps the browser's native new-tab behaviour —
@@ -257,7 +270,7 @@ export function EntityRef({
           )}
         >
           {labelBody}
-        </Link>
+        </AppLink>
       ) : onOpen ? (
         <button
           type="button"
@@ -274,7 +287,17 @@ export function EntityRef({
           {labelBody}
         </button>
       ) : (
-        <span className={cn("min-w-0", labelFit)} title={label}>
+        /* No door. NOTHING FAILS SILENTLY: when we KNOW the record cannot be
+           reached (`refusal`), the title says so in a sentence naming the id
+           — a name with no explanation reads as a broken page. While an
+           address is still resolving there is nothing to confess yet. */
+        <span
+          className={cn("min-w-0", refusal && "cursor-help", labelFit)}
+          title={refusal ?? label}
+          aria-describedby={undefined}
+          data-agent-link-refused={refusal ? "true" : undefined}
+          data-agent-link-resolving={hrefResolving ? "true" : undefined}
+        >
           {labelBody}
         </span>
       )}
@@ -314,7 +337,7 @@ export function EntityRef({
             </button>
           )}
           {resolvedHref && showNewTab && (
-            <Link
+            <AppLink
               href={resolvedHref}
               target="_blank"
               rel="noopener noreferrer"
@@ -325,7 +348,7 @@ export function EntityRef({
               className={CONTROL_CLASS}
             >
               <ExternalLink className="h-3 w-3" />
-            </Link>
+            </AppLink>
           )}
           {extraActions}
         </span>

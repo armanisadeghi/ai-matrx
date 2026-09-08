@@ -71,7 +71,7 @@ export function useMandateRowActions(
           label: "View current agent",
           icon: UserRound,
           kind: "link",
-          href: `/agents/${row.resolved_agent_id}`,
+          href: `/agents/go/${row.resolved_agent_id}`,
         },
         {
           id: "duplicate-agent",

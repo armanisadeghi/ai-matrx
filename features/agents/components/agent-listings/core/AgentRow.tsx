@@ -29,7 +29,7 @@ export function AgentRow({
   onHoverEnd,
   onDetailPress,
 }: AgentRowProps) {
-  const rowHref = href ?? `/agents/${agent.id}`;
+  const rowHref = href ?? `/agents/go/${agent.id}`;
 
   return (
     <div

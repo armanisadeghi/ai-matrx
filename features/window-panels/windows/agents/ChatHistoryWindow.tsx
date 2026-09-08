@@ -154,7 +154,7 @@ function useChatHistoryBrowser(opts: {
   const getConversationHref = useCallback(
     (conv: ConversationListItem): string =>
       conv.agentId
-        ? `/agents/${conv.agentId}/run?conversationId=${conv.conversationId}`
+        ? `/agents/go/${conv.agentId}/run?conversationId=${conv.conversationId}`
         : `/chat?conversationId=${conv.conversationId}`,
     [],
   );

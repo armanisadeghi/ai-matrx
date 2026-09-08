@@ -103,6 +103,7 @@ export function useCopyMandateAgent(): {
             "Copied your editable version — connect it to this step later.",
         );
       }
+      // agent-link-ok: copying a mandate agent creates a USER copy; the system twin is never the copy
       router.push(`/agents/${newId}/build`);
       return newId;
     } catch (err) {

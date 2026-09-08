@@ -448,7 +448,7 @@ export function TryItNowPanel({
                 token="agent"
                 id={ranAgentId}
                 name={ranAgentId}
-                href={`/agents/${ranAgentId}`}
+                href={`/agents/go/${ranAgentId}`}
                 openInNewTab
                 wrap
                 className="min-w-0"

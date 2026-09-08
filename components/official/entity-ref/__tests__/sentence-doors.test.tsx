@@ -104,8 +104,13 @@ describe("TextWithDoors — the refusal is openable", () => {
     act(() => {
       root.render(<TextWithDoors text={REFUSAL} />);
     });
+    // 🚨 NOT `/agents/<id>`. 8f0bbfc2 is a BUILTIN agent — it lives only in
+    // the System Agents admin shell, and this assertion used to demand the
+    // user-shell link that 404s (Arman, 2026-09-08). A sentence names an id
+    // and nothing else, so the door is the always-valid address, which
+    // resolves the shell server-side. See features/agents/addressing.
     const link = host.querySelector<HTMLAnchorElement>(
-      `a[href="/agents/${AGENT_ID}"]`,
+      `a[href="/agents/go/${AGENT_ID}"]`,
     );
     expect(link).not.toBeNull();
     expect(link?.getAttribute("target")).toBe("_blank");

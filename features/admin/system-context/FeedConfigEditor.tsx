@@ -149,7 +149,7 @@ export function feedSourceLink(
     }
     case "agent": {
       const id = cfgStr(cfg, "agent_id");
-      return id ? { href: `/agents/${encodeURIComponent(id)}`, label: "Open agent" } : null;
+      return id ? { href: `/agents/go/${encodeURIComponent(id)}`, label: "Open agent" } : null;
     }
     default:
       return null;

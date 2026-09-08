@@ -85,6 +85,7 @@ export function VariationsEditorWindow({
       toast.success(`Saved "${name}" as a new agent`, {
         action: {
           label: "Open in builder",
+          // agent-link-ok: a variation is saved as a new user agent for this user
           onClick: () => router.push(`/agents/${newId}/build`),
         },
       });

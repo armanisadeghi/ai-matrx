@@ -52,6 +52,53 @@ describe("crossDeploymentHref — the www build (no (admin), no (dev))", () => {
   });
 });
 
+describe("the satellite build sends everything that is not its own home", () => {
+  // 🚨 Found by WALKING manage.aimatrx.com after the first fix shipped. The
+  // admin shell's settings link produced the mirror image of the original
+  // error: /settings?_rsc=… redirected to www, preflight refused. The first
+  // model knew only the outbound direction.
+  it("sends the exact href the walk broke on back to the main app", async () => {
+    const { crossDeploymentHref } = await load("admin");
+    expect(crossDeploymentHref("/settings")).toBe(
+      "https://www.aimatrx.com/settings",
+    );
+  });
+
+  it("sends any main-app route home, query and all", async () => {
+    const { crossDeploymentHref } = await load("admin");
+    expect(crossDeploymentHref("/dashboard?tab=x")).toBe(
+      "https://www.aimatrx.com/dashboard?tab=x",
+    );
+    expect(crossDeploymentHref("/agents/all")).toBe(
+      "https://www.aimatrx.com/agents/all",
+    );
+  });
+
+  it("keeps the shared auth paths in place — login must work on every host", async () => {
+    const { crossDeploymentHref } = await load("admin");
+    expect(crossDeploymentHref("/login")).toBeNull();
+    expect(crossDeploymentHref("/auth/callback")).toBeNull();
+    expect(crossDeploymentHref("/api/version")).toBeNull();
+  });
+
+  it("holds for the demos satellite too, and sends it the admin surface", async () => {
+    const { crossDeploymentHref } = await load("demos");
+    expect(crossDeploymentHref("/dashboard")).toBe(
+      "https://www.aimatrx.com/dashboard",
+    );
+    expect(crossDeploymentHref("/administration")).toBe(
+      "https://manage.aimatrx.com/administration",
+    );
+    expect(crossDeploymentHref("/demos/chat")).toBeNull();
+  });
+
+  it("never sends anything home from the MAIN build", async () => {
+    const { crossDeploymentHref } = await load("slim");
+    expect(crossDeploymentHref("/settings")).toBeNull();
+    expect(crossDeploymentHref("/dashboard")).toBeNull();
+  });
+});
+
 describe("the deployment that owns the surface", () => {
   it("keeps /administration internal on the manage build", async () => {
     const { crossDeploymentHref } = await load("admin");
@@ -71,3 +118,45 @@ describe("the deployment that owns the surface", () => {
 });
 
 export {};
+
+/**
+ * THE OTHER HALF OF THE SPLIT (found 2026-09-08 while fixing agent addressing).
+ *
+ * `manage` PARKS app/(core) (next.config.js § PROFILES), so `/agents/<id>` is
+ * exactly as foreign there as `/administration/...` is on www. The table
+ * described only one direction, so the mandate console on manage — which names
+ * SYSTEM agents and USER agents side by side — linked every user agent to a
+ * path its own build does not serve.
+ */
+describe("crossDeploymentHref — the manage build (only (admin))", () => {
+  it("sends a user agent's address back to the main app", async () => {
+    const { crossDeploymentHref } = await load("admin");
+    expect(crossDeploymentHref("/agents/ac714b9b-9fb8-4c08-af62-190c0c4d86ff")).toBe(
+      "https://www.aimatrx.com/agents/ac714b9b-9fb8-4c08-af62-190c0c4d86ff",
+    );
+    expect(crossDeploymentHref("/agents/go/ac714b9b-9fb8-4c08-af62-190c0c4d86ff")).toBe(
+      "https://www.aimatrx.com/agents/go/ac714b9b-9fb8-4c08-af62-190c0c4d86ff",
+    );
+  });
+
+  it("keeps a system agent's address internal on manage", async () => {
+    const { crossDeploymentHref } = await load("admin");
+    expect(
+      crossDeploymentHref(
+        "/administration/agents/system-agents/agents/8f0bbfc2-85d9-4913-8cea-b09a50c62be6",
+      ),
+    ).toBeNull();
+  });
+
+  it("never rewrites the paths every build shares", async () => {
+    const { crossDeploymentHref } = await load("admin");
+    for (const shared of ["/api/agents/x", "/auth/callback", "/login"]) {
+      expect(crossDeploymentHref(shared)).toBeNull();
+    }
+  });
+
+  it("leaves the main app's own links internal on www", async () => {
+    const { crossDeploymentHref } = await load("slim");
+    expect(crossDeploymentHref("/agents/abc")).toBeNull();
+  });
+});

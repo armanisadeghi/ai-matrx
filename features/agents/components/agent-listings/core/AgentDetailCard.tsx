@@ -227,7 +227,7 @@ export function AgentDetailCard({ agent, onSelect }: AgentDetailCardProps) {
           <MessageCircle className="w-3.5 h-3.5" />
         </Link>
         <Link
-          href={`/agents/${agent.id}`}
+          href={`/agents/go/${agent.id}`}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}

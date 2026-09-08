@@ -15,6 +15,18 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { EntityDoorControls } from "../EntityDoorControls";
 import { EntityRef } from "../EntityRef";
+import {
+  __resetAgentAddressCache,
+  seedAgentAddress,
+} from "@/features/agents/addressing/agentAddressCache";
+
+const AGENT_ID = "aaaaaaaa-1111-2222-3333-444444444444";
+
+jest.mock("@/utils/supabase/client", () => ({
+  __esModule: true,
+  createClient: () => ({ rpc: async () => ({ data: [], error: null }) }),
+  supabase: {},
+}));
 
 jest.mock("next/link", () => ({
   __esModule: true,
@@ -47,6 +59,7 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  __resetAgentAddressCache();
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -62,10 +75,18 @@ function renderRef(el: React.ReactElement) {
 }
 
 describe("EntityRef doors for mandates/shortcuts surfaces", () => {
-  it("agent: open link from the registry route, new-tab link, and peek", () => {
-    renderRef(<EntityRef token="agent" id="a1" name="Flashcard Generator" />);
+  it("agent: open link, new-tab link, and peek", () => {
+    // 🚨 The href is NOT taken from the entity registry any more. An agent's
+    // shell depends on its KIND (see features/agents/addressing), so an id
+    // with no seeded address gets the always-valid `/agents/go/<id>`, which
+    // resolves server-side. Seeding the kind is covered by
+    // entity-ref-agent-address.test.tsx.
+    seedAgentAddress({ agentId: AGENT_ID, agentType: "user" });
+    renderRef(
+      <EntityRef token="agent" id={AGENT_ID} name="Flashcard Generator" />,
+    );
     const open = container.querySelector('a[title="Open Flashcard Generator"]');
-    expect(open?.getAttribute("href")).toBe("/agents/a1");
+    expect(open?.getAttribute("href")).toBe(`/agents/${AGENT_ID}`);
     expect(
       container.querySelector(
         'a[title="Open Flashcard Generator in a new tab"]',

@@ -12,6 +12,7 @@
  * the exact conversations it read, and each one opens.
  */
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
+import { agentPathFor } from "@/features/agents/addressing/agentAddress";
 
 import type { Enrollment } from "./types";
 
@@ -22,10 +23,25 @@ import type { Enrollment } from "./types";
  */
 export type DoorAudience = "admin" | "product";
 
-export function agentHref(agentId: string, audience: DoorAudience = "admin"): string {
-  return audience === "admin"
-    ? `/administration/agents/system-agents/agents/${agentId}`
-    : `/agents/${agentId}`;
+/**
+ * Where an agent opens.
+ *
+ * 🚨 AUDIENCE DOES NOT DECIDE THIS — the agent's KIND does. This function used
+ * to answer purely from `audience`, so a personal agent named on an admin
+ * Hindsight surface linked into the System Agents shell and a builtin named on
+ * the product surface linked into `/agents`, where it does not exist. The one
+ * address rule lives in `features/agents/addressing/agentAddress.ts`.
+ *
+ * `agentType` is `agent.definition.agent_type`. Pass it whenever the caller
+ * holds the row. When it is genuinely unknown the caller must resolve it
+ * (`useAgentHref`) rather than call this — `audience` is kept only so the
+ * remaining callers compile while they are converted, and it decides nothing.
+ */
+export function agentHref(
+  agentId: string,
+  agentType: string | null = null,
+): string {
+  return agentPathFor({ agentId, agentType });
 }
 
 export function conversationHref(
@@ -75,10 +91,12 @@ export function subjectDoor(
   enrollment: Enrollment,
   toolId?: string | null,
   audience: DoorAudience = "admin",
+  /** `agent_type` of the subject agent, when the caller holds the row. */
+  agentType: string | null = null,
 ): Door | null {
   const { subject_kind: kind, subject_id: id } = enrollment;
   if (kind === "agent" && id) {
-    return { href: agentHref(id, audience), label: "Open agent", external: false };
+    return { href: agentHref(id, agentType), label: "Open agent", external: false };
   }
   if (kind === "orchestra" && id) {
     return { href: orchestraHref(id), label: "Open orchestra", external: false };

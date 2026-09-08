@@ -73,7 +73,7 @@ export function VersionLadder({
         </span>
         <div className="flex items-center gap-2">
           <Link
-            href={`/agents/${agentId}/run`}
+            href={`/agents/go/${agentId}/run`}
             className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
             title="Try the current version"
           >
@@ -81,7 +81,7 @@ export function VersionLadder({
             Try it
           </Link>
           <Link
-            href={`/agents/${agentId}/latest`}
+            href={`/agents/go/${agentId}/latest`}
             className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
             title="Every version, with diffs"
           >
@@ -112,7 +112,7 @@ export function VersionLadder({
             return (
               <li key={v.version_id} className={cn(revertable && "flex items-start gap-1")}>
                 <Link
-                  href={`/agents/${agentId}/v/${v.version_number}`}
+                  href={`/agents/go/${agentId}/v/${v.version_number}`}
                   className={cn(
                     "flex items-start gap-1.5 rounded-md px-1.5 py-1 hover:bg-muted/50",
                     i === 0 && "bg-muted/30",

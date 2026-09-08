@@ -221,7 +221,7 @@ export function buildConversationMenu(
                     ? `Open agent — ${ctx.agent.name}`
                     : "Open agent",
                   icon: Webhook,
-                  href: `/agents/${ctx.agent.id}`,
+                  href: `/agents/go/${ctx.agent.id}`,
                 },
               ]
             : []),

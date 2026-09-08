@@ -19,6 +19,7 @@ export default async function AgentSurfacesRoute({
   return (
     <SurfacesAdminShell
       agent={agent}
+      // agent-link-ok: this page IS /agents/[id]; reaching it proves a user agent
       backHref={`/agents/${id}`}
       basePath="/agents"
       defaultLayout={defaultLayout}

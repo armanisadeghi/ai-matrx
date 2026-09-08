@@ -169,6 +169,7 @@ export function useAgentBuilder(onComplete?: () => void) {
       const result = await createAgentFromBuilder(config);
       if (result.success && result.agentId) {
         onComplete?.();
+        // agent-link-ok: the builder just created this agent for this user; it is a user agent by construction
         router.push(`/agents/${result.agentId}/build`);
         router.refresh();
       }

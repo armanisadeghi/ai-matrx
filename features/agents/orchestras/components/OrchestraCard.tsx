@@ -37,7 +37,7 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
   const strip = Math.min(count, 6);
 
   const setHref = `/agents/orchestras/${summary.conductorId}`;
-  const runHref = `/agents/${summary.conductorId}/run`;
+  const runHref = `/agents/go/${summary.conductorId}/run`;
 
   return (
     <Card

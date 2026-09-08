@@ -459,10 +459,34 @@ export function parseAgentMessages(raw: unknown): AgentDefinition["messages"] {
     if (!isDefinitionMessageRole(value.role)) {
       fail(`${path}.role`, 'must be "system", "user", or "assistant"');
     }
-    if (!Array.isArray(value.content)) {
+    // A BARE STRING is the legacy authored shape (`content: "You are…"`).
+    // The contract is a block list — aidream/kinds/agent_authoring.py:
+    // "Content is ALWAYS a list of these — never a bare string" — and
+    // `agent.definition` was repaired to match on 2026-09-08. But being
+    // STRICT here meant one legacy row took a whole page down: 22 agents and
+    // 67 versions produced
+    //   TypeError: [agent-definition] messages[0].content must be an array
+    // inside a Server Component, i.e. a 500 with a digest on both
+    // /agents/<id> and /administration/agents/system-agents/agents/<id>
+    // (Arman, 2026-09-08, agent 8f0bbfc2 "Research → Slides Generator").
+    //
+    // A READER refusing to open a record it can losslessly understand is a
+    // worse defect than the shape it refused. Lift it — and SCREAM, so the
+    // row gets repaired instead of quietly living on in a legacy shape.
+    const rawContent =
+      typeof value.content === "string"
+        ? (console.error(
+            `[agent-definition] LOUD: ${path}.content is a bare string, not a ` +
+              `block list. Reading it as a single text block. This row predates ` +
+              `the block-list contract and should be re-saved; new writes are ` +
+              `refused by aidream's assert_clean_messages.`,
+          ),
+          [{ type: "text", text: value.content }])
+        : value.content;
+    if (!Array.isArray(rawContent)) {
       fail(`${path}.content`, "must be an array");
     }
-    const content = value.content.map((part, partIndex) => {
+    const content = rawContent.map((part, partIndex) => {
       if (!isDefinitionMessagePart(part)) {
         fail(
           `${path}.content[${partIndex}]`,

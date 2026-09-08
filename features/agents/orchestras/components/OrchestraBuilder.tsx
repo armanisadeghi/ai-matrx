@@ -261,7 +261,7 @@ export function OrchestraBuilder({
           label: "Run",
           icon: Play,
           primary: true,
-          href: `/agents/${conductorId}/run`,
+          href: `/agents/go/${conductorId}/run`,
         }
       : {
           label: runOpen ? "Hide run panel" : "Run",
@@ -300,7 +300,7 @@ export function OrchestraBuilder({
     {
       label: "Conductor",
       icon: ExternalLink,
-      href: `/agents/${conductorId}/build`,
+      href: `/agents/go/${conductorId}/build`,
       newTab: true,
     },
     {

@@ -6,6 +6,11 @@
  */
 
 import { isJsonObject } from "@/types/json";
+import {
+  AGENT_BASE_PATH,
+  SYSTEM_AGENT_BASE_PATH,
+  agentPathFor,
+} from "@/features/agents/addressing/agentAddress";
 import { parseMandateContract } from "@/features/mandates/overrides";
 import { missingOutputKeys } from "@/features/mandates/output-contract";
 import { splitMandateKey } from "@/features/mandates/mandate-key";
@@ -67,15 +72,21 @@ export const HEALTH_PRIORITY: Record<MandateHealth, number> = {
  * admin shell; personal agents open in the user shell. Both trees carry the
  * same sub-routes (/build, /run, /v, /surfaces …).
  */
-export const SYSTEM_AGENT_BASE = "/administration/agents/system-agents/agents";
-export const USER_AGENT_BASE = "/agents";
+export const SYSTEM_AGENT_BASE = SYSTEM_AGENT_BASE_PATH;
+export const USER_AGENT_BASE = AGENT_BASE_PATH;
 
+/**
+ * Where this agent opens. Delegates to the ONE address rule
+ * (`features/agents/addressing/agentAddress.ts`) — this was one of three
+ * competing implementations before 2026-09-08 and is kept only as the
+ * mandate console's import name.
+ */
 export function agentHref(
   id: string,
   agentType: string | null,
   sub = "",
 ): string {
-  return `${agentType === "builtin" ? SYSTEM_AGENT_BASE : USER_AGENT_BASE}/${id}${sub}`;
+  return agentPathFor({ agentId: id, agentType }, sub);
 }
 
 export interface MandateRow {

@@ -219,7 +219,7 @@ function MandateWindowInner({
           id: "mandate-view-agent",
           label: "View current agent",
           icon: UserRound,
-          href: row?.agentId ? `/agents/${row.agentId}` : "#",
+          href: row?.agentId ? `/agents/go/${row.agentId}` : "#",
           disabled: !row?.agentId,
         },
       ],
