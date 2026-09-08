@@ -28,6 +28,15 @@ import { createRoot, type Root } from "react-dom/client";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+// The popover measures itself; jsdom has no ResizeObserver. This is the panel's
+// own layout machinery, not the behaviour under test.
+(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
+  class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+
 import { EntityFilterPanel } from "../components/EntityFilterPanel";
 import {
   DEFAULT_ENTITY_LIST_QUERY,
@@ -56,7 +65,10 @@ function render(
   act(() => {
     root.render(
       <EntityFilterPanel
-        query={{ ...DEFAULT_ENTITY_LIST_QUERY, scope: { kind: "orgs" } }}
+        query={{
+          ...DEFAULT_ENTITY_LIST_QUERY,
+          scope: { kind: "orgs", organizationId: null },
+        }}
         facets={EMPTY_FACETS}
         columns={[]}
         facetSections={[]}
@@ -125,7 +137,8 @@ describe("a declared scope section with no options", () => {
     // so on screen rather than hiding the section and hiding the defect.
     const text = render({ byKind: {}, narrow: {} });
     expect(text).toContain("Organization");
-    expect(text).toMatch(/could not be listed/i);
+    expect(text).toMatch(/no organization options could be listed/i);
+    expect(text).toMatch(/defect/i);
   });
 });
 
