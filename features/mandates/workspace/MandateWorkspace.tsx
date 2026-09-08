@@ -75,6 +75,7 @@ import {
 import { OneBindingWorkspace } from "@/features/bindings/OneBindingWorkspace";
 import { RunThisJobSection } from "./RunThisJobSection";
 import { Section } from "./Section";
+import { SystemAnswerSection } from "./SystemAnswerSection";
 import {
   useMandateWorkspaceData,
   type MandateWorkspaceData,
@@ -98,6 +99,30 @@ import {
 export type WorkspacePrincipal =
   | { kind: "user" }
   | { kind: "org"; orgId: string };
+
+/**
+ * ── THE HOST DECIDES THE PERSPECTIVE ─────────────────────────────────────────
+ * (Arman, 2026-09-08, FIX-R4 — the top-priority order behind this whole file.)
+ *
+ * One workspace, three questions, and a host may only ever ask ONE of them:
+ *
+ *  | Host                                            | perspective    |
+ *  |-------------------------------------------------|----------------|
+ *  | `/mandates/[key]` (core route)                  | `person`       |
+ *  | the window panel (`MandateWindow`, Yours pane)  | `person`       |
+ *  | `/organizations/[id]/settings/mandates/[key]`   | `organization` |
+ *  | `/administration/mandates/[key]` (admin route)  | `system`       |
+ *
+ * `system` is the admin panel, and Arman's rule for it is absolute: *"it should
+ * never show ANYTHING related to a user or an org … the ONLY thing it should
+ * ever show is the things we assign from the system."* So on that host there is
+ * no personal verdict, no ladder, no rung selector, no "for you" — the page IS
+ * the system rung: what the platform assigns, whether that assignment is sound,
+ * and the admin's own tools for changing it.
+ *
+ * The table above is the census, and it is mirrored in `../FEATURE.md`.
+ */
+export type WorkspacePerspective = "person" | "organization" | "system";
 
 export interface MandateWorkspaceProps {
   /** Mandate key ("podcast.multihost_script") or the row uuid — both open. */
@@ -332,11 +357,22 @@ export function MandateWorkspace({
     return (id: string) => byId.get(id) ?? null;
   }, [organizations]);
 
+  // THE HOST'S PERSPECTIVE, decided once and read everywhere below.
+  const perspective: WorkspacePerspective =
+    host === "admin-route"
+      ? "system"
+      : principal.kind === "org"
+        ? "organization"
+        : "person";
+
   // ONE ASK, ONE VIEW. The personal principal's answer is the server verdict;
   // the ladder beside it is the database's own rung list. The empty key is the
-  // documented disabled sentinel for both, so the org route asks for neither.
+  // documented disabled sentinel for both, so the org route asks for neither —
+  // and neither does the SYSTEM perspective, whose question is not "what runs
+  // for me". Asking would be worse than useless: it is the wrong answer,
+  // rendered as if it were this page's subject.
   const personalKey =
-    principal.kind === "user" && data ? data.mandate.mandate_key : "";
+    perspective === "person" && data ? data.mandate.mandate_key : "";
   const verdict = useMandate(personalKey);
   const ladder = useMandateLadder(personalKey, activeOrganizationId);
 
@@ -380,16 +416,24 @@ export function MandateWorkspace({
     );
   }
 
-  const resolution: FulfillmentView =
-    principal.kind === "org"
-      ? resolveForOrgPrincipal(data, principal.orgId, nameOfOrg(principal.orgId))
-      : viewFromVerdict(
-          data,
-          verdict.mandate,
-          verdict.loading,
-          verdict.error,
-          nameOfOrg,
-        );
+  // The SYSTEM perspective has its own section (`SystemAnswerSection`) and no
+  // `FulfillmentView` at all — "fulfilled by" is a per-caller question.
+  const resolution: FulfillmentView | null =
+    perspective === "system"
+      ? null
+      : principal.kind === "org"
+        ? resolveForOrgPrincipal(
+            data,
+            principal.orgId,
+            nameOfOrg(principal.orgId),
+          )
+        : viewFromVerdict(
+            data,
+            verdict.mandate,
+            verdict.loading,
+            verdict.error,
+            nameOfOrg,
+          );
   const feature = splitMandateKey(data.mandate.mandate_key).feature;
   // WHERE, not who: a mandate's goal, its declared inputs and running it are
   // SYSTEM management, so they exist only on the admin route. The user route
@@ -455,18 +499,28 @@ export function MandateWorkspace({
         <TriadFlowMark />
         <TriadOutputSection data={data} />
 
-        <FulfillmentSection
-          data={data}
-          resolution={resolution}
-          onChanged={refresh}
-          authoring={authoring}
-        />
+        {/* §2 — WHAT THE SYSTEM ASSIGNS, or what runs for this caller. Never
+            both: the two answer different questions and only one of them is
+            this host's. */}
+        {perspective === "system" ? (
+          <SystemAnswerSection data={data} />
+        ) : (
+          <FulfillmentSection
+            data={data}
+            resolution={resolution as FulfillmentView}
+            onChanged={refresh}
+            authoring={authoring}
+          />
+        )}
 
         {/* Run it — mandate management, so it lives where management lives:
             the admin route. Still super-admin gated inside (the server endpoint
             is require_super_admin). */}
         {authoring ? <RunThisJobSection data={data} /> : null}
-        {principal.kind === "user" ? (
+        {/* §3 — THE PERSON'S LADDER. It belongs to the person's perspective and
+            nowhere else: on the admin panel it is a ladder about the reader,
+            on a page whose whole subject is the platform's own answer. */}
+        {perspective === "person" ? (
           <LadderSection
             ladder={ladder}
             agentsById={data.agentsById}
@@ -491,6 +545,7 @@ export function MandateWorkspace({
         <BindingSection
           data={data}
           principal={principal}
+          perspective={perspective}
           authoring={authoring}
           onChanged={refresh}
         />
@@ -524,11 +579,13 @@ export function MandateWorkspace({
 function BindingSection({
   data,
   principal,
+  perspective,
   authoring,
   onChanged,
 }: {
   data: MandateWorkspaceData;
   principal: WorkspacePrincipal;
+  perspective: WorkspacePerspective;
   authoring: boolean;
   onChanged: () => void;
 }) {
@@ -548,16 +605,33 @@ function BindingSection({
 
   return (
     <div id="bind" ref={ref}>
-      <Section title="Who fulfils this job">
+      <Section
+        title={
+          perspective === "system"
+            ? "Assign the system holder"
+            : "Who fulfils this job"
+        }
+      >
         <OneBindingWorkspace
           data={data}
-          initialRung={principal.kind === "org" ? "org" : "user"}
+          initialRung={
+            perspective === "system"
+              ? "global"
+              : principal.kind === "org"
+                ? "org"
+                : "user"
+          }
           initialOrganizationId={
             principal.kind === "org" ? principal.orgId : null
           }
           // The admin door offers the system rung; the server's super-admin
           // gate is the authority and the workspace re-checks it too.
           allowGlobal={authoring}
+          // 🚨 THE ADMIN PANEL IS THE SYSTEM RUNG AND NOTHING ELSE. With the
+          // rung pinned the bar STATES it ("System — decides for every user")
+          // and offers no User/Org — an admin managing what the platform
+          // assigns is never one click away from writing a personal override.
+          fixedRung={perspective === "system" ? "global" : undefined}
           onChanged={onChanged}
         />
       </Section>

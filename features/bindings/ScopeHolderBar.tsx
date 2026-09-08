@@ -36,6 +36,12 @@ import { AgentVersionPicker } from "@/features/agent-shortcuts/components/AgentV
 import { ShortcutScopePicker } from "@/features/agent-shortcuts/components/ShortcutScopePicker";
 import { AGENT_SCOPES, type AgentScope } from "@/features/agent-shortcuts/constants";
 import { WorkflowHolderPicker } from "./WorkflowHolderPicker";
+import {
+  SYSTEM_RUNG_COVERS,
+  SYSTEM_RUNG_HOLDER_RULE,
+  SYSTEM_RUNG_TITLE,
+  systemRungHolderIsPersonal,
+} from "./system-rung";
 
 /** The rungs a mandate binding can actually be written at. */
 export type BindingRung = "global" | "org" | "user";
@@ -53,6 +59,19 @@ export interface ScopeHolderBarProps {
   organizationId: string | null;
   /** Super-admin authority — the system rung is theirs alone (server 403s). */
   allowGlobal: boolean;
+  /**
+   * 🚨 THE HOST DECIDES THE PERSPECTIVE (Arman, 2026-09-08, FIX-R4).
+   *
+   * When a host stands on ONE rung and only that rung — the admin route IS the
+   * system rung of a mandate — the rung is not a choice, so there is no
+   * selector. The bar STATES the rung instead ("System — decides for every
+   * user") and offers no User/Org, because offering a move the page does not
+   * mean is exactly the "meaningless garbage" Arman named.
+   *
+   * `undefined` (the default) keeps P13's movable control for every host whose
+   * question really is "which rung am I setting".
+   */
+  fixedRung?: BindingRung;
   onRungChange: (rung: BindingRung, organizationId: string | null) => void;
   /**
    * F3 — the standing sentence about what moving the rung costs, printed
@@ -174,8 +193,7 @@ function holderRestriction(rung: BindingRung): {
         visibleTabs: ["system"],
         initialTab: "system",
         includeSystemInAll: true,
-        sentence:
-          "The system rung runs for every user on the platform, so only system agents can be bound here.",
+        sentence: SYSTEM_RUNG_HOLDER_RULE,
       };
     case "org":
       return {
@@ -194,6 +212,7 @@ export function ScopeHolderBar({
   rung,
   organizationId,
   allowGlobal,
+  fixedRung,
   onRungChange,
   unsavedNote = null,
   appliesIn = null,
@@ -243,9 +262,13 @@ export function ScopeHolderBar({
   const builtinAgents = useAppSelector(selectBuiltinAgents);
   const systemHolderViolation = useMemo(() => {
     if (rung !== "global") return false;
-    if (holder.kind !== "agent" || !holder.agentId) return false;
-    if (builtinAgents.length === 0) return false;
-    return !builtinAgents.some((a) => a.id === holder.agentId);
+    if (holder.kind !== "agent") return false;
+    // ONE RULE, shared with the save refusal in `OneBindingWorkspace` — the
+    // alert and the thing that actually stops the write cannot disagree.
+    return systemRungHolderIsPersonal(
+      holder.agentId,
+      builtinAgents.map((a) => a.id),
+    );
   }, [rung, holder.kind, holder.agentId, builtinAgents]);
 
   return (
@@ -272,24 +295,47 @@ export function ScopeHolderBar({
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
             Rung
           </p>
-          <ShortcutScopePicker
-            scope={RUNG_TO_SCOPE[rung]}
-            scopeId={organizationId ?? undefined}
-            allowGlobal={allowGlobal}
-            allowedScopes={MANDATE_SCOPES}
-            disabled={disabled}
-            onScopeChange={(scope, scopeId) =>
-              onRungChange(scopeToRung(scope), scopeId ?? null)
-            }
-          />
+          {fixedRung ? (
+            /* THE RUNG IS STATED, NOT CHOSEN. A host that stands on one rung
+               offers no move — a selector here would be a control the page
+               cannot mean. */
+            <div className="rounded-md border border-border bg-muted/40 px-2 py-1.5">
+              <p className="text-[12px] font-medium text-foreground">
+                {fixedRung === "global"
+                  ? SYSTEM_RUNG_TITLE
+                  : rungWords(fixedRung).noun}
+              </p>
+              <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                {fixedRung === "global"
+                  ? SYSTEM_RUNG_COVERS
+                  : rungWords(fixedRung).covers}
+              </p>
+            </div>
+          ) : (
+            <ShortcutScopePicker
+              scope={RUNG_TO_SCOPE[rung]}
+              scopeId={organizationId ?? undefined}
+              allowGlobal={allowGlobal}
+              allowedScopes={MANDATE_SCOPES}
+              disabled={disabled}
+              onScopeChange={(scope, scopeId) =>
+                onRungChange(scopeToRung(scope), scopeId ?? null)
+              }
+            />
+          )}
           {/* THE RUNG EXPLAINS ITSELF IN ITS OWN CELL — who it covers and what
               it overrides — instead of a lone select in dead space. */}
           {/* `ladderLine` OPENS with this rung's own `covers` sentence and then
               names which rungs are answered today — one paragraph, not two, so
               the cell is filled with the ladder rather than with a repeat. */}
-          <p className="text-[11px] leading-relaxed text-muted-foreground">
-            {ladderLine}
-          </p>
+          {/* A fixed-rung host has already said what the rung covers, and the
+              ladder line is about rungs it does not manage — so it is dropped
+              rather than restated. */}
+          {fixedRung ? null : (
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              {ladderLine}
+            </p>
+          )}
           {/* THE SAVED ROW SAYS WHERE IT ANSWERS, in the server's own words —
               beneath the ladder sentence, which is about the rung you are
               choosing, not about the row that exists. */}
@@ -310,7 +356,7 @@ export function ScopeHolderBar({
               </p>
             </details>
           ) : null}
-          {!allowGlobal ? (
+          {!allowGlobal && !fixedRung ? (
             <p className="text-[10.5px] leading-snug text-muted-foreground/80">
               The system rung — the answer everybody gets — is a super-admin
               decision, so it is not offered here.

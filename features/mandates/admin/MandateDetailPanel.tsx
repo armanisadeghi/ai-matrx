@@ -44,7 +44,6 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
 import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
 import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
-import { MandateResolutionRibbon } from "@/features/mandates/components/MandateResolutionRibbon";
 import { ProvisionOfferList } from "@/features/mandates/components/ProvisionOfferList";
 import { useMandateGoal } from "@/features/mandates/useMandateGoal";
 import {
@@ -1355,47 +1354,6 @@ function FactsPanel({
   );
 }
 
-// ── Overrides roll-up (read-only; editing happens in MandateOverridePanel) ──────
-
-function OverridesList({
-  bindings,
-  data,
-}: {
-  bindings: MandateBindingRow[];
-  data: MandateConsoleData;
-}) {
-  if (bindings.length === 0) return null;
-  return (
-    <div className="space-y-1 text-xs">
-      <div className="font-medium text-muted-foreground">All bindings</div>
-      {bindings.map((b) => {
-        const bindingHolder = agentHolderOfBinding(b);
-        const versionAgentId = bindingHolder.versionId
-          ? data.versionsById[bindingHolder.versionId]?.agentId
-          : undefined;
-        const agentKey = bindingHolder.holderId ?? versionAgentId;
-        const agent = agentKey ? (data.agentsById[agentKey] ?? null) : null;
-        return (
-          <div key={b.id} className="space-y-0.5 py-0.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{b.principal_type}</Badge>
-              <span>
-                {agent ? `→ ${agent.name}` : "settings-only (no agent swap)"}
-              </span>
-              {!b.is_enabled && <Badge variant="secondary">disabled</Badge>}
-            </div>
-            {b.config_overrides != null && (
-              <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded bg-muted/40 p-1.5 font-mono text-[10px] text-muted-foreground">
-                {JSON.stringify(b.config_overrides, null, 1)}
-              </pre>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ── The goal + the provision — what the mandate IS ───────────────────────────
 
 /**
@@ -1561,7 +1519,6 @@ export function MandateDetailView({
     row.health === "agent archived" || row.health === "unresolved pin",
   );
   const [testOpen, setTestOpen] = useState(row.health === "version drift");
-  const [overridesOpen, setOverridesOpen] = useState(false);
   // REVIEW TIME. Notes are written in the second something is noticed (from the
   // Agents menu, wherever the job runs) and read back HERE, when the mandate is
   // being judged. Open by default: evidence you have to go looking for is
@@ -1729,28 +1686,19 @@ export function MandateDetailView({
         </div>
       </Section>
 
-      {/* "Bindings", not "overrides" — in this system, "overrides" means the
-          config_overrides list sent to the API on a run. A mandate_binding row is
-          a per-user/per-org replacement (different agent and/or settings). */}
-      <Section
-        title={
-          bindings.length > 0
-            ? `User & org bindings (${bindings.length})`
-            : "User & org bindings"
-        }
-        meta="who gets a different agent or settings"
-        open={overridesOpen}
-        onToggle={setOverridesOpen}
-      >
-        <div className="space-y-3 p-3">
-          {/* The canonical precedence chain — the admin edits the SYSTEM layer
-              in this drawer; these bindings sit above it at runtime. The admin's
-              OWN binding is edited in the same MandateWorkspace users get
-              (window opener / the dedicated route) — one editor, never a twin. */}
-          <MandateResolutionRibbon />
-          <OverridesList bindings={bindings} data={data} />
-        </div>
-      </Section>
+      {/* 🚨 THE PER-PRINCIPAL BINDINGS LIST IS GONE (2026-09-08, FIX-R4).
+          Arman: *"this is the Admin panel so it should never show ANYTHING
+          related to a user or an org."* A list of who overrode this job — with
+          the precedence ribbon above it, drawn from the reader's own point of
+          view — is other people's answers on a page that manages the
+          platform's. What survives is the ONE fact an admin managing the system
+          rung can act on: how many rungs sit above it, said in a sentence, with
+          no controls. */}
+      <p className="px-3 pb-1 text-[11.5px] leading-relaxed text-muted-foreground">
+        {bindings.length === 0
+          ? "Nothing overrides this job — every user on the platform runs the system answer."
+          : `${bindings.length} ${bindings.length === 1 ? "override sits" : "overrides sit"} above the system answer, set by organizations and people in their own workspaces. They are theirs to change, not this console's.`}
+      </p>
     </div>
   );
 }

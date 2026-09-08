@@ -47,6 +47,7 @@ import {
   selectAgentDescription,
   selectAgentExecutionPayload,
   selectAgentName,
+  selectBuiltinAgents,
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
   initInstanceOverrides,
@@ -113,6 +114,10 @@ import {
   type HolderDraft,
 } from "./ScopeHolderBar";
 import {
+  SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL,
+  systemRungHolderIsPersonal,
+} from "./system-rung";
+import {
   applySuggestions,
   seedAutoBinds,
   sourcesFor,
@@ -150,6 +155,14 @@ export interface OneBindingWorkspaceProps {
   initialOrganizationId?: string | null;
   /** Offer the system rung. Super-admin authority is checked here too. */
   allowGlobal?: boolean;
+  /**
+   * 🚨 THE HOST DECIDES THE PERSPECTIVE (Arman, 2026-09-08, FIX-R4). A host
+   * that IS one rung — the admin route is the system rung of a mandate — pins
+   * it here: the bar states the rung instead of offering a selector, and no
+   * other rung can be reached from this screen. Additive; every existing host
+   * leaves it undefined and keeps the movable control (P13/D1).
+   */
+  fixedRung?: BindingRung;
   onChanged: () => void;
 }
 
@@ -167,13 +180,15 @@ export function OneBindingWorkspace({
   initialRung = "user",
   initialOrganizationId = null,
   allowGlobal = false,
+  fixedRung,
   onChanged,
 }: OneBindingWorkspaceProps) {
   const userId = useAppSelector(selectUserId);
   const { organizations } = useUserOrganizations();
 
   const [rung, setRung] = useState<BindingRung>(
-    initialRung === "global" && !allowGlobal ? "user" : initialRung,
+    fixedRung ??
+      (initialRung === "global" && !allowGlobal ? "user" : initialRung),
   );
   const [organizationId, setOrganizationId] = useState<string | null>(
     initialOrganizationId,
@@ -234,6 +249,7 @@ export function OneBindingWorkspace({
       rung={rung}
       organizationId={organizationId}
       allowGlobal={allowGlobal}
+      fixedRung={fixedRung}
       mode={mode}
       onModeChange={(next) => {
         setMode(next);
@@ -254,6 +270,10 @@ export function OneBindingWorkspace({
         setWrittenSignature(null);
       }}
       onRungChange={(nextRung, nextOrgId) => {
+        // A pinned rung cannot move. The bar offers no control at all when it
+        // is pinned, so this is a belt: no path may quietly relocate the
+        // answer this host exists to manage.
+        if (fixedRung) return;
         setWriteReport(null);
         setWrittenSignature(null);
         setRung(nextRung);
@@ -274,6 +294,7 @@ function BindingDraft({
   rung,
   organizationId,
   allowGlobal,
+  fixedRung,
   mode,
   onModeChange,
   onBatchWrote,
@@ -289,6 +310,8 @@ function BindingDraft({
   rung: BindingRung;
   organizationId: string | null;
   allowGlobal: boolean;
+  /** The one rung this host manages, when it manages exactly one. */
+  fixedRung?: BindingRung;
   mode: BindingMode;
   onModeChange: (next: BindingMode) => void;
   /** A batch wrote rows — the single-place view is stale until it is left. */
@@ -639,6 +662,18 @@ function BindingDraft({
   const canBindThisOrg =
     selectedOrgRole === "owner" || selectedOrgRole === "admin";
 
+  // ONE RULE for "a personal agent may not be the system answer" — the same
+  // function the bar's alert uses, so the screen's warning and the thing that
+  // actually stops the write can never disagree. Silent until the system
+  // catalogue is read (see `systemRungHolderIsPersonal`).
+  const builtinAgents = useAppSelector(selectBuiltinAgents);
+  const systemHolderIsPersonal =
+    holder.kind === "agent" &&
+    systemRungHolderIsPersonal(
+      agentId,
+      builtinAgents.map((a) => a.id),
+    );
+
   /** Why Save cannot act — adjacent to the button, never a transient toast. */
   const saveRefusal = !holderChosen
     ? "Choose an agent or a workflow first — a binding names who runs the job."
@@ -648,6 +683,14 @@ function BindingDraft({
         ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there. Ask an owner to set it, or pick an organization you administer — your own answer above always works.`
         : rung === "global" && !canBindGlobal
         ? "The system answer is a super-admin decision — the server refuses this write."
+        : /* 🚨 A HARD REFUSAL, not a warning (Arman, 2026-08-31, restated
+             2026-09-08). The picker was restricted and the save was not: an
+             agent drafted before the restriction existed, or handed in by the
+             guard dialog, could still be written as the answer every user on
+             the platform gets. Now Save is DISABLED with the reason and the
+             remedy beside it. */
+          rung === "global" && systemHolderIsPersonal
+          ? SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL
         : holder.kind === "agent" && !verdict.passed
           ? verdict.checking
             ? "Checking whether this agent meets the mandate…"
@@ -1144,6 +1187,7 @@ function BindingDraft({
         rung={rung}
         organizationId={organizationId}
         allowGlobal={allowGlobal}
+        fixedRung={fixedRung}
         onRungChange={(nextRung, nextOrgId) =>
           void requestRungChange(nextRung, nextOrgId)
         }

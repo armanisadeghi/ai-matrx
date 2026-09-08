@@ -8,15 +8,17 @@
 // The admin console's row click used to open its own drawer — a second, older
 // mandate detail implementation that diverged from the rebuilt experience on
 // /mandates/[key]. It now lands here, and here renders THE SAME
-// `MandateWorkspace` the (core) route and the window panel render: the triad
-// (INPUT → GOAL → OUTPUT, goal editable), RUN THIS JOB, fulfillment, override,
-// notes. Zero divergent detail implementations — this file is a SHELL.
+// `MandateWorkspace` — one component, THREE perspectives, chosen by the host
+// (see `MandateWorkspace`'s census table). This host asks for `admin-route`,
+// which IS the SYSTEM perspective: the job, what the platform assigns, whether
+// that assignment is sound, and the admin's tools. Nothing about a user, an
+// organization, or the reader.
 //
 // What the admin shell adds and the (core) route does not: the operational
-// depth the console owns — health verdict and its fix, pin editing, rebind,
-// the test bench, per-principal bindings — kept in ONE collapsed section below
-// the workspace, rendered by the SAME `MandateDetailView` the drawer used.
-// It is no longer the first thing an admin sees, and it is no longer a drawer.
+// depth the console owns — health verdict and its fix, pin editing, the test
+// bench, promote, remove — rendered by the SAME `MandateDetailView` the drawer
+// used, ON THE SURFACE (2026-09-08, FIX-R4: it was behind an "Admin controls"
+// fold, which is where Arman found "the actual things I need" hiding).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -24,9 +26,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
-import { ArrowLeft, ChevronDown, Loader2, Trash2, Wrench } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2, Wrench } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
@@ -76,20 +77,24 @@ export function AdminMandateWorkspacePage({
 }
 
 /**
- * The console's operational depth, collapsed. Loads only this mandate's row
- * (`fetchMandateConsoleData({ mandateKeys })`), and only once opened — an
- * admin reading the triad pays for nothing.
+ * THE ADMIN'S OWN TOOLS, ON THE SURFACE — not behind a disclosure.
+ *
+ * 🚨 Arman, 2026-09-08: *"it's missing the actual things I need."* The health
+ * verdict and its fix, pin editing, the test bench, promote and remove were all
+ * here — inside a collapsed "Admin controls" fold, under a page whose visible
+ * half was a ladder about the reader. On a page that exists to manage what the
+ * platform assigns, these ARE the page. The fold is gone and the data loads
+ * with the page: an admin who opened `/administration/mandates/<key>` has
+ * already said what they came for.
  */
 function AdminControls({ mandateKey }: { mandateKey: string }) {
   const dispatch = useAppDispatch();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const lineageIndex = useAppSelector(selectAgentLineageIndex);
-
-  const [open, setOpen] = useState(false);
-  // "Bind an agent to this job" used to open THIS fold, because the rebind
-  // editor lived in it. It no longer does: the one binding UI is a section of
-  // the workspace above, and it listens for `matrx:open-mandate-pin` itself.
-  // This panel keeps only the depth the console owns.
+  // "Bind an agent to this job" used to open a fold, because the rebind editor
+  // lived in it. It no longer does: the one binding UI is a section of the
+  // workspace above, and it listens for `matrx:open-mandate-pin` itself. This
+  // panel keeps only the depth the console owns.
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [data, setData] = useState<MandateConsoleData | null>(null);
   const [codeTruthByKey, setCodeTruthByKey] = useState<
@@ -119,20 +124,17 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
   }, [mandateKey]);
 
   useEffect(() => {
-    if (!open || !isSuperAdmin) return;
+    if (!isSuperAdmin) return;
     load();
     dispatch(fetchAgentsListFull());
-  }, [dispatch, isSuperAdmin, load, open]);
+  }, [dispatch, isSuperAdmin, load]);
 
   // Any mandate write anywhere refreshes this — the same bus the console and
   // the window subscribe to, so a rebind made elsewhere never leaves a stale pin.
-  useEffect(() => {
-    if (!open) return;
-    return onMandateCacheInvalidated(() => load());
-  }, [load, open]);
+  useEffect(() => onMandateCacheInvalidated(() => load()), [load]);
 
   useEffect(() => {
-    if (!open || !isSuperAdmin) return;
+    if (!isSuperAdmin) return;
     let cancelled = false;
     fetchMandateCodeTruthReport(dispatch)
       .then((report) => {
@@ -147,7 +149,7 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
     return () => {
       cancelled = true;
     };
-  }, [dispatch, isSuperAdmin, open]);
+  }, [dispatch, isSuperAdmin]);
 
   const row = useMemo<MandateRow | null>(() => {
     if (!data) return null;
@@ -164,30 +166,16 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
   return (
     <div ref={panelRef} className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">
       <div className="rounded-xl border border-border/60 bg-card">
-        {/* Same class as the OPTIONS drawer's fold — a disclosure states its
-            own state. Censused together, fixed together. */}
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="flex w-full items-center gap-2 px-4 py-2.5 text-left"
-        >
+        <div className="flex items-center gap-2 border-b border-border/40 px-4 py-2.5">
           <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="flex-1 text-[13px] font-medium text-foreground">
-            Admin controls
+            Platform tools
           </span>
           <span className="text-[11.5px] text-muted-foreground">
-            Health, pin, rebind, test bench, bindings, promote
+            Health, pin, test bench, promote, remove
           </span>
-          <ChevronDown
-            className={cn(
-              "h-3.5 w-3.5 text-muted-foreground transition-transform",
-              open && "rotate-180",
-            )}
-          />
-        </button>
-        {open ? (
-          <div className="border-t border-border/40 p-4">
+        </div>
+        <div className="p-4">
             {loadError ? (
               <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 {loadError}
@@ -237,8 +225,7 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
                 <RemoveMandate row={row} />
               </>
             )}
-          </div>
-        ) : null}
+        </div>
       </div>
     </div>
   );
