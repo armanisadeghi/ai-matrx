@@ -402,6 +402,7 @@ export type FeSynthesizedBlockType =
   | "generated_video_set"
   | "generated_audio"
   | "podcast_episode"
+  | "media_asset"
   | "memory_aid"
   | "memory_hint"
   | "episode_title_options"
@@ -566,6 +567,7 @@ export type ShapeBlockType =
   | "generated_video_set"
   | "generated_audio"
   | "podcast_episode"
+  | "media_asset"
   | "memory_aid"
   | "memory_hint"
   | "episode_title_options"
@@ -1781,6 +1783,27 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.PodcastEpisodeBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
+  // `media_asset` (Arman's 2026-09-08 media-kind ruling) — ONE durable media
+  // handle. ADDITIVE ONLY: this fires when a producer supplies the structured
+  // kind. The bare-URL markdown paths above (`image` / `audio` / `video`,
+  // fed by the splitter's detectImageMarkdown / extractAudioLink /
+  // detectVideoMarkdown) are untouched and still handle everything that
+  // arrives without structure — that degradation floor is the ruling.
+  media_asset: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.MediaAssetBlock
           key={index}
           serverData={block.serverData}
         />

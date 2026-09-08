@@ -35,6 +35,7 @@ import GeneratedImageSetBlock from "../../blocks/media-io/GeneratedImageSetBlock
 import GeneratedVideoSetBlock from "../../blocks/media-io/GeneratedVideoSetBlock";
 import GeneratedAudioBlock from "../../blocks/media-io/GeneratedAudioBlock";
 import PodcastEpisodeBlock from "../../blocks/media-io/PodcastEpisodeBlock";
+import MediaAssetBlock from "../../blocks/media-io/MediaAssetBlock";
 import MemoryAidBlock from "../../blocks/memory-aid/MemoryAidBlock";
 import MemoryHintBlock from "../../blocks/memory-aid/MemoryHintBlock";
 import SeoPackageBlock from "../../blocks/seo-package/SeoPackageBlock";
@@ -518,6 +519,11 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <PodcastEpisodeBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  MediaAssetBlock: (props: React.ComponentProps<typeof MediaAssetBlock>) => (
+    <LazyBlockWrapper>
+      <MediaAssetBlock {...props} />
     </LazyBlockWrapper>
   ),
   MemoryAidBlock: (props: React.ComponentProps<typeof MemoryAidBlock>) => (

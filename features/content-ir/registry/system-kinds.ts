@@ -80,6 +80,7 @@ import { RUNTIME_WRAPPER_KIND_DEFINITIONS } from "../kinds/runtime-wrappers";
 import { GENERATED_IMAGE_SET_KIND_DEFINITIONS } from "../kinds/generated-image-set";
 import { GENERATED_VIDEO_SET_KIND_DEFINITIONS } from "../kinds/generated-video-set";
 import { GENERATED_AUDIO_KIND_DEFINITIONS } from "../kinds/generated-audio";
+import { MEDIA_ASSET_KIND_DEFINITIONS } from "../kinds/media-asset";
 import { PODCAST_EPISODE_KIND_DEFINITIONS } from "../kinds/podcast-episode";
 import { MEMORY_AID_KIND_DEFINITIONS } from "../kinds/memory-aid";
 import { SEO_PACKAGE_KIND_DEFINITIONS } from "../kinds/seo-package";
@@ -141,6 +142,12 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...GENERATED_VIDEO_SET_KIND_DEFINITIONS,
   ...GENERATED_AUDIO_KIND_DEFINITIONS,
   ...PODCAST_EPISODE_KIND_DEFINITIONS,
+  // `media_asset` (Arman's 2026-09-08 media-kind ruling) — the ONE durable
+  // media handle a producing mandate delivers. ADDITIVE ONLY: the markdown
+  // splitter's bare-URL floor (detectImageMarkdown / extractAudioLink /
+  // detectVideoMarkdown → the image/audio/video blocks) is untouched and still
+  // handles anything that arrives without structure. See kinds/media-asset.ts.
+  ...MEDIA_ASSET_KIND_DEFINITIONS,
   // Education Memory Tools (VISION §11): the full memory-aid artifact + the
   // per-flashcard hint. Registered 2026-08-17 after both shipped unregistered
   // and streamed as raw JSON in the LiveRunWindow.
