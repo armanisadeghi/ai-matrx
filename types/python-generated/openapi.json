@@ -16622,6 +16622,27 @@
         }
       }
     },
+    "/excalidraw/public/release": {
+      "get": {
+        "tags": [
+          "Excalidraw Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_excalidraw_public_release_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExcalidrawPublicRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -19977,6 +19998,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TeachableServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devto/public/status": {
+      "get": {
+        "tags": [
+          "DEV Community Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_devto_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevtoServiceStatus"
                 }
               }
             }
@@ -29699,6 +29741,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OverviewContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flask-docs/public/quickstart": {
+      "get": {
+        "tags": [
+          "Flask Documentation Integrations"
+        ],
+        "summary": "Public Quickstart",
+        "operationId": "public_quickstart_flask_docs_public_quickstart_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuickstartContent"
                 }
               }
             }
@@ -128563,6 +128626,47 @@
         "title": "DevCommunityArticleList",
         "description": "Bounded public-article response."
       },
+      "DevtoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "devto_public_service_status",
+            "title": "Kind",
+            "default": "devto_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "DEV",
+            "title": "Provider",
+            "default": "DEV"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.dev.to",
+            "title": "Status Page",
+            "default": "https://status.dev.to"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "DevtoServiceStatus",
+        "description": "Safe aggregate status projection for Devto's fixed status page."
+      },
       "DiagSpawnDetachedResponse": {
         "properties": {
           "ok": {
@@ -136627,6 +136731,48 @@
           "values"
         ],
         "title": "EvidenceWorkbenchBody"
+      },
+      "ExcalidrawPublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "excalidraw_public_release",
+            "title": "Kind",
+            "default": "excalidraw_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Excalidraw",
+            "title": "Provider",
+            "default": "Excalidraw"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag",
+          "release_url",
+          "published_at"
+        ],
+        "title": "ExcalidrawPublicRelease"
       },
       "ExceptionScanRequest": {
         "properties": {
@@ -197568,6 +197714,47 @@
           "urls"
         ],
         "title": "QuickScrapeRequest"
+      },
+      "QuickstartContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "flask_docs_quickstart_content",
+            "title": "Kind",
+            "default": "flask_docs_quickstart_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Flask Documentation",
+            "title": "Provider",
+            "default": "Flask Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "stable",
+            "title": "Version",
+            "default": "stable"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "QuickstartContent",
+        "description": "Safe projection of the fixed public Flask quickstart."
       },
       "QuipStatusResult": {
         "properties": {

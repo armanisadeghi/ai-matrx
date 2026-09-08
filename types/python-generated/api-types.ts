@@ -6591,6 +6591,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/excalidraw/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_excalidraw_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -8766,6 +8783,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_teachable_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/devto/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_devto_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15277,6 +15311,23 @@ export interface paths {
         };
         /** Public Overview */
         get: operations["public_overview_django_docs_public_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/flask-docs/public/quickstart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Quickstart */
+        get: operations["public_quickstart_flask_docs_public_quickstart_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -55901,6 +55952,38 @@ export interface components {
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
         };
+        /**
+         * DevtoServiceStatus
+         * @description Safe aggregate status projection for Devto's fixed status page.
+         */
+        DevtoServiceStatus: {
+            /**
+             * Kind
+             * @default devto_public_service_status
+             * @constant
+             */
+            __kind?: "devto_public_service_status";
+            /**
+             * Provider
+             * @default DEV
+             * @constant
+             */
+            provider?: "DEV";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.dev.to
+             * @constant
+             */
+            status_page?: "https://status.dev.to";
+        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -59446,6 +59529,33 @@ export interface components {
             question: string;
             /** Values */
             values: string[];
+        };
+        /** ExcalidrawPublicRelease */
+        ExcalidrawPublicRelease: {
+            /**
+             * Kind
+             * @default excalidraw_public_release
+             * @constant
+             */
+            __kind?: "excalidraw_public_release";
+            /**
+             * Provider
+             * @default Excalidraw
+             * @constant
+             */
+            provider?: "Excalidraw";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
         };
         /**
          * ExceptionScanRequest
@@ -87415,6 +87525,38 @@ export interface components {
              * @default false
              */
             stream?: boolean;
+        };
+        /**
+         * QuickstartContent
+         * @description Safe projection of the fixed public Flask quickstart.
+         */
+        QuickstartContent: {
+            /**
+             * Kind
+             * @default flask_docs_quickstart_content
+             * @constant
+             */
+            __kind?: "flask_docs_quickstart_content";
+            /**
+             * Provider
+             * @default Flask Documentation
+             * @constant
+             */
+            provider?: "Flask Documentation";
+            /**
+             * Version
+             * @default stable
+             * @constant
+             */
+            version?: "stable";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
         };
         /**
          * QuipStatusResult
@@ -124153,6 +124295,26 @@ export interface operations {
             };
         };
     };
+    public_release_excalidraw_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExcalidrawPublicRelease"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -126964,6 +127126,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TeachableServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_devto_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevtoServiceStatus"];
                 };
             };
         };
@@ -135441,6 +135623,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OverviewContent"];
+                };
+            };
+        };
+    };
+    public_quickstart_flask_docs_public_quickstart_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuickstartContent"];
                 };
             };
         };
