@@ -159,7 +159,14 @@ function toJsonValue(value: unknown): JsonValue | undefined {
   return round as JsonValue;
 }
 
-export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
+export function RunThisJobSection({
+  data,
+  foldSurfaceNotes = false,
+}: {
+  data: MandateWorkspaceData;
+  /** The host already states the Holder's defect — see the note at the block. */
+  foldSurfaceNotes?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   // THE PRINCIPAL DECIDES WHICH HOLDER RUNS. This section shows the viewer
@@ -298,6 +305,11 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
           heading="What the server could not read"
           notes={surface.notes}
           testId="run-surface-notes"
+          // 🚨 ONE COPY OF ONE DEFECT (FIX-R9-UI round 3). When the host above
+          // already states why the Holder cannot run this job, this note is the
+          // same fact in the server's longer words. Folded: the count still
+          // says a note exists, and one click is the server's exact sentence.
+          folded={foldSurfaceNotes}
         />
       ) : null}
 

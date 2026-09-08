@@ -47,6 +47,18 @@ export interface ServerNotesProps {
    * cannot be established stay plain text rather than becoming a wrong link.
    */
   idToken?: string | null;
+  /**
+   * 🚨 FOLDED, NEVER SWALLOWED (FIX-R9-UI round 3, re-walk of v0.4.1734).
+   *
+   * A host that ALREADY states the defect these notes are about would otherwise
+   * print it twice — which is the repetition Arman rejected: *"the repitition
+   * makes it more and more complex for no reason."* Folded, the counted heading
+   * still stands ("What the server could not read — 1 note"), so the reader is
+   * told a note exists and reaches the server's exact words in one click.
+   * Nothing is hidden and nothing is paraphrased; only the second copy of the
+   * same paragraph stops owning the default view.
+   */
+  folded?: boolean;
 }
 
 /** The sentences worth printing — the server's words, minus anything blank. */
@@ -62,9 +74,35 @@ export function ServerNotes({
   className,
   testId = "server-notes",
   idToken,
+  folded = false,
 }: ServerNotesProps) {
   const usable = usableServerNotes(notes);
   if (usable.length === 0) return null;
+  const title = `${heading} — ${usable.length} ${usable.length === 1 ? "note" : "notes"}`;
+  const body = usable.map((note) => (
+    <p
+      key={note}
+      className="text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400"
+    >
+      <TextWithDoors text={note} defaultToken={idToken} />
+    </p>
+  ));
+  if (folded) {
+    return (
+      <details
+        data-testid={testId}
+        className={cn(
+          "space-y-1 rounded-md border border-amber-500/40 bg-amber-500/5 px-2 py-1.5",
+          className,
+        )}
+      >
+        <summary className="cursor-pointer text-[10px] font-medium uppercase tracking-wider text-amber-700 dark:text-amber-400">
+          {title}
+        </summary>
+        <div className="space-y-1 pt-1">{body}</div>
+      </details>
+    );
+  }
   return (
     <div
       data-testid={testId}
@@ -74,7 +112,7 @@ export function ServerNotes({
       )}
     >
       <p className="text-[10px] font-medium uppercase tracking-wider text-amber-700 dark:text-amber-400">
-        {heading} — {usable.length} {usable.length === 1 ? "note" : "notes"}
+        {title}
       </p>
       {usable.map((note) => (
         <p

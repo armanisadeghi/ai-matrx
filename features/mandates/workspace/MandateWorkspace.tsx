@@ -582,7 +582,13 @@ export function MandateWorkspace({
           inside; the server endpoint is `require_super_admin`. */}
       {authoring ? (
         <div className="mx-auto w-full max-w-3xl px-4 pb-6 sm:px-6">
-          <RunThisJobSection data={data} />
+          <RunThisJobSection
+            data={data}
+            // The system host states the Holder's verdict beside the controls,
+            // so the server's longer version of it is folded rather than
+            // printed a second time (FIX-R9-UI round 3).
+            foldSurfaceNotes={perspective === "system"}
+          />
         </div>
       ) : null}
 
