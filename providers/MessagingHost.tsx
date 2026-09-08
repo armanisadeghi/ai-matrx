@@ -43,6 +43,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { MessagingProvider } from "@ai-matrx/messaging/react";
+import type { ActionHandler } from "@ai-matrx/messaging";
+// ONE ENTRY POINT ONLY. `@ai-matrx/meet` ships two declaration files that
+// re-declare the same branded types, so a value from `@ai-matrx/meet` is not
+// assignable to the identical type from `@ai-matrx/meet/react`. See
+// `features/meet/lib/meetClient.ts` (register item MRI-A5).
+import {
+  createCallInviteHandler,
+  createMeetingInviteHandler,
+  useMeetHost,
+} from "@ai-matrx/meet/react";
 import type {
   EngineDiagnostic,
   IncomingMessageContext,
@@ -159,6 +169,47 @@ export function MessagingHost({ children }: MessagingHostProps) {
     else console.info(line);
   }, []);
 
+  // THE MESSAGING SEAM (D8). A call or meeting invitation is an ACTIONABLE
+  // MESSAGE, not a second notification system: `@ai-matrx/messaging` knows
+  // nothing about meetings, and its action registry exists precisely so
+  // `@ai-matrx/meet` can add a kind without messaging learning about them.
+  //
+  // Both handlers come from the meet package and carry the whole behaviour —
+  // re-resolving the invite through the auth-checked RPC before joining
+  // anything, refusing to render chips for an expired invite, settling once
+  // across tabs. This file supplies only the two app-shaped answers: which
+  // runtime to act on, and where a join lands.
+  //
+  // A GUEST HAS NO CALL CENTER (`host.calls` is null by construction, D6), and
+  // a signed-out visitor has no meet host at all. In both cases the call
+  // handler is simply not registered, so an invitation message renders NO chips
+  // rather than a button that cannot work. The meeting handler needs no runtime
+  // — a durable link opens for anyone — so it is always registered.
+  const meetHost = useMeetHost();
+  const meetCalls = meetHost?.calls ?? null;
+  const meetRepository = meetHost?.repository ?? null;
+  const actions = useMemo(() => {
+    const list: ActionHandler<never>[] = [
+      createMeetingInviteHandler({
+        onOpen: (payload) => {
+          router.push(`/meet/${payload.slug}`);
+        },
+      }) as unknown as ActionHandler<never>,
+    ];
+    if (meetCalls !== null && meetRepository !== null) {
+      list.unshift(
+        createCallInviteHandler({
+          calls: meetCalls,
+          repository: meetRepository,
+          onJoin: (invite) => {
+            router.push(`/meet/${invite.roomName}`);
+          },
+        }) as unknown as ActionHandler<never>,
+      );
+    }
+    return list;
+  }, [meetCalls, meetRepository, router]);
+
   const onOpenReference = useCallback(
     (reference: { entityType: string; entityId: string }) => {
       router.push(`/${reference.entityType}/${reference.entityId}`);
@@ -210,6 +261,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
         maxTranscriptMessages={maxTranscriptMessages}
         sourceApp="matrx-frontend"
         sourceFeature="messages"
+        actions={actions}
         actionRenderers={MESSAGE_ACTION_SURFACES}
         // App chrome around the package's own surfaces: the data attributes the
         // v3 right-click menu resolves its target from, and this app's ONE

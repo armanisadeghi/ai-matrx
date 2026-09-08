@@ -21,6 +21,10 @@ import type {
   ConversationRowWrapperProps,
   MessageWrapperProps,
 } from "@ai-matrx/messaging/react";
+// ONE ENTRY POINT ONLY — see `features/meet/lib/meetClient.ts` (MRI-A5).
+import { asUserId, CallButton } from "@ai-matrx/meet/react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 
 export function MessagingMessageChrome({
@@ -34,13 +38,69 @@ export function MessagingMessageChrome({
   );
 }
 
+/**
+ * 🚨 THE ONE PLACE A PERSON IS SHOWN ON THIS APP'S MESSAGING SURFACES, so it is
+ * the one place `<CallButton>` is mounted (adoption census item 6).
+ *
+ * Every conversation-list surface in the app draws through this wrapper — the
+ * `/messages` route, the floating messages window, the side sheet and the
+ * agent-review workspace all render `@ai-matrx/messaging`'s ONE
+ * `<ConversationList>` — so a single mount here is calling everywhere, and
+ * five copies is the defect it avoids.
+ *
+ * WHO gets a button, and who deliberately does not:
+ *  - a DIRECT conversation with exactly one other participant who is a person →
+ *    the button, next to the row.
+ *  - a group, an org channel, a conversation whose other participant is an AI
+ *    agent, or a viewer whose own id has not hydrated yet → NOTHING. `is_agent`
+ *    is data messaging already carries; ringing a model is not a feature.
+ *  - a GUEST identity → the package itself renders nothing (`calls.canCall` is
+ *    false by construction, D6). Absent, never a disabled button.
+ *
+ * The wrapper stops being `display: contents` for a callable row because the
+ * button is a real sibling of the package's row `<button>`: `.mx-msg__row` is
+ * `width: 100%` inside this flex line and simply shrinks to make room, so the
+ * unread badge and timestamp stay visible rather than being covered by an
+ * overlay. Non-callable rows keep `contents` and are byte-identical to before.
+ */
 export function MessagingConversationRowChrome({
   conversation,
   children,
 }: ConversationRowWrapperProps) {
+  const viewerId = useAppSelector(selectUserId);
+  const others = conversation.participants.filter(
+    (participant) => String(participant.userId) !== viewerId,
+  );
+  const callable =
+    conversation.conversation.type === "direct" &&
+    viewerId !== null &&
+    others.length === 1 &&
+    others[0] !== undefined &&
+    !others[0].isAgent
+      ? others[0]
+      : null;
+
+  if (callable === null) {
+    return (
+      <div data-conversation-id={conversation.conversation.id} className="contents">
+        {children}
+      </div>
+    );
+  }
+
   return (
-    <div data-conversation-id={conversation.conversation.id} className="contents">
+    <div
+      data-conversation-id={conversation.conversation.id}
+      className="flex items-center pr-2"
+    >
       {children}
+      <CallButton
+        person={{
+          userId: asUserId(String(callable.userId)),
+          displayName: callable.displayName,
+          avatarUrl: callable.avatarUrl,
+        }}
+      />
     </div>
   );
 }

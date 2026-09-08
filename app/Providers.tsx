@@ -53,6 +53,11 @@ import { RealtimeHost } from "@/providers/RealtimeHost";
 // THE ONE `@ai-matrx/messaging` mount. Inside RealtimeHost on purpose — it
 // rides that provider's single manager. See providers/MessagingHost.tsx.
 import { MessagingHost } from "@/providers/MessagingHost";
+// THE ONE `@ai-matrx/meet` mount. Inside RealtimeHost (it rides that single
+// manager) and OUTSIDE MessagingHost, because the two call/meeting invitation
+// handlers registered on <MessagingProvider actions> read this provider's
+// call center and repository. See providers/MeetHost.tsx.
+import { MeetHost } from "@/providers/MeetHost";
 import { RecoveryWindow } from "@/features/request-recovery/components/RecoveryWindow";
 import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNudge";
 
@@ -153,6 +158,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                       <SelectedImagesProvider>
                             <RequestRecoveryProvider>
                               <RealtimeHost>
+                              <MeetHost>
                               <MessagingHost>
                               <MediaHostProvider>
                               {/* ONE audio mount — the whole audio system
@@ -234,6 +240,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                               </React.Fragment>
                               </MediaHostProvider>
                               </MessagingHost>
+                              </MeetHost>
                               </RealtimeHost>
                             </RequestRecoveryProvider>
                       </SelectedImagesProvider>

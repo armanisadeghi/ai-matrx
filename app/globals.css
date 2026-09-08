@@ -2169,6 +2169,32 @@
   --mx-msg-bubble-theirs-text: hsl(var(--foreground));
 }
 
+/* @ai-matrx/meet owns structure; the host owns its palette. Same contract and
+   the same unlayered posture as the messaging block above. The STAGE tokens are
+   deliberately NOT mapped onto this app's theme: video reads on dark, always,
+   and a light-themed stage would wash out every tile (the package ships them
+   dark in both palettes for that reason). */
+:root {
+  --mx-meet-bg: hsl(var(--background));
+  --mx-meet-bg-subtle: hsl(var(--muted));
+  --mx-meet-bg-raised: hsl(var(--card));
+  --mx-meet-bg-hover: hsl(var(--accent));
+  --mx-meet-bg-active: hsl(var(--accent-hover));
+  --mx-meet-border: hsl(var(--border));
+  --mx-meet-border-strong: hsl(var(--ring));
+  --mx-meet-text: hsl(var(--foreground));
+  --mx-meet-text-muted: hsl(var(--muted-foreground));
+  --mx-meet-text-faint: hsl(var(--muted-foreground) / 0.78);
+  --mx-meet-text-on-accent: hsl(var(--primary-foreground));
+  --mx-meet-accent: hsl(var(--primary));
+  --mx-meet-accent-hover: hsl(var(--primary-hover));
+  --mx-meet-accent-subtle: hsl(var(--primary) / 0.12);
+  --mx-meet-danger: hsl(var(--destructive));
+  --mx-meet-success: hsl(var(--success));
+  --mx-meet-warning: hsl(var(--warning));
+  --mx-meet-focus-ring: hsl(var(--ring));
+}
+
 /* .matrx-mobile-sheet (the ONE mobile density for a desktop panel hosted in a
    bottom sheet) moved VERBATIM to @ai-matrx/design-system/styles.css — the
    class is set by that package's TabbedBottomSheet, so the density restatement

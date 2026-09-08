@@ -2,6 +2,9 @@
 // Package defaults load first; globals.css maps them onto this app's semantic
 // theme tokens, and the structural sheet then consumes that host-owned map.
 import "@ai-matrx/messaging/tokens.css";
+// @ai-matrx/meet, same three-step contract: package defaults, then this app's
+// brand mapping in globals.css, then the structural sheet below.
+import "@ai-matrx/meet/tokens.css";
 import "./globals.css";
 // Tap-button geometry (the .matrx-tap-* system) ships in the package.
 import "@ai-matrx/tap-target/styles.css";
@@ -15,6 +18,9 @@ import "@ai-matrx/design-system/styles.css";
 // Without this structural sheet the thread collapses into unstyled document
 // flow (full-size avatars, loose metadata, and a browser-default composer).
 import "@ai-matrx/messaging/styles.css";
+// Without this the meeting room renders as unstyled document flow — full-size
+// video elements, no stage, no control bar.
+import "@ai-matrx/meet/styles.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
