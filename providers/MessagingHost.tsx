@@ -44,10 +44,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useRouter } from "next/navigation";
 import { MessagingProvider } from "@ai-matrx/messaging/react";
 import type { ActionHandler } from "@ai-matrx/messaging";
-// ONE ENTRY POINT ONLY. `@ai-matrx/meet` ships two declaration files that
-// re-declare the same branded types, so a value from `@ai-matrx/meet` is not
-// assignable to the identical type from `@ai-matrx/meet/react`. See
-// `features/meet/lib/meetClient.ts` (register item MRI-A5).
+// One entry point: `@ai-matrx/meet/react` re-exports the whole core, so a React
+// file needs exactly one import specifier. (Through 0.2.0 this was a REQUIREMENT
+// — the two declaration files re-declared every branded type — but 0.2.1 builds
+// both entries in one dts pass, so it is now just the tidier habit.)
 import {
   createCallInviteHandler,
   createMeetingInviteHandler,

@@ -19,7 +19,6 @@
 // not resolve says so, with what to do about it; it never spins.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-// ONE ENTRY POINT ONLY — see `features/meet/lib/meetClient.ts` (MRI-A5).
 import {
   MeetProvider,
   MeetingRoom,
@@ -29,7 +28,7 @@ import {
   type MeetingRecord,
 } from "@ai-matrx/meet/react";
 import type { MeetDiagnostic } from "@ai-matrx/meet/react";
-import { meetClient } from "@/features/meet/lib/meetClient";
+import { supabase } from "@/utils/supabase/client";
 import { Loader2 } from "lucide-react";
 import { Button, Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -62,7 +61,7 @@ export function MeetingSurface({
 
   useEffect(() => {
     let live = true;
-    const repository = createMeetRepository({ client: meetClient() });
+    const repository = createMeetRepository({ client: supabase });
     void repository
       .meetingBySlug(slug)
       .then((meeting) => {
@@ -230,7 +229,7 @@ function GuestRoom({ meeting, slug }: { meeting: MeetingRecord; slug: string }) 
 
   return (
     <MeetProvider
-      client={meetClient()}
+      client={supabase}
       baseUrl={baseUrl}
       guestName={guestName}
       // A guest's capability is exactly this one room's organization, and their

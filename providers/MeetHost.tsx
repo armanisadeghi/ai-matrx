@@ -53,8 +53,7 @@ import { usePathname } from "next/navigation";
 import { MeetProvider } from "@ai-matrx/meet/react";
 import type { MeetDiagnostic } from "@ai-matrx/meet/react";
 import { supabase } from "@/utils/supabase/client";
-import { meetClient } from "@/features/meet/lib/meetClient";
-import { MeetIncomingCalls } from "@/features/meet/components/MeetCallSurfaces";
+import { IncomingCallHost } from "@ai-matrx/meet/react";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import {
@@ -127,7 +126,7 @@ export function MeetHost({ children }: MeetHostProps) {
 
   return (
     <MeetProvider
-      client={meetClient()}
+      client={supabase}
       baseUrl={meetBaseUrl(store.getState())}
       userId={userId}
       organizationId={organizationId}
@@ -138,10 +137,11 @@ export function MeetHost({ children }: MeetHostProps) {
       agents={agents}
       onDiagnostic={onDiagnostic}
     >
-      {/* Mount ONCE, high in the tree — a call rings on every surface.
-          Wrapped because the package's own component throws while the provider
-          is inert; see features/meet/components/MeetCallSurfaces.tsx. */}
-      <MeetIncomingCalls />
+      {/* Mount ONCE, high in the tree — a call rings on every surface. Mounted
+          DIRECTLY: since @ai-matrx/meet 0.2.1 it renders nothing on its own
+          while this provider is inert (which is every server render and every
+          signed-out visitor), so there is nothing for this app to guard. */}
+      <IncomingCallHost />
       {children}
     </MeetProvider>
   );

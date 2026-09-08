@@ -1,6 +1,6 @@
 # Meet — calls and meetings on aimatrx.com
 
-**Status:** adopted, **blocked in the room** (see § Blocker) · **Package:** [`@ai-matrx/meet`](https://www.npmjs.com/package/@ai-matrx/meet) `latest` (0.2.0 at adoption) · **Cross-repo SoR:** `../../../common-docs/systems/communications/meet/HANDOFF.md` · **Register:** `../../../common-docs/projects/meet-realtime-intelligence/REGISTER.md` (MRI-D1)
+**Status:** adopted and running — the room renders, joins, and admits from the lobby against production data · **Package:** [`@ai-matrx/meet`](https://www.npmjs.com/package/@ai-matrx/meet) `latest` · **Cross-repo SoR:** `../../../common-docs/systems/communications/meet/HANDOFF.md` · **Register:** `../../../common-docs/projects/meet-realtime-intelligence/REGISTER.md` (MRI-D1, MRI-A5a)
 
 This folder is the HOST BINDING and nothing else. Every behaviour — ringing, the
 lobby, host controls, the stage arithmetic, device fallbacks, recording consent,
@@ -14,6 +14,7 @@ chrome, and the routes.
 | THE ONE `<MeetProvider>` mount | [`../../providers/MeetHost.tsx`](../../providers/MeetHost.tsx) |
 | The two invitation handlers on `<MessagingProvider actions>` | [`../../providers/MessagingHost.tsx`](../../providers/MessagingHost.tsx) |
 | `<CallButton>` — the one place a person is shown on messaging surfaces | [`../messaging/components/MessagingChrome.tsx`](../messaging/components/MessagingChrome.tsx) |
+| `<IncomingCallHost>` — mounted ONCE, directly | [`../../providers/MeetHost.tsx`](../../providers/MeetHost.tsx) |
 | The room, both lanes | [`components/MeetingSurface.tsx`](./components/MeetingSurface.tsx) |
 | Create a meeting, get its link | [`components/MeetingsWorkspace.tsx`](./components/MeetingsWorkspace.tsx) → `/meetings` |
 | Agent identity from Mandates | [`lib/meetMandates.ts`](./lib/meetMandates.ts) + [`lib/useMeetIntelligences.ts`](./lib/useMeetIntelligences.ts) |
@@ -49,34 +50,34 @@ deployed. The satellite hosts still hand `/meet/*` back to the main origin.
 - **Nothing dead, nothing lying.** Every state on these surfaces has a sentence:
   no org, no meet host, an unresolvable slug, an inert provider.
 
-## Blocker — the room does not run on 0.2.0
+## Zero wrappers (and why that is the point)
 
-`useDeviceSnapshot()` feeds `createDeviceManager().snapshot()` — a fresh object
-literal every call — straight into `useSyncExternalStore`, so `<PreJoin>` (which
-`<MeetingRoom>` always renders first) loops: *"The result of getSnapshot should
-be cached"* → *"Maximum update depth exceeded"* → this app's error boundary.
-Both lanes reach it and both die there; no host prop can reach the device
-manager. Verified live 2026-09-08 against the production backend. The fix is to
-memoize the snapshot inside the package — **MRI-A5**.
+**There is no host code here that stands in for a package defect.** The four
+wrappers this adoption was forced to write against `@ai-matrx/meet` 0.2.0 are
+all DELETED, because 0.2.1 fixed every one of them in the package where they
+belonged (C22, THE SAME-SESSION LAW):
 
-Two more package defects the adoption had to work around, both also MRI-A5:
+| What 0.2.0 forced | What is here now |
+|---|---|
+| `<PreJoin>` looped on an uncached `getSnapshot` and killed every room | Nothing. `<MeetingRoom>` renders. |
+| `lib/meetClient.ts` — one cast, because the public `client` prop sent tsc into TS2589 | Deleted. `<MeetProvider client={supabase}>` and `createMeetRepository({ client: supabase })` take the app's own client directly. |
+| `components/MeetCallSurfaces.tsx` — guards, because `<IncomingCallHost/>` and `<CallButton/>` threw while the provider was inert | Deleted. Both are mounted directly; they render nothing on their own until there is a runtime. |
+| The house rule "import everything from `@ai-matrx/meet/react`", because two declaration files re-declared every branded type | No longer required (one dts pass). Still the tidier habit in a React file, and still what these files do. |
 
-1. **Two declaration files re-declare the same branded types**, so `UserId` from
-   `@ai-matrx/meet` is not assignable to `UserId` from `@ai-matrx/meet/react`.
-   House rule until fixed: **import everything from `@ai-matrx/meet/react`**.
-2. **The public `client` prop is the rich internal `SupabaseLike`**, which sends
-   tsc into TS2589 against a typed `SupabaseClient<Database>` —
-   `@ai-matrx/messaging` already solved this with a shallow prop type and wrote
-   down why. One crossing stands in for it: [`lib/meetClient.ts`](./lib/meetClient.ts).
-3. **`<IncomingCallHost />` and `<CallButton />` throw when the provider is
-   inert**, which is every server render and every signed-out visitor — the
-   README's own three-line integration 500s. Guarded once in
-   [`components/MeetCallSurfaces.tsx`](./components/MeetCallSurfaces.tsx).
-
-Every one of those wrappers is DELETED when 0.3.0 lands.
+If a future defect tempts a fifth wrapper, the answer is the same: fix it in the
+package, release, adopt — never a crossing in here.
 
 ## Change log
 
+- `2026-09-08` — claude: **all four package workarounds deleted (MRI-A5a).**
+  `@ai-matrx/meet` 0.2.1 memoizes the device snapshot (the loop that killed
+  every room), stops throwing while the provider is inert, takes a shallow
+  `client` type, and ships one declaration of every branded type.
+  `lib/meetClient.ts` and `components/MeetCallSurfaces.tsx` are gone and their
+  callers pass `supabase` / mount the package's components directly. Verified
+  live: `<PreJoin>` renders, the `/api/v1/meet/token` round trip succeeds, a
+  guest reaches the lobby and is admitted from the host tab, and both tiles
+  appear.
 - `2026-09-08` — claude: **adopted `@ai-matrx/meet` (MRI-D1).** All eight census
   items landed; `/meetings` creates a real meeting against the live database and
   returns a durable link; `/meet/[slug]` is reachable signed-out and resolves the
