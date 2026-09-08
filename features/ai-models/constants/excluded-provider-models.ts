@@ -3,7 +3,7 @@
  * in the Matrx registry. Provider sync shows these as "Excluded" — not
  * "Not in DB".
  *
- * Keys match provider-sync fetcher keys (`anthropic`, `openai`, `groq`).
+ * Keys match provider-sync fetcher keys (`anthropic`, `openai`, `groq`, `google`).
  */
 export const EXCLUDED_PROVIDER_MODEL_IDS: Readonly<
   Record<string, readonly string[]>

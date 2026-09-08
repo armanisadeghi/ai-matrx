@@ -97,11 +97,63 @@ async function fetchGroqModels(): Promise<ProviderModelEntry[]> {
   }));
 }
 
-// Registry of providers we support fetching from
+type GoogleModelsPage = {
+  models?: Array<Record<string, unknown> & { name: string; displayName?: string }>;
+  nextPageToken?: string;
+};
+
+async function fetchGoogleModels(): Promise<ProviderModelEntry[]> {
+  const apiKey =
+    process.env.GEMINI_API_KEY ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY (or GOOGLE_GENERATIVE_AI_API_KEY) is not set");
+  }
+
+  const models: ProviderModelEntry[] = [];
+  let pageToken: string | undefined;
+
+  while (true) {
+    const url = new URL("https://generativelanguage.googleapis.com/v1beta/models");
+    url.searchParams.set("pageSize", "200");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+    const res = await fetch(url.toString(), {
+      headers: { "x-goog-api-key": apiKey },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Google API error ${res.status}: ${text}`);
+    }
+
+    const json = (await res.json()) as GoogleModelsPage;
+    for (const m of json.models ?? []) {
+      // Google names models "models/gemini-3.8-flash"; the wire id (what an
+      // offering's provider_model_id stores) is the part after the slash.
+      const id = m.name.startsWith("models/") ? m.name.slice("models/".length) : m.name;
+      models.push({
+        ...m,
+        id,
+        display_name: m.displayName ?? id,
+        max_input_tokens: (m.inputTokenLimit as number | undefined) ?? null,
+        max_tokens: (m.outputTokenLimit as number | undefined) ?? null,
+      });
+    }
+
+    if (!json.nextPageToken) break;
+    pageToken = json.nextPageToken;
+  }
+
+  return models;
+}
+
+// Registry of providers we support fetching from. `name` must equal the
+// ai.provider.name row (case-insensitive) — that is how GET marks a provider
+// as supported and how the dashboard picks the fetcher key.
 const PROVIDER_FETCHERS: Record<string, ProviderConfig> = {
   anthropic: { name: "Anthropic", fetchModels: fetchAnthropicModels },
   openai: { name: "OpenAi", fetchModels: fetchOpenAIModels },
   groq: { name: "Groq", fetchModels: fetchGroqModels },
+  google: { name: "Google", fetchModels: fetchGoogleModels },
 };
 
 export async function POST(request: NextRequest) {
