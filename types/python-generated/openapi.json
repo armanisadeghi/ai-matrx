@@ -82059,6 +82059,28 @@
           }
         }
       }
+    },
+    "/lulu/payment-mode": {
+      "get": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Payment Mode",
+        "description": "What this server's print lane actually is — test or live, and whether the\ntwo money integrations agree.\n\nA surface that offers ordering MUST badge this rather than infer a mode from\nits own hostname: a local page talks to whichever backend the server toggle\nnames, so \"I am on localhost\" says nothing about whose money is at stake.\nCarries no secret — only the derived mode.",
+        "operationId": "payment_mode_lulu_payment_mode_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintPaymentMode"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -249445,6 +249467,63 @@
           "success"
         ],
         "title": "TypeResult"
+      },
+      "PrintPaymentMode": {
+        "properties": {
+          "lulu_environment": {
+            "type": "string",
+            "enum": [
+              "test",
+              "live",
+              "unknown",
+              "unconfigured"
+            ],
+            "title": "Lulu Environment",
+            "description": "Derived from LULU_API_BASE: 'live' is api.lulu.com, 'test' is a sandbox host."
+          },
+          "lulu_api_base": {
+            "type": "string",
+            "title": "Lulu Api Base",
+            "description": "The Lulu base URL in use. Not a secret."
+          },
+          "payment_mode": {
+            "type": "string",
+            "enum": [
+              "test",
+              "live",
+              "unknown",
+              "unconfigured"
+            ],
+            "title": "Payment Mode",
+            "description": "Derived from the STRIPE_SECRET_KEY prefix. Never the key itself."
+          },
+          "pairing_ok": {
+            "type": "boolean",
+            "title": "Pairing Ok",
+            "description": "True only when both providers are configured and in the SAME mode."
+          },
+          "charges_real_money": {
+            "type": "boolean",
+            "title": "Charges Real Money",
+            "description": "True when a completed checkout would move real money and print a real book."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "One human sentence naming the mode and, when refused, the remedy."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lulu_environment",
+          "lulu_api_base",
+          "payment_mode",
+          "pairing_ok",
+          "charges_real_money",
+          "message"
+        ],
+        "title": "PrintPaymentMode",
+        "description": "What the backend's print lane actually is — the honest answer a surface\nbadges instead of asserting a mode from its own hostname."
       }
     }
   }
