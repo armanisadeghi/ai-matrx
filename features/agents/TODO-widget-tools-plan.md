@@ -6,7 +6,7 @@ todos:
     content: Write WIDGET_TOOLS_SEED.sql with full INSERT statements for 10 widget_* tools (parameters, output_schema, annotations, tags incl 'widget-capable', category per-tool, function_path pointing to planned Python module).
     status: pending
   - id: phase0-insert-db
-    content: Execute the seed SQL against automation-matrix project (txzxabzwovsujtloxrus) via user-supabase MCP in a single transaction; verify with a SELECT.
+    content: Execute the seed SQL against automation-matrix project (brsgrqvjdzwihsvnfqkf) via user-supabase MCP in a single transaction; verify with a SELECT.
     status: pending
   - id: phase1-widget-types
     content: "Create features/agents/types/widget-handle.types.ts: WIDGET_ACTION_NAMES, WidgetActionName, WidgetActionInput (discriminated), WidgetActionResult, WidgetHandle, WIDGET_TOOL_NAME_TO_HANDLE_METHOD, deriveClientToolsFromHandle, payload types."
@@ -90,7 +90,7 @@ flowchart LR
 
 ## Phase 0 — Database: canonical widget tools
 
-Add 10 rows to `public.tools` in the `automation-matrix` Supabase project (`txzxabzwovsujtloxrus`). These are the canonical widget capabilities. You will create Python duplicates later; for now `function_path` points to the planned Python module path so the DB row is future-proof.
+Add 10 rows to `public.tools` in the `automation-matrix` Supabase project (`brsgrqvjdzwihsvnfqkf`). These are the canonical widget capabilities. You will create Python duplicates later; for now `function_path` points to the planned Python module path so the DB row is future-proof.
 
 Shared column conventions, matched to existing rows (`note_patch`, `text_analyze`):
 

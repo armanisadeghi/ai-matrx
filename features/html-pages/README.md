@@ -602,7 +602,7 @@ RLS is enabled on `html_pages`, but **every write in this repo goes through the 
 (`SUPABASE_HTML_SECRET_KEY`), which bypasses it entirely — ownership is enforced in **app code**,
 not by Postgres. The only write path: browser → `HTMLPageService` (`services/htmlPageService.js`) →
 `POST /api/html-pages` → the route verifies the caller's session against the **main** app's
-Supabase Auth (`txzxabzwovsujtloxrus`), then reads/writes `html_pages` with the secret key, filtering
+Supabase Auth (`brsgrqvjdzwihsvnfqkf`), then reads/writes `html_pages` with the secret key, filtering
 every query by `user_id = session.user.id`. There is no browser-side Supabase client for this
 project in this repo — a direct anon-key client would need its own RLS policies and its own
 auth session against a project this repo's users never sign into, which is exactly the dead

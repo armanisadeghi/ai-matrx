@@ -1,56 +1,67 @@
 ---
 status: active
-updated: 2026-07-28
+updated: 2026-09-08
 repos: [matrx-frontend, aidream]
-vision: [/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md, features/content-ir/docs/SHAPE_SYSTEM.md]
+scope: program
+feature: Content IR
+vision: [/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md]
 ---
 
-# Kind authoring, the admin builder, and component interactivity — work order
+# Kind authoring and component interactivity — work order
 
-Scope: **how a kind gets built (esp. by an ADMIN agent) and how its component comes alive and DOES things.** The broader platform rollout (enforcement flips, tool_ui subsumption, workflows, bulk-bind) is a separate handoff — `docs/handoffs/content-ir-integration-map.md`. Read that one's Vision section too; it is the ground truth for the whole system. System-of-record (evidence/counts): `common-docs/systems/content-ir-system/FEATURE.md`.
+**What this is:** how a Shape (kind) gets BUILT — by a user at `/shapes/new`, by an
+admin at the kind registry, or by an agent — and how the component it renders with
+comes alive and DOES things instead of just displaying.
+**Scope:** Program
+**Feature:** Content IR
+**Vision:** [`common-docs/systems/content-ir-system/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md)
 
-## Vision — Arman's words
+Read the vision before touching anything here; it outranks this work order. The
+broader platform rollout (enforcement flips, tool_ui subsumption, workflows,
+bulk-bind) is [`content-ir-integration-map.md`](content-ir-integration-map.md).
+Evidence/counts system-of-record: `common-docs/systems/content-ir-system/FEATURE.md`.
 
-**Moved 2026-08-25 to [`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md).** Every quote that was here is preserved there verbatim,
-grouped by theme with its source and date, alongside the rest of his Content IR vision — which
-had been split across four work orders in this repo and was invisible to agents in every other
-repo. **Read it before touching anything here; it outranks this work order.**
+> **Everything below was re-verified against live code on 2026-09-08.** Claims that
+> had rotted were corrected, not appended to.
 
-## Resources (pointers, not explanations)
+## Resources
 
 - **Kernel + registries:** `features/content-ir/` (`core/`, `registry/`, `react/`, `kinds/`, `studio/`, `admin/`). Feature doc: `features/content-ir/FEATURE.md`. Skill: `.claude/skills/shape-system/`.
-- **Admin builder:** route `app/(admin)/administration/utilities/kind-registry/build/`, client `features/content-ir/admin/KindBuilderClient.tsx`. Agent `kind_architect` (`9d484ce1-1e2b-4db7-8469-d3ba8550cdd8`, builtin, 19 kind tools incl. `kind_activate`). Read-only diagnostic console: `/administration/utilities/kind-registry` (catalog + doctor board + per-kind tabs).
-- **User builder:** `/shapes`, `/shapes/[kind]` (+ `/test`, `/instances`), `/shapes/new` → `features/content-ir/studio/components/NewShapeClient.tsx`. Agent `kind_creator` (`4f4ffd49-…`, v9). Both builders EJECT to `/chat/a/[agentId]` via `stashChatDraftTransfer` (not embedded).
-- **Action registry:** `features/content-ir/react/actions/` — `kind-action-registry.ts` (`registerKindAction`), `useKindActionRunner.ts` (`runAction`, injected into every db component by `DbKindComponent.tsx`), `handlers/trigger-agent.ts` (the only handler so far, key `"trigger_agent"`), `KindAgentActionButton.tsx` (the bundled trigger button; kind data declares `action:{agent_id, variable_name, label}`).
-- **Kind Request:** `react/actions/useKindRequest.ts` + `KindRequestDialog.tsx` (streams the result live; renders it through the kind's own component with `onResolve` + `uiOptions`). First consumer: `features/podcasts/generator/components/TopicIdeaHelper.tsx` on `/podcast/studio/create`. Return channel: `onResolve`/`uiOptions` on `dbKindComponentCache.ts` render props.
-- **Emit/render shape:** `core/emit-payload.ts` (`withRootKind`/`emitPayloadFence`) — the `{__kind, …}` composer; copy affordance on `studio/components/KindExamplePreview.tsx`.
-- **aidream tools:** `packages/matrx-ai/matrx_ai/tools/implementations/kind_authoring.py` (+ `kind_component.py`). Agent prompts: `internal_agents/kind_creator.md`, `internal_agents/kind_architect.md`.
-- **DB (project `txzxabzwovsujtloxrus`):** activation authority `content_ir.set_kind_activation(p_kind_definition_id, p_active, p_note, p_actor)` (gated; browser `auth.uid()` wins, server passes `p_actor`) + `evaluate_kind_activation`. Menu reads `skill.render_definition` via `agent.context_menu_view` (NOT `public.content_blocks`). System org = `39c38960-d30c-4840-b0c1-c9960de95582`.
-- **Login for testing:** `/login` with `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>` (per CLAUDE.md). Note: kinds are org-scoped — verify against the org that owns the kind.
+- **User studio:** `/shapes/all` → `/shapes/[kind]` with **nine tabs, one set for users and admins alike** (Preview · Test · Stream · Examples · Instances · Schema · Template · Inputs · Gate — `studio/components/ShapeDetailHeader.tsx`).
+- **Create a Shape — two deliberately different experiences.** `/shapes/new` is a **dedicated purpose-built form** (`studio/components/NewShapeClient.tsx` + the question definitions in `studio/new-shape-options.ts`) beside a live result pane that the run streams into via `AgentRunner`, conversation left open. From **anywhere else**, the `shape_builder` surface role opens the generic agent window so you never leave the page (`studio/useKindAgentLaunch.ts`). Neither navigates to `/chat` any more.
+- **Admin builder:** `app/(admin)/administration/utilities/kind-registry/build/`, client `features/content-ir/admin/KindBuilderClient.tsx`. Agent `kind_architect` (builtin, 19 kind tools incl. `kind_activate`).
+- **Agents are surface roles, not hardcoded ids:** `SHAPE_BUILDER_ROLE` / `SHAPES_SURFACE_NAME` in `studio/constants.ts`; briefs composed in `studio/kind-agent-intents.ts` (structured content rides named variables — THE USER-INPUT LAW).
+- **Action registry:** `features/content-ir/react/actions/` — `kind-action-registry.ts`, `useKindActionRunner.ts` (injected into every db component), handlers `trigger-agent.ts` + `apply-surface-write.ts`.
+- **Kind Request:** `react/actions/useKindRequest.ts` + `KindRequestDialog.tsx`. First consumer: `features/podcasts/generator/components/TopicIdeaHelper.tsx`.
+- **Sandbox allowlist:** `features/agent-apps/utils/allowed-imports.ts` — React hooks, shadcn, lucide, recharts, `runAction`, and (added since this doc was written) `CopyButtons` + `CopyForAiButton`. Still NO framer-motion; animation is CSS/Tailwind only.
+- **aidream tools:** `packages/matrx-ai/matrx_ai/tools/implementations/kind_authoring.py` (+ `kind_component.py`). Prompts: `internal_agents/kind_creator.md`, `internal_agents/kind_architect.md`.
+- **DB (project `brsgrqvjdzwihsvnfqkf` — Matrx Main; the old `txz…` ref that used to be in this doc is a RETIRED project that will confirm anything you ask it):** activation authority `content_ir.set_kind_activation(...)` + `evaluate_kind_activation`. Menu reads `skill.render_definition` via `agent.context_menu_view`. System org `39c38960-d30c-4840-b0c1-c9960de95582`.
+- **Login for testing:** `/login`, `admin@admin.com`, `AI_ADMIN_PASSWORD` from `.env`. Kinds are org-scoped — verify against the org that owns the kind.
 
 ## Remaining work (ordered; each independently actionable)
 
-1. **VERIFY THE AIDREAM DEPLOY — everything below waits on it.** These are pushed to `aidream` main but need a prod redeploy to take effect: `kind_activate` calling `set_kind_activation`; `kind_create_content_block` → `skill.render_definition`; `kind_creator` v9 prompt; and the `kind-action` source_feature registration (`aidream/services/conversation_context/source_attribution.py`) that Kind Request / KindAgentActionButton launch under. Confirm prod has them (run a real kind build via `/administration/utilities/kind-registry/build`; run the podcast idea-picker on prod). Until then those flows fail at request validation or activation.
-2. ~~**Stop ejecting to `/chat` — run the agent ON THE SAME PAGE (Arman, elevated).**~~ DONE (verified 2026-08-06): `KindBuilderClient`, `NewShapeClient`, and `KindAgentButton` now use `useOpenAgentRunWindow` (window-panel launch) instead of `stashChatDraftTransfer` + `router.push` — recorded in the sibling FEATURE.md change log 2026-07-28. Original brief kept for context: Arman's direction: "use the window panel to do this instead, or render the chat in the same UI in a split UI or something." So: render the agent chat in a **WindowPanel** (`features/window-panels/` — invoke the `window-panels` skill) or a **split pane** beside a live `/shapes/[kind]` preview, so the user watches the build and sees the component appear without leaving the page. Reuse the embeddable-chat precedents: `features/tool-call-visualization/admin/hooks/useToolComponentAgent.ts` (headless launch + stream) or `AgentConversationColumn` (the education-tutor embed pattern). The live-preview payoff pairs with the in-session cache-bust (already shipped, see Done).
-3. **Raise the component quality bar in the builder prompts (they still produce competent-but-plain TSX).** The sandbox gives db components React hooks + shadcn (accordion/collapsible/dialog/sheet/tabs) + lucide + recharts + `runAction` + `onResolve`/`uiOptions` — but NO framer-motion (animation is CSS/Tailwind only) and NOT the repo's `CopyButtons`/`IconButton`/`useArtifactState`. Two moves: (a) EXPAND the sandbox allowlist (`features/agent-apps/utils/allowed-imports.ts`) to expose the interactivity primitives — copy-for-AI FIRST (Arman: "critical"); (b) rewrite `kind_architect`/`kind_creator` component guidance to teach the CSS-native techniques from the gold-standard files: 3D flip = `perspective`+`preserve-3d`+`rotateY`+`backface-hidden`; fullscreen = `fixed inset-0`+`useState`; container queries; celebration states; and "must DO something" (copy-for-AI, collapsible). Exemplars: `components/mardown-display/blocks/flashcards/FlashcardItem.tsx`, `.../cooking-recipes/cookingRecipeDisplay.tsx`, `.../quiz/MultipleChoiceQuiz.tsx`.
-4. **Grow the action registry past one handler (the "thousands" vision).** Add handlers under `react/actions/handlers/` via `registerKindAction`. Each: validate input, run as the viewing user, never throw into component code (safe `{ok,error}` envelope), degrade gracefully. This is the extensible seam — adding capability #2..N must never touch the sandbox contract.
-5. **The image example end-to-end (proves the trigger + return together).** Build the `image_description` kind (clone `features/content-ir/kinds/video-prompt-options.ts` + its block, the shipped worked example of a data-declared agent action) and a small `generated_image` result kind so the image lands *in place* via `<InlineMediaRef>` (durable `file_id`, never a signed URL). Needs an image-gen agent that emits a structured `file_id` result.
-6. **`kind_surface` creation is still absent from the toolset.** Neither builder agent can register a detection surface (XML tag / non-JSON fence). JSON `__kind` detection works without it, so this is only needed for non-JSON arrival forms — build a `kind_create_surface` tool + regenerate the surface bootstraps (`pnpm check:shapes:surfaces:refresh`, writes both repos) if/when a kind needs it.
-7. **System-agent ownership at creation.** Agent-built kinds land in the *user's* org (I had to hand-reassign `topic_ideas`/`topic_idea`/`keyword_relationship_research` to the system org). For platform kinds the admin builder should create them system-owned from the start (org `39c38960`, `created_by` null, visibility public) — a flag on `kind_architect`'s create path. Their SKILLS also still land in the user org (the render blocks were moved; skills were not).
-8. **The FE incident reporter (shared with the other handoff).** `DbKindComponentErrorBoundary` screams to the error store but never writes `content_ir.kind_component_incident`, so `kindcomp_resolve_incident` is blind to real crashes. Wire the boundary (and the html-flavor frame) to insert incidents (RLS-gated, org-scoped, dedup), include the crashing `data_snapshot`.
+1. **Verify the aidream prod deploy — several items below assume it.** Pushed to `aidream` main but needing prod: `kind_activate` → `set_kind_activation`; `kind_create_content_block` → `skill.render_definition`; the `kind_creator` prompt; and the `kind-action` source_feature registration (`aidream/services/conversation_context/source_attribution.py`). Confirm by running a real kind build at `/administration/utilities/kind-registry/build` and the podcast idea-picker on prod. **Not verifiable from this repo** — it needs prod access.
+2. **Teach the builder prompts to produce components that DO something.** The sandbox now exposes copy-for-AI (Arman: "critical") — that half is done. What is NOT done is the prompt guidance: `kind_architect` / `kind_creator` still emit competent-but-plain TSX. Rewrite their component guidance around the CSS-native techniques in the gold-standard files (3D flip = `perspective`+`preserve-3d`+`rotateY`+`backface-hidden`; fullscreen = `fixed inset-0`+`useState`; container queries; celebration states). Exemplars: `components/mardown-display/blocks/flashcards/FlashcardItem.tsx`, `.../cooking-recipes/cookingRecipeDisplay.tsx`, `.../quiz/MultipleChoiceQuiz.tsx`.
+3. **Grow the action registry past two handlers** (the "thousands" vision). Add under `react/actions/handlers/` via `registerKindAction`. Each: validate input, run as the viewing user, never throw into component code (safe `{ok,error}` envelope), degrade gracefully. Adding capability #3..N must never touch the sandbox contract.
+4. **The image example end-to-end** (proves trigger + return together). `generated-image-set.ts` exists; `image_description` does not. Build it (clone `kinds/video-prompt-options.ts` + its block) so the result lands in place via `<InlineMediaRef>` (durable `file_id`, never a signed URL). Needs an image-gen agent emitting a structured `file_id`.
+5. **`kind_surface` creation is still absent from the toolset.** Neither builder agent can register a detection surface (XML tag / non-JSON fence) — confirmed absent from `kind_authoring.py` on 2026-09-08. JSON `__kind` detection works without it, so this is only needed for non-JSON arrival forms.
+6. **System-agent ownership at creation.** Agent-built kinds land in the *user's* org; platform kinds should be created system-owned (org `39c38960`, `created_by` null, visibility public) — a flag on `kind_architect`'s create path. Their SKILLS still land in the user org too.
+7. **D279 — the Shape Studio render-status strip can lie.** It reports an inactive DB override as the live renderer when the compiled bridge is what actually renders, and the same false premise reaches `ShapeActivationControl`'s deactivate confirmation. Full write-up in `FOUND_DEFECTS.md` § D279.
 
-## Done (git + FEATURE.md hold detail)
+## Done (git + `features/content-ir/FEATURE.md` hold detail)
 
-- Activation path built — DB gate `content_ir.set_kind_activation` (+ server-actor overload); `kind_activate` tool calls it; both builder agents can finish a kind.
-- Kind Request primitive + streaming result + podcast idea-picker — `react/actions/useKindRequest.ts` / `KindRequestDialog.tsx` / podcast `TopicIdeaHelper`.
-- Action registry seam + `trigger_agent` handler wired into every db component — `react/actions/`.
-- `__kind` render-template made copyable + agent v9 teaches the two shapes and emits a live `__kind` block as its final step — `core/emit-payload.ts`, `KindExamplePreview.tsx`.
-- Content blocks now reach the menu — tool writes `skill.render_definition`; 3 live blocks ported to system org.
-- db-component error boundary un-latches on version change ("broke then healed itself" class) — `DbKindComponentErrorBoundary.tsx`.
-- In-session component cache-bust — a `kindcomp_*` tool completion force-refreshes the component registry so an edited component re-renders live (no manual refresh) — `features/tool-call-visualization/effects/toolStateEffects.ts` (`kind-components` effect). FE-only; live E2E (agent edits a mounted `__kind` block) pending a session with deployed aidream. Optional rider: add `kind` to the update/patch/settings tool outputs in aidream `kind_component.py` for the belt-and-suspenders `invalidateDbKindComponent` (today only `kindcomp_create_component` returns it; `refreshKindComponents(0)` alone already suffices).
-- `kind_architect` admin agent + `/administration/utilities/kind-registry/build` page exist (a parallel session).
+- Create-with-agent never navigates to `/chat` — window launch from anywhere, dedicated form at `/shapes/new`.
+- `/shapes/new` rebuilt as a purpose-built questionnaire + inline streaming result pane — `studio/new-shape-options.ts`, `studio/components/NewShapeClient.tsx`.
+- Shape agents are surface roles with composed, variable-bound briefs — `studio/useKindAgentLaunch.ts`, `studio/kind-agent-intents.ts`.
+- One set of tabs for users and admins — `studio/components/ShapeDetailHeader.tsx`.
+- Activation path + `kind_activate` → `content_ir.set_kind_activation`.
+- Kind Request primitive + streaming result + podcast idea-picker — `react/actions/`.
+- Action registry seam wired into every db component; two handlers live.
+- Sandbox allowlist exposes copy-for-AI.
+- db-component error boundary files durable incidents through its `onCaught` seam — `react/db-component/DbKindComponentErrorBoundary.tsx`.
+- In-session component cache-bust so an edited component re-renders live.
 
 ## Decisions needed (Arman only)
 
-1. **Sandbox widening — APPROVED.** Arman said yes to exposing agent-triggering (and the growing action registry) into db components, emphatically "anything but narrow… as long as it's safe." Proceed with the safe-seam approach (one injected `runAction`, host enforces click-only/RLS/spend). No further sign-off needed to add handlers.
-2. **Open:** should agent-built PLATFORM kinds be system-owned by default (remaining #7), and should spend/rate-limiting gate action-triggered agent launches before public launch? Both are pre-launch product calls, not blockers for building.
+1. **Should agent-built PLATFORM kinds be system-owned by default?** (remaining #6). Today an agent building a platform Shape leaves it owned by whoever happened to run the agent, and someone hand-reassigns it later. Decide: default to system-owned when an admin builds from the registry, or keep user-owned and make reassignment a visible one-click step.
+2. **Should spend/rate-limiting gate action-triggered agent launches before public launch?** A kind component can now trigger an agent from a click. Neither a per-user rate limit nor a spend ceiling gates that today.

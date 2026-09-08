@@ -8,7 +8,7 @@
 
 **Status:** Approved for implementation  
 **Frontend:** `matrx-frontend`  
-**Database:** Supabase project `txzxabzwovsujtloxrus`, schema `web`  
+**Database:** Supabase project `brsgrqvjdzwihsvnfqkf`, schema `web`  
 **Decision authority:** [`MARKETING_SITE_DECISION_REGISTER.md`](./MARKETING_SITE_DECISION_REGISTER.md)
 
 ## 1. Product model

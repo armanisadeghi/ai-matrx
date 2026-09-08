@@ -18,7 +18,7 @@ per this campaign's own findings, an extra unaudited surface.
    `auth.uid()` **only** — never a client-supplied actor/user param. That exact shape is the
    vulnerability class this campaign already found twice (`rag.library_grant_*` trusted a
    caller-supplied `p_actor` and two were `EXECUTE`-granted to `anon`).
-2. Apply the change with the Supabase MCP (project `txzxabzwovsujtloxrus`); mirror into
+2. Apply the change with the Supabase MCP (project `brsgrqvjdzwihsvnfqkf`); mirror into
    `packages/matrx-rag/matrx_rag/migrations/` if it touches `rag` tables.
 3. Rewrite the hook/service to call it via `supabase-js` (`ragDb()` / `codeDb()` / `iamDb()`
    helpers in `utils/supabase/`).

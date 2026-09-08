@@ -7,7 +7,7 @@ known weakness. Supersedes `HANDOFF_2026-06-12.md` (archived at `docs/archive/20
 
 - **Server (the pipeline):** `aidream` → `packages/matrx-ai/matrx_ai/agent_runners/podcast_generator.py` + the primary contract **`PODCAST_PIPELINE.md`** beside it. **Read PODCAST_PIPELINE.md** — it is the law for the flow.
 - **Frontend:** `matrx-frontend` → `features/podcasts/` + `app/(core)/podcast/`.
-- **DB:** Supabase `txzxabzwovsujtloxrus` (shared by both).
+- **DB:** Supabase `brsgrqvjdzwihsvnfqkf` (shared by both).
 - **Work on `main` in both.** Server code is **committed but the user deploys it.**
 
 ---

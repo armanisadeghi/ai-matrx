@@ -8,7 +8,7 @@
 > Claude Design prototypes (read the HTML/CSS directly; pixel truth for every surface).
 > Every brief in this folder is standalone — hand it to one agent blind using the copy-paste
 > prompt in [`ASSIGN.md`](./ASSIGN.md). Every factual claim was re-verified against live code +
-> the live DB (project `txzxabzwovsujtloxrus`) on 2026-07-07.
+> the live DB (project `brsgrqvjdzwihsvnfqkf`) on 2026-07-07.
 
 ---
 

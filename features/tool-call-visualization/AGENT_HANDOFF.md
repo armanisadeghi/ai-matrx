@@ -138,7 +138,7 @@ Generic field library + new `GenericRenderer` + `ToolTabBodies` (raw tab = 3 ver
 
 ## 5. CLEANUP DEBT I created (fix these — a fresh me will trip on them)
 
-- **`dynamic_demo` row in the `tool_ui` table (DB).** I inserted a v2 demo row to test the dynamic path (it hangs in dev). DELETE it when purging `tool_ui`: `DELETE FROM public.tool_ui WHERE tool_name='dynamic_demo';` (project `txzxabzwovsujtloxrus`).
+- **`dynamic_demo` row in the `tool_ui` table (DB).** I inserted a v2 demo row to test the dynamic path (it hangs in dev). DELETE it when purging `tool_ui`: `DELETE FROM public.tool_ui WHERE tool_name='dynamic_demo';` (project `brsgrqvjdzwihsvnfqkf`).
 - **The gallery references the duplicate runner.** `page.dev.tsx` imports `DynamicInlineRenderer` from `features/tool-call-visualization/dynamic/DynamicToolRenderer` and has a "Dynamic (DB) renderer" section using `dynamic_demo`. **These BREAK when you delete `dynamic/`** — remove that section + import as part of the purge (replace with a section that renders a tool through the NEW applet-runtime path once it exists).
 - **Two `parseResearch.ts`** (revival + modern) — CANONICALIZE to one shared parser when the research version is picked. (Doctrine hook already flagged the duplicate types.)
 - **Research not registered** — only in the gallery. Register the picked version for `research_web` / `core_web_search_and_read` / `news_get_headlines`. NOTE: `core_web_search` emits a DIFFERENT format (`🔍 Results for "q"`, not `## "q" (N results)`) — the new parsers handle the `# All Search Results` shape; wire `core_web_search` carefully (it may need a second parse branch or its own renderer).

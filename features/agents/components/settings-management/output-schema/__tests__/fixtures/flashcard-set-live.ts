@@ -1,5 +1,5 @@
 /**
- * LIVE fixture — pulled from Supabase (Matrx Main, project txzxabzwovsujtloxrus)
+ * LIVE fixture — pulled from Supabase (Matrx Main, project brsgrqvjdzwihsvnfqkf)
  * on 2026-07-17:
  *
  *   - `LIVE_DEFS` / `LIVE_EDGES`: the `content_ir.kind_definition` +

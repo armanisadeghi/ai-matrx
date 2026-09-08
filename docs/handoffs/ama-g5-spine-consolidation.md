@@ -35,7 +35,7 @@ vision: []
 - `features/rag/components/library/KnowledgeAssetPanel.tsx`
 - `features/rag/api/derivations.ts` — resume default; `?reset=true` for full rebuild
 - `features/rag/api/stages.ts` — `POST /rag/library/{id}/clean`
-- DB (project `txzxabzwovsujtloxrus`): `rag.kg_chunks` (`derivation_kind`), `docproc.derive_runs`,
+- DB (project `brsgrqvjdzwihsvnfqkf`): `rag.kg_chunks` (`derivation_kind`), `docproc.derive_runs`,
   `docproc.processed_document_pages` (`verification_flags`), `rag.data_stores` /
   `rag.data_store_members`, `files.files` (canonical name; `public.cld_files` is legacy).
 

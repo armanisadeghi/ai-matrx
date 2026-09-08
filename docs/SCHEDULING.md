@@ -2,7 +2,7 @@
 
 **Audience.** matrx-frontend team building the scheduling UI on aimatrx.com, and any future surface (desktop, mobile, server worker) that will create or claim scheduled work.
 
-**Status.** Live in Supabase project `txzxabzwovsujtloxrus` as of 2026-05-10. Migration: [`migrations/2026_05_10_sch_v0.sql`](../migrations/2026_05_10_sch_v0.sql). TypeScript reference implementation: [`src/lib/agenda/queries.ts`](../src/lib/agenda/queries.ts) (the agent-kind façade over the raw tables).
+**Status.** Live in Supabase project `brsgrqvjdzwihsvnfqkf` as of 2026-05-10. Migration: [`migrations/2026_05_10_sch_v0.sql`](../migrations/2026_05_10_sch_v0.sql). TypeScript reference implementation: [`src/lib/agenda/queries.ts`](../src/lib/agenda/queries.ts) (the agent-kind façade over the raw tables).
 
 ---
 

@@ -235,7 +235,7 @@ Phase 9 smoke tests are documented but manual. A lightweight Jest/Vitest suite c
 NODE_OPTIONS="--max-old-space-size=8192" pnpm tsc --noEmit
 
 # DB verification
-# (via Supabase MCP against project txzxabzwovsujtloxrus)
+# (via Supabase MCP against project brsgrqvjdzwihsvnfqkf)
 SELECT d.name, d.category, b.executor_name
 FROM tool.definition d
 JOIN tool.binding b ON b.tool_id = d.id AND b.is_active

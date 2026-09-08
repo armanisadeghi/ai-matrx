@@ -1,7 +1,7 @@
 # Post-Reorg Security & Hardening Backlog
 
 > **Status:** deferred, tracked. Generated **2026-07-04** from the live Supabase security advisors
-> (project `txzxabzwovsujtloxrus`) after the 2026 schema reorg. **The app is up and serving; none of
+> (project `brsgrqvjdzwihsvnfqkf`) after the 2026 schema reorg. **The app is up and serving; none of
 > the items below are outages.** This is a hardening list, not a break/fix list.
 
 **Triage rule (owner decision, 2026-07-04):** a table with **RLS disabled is treated as low-value /

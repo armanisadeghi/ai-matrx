@@ -14,7 +14,7 @@ There is a real **personal organization** per user (`organizations.is_personal =
 
 `ctx_projects` rows can have **both** `organization_id` set AND `is_personal = true` simultaneously. Example: "All Green Region Pages" (`17bf8c1e-…`) has `organization_id = f9cb3e35` (Titanium) **and** `is_personal = true`. Any UI that keyed the "Personal" badge off `is_personal` mislabeled it as personal when it's a Titanium project. Root cause: `createProject` writes `is_personal: !organizationId` at creation, and the flag is never reconciled when an org is later assigned (and orgs now get auto-assigned via scope adoption — see `setEntityScopes` thunk — making the stale flag even more common).
 
-## DB scope (verified against project `txzxabzwovsujtloxrus`)
+## DB scope (verified against project `brsgrqvjdzwihsvnfqkf`)
 
 **Columns named `is_personal` (3):**
 - `ctx_projects.is_personal` (boolean) — **REMOVE**

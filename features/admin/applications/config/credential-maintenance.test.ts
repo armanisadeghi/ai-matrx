@@ -16,7 +16,7 @@ const appleEntry: CredentialMaintenanceEntry = {
   key_id: "969RCLFTAR",
   source_url: "https://developer.apple.com/account/resources/authkeys/list",
   deployment_url:
-    "https://supabase.com/dashboard/project/txzxabzwovsujtloxrus/auth/providers?provider=Apple",
+    "https://supabase.com/dashboard/project/brsgrqvjdzwihsvnfqkf/auth/providers?provider=Apple",
 };
 
 describe("credential maintenance", () => {

@@ -29,16 +29,36 @@
  *               WAVE ONE (Arman, 2026-08-25). Correctness-flavoured: an
  *               overlay without its own menu hands the user the UNDERLYING
  *               page's surface and agents — silently wrong.
+ *   form-fields — a SHORT input collecting a value inside a dialog/form, as
+ *               opposed to a content body. TRACKED, NOT WAVE ONE: wrapping an
+ *               invite field to satisfy a counter is padding, not coverage.
  *   bespoke   — a hand-rolled onContextMenu / DropdownMenu-as-context-menu to
  *               COLLAPSE into v3. Different risk class from adding one: it is
  *               delete-and-replace and needs live proof the old items survived.
  *
- * AND two law checks that make the 2026-08-25 rulings enforceable:
+ * TWO WAYS A FILE LEAVES A POPULATION WITHOUT BEING WIRED, both recorded in the
+ * file itself so the decision survives the next agent and the next census:
+ *   // context-menu: deliberately-absent — <reason>
+ *       A considered REFUSAL. The HR complaints list carries one: the menu
+ *       grants Copy/Export/AI, and a CSV of complaints must not exist by
+ *       accident.
+ *   // context-menu: covered-by <path>
+ *       The menu is real but more than one hop away (the net walks one hop).
+ *
+ * AND three law checks that make the 2026-08-25 rulings enforceable:
  *   density   — THE DENSITY LAW: a menu item carrying `description` that is
  *               not a disabled-reason. Labels only, macOS-terse.
  *   registry  — features/context-menu-v3/SECTIONS.md drift: a registered
  *               shared builder whose file/export vanished, or whose Consumers
  *               column no longer matches who actually imports it.
+ *   attribution — a `sourceFeature` value that is not in the generated
+ *               SOURCE_FEATURES allow-list. That list comes from the Python
+ *               server and cannot be extended here, so an invented value
+ *               silently misattributes every agent run the menu launches.
+ *               Checked directly against the generated file because tsc only
+ *               speaks once the whole tree compiles — and during a fleet run
+ *               the tree is often red from another session, which is exactly
+ *               when an agent decides an error is "not mine".
  *
  * 🚨 THIS IS A TEXTUAL HEURISTIC, NOT A RENDERER. "Covered" means a menu is
  * mounted in this file, or this file's component is rendered inside a file

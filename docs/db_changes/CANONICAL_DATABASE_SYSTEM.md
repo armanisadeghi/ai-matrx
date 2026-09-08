@@ -1,6 +1,6 @@
 # AI Matrx — Database System Reference
 
-**Implementation reference.** Postgres project `txzxabzwovsujtloxrus`. This captures the database-system shape verified on 2026-07-03. Live schema and `docs/official/db-rules.md` take precedence when this document has drifted.
+**Implementation reference.** Postgres project `brsgrqvjdzwihsvnfqkf`. This captures the database-system shape verified on 2026-07-03. Live schema and `docs/official/db-rules.md` take precedence when this document has drifted.
 
 ---
 

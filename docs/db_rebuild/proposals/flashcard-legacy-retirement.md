@@ -15,7 +15,7 @@ in aidream's conversation fork) — has **not** been retired and is tracked in
 `common-docs/systems/education/STATE.md`. The two are constantly conflated; check the
 schema before acting on either.
 
-**Measured live:** 2026-08-12, Matrx Main (`txzxabzwovsujtloxrus`), direct Postgres read.
+**Measured live:** 2026-08-12, Matrx Main (`brsgrqvjdzwihsvnfqkf`), direct Postgres read.
 Retirement confirmed complete 2026-08-19.
 
 ---

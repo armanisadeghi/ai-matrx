@@ -637,7 +637,7 @@ read-only table. A second write path is always the one that corrupts something.
 The live DB is **`brsgrqvjdzwihsvnfqkf`** ("AI Matrx"), served at
 `https://db.matrxserver.com`. Pass that `project_id` to every Supabase MCP call.
 
-`txzxabzwovsujtloxrus` is the **RETIRED** old Matrx Main. It is still healthy,
+A retired old Matrx Main project is still healthy,
 still accepts DDL, and holds a **stale copy of real data** — same table ids,
 same row ids. A migration applied there succeeds, and reading it back confirms
 exactly what you hoped, while the app never sees the change. This cost a

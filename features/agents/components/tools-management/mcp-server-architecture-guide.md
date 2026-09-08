@@ -599,7 +599,7 @@ Read-only, documentation-style servers that require no authentication.
       "args": [
         "-y", "@supabase/mcp-server-supabase",
         "--read-only",
-        "--project-ref=txzxabzwovsujtloxrus"
+        "--project-ref=brsgrqvjdzwihsvnfqkf"
       ],
       "env": {
         "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"

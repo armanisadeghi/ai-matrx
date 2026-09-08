@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-18
+updated: 2026-09-08
 repos: [matrx-frontend, aidream, common-docs]
 vision: [/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md, /Users/armanisadeghi/code/common-docs/systems/content-ir-system/OWNER_BRIEF.md]
 ---
@@ -33,7 +33,7 @@ Every lane: build → independent adversarial review agent (goal: REFUTE the cla
 ## Remaining work — safely delegable to any competent agent
 
 1. **Deploy aidream → drift → flips (owner-gated start, then mechanical).** After Arman runs `bash scripts/release.sh`: verify prod (creator agent live, tool stamping, envelope producer), let traffic soak, read `tool_io` drift logs (`degraded_reason=` tokens + `output kind … DEGRADED`), fix screamers, then flip `MATRX_KINDS_ENFORCE_TOOL_IO`, then remaining families as logs come clean, then delete the hand-coded detector literals (gated on the flip). Post-soak: drop `content_ir._backup_*` + the two `matrx_orm.yaml` exclude lines.
-2. **FE incident reporter.** DbKindComponent's error boundary screams to the error store but never writes `content_ir.kind_component_incident` rows — the agent's `resolve_incident` loop is blind to real crashes. Wire the boundary (and the html-flavor frame's error channel) to insert incidents via the browser client (RLS-gated, org-scoped, dedup per the tool_component pattern). Include the crashing `data_snapshot`. This closes the self-healing loop.
+2. **Incident capture is SHIPPED — the remaining loop lives elsewhere.** The browser files `content_ir.kind_component_incident` through `log_kind_component_incident` (five error types, deduped, shape-only snapshots), the queue has a human door at `?tab=incidents`, and every error surface reads through the one `errors` tool. What is still unbuilt is the AGENT side: nothing wakes up and fixes an incident. That work, its live counts, and Arman's decisions are in [`common-docs/projects/unified-error-observability/HANDOFF.md`](/Users/armanisadeghi/code/common-docs/projects/unified-error-observability/HANDOFF.md) — do not restart it here.
 3. **Creator-agent conversational polish.** Run fresh full-loop browser passes as a naive user; every rough edge in the agent's flow (confusing replies, missed tool opportunities, guidance gaps) → prompt/spec/tool-docstring fixes via the factory path (version-bump). The E2E script (`run_kind_tools_e2e.py`) guards regressions.
 4. **Loading-component adoption sweep.** Teach `kind_creator` to set `metadata.loading_component` + emit early keys in its skills' guidance (the contract is in SHAPE_SYSTEM.md); set sensible loading components on the ~19 active platform display kinds (data-only, ledgered).
 5. **Richer fielded inputs.** Extend the flat-schema fielded form to nested objects (the bridge + `fields_from_json_schema` both sides, all-or-nothing honesty per level); dedicated input-role components ride the same db-component machinery when needed (lift the `generic_structured`-only restriction carefully — FE routing + docs + agent guidance together).

@@ -2,7 +2,7 @@
 
 > 🚨 **Use Matrx Main only.** The `web` schema has 36 live tables at
 > `https://db.matrxserver.com`. Database instructions name this URL, never a project ref;
-> `txzxabzwovsujtloxrus` is retired but writable and must never be used.
+> A retired legacy project remains writable and must never be used. The live database is `brsgrqvjdzwihsvnfqkf` at `db.matrxserver.com`.
 
 **Project:** Matrx Main — address it by URL, `https://db.matrxserver.com`  
 **Schema:** `web`
