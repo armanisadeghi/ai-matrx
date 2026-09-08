@@ -162,6 +162,16 @@ export default function AuthSessionWatcher() {
         // previous user's active context and cached scope tree never bleed
         // into the next session. (Legacy agent-context slices have no reset
         // actions — they are torn down in Phase 5.)
+        //
+        // NOT A DUPLICATE of `sync/identityReset` (lib/sync/engine/identityReset.ts),
+        // and neither one covers the other: that reset is automatic over every
+        // slice registered with `definePolicy` and fires on ANY swap away from
+        // an authenticated identity (person → person included, which this
+        // SIGNED_OUT branch never sees); this hand-written list is the only
+        // thing that reaches `scopes` and `contextValues`, which are not sync
+        // policies and so have no record for the engine to key on. Deleting
+        // either one leaves a real hole — if you make those two slices
+        // policies, delete these lines rather than leaving both.
         dispatch(clearContext());
         dispatch(scopesActions.scopesReset());
         dispatch(contextValuesActions.contextValuesReset());
