@@ -1,218 +1,37 @@
 "use client";
 
-import * as React from "react";
-import {
-  CaretSortIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from "@radix-ui/react-icons";
-import * as SelectPrimitive from "@radix-ui/react-select";
-import { cva, type VariantProps } from "class-variance-authority";
-
-import { cn } from "@/styles/themes/utils";
-import { useNestedPortalContainer } from "@/hooks/use-nested-portal-container";
-
 /**
- * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
- * rendering until after hydration ("Radix generates dynamic aria-controls ids
- * that differ between SSR and client"), and that justification was false:
- * Radix ids come from React's SSR-stable `useId` (verified against
- * @radix-ui/react-select 2.3.1 / react-id 1.1.2). The gate was actively
- * harmful — it deleted the ALWAYS-VISIBLE select trigger (a form control)
- * from SSR and the first client paint. See
- * components/ui/context-menu/context-menu.tsx (the precedent fix, D144).
+ * HOST DOOR ONLY — the Select implementation lives in
+ * `@ai-matrx/design-system`. This file exists so ~400 import sites keep
+ * saying `@/components/ui/select`, and for nothing else.
+ *
+ * The package body is the verbatim port of what used to be here: the same
+ * `selectTriggerVariants` (sm/default/lg), the same `hideArrow` trigger prop,
+ * the same `description` second line on `SelectItem` (rendered OUTSIDE Radix
+ * `ItemText` on purpose, so the closed trigger stays one line), the same
+ * scroll buttons, the same popper positioning, and the same unconditional
+ * root — no hydration mount gate, which used to delete an always-visible form
+ * control from SSR and the first client paint.
+ *
+ * The one seam: the host's `useNestedPortalContainer` (dialog/popout aware)
+ * became the package's `PortalContainerProvider`, and the explicit
+ * `container` prop on `SelectContent` still beats it, exactly as before.
+ *
+ * Need a new behavior? Add it to the PACKAGE and release. A body re-grown here
+ * is the twin `pnpm check:package-twins` exists to catch.
  */
-const Select = SelectPrimitive.Root;
-
-const SelectGroup = SelectPrimitive.Group;
-
-const SelectValue = SelectPrimitive.Value;
-
-const selectTriggerVariants = cva(
-  "flex w-full items-center justify-between whitespace-nowrap rounded-md border border-border bg-card text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground transition-colors hover:bg-accent hover:border-accent-foreground/20 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-  {
-    variants: {
-      size: {
-        sm: "h-7 px-2 py-1 text-xs",
-        default: "h-9 px-3 py-1",
-        lg: "h-10 px-3 py-2",
-      },
-    },
-    defaultVariants: {
-      size: "default",
-    },
-  },
-);
-
-export interface SelectTriggerProps
-  extends
-    React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>,
-    VariantProps<typeof selectTriggerVariants> {
-  hideArrow?: boolean;
-}
-
-const SelectTrigger = React.forwardRef<
-  React.ComponentRef<typeof SelectPrimitive.Trigger>,
-  SelectTriggerProps
->(({ className, children, hideArrow = false, size, ...props }, ref) => (
-  <SelectPrimitive.Trigger
-    ref={ref}
-    className={cn(selectTriggerVariants({ size, className }))}
-    {...props}
-  >
-    {children}
-    {!hideArrow && (
-      <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="h-4 w-4 opacity-50" />
-      </SelectPrimitive.Icon>
-    )}
-  </SelectPrimitive.Trigger>
-));
-SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
-
-const SelectScrollUpButton = React.forwardRef<
-  React.ComponentRef<typeof SelectPrimitive.ScrollUpButton>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>
->(({ className, ...props }, ref) => (
-  <SelectPrimitive.ScrollUpButton
-    ref={ref}
-    className={cn(
-      "flex cursor-default items-center justify-center py-1",
-      className,
-    )}
-    {...props}
-  >
-    <ChevronUpIcon />
-  </SelectPrimitive.ScrollUpButton>
-));
-SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName;
-
-const SelectScrollDownButton = React.forwardRef<
-  React.ComponentRef<typeof SelectPrimitive.ScrollDownButton>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>
->(({ className, ...props }, ref) => (
-  <SelectPrimitive.ScrollDownButton
-    ref={ref}
-    className={cn(
-      "flex cursor-default items-center justify-center py-1",
-      className,
-    )}
-    {...props}
-  >
-    <ChevronDownIcon />
-  </SelectPrimitive.ScrollDownButton>
-));
-SelectScrollDownButton.displayName =
-  SelectPrimitive.ScrollDownButton.displayName;
-
-const SelectContent = React.forwardRef<
-  React.ComponentRef<typeof SelectPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> & {
-    container?: HTMLElement | null;
-  }
->(({ className, children, position = "popper", container, ...props }, ref) => {
-  const portalContainer = useNestedPortalContainer(container);
-  return (
-    <SelectPrimitive.Portal container={portalContainer}>
-      <SelectPrimitive.Content
-        ref={ref}
-        className={cn(
-          "relative z-[10001] max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-          position === "popper" &&
-            "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
-          className,
-        )}
-        position={position}
-        {...props}
-      >
-        <SelectScrollUpButton />
-        <SelectPrimitive.Viewport
-          className={cn(
-            "p-0.5 overflow-y-auto",
-            position === "popper" &&
-              "w-full min-w-[var(--radix-select-trigger-width)] max-h-[var(--radix-select-content-available-height)]",
-          )}
-        >
-          {children}
-        </SelectPrimitive.Viewport>
-        <SelectScrollDownButton />
-      </SelectPrimitive.Content>
-    </SelectPrimitive.Portal>
-  );
-});
-SelectContent.displayName = SelectPrimitive.Content.displayName;
-
-const SelectLabel = React.forwardRef<
-  React.ComponentRef<typeof SelectPrimitive.Label>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
->(({ className, ...props }, ref) => (
-  <SelectPrimitive.Label
-    ref={ref}
-    className={cn("px-2 py-1.5 text-sm font-semibold", className)}
-    {...props}
-  />
-));
-SelectLabel.displayName = SelectPrimitive.Label.displayName;
-
-const SelectItem = React.forwardRef<
-  React.ComponentRef<typeof SelectPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> & {
-    /**
-     * Secondary line shown under the label IN THE LIST ONLY. Rendered outside
-     * Radix `ItemText` on purpose: everything inside `ItemText` is what the
-     * closed trigger displays, so a description passed as `children` gets
-     * squeezed into the fixed-height trigger and clipped. This prop keeps the
-     * trigger to the one-line label while the open list shows both lines.
-     */
-    description?: React.ReactNode;
-  }
->(({ className, children, description, ...props }, ref) => (
-  <SelectPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex w-full cursor-default select-none rounded-sm py-1 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      description ? "flex-col items-start gap-0.5 py-1.5" : "items-center",
-      className,
-    )}
-    {...props}
-  >
-    <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
-      <SelectPrimitive.ItemIndicator>
-        <CheckIcon className="h-4 w-4" />
-      </SelectPrimitive.ItemIndicator>
-    </span>
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-    {description ? (
-      <span className="block text-xs leading-snug text-muted-foreground">
-        {description}
-      </span>
-    ) : null}
-  </SelectPrimitive.Item>
-));
-SelectItem.displayName = SelectPrimitive.Item.displayName;
-
-const SelectSeparator = React.forwardRef<
-  React.ComponentRef<typeof SelectPrimitive.Separator>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>
->(({ className, ...props }, ref) => (
-  <SelectPrimitive.Separator
-    ref={ref}
-    className={cn("-mx-1 my-1 h-px bg-muted", className)}
-    {...props}
-  />
-));
-SelectSeparator.displayName = SelectPrimitive.Separator.displayName;
 
 export {
   Select,
-  SelectGroup,
-  SelectValue,
-  SelectTrigger,
   SelectContent,
-  SelectLabel,
+  SelectGroup,
   SelectItem,
-  SelectSeparator,
-  SelectScrollUpButton,
+  SelectLabel,
   SelectScrollDownButton,
-};
+  SelectScrollUpButton,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+  selectTriggerVariants,
+} from "@ai-matrx/design-system";
+export type { SelectTriggerProps } from "@ai-matrx/design-system";

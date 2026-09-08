@@ -1,6 +1,6 @@
 // BookmarkManagerActions.jsx
 import React, { useState } from "react";
-import { Button } from "@/components/ui/ButtonMine";
+import { Button } from "@/components/ui/button";
 import { SettingsIcon } from "lucide-react";
 import BookmarkManager from "./BookmarkManager";
 

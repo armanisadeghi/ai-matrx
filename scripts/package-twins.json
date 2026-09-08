@@ -1,12 +1,12 @@
 {
   "$comment": [
-    "THE TWIN REGISTER \u2014 every capability whose logic has been COLLAPSED into an",
+    "THE TWIN REGISTER — every capability whose logic has been COLLAPSED into an",
     "@ai-matrx/* package. A local definition of one of these names in this repo is a",
     "re-grown twin: the exact failure the client-package campaign exists to kill",
     "(Arman: 'the logic of the packages is NEVER duplicated outside of the package').",
     "",
     "Add a row the same session you delete a twin. Never add an allowlist entry to",
-    "silence a NEW twin \u2014 an allowlist entry is only for a definition that is",
+    "silence a NEW twin — an allowlist entry is only for a definition that is",
     "PROVABLY not the same capability, and it must say why in `reason`.",
     "A WRAPPER is not a twin: a local function that BINDS the package function's options (unit, style, fallback) and delegates in a line or two is the sanctioned adapter, and needs no entry. A re-implemented BODY is a twin, always.",
     "",
@@ -106,7 +106,7 @@
     {
       "name": "isRfc4122Uuid",
       "package": "@ai-matrx/kit/uuid",
-      "why": "The STRICT RFC-4122 predicate (version 1-5, variant 8/9/a/b) \u2014 the right question for a validation door on a public route, and it REJECTS what isUuidShape accepts (the nil UUID, v6/v7/v8). Eight host copies collapsed 2026-09-07: six invite/notify API doors plus the two voice readiness doors that had been ALLOWLISTED here because the package shipped only the lax predicate. Never swap one predicate for the other to make a test pass.",
+      "why": "The STRICT RFC-4122 predicate (version 1-5, variant 8/9/a/b) — the right question for a validation door on a public route, and it REJECTS what isUuidShape accepts (the nil UUID, v6/v7/v8). Eight host copies collapsed 2026-09-07: six invite/notify API doors plus the two voice readiness doors that had been ALLOWLISTED here because the package shipped only the lax predicate. Never swap one predicate for the other to make a test pass.",
       "allow": []
     },
     {
@@ -147,7 +147,7 @@
     {
       "name": "parseTimestamp",
       "package": "@ai-matrx/kit/format",
-      "why": "The Postgres correction: a zone-less `timestamp without time zone` is UTC, not the viewer's local time \u2014 the classic 'times are off by N hours' bug. It lived in @ai-matrx/diff and in matrx-frontend's utils/datetime.ts as byte-level twins until 2026-09-07.",
+      "why": "The Postgres correction: a zone-less `timestamp without time zone` is UTC, not the viewer's local time — the classic 'times are off by N hours' bug. It lived in @ai-matrx/diff and in matrx-frontend's utils/datetime.ts as byte-level twins until 2026-09-07.",
       "allow": [
         {
           "file": "utils/datetime.ts",
@@ -164,7 +164,7 @@
     {
       "name": "formatFileSize",
       "package": "@ai-matrx/kit/format",
-      "why": "THE byte-size formatter. It was hiding inside @ai-matrx/media's UploadProgressList React component, so six matrx-frontend twins could only reach it by depending on the media React bundle to print a byte count. Moved to kit 2026-09-07 with the display decisions written down (binary units, short labels, one decimal below ten in a unit, whole bytes below 1 KB, em-dash for unknown/negative \u2014 NEVER a confident '0 B').",
+      "why": "THE byte-size formatter. It was hiding inside @ai-matrx/media's UploadProgressList React component, so six matrx-frontend twins could only reach it by depending on the media React bundle to print a byte count. Moved to kit 2026-09-07 with the display decisions written down (binary units, short labels, one decimal below ten in a unit, whole bytes below 1 KB, em-dash for unknown/negative — NEVER a confident '0 B').",
       "allow": []
     },
     {
@@ -187,8 +187,153 @@
     {
       "name": "escapeHtml",
       "package": "@ai-matrx/kit/html-escape",
-      "why": "TEN copies were live across the fleet and THEY DID NOT ESCAPE THE SAME CHARACTERS \u2014 three did & < > only, two added \", four added ' (two as &#39;, two as &#039;), and a tenth wore the name escapeHtmlAttr while escaping only & < \" into an HTML ATTRIBUTE. A string safe through one was an attribute break-out through another. kit ships ONE decided set: & < > \" ' \u2014 all five, always. It is not in @ai-matrx/print because an HTML escaper must not require jspdf + html2canvas.",
+      "why": "TEN copies were live across the fleet and THEY DID NOT ESCAPE THE SAME CHARACTERS — three did & < > only, two added \", four added ' (two as &#39;, two as &#039;), and a tenth wore the name escapeHtmlAttr while escaping only & < \" into an HTML ATTRIBUTE. A string safe through one was an attribute break-out through another. kit ships ONE decided set: & < > \" ' — all five, always. It is not in @ai-matrx/print because an HTML escaper must not require jspdf + html2canvas.",
       "allow": []
+    },
+    {
+      "name": "Select",
+      "package": "@ai-matrx/design-system",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "allow": [
+        {
+          "file": "components/ui/loaders/select.tsx",
+          "reason": "A DIFFERENT capability: a self-contained loading/error-aware select CONTROL with its own label/description/icon/size/variant API, not the Radix Select primitive family. It has zero importers today; per common-docs/policies/unfinished-work-alarm.md only Arman may name it dead, so it is allowed here rather than deleted."
+        }
+      ]
+    },
+    {
+      "name": "SelectTrigger",
+      "package": "@ai-matrx/design-system",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "allow": []
+    },
+    {
+      "name": "SelectContent",
+      "package": "@ai-matrx/design-system",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "allow": []
+    },
+    {
+      "name": "SelectItem",
+      "package": "@ai-matrx/design-system",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "allow": []
+    },
+    {
+      "name": "SelectLabel",
+      "package": "@ai-matrx/design-system",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "allow": []
+    },
+    {
+      "name": "SelectSeparator",
+      "package": "@ai-matrx/design-system",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "allow": []
+    },
+    {
+      "name": "SelectScrollUpButton",
+      "package": "@ai-matrx/design-system",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "allow": []
+    },
+    {
+      "name": "SelectScrollDownButton",
+      "package": "@ai-matrx/design-system",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "allow": []
+    },
+    {
+      "name": "selectTriggerVariants",
+      "package": "@ai-matrx/design-system",
+      "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body — a verbatim port with the portal seam inverted — and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
+      "allow": []
+    },
+    {
+      "name": "Command",
+      "package": "@ai-matrx/design-system",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "allow": []
+    },
+    {
+      "name": "CommandDialog",
+      "package": "@ai-matrx/design-system",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "allow": []
+    },
+    {
+      "name": "CommandInput",
+      "package": "@ai-matrx/design-system",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "allow": []
+    },
+    {
+      "name": "CommandList",
+      "package": "@ai-matrx/design-system",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "allow": []
+    },
+    {
+      "name": "CommandEmpty",
+      "package": "@ai-matrx/design-system",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "allow": []
+    },
+    {
+      "name": "CommandGroup",
+      "package": "@ai-matrx/design-system",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "allow": []
+    },
+    {
+      "name": "CommandItem",
+      "package": "@ai-matrx/design-system",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "allow": []
+    },
+    {
+      "name": "CommandSeparator",
+      "package": "@ai-matrx/design-system",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "allow": []
+    },
+    {
+      "name": "CommandShortcut",
+      "package": "@ai-matrx/design-system",
+      "why": "The cmdk-backed Command palette family. matrx-frontend's fork (components/ui/command.tsx) was collapsed to a re-export door on 2026-09-07; the package body is a superset — same filtering (cmdk's own filter/shouldFilter/keywords pass through) plus a mobile bottom-sheet CommandDialog, the modal context, and a container escape hatch.",
+      "allow": []
+    },
+    {
+      "name": "CreatablePicker",
+      "package": "@ai-matrx/design-system",
+      "why": "P23's every-picker-takes-new-input control. The package copy says it was 'promoted' from components/ui/creatable-picker.tsx, but the origin was never deleted — two bodies with the same name and the same CreatableOption interface sat side by side until 2026-09-07, when the host file became a re-export door. The locked-vocabulary door, the manage door, the createExtra slot and footerActions all live in the package.",
+      "allow": []
+    },
+    {
+      "name": "Button",
+      "package": "@ai-matrx/design-system",
+      "why": "The one Button. components/ui/ButtonMine.tsx was a 127-line CVA reimplementation with its own hardcoded blue/gray palette and extra sizes; its 17 call sites moved to the package Button on 2026-09-07 after design-system 0.6.0 took the missing sizes (xs/md/xl/2xl/3xl/roundIcon) and variants (primary/success) in. components/ui/button.tsx is a re-export door, not a definition, so it does not match this row.",
+      "allow": [
+        {
+          "file": "app/(dev)/demos/general/monaco-test/page.dev.tsx",
+          "reason": "Not code: the match is a line inside a template-literal SAMPLE_TSX string that the Monaco demo displays in an editor. It defines nothing."
+        }
+      ]
+    },
+    {
+      "name": "buttonVariants",
+      "package": "@ai-matrx/design-system",
+      "why": "The button's CVA recipe — the actual duplicated LOGIC behind the ButtonMine fork (deleted 2026-09-07). A re-grown `const buttonVariants = cva(...)` in this repo is a second button scale and a second palette; add the rung to the package instead.",
+      "allow": [
+        {
+          "file": "components/animated/Menu/AnimatedMenu.tsx",
+          "reason": "A DIFFERENT capability: a framer-motion `Variants` animation map (hidden/visible keyframes), not a CVA class recipe. Same word, unrelated meaning."
+        },
+        {
+          "file": "components/matrx/navigation/module-header/AdminShortcuts.tsx",
+          "reason": "A DIFFERENT capability: a framer-motion `Variants` animation map, not a CVA class recipe."
+        }
+      ]
     }
   ]
 }

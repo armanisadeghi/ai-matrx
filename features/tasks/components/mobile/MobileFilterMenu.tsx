@@ -31,7 +31,7 @@ import type {
 } from "@/features/tasks/types/sort";
 import { selectSmartViewCounts } from "@/features/tasks/redux/selectors";
 import { SMART_VIEWS } from "@/features/tasks/constants/smartViews";
-import { Button } from "@/components/ui/ButtonMine";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
