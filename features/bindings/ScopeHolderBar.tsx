@@ -419,7 +419,9 @@ export function ScopeHolderBar({
                     disabled={disabled}
                     onClick={() => onRungChange(other, null)}
                   >
-                    Set {pinnedRungWords(other, defaultHolderOffer).noun.toLowerCase()} instead
+                    {/* NOT lowercased — a rung's noun can carry an
+                        organization's NAME (FIX-R6/F3). */}
+                    Set {pinnedRungWords(other, defaultHolderOffer).noun} instead
                   </Button>
                 ))}
             </div>
@@ -539,7 +541,7 @@ export function ScopeHolderBar({
                     disabled={disabled}
                     onClick={() => onRungChange(DEFAULT_HOLDER_RUNG, null)}
                   >
-                    Set {defaultHolderOffer.label.toLowerCase()}
+                    Set {defaultHolderOffer.label}
                   </Button>
                 </>
               ) : (
@@ -702,7 +704,10 @@ export function ScopeHolderBar({
                the reader has to guess is a sentence that will be read wrong. */
             <p className="text-[11px] leading-snug text-muted-foreground">
               Nothing is set at{" "}
-              {pinnedRungWords(rung, defaultHolderOffer).noun.toLowerCase()} yet
+              {/* NOT lowercased: the bottom rung's noun carries the home
+                  organization's NAME, and "write target sandbox" is not that
+                  organization's name. */}
+              {pinnedRungWords(rung, defaultHolderOffer).noun} yet
               — pick an agent or a workflow to set one, or come back when the
               intelligence exists.
               {onDefaultHolderRung

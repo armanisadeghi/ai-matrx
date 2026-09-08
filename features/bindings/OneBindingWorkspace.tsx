@@ -399,6 +399,38 @@ function BindingDraft({
   );
   const onDefaultHolderRung = rung === DEFAULT_HOLDER_RUNG;
 
+  /**
+   * WHO HOLDS THE BOTTOM RUNG TODAY — read from the definition, from the SAME
+   * accessor that seeds the draft when this screen stands on that rung, so the
+   * sentence and the editor can never disagree (FIX-R6/F3).
+   *
+   * 🚨 The defect this closes, verbatim from the walk of v0.4.1722: after
+   * saving an org-homed job's default holder and reloading, the bar's HOLDER
+   * cell read *"No holder yet — pick an agent…"* beside a block headed *"The
+   * job's own default"*, while "Fulfilled by" named the new holder — because
+   * the cell was answering about the USER rung and the block never said who
+   * held the bottom one. Nothing was broken about the save; the screen simply
+   * never stated the bottom rung's answer anywhere a reader standing above it
+   * could see.
+   */
+  const defaultHolderNow = useMemo(() => {
+    const held = defaultHolderDraftOf(data.mandate);
+    const holderId = held.agentId ?? held.workflowId;
+    if (!holderId) return { set: false, name: null };
+    return {
+      set: true,
+      name:
+        held.kind === "workflow"
+          ? "a workflow"
+          : (data.agentsById[held.agentId ?? ""]?.name ??
+            (held.agentVersionId
+              ? (data.agentsById[
+                  data.versionsById[held.agentVersionId]?.agentId ?? ""
+                ]?.name ?? null)
+              : null)),
+    };
+  }, [data.mandate, data.agentsById, data.versionsById]);
+
   // ── The holder draft — seeded once, from the row this instance is keyed to ─
   //
   // At the BOTTOM RUNG there is no binding row: the answer lives on the mandate
@@ -1344,6 +1376,9 @@ function BindingDraft({
             ? null
             : defaultHolderOffer
         }
+        // The bottom rung's CURRENT answer, stated wherever that rung is
+        // described — including from the rungs above it (FIX-R6/F3).
+        defaultHolderNow={defaultHolderNow}
         onRungChange={(nextRung, nextOrgId) =>
           void requestRungChange(nextRung, nextOrgId)
         }
@@ -1804,7 +1839,9 @@ function BindingDraft({
                 : onDefaultHolderRung
                   ? seedHolder.agentId || seedHolder.workflowId
                     ? "Save"
-                    : `Set ${defaultHolderOffer.label.toLowerCase()}`
+                    : // NOT lowercased — the label carries the home
+                      // organization's NAME (FIX-R6/F3).
+                      `Set ${defaultHolderOffer.label}`
                   : binding
                     ? "Save"
                     : `Set ${rungWords(rung).noun}`}
