@@ -144,3 +144,68 @@ describe("Supabase proxy session continuity", () => {
     );
   });
 });
+
+/**
+ * 🚨 THE SIGN-OUT MUST NOT BE SILENT (2026-09-08, R-O3).
+ *
+ * When a browser's jar holds one auth cookie name BOTH unchunked and chunked,
+ * `@ai-matrx/data/next` refuses both copies — serving either risks serving a
+ * different person's session — and expires them. That ENDS the person's
+ * session on purpose.
+ *
+ * `SessionIntegrityGate` reads the proxy's header off the CURRENT request, so
+ * it covers every pass-through response. It cannot cover a BOUNCE: the header
+ * rides the 307, and the `/login` render that follows arrives with a clean jar
+ * and no signal at all. Without the sentence on the redirect, the person is
+ * signed out by us and lands on a login page that says nothing.
+ */
+describe("an ambiguous auth cookie jar says so on the login bounce", () => {
+  const NAME = AUTH_COOKIE_NAME;
+  const POISONED = `${NAME}=SESSION-OF-USER-A; ${NAME}.0=SESSION-OF-; ${NAME}.1=USER-B`;
+
+  beforeEach(() => {
+    mockedCreateServerClient.mockImplementation(
+      (_url: string, _key: string, _options: MockServerOptions) => ({
+        auth: { getUser: async () => ({ data: { user: null } }) },
+      }),
+    );
+  });
+
+  it("carries the true sentence into /login instead of bouncing in silence", async () => {
+    const response = await updateSession(request("/dashboard", POISONED));
+
+    expect(response.status).toBe(307);
+    const location = new URL(
+      response.headers.get("location") as string,
+      "https://www.aimatrx.com",
+    );
+    expect(location.pathname).toBe("/login");
+    const said = location.searchParams.get("error") ?? "";
+    expect(said).toContain("We signed you out of this browser");
+    expect(said).toContain("Nothing you saved is affected");
+    // the destination is still preserved — the notice must not eat it
+    expect(location.searchParams.get("redirectTo")).toBeTruthy();
+
+    // ...and the redirect really does expire the whole family, at both scopes.
+    const setCookies = response.headers.getSetCookie();
+    for (const name of [NAME, `${NAME}.0`, `${NAME}.1`]) {
+      const writes = setCookies.filter((h) => h.startsWith(`${name}=`));
+      expect(
+        writes.some((h) => h.includes("Domain=.aimatrx.com") && h.includes("Max-Age=0")),
+      ).toBe(true);
+      expect(
+        writes.some((h) => !h.includes("Domain=") && h.includes("Max-Age=0")),
+      ).toBe(true);
+    }
+  });
+
+  it("says nothing extra on an ordinary signed-out bounce", async () => {
+    const response = await updateSession(request("/dashboard", ""));
+    const location = new URL(
+      response.headers.get("location") as string,
+      "https://www.aimatrx.com",
+    );
+    expect(location.pathname).toBe("/login");
+    expect(location.searchParams.get("error")).toBeNull();
+  });
+});

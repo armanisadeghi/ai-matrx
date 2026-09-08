@@ -10,6 +10,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseNext } from "@/utils/supabase/authCookie";
+import { sessionIntegrityNotice } from "@/features/shell/components/sessionIntegrityNotice";
 import {
   captureAuthDestination,
   loginHref,
@@ -140,9 +141,29 @@ export async function updateSession(
       pathname,
       request.nextUrl.search,
     );
-    return redirectWithSessionCookies(
-      new URL(loginHref(destination), request.nextUrl.origin),
-    );
+    const target = new URL(loginHref(destination), request.nextUrl.origin);
+    // 🚨 THE SENTENCE MUST SURVIVE THE REDIRECT. When this pass refused an
+    // ambiguous auth cookie family it ENDED this person's session on purpose,
+    // and `SessionIntegrityGate` reads the header off the CURRENT request — so
+    // on a bounce the header rides the 307 and the /login render that follows
+    // carries a clean jar and no signal at all. Without this the person is
+    // signed out by us and lands on a login page that says nothing, which is
+    // the exact "automatic intervention with no announcement" the fourth law
+    // forbids. The banner still owns every non-redirect response.
+    if (session.ambiguousAuthCookies) {
+      const notice = sessionIntegrityNotice({
+        splitCookieJar: session.splitCookieJar,
+        ambiguousAuthCookies: true,
+        clientHasSession: false,
+      });
+      if (notice) {
+        target.searchParams.set(
+          "error",
+          `${notice.title}. ${notice.description}`,
+        );
+      }
+    }
+    return redirectWithSessionCookies(target);
   }
 
   // IMPORTANT: return `session.response` — it is the response carrying every
