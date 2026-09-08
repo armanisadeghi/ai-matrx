@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-08-15`
+**Last updated:** `2026-09-08`
 
 ---
 
@@ -115,11 +115,15 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 
 - `admin-navigation.ts` is the only hierarchy. Never create a second dashboard, sidebar, or mobile grouping object.
 - The expanded Administration route sidebar has exactly two visual levels:
-  separated all-caps domain headers and full-size clickable destination rows.
+  icon-and-label all-caps domain accordions and clickable destination rows.
   Registry sections remain useful for directories and search, but must not add
   a third, non-clickable label layer to the space-constrained sidebar. Do not
   add `Browse <domain>` filler links; the domain's real root destination is
   already rendered from the registry.
+- Expanded and collapsed Administration navigation are the same persistent DOM
+  tree. Every dashboard, Launchpad, domain, and visible destination icon keeps
+  identical x/y geometry while the sidebar changes width; collapse only hides
+  labels and carets. Never restore a separate flattened icon-only branch.
 - Administration sidebar chrome uses semantic theme colors (`background`,
   `foreground`, `accent`, `accent-foreground`, `border`). Destination rows must
   not use `muted-foreground`, which makes working navigation look disabled.
@@ -218,6 +222,10 @@ that existing editor; private keys and client secrets remain outside
 ---
 
 ## Change log
+
+- `2026-09-08` — Codex: replaced the expanded/collapsed Administration menu
+  branches with one persistent icon-led accordion tree, preserving every row's
+  position and open state while collapse removes only labels and carets.
 
 - `2026-08-31` — Registered every static System Agents shortcut-tab alias as
   an exact owned route of the Shortcuts destination, keeping the canonical

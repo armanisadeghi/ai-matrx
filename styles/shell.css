@@ -995,6 +995,79 @@ button.shell-nav-flyout-item {
   gap: 0.125rem;
 }
 
+/* Administration Large Route — ONE persistent two-tier tree at both sidebar
+   widths. The shared nav row owns fixed icon geometry; collapse only fades and
+   clips labels/carets. Keeping open destination rows mounted also means an
+   expanded accordion does not reorder the icon rail when the shell collapses. */
+.shell-admin-route-menu,
+.shell-admin-domain-list,
+.shell-admin-domain-children {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.shell-admin-route-menu {
+  flex: 1;
+}
+
+.shell-admin-domain {
+  min-width: 0;
+  border-top: 1px solid var(--border);
+}
+
+.shell-admin-domain-trigger {
+  cursor: pointer;
+  list-style: none;
+}
+
+.shell-admin-domain-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.shell-admin-domain-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.shell-admin-domain-caret {
+  display: inline-flex;
+  width: 0;
+  height: 1rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  overflow: hidden;
+  opacity: 0;
+  color: var(--shell-nav-icon);
+  transition:
+    width var(--shell-duration-normal) var(--shell-ease-smooth),
+    opacity var(--shell-duration-normal) var(--shell-ease-smooth),
+    transform var(--shell-duration-normal) var(--shell-ease-smooth);
+}
+
+.shell-root:has(#shell-sidebar-toggle:checked) .shell-admin-domain-caret {
+  width: 1rem;
+  opacity: 1;
+}
+
+.shell-admin-domain[open] > summary .shell-admin-domain-caret {
+  transform: rotate(180deg);
+}
+
+.shell-admin-route-menu .shell-nav-label,
+.shell-admin-route-menu .shell-active-pill .shell-nav-label {
+  font-weight: 400;
+}
+
+.shell-admin-destination .shell-nav-icon {
+  transform: scale(0.8889);
+}
+
 /* Default: main nav visible, route nav hidden */
 .shell-sidebar-nav[data-sidebar-view="main"] .shell-sidebar-route-nav {
   display: none;
