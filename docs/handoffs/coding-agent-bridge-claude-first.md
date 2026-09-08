@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-24
+updated: 2026-09-08
 repos: [matrx-frontend, aidream, matrx-local, matrx-claude-plugin, matrx-codex-plugin, matrx-cursor-plugin, matrx-vscode, matrx-sandbox, common-docs]
 vision:
   - /Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md
@@ -39,87 +39,87 @@ individually "works". Verified ground truth below is from a three-way full-featu
   the parts but the parts aren't talking to each other yet and we're missing the main layer on
   top… someone needs to be aware of that." That someone is the owner of THIS document.
 
-## The global map — every component and its state (re-verified 2026-08-24)
+## The global map — every component and its state (RE-VERIFIED LIVE 2026-09-08)
 
-| Component | State | Proof |
+Nothing below is carried forward on trust — every row was re-checked against the live engine
+(v1.4.74 installed / v1.4.75 released), the live DB, the machine ledger, and git history today.
+
+| Component | State (2026-09-08) | Proof |
 |---|---|---|
-| Contract + raw ledger + projection (aidream `services/coding_session_bridge/`) | LIVE; projector reclassified (sidecar kinds + empty Stops skip; native tool_use/tool_result pair into `chat.tool_call` in BOTH lanes) | 977k entries; **projection errors: 0** after set-based backfill (148,968 historical tool_calls minted) |
-| Claude event mirror (matrx-claude-plugin `alpha-6`) + history import + reconciler | LIVE | newest entries minutes old |
-| Titles Claude→Matrx + return direction | LIVE; 193+78 drifted titles backfilled with ladder precedence (0 user renames touched) | cloud titles == Claude sidebar |
-| **Pins + categories Claude→Matrx** | **LIVE end-to-end**: app localStorage LevelDB → `~/.claude/claude-code-pins-extract.py` → ledger (`sync-claude-code-sessions.py`, wipe-guarded) → matrx-local `claude_session_index.py` → SessionMetadata (flip-detection; explicit-category contract) → `conversation.is_favorite` + bridge category → AI Work Category column | 1,223 sessions carry pin state via the live pipe; pins restored INTO Claude via `~/.claude/claude-code-pins-writeback.mjs` (Arman ran it, app adopted) |
-| Desktop engine auth / outbox | **RESOLVED 2026-08-24**: root cause was the retired Supabase project's publishable key baked into every build (CI secret never rotated at East cutover); fixed bbdc48b01 + secret rotation, shipped v1.4.43; Arman re-logged-in | outbox 42,192 → ~59; engine v1.4.47 ok |
-| `conversations` tool search+provider | FIXED on main (nested-Subquery ORM fix) + forcing-function regression tests added; feedback `2f29a244` resolved `awaiting_review` | 5+13 tests green |
-| AI Work UI | LIVE incl. watchable running sessions (v0.4.851), Category column + facet, schedule prefill (with Suspense boundary) | — |
-| Local Claude runtime | LIVE, heavily used | 146+ native sessions |
-| Hosted (sandbox) Claude runtime | Backend certified (pre-migration — treat unre-certified); UI-orphaned | item 3 |
-| Codex event mirror | quarantine fix RELEASED `v0.2.0-alpha.4`; hooks still untrusted on real hosts = mirrors nothing | item 4 |
-| Cursor / VS Code | certified/packaged; distribution Arman-gated | item 7 |
+| Capture: Claude hooks → cloud | LIVE | newest `chat.coding_session_entry` seconds old |
+| **Outbox delivery (importer/codex lanes)** | **BLOCKED since 08-30 — 118,492 rows, growing.** Server (correctly, per the no-assigned-org law) refuses org-scoped deliveries: "You belong to more than one organization and haven't set a default." Arman's `users.user_preferences → organization.defaultOrganizationId` is NULL (verified). Engine-side half fixed in `9c3026d61` (owner-scoped routes no longer demand an org; 116,803 wrongly-deferred rows auto-requeued) — the remaining unlock is Arman picking a default org in desktop Settings. Nothing lost: rows are durable locally. | outbox sqlite + fresh 17:28 error + prefs query |
+| Projection ledger | CLEAN (8 errors total; was 449k on 08-24) | live count |
+| Titles / pins / categories pipeline | LIVE end-to-end; ledger fresh today (1,456 entries, 227 pinned, 39 categorized); **pin mirror rewritten `378aa5f9f`**: favorites now upsert `platform.user_entity_state` (the star UI's real path — the old `chat.conversation.is_favorite` column is frozen; 171 favorites live). Labels UNMASKED to full email per Arman's 2026-09-07 ruling (`c5c9558e3` local + aidream). Sidebar ledger now wins over auto titles in the index reader. | ledger mtime 09:21 today; DB counts |
+| Local runtime trigger (browser → Mac) | **Transport PROVEN 2026-08-26** over the real Broadcast channel (launch → execute → status → cancel), and **22 `origin=matrx_local` sessions created since** — the lane is in use. Identity-probe fallback (Claude ≥2.1.228 `auth status` misreports signed-out; desktop OAuth record fallback, key byte-stable) shipped v1.4.55. **Still missing: one clean browser-UI end-to-end proof WITH mirror, run by/with Arman** — never demonstrated to him. | proof script `scratchpad` (gone) → re-derive from `features/ai-work/lib/matrxLocalRuntime.ts`; runtime_runs + DB |
+| Desktop auth self-heal | SHIPPED v1.4.54 (engine never wipes stored session on a bad posted one; UI refresh-then-signout loudly) | token valid to 09-15; no 401 storms |
+| AI Work UI | Reorganized into three buckets (AI chats / External app runs / Internal Matrx runs) via `public.cvx_audience` (`7257690791`); live updates through the realtime manager (`650325ea7`); canonical favorites read (`415c592922`); add-to-projects action; Category column | git + live UI |
+| Desktop `/claude-code` screen | REBUILT 08-30 (`f835747a4`): one list, one sync button, real per-session cloud status from the server (`9c3026d61`), every count clickable into evidence | git |
+| Codex / Cursor / VS Code | UNCHANGED since 08-24: codex plugin `alpha-4` released but hooks untrusted on real hosts (mirrors nothing); Cursor/VS Code distribution Arman-gated | git (no commits) |
+| Hosted (sandbox) lane | UNCHANGED: ruled BUILD 08-20, blocked on EC2-tier isolation review; endpoints unre-certified since AWS migration | git (no commits) |
 
 ## Resources
 
-- **Behavior bar (read FIRST):** `common-docs/systems/coding/coding-session-bridge/BEHAVIOR.md`.
-  Contract: `.../FEATURE.md` (invariant added 2026-08-24: tool use/result pair into ONE
-  `chat.tool_call` in both lanes). Product plan: `common-docs/projects/ai-work-hub/PLAN.md`.
-- **Backend:** aidream `aidream/services/coding_session_bridge/` (service, orm_store, backfill.py +
-  `scripts/backfill_native_tool_projections.py` — per-row, resumable; historical bulk was applied
-  set-based 2026-08-24). **Frontend:** `features/ai-work/`. **Local:** matrx-local
-  `app/services/coding_sessions/` (ledger reader `claude_session_index.py`).
-- **Machine (Arman's Mac):** `~/.claude/sync-claude-code-sessions.py` (launchd, ledger keeper) ·
-  `claude-code-pins-extract.py` (LevelDB read, venv `~/.claude/.sync-venv`) ·
-  `claude-code-pins-writeback.mjs` (app-closed pin restore; categories are server-synced per
-  account — local cross-account replication is impossible, verified: the app restores scopes from
-  Anthropic's servers on launch).
-- **DB probes:** asyncpg + aidream `.env` `SUPABASE_MATRIX_*`; outbox
-  `sqlite3 ~/.matrx/matrx.db "select count(*) from coding_session_bridge_outbox"`.
+- **Vision/contract (read FIRST):** `common-docs/systems/coding/coding-session-bridge/BEHAVIOR.md`
+  + `FEATURE.md`; product plan `common-docs/projects/ai-work-hub/PLAN.md`.
+- **Backend:** aidream `aidream/services/coding_session_bridge/` (favorites now via
+  `platform.user_entity_state` — `378aa5f9f`). **Frontend:** `features/ai-work/` (browser→Mac
+  relay `features/ai-work/lib/matrxLocalRuntime.ts` — v2 rpc envelopes on Broadcast channel
+  `matrx-local-bridge:<userId>`; engine handlers `matrx-local/app/api/coding_runtime_handlers.py`).
+- **Local:** matrx-local `app/services/coding_sessions/` (probe fallback in `claude_probe.py`;
+  org resolution `app/services/aidream/organization.py` — default org =
+  `users.user_preferences → organization.defaultOrganizationId`, picker in desktop Settings).
+- **Machine (Arman's Mac):** `~/.claude/sync-claude-code-sessions.py` (launchd ledger keeper,
+  alive) · `claude-code-pins-extract.py` (LevelDB read) · `claude-code-pins-writeback.mjs`
+  (app-closed pin restore; categories are Anthropic-server-synced per account — local
+  cross-account replication impossible, verified 08-22).
+- **Probes:** outbox `sqlite3 ~/.matrx/matrx.db "select count(*) from coding_session_bridge_outbox"`;
+  engine `curl -s http://127.0.0.1:22140/health`; engine session (loopback)
+  `GET /auth/token`; DB via aidream `.env` `SUPABASE_MATRIX_*`.
 
 ## Remaining work (priority order)
 
-1. **Verify the last mile after the aidream deploy** (deploy agent ships main): new sidecar-kind
-   entries stop erroring; run one sweep of the sidecar receipt UPDATE for any stragglers (pattern
-   in this doc's history / `backfill.py`); confirm `Auto:%` titles decay as title sync runs.
-2. **Favorite return direction (design gap, accepted for now):** pin mirror is one-way with
-   flip-detection — an AI Matrx favorite change survives unchanged provider observations but a
-   real Claude-side flip wins; favoriting in AI Matrx never reaches Claude. The return path =
-   ledger write + `claude-code-pins-writeback.mjs` mechanics. Also open: auto-run write-back when
-   Claude is closed and drifted (needs Arman's yes — standing automation).
-3. **Hosted lane — RULED BUILD (2026-08-20).** Blocker: `development` sandbox is EC2-tier-only
-   while managed Claude is hosted-tier-only by an isolation gate (contract FEATURE.md:232) —
-   review bwrap/socat isolation on the dev image, open EC2 tier deliberately, re-certify the
-   hosted endpoints (their 08-15 certification predates the AWS migration), then wire
-   `/claude/stream`+`/cancel` into `/work/new`. Missing capability = LOUD "unavailable because X".
-4. **Codex to LIVE mirroring:** Arman runs `/hooks` trust once per machine (plugin alpha-4 is
-   released); build the trust detector + honest `/work/connections` status; verify real codex
-   sessions land. Non-claude native tool outcomes are skipped-not-guessed by design — revisit
-   per-provider rules when codex native entries actually flow.
-5. **Web sync door (TASK-007):** add `coding_history.*` handlers beside `coding_runtime.*` over
-   the Broadcast bridge; give AI Work real preview/import/status/retry/discard. TASK-008
-   (reconnect/account UX) not started. Live-path multi-account identity unproven.
-6. **Conformance + docs debt:** BEHAVIOR.md 12-MUST pass never executed (MUST #1 mismatch
-   statement likely missing); matrx-local AGENT_TASKS hygiene (TASK-003/003b done-but-Active);
-   owner-eyes browser pass on live watchable sessions (owner-only by construction).
-7. **Distribution (all Arman-gated):** VS Code publish checklist (40 min); Cursor repo
-   visibility; Claude plugin marketplace.
-8. **Analysis surfaces polish:** row-level analyze on the inbox, durable analysis outputs,
-   thread-level War Room placement, FTS when ILIKE stops scaling.
+1. **Unblock the 118K-row outbox (ARMAN, ~30 seconds): set a default organization in the AI
+   Matrx desktop app → Settings → organization.** His preference is verifiably NULL and the
+   server (correctly) refuses org-scoped deliveries without it. Then WATCH the drain (probe
+   above), expect residual failure classes to surface (MXL-D-079 large-envelope TLS is still
+   latent beneath), and verify 08-30→09-08 sessions appear in `/work/conversations`.
+2. **Finish the trigger proof FOR Arman (his #1 ask, 2026-08-26: "prove that it works, then
+   make it better").** Transport is proven and 22 runtime sessions exist, but he has never
+   seen the clean loop himself: /work/new → "Claude Code on my Mac" → watch it stream →
+   conversation with mirror. Deliver as a guided session with the URL. Then the "make it
+   better" pass: launch latency, honest availability copy, resume affordances.
+3. **Favorite return direction:** AI Matrx star → Claude pin (ledger write + the write-back
+   mechanics exist); plus the standing automation (auto-restore pins when Claude is closed and
+   drifted) — needs Arman's yes.
+4. **Hosted lane** (ruled BUILD): EC2-tier isolation review on the dev sandbox image →
+   re-certify hosted endpoints → wire `/claude/stream`+`/cancel` into `/work/new`. LOUD
+   unavailability copy until then.
+5. **Codex to LIVE:** Arman runs `/hooks` trust once per machine; trust detector + honest
+   `/work/connections` status; verify real codex sessions land.
+6. **Docs debt:** BEHAVIOR.md 12-MUST conformance pass (never executed; baseline v1.4.33 is
+   now ancient vs v1.4.75 — several MUSTs likely drifted, e.g. masked labels are now
+   deliberately UNMASKED by Arman's 09-07 ruling → BEHAVIOR.md needs that ruling folded in);
+   matrx-local AGENT_TASKS hygiene; common-docs FEATURE.md favorites-path update
+   (`user_entity_state`).
+7. **Distribution (Arman-gated):** VS Code checklist, Cursor repo visibility, Claude plugin
+   marketplace.
 
-## Done (one line each; details in code/FEATURE.md)
+## Done (compressed; details in code/FEATURE.md)
 
-- Contract, raw tables, RLS, event mirror, idempotency/leases; unique binding live.
-- Titles both directions; pins/categories capture + platform mirror + backfills (95→ favorites,
-  categories, 271 title corrections); AI Work Category column; watchable runs; schedule prefill.
-- Projection ledger CLEAN: sidecar/empty-Stop reclassification, native tool pairing both lanes,
-  148,968 historical tool_calls, projection errors 0 (2026-08-24).
-- East-key auth incident: root-caused, fixed, released (v1.4.43), outbox drained 42k→~59.
-- Outbox durability (v1.4.36–38), poison-row quarantine both sides (codex plugin alpha-4
-  released); 88 quarantined codex rows preserved-by-design (repair-or-accept still open below).
-- Adversarial-review hardening 2026-08-24: pin flip-detection (no favorite clobber), explicit
-  category observation contract, StopFailure named receipts, per-provider sidecar gate,
-  duplicate-tool_use_id ordinal ids, create_tool_call race convergence, ledger wipe-guard on
-  total emptiness, write-back keeps pins the ledger has no real opinion on.
-- macOS TCC Documents watcher finding handed to Arman (System Settings toggle).
+- 08-21→24: titles/pins/categories unification + backfills; projection ledger 449k errors → 0
+  with 148,968 historical tool_calls; East-key auth incident root-caused/shipped; adversarial
+  hardening (flip-detection, explicit category observation, etc.).
+- 08-26: browser→Mac trigger transport proven live; auth self-heal (v1.4.54); identity-probe
+  fallback (v1.4.55).
+- 08-27→09-07 (other sessions): favorites → `user_entity_state` (`378aa5f9f`); unmasked labels
+  ruling executed; three-bucket conversation list + realtime manager; `/claude-code` screen
+  rebuild with server-truth sync status; engine org fix + 116,803-row requeue (`9c3026d61`);
+  anonymous-list access revoked.
 
 ## Decisions needed
 
-- **Quarantined codex events:** 88 envelopes (entry_mutated, preserved) — repair upstream ids or
-  accept loss?
-- **Standing automation:** auto-run the pin write-back when Claude is closed and drifted (item 2)?
+- Default organization: item 1 is an Arman action, not a decision — but if he wants the bridge
+  exempt from org scoping instead, that's a ruling against the no-assigned-org law (not
+  recommended).
+- Standing automation: auto-run pin write-back when Claude is closed and drifted (item 3)?
+- Quarantined codex events (88, entry_mutated, preserved): repair upstream ids or accept loss?
