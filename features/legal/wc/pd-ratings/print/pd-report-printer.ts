@@ -12,9 +12,13 @@
  * block-print-utils.
  */
 
+// `escapeHtml` moved OUT of @ai-matrx/print/core into @ai-matrx/kit/html-escape
+// in print 0.5.0 (C28, duplication census row 14): an HTML escaper must not
+// require the print engine's jspdf + html2canvas graph. Same five characters,
+// byte-identical output.
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 import {
   buildPrintDocument,
-  escapeHtml,
   openPrintWindow,
   type BlockPrinter,
   type PrintSettings,
