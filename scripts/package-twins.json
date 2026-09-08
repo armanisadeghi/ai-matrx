@@ -26,6 +26,45 @@
       "allow": []
     },
     {
+      "name": "isOwnEcho",
+      "package": "@ai-matrx/realtime",
+      "why": "Echo suppression. The notes middleware's ~60-line isOwnEcho (monotonic updated_at + equal-timestamp content match + same-actor-while-saving) was deleted in the 2026-09-07 adoption; manager.ledger.classify covers every leg. NOTE: features/files/redux/request-ledger.ts is a DIFFERENT mechanism (a server-stamped metadata.request_id under a documented wire contract) and is allowed.",
+      "allow": [
+        {
+          "file": "features/files/redux/request-ledger.ts",
+          "reason": "A DIFFERENT capability: correlation on metadata.request_id, an end-to-end write id the Python backend stamps under common-docs systems/media/file-service/WIRE_CONTRACT.md. The package's ledger infers from (table, id, updated_at, fingerprint) and has no equivalent."
+        },
+        {
+          "file": "features/files/redux/realtime-middleware.ts",
+          "reason": "Consumer of the request-id ledger above, on top of everything the package does."
+        }
+      ]
+    },
+    {
+      "name": "scheduleReconnect",
+      "package": "@ai-matrx/realtime",
+      "why": "Reconnect backoff. Four hand-rolled ladders (notes, marketing crawl activity, vision-interview room, transcript-studio) were deleted in the 2026-09-07 adoption; the package owns jittered backoff with the 30s stability reset.",
+      "allow": []
+    },
+    {
+      "name": "BACKOFF_RESET_AFTER_MS",
+      "package": "@ai-matrx/realtime",
+      "why": "The stability-reset constant. Resetting the attempt counter on SUBSCRIBED lets a flapping channel cycle at the 1s floor forever, firing a full catch-up each time — the package encodes the 30s rule once.",
+      "allow": []
+    },
+    {
+      "name": "RECONNECT_ALARM_ATTEMPT",
+      "package": "@ai-matrx/realtime",
+      "why": "Sustained-outage alarm threshold; the package exports RECONNECT_ALARM_ATTEMPTS and screams through its diagnostics sink. Deleted from the notes middleware 2026-09-07.",
+      "allow": []
+    },
+    {
+      "name": "attachRealtime",
+      "package": "@ai-matrx/realtime",
+      "why": "Per-hook refcounted channel attach. Four hand-copied maps (useAnnotations, usePages, useFileAnalysis, useExtractionJobs) collapsed into lib/realtime/sharedChannel.ts on 2026-09-07, whose exported door is `openShared` — the ONE sanctioned home for the app-shaped fan-in the package's room registry deliberately does not cover for pg-changes. This row exists so a fifth per-hook copy cannot come back.",
+      "allow": []
+    },
+    {
       "name": "toMs",
       "package": "@ai-matrx/realtime",
       "why": "Realtime timestamp normalizer, deleted in the 2026-08-31 realtime adoption.",
