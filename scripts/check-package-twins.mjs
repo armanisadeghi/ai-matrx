@@ -93,10 +93,14 @@ if (SELF_TEST) {
     process.exit(1);
   }
   // The allowlist must be the ONLY way past the guard, and it must be per-file.
-  const allowed = twinsIn(
-    "features/organizations/admin/utils.ts",
-    planted,
-  );
+  // Planted here rather than read from the register, so this self-test is
+  // repo-agnostic: the script and its JSON copy unchanged into every repo, and
+  // no repo's real allowlist paths are baked into the proof.
+  const row = BY_NAME.get("formatRelativeTime");
+  const realAllow = row.allow ?? [];
+  row.allow = [{ file: "planted.ts", reason: "self-test only" }];
+  const allowed = twinsIn("planted.ts", planted);
+  row.allow = realAllow;
   if (allowed.length !== 0) {
     console.error(
       "SELF-TEST FAILED: an allowlisted file still reported its twin.",
