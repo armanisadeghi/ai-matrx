@@ -16,10 +16,13 @@
 //   §1 THE TRIAD — INPUT → GOAL → OUTPUT (TriadSections.tsx). Arman: "INPUT ->
 //      Charge (Goal) -> Output. The UI should show this clearly and since the
 //      goal lives ONLY HERE, it needs to be easy to read and quickly edit."
-//   §2 How the system meets it now — the effective Holder, its version
-//      binding (latest vs pinned + DRIFT), view it / duplicate it.
-//   §3 Organization context — one line, collapsed. This surface is PERSONAL;
-//      org editing lives on the org route.
+//   §2 How the system meets it now — the effective Holder, read from the ONE
+//      resolver (the server verdict; this screen never resolves), view it /
+//      duplicate it. It names the ACTIVE org, because the org rung IS the
+//      active org (D-R1, Arman 2026-09-01).
+//   §3 The ladder as the DATABASE tells it — `mandate.resolve`, one row per
+//      rung, what each rung says and nothing about which one wins. This
+//      surface is PERSONAL; org editing lives on the org route.
 //   §4 Who fulfils this job — THE ONE BINDING UI (features/bindings/
 //      OneBindingWorkspace): the rung as a control, the holder cell, and the
 //      two-sides-and-a-middle mapping over the shared row component. It
@@ -50,7 +53,6 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { MandateResolutionRibbon } from "../components/MandateResolutionRibbon";
 import { MandateNotesPanel } from "../components/MandateNotesPanel";
