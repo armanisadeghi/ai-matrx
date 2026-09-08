@@ -9,18 +9,29 @@
  */
 
 import { useState } from "react";
-import { Copy, GitBranch, Link2, Loader2, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Copy,
+  GitBranch,
+  Link2,
+  Loader2,
+  ShieldCheck,
+  Building2,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { duplicateAgent } from "@/features/agents/redux/agent-definition/thunks";
 import type { AgentLineageRef } from "@/features/agents/redux/agent-definition/selectors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";
+import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { agentHref } from "./mandate-health";
 import { useGuardedRebind } from "./useGuardedRebind";
+import { promoteMandateToSystem } from "./promotion";
 import type { MandateCodeTruth, MandateDefinitionRow } from "./service";
 
 /** A lineage relative, always rendered with a door. */
@@ -238,5 +249,110 @@ export function CreateSystemTwinButton({
       </Button>
       {dialog}
     </>
+  );
+}
+
+/**
+ * PROMOTE THE MANDATE — the sibling of `CreateSystemTwinButton` above.
+ *
+ * That button promotes the AGENT (`agx_duplicate_agent(p_as_system)`); this one
+ * promotes the MANDATE (`mandate.duplicate_mandate(p_as_system)`, aidream
+ * 0592). They are different objects and both are needed: an agent's system twin
+ * still leaves the JOB homed in one workspace, where it decides for that
+ * organization only. Promoting the mandate copies the job into the Matrx System
+ * organization, which is what "impacts all users" means under D-R3 — home IS
+ * scope, there is no type flag.
+ *
+ * 🚨 THE COPY STARTS WITH NO RUNGS. The door carries no binding across, so the
+ * promoted job answers with its own default holder until somebody binds it.
+ * This says so in words rather than letting an admin discover it.
+ *
+ * The super-admin gate here is CHROME — it decides whether to OFFER the
+ * control. The authority is `is_super_admin()` inside the function body, and
+ * when the door refuses anyway (a lower admin tier, or THE HOLDER LAW finding a
+ * personal agent behind the job) its own sentence is printed verbatim, hint
+ * included, because that hint names the door that fixes it.
+ */
+export function PromoteToSystemMandateButton({
+  mandate,
+  onPromoted,
+}: {
+  mandate: MandateDefinitionRow;
+  /** Called after a successful promotion, before the copy is opened. */
+  onPromoted?: () => void;
+}) {
+  const router = useRouter();
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const [busy, setBusy] = useState(false);
+  const [refusal, setRefusal] = useState<{
+    message: string;
+    hint: string | null;
+  } | null>(null);
+
+  if (!isSuperAdmin) return null;
+
+  const alreadySystem = mandate.organization_id === SYSTEM_ORGANIZATION_ID;
+
+  return (
+    <div className="mt-4 space-y-2 border-t border-border/40 pt-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-7 gap-1.5 text-[12px]"
+          disabled={busy || alreadySystem}
+          onClick={async () => {
+            setBusy(true);
+            setRefusal(null);
+            try {
+              const copy = await promoteMandateToSystem(mandate.id);
+              toast.success(
+                `Promoted to the system mandate "${copy.mandateKey}". It carries no bindings yet.`,
+              );
+              onPromoted?.();
+              router.push(
+                `/administration/mandates/${encodeURIComponent(copy.mandateKey)}`,
+              );
+            } catch (error: unknown) {
+              // THE DOOR'S OWN WORDS, verbatim — including the hint, which
+              // names the agent promotion door when the holder law fires.
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "That mandate was not promoted.";
+              const hint =
+                error instanceof Error && "hint" in error
+                  ? ((error as { hint?: string | null }).hint ?? null)
+                  : null;
+              setRefusal({ message, hint });
+              toast.error(message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Building2 className="h-3.5 w-3.5" />
+          )}
+          {busy ? "Promoting…" : "Promote to system mandate"}
+        </Button>
+        <span className="text-[11px] leading-snug text-muted-foreground">
+          {alreadySystem
+            ? "This job is already homed in the Matrx System organization, so it already decides for every user."
+            : "Copies this job into the Matrx System organization, where it decides for every user. The copy starts with no bindings, and this one is left exactly as it is."}
+        </span>
+      </div>
+      {refusal ? (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-[11.5px] text-destructive">
+          <p>{refusal.message}</p>
+          {refusal.hint ? (
+            <p className="mt-1 text-destructive/80">{refusal.hint}</p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }

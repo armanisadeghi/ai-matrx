@@ -56,6 +56,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { MandateResolutionRibbon } from "../components/MandateResolutionRibbon";
 import { MandateNotesPanel } from "../components/MandateNotesPanel";
+import { MandateLineageLine } from "../components/MandateLineageLine";
 import {
   TriadFlowMark,
   TriadGoalSection,
@@ -415,6 +416,14 @@ export function MandateWorkspace({
               </Link>
             ) : null}
           </div>
+          {/* LINEAGE — where this job came from and what came from it, read
+              from `source_mandate_id` (aidream 0592). A fact about the corpus,
+              so it belongs here rather than behind the admin fold. */}
+          <MandateLineageLine
+            mandateId={data.mandate.id}
+            sourceMandateId={data.mandate.source_mandate_id ?? null}
+            host={host}
+          />
         </header>
 
         {/* THE TRIAD — INPUT → GOAL → OUTPUT, the mandate's own order.

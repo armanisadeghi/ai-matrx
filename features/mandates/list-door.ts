@@ -46,6 +46,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
+import { MandateDoorError } from "./door-error";
 import type { MandateListRow } from "./browse/types";
 
 /** WHOSE mandates are in the corpus. */
@@ -108,31 +109,19 @@ export interface MandateListDoorQuery {
  * both written for a person. The `hint` is the door's remedy in RPC terms —
  * kept for the console, never printed at a user.
  */
-export class MandateListDoorError extends Error {
-  readonly code: string | null;
-  readonly detail: string | null;
-  readonly hint: string | null;
-  /** True when the door refused this caller (42501), rather than failing. */
-  readonly refused: boolean;
-
+export class MandateListDoorError extends MandateDoorError {
   constructor(init: {
     message: string;
     code?: string | null;
     detail?: string | null;
     hint?: string | null;
   }) {
-    const sentence = [init.message?.trim(), init.detail?.trim()]
-      .filter((part): part is string => Boolean(part))
-      .join(" ");
-    super(
-      sentence ||
+    super({
+      ...init,
+      name: "MandateListDoorError",
+      fallback:
         "The mandate list door returned an error with no message — usually a gateway/PostgREST failure rather than a query error.",
-    );
-    this.name = "MandateListDoorError";
-    this.code = init.code ?? null;
-    this.detail = init.detail ?? null;
-    this.hint = init.hint ?? null;
-    this.refused = init.code === "42501";
+    });
   }
 }
 

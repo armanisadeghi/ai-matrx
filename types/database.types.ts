@@ -15015,6 +15015,416 @@ export type Database = {
         }
         Relationships: []
       }
+      meet_call_invites: {
+        Row: {
+          callee_ids: string[]
+          caller_avatar_url: string | null
+          caller_name: string
+          caller_user_id: string
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          decline_message: string | null
+          deleted_at: string | null
+          expires_at: string
+          id: string
+          metadata: Json
+          mode: string
+          organization_id: string
+          room_name: string
+          settled_at: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          callee_ids?: string[]
+          caller_avatar_url?: string | null
+          caller_name?: string
+          caller_user_id: string
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decline_message?: string | null
+          deleted_at?: string | null
+          expires_at: string
+          id?: string
+          metadata?: Json
+          mode?: string
+          organization_id: string
+          room_name: string
+          settled_at?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          callee_ids?: string[]
+          caller_avatar_url?: string | null
+          caller_name?: string
+          caller_user_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decline_message?: string | null
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          mode?: string
+          organization_id?: string
+          room_name?: string
+          settled_at?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      meet_meetings: {
+        Row: {
+          ai_enabled: boolean
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          ended_at: string | null
+          host_user_id: string
+          id: string
+          kind: string
+          lobby_enabled: boolean
+          locked: boolean
+          metadata: Json
+          organization_id: string
+          recording_policy: string
+          room_name: string
+          scheduled_duration_minutes: number | null
+          scheduled_for: string | null
+          slug: string
+          started_at: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          ai_enabled?: boolean
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ended_at?: string | null
+          host_user_id: string
+          id?: string
+          kind?: string
+          lobby_enabled?: boolean
+          locked?: boolean
+          metadata?: Json
+          organization_id: string
+          recording_policy?: string
+          room_name: string
+          scheduled_duration_minutes?: number | null
+          scheduled_for?: string | null
+          slug: string
+          started_at?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          ai_enabled?: boolean
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ended_at?: string | null
+          host_user_id?: string
+          id?: string
+          kind?: string
+          lobby_enabled?: boolean
+          locked?: boolean
+          metadata?: Json
+          organization_id?: string
+          recording_policy?: string
+          room_name?: string
+          scheduled_duration_minutes?: number | null
+          scheduled_for?: string | null
+          slug?: string
+          started_at?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      meet_notes: {
+        Row: {
+          assignee_user_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          text: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          assignee_user_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          meeting_id: string
+          metadata?: Json
+          organization_id: string
+          text: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          assignee_user_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          meeting_id?: string
+          metadata?: Json
+          organization_id?: string
+          text?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meet_notes_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meet_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meet_participants: {
+        Row: {
+          admission_state: string
+          avatar_url: string | null
+          consent_acknowledged_at: string | null
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          display_name: string
+          id: string
+          identity: string
+          is_agent: boolean
+          joined_at: string | null
+          knocked_at: string
+          left_at: string | null
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          participant_user_id: string | null
+          role: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          admission_state?: string
+          avatar_url?: string | null
+          consent_acknowledged_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          display_name?: string
+          id?: string
+          identity: string
+          is_agent?: boolean
+          joined_at?: string | null
+          knocked_at?: string
+          left_at?: string | null
+          meeting_id: string
+          metadata?: Json
+          organization_id: string
+          participant_user_id?: string | null
+          role?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          admission_state?: string
+          avatar_url?: string | null
+          consent_acknowledged_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          display_name?: string
+          id?: string
+          identity?: string
+          is_agent?: boolean
+          joined_at?: string | null
+          knocked_at?: string
+          left_at?: string | null
+          meeting_id?: string
+          metadata?: Json
+          organization_id?: string
+          participant_user_id?: string | null
+          role?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meet_participants_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meet_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meet_recordings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          egress_id: string | null
+          ended_at: string | null
+          failure_reason: string | null
+          file_id: string | null
+          id: string
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          started_at: string | null
+          started_by: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          egress_id?: string | null
+          ended_at?: string | null
+          failure_reason?: string | null
+          file_id?: string | null
+          id?: string
+          meeting_id: string
+          metadata?: Json
+          organization_id: string
+          started_at?: string | null
+          started_by?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          egress_id?: string | null
+          ended_at?: string | null
+          failure_reason?: string | null
+          file_id?: string | null
+          id?: string
+          meeting_id?: string
+          metadata?: Json
+          organization_id?: string
+          started_at?: string | null
+          started_by?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meet_recordings_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meet_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meet_transcript_segments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          identity: string
+          is_final: boolean
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          speaker: string
+          started_at: string
+          text: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          identity: string
+          is_final?: boolean
+          meeting_id: string
+          metadata?: Json
+          organization_id: string
+          speaker?: string
+          started_at?: string
+          text: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          identity?: string
+          is_final?: boolean
+          meeting_id?: string
+          metadata?: Json
+          organization_id?: string
+          speaker?: string
+          started_at?: string
+          text?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meet_transcript_segments_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meet_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification: {
         Row: {
           acted_at: string | null
@@ -16156,6 +16566,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _meet_actor: { Args: { p_claimed: string }; Returns: string }
+      _meet_is_host: {
+        Args: { p_actor: string; p_meeting_id: string }
+        Returns: boolean
+      }
       _set_notification_outcome: {
         Args: {
           p_acted_at?: string
@@ -16720,6 +17135,280 @@ export type Database = {
       mark_notification_read: {
         Args: { p_channel: string; p_notification_id: string }
         Returns: boolean
+      }
+      meet_admit_participant: {
+        Args: {
+          p_admitted: boolean
+          p_by_user_id: string
+          p_identity: string
+          p_meeting_id: string
+        }
+        Returns: undefined
+      }
+      meet_create_call_invite: {
+        Args: {
+          p_callee_ids: string[]
+          p_caller_avatar_url: string
+          p_caller_name: string
+          p_caller_user_id: string
+          p_conversation_id: string
+          p_expires_at: string
+          p_mode: string
+          p_organization_id: string
+          p_room_name: string
+        }
+        Returns: {
+          callee_ids: string[]
+          caller_avatar_url: string | null
+          caller_name: string
+          caller_user_id: string
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          decline_message: string | null
+          deleted_at: string | null
+          expires_at: string
+          id: string
+          metadata: Json
+          mode: string
+          organization_id: string
+          room_name: string
+          settled_at: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_call_invites"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_end_meeting: {
+        Args: { p_by_user_id: string; p_meeting_id: string }
+        Returns: {
+          ai_enabled: boolean
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          ended_at: string | null
+          host_user_id: string
+          id: string
+          kind: string
+          lobby_enabled: boolean
+          locked: boolean
+          metadata: Json
+          organization_id: string
+          recording_policy: string
+          room_name: string
+          scheduled_duration_minutes: number | null
+          scheduled_for: string | null
+          slug: string
+          started_at: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_meetings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_get_or_create_meeting: {
+        Args: {
+          p_ai_enabled: boolean
+          p_host_user_id: string
+          p_kind: string
+          p_lobby_enabled: boolean
+          p_organization_id: string
+          p_recording_policy: string
+          p_scheduled_duration_minutes: number
+          p_scheduled_for: string
+          p_slug: string
+          p_title: string
+        }
+        Returns: {
+          ai_enabled: boolean
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          ended_at: string | null
+          host_user_id: string
+          id: string
+          kind: string
+          lobby_enabled: boolean
+          locked: boolean
+          metadata: Json
+          organization_id: string
+          recording_policy: string
+          room_name: string
+          scheduled_duration_minutes: number | null
+          scheduled_for: string | null
+          slug: string
+          started_at: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_meetings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_meeting_by_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          ai_enabled: boolean
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          ended_at: string | null
+          host_user_id: string
+          id: string
+          kind: string
+          lobby_enabled: boolean
+          locked: boolean
+          metadata: Json
+          organization_id: string
+          recording_policy: string
+          room_name: string
+          scheduled_duration_minutes: number | null
+          scheduled_for: string | null
+          slug: string
+          started_at: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_meetings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_pending_call_invites: {
+        Args: { p_user_id: string }
+        Returns: {
+          callee_ids: string[]
+          caller_avatar_url: string | null
+          caller_name: string
+          caller_user_id: string
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          decline_message: string | null
+          deleted_at: string | null
+          expires_at: string
+          id: string
+          metadata: Json
+          mode: string
+          organization_id: string
+          room_name: string
+          settled_at: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "meet_call_invites"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      meet_record_consent: {
+        Args: {
+          p_acknowledged_at: string
+          p_identity: string
+          p_meeting_id: string
+        }
+        Returns: undefined
+      }
+      meet_set_lock: {
+        Args: { p_by_user_id: string; p_locked: boolean; p_meeting_id: string }
+        Returns: {
+          ai_enabled: boolean
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          ended_at: string | null
+          host_user_id: string
+          id: string
+          kind: string
+          lobby_enabled: boolean
+          locked: boolean
+          metadata: Json
+          organization_id: string
+          recording_policy: string
+          room_name: string
+          scheduled_duration_minutes: number | null
+          scheduled_for: string | null
+          slug: string
+          started_at: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_meetings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_settle_call_invite: {
+        Args: {
+          p_decline_message: string
+          p_invite_id: string
+          p_state: string
+        }
+        Returns: {
+          callee_ids: string[]
+          caller_avatar_url: string | null
+          caller_name: string
+          caller_user_id: string
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          decline_message: string | null
+          deleted_at: string | null
+          expires_at: string
+          id: string
+          metadata: Json
+          mode: string
+          organization_id: string
+          room_name: string
+          settled_at: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_call_invites"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       notification_user_channels: {
         Args: {
@@ -52353,6 +53042,7 @@ export type Database = {
           provision_key: string | null
           required_context_policies: string[]
           required_output_keys: string[]
+          source_mandate_id: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -52389,6 +53079,7 @@ export type Database = {
           provision_key?: string | null
           required_context_policies?: string[]
           required_output_keys?: string[]
+          source_mandate_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -52425,12 +53116,35 @@ export type Database = {
           provision_key?: string | null
           required_context_policies?: string[]
           required_output_keys?: string[]
+          source_mandate_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "definition_source_mandate_id_fkey"
+            columns: ["source_mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "definition_source_mandate_id_fkey"
+            columns: ["source_mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "definition_source_mandate_id_fkey"
+            columns: ["source_mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+        ]
       }
       provision: {
         Row: {
@@ -52686,8 +53400,20 @@ export type Database = {
           version_live: boolean
         }[]
       }
+      duplicate_mandate: {
+        Args: {
+          p_as_system?: boolean
+          p_mandate_id: string
+          p_organization_id?: string
+        }
+        Returns: string
+      }
       generate_app_mandate_key: {
         Args: { p_name: string; p_slug: string }
+        Returns: string
+      }
+      generate_copy_mandate_key: {
+        Args: { p_source_key: string }
         Returns: string
       }
       generate_shortcut_mandate_key: {

@@ -40,6 +40,7 @@ import {
 } from "@/features/mandates/mandate-address";
 import { buildRow, type MandateRow } from "./mandate-health";
 import { MandateDetailView } from "./MandateDetailPanel";
+import { PromoteToSystemMandateButton } from "./mandate-actions";
 import {
   fetchMandateCodeTruthReport,
   fetchMandateConsoleData,
@@ -176,7 +177,7 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
             Admin controls
           </span>
           <span className="text-[11.5px] text-muted-foreground">
-            Health, pin, rebind, test bench, bindings
+            Health, pin, rebind, test bench, bindings, promote
           </span>
           <ChevronDown
             className={cn(
@@ -226,6 +227,13 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
                     not an answer to "a creator can never remove a job". This
                     is the discoverable one, on the job's own page, where
                     someone who wants it gone will actually look. */}
+                {/* PROMOTE THE JOB. `MandateDetailView` above already offers
+                    the AGENT promotion ("Create system twin + rebind"); this
+                    is its sibling for the MANDATE — the job's own home is its
+                    scope (D-R3), so an agent twin alone still leaves the job
+                    deciding for one organization. Super-admin gated inside,
+                    and the door's own refusal is what prints. */}
+                <PromoteToSystemMandateButton mandate={row.mandate} onPromoted={load} />
                 <RemoveMandate row={row} />
               </>
             )}
