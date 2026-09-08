@@ -101,6 +101,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/organizations/default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set My Default Organization
+         * @description Pin (or clear) the caller's durable default organization.
+         *
+         *     The write half of the org-header contract's second rung: the SAME
+         *     ``users.user_preferences`` field the main app's "Set as my default"
+         *     switch writes, so Studio and the dashboard can offer the identical
+         *     control. Refuses an organization that is not one of the caller's
+         *     memberships. Returns the fresh report, like ``GET /organizations``.
+         */
+        put: operations["set_my_default_organization_auth_organizations_default_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -3665,6 +3691,39 @@ export interface paths {
         put?: never;
         /** Agent Stop */
         post: operations["agent_stop_v1_meet_agent_stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/intelligence/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Intelligence Ask
+         * @description Ask the meeting a question and watch the answer arrive.
+         *
+         *     Like `/token`, this route takes NO authentication dependency: a guest holding
+         *     the meeting link is a first-class participant (D6), and it is the SERVICE
+         *     that decides what a guest may do — `authorize_meeting_question` mirrors the
+         *     join decision exactly, including the org's `meet.guest_join_enabled` knob.
+         *
+         *     The body is `{meeting_id, question}` and nothing else. No transcript, no
+         *     context, no agent id crosses the wire — the answer is built server-side from
+         *     durable rows (D16) and the Holder is the Binding's call.
+         *
+         *     Both refusals happen BEFORE the stream opens, so the client gets an honest
+         *     HTTP status instead of a stream that dies: 401/403/404 for who is asking,
+         *     503 naming the Mandate admin when nothing is bound to answer.
+         */
+        post: operations["intelligence_ask_v1_meet_intelligence_ask_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -30541,6 +30600,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflows/{definition_id}/conductor-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Conductor Context
+         * @description The Conductor launcher — assemble the WHOLE-workflow envelope and
+         *     resolve which agent holds the ``workflow.conductor`` Mandate. The studio
+         *     then starts an ordinary agent conversation with the returned variables;
+         *     every write goes through the agent's tools (workflow_author's plan-anchor
+         *     gate, workflow_plan's gate stack). No seed fallback: an unresolved Mandate
+         *     is a 503 that names the fix.
+         */
+        get: operations["get_conductor_context_workflows__definition_id__conductor_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workflows/{definition_id}/nodes/{node_id}/input-status": {
         parameters: {
             query?: never;
@@ -52180,6 +52264,46 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * ConductorChatContext
+         * @description Everything the studio needs to open the Conductor for one workflow:
+         *     the resolved mandate agent + the variables to pass on POST /agents/{id}.
+         */
+        ConductorChatContext: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Agent Id */
+            agent_id: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Is Version */
+            is_version: boolean;
+            /**
+             * Provenance
+             * @default system
+             */
+            provenance?: string;
+            /**
+             * Can Edit
+             * @default true
+             */
+            can_edit?: boolean;
+            /** Workflow Id */
+            workflow_id: string;
+            /** Workflow Name */
+            workflow_name: string;
+            /** Step Count */
+            step_count: number;
+            /** Open Plan Count */
+            open_plan_count: number;
+            /**
+             * Variables
+             * @description Pass verbatim as the agent-start `variables`: workflow_id, workflow_name, workflow_context (the XML envelope).
+             */
+            variables?: {
+                [key: string]: string;
+            };
+        };
         /** ConfirmCandidateRequest */
         ConfirmCandidateRequest: {
             /**
@@ -55789,6 +55913,11 @@ export interface components {
             canonical_clean_id?: string | null;
             /** Archived At */
             archived_at?: string | null;
+        };
+        /** DefaultOrganizationBody */
+        DefaultOrganizationBody: {
+            /** Organization Id */
+            organization_id?: string | null;
         };
         /**
          * DefaultsResponse
@@ -76058,6 +76187,20 @@ export interface components {
             is_relevant?: boolean | null;
         };
         /**
+         * MeetQuestionRequest
+         * @description `POST /api/v1/meet/intelligence/ask` — a question and nothing else.
+         *
+         *     🚨 The body carries NO context, NO transcript and NO agent id. Everything the
+         *     answer is built from is read from durable rows on the server (D16), and which
+         *     holder answers is the Binding's call, not the client's.
+         */
+        MeetQuestionRequest: {
+            /** Meeting Id */
+            meeting_id: string;
+            /** Question */
+            question: string;
+        };
+        /**
          * MemServiceStatus
          * @description Safe aggregate status projection for Mem's fixed status page.
          */
@@ -80746,6 +80889,8 @@ export interface components {
         OrganizationReport: {
             /** Authenticated */
             authenticated: boolean;
+            /** User Id */
+            user_id?: string | null;
             /** Organizations */
             organizations: components["schemas"]["OrganizationSummary"][];
             /** Default Organization Id */
@@ -80927,6 +81072,8 @@ export interface components {
             name: string;
             /** Is Personal */
             is_personal: boolean;
+            /** Abbreviation */
+            abbreviation?: string | null;
         };
         /**
          * OsfPublicProject
@@ -114898,6 +115045,39 @@ export interface operations {
             };
         };
     };
+    set_my_default_organization_auth_organizations_default_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DefaultOrganizationBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     health_check_health_get: {
         parameters: {
             query?: never;
@@ -120996,6 +121176,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentDispatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    intelligence_ask_v1_meet_intelligence_ask_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetQuestionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -162542,6 +162755,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NodeAgentChatContext"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_conductor_context_workflows__definition_id__conductor_context_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConductorChatContext"];
                 };
             };
             /** @description Validation Error */

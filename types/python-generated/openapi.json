@@ -205,6 +205,49 @@
         }
       }
     },
+    "/auth/organizations/default": {
+      "put": {
+        "tags": [
+          "Auth",
+          "Auth"
+        ],
+        "summary": "Set My Default Organization",
+        "description": "Pin (or clear) the caller's durable default organization.\n\nThe write half of the org-header contract's second rung: the SAME\n``users.user_preferences`` field the main app's \"Set as my default\"\nswitch writes, so Studio and the dashboard can offer the identical\ncontrol. Refuses an organization that is not one of the caller's\nmemberships. Returns the fresh report, like ``GET /organizations``.",
+        "operationId": "set_my_default_organization_auth_organizations_default_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefaultOrganizationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
@@ -8857,6 +8900,46 @@
                 "schema": {
                   "$ref": "#/components/schemas/AgentDispatchResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meet/intelligence/ask": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Intelligence Ask",
+        "description": "Ask the meeting a question and watch the answer arrive.\n\nLike `/token`, this route takes NO authentication dependency: a guest holding\nthe meeting link is a first-class participant (D6), and it is the SERVICE\nthat decides what a guest may do — `authorize_meeting_question` mirrors the\njoin decision exactly, including the org's `meet.guest_join_enabled` knob.\n\nThe body is `{meeting_id, question}` and nothing else. No transcript, no\ncontext, no agent id crosses the wire — the answer is built server-side from\ndurable rows (D16) and the Holder is the Binding's call.\n\nBoth refusals happen BEFORE the stream opens, so the client gets an honest\nHTTP status instead of a stream that dies: 401/403/404 for who is asking,\n503 naming the Mandate admin when nothing is bound to answer.",
+        "operationId": "intelligence_ask_v1_meet_intelligence_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeetQuestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -66363,6 +66446,49 @@
         }
       }
     },
+    "/workflows/{definition_id}/conductor-context": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get Conductor Context",
+        "description": "The Conductor launcher — assemble the WHOLE-workflow envelope and\nresolve which agent holds the ``workflow.conductor`` Mandate. The studio\nthen starts an ordinary agent conversation with the returned variables;\nevery write goes through the agent's tools (workflow_author's plan-anchor\ngate, workflow_plan's gate stack). No seed fallback: an unresolved Mandate\nis a 503 that names the fix.",
+        "operationId": "get_conductor_context_workflows__definition_id__conductor_context_get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConductorChatContext"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/workflows/{definition_id}/nodes/{node_id}/input-status": {
       "get": {
         "tags": [
@@ -118825,6 +118951,74 @@
         ],
         "title": "ConceptboardServiceStatus"
       },
+      "ConductorChatContext": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "is_version": {
+            "type": "boolean",
+            "title": "Is Version"
+          },
+          "provenance": {
+            "type": "string",
+            "title": "Provenance",
+            "default": "system"
+          },
+          "can_edit": {
+            "type": "boolean",
+            "title": "Can Edit",
+            "default": true
+          },
+          "workflow_id": {
+            "type": "string",
+            "title": "Workflow Id"
+          },
+          "workflow_name": {
+            "type": "string",
+            "title": "Workflow Name"
+          },
+          "step_count": {
+            "type": "integer",
+            "title": "Step Count"
+          },
+          "open_plan_count": {
+            "type": "integer",
+            "title": "Open Plan Count"
+          },
+          "variables": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Variables",
+            "description": "Pass verbatim as the agent-start `variables`: workflow_id, workflow_name, workflow_context (the XML envelope)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "agent_id",
+          "organization_id",
+          "is_version",
+          "workflow_id",
+          "workflow_name",
+          "step_count",
+          "open_plan_count"
+        ],
+        "title": "ConductorChatContext",
+        "description": "Everything the studio needs to open the Conductor for one workflow:\nthe resolved mandate agent + the variables to pass on POST /agents/{id}."
+      },
       "ConfirmCandidateRequest": {
         "properties": {
           "organization_id": {
@@ -127340,6 +127534,23 @@
           "derivation_kind"
         ],
         "title": "DedupResponse"
+      },
+      "DefaultOrganizationBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "title": "DefaultOrganizationBody"
       },
       "DefaultsResponse": {
         "properties": {
@@ -172094,6 +172305,25 @@
         "type": "object",
         "title": "MediaUpdate"
       },
+      "MeetQuestionRequest": {
+        "properties": {
+          "meeting_id": {
+            "type": "string",
+            "title": "Meeting Id"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meeting_id",
+          "question"
+        ],
+        "title": "MeetQuestionRequest",
+        "description": "`POST /api/v1/meet/intelligence/ask` — a question and nothing else.\n\n🚨 The body carries NO context, NO transcript and NO agent id. Everything the\nanswer is built from is read from durable rows on the server (D16), and which\nholder answers is the Binding's call, not the client's."
+      },
       "MemServiceStatus": {
         "properties": {
           "__kind": {
@@ -181638,6 +181868,17 @@
             "type": "boolean",
             "title": "Authenticated"
           },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
           "organizations": {
             "items": {
               "$ref": "#/components/schemas/OrganizationSummary"
@@ -182253,6 +182494,17 @@
           "is_personal": {
             "type": "boolean",
             "title": "Is Personal"
+          },
+          "abbreviation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abbreviation"
           }
         },
         "type": "object",
