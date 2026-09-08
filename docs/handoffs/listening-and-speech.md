@@ -64,28 +64,44 @@ On why it matters beyond this feature:
 
 ## Remaining work
 
-1. **Org tier has no editor — the middle rung of Arman's cascade is unreachable.**
+1. **Org tier has no editor — the middle rung of the cascade is unreachable.**
    Resolution already merges org rows correctly and `setNamespaceConfig` accepts an org scope;
-   what is missing is any UI that writes one, so zero org rows exist. **Do not build this
-   blind** — it is entangled with the settings campaign's open ruling Q4 ("Who may write at
-   each scope?") in
-   `/Users/armanisadeghi/code/common-docs/projects/unified-settings-platform/DECISIONS.md`.
-   Read that first; if Q4 is still open, this stays blocked and belongs in Decisions below.
+   what is missing is any UI that writes one, so zero org rows exist.
+   **Who may write it is SETTLED, not open: org admins** (Arman, 2026-09-08 — "every
+   organization has admin privileges, and only those with admin privileges can modify things
+   like that"). The platform primitive for that gate already exists and is healthy:
+   `public.is_org_admin(org_id)` → `iam.organization_member.role in ('owner','admin')`, the
+   same gate `features/organizations/admin/` uses.
+   **Blocked only on the RLS gap in item 2** — a UI gate alone is not enough here, because
+   clients write `ui.ui_surface_config` directly through RLS.
 
-2. **Decide where this feature's `FEATURE.md` lives, then write it.** Today the feature has no
+2. **🚨 Org-tier writes on `ui.ui_surface_config` are gated on MEMBERSHIP, not org admin.**
+   Verified live 2026-09-08. The generated `std_insert` policy allows an org row when
+   `iam.has_org_access(organization_id)` — which is `exists(... organization_member ...)` with
+   **no role check** — while the `std_select` policy only lets `owner`/`admin` read org rows
+   back. So today any ordinary member can write a setting that applies to their whole
+   organization and then cannot read it. This is a class, not an instance: of 622 generated
+   `std_insert` policies, **313 use `has_org_access` and 0 use `is_org_admin`.** For content
+   tables (notes, tasks, documents) member-level write is CORRECT — the gap is that
+   governance/config tables inherit the content policy. `iam.apply_rls` has no governance
+   variant (variants today: `entity`, `component`, `ledger`, `personal`, `restricted`,
+   `system`), and hand-written policies are banned, so the fix belongs in the generator.
+   **Awaiting Arman's scope call — see Decisions.**
+
+3. **Decide where this feature's `FEATURE.md` lives, then write it.** Today the feature has no
    owning doc — it exists only as change-log entries in four unrelated FEATURE.md files, which
    is why a fresh agent cannot find it. Recommended: a "Listening & Speech" section in
    `features/audio/FEATURE.md` (it already owns `speak()`, the queue, the unlock primitive and
    the tiered config) with pointers from the other three. There is no `features/tts/FEATURE.md`
    and `features/tts/` contains no markdown at all.
 
-3. **Close out the agent-review row.** `agent.review_queue` id
+4. **Close out the agent-review row.** `agent.review_queue` id
    `b464b22c-04f5-4fc2-83cc-602a901fec6b` has sat at `submitted` since 2026-08-31 and was never
    picked up. Arman has since confirmed mobile audio works ("The audio tests passed",
    2026-09-08), which was the row's last open question — so this is a review-and-archive, not a
    repair. Invoke the `agent-review-queue` skill.
 
-4. **Consider a real form for the system default.** The admin editor is a raw JSON textarea.
+5. **Consider a real form for the system default.** The admin editor is a raw JSON textarea.
    Arman's words were "all of the system defaults should be customizable by me in a centralized
    place" — a JSON box technically satisfies it, a voice/speed/language form actually does.
    Small, and it is the same three controls the Listen panel already renders.
@@ -102,28 +118,19 @@ On why it matters beyond this feature:
 
 ## Decisions needed
 
-**Org-level speech settings — who may set them, and does this feature wait?**
+**Governance tables let any org member write org-wide rows — fix this table, or the generator?**
 
-*Situation.* Speech settings (voice, speed, language) resolve system → org → user today, and the
-user and system rungs both have working editors. The org rung resolves correctly but nothing in
-the product can write one, so no organization has ever set a default voice. Building that editor
-means deciding who is allowed to set settings for a whole organization — the same question the
-Unified Settings Platform campaign has parked as its open ruling Q4, which is currently blocking
-that entire campaign's build.
+*Situation.* Org admin privileges exist and work correctly across the platform
+(`public.is_org_admin` → `owner`/`admin` on `iam.organization_member`). But the canonical RLS
+generator has no notion of them for writes: every org-scoped write it generates is gated on
+plain membership. On content tables (notes, tasks, files) that is right. On configuration
+tables like `ui.ui_surface_config` — where one row changes behavior for everyone in the
+organization — it means an ordinary member can set an org-wide default, and cannot even read it
+back afterwards, because reads on those same rows are correctly restricted to owners and admins.
+313 of the 622 generated insert policies are in this shape. Policies may only be produced by the
+generator (hand-written ones are banned), so this cannot be fixed on the table alone.
 
-*Decide.* Either (a) answer Q4 once for the whole platform and let this feature follow it, or
-(b) ship a narrow org editor for speech settings only, gated to org admins, accepting that a
-later platform-wide ruling may change it. (a) keeps one rule; (b) completes Arman's stated
-cascade for this feature now.
-
-**Does the listening config migrate onto `platform.feature_knob`?**
-
-*Situation.* This feature stores its settings in `ui.ui_surface_config` (the surface-config
-namespace system). The settings campaign has separately ruled (USD-1) that the canonical
-settings system for the platform is `platform.feature_knob`. Arman asked for this feature to
-become "a model for what we can do", so the two need to agree — right now the model and the
-canon are different tables.
-
-*Decide.* Either the listening config migrates onto `platform.feature_knob` when that campaign
-builds, or surface-scoped settings stay a deliberate, documented exception because they hang off
-a surface identity rather than a feature knob.
+*Decide.* Either (a) add a governance mode to the RLS generator that requires org-admin for
+org-scoped writes, and apply it to the configuration tables — one change, fixes the class, and
+unblocks org-level settings everywhere; or (b) scope it to `ui.ui_surface_config` only for now,
+leaving the same latent gap on other configuration tables.
