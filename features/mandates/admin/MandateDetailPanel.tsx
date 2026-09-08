@@ -91,6 +91,7 @@ import {
   USER_AGENT_BASE,
   agentHref,
   resolveDriftRemedy,
+  type MandateHealth,
   type MandateRow,
 } from "./mandate-health";
 import {
