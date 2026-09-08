@@ -294,8 +294,8 @@ export function RunThisJobSection({
     <Section title="Run this job" hint="super admin">
     <div className="space-y-3 rounded-xl border border-border/60 bg-card p-4">
       <p className="text-[12px] leading-relaxed text-muted-foreground">
-        Run the job on values you fill in here. It uses whatever fulfils the
-        mandate right now — the Holder above, agent or workflow.
+        Runs on values you fill in here, using whatever fulfils this job right
+        now — the Holder above.
       </p>
 
       {/* WHAT THE SERVER COULD NOT READ, in its own words — never swallowed
