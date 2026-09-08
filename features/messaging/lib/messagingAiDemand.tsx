@@ -30,13 +30,7 @@
 // a mandate cache invalidation cannot re-resolve four keys for a surface that
 // closed ten minutes ago.
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 /** Acquire one unit of demand; the returned function releases it. */
 type AcquireMessagingAi = () => () => void;

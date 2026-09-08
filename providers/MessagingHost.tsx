@@ -84,9 +84,13 @@ export function MessagingHost({ children }: MessagingHostProps) {
   // the AI-version flag, org admission and error capture all behave here
   // exactly as they do everywhere else. Built once: a new transport identity
   // per render would rebuild the package's AI client on every render.
-  const transport = useMemo(() => createMatrxTransport(store.getState, {
-    source: "messagingHost",
-  }), [store]);
+  const transport = useMemo(
+    () =>
+      createMatrxTransport(store.getState, {
+        source: "messagingHost",
+      }),
+    [store],
+  );
 
   // 🚨 THE AI IDENTITY IS RESOLVED ON DEMAND, NOT ON MOUNT (2026-09-08).
   //
@@ -169,42 +173,42 @@ export function MessagingHost({ children }: MessagingHostProps) {
 
   return (
     <MessagingAiDemandProvider acquire={aiDemand.acquire}>
-    <MessagingProvider
-      client={supabase}
-      userId={userId}
-      organizationId={organizationId}
-      // The AI seam: the transport, WHO fulfils each job (from Mandates, both
-      // halves), how much history an organization is willing to send, and the
-      // producer slugs the server's register accepts. An unregistered producer
-      // is a 422, not a lost analytic — `matrx-frontend` / `messages` are the
-      // registered pair for this surface (aidream source_attribution).
-      transport={transport}
-      agents={agents}
-      maxTranscriptMessages={maxTranscriptMessages}
-      sourceApp="matrx-frontend"
-      sourceFeature="messages"
-      actionRenderers={MESSAGE_ACTION_SURFACES}
-      // App chrome around the package's own surfaces: the data attributes the
-      // v3 right-click menu resolves its target from, and this app's ONE
-      // renderer for a ```matrx fence (the kind registry), so a reference in a
-      // DM looks and behaves exactly as it does everywhere else.
-      wrapMessage={MessagingMessageChrome}
-      wrapConversationRow={MessagingConversationRowChrome}
-      renderFence={MessagingFence}
-      onOpenReference={onOpenReference}
-      onIncomingMessage={onIncomingMessage}
-      onDiagnostic={onDiagnostic}
-      // Redux identity and the browser's Supabase session hydrate in separate
-      // steps. Without this, a read that lands in between reports
-      // `session-unavailable` instead of retrying once and recovering — which
-      // is exactly the window that produced 909 captured errors in 0.6s.
-      resolveSession={async () => {
-        const { data } = await supabase.auth.getSession();
-        return data.session !== null;
-      }}
-    >
-      {children}
-    </MessagingProvider>
+      <MessagingProvider
+        client={supabase}
+        userId={userId}
+        organizationId={organizationId}
+        // The AI seam: the transport, WHO fulfils each job (from Mandates, both
+        // halves), how much history an organization is willing to send, and the
+        // producer slugs the server's register accepts. An unregistered producer
+        // is a 422, not a lost analytic — `matrx-frontend` / `messages` are the
+        // registered pair for this surface (aidream source_attribution).
+        transport={transport}
+        agents={agents}
+        maxTranscriptMessages={maxTranscriptMessages}
+        sourceApp="matrx-frontend"
+        sourceFeature="messages"
+        actionRenderers={MESSAGE_ACTION_SURFACES}
+        // App chrome around the package's own surfaces: the data attributes the
+        // v3 right-click menu resolves its target from, and this app's ONE
+        // renderer for a ```matrx fence (the kind registry), so a reference in a
+        // DM looks and behaves exactly as it does everywhere else.
+        wrapMessage={MessagingMessageChrome}
+        wrapConversationRow={MessagingConversationRowChrome}
+        renderFence={MessagingFence}
+        onOpenReference={onOpenReference}
+        onIncomingMessage={onIncomingMessage}
+        onDiagnostic={onDiagnostic}
+        // Redux identity and the browser's Supabase session hydrate in separate
+        // steps. Without this, a read that lands in between reports
+        // `session-unavailable` instead of retrying once and recovering — which
+        // is exactly the window that produced 909 captured errors in 0.6s.
+        resolveSession={async () => {
+          const { data } = await supabase.auth.getSession();
+          return data.session !== null;
+        }}
+      >
+        {children}
+      </MessagingProvider>
     </MessagingAiDemandProvider>
   );
 }

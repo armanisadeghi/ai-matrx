@@ -138,8 +138,9 @@ export function useMessagingIntelligences(options: {
   }, [knobs.knobs]);
 
   return useMemo(() => {
-    const agents: { -readonly [K in MessagingCapability]?: MessagingAgentIdentity } =
-      {};
+    const agents: {
+      -readonly [K in MessagingCapability]?: MessagingAgentIdentity;
+    } = {};
     const unresolved: { mandateKey: string; reason: string }[] = [];
 
     (Object.keys(MESSAGING_MANDATE_KEYS) as MessagingCapability[]).forEach(

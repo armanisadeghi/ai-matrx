@@ -26,7 +26,11 @@
  */
 
 import { useRef, useState } from "react";
-import { ConversationView, useConversation, useConversations } from "@ai-matrx/messaging/react";
+import {
+  ConversationView,
+  useConversation,
+  useConversations,
+} from "@ai-matrx/messaging/react";
 import { asConversationId, type Message } from "@ai-matrx/messaging";
 import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -61,7 +65,8 @@ export function ConversationPane({
   const { messages } = useConversation(id);
   const { conversations } = useConversations();
   const conversation =
-    conversations.find((item) => item.conversation.id === conversationId) ?? null;
+    conversations.find((item) => item.conversation.id === conversationId) ??
+    null;
   const [menuMessage, setMenuMessage] = useState<Message | null>(null);
   const menuRef = useRef<Message | null>(null);
 
@@ -72,15 +77,16 @@ export function ConversationPane({
       {...(getApplicationScope ? { getApplicationScope } : {})}
       contentSource={{ type: "raw" }}
       contextData={{
-        content: conversation ? `Conversation: ${conversation.displayName}` : "",
+        content: conversation
+          ? `Conversation: ${conversation.displayName}`
+          : "",
         current_conversation_id: conversationId,
       }}
       resolveContextOnOpen={(target) => {
         const messageId = target
           ?.closest("[data-message-id]")
           ?.getAttribute("data-message-id");
-        const message =
-          messages.find((item) => item.id === messageId) ?? null;
+        const message = messages.find((item) => item.id === messageId) ?? null;
         menuRef.current = message;
         setMenuMessage(message);
         if (!message) {

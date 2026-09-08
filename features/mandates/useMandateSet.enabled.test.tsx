@@ -34,7 +34,9 @@ describe("useMandateSet — enabled", () => {
   });
 
   it("fires NOTHING while disabled", async () => {
-    const hook = await renderHook(() => useMandateSet(KEYS, { enabled: false }));
+    const hook = await renderHook(() =>
+      useMandateSet(KEYS, { enabled: false }),
+    );
     expect(resolveMandate).not.toHaveBeenCalled();
     // Deliberately an EMPTY set, not four `{mandate: null}` entries: a consumer
     // must not be able to read "we never asked" as "nothing is bound" and print
