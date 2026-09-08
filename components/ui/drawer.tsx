@@ -1,150 +1,41 @@
 "use client";
 
-import * as React from "react";
-import { Drawer as DrawerPrimitive } from "vaul";
-
-import { cn } from "@/lib/utils";
-import { treeContainsComponent } from "@ai-matrx/kit/react-tree";
-import { RadixDialogModalProvider } from "@/components/ui/radix-dialog-modal-context";
-
-type DrawerProps = React.ComponentProps<typeof DrawerPrimitive.Root> & {
-  /** Vaul does not forward false to its underlying Radix root. */
-  modal?: true;
-};
-
-const Drawer = ({
-  children,
-  shouldScaleBackground = true,
-  ...props
-}: DrawerProps) => (
-  <RadixDialogModalProvider modal>
-    <DrawerPrimitive.Root
-      modal
-      shouldScaleBackground={shouldScaleBackground}
-      {...props}
-    >
-      {children}
-    </DrawerPrimitive.Root>
-  </RadixDialogModalProvider>
-);
-Drawer.displayName = "Drawer";
-
-const DrawerTrigger = DrawerPrimitive.Trigger;
-
-const DrawerPortal = DrawerPrimitive.Portal;
-
-const DrawerClose = DrawerPrimitive.Close;
-
-const DrawerOverlay = React.forwardRef<
-  React.ComponentRef<typeof DrawerPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
->(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Overlay
-    ref={ref}
-    className={cn("fixed inset-0 z-50 bg-black/80", className)}
-    {...props}
-  />
-));
-DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
-
-const DrawerDescription = React.forwardRef<
-  React.ComponentRef<typeof DrawerPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Description
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-));
-DrawerDescription.displayName = DrawerPrimitive.Description.displayName;
-
 /**
- * Unstyled, non-portalling Content for custom Drawer layouts. It derives
- * explicit modal semantics while Vaul retains focus/background behavior.
+ * HOST RE-EXPORT ONLY — the Drawer implementation lives in
+ * `@ai-matrx/design-system`, which is where this app's own mobile doctrine
+ * ("Drawer, not Dialog, on mobile") now lives too, so no surface re-derives it:
+ *
+ * - `dvh`, never `vh` (iOS `vh` is the tallest-possible viewport, so a
+ *   vh-capped drawer hides its own footer behind the browser chrome);
+ * - `pb-safe` / `pt-safe` safe-area padding on content and footer;
+ * - a 44px grab-handle TARGET around the 4px pill (this copy shipped the pill
+ *   alone, so the advertised gesture had a third of the HIG minimum);
+ * - `DrawerBody`, the `flex-1 min-h-0 overflow-y-auto` scroll shard, with a
+ *   `mt-auto` footer so the primary action stays reachable;
+ * - `direction` as a prop — a top or side drawer is no longer a fork.
+ *
+ * `DrawerBody` is NEW: reach for it instead of hand-wrapping the body in
+ * another `flex-1 min-h-0` div.
+ *
+ * Import from here or from the package — both are the same component.
  */
-const DrawerContentPrimitive = React.forwardRef<
-  React.ComponentRef<typeof DrawerPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
->(({ ...props }, ref) => (
-  <DrawerPrimitive.Content {...props} ref={ref} aria-modal="true" />
-));
-DrawerContentPrimitive.displayName = "DrawerContentPrimitive";
-
-const DrawerContent = React.forwardRef<
-  React.ComponentRef<typeof DrawerPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
->(({ className, children, ...props }, ref) => {
-  const hasDescription =
-    treeContainsComponent(children, DrawerDescription) ||
-    treeContainsComponent(children, DrawerPrimitive.Description);
-  return (
-    <DrawerPortal>
-      <DrawerOverlay />
-      <DrawerContentPrimitive
-        ref={ref}
-        className={cn(
-          "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background pb-safe",
-          className,
-        )}
-        {...(hasDescription ? {} : { "aria-describedby": undefined })}
-        {...props}
-      >
-        <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
-        {children}
-      </DrawerContentPrimitive>
-    </DrawerPortal>
-  );
-});
-DrawerContent.displayName = "DrawerContent";
-
-const DrawerHeader = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn("grid gap-1.5 p-4 text-center sm:text-left", className)}
-    {...props}
-  />
-);
-DrawerHeader.displayName = "DrawerHeader";
-
-const DrawerFooter = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn("mt-auto flex flex-col gap-2 p-4", className)}
-    {...props}
-  />
-);
-DrawerFooter.displayName = "DrawerFooter";
-
-const DrawerTitle = React.forwardRef<
-  React.ComponentRef<typeof DrawerPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Title
-    ref={ref}
-    className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
-      className,
-    )}
-    {...props}
-  />
-));
-DrawerTitle.displayName = DrawerPrimitive.Title.displayName;
 
 export {
   Drawer,
-  DrawerPortal,
-  DrawerOverlay,
-  DrawerTrigger,
+  DrawerBody,
   DrawerClose,
   DrawerContent,
   DrawerContentPrimitive,
-  DrawerHeader,
-  DrawerFooter,
-  DrawerTitle,
   DrawerDescription,
-};
+  DrawerFooter,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerPortal,
+  DrawerTitle,
+  DrawerTrigger,
+  useDrawerDirection,
+  type DrawerContentProps,
+  type DrawerDirection,
+  type DrawerProps,
+  type DrawerSize,
+} from "@ai-matrx/design-system";

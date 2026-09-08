@@ -29,7 +29,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 // The package's tap buttons resolve THEIR radix-tooltip module instance —
 // pnpm may hold a different version than components/ui/tooltip's, so the
 // host provider cannot serve them. Mount the package provider alongside.
-import { TooltipProvider as TapTargetTooltipProvider } from "@ai-matrx/tap-target";
+import { TooltipProvider as TapTargetTooltipProvider } from "@ai-matrx/design-system";
 import type { BaseReduxState } from "@/types/reduxTypes";
 import { RefProvider } from "@/lib/refs";
 import { ToastProvider } from "@/providers/toast-context";

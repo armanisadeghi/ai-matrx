@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
+import { Alert as PackageAlert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -733,6 +734,13 @@ function Header({
   );
 }
 
+/**
+ * A thin adapter over the package `Alert`, which since design-system 0.7.0
+ * ships the whole status vocabulary from tokens. The literal red/amber blocks
+ * this used to carry (with hand-written dark twins) are the twin that release
+ * replaces; only this console's `warn`/`error` naming and its trailing action
+ * button stay local.
+ */
 function Alert({
   tone,
   text,
@@ -743,12 +751,9 @@ function Alert({
   action?: { label: string; onClick: () => void };
 }) {
   return (
-    <div
-      className={`flex flex-wrap items-center gap-2 rounded-md border px-3 py-1.5 text-xs ${
-        tone === "error"
-          ? "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
-          : "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300"
-      }`}
+    <PackageAlert
+      variant={tone === "error" ? "destructive" : "warning"}
+      className="flex flex-wrap items-center gap-2 px-3 py-1.5 text-xs"
     >
       <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
       <span className="min-w-0">{text}</span>
@@ -762,7 +767,7 @@ function Alert({
           {action.label}
         </Button>
       )}
-    </div>
+    </PackageAlert>
   );
 }
 

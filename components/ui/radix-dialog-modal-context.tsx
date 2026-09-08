@@ -1,22 +1,21 @@
 "use client";
 
 /**
- * HOST RE-EXPORT ONLY — this context lives in `@ai-matrx/design-system`.
+ * HOST RE-EXPORT ONLY — `RadixDialogModalProvider` / `useRadixDialogModal` live
+ * in `@ai-matrx/design-system`.
  *
- * IT MUST BE ONE CONTEXT, NOT TWO. `components/ui/dialog.tsx` is now the
- * package's Dialog, so `DialogContentPrimitive` reads the PACKAGE's modality
- * context. A host copy of this provider would silently stop reaching it — the
- * provider would wrap, the primitive would read its own default, and the
- * `aria-modal` a non-modal dialog is supposed to drop would come back. Two
- * React contexts with the same name and different identities fail exactly that
- * quietly, which is why this file forwards instead of declaring.
+ * THIS FILE WAS THE QUIET TWIN. The package has owned this context since 0.5.0,
+ * but a host copy survived here, and a duplicated React CONTEXT does not fail
+ * loudly: `useContext` matches by object IDENTITY, so the host Drawer's
+ * provider and the package Sheet's consumer were two different contexts that
+ * merely looked alike — each silently falling back to its default. Re-adding a
+ * local `createContext` for this is the defect, not the fix.
  *
- * Consumers: `components/ui/drawer.tsx` and `components/ui/matrx/dialog.tsx`,
- * both of which wrap package-owned content.
+ * Import from here or from the package — both are the same context.
  */
 
 export {
   RadixDialogModalProvider,
   useRadixDialogModal,
+  type RadixDialogModalProviderProps,
 } from "@ai-matrx/design-system";
-export type { RadixDialogModalProviderProps } from "@ai-matrx/design-system";

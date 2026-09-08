@@ -1,39 +1,27 @@
-"use client"
-
-import * as React from "react"
-import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
-
-import { cn } from "@/lib/utils"
+"use client";
 
 /**
- * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
- * rendering until after hydration ("Radix generates dynamic aria-controls ids
- * that differ between SSR and client"), and that justification was false:
- * @radix-ui/react-hover-card 1.1.17 generates no ids of its own at all, and
- * Radix ids generally come from React's SSR-stable `useId`. The gate was
- * actively harmful — the Trigger wraps ALWAYS-VISIBLE content, so
- * `return null` deleted it from SSR and the first client paint. See
- * components/ui/context-menu/context-menu.tsx (the precedent fix, D144).
+ * HOST RE-EXPORT ONLY — the HoverCard implementation lives in
+ * `@ai-matrx/design-system`.
+ *
+ * Behaviour changes worth knowing (both fixes, both in the package CHANGELOG):
+ * - the content now PORTALS instead of rendering inline, so a card inside an
+ *   `overflow-hidden` ancestor is no longer clipped and one inside a
+ *   popped-out window panel works at all. It follows the same
+ *   `PortalContainerProvider` seam as Dialog/Tooltip;
+ * - because it portals to the body, its layer is `z-[10001]` rather than
+ *   `z-50` — at `z-50` it would render UNDER a modal.
+ *
+ * The root still renders unconditionally: `@radix-ui/react-hover-card`
+ * generates no ids of its own, so the old hydration gate only ever deleted
+ * always-visible triggers from the first paint.
+ *
+ * Import from here or from the package — both are the same component.
  */
-const HoverCard = HoverCardPrimitive.Root
 
-const HoverCardTrigger = HoverCardPrimitive.Trigger
-
-const HoverCardContent = React.forwardRef<
-  React.ComponentRef<typeof HoverCardPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content>
->(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
-  <HoverCardPrimitive.Content
-    ref={ref}
-    align={align}
-    sideOffset={sideOffset}
-    className={cn(
-      "z-50 w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-      className
-    )}
-    {...props}
-  />
-))
-HoverCardContent.displayName = HoverCardPrimitive.Content.displayName
-
-export { HoverCard, HoverCardTrigger, HoverCardContent }
+export {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+  type HoverCardContentProps,
+} from "@ai-matrx/design-system";

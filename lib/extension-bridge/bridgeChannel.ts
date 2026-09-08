@@ -43,6 +43,7 @@
 import type { ChannelSpec } from "@ai-matrx/realtime";
 import {
   BRIDGE_BROADCAST_EVENT,
+  BridgeEnvelopeSchema,
   bridgeChannelName,
   type BridgeEnvelope,
 } from "@/lib/types/bridge-envelope";
@@ -51,17 +52,8 @@ export type BridgeHandler = (envelope: BridgeEnvelope) => void;
 
 /** Is this payload a `BridgeEnvelope`? Raw wire means we validate what arrives. */
 function asBridgeEnvelope(payload: unknown): BridgeEnvelope | null {
-  if (payload === null || typeof payload !== "object") return null;
-  const record = payload as Record<string, unknown>;
-  if (
-    record["direction"] !== "frontend->extension" &&
-    record["direction"] !== "extension->frontend"
-  ) {
-    return null;
-  }
-  if (typeof record["action"] !== "string") return null;
-  if (typeof record["requestId"] !== "string") return null;
-  return record as unknown as BridgeEnvelope;
+  const parsed = BridgeEnvelopeSchema.safeParse(payload);
+  return parsed.success ? parsed.data : null;
 }
 
 /**

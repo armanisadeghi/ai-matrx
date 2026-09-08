@@ -1,45 +1,19 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as TogglePrimitive from "@radix-ui/react-toggle"
-import { cva, type VariantProps } from "class-variance-authority"
+/**
+ * HOST RE-EXPORT ONLY — Toggle and ToggleGroup live in
+ * `@ai-matrx/design-system`, in ONE module.
+ *
+ * They had to merge: `ToggleGroupItem` reads both `toggleVariants` and the
+ * group's variant CONTEXT, and a host copy of a React context is the quiet twin
+ * — `useContext` matches by object identity, so two look-alike contexts never
+ * see each other. One module, one context.
+ *
+ * `Toggle` is not `Switch` (a Switch states a setting; a Toggle is a pressed
+ * button in a toolbar) and not `SegmentedControl` (which is for labelled
+ * choices).
+ *
+ * Import from here or from the package — both are the same component.
+ */
 
-import { cn } from "@/styles/themes/utils"
-
-const toggleVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground",
-  {
-    variants: {
-      variant: {
-        default: "bg-transparent",
-        outline:
-          "border border-input bg-transparent shadow-sm hover:bg-accent hover:text-accent-foreground",
-      },
-      size: {
-        default: "h-9 px-3",
-        sm: "h-8 px-2",
-        lg: "h-10 px-3",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  }
-)
-
-const Toggle = React.forwardRef<
-  React.ComponentRef<typeof TogglePrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root> &
-    VariantProps<typeof toggleVariants>
->(({ className, variant, size, ...props }, ref) => (
-  <TogglePrimitive.Root
-    ref={ref}
-    className={cn(toggleVariants({ variant, size, className }))}
-    {...props}
-  />
-))
-
-Toggle.displayName = TogglePrimitive.Root.displayName
-
-export { Toggle, toggleVariants }
+export { Toggle, toggleVariants, type ToggleProps } from "@ai-matrx/design-system";

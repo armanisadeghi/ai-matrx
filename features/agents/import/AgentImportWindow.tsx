@@ -13,6 +13,10 @@ import {
   Loader2,
   XCircle,
 } from "lucide-react";
+import {
+  Alert as PackageAlert,
+  AlertDescription,
+} from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -97,6 +101,13 @@ function ImportSidebar({
 
 // ─── Inline alert ─────────────────────────────────────────────────────────────
 
+/**
+ * A thin variant-name adapter over the package `Alert`, which since
+ * design-system 0.7.0 ships the whole status vocabulary from tokens. The local
+ * hand-rolled version (three literal palette blocks with hand-written dark
+ * twins) is exactly the twin that release replaces; only the icon choice and
+ * this file's `error`→`destructive` naming stay local.
+ */
 function Alert({
   variant,
   children,
@@ -104,29 +115,21 @@ function Alert({
   variant: "warning" | "error" | "success";
   children: React.ReactNode;
 }) {
-  const styles = {
-    warning:
-      "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800 text-yellow-900 dark:text-yellow-200",
-    error:
-      "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-900 dark:text-red-200",
-    success:
-      "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-900 dark:text-green-200",
-  };
   const Icon = {
     warning: AlertTriangle,
     error: XCircle,
     success: CheckCircle2,
   }[variant];
   return (
-    <div
-      className={cn(
-        "flex items-start gap-2 rounded-md border px-3 py-2 text-xs",
-        styles[variant],
-      )}
+    <PackageAlert
+      variant={variant === "error" ? "destructive" : variant}
+      className="flex items-start gap-2 px-3 py-2 text-xs"
     >
       <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-      <div className="flex-1 min-w-0">{children}</div>
-    </div>
+      <AlertDescription className="min-w-0 flex-1 text-xs">
+        {children}
+      </AlertDescription>
+    </PackageAlert>
   );
 }
 

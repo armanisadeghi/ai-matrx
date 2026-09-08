@@ -1,82 +1,37 @@
-"use client"
-
-import { DragHandleDots2Icon } from "@radix-ui/react-icons"
-import React from "react"
-import { Group, Panel, Separator } from "react-resizable-panels"
-import { cn } from "@/styles/themes/utils"
+"use client";
 
 /**
- * react-resizable-panels v4 wrapper (matrx variant with configurable handle sizes)
+ * HOST BINDING ONLY — the Resizable family lives in
+ * `@ai-matrx/design-system`. This file binds the ONE thing that made it a
+ * separate fork from `components/ui/resizable.tsx`: its default handle
+ * thickness is `md` (8px), not the package default `sm` (2px).
  *
- * v4 breaking changes vs v1/v2:
- * - `data-panel-group-direction` attribute removed → use `aria-orientation` on Separator
- * - Numeric size props are PIXELS → use strings for percentages (e.g. "30%")
- * - Group internally sets display:flex, flex-direction, overflow:hidden
- * - Separator has aria-orientation="vertical" in horizontal groups, "horizontal" in vertical groups
+ * Its eight-step scale IS the package's `ResizableHandleSize`, so every
+ * `size=` at a call site here keeps working unchanged; `HandleSize` remains
+ * exported as an alias for the same union.
+ *
+ * Do not re-fork this. If a panel needs different geometry, pass `size`.
  */
 
-const handleSizes = {
-  xs: "w-1 [&[aria-orientation=horizontal]]:w-auto [&[aria-orientation=horizontal]]:h-1",
-  sm: "w-1.5 [&[aria-orientation=horizontal]]:w-auto [&[aria-orientation=horizontal]]:h-1.5",
-  md: "w-2 [&[aria-orientation=horizontal]]:w-auto [&[aria-orientation=horizontal]]:h-2",
-  lg: "w-3 [&[aria-orientation=horizontal]]:w-auto [&[aria-orientation=horizontal]]:h-3",
-  xl: "w-4 [&[aria-orientation=horizontal]]:w-auto [&[aria-orientation=horizontal]]:h-4",
-  "2xl": "w-6 [&[aria-orientation=horizontal]]:w-auto [&[aria-orientation=horizontal]]:h-6",
-  "3xl": "w-8 [&[aria-orientation=horizontal]]:w-auto [&[aria-orientation=horizontal]]:h-8",
-  "4xl": "w-10 [&[aria-orientation=horizontal]]:w-auto [&[aria-orientation=horizontal]]:h-10",
-} as const
+import {
+  ResizableHandle as PackageResizableHandle,
+  type ResizableHandleProps,
+  type ResizableHandleSize,
+} from "@ai-matrx/design-system";
+import * as React from "react";
 
-type HandleSize = keyof typeof handleSizes
+export {
+  ResizablePanel,
+  ResizablePanelGroup,
+  type ResizableHandleProps,
+} from "@ai-matrx/design-system";
 
-const ResizablePanelGroup = ({
-                               className,
-                               ...props
-                             }: React.ComponentProps<typeof Group>) => (
-    <Group
-        className={cn(
-            "flex h-full w-full",
-            className
-        )}
-        {...props}
-    />
-)
+export type HandleSize = ResizableHandleSize;
 
-const ResizablePanel = Panel
-
-interface ResizableHandleProps extends React.ComponentProps<typeof Separator> {
-  withHandle?: boolean
-  size?: HandleSize
-}
-
-const ResizableHandle = ({
-                           withHandle,
-                           size = "md",
-                           className,
-                           ...props
-                         }: ResizableHandleProps) => (
-    <Separator
-        className={cn(
-            "group/handle relative flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1",
-            "[&[aria-orientation=horizontal]]:w-full [&[aria-orientation=horizontal]]:h-1.5",
-            "[&[aria-orientation=vertical]]:w-1.5 [&[aria-orientation=vertical]]:h-full",
-            handleSizes[size],
-            className
-        )}
-        {...props}
-    >
-      {withHandle && (
-          <div
-              className={cn(
-                  "z-10 flex items-center justify-center rounded-sm border bg-border",
-                  "h-8 w-4",
-                  "group-aria-[orientation=horizontal]/handle:h-4 group-aria-[orientation=horizontal]/handle:w-8"
-              )}
-          >
-            <DragHandleDots2Icon className="h-2.5 w-2.5 group-aria-[orientation=horizontal]/handle:rotate-90" />
-          </div>
-      )}
-    </Separator>
-)
-
-export { ResizablePanelGroup, ResizablePanel, ResizableHandle }
-export type { HandleSize }
+export const ResizableHandle = ({
+  size = "md",
+  ...props
+}: ResizableHandleProps) => (
+  <PackageResizableHandle size={size} {...props} />
+);
+ResizableHandle.displayName = "ResizableHandle";
