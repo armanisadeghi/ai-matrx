@@ -23,7 +23,7 @@ import { applySuggestions, sourcesFor } from "@/features/bindings/consumption-wr
 import type { OfferedValue } from "@/features/mandates/provision-shapes";
 
 /** Verbatim: the deployed agent's answer, 2026-08-31. */
-const REAL_ANSWER = JSON.stringify({
+const REAL_ANSWER = {
   mappings: [
     {
       prompt: null,
@@ -53,7 +53,7 @@ const REAL_ANSWER = JSON.stringify({
   overall_notes:
     "The configuration provides the agent with all available details about the task, inputs, outputs, and system prompt combined into the source material. It also directly maps the full agent object as requested.",
   write_policy_suggestions: [],
-});
+};
 
 /** The real offer: mandate.goal_writer's five described inputs. */
 const OFFERED_NAMES = [
@@ -75,7 +75,7 @@ const OFFERED = new Map<string, OfferedValue>(
 const TARGETS = ["source_material", "agent_definition"];
 
 const ARGS = {
-  raw: REAL_ANSWER,
+  value: REAL_ANSWER,
   validTargets: new Set(TARGETS),
   validSurfaceValues: new Set(OFFERED_NAMES),
   validWriteTargets: new Set<string>(),

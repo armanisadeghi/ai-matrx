@@ -8,7 +8,7 @@
  * owns both directions of that wire:
  *
  *   buildMapperVariables()  — surface/agent state → the agent's variables
- *   parseMapperResult()     — accumulated run text → validated suggestions
+ *   parseMapperResult()     — the run's EXTRACTED object → validated suggestions
  *   suggestionsToMappings() — accepted suggestions → the canonical
  *                             ValueMappingMap the bind save already speaks
  *
@@ -17,7 +17,6 @@
  * useHeadlessAgentJson).
  */
 
-import { extractFirstJson } from "@/utils/json/extract-json";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type {
@@ -156,7 +155,14 @@ function isConfidence(v: unknown): v is SuggestionConfidence {
  * reported — the model never gets to invent a name that then fails at launch.
  */
 export function parseMapperResult(args: {
-  raw: string;
+  /**
+   * The mapper's answer as the ONE pipeline already extracted it
+   * (`useHeadlessAgentJson` with the default `expect: "json"`). Never the
+   * answer STRING re-parsed here — that was the flattening defect
+   * (`run<string>` + `expect: "text"` + a local JSON hunt) this signature
+   * exists to rule out; see structured-output-flattening.ts.
+   */
+  value: unknown;
   validTargets: ReadonlySet<string>;
   validSurfaceValues: ReadonlySet<string>;
   validWriteTargets: ReadonlySet<string>;
@@ -171,8 +177,7 @@ export function parseMapperResult(args: {
    */
   allowManyToOne?: boolean;
 }): MapperProposal | null {
-  const extracted = extractFirstJson(args.raw, { allowFuzzy: true });
-  const root = extracted?.value;
+  const root = args.value;
   if (!root || typeof root !== "object" || Array.isArray(root)) return null;
   const obj = root as Record<string, unknown>;
 

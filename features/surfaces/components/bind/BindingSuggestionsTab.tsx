@@ -166,12 +166,14 @@ export function BindingSuggestionsTab({
     setRunFailure(null);
     setProposal(null);
     try {
-      const raw = await runMandate<string>({
+      // The product is the EXTRACTED object (default `expect: "json"`) — the
+      // ONE pipeline parses the answer; this panel never re-hunts JSON in the
+      // answer string (structured-output-flattening.ts names why).
+      const value = await runMandate<Record<string, unknown>>({
         mandateKey: BINDING_MAPPER_MANDATE_KEY,
         surfaceKey: `mandate:${BINDING_MAPPER_MANDATE_KEY}`,
         sourceFeature:
           sourceFeatureFromSurfaceName(surfaceName) ?? "ai-results",
-        expect: "text",
         initiation: "user",
         variables: buildMapperVariables({
           surfaceName,
@@ -187,7 +189,7 @@ export function BindingSuggestionsTab({
         }),
       });
       const parsed = parseMapperResult({
-        raw,
+        value,
         validTargets,
         validSurfaceValues: valueNames,
         validWriteTargets: writeTargetNames,

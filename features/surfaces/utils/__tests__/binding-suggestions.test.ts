@@ -24,7 +24,7 @@ import {
 // A REPORT, never silently dropped and never silently applied (P12).
 
 describe("many-to-one proposals", () => {
-  const raw = JSON.stringify({
+  const value = {
     mappings: [
       {
         target: "working_text",
@@ -38,9 +38,9 @@ describe("many-to-one proposals", () => {
     ],
     write_policy_suggestions: [],
     overall_notes: "",
-  });
+  };
   const args = {
-    raw,
+    value,
     validTargets: new Set(["working_text"]),
     validSurfaceValues: new Set(["task_overview", "inputs", "outputs"]),
     validWriteTargets: new Set<string>(),
@@ -70,7 +70,7 @@ describe("many-to-one proposals", () => {
   it("discards an invented value out of a combination and keeps the real ones", () => {
     const parsed = parseMapperResult({
       ...args,
-      raw: JSON.stringify({
+      value: {
         mappings: [
           {
             target: "working_text",
@@ -82,7 +82,7 @@ describe("many-to-one proposals", () => {
         ],
         write_policy_suggestions: [],
         overall_notes: "",
-      }),
+      },
       allowManyToOne: true,
     });
     expect(parsed?.suggestions[0].alsoFrom).toEqual([]);
@@ -118,7 +118,7 @@ describe("many-to-one proposals", () => {
 describe("the proposal's names", () => {
   const one = (surfaceValue: string) =>
     parseMapperResult({
-      raw: JSON.stringify({
+      value: {
         mappings: [
           {
             target: "rulebook_document",
@@ -131,7 +131,7 @@ describe("the proposal's names", () => {
         ],
         write_policy_suggestions: [],
         overall_notes: "",
-      }),
+      },
       validTargets: new Set(["rulebook_document"]),
       validSurfaceValues: new Set([surfaceValue]),
       validWriteTargets: new Set<string>(),
@@ -149,7 +149,7 @@ describe("the proposal's names", () => {
     ]);
     // A decision that takes nothing from the inventory has no source keys.
     const asked = parseMapperResult({
-      raw: JSON.stringify({
+      value: {
         mappings: [
           {
             target: "tone",
@@ -161,7 +161,7 @@ describe("the proposal's names", () => {
         ],
         write_policy_suggestions: [],
         overall_notes: "",
-      }),
+      },
       validTargets: new Set(["tone"]),
       validSurfaceValues: new Set<string>(),
       validWriteTargets: new Set<string>(),
