@@ -64923,6 +64923,17 @@ export type Database = {
         Args: { p_agent_id: string; p_keep_count?: number }
         Returns: Json
       }
+      agx_resolve_agent_address: {
+        Args: { p_ids: string[] }
+        Returns: {
+          agent_id: string
+          agent_name: string
+          agent_type: string
+          input_id: string
+          is_version: boolean
+          version_number: number
+        }[]
+      }
       agx_search: {
         Args: {
           p_deep?: boolean

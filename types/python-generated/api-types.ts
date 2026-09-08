@@ -8570,6 +8570,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/grammarly/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_grammarly_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -63751,6 +63768,40 @@ export interface components {
              * @constant
              */
             status_url?: "https://www.grainstatus.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /** GrammarlyServiceStatus */
+        GrammarlyServiceStatus: {
+            /**
+             * Kind
+             * @default grammarly_official_writing_productivity_status
+             * @constant
+             */
+            __kind?: "grammarly_official_writing_productivity_status";
+            /**
+             * Provider
+             * @default Grammarly
+             * @constant
+             */
+            provider?: "Grammarly";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.grammarly.com
+             * @constant
+             */
+            status_page?: "https://status.grammarly.com";
             /**
              * Indicator
              * @enum {string}
@@ -124811,6 +124862,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ZulipCloudServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_grammarly_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrammarlyServiceStatus"];
                 };
             };
         };
