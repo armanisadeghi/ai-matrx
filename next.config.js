@@ -300,6 +300,12 @@ const nextConfig = {
   // accepted cost. Do not flip this off without also rewriting the memoization doctrine.
   reactCompiler: true,
   experimental: {
+    // Next 16.3 enabled persistent build caching by default. Same-ref local
+    // A/B (0367ba3317, 2026-09-08): default exceeded 65.1 GiB and was stopped
+    // still compiling; cache-off completed at 31.1 GiB. Preserve the former
+    // nonpersistent build mode; this does not disable runtime/data caching.
+    // Re-enable only after a measured memory acceptance. Guard: build-lab test.
+    turbopackFileSystemCacheForBuild: false,
     // ON (2026-08-11): enables `forbidden()` / `unauthorized()` from
     // next/navigation and their `forbidden.tsx` / `unauthorized.tsx`
     // boundaries. Required by `requireAccess(..., { forbid: true })` —

@@ -47,6 +47,8 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Measured production build-cache contract
+        run: node --test scripts/build-lab/config-contract.test.mjs
       - name: Matrx-owned packages are declared and installed at npm latest
         run: pnpm check:matrx-packages
       - name: EVERY TYPESCRIPT FILE PARSES
