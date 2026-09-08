@@ -1,4 +1,15 @@
-import { sandboxDisplayName } from "@/lib/sandbox/format";
+import { sandboxDisplayName, formatSandboxTimestamp } from "@/lib/sandbox/format";
+
+describe("sandbox timestamps", () => {
+  // Live fleet contains expires_at='infinity', a valid PostgreSQL timestamp.
+  it("renders unlimited expiry without JavaScript Invalid Date", () => {
+    expect(formatSandboxTimestamp("infinity")).toBe("No expiry");
+  });
+  it("distinguishes missing and malformed timestamps", () => {
+    expect(formatSandboxTimestamp(null)).toBe("—");
+    expect(formatSandboxTimestamp("invalid")).toBe("Invalid timestamp");
+  });
+});
 
 describe("sandboxDisplayName", () => {
   it("uses the stored name", () => {

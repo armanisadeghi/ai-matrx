@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback } from "react";
+import { readAllRows } from "@ai-matrx/data/db";
+import { createClient } from "@/utils/supabase/client";
+import { isJsonObject } from "@/types/json";
 import {
   Container,
   RefreshCw,
@@ -45,11 +48,10 @@ import AppLink from "@/components/navigation/AppLink";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
-import { sandboxInstanceSummary } from "@/lib/sandbox/format";
+import { sandboxInstanceSummary, formatSandboxTimestamp } from "@/lib/sandbox/format";
 import { toast } from "@/lib/toast";
 import type {
-  SandboxInstance,
-  SandboxStatus,
+  SandboxInstanceRow as SandboxInstance,
   SandboxAccessResponse,
 } from "@/types/sandbox";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -61,7 +63,7 @@ import {
 } from "@/features/surfaces/manifests/admin-sandbox.manifest";
 
 const STATUS_BADGE_MAP: Record<
-  SandboxStatus,
+  string,
   {
     variant:
       | "success"
@@ -133,7 +135,7 @@ function toExpandedEntry(
     ...toScopeEntry(instance),
     stop_reason: instance.stop_reason,
     last_heartbeat_at: instance.last_heartbeat_at,
-    config: instance.config,
+    config: isJsonObject(instance.config) ? instance.config : null,
   };
 }
 
@@ -158,11 +160,12 @@ export default function AdminSandboxManagementPage() {
   // The door is therefore offered only for the viewer's own instances; every
   // row's OWNER is reachable through `AdminUserRef` regardless.
   const viewerUserId = useAppSelector(selectUserId);
-  const [instances, setInstances] = useState<SandboxInstance[]>([]);
+  const [fleet, setFleet] = useState<SandboxInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const instances = statusFilter === "all" ? fleet : fleet.filter((instance) => instance.status === statusFilter);
   const [deleteTarget, setDeleteTarget] = useState<SandboxInstance | null>(
     null,
   );
@@ -181,25 +184,25 @@ export default function AdminSandboxManagementPage() {
 
   const fetchInstances = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
-      if (statusFilter !== "all") params.set("status", statusFilter);
-      params.set("limit", "100");
-
-      const resp = await fetch(`/api/admin/sandbox?${params}`);
-      if (!resp.ok) {
-        const body = await resp.json();
-        throw new Error(body.error || "Failed to fetch instances");
-      }
-
-      const data = await resp.json();
-      setInstances(data.instances || []);
+      const supabase = createClient();
+      // Fleet-wide admin scope, authorized by RLS. Counts and local filters
+      // require every non-deleted row, not a single PostgREST page.
+      const rows = await readAllRows<SandboxInstance>(({ from, to }) =>
+        supabase.from("sandbox_instances").select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to),
+        { label: "admin.sandbox_instances" },
+      );
+      setFleet(rows);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -252,7 +255,7 @@ export default function AdminSandboxManagementPage() {
         const body = await resp.json().catch(() => ({}));
         throw new Error(body.error || `Failed to delete (HTTP ${resp.status})`);
       }
-      setInstances((prev) => prev.filter((i) => i.id !== deleteTarget.id));
+      setFleet((prev) => prev.filter((i) => i.id !== deleteTarget.id));
       toast.success(`Sandbox ${deleteTarget.sandbox_id} deleted`);
       setDeleteTarget(null);
     } catch (err) {
@@ -318,11 +321,11 @@ export default function AdminSandboxManagementPage() {
     URL.revokeObjectURL(url);
   };
 
-  const activeCount = instances.filter((i) =>
+  const activeCount = fleet.filter((i) =>
     ["creating", "starting", "ready", "running"].includes(i.status),
   ).length;
-  const uniqueUsers = new Set(instances.map((i) => i.user_id)).size;
-  const failedCount = instances.filter((i) => i.status === "failed").length;
+  const uniqueUsers = new Set(fleet.map((i) => i.user_id)).size;
+  const failedCount = fleet.filter((i) => i.status === "failed").length;
 
   const statusFilters = [
     "all",
@@ -342,8 +345,8 @@ export default function AdminSandboxManagementPage() {
   //
   // `getScope` is SYNCHRONOUS over live render state, and must stay that way:
   // `useLiveSurfaceScope` samples it every 400ms for as long as a Surface
-  // Context window is open. An async builder that re-read `/api/admin/sandbox`
-  // to "freshen" the values would hammer the fleet-wide admin endpoint
+  // Context window is open. An async builder that re-read the sandbox table
+  // to "freshen" the values would hammer the fleet-wide read
   // continuously behind a debug panel that looks idle. The 15s interval above
   // is this page's ONLY fetch; this callback just reads what that already put
   // in state, so the values are exactly what the admin is looking at.
@@ -354,7 +357,7 @@ export default function AdminSandboxManagementPage() {
   const getAdminSandboxScope = () =>
     createAdminSandboxScope({
       sandbox_active_count: activeCount,
-      sandbox_total_count: instances.length,
+      sandbox_total_count: fleet.length,
       sandbox_unique_user_count: uniqueUsers,
       sandbox_failed_count: failedCount,
       sandbox_status_filter: statusFilter,
@@ -392,7 +395,7 @@ export default function AdminSandboxManagementPage() {
                     instances,
                     {
                       active: activeCount,
-                      total: instances.length,
+                      total: fleet.length,
                       uniqueUsers,
                       failed: failedCount,
                     },
@@ -411,7 +414,7 @@ export default function AdminSandboxManagementPage() {
                   },
                   context: {
                     active: activeCount,
-                    total: instances.length,
+                    total: fleet.length,
                     "unique-users": uniqueUsers,
                     failed: failedCount,
                   },
@@ -449,7 +452,7 @@ export default function AdminSandboxManagementPage() {
             <CardContent className="p-4 flex items-center gap-3">
               <Activity className="w-8 h-8 text-blue-500" />
               <div>
-                <p className="text-2xl font-semibold">{instances.length}</p>
+                <p className="text-2xl font-semibold">{fleet.length}</p>
                 <p className="text-xs text-muted-foreground">Total Instances</p>
               </div>
             </CardContent>
@@ -533,14 +536,14 @@ export default function AdminSandboxManagementPage() {
               </TableHeader>
               <TableBody>
                 {instances.map((instance) => {
-                  const statusConfig = STATUS_BADGE_MAP[instance.status];
+                  const statusConfig = STATUS_BADGE_MAP[instance.status] ?? { variant: "secondary", label: instance.status };
                   const isActive = ["ready", "running"].includes(
                     instance.status,
                   );
                   const isExpanded = expandedRow === instance.id;
 
                   return (
-                    <>
+                    <Fragment key={instance.id}>
                       <TableRow
                         key={instance.id}
                         className="cursor-pointer hover:bg-muted/50"
@@ -585,12 +588,10 @@ export default function AdminSandboxManagementPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {new Date(instance.created_at).toLocaleString()}
+                          {formatSandboxTimestamp(instance.created_at)}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {instance.expires_at
-                            ? new Date(instance.expires_at).toLocaleString()
-                            : "--"}
+                          {formatSandboxTimestamp(instance.expires_at)}
                         </TableCell>
                         <TableCell className="text-xs font-mono">
                           {instance.tier ?? "--"}
@@ -732,13 +733,11 @@ export default function AdminSandboxManagementPage() {
                                     Last Heartbeat
                                   </span>
                                   <span className="text-xs font-mono">
-                                    {new Date(
-                                      instance.last_heartbeat_at,
-                                    ).toLocaleString()}
+                                    {formatSandboxTimestamp(instance.last_heartbeat_at)}
                                   </span>
                                 </div>
                               )}
-                              {instance.config &&
+                              {isJsonObject(instance.config) &&
                                 Object.keys(instance.config).length > 0 && (
                                   <div className="col-span-full">
                                     <span className="text-xs font-medium text-muted-foreground block mb-0.5">
@@ -753,7 +752,7 @@ export default function AdminSandboxManagementPage() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </TableBody>

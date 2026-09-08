@@ -5,7 +5,7 @@
  * console over the platform's on-demand sandbox instances (isolated agent
  * execution boxes; see `AdminSandboxManagementPage` in
  * `app/(admin)/administration/compute/sandbox/page.tsx`). The page polls
- * `/api/admin/sandbox` for the full instance list across ALL users, shows
+ * Supabase through `readAllRows` for the full instance list across ALL users, shows
  * summary stats, a status filter, and an expandable table row per instance;
  * a super-admin can stop, delete, or mint temporary SSH access for an
  * active instance.
@@ -29,8 +29,8 @@
  * reached exactly zero agents). `getScope` there is SYNCHRONOUS over live
  * render state and must stay that way: `useLiveSurfaceScope` samples it every
  * 400ms while a Surface Context window is open, so an emitter that re-fetched
- * `/api/admin/sandbox` to freshen itself would hammer the fleet-wide admin
- * endpoint continuously behind a panel that looks idle. The page's own 15s
+ * Supabase to freshen itself would hammer the fleet-wide read
+ * continuously behind a panel that looks idle. The page's own 15s
  * poll is the only fetch; the emitter reads what it already put in state.
  *
  * DELIBERATELY NOT DECLARED, beyond the SSH material above:
@@ -110,7 +110,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Fleet stats",
     sortOrder: 100,
     description:
-      "Summary counts across all sandbox instances currently loaded: active, total, unique users, failed.",
+      "Fleet counts across every non-deleted sandbox, independent of the table status filter: active, total, unique users, failed.",
   },
   {
     key: "instance_list",
