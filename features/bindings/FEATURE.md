@@ -21,7 +21,8 @@ Arman's sentence is the spine:
 | File | What it is |
 |---|---|
 | `OneBindingWorkspace.tsx` | The shell. Owns the draft (rung, holder, consumption map, refusals), resolves the offer, runs the agent pre-flight, hosts settings, saves and removes. Every refusal is adjacent to the control it refuses. |
-| `ScopeHolderBar.tsx` | RUNG · HOLDER · JOB. The rung is `ShortcutScopePicker`; the holder cell is the agent/workflow picker lifted out of the deleted wizard. |
+| `HolderAssignment.tsx` | 🚨 **THE ONE HOLDER CHOOSER.** Three labelled controls and nothing else — **Holder Type** (Agent | Workflow) · **Assigned Agent/Workflow** (the dropdown, with that record's own id beside the name — never a version id) · **Version** (Latest, or one version, in ONE dropdown; `Latest` stores `default_holder_version_id = NULL`). The version control is ABSENT until a holder is chosen. Every host mounts this; a second picker anywhere in the mandate/bindings trees fails `features/mandates/workspace/__tests__/holder-assignment.test.tsx`. |
+| `ScopeHolderBar.tsx` | RUNG · HOLDER · JOB, where a rung is genuinely a choice. The rung is `ShortcutScopePicker`; the holder cell IS `HolderAssignment`. Under `perspective="system"` (the admin route) it renders the three controls alone, plus the door's verdict — no rung cell (one rung), no job cell (the page's heading is the job). |
 | `OfferedInventoryColumn.tsx` | The offered side, permanently open. |
 | `HolderInputsColumn.tsx` | The consuming side, permanently open: variables then context policies. |
 | `BindingMiddle.tsx` | The match. `SurfaceVariableBinding` rendered **VERBATIM**, plus the many-to-one strip, the absence answer and the per-row problems a job binding needs and a surface binding does not. |
