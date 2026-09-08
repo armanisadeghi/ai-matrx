@@ -260,6 +260,12 @@ silently drops items the server would have happily applied.
 
 ## Change Log
 
+- 2026-09-08 — Two defects found on the SHIPPED card at demos.aimatrx.com and fixed: a full
+  UUID rendered as a fact chip (`model_id` is 36 chars, the scalar cutoff was 40 — an id is
+  now never a chip, guarded by two regression tests), and the item name lost the space fight
+  to its own fact chips ("Masterwork Conductor" at 37px against a 141px need). Open: the
+  `action` class double-verbs its title — "Run Create agent definition" — in `nounDisplay.ts`.
+  Work order: `common-docs/systems/content-ir-system/HANDOFF-directives.md`.
 - 2026-09-01 — **Reference copy has a non-dead-end clipboard fallback.** All record,
   file, compound, menu, and bulk reference-copy controls now route through the canonical
   clipboard primitive. When browser clipboard access is blocked, the global manual-copy

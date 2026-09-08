@@ -355,8 +355,38 @@ register_action(
 )
 ```
 
-Registered today: `context_groom`, `create_agent`, `create_project_with_tasks`,
-`create_task`, `db_create`, `db_update`, `plan_node_patch`, `plan_tree`.
+Registered today: `context_groom`, `create_agent`, `create_agent_definition`,
+`create_project_with_tasks`, `create_task`, `db_create`, `db_update`,
+`plan_node_patch`, `plan_tree`.
+
+(`context_groom` registers at startup from `package_integration.py`, not from
+`register_output_directives()` — a count taken from that function alone reads one low.)
+
+### THE DIRECTIVE⇄KIND SEAM — an item can BE a registered kind
+
+A directive is a **container**; its `items` are the payload. When a shape's item model is
+itself a `KindModel`, that payload **is** a registered content-IR kind — so the kind system
+already knows how to validate it, render it through its own component, and copy it.
+
+`ShapeSpec.item_kind` exposes it and is **DERIVED** (`item_model.kind_slug`), never authored:
+no shape registers twice, and a shape whose item model becomes a kind tomorrow is folded in
+with zero edits in the registry, the catalog, or any client. It is published as
+`DirectiveCatalog.item_kinds` (slug → kind, every class) plus `KindActionEntry.item_kind`,
+and mirrored to clients through `kind_directives_catalog.generated.json`.
+
+**`None` is honest, not a gap.** A plain Pydantic item model has no kind, no schema and no
+component, so a consumer degrades to the generic structured viewer instead of inventing one.
+The set of `None`s is the burndown list — 1 of 56 shapes carries a kind today
+(`create_agent_definition` → `agent_definition`).
+
+**The division of labour this buys: the directive layer owns the ACTION, the kind system owns
+the DISPLAY.** matrx-frontend renders every side-effect directive with one card and draws each
+item through that item's own kind component — no directive-specific rendering code.
+
+⚠️ **A directive slug is NOT a registered kind** (0 of 1,108 kind rows are directives, by
+design — a container is not a payload). So a mandate whose agent emits an envelope declares
+`output_kind="json"`, never the slug: declaring the slug would fail the mandate kind check as
+`kind_not_registered` on every run.
 
 > **Why one slug per shape matters.** Before 2026-08-23 the same procedure was registered
 > TWICE — once as `(output_directive, plan_tree)` and once as `(function, plan_tree)` — two
