@@ -14,7 +14,10 @@
 import { supabase } from "@/utils/supabase/client";
 import { interviewDb } from "@/utils/supabase/interviewDb";
 import { readAllRows } from "@ai-matrx/data/db";
-import { uniqueChannelTopic } from "@ai-matrx/data/db";
+import {
+  defineChannelNamespace,
+  subscribeToRealtimeManager,
+} from "@ai-matrx/realtime";
 import type {
   HoleClassification,
   HoleStatus,
@@ -298,18 +301,39 @@ export interface RoomRealtimeHandlers {
   onQuestion: (row: InterviewQuestionRow) => void;
   onHole: (row: InterviewHoleRow) => void;
   onSession: (row: InterviewSessionRow) => void;
-  /** Channel dropped (CHANNEL_ERROR / TIMED_OUT). The caller owns the
-   *  backoff + catch-up refetch (realtime has no replay). */
-  onChannelDown?: () => void;
+  /**
+   * THE BACKFILL DOOR — re-read the room. Realtime has no replay, so the
+   * package calls this on every recovery path (reconnect, tab wake, network
+   * restore, queue overflow), not only on an error. It replaces the old
+   * `onChannelDown` + caller-owned backoff, which reconnected on an error but
+   * knew nothing about a slept tab.
+   */
+  onBackfill: () => void | Promise<void>;
 }
+
+/** One place names this channel. A second, different declaration throws. */
+const interviewRoomChannel = defineChannelNamespace({
+  namespace: "vision-interview",
+  parts: ["sessionId"],
+  description:
+    "interview.turn / question / hole / session rows for one interview room",
+});
 
 /**
  * ONE channel for the whole room — turn / question / hole inserts+updates
  * filtered by session, plus the session row itself (stage, round, document).
  *
  * RLS authorizes delivery (interview.* components ride the parent session's
- * access), so there is no client-side owner filter. Echo suppression happens
- * in the slice merge — see the file header.
+ * access), so there is no client-side owner filter.
+ *
+ * REALTIME: `@ai-matrx/realtime` owns the channel — unique instance topic, echo
+ * suppression, dedup, the decoupled ordered handler queue, jittered reconnect
+ * WITH THE STABILITY RESET, tab sleep, diagnostics. What this replaced was a
+ * raw `.channel(...).subscribe()` here plus a hand-rolled backoff ladder,
+ * attempt counter, healthy-timer and catch-up refetch in `useInterviewRoom` —
+ * ~40 lines of the package's job, which reconnected on a channel error but
+ * never noticed a slept tab, so a laptop that closed mid-interview reopened to
+ * a room frozen at the last question it heard.
  *
  * Returns an unsubscribe function.
  */
@@ -317,54 +341,46 @@ export function subscribeToRoom(
   sessionId: string,
   handlers: RoomRealtimeHandlers,
 ): () => void {
-  const channel = supabase.channel(
-    uniqueChannelTopic(`vision-interview:${sessionId}`),
-  );
+  const scoped = (table: string) =>
+    ({
+      event: "*" as const,
+      schema: "interview",
+      table,
+      filter: `session_id=eq.${sessionId}`,
+      rowId: (row: Record<string, unknown>) =>
+        typeof row.id === "string" ? row.id : undefined,
+    }) as const;
 
-  const opts = (table: string) => ({
-    event: "*" as const,
-    schema: "interview",
-    table,
-    filter: `session_id=eq.${sessionId}`,
-  });
+  const deliver = <T>(row: Record<string, unknown> | null, to: (value: T) => void) => {
+    if (row && Object.keys(row).length > 0) to(row as T);
+  };
 
-  channel
-    .on("postgres_changes", opts("turn"), (payload) => {
-      if (payload.new && Object.keys(payload.new).length > 0) {
-        handlers.onTurn(payload.new as InterviewTurnRow);
-      }
-    })
-    .on("postgres_changes", opts("question"), (payload) => {
-      if (payload.new && Object.keys(payload.new).length > 0) {
-        handlers.onQuestion(payload.new as InterviewQuestionRow);
-      }
-    })
-    .on("postgres_changes", opts("hole"), (payload) => {
-      if (payload.new && Object.keys(payload.new).length > 0) {
-        handlers.onHole(payload.new as InterviewHoleRow);
-      }
-    })
-    .on(
-      "postgres_changes",
+  return subscribeToRealtimeManager(() => ({
+    topic: interviewRoomChannel.topic({ sessionId }),
+    postgresChanges: [
+      {
+        ...scoped("turn"),
+        onChange: ({ row }) => deliver<InterviewTurnRow>(row, handlers.onTurn),
+      },
+      {
+        ...scoped("question"),
+        onChange: ({ row }) =>
+          deliver<InterviewQuestionRow>(row, handlers.onQuestion),
+      },
+      {
+        ...scoped("hole"),
+        onChange: ({ row }) => deliver<InterviewHoleRow>(row, handlers.onHole),
+      },
       {
         event: "UPDATE",
         schema: "interview",
         table: "session",
         filter: `id=eq.${sessionId}`,
+        rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+        onChange: ({ row }) =>
+          deliver<InterviewSessionRow>(row, handlers.onSession),
       },
-      (payload) => {
-        if (payload.new && Object.keys(payload.new).length > 0) {
-          handlers.onSession(payload.new as InterviewSessionRow);
-        }
-      },
-    )
-    .subscribe((status) => {
-      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        handlers.onChannelDown?.();
-      }
-    });
-
-  return () => {
-    void supabase.removeChannel(channel);
-  };
+    ],
+    onBackfill: () => handlers.onBackfill(),
+  }));
 }

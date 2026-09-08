@@ -37,9 +37,6 @@ import {
   turnMerged,
 } from "../redux/vision-interview.slice";
 
-const BACKOFF_BASE_MS = 1_000;
-const BACKOFF_CAP_MS = 30_000;
-const BACKOFF_RESET_AFTER_MS = 30_000;
 
 export function useInterviewRoom(sessionId: string) {
   const dispatch = useAppDispatch();
@@ -50,13 +47,10 @@ export function useInterviewRoom(sessionId: string) {
   // its mandate — so this runs for EVERY session, run or no run.
   const { retryRoles } = useRoleBindings(sessionId);
 
-  const attemptRef = useRef(0);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     let disposed = false;
     let unsubscribe: (() => void) | null = null;
-    const timers = timersRef.current;
 
     dispatch(roomOpened({ sessionId }));
 
@@ -94,47 +88,23 @@ export function useInterviewRoom(sessionId: string) {
       }
     };
 
-    const subscribe = () => {
-      if (disposed) return;
-      unsubscribe?.();
-      const healthyTimer = setTimeout(() => {
-        // Channel stayed up — only now does the backoff counter reset.
-        attemptRef.current = 0;
-      }, BACKOFF_RESET_AFTER_MS);
-      timers.push(healthyTimer);
-
-      unsubscribe = subscribeToRoom(sessionId, {
-        onTurn: (row) => dispatch(turnMerged(row)),
-        onQuestion: (row) => dispatch(questionMerged(row)),
-        onHole: (row) => dispatch(holeMerged(row)),
-        onSession: (row) => dispatch(sessionMerged(row)),
-        onChannelDown: () => {
-          clearTimeout(healthyTimer);
-          if (disposed) return;
-          attemptRef.current += 1;
-          const delay = Math.min(
-            BACKOFF_BASE_MS * 2 ** (attemptRef.current - 1),
-            BACKOFF_CAP_MS,
-          );
-          const retryTimer = setTimeout(() => {
-            if (disposed) return;
-            subscribe();
-            // Catch-up fetch: events during the gap are lost forever.
-            void hydrate();
-          }, delay);
-          timers.push(retryTimer);
-        },
-      });
-    };
-
+    // Backoff, the attempt counter, the healthy-timer reset and the catch-up
+    // refetch all used to live here; `@ai-matrx/realtime` owns every one of
+    // them now, and its backfill door fires on tab wake and network restore
+    // too — not only on a channel error, which is what this hook could see.
     void hydrate();
-    subscribe();
+    unsubscribe = subscribeToRoom(sessionId, {
+      onTurn: (row) => dispatch(turnMerged(row)),
+      onQuestion: (row) => dispatch(questionMerged(row)),
+      onHole: (row) => dispatch(holeMerged(row)),
+      onSession: (row) => dispatch(sessionMerged(row)),
+      // Realtime has no replay — re-read the whole room on every recovery path.
+      onBackfill: hydrate,
+    });
 
     return () => {
       disposed = true;
       unsubscribe?.();
-      for (const t of timers) clearTimeout(t);
-      timers.length = 0;
     };
   }, [dispatch, sessionId]);
 

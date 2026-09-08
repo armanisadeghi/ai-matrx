@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { supabase } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@ai-matrx/data/db";
+import { defineChannelNamespace, type RealtimeStatus } from "@ai-matrx/realtime";
+import { useChannel } from "@ai-matrx/realtime/react";
 import {
   marketingKeys,
   useActiveCrawlSessions,
@@ -16,11 +16,12 @@ import {
 } from "@/features/marketing/crawler/direct-client";
 import type { CrawlSession } from "@/features/marketing/types";
 
-const BACKOFF_RESET_AFTER_MS = 30_000;
-const MAX_RECONNECT_DELAY_MS = 30_000;
 
-export type CrawlRealtimeStatus =
-  "connecting" | "connected" | "reconnecting" | "disconnected";
+/**
+ * The channel's live state, straight from `@ai-matrx/realtime`. Aliased rather
+ * than redeclared so the two can never drift into a silent mapping bug.
+ */
+export type CrawlRealtimeStatus = RealtimeStatus;
 
 export interface SiteCrawlActivity {
   /**
@@ -68,6 +69,13 @@ function catchUpCrawlActivity(
  * the bounded durable event feed, so refreshes and connection gaps lose
  * nothing without broadcasting enormous page_parsed payloads.
  */
+/** One place names this channel. A second, different declaration throws. */
+const crawlActivityChannel = defineChannelNamespace({
+  namespace: "marketing-crawls",
+  parts: ["siteId"],
+  description: "web.crawl_session rows for one marketing site",
+});
+
 export function useSiteCrawlActivity(siteId: string): SiteCrawlActivity {
   const queryClient = useQueryClient();
   const [realtimeStatus, setRealtimeStatus] =
@@ -88,77 +96,45 @@ export function useSiteCrawlActivity(siteId: string): SiteCrawlActivity {
     activeIdRef.current = activeId;
   }, [activeId]);
 
+  // REALTIME: `@ai-matrx/realtime` owns this channel. What was here was a raw
+  // `.channel(...).subscribe()` plus ~55 lines of the package's own job — a
+  // reconnect ladder, an attempt counter, a 30s backoff-reset timer, a
+  // catch-up-after-connect flag and manual teardown. It reconnected on a
+  // channel error but knew nothing about a slept tab, so a laptop that closed
+  // mid-crawl reopened to a progress view frozen at the last event it heard,
+  // with the status dot still reading "connected".
+  const { status } = useChannel(
+    siteId
+      ? {
+          topic: crawlActivityChannel.topic({ siteId }),
+          postgresChanges: [
+            {
+              event: "*",
+              schema: "web",
+              table: "crawl_session",
+              filter: `site_id=eq.${siteId}`,
+              rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+              fingerprint: (row) =>
+                JSON.stringify([row.status ?? null, row.updated_at ?? null]),
+              onChange: () =>
+                catchUpCrawlActivity(queryClient, siteId, activeIdRef.current),
+            },
+          ],
+          // Realtime has no replay. Reconnect, tab wake, network restore and
+          // queue overflow all land here — one catch-up read, not a poll.
+          onBackfill: () =>
+            catchUpCrawlActivity(queryClient, siteId, activeIdRef.current),
+        }
+      : null,
+  );
+
+  // The polling fallback is gated on the SAME truth the package reports, so a
+  // degraded channel still shows a degraded dot and still polls. The two unions
+  // are identical by construction — `CrawlRealtimeStatus` is the package's
+  // `RealtimeStatus`, which is why this is an assignment and not a mapping.
   useEffect(() => {
-    if (!siteId) return undefined;
-    let disposed = false;
-    let reconnectAttempt = 0;
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-    let backoffResetTimer: ReturnType<typeof setTimeout> | null = null;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-
-    const clearTimers = () => {
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (backoffResetTimer) clearTimeout(backoffResetTimer);
-      reconnectTimer = null;
-      backoffResetTimer = null;
-    };
-
-    const subscribe = (catchUpAfterConnect: boolean) => {
-      if (disposed) return;
-      if (channel) {
-        void supabase.removeChannel(channel);
-        channel = null;
-      }
-
-      channel = supabase
-        .channel(uniqueChannelTopic(`marketing-crawls:${siteId}`))
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "web",
-            table: "crawl_session",
-            filter: `site_id=eq.${siteId}`,
-          },
-          () => catchUpCrawlActivity(queryClient, siteId, activeIdRef.current),
-        )
-        .subscribe((status) => {
-          if (disposed) return;
-          if (status === "SUBSCRIBED") {
-            setRealtimeStatus("connected");
-            if (backoffResetTimer) clearTimeout(backoffResetTimer);
-            backoffResetTimer = setTimeout(() => {
-              reconnectAttempt = 0;
-              backoffResetTimer = null;
-            }, BACKOFF_RESET_AFTER_MS);
-            if (catchUpAfterConnect) {
-              catchUpCrawlActivity(queryClient, siteId, activeIdRef.current);
-            }
-            return;
-          }
-          if (status !== "CHANNEL_ERROR" && status !== "TIMED_OUT") return;
-          setRealtimeStatus("reconnecting");
-          if (reconnectTimer) return;
-          const delay = Math.min(
-            1_000 * 2 ** reconnectAttempt,
-            MAX_RECONNECT_DELAY_MS,
-          );
-          reconnectAttempt += 1;
-          reconnectTimer = setTimeout(() => {
-            reconnectTimer = null;
-            subscribe(true);
-          }, delay);
-        });
-    };
-
-    subscribe(true);
-
-    return () => {
-      disposed = true;
-      clearTimers();
-      if (channel) void supabase.removeChannel(channel);
-    };
-  }, [queryClient, siteId]);
+    setRealtimeStatus(status);
+  }, [status]);
 
   const restoredEvents = (durableEvents.data ?? []).flatMap((row) => {
     const event = crawlLiveEventFromDurableRow(row);
