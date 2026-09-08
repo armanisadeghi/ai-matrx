@@ -24,6 +24,60 @@ description: Register anything you built that Arman must go see/test in the UI, 
 - A row that leads with deploy caveats is a defect — it burns his review on a false premise.
 - `metadata.origin.branch`/`commit` stay — that's provenance, not a status claim.
 
+## 🚨 THE THREE RULES THAT GET YOUR WORK SEEN (2026-09-07)
+
+**Arman, 2026-09-07:**
+
+> "I'm trying to find what you need me to review in agent-review but I can't seem to find it
+> — it's one of the biggest weaknesses of the system."
+
+Measured the same day: **573 rows at `submitted`, 74 at `ready_for_human`**, oldest submission
+2026-07-24. Only `ready_for_human` reaches him, so nearly everything agents had built was
+invisible to him — filed, and therefore assumed delivered. **Filing a row is not delivery.**
+
+### 1. THE DIRECT-LINK RULE
+
+Whenever any agent asks Arman to look at, test, or approve something, the message **carries the
+row's own URL**:
+
+```
+https://manage.aimatrx.com/administration/users/agent-review/<id>
+```
+
+"It's in the agent review queue", "find it under Ready for you", a title alone, or a route to
+the reviewed page without the row — all **banned**. He has one inbox and hundreds of rows; a
+link is the difference between two seconds and a search that fails. This is
+[`policies/human-steps-are-guided-sessions.md`](/policies/human-steps-are-guided-sessions.md)
+("ONE link") applied to this queue, and it binds agent-to-agent messages too.
+
+### 2. THE OWNED-REVIEW RULE
+
+**The session that files a row is responsible for that row REACHING `ready_for_human`.**
+
+- Immediately after inserting, dispatch an **INDEPENDENT reviewer agent** — a subagent in the
+  same session, never the builder, never yourself — to run the review pass in this skill
+  against the live surface, and to promote or reject with recorded evidence.
+- Only **after** promotion do you tell Arman about it, with the direct link.
+- **A row left at `submitted` is unfinished work**, exactly like uncommitted code. Do not end a
+  turn claiming "registered for review" as if it were done — the six laws' first law is that
+  done means verified by someone who did not build it, and `submitted` is the state of having
+  skipped that.
+- Never promote your own row. If no independent reviewer can be dispatched, say so plainly in
+  your final message and name the row's URL — do not silently leave it in the pile.
+
+The backlog is worked with `pnpm review-queue:sweep` in `matrx-frontend` (submitted rows older
+than N hours, grouped by lane and repo, each with its direct URL, plus the claim SQL). The
+recurring `agent-review-first-pass` worker takes **one row per 30 minutes** and skips rows with
+no triage envelope, no `browser` tool, or no conversation — it is a floor, never your excuse.
+
+### 3. THE LANE TAG RULE
+
+**Every row carries `metadata.origin.agent_label` = the campaign/lane slug** (e.g.
+`print-package`, `outreach-system`, `review-system`), so ONE filter shows a whole lane's items.
+It is a first-class, sortable, filterable column in the UI — **Filed by / lane** — and rows
+without it render as *Not labeled*. Use the same slug for every row a campaign files, for its
+whole life; never a per-session unique string, never a sentence.
+
 ## 🚨 EVERY ROW IS CLASSIFIED FROM THE REGISTRY — this is the whole point
 
 **Arman, 2026-08-20, on the 392-row backlog he could not filter:**
@@ -149,7 +203,13 @@ Allowed values are defined and runtime-validated in `features/admin/agent-review
 - Assignment state: `ready | claimed | blocked | fixing | verifying | awaiting_review`
 - Priority: `critical | high | normal | low`
 
-Then say in your final message that you registered it, with the title.
+`metadata.origin.agent_label` is not optional — THE LANE TAG RULE. Return the inserted `id`
+(`returning id`), because your final message must carry
+`https://manage.aimatrx.com/administration/users/agent-review/<id>`, and because the reviewer
+agent you dispatch next needs it.
+
+Then say in your final message that you registered it, with the title, the direct link, and the
+row's current status — and dispatch the independent reviewer (THE OWNED-REVIEW RULE).
 
 ## Statuses — the contract
 
@@ -172,6 +232,10 @@ violation. Never invent a status; read `REVIEW_STAGE_ORDER` if you need the orde
 **Agents review first — that is the whole point.** A row you insert sits at `submitted` and must
 be agent-reviewed and repaired before anything sets `ready_for_human`; only then does Arman see
 it. Filing straight to `ready_for_human` puts unverified work in front of him.
+
+**And `submitted` is where work goes to die unless YOU move it** — see THE OWNED-REVIEW RULE
+above. Dispatch the independent reviewer in the same session; do not hand the row to a queue
+that drains one row per half hour.
 
 ## Codex Browser isolation — mandatory for every automated review
 
@@ -444,7 +508,8 @@ high/critical work. Agents repair and verify; Arman alone approves or requests t
 
 ## Rules
 
-- **This queue, not prose.** A "please test /demos/foo" buried in a chat message is the anti-pattern — register it.
+- **This queue, not prose.** A "please test /demos/foo" buried in a chat message is the anti-pattern — register it. And a registered row you never mention with its link is the *other* anti-pattern — THE DIRECT-LINK RULE.
+- **Find a row the way Arman does.** The list at `/administration/users/agent-review` searches title, instructions, target page, repository, domain/feature names, lane, and notes — and a search WIDENS to every non-archived step, saying how many matches sit outside the step you were browsing. Filter by **Filed by / lane** to see one campaign's whole backlog.
 - **No deployment status, ever** — see "Everything is LIVE" above.
 - Don't duplicate: before inserting, check for an existing row with the same `url` — update its `instructions` and reset to `submitted` instead.
 - Never infer ownership from `source`; it is only the repository identifier.

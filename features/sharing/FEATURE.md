@@ -33,7 +33,10 @@ One RLS-backed permissions system that makes any resource type shareable with us
 
 - `useShare()` opens the platform share sheet, falls back to clipboard, then an
   accessible manual-copy dialog. It is the reusable hook for public acquisition
-  surfaces; the podcast import is a compatibility re-export.
+  surfaces; the podcast import is a compatibility re-export. `share()` resolves
+  to which door actually opened — `"shared" | "copied" | "manual"` — so a caller
+  that announces the result cannot claim a copy the manual dialog never made
+  (added 2026-09-07 for the Agent Review copy-link column).
 
 **Hooks** (`utils/permissions/hooks.ts`)
 

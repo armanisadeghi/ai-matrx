@@ -26,6 +26,8 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 | Direct services         | `service.ts`                                                  |
 | Registry classification | `registry.ts`                                                 |
 | Status/types            | `types.ts`                                                    |
+| Lane + search text      | `row-text.ts`                                                 |
+| Backlog sweep (CLI)     | `scripts/review-queue-sweep.ts` (`pnpm review-queue:sweep`)   |
 | Triage contract         | `triage.ts`                                                   |
 | Surface scope (list)    | `surface-scope.ts`                                            |
 | Surface write half      | `components/AgentReviewWriteTargets.tsx`                      |
@@ -56,6 +58,20 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 - Opening an item changes the route. The detail page owns the stage rail, target-page door, full conversation, and human actions.
 - The same conversation appears in `/messages/[conversationId]`; Agent Review embeds the canonical messaging thread rather than cloning chat state.
 - Blank domain/feature values render **Not assigned** instead of disappearing.
+- 🚨 **Search never hides.** Typing a search widens the list to EVERY non-archived
+  step, regardless of the workflow step being browsed, and says so in a visible
+  line: how many matched and how many of those sit outside that step, with a
+  **Narrow to \<step\>** control to go back. Search covers title, instructions,
+  target page, repository, domain and feature names, lane, thread/branch, and
+  notes (`row-text.ts` is the one definition of a row's searchable text) — not
+  just the rendered columns. Archived rows stay out, and the empty state says so.
+- **Filed by / lane** (`metadata.origin.agent_label`) and **Filed**
+  (`created_at`) are columns, sortable and filterable like every other; an
+  unlabelled row reads **Not labeled** rather than blank.
+- Every row carries a **copy-link** button for its own page
+  (`/administration/users/agent-review/[id]`), via the platform `useShare` hook —
+  share sheet, then clipboard, then the manual copy dialog; the toast only claims
+  a copy when a copy actually happened.
 
 ## Agent surfaces
 
@@ -77,8 +93,35 @@ Both routes are agent-aware surfaces, and they are TWO surfaces on purpose: the 
 - The list defaults to the human inbox (`ready_for_human`) and exposes all workflow activity only through the explicit **All activity** view.
 - Each workflow count card is a real filter control: selecting it opens the all-activity view and applies the matching status filter to the canonical URL-driven table. The combined Changes card selects both agent- and human-requested changes, and the active card remains visibly pressed.
 
+## The middle stage — the queue's structural weakness
+
+Arman, 2026-09-07: *"I'm trying to find what you need me to review in agent-review
+but I can't seem to find it — it's one of the biggest weaknesses of the system."*
+Measured that day: **573 rows at `submitted` against 74 at `ready_for_human`**,
+oldest submission 2026-07-24. Only `ready_for_human` reaches him, and the single
+recurring promoter (`agent-review-first-pass`) moves ONE row per 30 minutes and
+skips rows with no triage envelope, no `browser` tool, or no conversation — so
+nearly everything agents built was invisible to him by design.
+
+Two halves of the fix live outside this surface, and both are in the shared
+`agent-review-queue` skill (canonical body: `common-docs/skills/`):
+
+- `pnpm review-queue:sweep` — the operational entry point for a review pass.
+  Lists `submitted` rows older than N hours grouped by lane and repository, each
+  with its direct URL, flags rows the recurring worker can never pick up, and
+  prints the claim SQL. It is a REPORT: it changes no row.
+- The three communication rules — THE DIRECT-LINK RULE (every ask carries
+  `…/agent-review/<id>`), THE OWNED-REVIEW RULE (the filing session dispatches an
+  independent reviewer and only tells Arman after promotion), and THE LANE TAG
+  RULE (`metadata.origin.agent_label` on every row).
+
+A recurring `agent-review-sweep` schedule is PROPOSED, not created, in
+`common-docs/operations/scheduled-tasks.md` § Proposed, NOT approved — per the
+no-unapproved-schedules law.
+
 ## Change log
 
+- 2026-09-07 — Search stopped hiding: it widens to every non-archived step with a visible match-count line and a narrow-back control, and now covers instructions, lane, notes and thread/branch instead of only the rendered columns (`row-text.ts`). Added the **Filed by / lane** and **Filed** columns and a per-row copy-link button; Copy-as/AI payloads carry the row's direct URL. Shipped `pnpm review-queue:sweep` for the unmanned promotion stage and recorded the three communication rules in the shared skill.
 - 2026-08-31 — Put the review queue, taxonomy, and repository list reads behind the canonical session-retry boundary so an expired admin session cannot fan out anonymous permission errors.
 - 2026-08-30 — Wired the five workflow count cards to the canonical URL-backed table status filter, including the combined Changes statuses and active-card state; switching to Ready for you or All activity clears that workflow-card filter.
 - 2026-08-26 — Rebuilt both surfaces against the live agent-first pages: real emitters on the list and the item workspace, a working triage write target, a feedback-draft write target, and a separate `matrx-admin/agent-review-item` surface. The old manifest still described the retired human-first page (pending/changes_requested statuses, an archived toggle, per-row feedback drafts) and claimed an emitter in a file that never existed.

@@ -21,8 +21,9 @@ that gap is exactly why this skill exists (Arman, 2026-08-21).
 
 ## 0. Ground rules
 
-- **Live project ONLY: `brsgrqvjdzwihsvnfqkf`** (`db.matrxserver.com`). The retired project
-  `txzxabzwovsujtloxrus` may be READ for historical comparison, never written.
+- **Live project ONLY: `brsgrqvjdzwihsvnfqkf`** (`db.matrxserver.com`). Never access the
+  retired project `txzxabzwovsujtloxrus`, including for reads or historical comparison;
+  use archived evidence for historical comparisons instead.
 - **Verify against live state, never against a brief.** Audit briefs go stale and get
   re-issued: the 8-finding "Canonical Architecture Drift Audit" brief is from 2026-08-15 and
   was fully adjudicated the same day

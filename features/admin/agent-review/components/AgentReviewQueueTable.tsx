@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ExternalLink, RefreshCw } from "lucide-react";
+import { ArrowRight, ExternalLink, Link2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -31,6 +31,19 @@ import {
   type ReviewStatus,
 } from "@/features/admin/agent-review/types";
 import { reviewTargetPageDisplay } from "@/features/admin/agent-review/target-page";
+import {
+  REVIEW_LANE_UNLABELLED,
+  reviewLaneLabel,
+  reviewSearchText,
+} from "@/features/admin/agent-review/row-text";
+import { matchesTableSearch } from "@/components/official/matrx-data-table/filter-engine";
+import { useShare } from "@/features/sharing/hooks/useShare";
+
+/** The row's own page — the link every agent owes Arman (see the
+ *  `agent-review-queue` skill, THE DIRECT-LINK RULE). */
+export function reviewItemPath(id: string): string {
+  return `/administration/users/agent-review/${id}`;
+}
 
 const FLOW = [
   { statuses: ["submitted"], label: "1. Submitted" },
@@ -57,9 +70,14 @@ function reviewRowContent(
   row: ReviewQueueRow,
   registry: ReviewRegistry,
 ): string {
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
   return [
     row.title,
+    // THE DIRECT-LINK RULE: anything copied out of this row carries the row's
+    // own address, so nobody is ever told to "find it in the queue".
+    `Review: ${origin}${reviewItemPath(row.id)}`,
     `Status: ${REVIEW_STATUS_LABELS[row.status as ReviewStatus] ?? row.status}`,
+    `Filed by / lane: ${reviewLaneLabel(row)}`,
     `Domain: ${domainName(row, registry)}`,
     `Feature: ${featureName(row, registry)}`,
     `Repository: ${row.repo_slug}`,
@@ -81,6 +99,10 @@ export default function AgentReviewQueueTable() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [clickedRow, setClickedRow] = useState<ReviewQueueRow | null>(null);
+  /** While searching, the list widens to every step by default; this pins it
+   *  back to the step being browsed. Cleared with the search itself. */
+  const [narrowToStep, setNarrowToStep] = useState(false);
+  const { share, fallbackDialog } = useShare();
   const table = useTableUrlState({
     tableId: "agent-review",
     defaultSort: { id: "updated_at", direction: "desc" },
@@ -156,7 +178,7 @@ export default function AgentReviewQueueTable() {
                 onClick={(event) => {
                   event.stopPropagation();
                   window.setTimeout(() => {
-                    router.push(`/administration/users/agent-review/${row.id}`);
+                    router.push(reviewItemPath(row.id));
                   }, 0);
                 }}
               >
@@ -167,10 +189,40 @@ export default function AgentReviewQueueTable() {
         },
       },
       {
+        id: "copy_link",
+        header: "Link",
+        accessorFn: (row) => row.id,
+        sortable: false,
+        filter: false,
+        compact: true,
+        align: "center",
+        width: 56,
+        cell: (row) => (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            title="Copy this review's direct link"
+            aria-label={`Copy the direct link to: ${row.title}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              const url = `${window.location.origin}${reviewItemPath(row.id)}`;
+              void share({ title: row.title, url }).then((outcome) => {
+                if (outcome === "copied") toast.success("Review link copied");
+                // "shared" spoke for itself; "manual" opened the copy dialog.
+              });
+            }}
+          >
+            <Link2 className="h-3.5 w-3.5" />
+          </Button>
+        ),
+      },
+      {
         accessorKey: "title",
         header: "Review item",
-        href: (row) => `/administration/users/agent-review/${row.id}`,
+        href: (row) => reviewItemPath(row.id),
         cellKind: "text",
+        filter: "text",
         width: 420,
       },
       {
@@ -183,6 +235,26 @@ export default function AgentReviewQueueTable() {
         })),
         cell: (row) =>
           REVIEW_STATUS_LABELS[row.status as ReviewStatus] ?? row.status,
+        width: 180,
+      },
+      {
+        id: "agent_label",
+        header: "Filed by / lane",
+        accessorFn: (row) => reviewLaneLabel(row),
+        filter: "select",
+        cell: (row) => {
+          const lane = reviewLaneLabel(row);
+          return (
+            <span
+              className={cn(
+                "truncate",
+                lane === REVIEW_LANE_UNLABELLED && "text-muted-foreground",
+              )}
+            >
+              {lane}
+            </span>
+          );
+        },
         width: 180,
       },
       {
@@ -231,6 +303,14 @@ export default function AgentReviewQueueTable() {
         mobileHidden: true,
       },
       {
+        accessorKey: "created_at",
+        header: "Filed",
+        filter: "text",
+        cell: (row) => new Date(row.created_at).toLocaleString(),
+        width: 180,
+        mobileHidden: true,
+      },
+      {
         accessorKey: "updated_at",
         header: "Last activity",
         filter: "text",
@@ -239,12 +319,97 @@ export default function AgentReviewQueueTable() {
         mobileHidden: true,
       },
     ],
-    [registry],
+    [registry, share],
   );
 
   const activeRows = rows.filter((row) => row.status !== "archived");
   const inboxRows = rows.filter((row) => row.status === "ready_for_human");
-  const visibleRows = view === "all" ? rows : inboxRows;
+  /** What BROWSING shows: the human inbox, or all activity, narrowed further
+   *  by whichever workflow step is selected. */
+  const browseRows = view === "all" ? rows : inboxRows;
+
+  const searchQuery = table.state.search.trim().toLowerCase();
+  const searching = searchQuery.length > 0;
+  const searchMode = table.state.searchMatchMode ?? "contains";
+  const statusFilter = table.state.columnFilters.status;
+  const stepStatuses =
+    statusFilter?.kind === "select"
+      ? (statusFilter.values ?? [statusFilter.value])
+      : [];
+  const stepLabel =
+    stepStatuses.length > 0
+      ? (FLOW.find(
+          (step) =>
+            step.statuses.length === stepStatuses.length &&
+            step.statuses.every((status) => stepStatuses.includes(status)),
+        )?.label.replace(/^\d+\.\s*/, "") ??
+        stepStatuses
+          .map((status) => REVIEW_STATUS_LABELS[status as ReviewStatus])
+          .join(" / "))
+      : view === "inbox"
+        ? "Ready for you"
+        : "All activity";
+
+  /**
+   * A search that runs INSIDE the open step hides instead of finding — typing
+   * "print" on the inbox step returned zero while 30 print rows sat one step
+   * back (Arman, 2026-09-07). So a search widens to every non-archived step by
+   * default, and says so out loud.
+   */
+  const widened = searching && !narrowToStep;
+  const visibleRows = widened ? activeRows : browseRows;
+
+  const browseIds = new Set(
+    browseRows
+      .filter(
+        (row) =>
+          stepStatuses.length === 0 ||
+          stepStatuses.some((status) => status === row.status),
+      )
+      .map((row) => row.id),
+  );
+  const matchingRows = searching
+    ? activeRows.filter((row) =>
+        matchesTableSearch(
+          reviewSearchText(row, {
+            domain: domainName(row, registry),
+            feature: featureName(row, registry),
+          }),
+          searchQuery,
+          searchMode,
+        ),
+      )
+    : [];
+  const matchesElsewhere = matchingRows.filter(
+    (row) => !browseIds.has(row.id),
+  ).length;
+
+  /** The table only ever sees the status filter when it is actually applied —
+   *  a widened search must not render a step chip it is ignoring. */
+  const tableState = widened
+    ? {
+        ...table.state,
+        columnFilters: { ...table.state.columnFilters, status: undefined },
+      }
+    : table.state;
+
+  function handleTableState(next: typeof table.state) {
+    if (!next.search.trim()) setNarrowToStep(false);
+    if (!widened) {
+      table.onStateChange(next);
+      return;
+    }
+    // The step filter is hidden while widened, so the table cannot have
+    // cleared it deliberately — carry it through untouched.
+    table.onStateChange(
+      statusFilter
+        ? {
+            ...next,
+            columnFilters: { ...next.columnFilters, status: statusFilter },
+          }
+        : next,
+    );
+  }
 
   function setStatusFilter(statuses?: ReviewStatus[]) {
     table.onStateChange(
@@ -373,6 +538,48 @@ export default function AgentReviewQueueTable() {
           })}
         </nav>
 
+        {searching ? (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-primary/30 bg-accent/50 px-3 py-2 text-sm"
+          >
+            {widened ? (
+              <>
+                <span>
+                  Searching <strong>every step</strong> — {matchingRows.length}{" "}
+                  {matchingRows.length === 1 ? "match" : "matches"},{" "}
+                  {matchesElsewhere} outside {stepLabel}.
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  onClick={() => setNarrowToStep(true)}
+                >
+                  Narrow to {stepLabel}
+                </Button>
+              </>
+            ) : (
+              <>
+                <span>
+                  Searching <strong>{stepLabel}</strong> only —{" "}
+                  {matchesElsewhere}{" "}
+                  {matchesElsewhere === 1 ? "match is" : "matches are"} hidden
+                  in other steps.
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  onClick={() => setNarrowToStep(false)}
+                >
+                  Search every step
+                </Button>
+              </>
+            )}
+          </div>
+        ) : null}
+
         <div className="min-h-0 flex-1">
           {/* Write half of the surface — renders nothing, services the
             manifest's triage target through updateReviewQueueRow. */}
@@ -409,9 +616,7 @@ export default function AgentReviewQueueTable() {
                     id: "agent-review-open-item",
                     label: "Open review item",
                     icon: ArrowRight,
-                    href: clickedRow
-                      ? `/administration/users/agent-review/${clickedRow.id}`
-                      : "#",
+                    href: clickedRow ? reviewItemPath(clickedRow.id) : "#",
                     disabled: !clickedRow,
                     description: "Open the review's own page",
                   },
@@ -443,27 +648,36 @@ export default function AgentReviewQueueTable() {
                 isLoading={loading}
                 query={{
                   mode: "controlled-local",
-                  state: table.state,
-                  onStateChange: table.onStateChange,
+                  state: tableState,
+                  onStateChange: handleTableState,
                 }}
+                searchText={(row) =>
+                  reviewSearchText(row, {
+                    domain: domainName(row, registry),
+                    feature: featureName(row, registry),
+                  })
+                }
                 toolbar={{
                   search: true,
-                  searchPlaceholder: "Search review items",
+                  searchPlaceholder:
+                    "Search title, instructions, target page, lane…",
                 }}
                 detail={{ enabled: false }}
-                onRowOpen={(row) =>
-                  router.push(`/administration/users/agent-review/${row.id}`)
-                }
+                onRowOpen={(row) => router.push(reviewItemPath(row.id))}
                 pageSize={25}
                 pageSizeOptions={[25, 50, 100]}
                 zebra
                 emptyState={{
-                  title:
-                    view === "inbox"
+                  title: searching
+                    ? "No review item matches that search"
+                    : view === "inbox"
                       ? "Nothing is waiting for your review"
                       : "No review items match this view",
-                  description:
-                    view === "inbox"
+                  description: searching
+                    ? widened
+                      ? "Every step was searched, including items agents have not finished reviewing. Archived items are not searched."
+                      : `Only ${stepLabel} was searched — use “Search every step” above.`
+                    : view === "inbox"
                       ? "Agents are still testing and repairing the remaining activity."
                       : "Clear a search or column filter to see more items.",
                 }}
@@ -471,6 +685,7 @@ export default function AgentReviewQueueTable() {
             </div>
           </NonEditableContextMenu>
         </div>
+        {fallbackDialog}
       </div>
     </SurfaceRuntimeProvider>
   );
