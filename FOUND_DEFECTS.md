@@ -15,6 +15,27 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D295 — the resolution door does not return a mandate's identity or its pins, so every client resolution still pays a second read
+
+Found 2026-09-07 rewiring `resolveMandate` onto `GET /mandates/{key}/resolution` (the
+one-resolution campaign, L2). The door answers the RUN decision in full — holder, config
+overrides, rung, contract, provision key, consumption map, `auto_run` — but not
+`mandate.definition.id`, `pins`, or `pinned_context`. `ResolvedMandate` needs all three
+(`mandateId` is what notes and observations hang off; `pins` are code-owned levers that win
+over binding overrides at run time), so `features/mandates/service.ts` follows every verdict
+with a `mandate.definition` read by key. That read is NOT a resolution rung and is not the
+defect — the defect is that one question takes two round trips, and `useMandateSet` multiplies
+it by the number of keys on the page.
+
+Fix (aidream): add `mandate_id`, `pins`, `pinned_context` to `MandateResolutionResponse`
+(`aidream/api/routers/mandate_bindings.py`, the model at ~line 307) — `resolve_mandate` already
+holds the definition row it would read them from, and it holds the row for the mandate that
+actually ANSWERED, which after a fallback chain is not the row the client looked up. Then delete
+the definition read from `resolveMandate` and take the three fields off the verdict. Until then
+a fallback-chained mandate reports the requested job's `mandateId`/`pins` alongside the
+answering job's holder, which is a small but real inconsistency on the 33 definitions carrying a
+`fallback_mandate_key`.
+
 ### D294 — `@ai-matrx/data` legacy cookie migration skips `-code-verifier`, so an auth-cookie rename strands every in-flight/stale-bundle OAuth login
 
 Found 2026-08-31 root-causing the mobile Google OAuth outage. `migrateLegacyCookies`
