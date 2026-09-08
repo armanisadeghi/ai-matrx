@@ -11,6 +11,18 @@
  *
  * Reply is the package's own affordance on each bubble, and it is a REAL reply
  * (`reply_to_id`, quoted in the composer), not "> " text pasted into a box.
+ *
+ * 🚨 THIS IS WHERE THE CONVERSATION AI IS ASKED FOR (2026-09-08). This is the
+ * ONE component in the app that renders `<ConversationView>` — the /messages
+ * route, the floating messages window, the single-message window, the side
+ * sheet and the agent-review workspace all come through here — so it is the one
+ * place that declares demand for the four `messaging.*` intelligences.
+ * `<MessagingHost>` resolves them only while a pane is mounted, because a page
+ * must not resolve what it does not run (it used to resolve all four on every
+ * route in the app, and log four refusals per page load). If you add a second
+ * component that renders `<ConversationView>`, it calls `useMessagingAiDemand()`
+ * too — and it screams if it is mounted outside the host rather than quietly
+ * dropping the AI bar.
  */
 
 import { useRef, useState } from "react";
@@ -27,6 +39,7 @@ import {
   messageEntityRef,
   messageMenuSection,
 } from "@/features/messaging/lib/messaging-menu-actions";
+import { useMessagingAiDemand } from "@/features/messaging/lib/messagingAiDemand";
 
 export interface ConversationPaneProps {
   conversationId: string;
@@ -41,6 +54,9 @@ export function ConversationPane({
   getApplicationScope,
   className,
 }: ConversationPaneProps) {
+  // Declare that this surface renders the conversation AI bar, so the four
+  // `messaging.*` mandates resolve. Ref-counted: it releases on unmount.
+  useMessagingAiDemand();
   const id = asConversationId(conversationId);
   const { messages } = useConversation(id);
   const { conversations } = useConversations();

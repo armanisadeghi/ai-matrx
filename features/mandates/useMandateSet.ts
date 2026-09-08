@@ -15,6 +15,26 @@ export type MandateSetState = Readonly<Record<string, MandateState>>;
 export interface UseMandateSetOptions {
   /** Deliberately unassigned keys still refuse but are not system errors. */
   optionalKeys?: readonly string[];
+  /**
+   * RESOLVE ONLY WHAT THIS SURFACE ACTUALLY RUNS. Defaults to `true`.
+   *
+   * 🚨 WHY (2026-09-08, FIX-R6's third un-absorbed finding). Resolution is not
+   * free and it is not private: each key is a round trip to
+   * `GET /mandates/{key}/resolution`, and a key with no Holder REFUSES — as it
+   * should. A consumer that resolves on mount regardless of whether its
+   * affordance will ever render turns that honest refusal into a system error
+   * on every page load of the whole app. Measured on production: the app-wide
+   * `<MessagingHost>` resolved the four `messaging.*` intelligences on EVERY
+   * route — /mandates, /dashboard, everywhere — for a conversation pane that
+   * was not on screen, producing four console errors and four captured errors
+   * per load for a person who had not opened a single message.
+   *
+   * While `false` this hook fires nothing and returns an EMPTY set. A key that
+   * is absent from the set is a key this hook WAS NOT ASKED ABOUT — deliberately
+   * not the same shape as a key that resolved to nothing, so no consumer can
+   * read "not asked" as "no Holder" and print a refusal nobody earned.
+   */
+  enabled?: boolean;
 }
 
 export function shouldReportMandateSetFailure(
@@ -33,10 +53,18 @@ function pendingSet(keys: readonly string[]): Record<string, MandateState> {
   return out;
 }
 
+const EMPTY_KEYS: readonly string[] = [];
+
 export function useMandateSet(
-  keys: readonly string[],
+  requestedKeys: readonly string[],
   options: UseMandateSetOptions = {},
 ): MandateSetState {
+  const enabled = options.enabled ?? true;
+  // An empty key list IS the disabled state, all the way down: the effects
+  // below already no-op on it, `pendingSet` returns {}, and the identity of
+  // `keyList` is what every effect keys on. Gating here rather than at each
+  // effect means there is exactly one place where "not asked" is decided.
+  const keys = enabled ? requestedKeys : EMPTY_KEYS;
   const keyList = keys.join(SEPARATOR);
   const optionalKeyList = (options.optionalKeys ?? []).join(SEPARATOR);
   const [state, setState] = useState<{

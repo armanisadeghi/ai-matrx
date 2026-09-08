@@ -92,12 +92,30 @@ export interface MessagingIntelligences {
 export function useMessagingIntelligences(options: {
   organizationId: string | null | undefined;
   userId: string | null | undefined;
+  /**
+   * 🚨 ONLY WHEN A CONVERSATION SURFACE IS ACTUALLY MOUNTED (2026-09-08).
+   *
+   * The host that calls this is app-wide, and used to resolve all four keys on
+   * every route in the app — four requests and four refusals per page load for
+   * a pane nobody had opened. The demand is ref-counted by `<ConversationPane>`
+   * (see `./messagingAiDemand`), so the question "who fulfils Catch me up?" is
+   * asked where the answer can appear and nowhere else.
+   *
+   * While false, `agents` is empty and `unresolved` is empty — NOT a list of
+   * four refusals. Nothing refused; nothing was asked.
+   */
+  enabled: boolean;
 }): MessagingIntelligences {
-  const { organizationId, userId } = options;
-  const mandates = useMandateSet(MESSAGING_MANDATE_KEY_LIST);
+  const { organizationId, userId, enabled } = options;
+  const mandates = useMandateSet(MESSAGING_MANDATE_KEY_LIST, { enabled });
 
+  // The transcript cap is the same class of question as the four mandates —
+  // it describes how the conversation pane behaves — so it rides the same
+  // demand. `useScopedKnobs` already treats a null organization as "nothing to
+  // read", which is exactly the honest shape here: no org in play for this
+  // question yet, so no request and no answer.
   const knobs = useScopedKnobs({
-    organizationId,
+    organizationId: enabled ? organizationId : null,
     featurePrefix: MESSAGING_AI_KNOB_FEATURE,
     ...(userId ? { userId } : {}),
   });

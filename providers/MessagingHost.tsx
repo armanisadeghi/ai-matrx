@@ -52,6 +52,10 @@ import { supabase } from "@/utils/supabase/client";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { useMessagingIntelligences } from "@/features/messaging/lib/useMessagingIntelligences";
+import {
+  MessagingAiDemandProvider,
+  useMessagingAiDemandCounter,
+} from "@/features/messaging/lib/messagingAiDemand";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { MESSAGE_ACTION_SURFACES } from "@/features/messaging/actions/messageActionSurfaces";
@@ -84,9 +88,24 @@ export function MessagingHost({ children }: MessagingHostProps) {
     source: "messagingHost",
   }), [store]);
 
+  // 🚨 THE AI IDENTITY IS RESOLVED ON DEMAND, NOT ON MOUNT (2026-09-08).
+  //
+  // This provider is app-wide (see the block above — the unread badge and the
+  // "Message" buttons need it everywhere), and it used to resolve the four
+  // `messaging.*` mandates on every single route as a result. Measured on
+  // production: `/mandates` and `/dashboard` each fired four
+  // `GET /mandates/{key}/resolution` calls and logged four errors for a
+  // conversation pane that was not on screen. A page must not resolve what it
+  // does not run.
+  //
+  // `<ConversationPane>` — the one component in this app that renders the
+  // package's `<ConversationView>` — declares the demand, and only then are the
+  // four jobs (and the transcript-cap knob) asked about.
+  const aiDemand = useMessagingAiDemandCounter();
   const { agents, maxTranscriptMessages } = useMessagingIntelligences({
     organizationId,
     userId,
+    enabled: aiDemand.demanded,
   });
 
   // A background failure is never silent, and never a wall of red either: the
@@ -149,6 +168,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
   }, []);
 
   return (
+    <MessagingAiDemandProvider acquire={aiDemand.acquire}>
     <MessagingProvider
       client={supabase}
       userId={userId}
@@ -185,6 +205,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
     >
       {children}
     </MessagingProvider>
+    </MessagingAiDemandProvider>
   );
 }
 
