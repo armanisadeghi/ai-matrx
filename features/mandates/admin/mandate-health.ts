@@ -7,6 +7,7 @@
 
 import { isJsonObject } from "@/types/json";
 import { parseMandateContract } from "@/features/mandates/overrides";
+import { missingOutputKeys } from "@/features/mandates/output-contract";
 import { splitMandateKey } from "@/features/mandates/mandate-key";
 import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
 import {
@@ -28,6 +29,7 @@ export type MandateHealth =
   | "not a system agent"
   | "agent archived"
   | "code ↔ contract drift"
+  | "output contract unmet"
   | "version drift"
   | "no holder yet"
   | "ok";
@@ -47,6 +49,14 @@ export const HEALTH_PRIORITY: Record<MandateHealth, number> = {
   "not a system agent": 3,
   "agent archived": 4,
   "code ↔ contract drift": 5,
+  // 🚨 A HOLDER THAT CANNOT PRODUCE THE JOB'S REQUIRED OUTPUT KEYS IS NOT
+  // "healthy" (walk of v0.4.1720, FIX-R4). `research_client.output_slides`
+  // showed a RED "the assignment fails at run time" three inches above a GREEN
+  // "Healthy — System agent, tracking the latest version", about the same
+  // holder: this model simply did not know about the output half of the
+  // contract, which `enforced_holder_contract` keeps in force ALWAYS. Ranked
+  // above version drift because a drifted pin still runs and this does not.
+  "output contract unmet": 5.5,
   "version drift": 6,
   "no holder yet": 7,
   ok: 8,
@@ -181,6 +191,15 @@ export function buildRow(
   mandate: MandateDefinitionRow,
   data: MandateConsoleData,
   codeTruth?: MandateCodeTruth,
+  /**
+   * The bound holder's declared `output_schema`, by agent id, when the caller
+   * has read it (`fetchAgentOutputSchemas`). **Absent means UNKNOWN, never
+   * "fine"** — a caller that has not read it gets exactly the verdict it got
+   * before, and only a caller that HAS read it can report `output contract
+   * unmet`. The single-mandate admin page supplies it; the console list does
+   * not yet, and that gap is named in FEATURE.md rather than papered over.
+   */
+  outputSchemas?: Record<string, unknown>,
 ): MandateRow {
   let agentId: string | null = null;
   let agentName = "(unknown agent)";
@@ -253,6 +272,19 @@ export function buildRow(
   const codeImportFailed =
     codeTruth?.resolution === "code_exists_but_import_failed";
 
+  // THE OUTPUT HALF OF THE CONTRACT — in force always (aidream
+  // `enforced_holder_contract`), judged by the SHARED mirror of the server's
+  // rule so this console and the binding pre-flight cannot disagree.
+  const contractForOutput = parseMandateContract(contractOfMandate(mandate));
+  const outputContractUnmet =
+    hasPin &&
+    agentId !== null &&
+    outputSchemas !== undefined &&
+    agentId in outputSchemas &&
+    contractForOutput.requiredOutputKeys.length > 0 &&
+    missingOutputKeys(contractForOutput.requiredOutputKeys, outputSchemas[agentId])
+      .length > 0;
+
   const health: MandateHealth = codeAgentDrift
     ? "code ↔ agent drift"
     : codeImportFailed
@@ -265,7 +297,9 @@ export function buildRow(
             ? "agent archived"
             : codeContractDrift
               ? "code ↔ contract drift"
-              : drift
+              : outputContractUnmet
+                ? "output contract unmet"
+                : drift
                 ? "version drift"
                 : hasPin
                   ? "ok"
@@ -350,6 +384,7 @@ export const HEALTH_CLASS: Record<MandateHealth, string> = {
     "text-amber-600 border-amber-500/40 bg-amber-500/10",
   "version drift": "text-amber-600 border-amber-500/40 bg-amber-500/10",
   "code ↔ contract drift": "text-amber-600 border-amber-500/40 bg-amber-500/10",
+  "output contract unmet": "text-rose-600 border-rose-500/40 bg-rose-500/10",
   "agent archived": "text-rose-600 border-rose-500/40 bg-rose-500/10",
   "not a system agent": "text-rose-600 border-rose-500/40 bg-rose-500/10",
   "unresolved pin": "text-rose-600 border-rose-500/40 bg-rose-500/10",
@@ -370,6 +405,8 @@ export const HEALTH_HINT: Partial<Record<MandateHealth, string>> = {
   "not a system agent":
     "This mandate serves every user, but its default is a personal agent only some of them can see.",
   "agent archived": "The pinned agent is archived — rebind before it breaks.",
+  "output contract unmet":
+    "The holder does not declare the structured output keys this job's consumers require, so the assignment fails at run time. Give the holder an output schema that declares them, or bind one that already does.",
   "no holder yet":
     "Nothing is bound to this mandate yet, which is where every new mandate starts. Choose a holder above whenever the intelligence exists.",
 };

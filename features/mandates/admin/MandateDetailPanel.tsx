@@ -978,6 +978,42 @@ function StatusBanner({
           )}
         </div>
       );
+    // 🚨 THE OUTPUT HALF OF THE CONTRACT (walk of v0.4.1720). This banner sat
+    // three inches under "the assignment fails at run time" saying "Healthy"
+    // about the same holder. One screen, two verdicts, is the fourth law's lie.
+    case "output contract unmet":
+      return (
+        <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-xs">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+            <div className="space-y-1">
+              <p className="font-medium text-rose-700 dark:text-rose-400">
+                {row.agentName} does not produce what this job promises.
+              </p>
+              <p className="text-muted-foreground">
+                {HEALTH_HINT["output contract unmet"]}
+              </p>
+              <p className="text-muted-foreground">
+                This job requires{" "}
+                {row.requiredOutputKeys
+                  .map((key) => `\`${key}\``)
+                  .join(", ")}
+                .
+              </p>
+            </div>
+          </div>
+          {row.agentId ? (
+            <Button size="sm" variant="outline" asChild>
+              <a href={agentHref(row.agentId, row.agentType, "/build")}>
+                Open {row.agentName}
+              </a>
+            </Button>
+          ) : null}
+          <Button size="sm" variant="outline" onClick={onOpenRebind}>
+            Assign a different holder
+          </Button>
+        </div>
+      );
     case "ok":
       return (
         <div className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs">
@@ -1501,11 +1537,23 @@ export function MandateDetailView({
   data,
   lineage,
   onSaved,
+  showGoal = true,
 }: {
   row: MandateRow;
   data: MandateConsoleData;
   lineage: AgentLineage;
   onSaved: () => void;
+  /**
+   * 🚨 ONE GOAL PER SCREEN (walk of v0.4.1720). This block reads the goal
+   * through `useMandateGoal`, whose server call is org-admitted — so on the
+   * admin route, where the workspace's TRIAD already shows the same goal above,
+   * it rendered a second copy AND, with no organization admitted, the refusal
+   * *"The goal could not be read: Select an organization before sending this
+   * request."* inside a panel about what the PLATFORM assigns. A host that
+   * already shows the goal passes `false`; the window's Admin pane, which shows
+   * no triad, keeps it.
+   */
+  showGoal?: boolean;
 }) {
   const dispatch = useAppDispatch();
   const bindings = data.bindingsByMandateId[row.id] ?? [];
@@ -1592,10 +1640,12 @@ export function MandateDetailView({
       {/* THE GOAL first — what this Mandate is FOR. It is a code declaration
           read through the catalogue, not a column on this row, so it is shown
           read-only and says so. `description` is a different, lesser field. */}
-      <MandateGoalBlock
-        mandateKey={row.mandateKey}
-        description={row.mandate.description}
-      />
+      {showGoal ? (
+        <MandateGoalBlock
+          mandateKey={row.mandateKey}
+          description={row.mandate.description}
+        />
+      ) : null}
 
       {/* Facts first — what IS. The verdict on what's wrong comes second. */}
       <FactsPanel
@@ -1637,8 +1687,8 @@ export function MandateDetailView({
         <div className="space-y-2 p-3">
           <p className="text-xs leading-relaxed text-muted-foreground">
             The holder, the rung it applies at, and the value mapping are all
-            chosen together in <strong>Who fulfils this job</strong> above — one
-            screen, three rungs (system, organization, just you).
+            chosen together in the section above — one screen, showing exactly
+            the rungs this page manages.
           </p>
           <Button size="sm" variant="outline" onClick={openTheBindingUi}>
             Open it

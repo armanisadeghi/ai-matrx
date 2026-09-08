@@ -39,6 +39,7 @@ import {
   notAnAddressFailure,
   readMandateAddress,
 } from "@/features/mandates/mandate-address";
+import { fetchAgentOutputSchemas } from "@/features/mandates/output-contract";
 import { buildRow, type MandateRow } from "./mandate-health";
 import { MandateDetailView } from "./MandateDetailPanel";
 import { PromoteToSystemMandateButton } from "./mandate-actions";
@@ -101,6 +102,18 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
     Record<string, MandateCodeTruth>
   >({});
   const [loadError, setLoadError] = useState<string | null>(null);
+  /**
+   * 🚨 THE OUTPUT HALF OF THE CONTRACT, READ FOR THIS ONE MANDATE (walk of
+   * v0.4.1720). Without it `buildRow` reported `ok` and this panel printed
+   * "Healthy" three inches under the system answer's red "the assignment fails
+   * at run time" — one screen, two verdicts about one holder. `null` means
+   * UNREAD, so the verdict stays exactly what it was rather than becoming a
+   * guess.
+   */
+  const [outputSchemas, setOutputSchemas] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
 
   const load = useCallback(() => {
     fetchMandateConsoleData({ mandateKeys: [mandateKey] })
@@ -151,6 +164,33 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
     };
   }, [dispatch, isSuperAdmin]);
 
+  // The holder behind this ONE mandate's own default, read by id. Derived from
+  // the loaded row rather than from a second lookup, and re-read whenever the
+  // holder moves.
+  const holderAgentId = useMemo(() => {
+    if (!data) return null;
+    const mandate =
+      data.mandates.find((m) => m.mandate_key === mandateKey) ??
+      data.mandates.find((m) => m.id === mandateKey) ??
+      null;
+    if (!mandate) return null;
+    return buildRow(mandate, data).agentId;
+  }, [data, mandateKey]);
+
+  useEffect(() => {
+    if (!holderAgentId) return;
+    let cancelled = false;
+    void fetchAgentOutputSchemas([holderAgentId]).then((byId) => {
+      // An agent absent from the answer is UNREADABLE, not schema-less — and
+      // `buildRow` only judges ids the map actually contains, so an unreadable
+      // holder keeps its existing verdict instead of gaining a false one.
+      if (!cancelled) setOutputSchemas(byId);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [holderAgentId]);
+
   const row = useMemo<MandateRow | null>(() => {
     if (!data) return null;
     const mandate =
@@ -158,8 +198,13 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
       data.mandates.find((m) => m.id === mandateKey) ??
       null;
     if (!mandate) return null;
-    return buildRow(mandate, data, codeTruthByKey[mandate.mandate_key]);
-  }, [codeTruthByKey, data, mandateKey]);
+    return buildRow(
+      mandate,
+      data,
+      codeTruthByKey[mandate.mandate_key],
+      outputSchemas ?? undefined,
+    );
+  }, [codeTruthByKey, data, mandateKey, outputSchemas]);
 
   if (!isSuperAdmin) return null;
 
@@ -198,6 +243,11 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
                   key={row.id}
                   row={row}
                   data={data}
+                  // The workspace above renders the triad (INPUT → GOAL →
+                  // OUTPUT), so a second goal block here is a duplicate — and
+                  // its org-admitted read printed a refusal about choosing an
+                  // organization on the platform's own page.
+                  showGoal={false}
                   lineage={
                     (row.agentId ? lineageIndex[row.agentId] : undefined) ?? {
                       parent: null,
