@@ -31,6 +31,8 @@ import { AlertTriangle, CircleCheck, Settings2, Trash2 } from "lucide-react";
 
 import {
   PropertyRow,
+  ConfigurationTable,
+  ConfigurationTableRow,
   StatusToken,
   FieldHelp,
 } from "@/components/official/ConfigurationFields";
@@ -173,6 +175,12 @@ const MANDATE_MAP_WORDS: SuggestionWords = {
   intro: (agentName) =>
     `The mapping helper reads what this job offers and what ${agentName} needs, then proposes the whole match for you to review. Several offered values may feed one input — it can propose that too.`,
 };
+
+const CHECK_COLUMNS = [
+  { key: "check", label: "Check" },
+  { key: "result", label: "Result" },
+  { key: "reference", label: "Reference" },
+];
 
 export type BindingWorkspaceSection =
   "holder" | "overrides" | "display" | "permissions";
@@ -1982,118 +1990,162 @@ function BindingDraft({
                   : "rounded-lg border border-border p-3"
               }
             >
-              <dl>
-                <PropertyRow
-                  label="Preliminary check"
-                  value={
-                    <StatusToken
-                      status={
-                        !holderChosen ||
-                        holder.kind === "workflow" ||
-                        verdict.checking
-                          ? "unknown"
-                          : verdict.passed
-                            ? "ok"
-                            : "error"
-                      }
-                      label={
-                        !holderChosen
-                          ? "Not yet evaluated"
-                          : holder.kind === "workflow"
-                            ? "Not yet evaluated"
+              <h3 className="mb-3 text-sm font-semibold">Checks</h3>
+              <ConfigurationTable label="Holder checks" columns={CHECK_COLUMNS}>
+                <ConfigurationTableRow
+                  columns={CHECK_COLUMNS}
+                  cells={{
+                    check: (
+                      <span className="inline-flex items-center gap-1">
+                        Preliminary
+                        <FieldHelp label="Preliminary check">
+                          Checks the latest agent declaration against the input
+                          and output contract. It does not validate this
+                          version's mapping or runtime execution.
+                        </FieldHelp>
+                      </span>
+                    ),
+                    result: (
+                      <StatusToken
+                        status={
+                          !holderChosen ||
+                          holder.kind === "workflow" ||
+                          verdict.checking
+                            ? "unknown"
+                            : verdict.passed
+                              ? "ok"
+                              : "error"
+                        }
+                        label={
+                          !holderChosen || holder.kind === "workflow"
+                            ? "Not evaluated"
                             : verdict.checking
                               ? "Checking"
                               : verdict.passed
-                                ? "Preliminary check passed"
-                                : "Preliminary check failed"
-                      }
-                    />
-                  }
-                  help="Checks the agent's declared inputs and output contract. Mapping and runtime execution are separate checks."
+                                ? "Passed"
+                                : "Failed"
+                        }
+                      />
+                    ),
+                    reference:
+                      holder.kind === "workflow" || !holderChosen
+                        ? "None"
+                        : "Latest declaration",
+                  }}
                 />
-                <PropertyRow
-                  label="Check reference"
-                  value={
-                    holder.kind === "workflow"
-                      ? "Not evaluated"
-                      : "Latest agent declaration"
-                  }
+                <ConfigurationTableRow
+                  columns={CHECK_COLUMNS}
+                  cells={{
+                    check: "Mapped inputs",
+                    result:
+                      holderInputs.status !== "ready"
+                        ? "Unknown"
+                        : `${holderInputs.targets.filter((target) => isFed(sourcesFor(draftMap, target.name))).length} / ${holderInputs.targets.length}`,
+                    reference: "Draft mapping",
+                  }}
                 />
-                <PropertyRow
-                  label="Matching"
-                  value={
-                    holderInputs.status !== "ready"
-                      ? "Unknown"
-                      : `${holderInputs.targets.filter((target) => isFed(sourcesFor(draftMap, target.name))).length} of ${holderInputs.targets.length} inputs mapped`
-                  }
+                <ConfigurationTableRow
+                  columns={CHECK_COLUMNS}
+                  cells={{
+                    check: "Unused inputs",
+                    result:
+                      offeredValues
+                        .filter((value) => !consumedBy.has(value.name))
+                        .map((value) => formatVariableDisplayName(value.name))
+                        .join(", ") || "None",
+                    reference: "Draft mapping",
+                  }}
                 />
-                <PropertyRow
-                  label="Unused offered inputs"
-                  value={
-                    offeredValues
-                      .filter((value) => !consumedBy.has(value.name))
-                      .map((value) => formatVariableDisplayName(value.name))
-                      .join(", ") || "None"
-                  }
+                <ConfigurationTableRow
+                  columns={CHECK_COLUMNS}
+                  cells={{
+                    check: "Required missing",
+                    result:
+                      holderInputs.status !== "ready"
+                        ? "Unknown"
+                        : unfedRequired.length,
+                    reference: "Draft mapping",
+                  }}
                 />
-                <PropertyRow
-                  label="Required inputs missing"
-                  value={
-                    holderInputs.status !== "ready"
-                      ? "Unknown"
-                      : unfedRequired.length
-                  }
+                <ConfigurationTableRow
+                  columns={CHECK_COLUMNS}
+                  cells={{
+                    check: "Mapping issues",
+                    result: mapProblems.length + (awaitingPick ? 1 : 0),
+                    reference: "Draft mapping",
+                  }}
                 />
-                <PropertyRow
-                  label="Mapping issues"
-                  value={mapProblems.length + (awaitingPick ? 1 : 0)}
+                <ConfigurationTableRow
+                  columns={CHECK_COLUMNS}
+                  cells={{
+                    check: (
+                      <span className="inline-flex items-center gap-1">
+                        Resolution
+                        {healthNote ? (
+                          <FieldHelp label="Saved resolution">
+                            {healthNote.sentence}
+                            {healthNote.remedy ? ` ${healthNote.remedy}` : ""}
+                          </FieldHelp>
+                        ) : null}
+                      </span>
+                    ),
+                    result: (
+                      <StatusToken
+                        status={
+                          healthNote == null
+                            ? "unknown"
+                            : healthNote.broken
+                              ? "error"
+                              : "neutral"
+                        }
+                        label={
+                          healthNote == null
+                            ? "Not evaluated"
+                            : healthNote.broken
+                              ? "Unavailable"
+                              : "Resolved"
+                        }
+                      />
+                    ),
+                    reference: "Saved configuration",
+                  }}
                 />
-                <PropertyRow
-                  label="Saved resolution"
-                  value={
-                    <StatusToken
-                      status={
-                        healthNote == null
-                          ? "unknown"
-                          : healthNote.broken
-                            ? "error"
-                            : "neutral"
-                      }
-                      label={
-                        healthNote == null
-                          ? "Not evaluated"
-                          : healthNote.broken
-                            ? "Unavailable"
-                            : "Resolved"
-                      }
-                    />
-                  }
-                  source="Saved configuration"
-                  help={
-                    healthNote
-                      ? `${healthNote.sentence}${healthNote.remedy ? ` ${healthNote.remedy}` : ""}`
-                      : undefined
-                  }
+                <ConfigurationTableRow
+                  columns={CHECK_COLUMNS}
+                  cells={{
+                    check: "Full validation",
+                    result: (
+                      <StatusToken status="neutral" label="Not evaluated" />
+                    ),
+                    reference: "None",
+                  }}
                 />
-                <PropertyRow
-                  label="Full validation"
-                  value={
-                    <StatusToken status="neutral" label="Not yet evaluated" />
-                  }
-                />
-              </dl>
-              {holder.kind === "agent" && !verdict.checking && !verdict.passed
-                ? verdict.problems.map((problem, index) => (
-                    <PropertyRow
-                      key={problem}
-                      label={`Check ${index + 1}`}
-                      value={<StatusToken status="error" />}
-                      help={
-                        <TextWithDoors text={problem} defaultToken="agent" />
-                      }
-                    />
-                  ))
-                : null}
+                {holder.kind === "agent" && !verdict.checking && !verdict.passed
+                  ? verdict.problems.map((problem, index) => (
+                      <ConfigurationTableRow
+                        key={problem}
+                        columns={CHECK_COLUMNS}
+                        cells={{
+                          check: (
+                            <span className="inline-flex items-center gap-1">
+                              Issue {index + 1}
+                              <FieldHelp
+                                label={`Preliminary issue ${index + 1}`}
+                              >
+                                <TextWithDoors
+                                  text={problem}
+                                  defaultToken="agent"
+                                />
+                              </FieldHelp>
+                            </span>
+                          ),
+                          result: <StatusToken status="error" />,
+                          reference: "Latest declaration",
+                        }}
+                      />
+                    ))
+                  : null}
+              </ConfigurationTable>
             </div>
             <div
               className={
@@ -2308,7 +2360,10 @@ function BindingDraft({
             {saveRefusal ? (
               <p className="mr-auto flex items-start gap-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <TextWithDoors text={saveRefusal} defaultToken="agent" />
+                <span>Save unavailable</span>
+                <FieldHelp label="Save unavailable">
+                  <TextWithDoors text={saveRefusal} defaultToken="agent" />
+                </FieldHelp>
               </p>
             ) : null}
             {binding ? (

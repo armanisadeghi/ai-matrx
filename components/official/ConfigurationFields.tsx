@@ -15,6 +15,15 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
+import styles from "./ConfigurationFields.module.css";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from "@/components/ui/table";
 
 /** Field-attached help, reachable by pointer, keyboard and touch. */
 export function FieldHelp({
@@ -161,5 +170,86 @@ export function PropertyRow({
         ) : null}
       </div>
     </div>
+  );
+}
+
+export interface ConfigurationColumn {
+  key: string;
+  label: string;
+  help?: ReactNode;
+}
+
+/** Repeated configuration data: table on desktop, labeled records on phones. */
+export function ConfigurationTable({
+  label,
+  columns,
+  children,
+}: {
+  label: string;
+  columns: readonly ConfigurationColumn[];
+  children: ReactNode;
+}) {
+  return (
+    <div className="min-w-0 rounded-lg border border-border bg-card">
+      <Table
+        wrap={false}
+        aria-label={label}
+        className={cn(styles.table, "text-sm text-foreground")}
+      >
+        <TableHeader className={styles.head}>
+          <TableRow className="bg-accent/40 hover:bg-accent/40">
+            {columns.map((column) => (
+              <TableHead
+                key={column.key}
+                scope="col"
+                className="whitespace-normal align-top font-semibold text-foreground"
+              >
+                <span className="inline-flex items-center gap-1">
+                  {column.label}
+                  {column.help ? (
+                    <FieldHelp label={column.label}>{column.help}</FieldHelp>
+                  ) : null}
+                </span>
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody className={styles.body}>{children}</TableBody>
+      </Table>
+    </div>
+  );
+}
+
+export function ConfigurationTableRow({
+  columns,
+  cells,
+}: {
+  columns: readonly ConfigurationColumn[];
+  cells: Record<string, ReactNode>;
+}) {
+  return (
+    <TableRow
+      className={cn(styles.row, "border-b border-border last:border-b-0")}
+    >
+      {columns.map((column) => (
+        <TableCell
+          key={column.key}
+          className={cn(styles.cell, "min-w-0 whitespace-normal align-top")}
+        >
+          <span
+            className={cn(
+              styles.mobileLabel,
+              "mb-1 items-center gap-1 font-semibold",
+            )}
+          >
+            {column.label}:
+            {column.help ? (
+              <FieldHelp label={column.label}>{column.help}</FieldHelp>
+            ) : null}
+          </span>
+          <div className="min-w-0">{cells[column.key] ?? "Not specified"}</div>
+        </TableCell>
+      ))}
+    </TableRow>
   );
 }

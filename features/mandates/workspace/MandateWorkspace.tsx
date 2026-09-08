@@ -543,15 +543,9 @@ function OneMandateWorkspace({
     >
       <div className="mx-auto w-full max-w-6xl px-4 pb-12 pt-3 sm:px-6">
         <header className="mb-5 space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
-              <Link
-                href={authoring ? "/administration/mandates" : "/mandates"}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                All mandates
-              </Link>
-              <h2 className="mt-1 break-words text-xl font-semibold tracking-tight text-foreground">
+              <h2 className="break-words text-xl font-semibold tracking-tight text-foreground">
                 {data.mandate.label?.trim() || "Display name unavailable"}
               </h2>
             </div>

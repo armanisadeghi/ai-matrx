@@ -1,0 +1,43 @@
+.table {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.head {
+  display: table-header-group;
+}
+
+.body {
+  display: table-row-group;
+}
+
+.row {
+  display: table-row;
+}
+
+.cell {
+  display: table-cell;
+  overflow-wrap: anywhere;
+}
+
+.mobileLabel {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .table,
+  .body,
+  .row,
+  .cell {
+    display: block;
+  }
+
+  .head {
+    display: none;
+  }
+
+  .mobileLabel {
+    display: flex;
+  }
+}

@@ -105,7 +105,7 @@ export function BindingMiddle({
   if (targets.length === 0) return null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       {targets.map((target) => (
         <BindingMiddleRow
           key={target.name}
@@ -197,8 +197,8 @@ export function BindingMiddleRow({
     !hasHolderDefault(target.defaultValue);
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex flex-wrap items-center gap-1.5 px-0.5">
+    <div className="space-y-3 rounded-xl border-2 border-border bg-card p-4">
+      <div className="grid min-w-0 gap-x-6 sm:grid-cols-2">
         <PropertyRow
           label="Destination"
           value={isContext ? "Context slot" : "Variable"}
@@ -276,18 +276,13 @@ export function BindingMiddleRow({
         </p>
       ) : null}
 
-      {rowProblems.map((problem) => (
-        <p
+      {rowProblems.map((problem, index) => (
+        <PropertyRow
           key={problem}
-          className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-destructive"
-        >
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          {/* A contract problem NAMES the agent/holder it is about — the
-              reader opens it from here (THE DOOR LAW). */}
-          <span>
-            <TextWithDoors text={problem} defaultToken="agent" />
-          </span>
-        </p>
+          label={`Mapping issue ${index + 1}`}
+          value={<StatusToken status="error" label="Invalid" />}
+          help={<TextWithDoors text={problem} defaultToken="agent" />}
+        />
       ))}
 
       <PropertyRow
@@ -493,47 +488,62 @@ function AbsenceControl({
   disabled: boolean;
   onPatch: (patch: Partial<OfferedSource>) => void;
 }) {
-  if (!offered || offered.guaranteed)
-    return (
-      <PropertyRow
-        label="When source is missing"
-        value={
-          offered?.guaranteed
-            ? "Not applicable — always available"
-            : "Unknown source"
-        }
-      />
-    );
+  const unavailable = !offered || offered.guaranteed === true;
+  const choices = [
+    { value: "skip", label: "Skip" },
+    { value: "use_default", label: "Use default" },
+    { value: "fail", label: "Stop run" },
+  ] as const;
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-2 px-0.5 text-[11.5px] text-muted-foreground">
-      <span>When source is missing</span>
-      <Select
-        value={entry.when_absent ?? "skip"}
-        disabled={disabled}
-        onValueChange={(v) =>
-          onPatch({ when_absent: v as OfferedSource["when_absent"] })
-        }
+    <div className="space-y-2 border-t border-border pt-3">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="font-semibold">Missing source:</span>
+        {unavailable ? (
+          <StatusToken
+            status="neutral"
+            label={offered ? "Not applicable" : "Unknown"}
+          />
+        ) : null}
+        <FieldHelp label="Missing source">
+          {offered?.guaranteed
+            ? "This input is always available, so missing-source behavior does not apply."
+            : !offered
+              ? "Select an available source before choosing its missing-source behavior."
+              : "Choose what happens if this source is absent. Skip omits it, Use default substitutes the value below, and Stop run refuses execution."}
+        </FieldHelp>
+      </div>
+      <div
+        role="group"
+        aria-label={`Missing ${formatVariableDisplayName(entry.target)}`}
+        className="flex flex-wrap gap-2"
       >
-        <SelectTrigger
-          className="h-7 w-[150px] text-[11.5px]"
-          aria-label={`When ${formatVariableDisplayName(entry.target)} is absent`}
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="skip">Skip it</SelectItem>
-          <SelectItem value="use_default">Use a default</SelectItem>
-          <SelectItem value="fail">Fail the run</SelectItem>
-        </SelectContent>
-      </Select>
+        {choices.map((choice) => (
+          <Button
+            key={choice.value}
+            size="sm"
+            variant={
+              !unavailable && (entry.when_absent ?? "skip") === choice.value
+                ? "default"
+                : "outline"
+            }
+            aria-pressed={
+              !unavailable && (entry.when_absent ?? "skip") === choice.value
+            }
+            disabled={disabled || unavailable}
+            onClick={() => onPatch({ when_absent: choice.value })}
+          >
+            {choice.label}
+          </Button>
+        ))}
+      </div>
       {entry.when_absent === "use_default" ? (
         <ProTextarea
-          wrapperClassName="h-8 min-w-0 flex-1"
           value={typeof entry.default === "string" ? entry.default : ""}
-          disabled={disabled}
+          disabled={disabled || unavailable}
           onChange={(e) => onPatch({ default: e.target.value })}
+          aria-label="Missing source default"
           placeholder="Default value"
-          className="h-8 min-h-8 flex-1 resize-none py-1 text-[12px]"
+          className="min-h-16"
         />
       ) : null}
     </div>
@@ -577,9 +587,7 @@ function AddAnotherSource({
           className="h-auto min-h-7 w-full max-w-[280px] whitespace-normal py-1 text-left text-[11.5px] [&>span]:line-clamp-none"
           aria-label={`Add another value to ${targetLabel}`}
         >
-          <SelectValue
-            placeholder={`Also feed ${targetLabel} another value…`}
-          />
+          <SelectValue placeholder="Add source" />
         </SelectTrigger>
         <SelectContent>
           {remaining.map((v) => (

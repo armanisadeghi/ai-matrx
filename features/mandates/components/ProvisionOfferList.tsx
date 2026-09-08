@@ -16,6 +16,8 @@ import { formatVariableDisplayName } from "@/features/agents/utils/variable-util
 import {
   FieldHelp,
   PropertyRow,
+  ConfigurationTable,
+  ConfigurationTableRow,
 } from "@/components/official/ConfigurationFields";
 import type { OfferedValue } from "../provision-shapes";
 
@@ -34,74 +36,64 @@ export function ProvisionOfferList({
   if (values.length === 0) {
     return <PropertyRow label="Available inputs" value="None" />;
   }
+  const columns = [
+    { key: "name", label: "Input" },
+    { key: "format", label: "Format" },
+    {
+      key: "available",
+      label: "Availability",
+      help: "Always: provided on every call. Conditional: may be absent.",
+    },
+    { key: "retrieval", label: "Retrieval" },
+    {
+      key: "context",
+      label: "Auto context",
+      help: "Whether the platform delivers this input to context automatically.",
+    },
+    { key: "example", label: "Example" },
+  ];
   return (
-    <ul className={cn("grid min-w-0 gap-3 sm:grid-cols-2", className)}>
-      {values.map((value) => (
-        <OfferedValueRow
-          key={value.name}
-          value={value}
-          pinned={pinnedContext.includes(value.name)}
-        />
-      ))}
-    </ul>
-  );
-}
-
-function OfferedValueRow({
-  value,
-  pinned,
-}: {
-  value: OfferedValue;
-  pinned: boolean;
-}) {
-  return (
-    <li className="min-w-0 rounded-lg border border-border bg-card px-3 py-3">
-      <div className="mb-1 flex items-center gap-1">
-        <h4 className="min-w-0 break-words text-sm font-semibold">
-          {formatVariableDisplayName(value.name) || "Display name missing"}
-        </h4>
-        <FieldHelp label={formatVariableDisplayName(value.name) || "Input"}>
-          {value.description || "No description provided."}
-        </FieldHelp>
-      </div>
-      <div className="min-w-0">
-        <PropertyRow
-          label="Format"
-          value={formatVariableDisplayName(value.kind) || "Unknown"}
-        />
-        <PropertyRow
-          label="Always available"
-          value={
-            typeof value.guaranteed === "boolean"
-              ? value.guaranteed
-                ? "Yes"
-                : "No"
-              : "Unknown"
-          }
-        />
-        <PropertyRow
-          label="Retrieval"
-          value={
-            typeof value.lazy === "boolean"
-              ? value.lazy
-                ? "On demand"
-                : "At launch"
-              : "Unknown"
-          }
-        />
-        <PropertyRow
-          label="Automatic context delivery"
-          value={pinned ? "Yes" : "No"}
-        />
-        <PropertyRow
-          label="Example"
-          value={
-            <span className="whitespace-pre-wrap">
-              {value.example || "Not provided"}
-            </span>
-          }
-        />
-      </div>
-    </li>
+    <div className={cn("min-w-0", className)}>
+      <ConfigurationTable label="Mandate inputs" columns={columns}>
+        {values.map((value) => (
+          <ConfigurationTableRow
+            key={value.name}
+            columns={columns}
+            cells={{
+              name: (
+                <span className="inline-flex items-center gap-1 font-semibold">
+                  {formatVariableDisplayName(value.name) ||
+                    "Display name missing"}
+                  <FieldHelp
+                    label={formatVariableDisplayName(value.name) || "Input"}
+                  >
+                    {value.description || "No description provided."}
+                  </FieldHelp>
+                </span>
+              ),
+              format: formatVariableDisplayName(value.kind) || "Unknown",
+              available:
+                typeof value.guaranteed === "boolean"
+                  ? value.guaranteed
+                    ? "Always"
+                    : "Conditional"
+                  : "Unknown",
+              retrieval:
+                typeof value.lazy === "boolean"
+                  ? value.lazy
+                    ? "On demand"
+                    : "At launch"
+                  : "Unknown",
+              context: pinnedContext.includes(value.name) ? "Yes" : "No",
+              example: (
+                <span className="whitespace-pre-wrap">
+                  {value.example || "Not provided"}
+                </span>
+              ),
+            }}
+          />
+        ))}
+      </ConfigurationTable>
+    </div>
   );
 }

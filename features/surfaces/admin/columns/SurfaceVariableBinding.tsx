@@ -196,7 +196,9 @@ export function SurfaceVariableBinding({
     <TooltipProvider delayDuration={200}>
       <article
         className={cn(
-          "rounded-xl border border-border bg-card shadow-sm overflow-hidden",
+          structured
+            ? "min-w-0"
+            : "rounded-xl border border-border bg-card shadow-sm overflow-hidden",
           disabled && "opacity-60",
         )}
       >

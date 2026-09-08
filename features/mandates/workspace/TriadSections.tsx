@@ -27,6 +27,8 @@ import { ArrowDown, Check, Pencil, X } from "lucide-react";
 import {
   FieldHelp,
   PropertyRow,
+  ConfigurationTable,
+  ConfigurationTableRow,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
 import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
@@ -770,6 +772,12 @@ export function TriadGoalSection({
 
 // ── OUTPUT ───────────────────────────────────────────────────────────────────
 
+const OUTPUT_COLUMNS = [
+  { key: "property", label: "Property" },
+  { key: "value", label: "Value" },
+  { key: "source", label: "Source" },
+];
+
 export function TriadOutputSection({ data }: { data: MandateWorkspaceData }) {
   const constraints = outputConstraintsOf(data.mandate);
   return (
@@ -787,11 +795,12 @@ export function TriadOutputSection({ data }: { data: MandateWorkspaceData }) {
         </div>
       }
     >
-      <div className="space-y-1.5 rounded-xl border border-border/60 bg-card p-4">
-        <PropertyRow
-          label="Format"
-          value={
-            data.mandate.output_kind ? (
+      <ConfigurationTable label="Output contract" columns={OUTPUT_COLUMNS}>
+        <ConfigurationTableRow
+          columns={OUTPUT_COLUMNS}
+          cells={{
+            property: "Format",
+            value: data.mandate.output_kind ? (
               <EntityRef
                 token="shape"
                 id={data.mandate.output_kind}
@@ -802,31 +811,36 @@ export function TriadOutputSection({ data }: { data: MandateWorkspaceData }) {
               />
             ) : (
               "Not specified"
-            )
-          }
-          source="Mandate definition"
+            ),
+            source: "Mandate definition",
+          }}
         />
-        <PropertyRow
-          label="Required fields"
-          value={
-            data.contract.requiredOutputKeys.length > 0
-              ? data.contract.requiredOutputKeys
-                  .map((key) => displayLabelForKey(key))
-                  .join(", ")
-              : "None declared"
-          }
-          source="Mandate contract"
+        <ConfigurationTableRow
+          columns={OUTPUT_COLUMNS}
+          cells={{
+            property: "Required fields",
+            value:
+              data.contract.requiredOutputKeys.length > 0
+                ? data.contract.requiredOutputKeys
+                    .map((key) => displayLabelForKey(key))
+                    .join(", ")
+                : "None declared",
+            source: "Mandate contract",
+          }}
         />
-        <PropertyRow
-          label="Constraints"
-          value={
-            <span className="whitespace-pre-wrap">
-              {constraints || "Not specified"}
-            </span>
-          }
-          source="Mandate definition"
+        <ConfigurationTableRow
+          columns={OUTPUT_COLUMNS}
+          cells={{
+            property: "Constraints",
+            value: (
+              <span className="whitespace-pre-wrap">
+                {constraints || "Not specified"}
+              </span>
+            ),
+            source: "Mandate definition",
+          }}
         />
-      </div>
+      </ConfigurationTable>
     </Section>
   );
 }

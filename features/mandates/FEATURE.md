@@ -342,6 +342,8 @@ commit time.
 
 ## Change Log
 
+- 2026-09-08 — Structured inputs, output contracts, model parameters and holder checks now use shared responsive configuration tables. Source/state occupy columns; phone layouts retain labeled cells. Removed the redundant All mandates link; matching targets have enclosing borders and visible missing-source choices, disabled when inapplicable. Existing mapping, override and validation computations remain unchanged.
+
 - 2026-09-08 — Live refinement: shared property rows now use bold colon labels, full-contrast values, fixed desktop label widths and row dividers. Input cards own one aligned property list including examples; removed the redundant declaration-source row. Goal editing has a visible button; input and output editing limitations are explicit. Existing authoring gates and writers are unchanged.
 
 - 2026-09-08 — Tab-based configuration: Definition, Holder, Overrides, Display Options, Test, Permissions, Diagnostics, Notes. Preserved scope gates and existing writers, removed duplicate inventories and test forms, added labeled symmetric states/accessibility help. Overrides rebase against the selected holder/version while retaining edits; unset numeric settings no longer display a fabricated minimum. Sample-data fill and exact-draft full validation remain deferred. Localhost interaction and responsive verification recorded in the session review artifact; 55 focused preservation tests pass.

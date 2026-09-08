@@ -30,7 +30,8 @@
  */
 
 import {
-  PropertyRow,
+  ConfigurationTable,
+  ConfigurationTableRow,
   FieldHelp,
 } from "@/components/official/ConfigurationFields";
 import { useEffect } from "react";
@@ -56,6 +57,17 @@ import type { ControlDefinition } from "@/lib/redux/slices/agent-settings/types"
 import { SettingControlInput } from "@/features/agents/components/settings-management/controls/SettingControlInput";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+
+const OVERRIDE_COLUMNS = [
+  { key: "setting", label: "Setting" },
+  {
+    key: "value",
+    label: "Value",
+    help: "The effective value. Editing it creates an override; Reset restores inheritance.",
+  },
+  { key: "source", label: "Source" },
+  { key: "state", label: "State" },
+];
 
 const deepEqual = (a: unknown, b: unknown) =>
   JSON.stringify(a) === JSON.stringify(b);
@@ -213,10 +225,16 @@ export function RunConfigOverrides({
   return (
     <div className="border-t border-border">
       <div className="flex w-full items-center justify-between px-3 pb-1 pt-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span
+          className={
+            structured
+              ? "text-sm font-semibold text-foreground"
+              : "text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+          }
+        >
           {structured ? "Model parameter overrides" : w.heading}
         </span>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-foreground">
           Overrides: {overriddenCount}
         </span>
       </div>
@@ -270,29 +288,34 @@ export function RunConfigOverrides({
                   {group.label}
                 </p>
               )}
-              {group.rows.map((row) => (
-                <OverrideRow
-                  key={row.key}
-                  row={row}
-                  structured={structured}
-                  inheritedSource={
-                    base[row.key] != null ? "Holder" : "Model default"
-                  }
-                  value={
-                    row.key in overrides
-                      ? overrides[row.key]
-                      : removals.includes(row.key)
-                        ? undefined
-                        : effectiveDefault(row.key, row.control)
-                  }
-                  isOverridden={row.key in overrides}
-                  isRemoved={removals.includes(row.key)}
-                  onChange={(v) => handleChange(row.key, row.control, v)}
-                  onReset={() =>
-                    dispatch(resetOverride({ conversationId, key: row.key }))
-                  }
-                />
-              ))}
+              <OverrideRows
+                structured={structured}
+                label={group.label || "Model parameters"}
+              >
+                {group.rows.map((row) => (
+                  <OverrideRow
+                    key={row.key}
+                    row={row}
+                    structured={structured}
+                    inheritedSource={
+                      base[row.key] != null ? "Holder" : "Model default"
+                    }
+                    value={
+                      row.key in overrides
+                        ? overrides[row.key]
+                        : removals.includes(row.key)
+                          ? undefined
+                          : effectiveDefault(row.key, row.control)
+                    }
+                    isOverridden={row.key in overrides}
+                    isRemoved={removals.includes(row.key)}
+                    onChange={(v) => handleChange(row.key, row.control, v)}
+                    onReset={() =>
+                      dispatch(resetOverride({ conversationId, key: row.key }))
+                    }
+                  />
+                ))}
+              </OverrideRows>
             </div>
           ))
         )}
@@ -308,6 +331,24 @@ export function RunConfigOverrides({
     </div>
   );
 }
+function OverrideRows({
+  structured,
+  label,
+  children,
+}: {
+  structured: boolean;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return structured ? (
+    <ConfigurationTable label={label} columns={OVERRIDE_COLUMNS}>
+      {children}
+    </ConfigurationTable>
+  ) : (
+    <>{children}</>
+  );
+}
+
 function OverrideRow({
   structured = false,
   inheritedSource,
@@ -334,42 +375,51 @@ function OverrideRow({
   if (!row.control) return null;
   if (structured)
     return (
-      <PropertyRow
-        label={row.label}
-        source={
-          isRemoved
-            ? "Binding"
-            : isOverridden
-              ? "Binding"
-              : (inheritedSource ?? "Unknown")
-        }
-        state={
-          isRemoved ? "Removed" : isOverridden ? "Overridden" : "Inherited"
-        }
-        value={
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="min-w-0 flex-1">
-              <SettingControlInput
-                explicitState
-                settingKey={row.key}
-                control={row.control}
-                value={value}
-                onChange={onChange}
-                disabled={isRemoved}
-                id={`run-override-${row.key}`}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={onReset}
-              disabled={!touched}
-              aria-label={`Reset ${row.label}`}
-              className="shrink-0 rounded p-2 text-muted-foreground disabled:opacity-40"
+      <ConfigurationTableRow
+        columns={OVERRIDE_COLUMNS}
+        cells={{
+          setting: (
+            <label
+              htmlFor={`run-override-${row.key}`}
+              className="font-semibold"
             >
-              <RotateCcw className="size-3.5" />
-            </button>
-          </div>
-        }
+              {row.label}
+            </label>
+          ),
+          source:
+            isRemoved || isOverridden
+              ? "Binding"
+              : (inheritedSource ?? "Unknown"),
+          state: isRemoved
+            ? "Removed"
+            : isOverridden
+              ? "Overridden"
+              : "Inherited",
+          value: (
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <SettingControlInput
+                  explicitState
+                  settingKey={row.key}
+                  control={row.control}
+                  value={value}
+                  onChange={onChange}
+                  disabled={isRemoved}
+                  id={`run-override-${row.key}`}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={onReset}
+                disabled={!touched}
+                aria-label={`Reset ${row.label}`}
+                className="shrink-0 rounded p-2 text-muted-foreground disabled:opacity-40"
+              >
+                <RotateCcw className="size-3.5" />
+              </button>
+            </div>
+          ),
+        }}
       />
     );
   return (
