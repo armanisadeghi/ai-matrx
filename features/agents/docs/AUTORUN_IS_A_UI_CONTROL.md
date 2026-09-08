@@ -21,8 +21,35 @@ wired to an agent and that agent runs — that is a done deal, and nothing about
 
 | Value | Meaning |
 |---|---|
-| `false` (the hard default) | The component opens and WAITS. A human presses send. |
+| `false` | The component opens and WAITS. A human presses send. |
 | `true` | The request goes out immediately; the person gets no turn first. |
+
+### Where the value comes from (added 2026-08-29 — THE INVERSION FIX)
+
+It is not a single flag any more. `resolveEffectiveAutoRun` in
+[`features/surfaces/utils/binding-auto-run.ts`](../../surfaces/utils/binding-auto-run.ts)
+owns the precedence, in one testable place:
+
+**caller's explicit literal → the surface binding's stored answer → whatever
+instance-ui-state was seeded with → `false`.**
+
+The binding sits ABOVE the seed deliberately. A `direct` launch seeds a
+meaningless hard `false`, and letting that win meant a binding could never say
+"run it" — the inversion that fix exists to correct. Two consequences worth
+knowing before you touch this:
+
+- **A stored `auto_run: true` is intent, never a bypass.** At launch,
+  `unresolvedRequiredVariables` re-checks that the mapping actually delivered
+  every required variable *on this page, right now*. If it did not, auto-run is
+  refused, the input panel opens asking for exactly the gap, and the thunk logs
+  why. (THE-MODEL law 7: "a referenced, fully-mapped binding runs with no user
+  input; prompting is the flexibility option.")
+- **When the binding decides, the thunk also seeds instance-ui-state**, so a
+  consumer rendering `AgentRunner` directly agrees with the launcher instead of
+  reading a stale hard default.
+
+That file governs *which value wins*. This document governs *what the value
+means* and where it cannot apply. Neither replaces the other.
 
 **`autoRun` never gates rendering.** The launch thunk opens the display mode's
 overlay in Step 4, *before* the `autoRun` check in Step 5, precisely so this
@@ -96,6 +123,12 @@ Don't. Read this file again, then check whether what you actually have is one
 of these:
 
 - A component that will not render → fix the component.
+- A `direct`-mode surface whose `AgentRunner` never auto-runs → **known, open.**
+  `direct` instances are created at status `draft` and never promoted to
+  `ready`, and `AgentRunner`'s own auto-run effect gates on `ready`. So in
+  `direct` mode only the LAUNCH THUNK's autoRun fires, never the component's.
+  Today that is load-bearing (it is what stops `NewShapeClient` double-firing),
+  so do not "fix" it without tracing every `direct` consumer first.
 - A headless run that will not fire → you wrote `autoRun: false` on a mode with
   no UI. Drop the flag, or pass `true`.
 - A run that fires before you finished seeding it → you want `callerExecutes`,
