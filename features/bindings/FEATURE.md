@@ -238,6 +238,43 @@ never become an answer, and absent means the declaration gave none — never inv
 
 ## Change Log
 
+- 2026-09-08 — **A HOST MAY PIN THE RUNGS IT MANAGES** (`fixedRung`, one-resolution FIX-R4). P13 made the rung a control inside the flow, and that is right for every host whose question really is *"which rung am I setting"*. It is wrong for a host that IS one rung: `/administration/mandates/[key]` is the platform's own page, and it rendered a rung selector defaulting to **User** with *"This applies everywhere you run"* beside it. `fixedRung` takes one rung or a FIXED SET; the bar then STATES the rung (and offers its sibling by name) instead of opening a scope select, and drops the ladder line, the "not offered here" note and the bottom-rung box, all of which are about rungs the host does not manage. The admin route pins `["system", "global"]` — the job's own default holder and the platform-wide binding above it, the two rungs that decide for everybody — ordered so the one that answers TODAY is where the page opens. Nothing changes for an unpinned host. Alongside it, `system-rung.ts` carries the ONE rule for *"a personal agent may not be the system answer"*, used by the bar's alert AND by `saveRefusal`, which now **hard-refuses** that write (Save disabled, reason + remedy adjacent) — before this the picker was restricted and the save was not, so an agent drafted earlier or handed back by `GlobalBindAgentGuard` could still be written as the answer every user on the platform gets. 🔶 **Declared deviation:** the brief's wording for the pinned bar was *"System — decides for every user"*; FIX-R3 landed the mandate's own default as a fourth rung labelled *"System default"* in the same files, so the platform-wide binding is titled **"System-wide binding — decides for every user"** — the collision FIX-R3 reported is closed here rather than left for a reader to trip over. Guards: `features/mandates/admin/__tests__/system-rung-holder-refusal.test.tsx` (RED: the scope picker rendered on the pinned host; the shipped `saveRefusal` had no branch for a non-system holder).
+
+- 2026-09-08 — **The BOTTOM RUNG can be set, and the screen names who may set it
+  (FIX-R3/W3).** A fresh Sonnet walk of v0.4.1718 found a mandate's own default holder —
+  `mandate.definition.default_holder_*`, which `mandate._rungs` returns as the `system`
+  rung and whose principal is the mandate's HOME organization (FIX-R1) — could not be set
+  from this UI at all, while `ScopeHolderBar` told every reader it *"is a super-admin
+  decision, so it is not offered here"*: true for a system-homed mandate, and a LIE for an
+  org-homed one, whose bottom rung belongs to that organization's own administrators.
+  · `default-holder-rung.ts` (new) is the one predicate + the words for either answer —
+    super admin, or an owner/admin of the HOME organization (never the caller's active
+    workspace), mirroring `put_mandate_default_holder`'s own gate.
+  · `putMandateDefaultHolder` (`features/mandates/overrides.ts`) is the ONE client seam,
+    through `PUT /mandates/{mandate_key}/default-holder`, reusing `bindGateMessage` so the
+    door's four refusals (403 platform-admin, 403 org-admin, 409 containment, 422
+    contract) reach the screen as the sentences the server authored. No path writes
+    `default_holder_*` directly from here. The route is not in the generated API types yet,
+    so the path is `as keyof paths` and the response is narrowed at the seam
+    (`parseDefaultHolderResult`) — both become plain reads after the next regeneration.
+  · `ScopeHolderBar` gained `defaultHolderOffer` and a `WorkspaceRung` type: the rung is
+    offered as a fourth choice to whoever may set it, and to everyone else the cell prints
+    who may decide **and what this reader can still do**. The blanket sentence is gone.
+  · The rung is **holder-only**: the definition has no `consumption_map`, no
+    `config_overrides` and no `auto_run`, so the whole map/settings/auto-run half is ABSENT
+    there behind one honest sentence — never a control that appears to save what the door
+    never receives. Batch mode is absent for the same reason.
+  · Holder rule by HOME: system-homed reuses the platform-wide law (system agents only,
+    hard refusal on a personal agent, plus `GlobalBindAgentGuard`); org-homed restricts to
+    shared + system agents and lets the server's 409 containment sentence through verbatim.
+  · Guard: `__tests__/default-holder-rung.test.ts` — the copy census, the whole authority
+    matrix through the real predicate, holder-only body, and refusal passthrough.
+  · 🔶 **Naming collision, reported not resolved:** the frozen ladder is `system` · `global`
+    · `org` · `user`, and `global` is never relabelled `system` — but `system-rung.ts`
+    titles the **global** binding rung "System — decides for every user". Nothing here
+    renames it (that lane is live in these files); this rung's constants are
+    `DEFAULT_HOLDER_*` and its copy leads with "default".
+
 - 2026-08-31 — **Modal ownership is enforced at the shared boundary.** `confirm()` waits
   for `afterCurrentLayerCloses()` before every AlertDialog open; the forcing guard rejects
   the former direct re-export that left unpatched Select/Menu callers exposed.
