@@ -86,21 +86,26 @@ export function sortArgs(option: WorkflowSortOption): {
  * (`fetchWorkflowFacts`), never guessed.
  */
 export interface WorkflowListRecord {
-  row: WorkflowBrowseRow;
   id: string;
   name: string;
   description: string | null;
   category: string | null;
   tags: string[];
   isFavorite: boolean;
-  isOwner: boolean;
+  /** `null` where the read cannot say — never a confident `false`. */
+  isOwner: boolean | null;
   accessLevel: string | null;
   visibility: string | null;
   organizationName: string | null;
   ownerEmail: string | null;
   version: number | null;
-  stepCount: number;
-  runCount: number;
+  /**
+   * `null` means NOT KNOWN by this read, never zero. A picker that prints
+   * "0 steps" for a workflow it simply did not count is the quiet lie the
+   * fourth law forbids.
+   */
+  stepCount: number | null;
+  runCount: number | null;
   lastRunAt: string | null;
   lastRunStatus: string | null;
   lastRunId: string | null;
@@ -112,12 +117,12 @@ export interface WorkflowListRecord {
   outputKind: string | null;
 }
 
+/** One `wfx_list_scoped` row as the picker renders it. */
 export function toWorkflowListRecord(
   row: WorkflowBrowseRow,
   outputKind: string | null,
 ): WorkflowListRecord {
   return {
-    row,
     id: row.id,
     name: row.name || "Untitled",
     description: row.description ?? null,
