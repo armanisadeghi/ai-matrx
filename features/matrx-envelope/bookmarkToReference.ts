@@ -23,9 +23,10 @@ import type {
 } from "@/types/python-generated/stream-events";
 import {
   type DecodedDirective,
+  buildDirectiveSlug,
+  buildKindDirective,
   decodeDirective,
-} from "@/features/content-ir/directives/decode";
-import { buildDirectiveSlug, buildKindDirective } from "@/features/content-ir/directives/grammar";
+} from "@ai-matrx/content-ir";
 import type {
   ReferenceItem,
   ReferenceType,

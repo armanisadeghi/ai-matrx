@@ -11,8 +11,8 @@
  * and NEVER claims to be applying something.
  */
 
-import { EnvelopeFallbackCard } from "@/features/matrx-envelope/EnvelopeFallbackCard";
-import type { DirectiveRendererProps } from "@/features/matrx-envelope/registry";
+import { DirectiveFallbackCard } from "@ai-matrx/content-ir-react";
+import type { DirectiveRendererProps } from "@ai-matrx/content-ir-react";
 
 import { parsePlanTreeItems } from "./parseDirectiveItems";
 import { useResolvePlanTree } from "./useResolvePlanTree";
@@ -37,10 +37,10 @@ function PlanTreeItem({
 const PlanTreeRenderer = ({ directive }: DirectiveRendererProps) => {
   const items = parsePlanTreeItems(directive);
   // NEVER return null — that deletes the whole message block (see
-  // EnvelopeFallbackCard). Degrade visibly instead.
+  // DirectiveFallbackCard). Degrade visibly instead.
   if (items.length === 0) {
     return (
-      <EnvelopeFallbackCard
+      <DirectiveFallbackCard
         directive={directive}
         reason="no readable plan items"
       />

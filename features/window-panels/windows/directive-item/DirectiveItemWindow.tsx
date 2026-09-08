@@ -15,7 +15,7 @@
  *
  *   Pretty — `DbKindComponent`, the kind pipeline's own renderer, reached
  *     because the item IS a kind instance (THE DIRECTIVE⇄KIND SEAM;
- *     `features/content-ir/directives/itemKind.ts`). An `agent_definition` item
+ *     `features/matrx-envelope/directiveHost.tsx`). An `agent_definition` item
  *     therefore renders through the very same component that draws an agent
  *     everywhere else — and it does so with ZERO code here, which is the whole
  *     point of the seam. `DbKindComponent` brings its own graceful ladder

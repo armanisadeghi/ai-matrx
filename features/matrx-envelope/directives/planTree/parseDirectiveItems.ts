@@ -1,4 +1,4 @@
-import type { DecodedDirective } from "@/features/content-ir/directives/decode";
+import type { DecodedDirective } from "@ai-matrx/content-ir";
 
 import type {
   PlanNodePatchItem,

@@ -1,11 +1,16 @@
 # Kind Directives — frontend (`features/matrx-envelope/`)
 
-> 🚨 **THE SHELL AND THE GRAMMAR LIVE IN `features/content-ir/directives/`.** A directive
+> 🚨 **THE SHELL, THE GRAMMAR AND THE RENDERING LIVE IN THE PACKAGES.** A directive
 > IS a kind instance — `{ "__kind": "directive_v1_<class>_<noun>", "items": [...] }` — and
-> its grammar, detector, decoder and read-only legacy shim are there, mirrored from
-> aidream's `matrx_graph/content_ir/directives.py`. What lives in THIS directory is what is
-> genuinely reference-specific: the reference noun taxonomy, the chips, the copy-shortcut
-> builders, the renderer registry, and the apply/confirm affordances.
+> its grammar, detector, decoder, read-only legacy shim, naming, item summary and the
+> DIRECTIVE⇄KIND seam are `@ai-matrx/content-ir/directives` (mirrored from aidream's
+> `matrx_graph/content_ir/directives.py`); the renderer registry, `DirectiveRender`, the
+> side-effect card, the fallback floor and `ApplyDirectiveButton` are
+> `@ai-matrx/content-ir-react/directives`. Both since **0.11.0, 2026-09-08** — this repo
+> CONSUMES them and keeps no copy. What lives in THIS directory is what is genuinely host
+> property: the reference noun taxonomy, the live chips, the copy-shortcut builders, the
+> host-specific renderer registrations (`registry.tsx`), and the HOST SEAMS
+> (`directiveHost.tsx`).
 >
 > Source of record: `docs/protocol/KIND_DIRECTIVES.md` (byte-identical in aidream). Read
 > [`/policies/strictness-law.md`](/Users/armanisadeghi/code/common-docs/policies/strictness-law.md)
@@ -14,8 +19,9 @@
 
 **Detection is `__kind`, never `matrx_version`.** The retired 4-key shell
 (`{matrx_version, kind, type, items}`) is READ-ONLY: it is understood in exactly one
-module (`features/content-ir/directives/legacyShell.ts`, single importer `decode.ts`,
-enforced by `pnpm check:legacy-shim-containment`), it is emitted nowhere, and every
+module — package-internal to `@ai-matrx/content-ir`, whose only reader is its own
+`decodeDirective`; `pnpm check:legacy-shim-containment` now guards this side by asserting
+this repo neither re-creates a local copy nor imports one — it is emitted nowhere, and every
 decision downstream is made once, on the translated new shell. There is no
 "try the new shape, fall back to the old" branch anywhere — that is a defect the moment
 it is written.
@@ -59,11 +65,15 @@ render through the SAME live chip renderer.
 
 ## Parts
 
-- `features/content-ir/directives/` (NOT here) — `grammar.ts` (the reserved prefix, the
-  CLOSED 8-class vocabulary, derived capability, `buildDirectiveSlug` / `parseDirectiveSlug`,
-  the position law as `executesAtOutputRoot` / `resolvesInContent`), `legacyShell.ts`,
-  `decode.ts` (`decodeDirective` / `tryDecodeDirective`), `nounDisplay.ts` (the auto-view's
-  catalog-derived naming). Parity with aidream is machine-checked: `pnpm sync:directive-grammar`
+- `@ai-matrx/content-ir/directives` (a PACKAGE, not a directory here) — the grammar (the
+  reserved prefix, the CLOSED 8-class vocabulary, derived capability, `buildDirectiveSlug` /
+  `parseDirectiveSlug`, the position law as `executesAtOutputRoot` / `resolvesInContent`),
+  the legacy shim, the decoder (`decodeDirective` / `tryDecodeDirective` /
+  `tryDecodeDirectiveContent`), the auto-view's catalog-derived naming (`directiveDisplay`,
+  `nounLabel`, `nounFamily`, `nounTitleColumn` — each taking an optional host catalog), the
+  item summary (`itemTitle(item, titleColumn, index, total)`, `itemSubtitle`, `itemFacts`)
+  and the seam (`asKindInstance(item, kind)`, `directiveItemKindFromEdges`). Parity with
+  aidream is machine-checked: `pnpm sync:directive-grammar`
   extracts the Python constants into `docs/protocol/kind_directive_grammar.generated.json`,
   an offline jest test asserts the TS mirror against it (so CI can measure it), and
   `pnpm check:directive-grammar` verifies the artifact against a live aidream checkout —
@@ -74,28 +84,41 @@ render through the SAME live chip renderer.
   `buildDirectiveOutputSchema` (mirrors aidream's schema-gen; pins `__kind` `const` and
   FIRST). **Every receipt's identity field is `directive` and it carries the SLUG** — one
   field, one name for the thing.
-- `directives/sideEffect/SideEffectDirectiveCard.tsx` — **the card for every `create` /
-  `update` / `delete` / `action` shape**, registered by CLASS so all 56 registered shapes
-  (and every future one) get it with zero edits. Names the write from the catalog, names
-  each item from the noun's `title_column`, shows scalar facts, folds past 3 rows, and
-  offers Copy + Apply. `View` opens `directiveItemWindow`. Never returns `null` — an empty
-  batch is a stated line.
-- `directives/sideEffect/classIcon.ts` — the icon, **class first** (create/update/delete/action):
-  on a card whose job is authorizing a write, a delete that looks like a create is a trap.
+- `@ai-matrx/content-ir-react/directives` (a PACKAGE) — `DirectiveRender` (THE renderer:
+  decode → host-registered renderer → `SideEffectDirectiveCard` for side-effect classes →
+  `DirectiveFallbackCard`; **never null**), the registry (`registerDirectiveRenderer` /
+  `getDirectiveRenderer` / `resetDirectiveRenderers`), `ApplyDirectiveButton`, and the
+  `DirectiveHost` seam type + `DirectiveHostProvider` / `useDirectiveHost`. The
+  side-effect card is registered by the package's own tier, so all 56 registered shapes
+  (and every future one) get it with zero edits, on **every** AI Matrx client. The icon is
+  **class first** (create/update/delete/action): on a card whose job is authorizing a
+  write, a delete that looks like a create is a trap.
+- `directiveHost.tsx` — 🚨 **THE HOST SEAMS, wired once.** `matrxDirectiveHost` supplies the
+  six things the package refuses to own: `confirm` (`confirmDirective` → `POST
+  /directives/confirm`, base URL from the store), `openItem` (the `directiveItemWindow`
+  overlay), `renderCopy` (`CopyButtons`), `nouns` (`matrxDirectiveNouns`, from
+  `catalog-nouns.generated.ts`), `itemKind` (`matrxDirectiveItemKind`, THE DIRECTIVE⇄KIND
+  SEAM), and `reportError` (`captureError`). A seam that cannot do its job is ABSENT, never
+  dead: no `confirm` → no Apply button. Mounted by `MatrxEnvelopeBlock` via
+  `DirectiveHostProvider` **and** hung on `matrxContentIrHost.directives`, so a directive
+  gets its seams whether or not it renders under `ContentIrRenderProvider`.
 - `state/proposedDirectivesSlice.ts` — the per-conversation inbox of agent-proposed actions
   (`ask` policy); `proposeDirective` / `removeProposal` + `selectProposedDirectives`.
 - `components/ProposedDirectivesZone.tsx` — the Approve/Decline card per pending proposal;
   Approve → `confirmDirective` (`features/directive-catalog/service.ts`) → `POST /directives/confirm`.
-- `registry.tsx` — the **renderer registry and THE PREFIX TIER**:
-  `registerDirectiveRenderer(class, renderer, noun?)` + `getDirectiveRenderer(directive)`
-  (exact slug → the CLASS prefix rule → null). **The prefix rule is the routing language
-  made real:** registering `reference` once renders every `directive_v1_reference_*` slug
-  the 419-noun catalog can mint, so a brand-new server noun renders with ZERO frontend
-  edits; an exact slug overrides it. Built-in: `reference` → **live, clickable chips**
+- `registry.tsx` — **this app's renderers, registered into the PACKAGE registry** through
+  `registerDirectiveRenderer(class, renderer, noun?)` from `@ai-matrx/content-ir-react`
+  (resolution is the package's: exact slug → the CLASS prefix rule → null). **The prefix
+  rule is the routing language made real:** registering `reference` once renders every
+  `directive_v1_reference_*` slug the 419-noun catalog can mint, so a brand-new server noun
+  renders with ZERO frontend edits; an exact slug overrides it. The four side-effect classes
+  are deliberately NOT registered here — the package tier owns them. Registered here:
+  `reference` → **live, clickable chips**
   (`ReferenceChip`, one per item); `action:create_project_with_tasks` → optimistic project
   card + task list with DB polling; `action:plan_tree` / `action:plan_node_patch` /
   `action:context_groom`. A noun is passed as a NOUN, never a hand-typed slug — the slug is
-  BUILT by the grammar, so an unparseable registration is unconstructable.
+  BUILT by the grammar, so an unparseable registration is unconstructable. `MatrxEnvelopeBlock`
+  imports this module for its side effects so the registrations run before anything renders.
 - `referenceFence.ts` — the **reference-fence serializer + reader**:
   `buildReferenceFence({type,items})` / `buildPicklistItemFence(...)` emit the canonical
   ` ```matrx ` fence with its directive shell minified onto one JSON line and FLAT items
@@ -154,8 +177,8 @@ render through the SAME live chip renderer.
 **Arman, 2026-08-26:** the envelope / Matrx-Actions system and the Shape (kind) system are
 **ONE system with several methods inside it.** They meet at the ITEM.
 
-A directive is a container; its items are the payload. `features/content-ir/directives/itemKind.ts`
-resolves `slug → item kind` from the **server-derived** map in `catalog-nouns.generated.ts`
+A directive is a container; its items are the payload. `matrxDirectiveItemKind`
+(`directiveHost.tsx`) resolves `slug → item kind` from the **server-derived** map in `catalog-nouns.generated.ts`
 (aidream `ShapeSpec.item_kind` → the catalog manifest). `asKindInstance` stamps `__kind`
 first — added, never overwritten — so the item is an ordinary kind instance on the wire.
 
@@ -170,16 +193,16 @@ item genuinely has no registered kind. Never invent one.
 
 ## A REGISTERED RENDERER MUST NEVER RETURN `null`
 
-`MatrxEnvelopeBlock` step 2 renders a found renderer's output **verbatim** — so a
+`DirectiveRender` renders a found renderer's output **verbatim** — so a
 renderer that bails with `null` deletes the assistant's whole message block, on
-first paint and every reload, with no error anywhere. The step-3 neutral card
+first paint and every reload, with no error anywhere. The floor tier
 cannot save it: a renderer *was* found. **Degrade to
-`<EnvelopeFallbackCard directive reason="…" />`** (`EnvelopeFallbackCard.tsx`),
+`<DirectiveFallbackCard directive reason="…" />`** (`@ai-matrx/content-ir-react`),
 never to nothing. That card is also **THE PREFIX FLOOR**: a slug whose class nothing
 claims lands there, named from the catalog ("Create Agent · Agents"), with an Apply button
 when the class is a side effect. A shape this frontend has never heard of is still legible
 and still actionable. **Since 2026-08-26 the four SIDE-EFFECT classes no longer reach it** —
-`SideEffectDirectiveCard` claims them, because "named and never dropped" was never enough
+the package's `SideEffectDirectiveCard` tier claims them, because "named and never dropped" was never enough
 for a write: it asked a person to approve a potentially destructive action with no idea what
 it would do. The floor's real job — the never-`null` degrade target, and the truly unclaimed
 class (`validation`) — is unchanged.
@@ -278,6 +301,24 @@ silently drops items the server would have happily applied.
   CopyButtons). Replaces "a name and a blind Apply button" for all 56 registered shapes.
   Tests: `__tests__/side-effect-directive-card.test.tsx` (15, against the real 22KB
   Masterwork Conductor item). Demo rows 6–8 on `/demos/kind-directives`.
+
+- 2026-09-08 — **C9 full elimination: the directive tier is the PACKAGES.** Root cause:
+  the grammar, decoder, legacy shim, naming, item summary, kind seam, renderer registry,
+  side-effect card, fallback floor and Apply control all lived app-local, so every other AI
+  Matrx client had to grow its own copy and drift. Deleted here:
+  `features/content-ir/directives/{grammar,decode,legacyShell,itemKind,itemSummary,nounDisplay}.ts`,
+  `EnvelopeFallbackCard.tsx`, `ApplyDirectiveButton.tsx`,
+  `directives/sideEffect/{SideEffectDirectiveCard.tsx,classIcon.ts}`, and the registry core
+  in `registry.tsx`. Consumed instead from `@ai-matrx/content-ir` 0.11.0 +
+  `@ai-matrx/content-ir-react` 0.11.0. `registry.tsx` keeps ONLY this app's renderers
+  (reference chips, context-groom receipt, plan tree / plan-node-patch /
+  create-project-with-tasks) and registers them through the package;
+  `MatrxEnvelopeBlock.tsx` is a thin `DirectiveHostProvider` + `DirectiveRender` wrapper;
+  the new `directiveHost.tsx` is the whole seam surface. `check:legacy-shim-containment`
+  was re-aimed at "no local copy, no importer". Tests became HOST tests:
+  `__tests__/side-effect-directive-card.test.tsx` renders `MatrxEnvelopeBlock` with a real
+  store and proves Apply is present, the item row dispatches the real overlay kind-stamped,
+  and an unknown noun is still named from the catalog.
 
 - 2026-08-30 — **Reference copy fences emit minified JSON.** The shared
   `buildReferenceFence` serializer now writes the two-key directive shell on one line, so

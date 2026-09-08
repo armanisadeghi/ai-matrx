@@ -18,9 +18,10 @@
 
 import {
   type DecodedDirective,
+  buildDirectiveSlug,
+  buildKindDirective,
   tryDecodeDirective,
-} from "@/features/content-ir/directives/decode";
-import { buildDirectiveSlug, buildKindDirective } from "@/features/content-ir/directives/grammar";
+} from "@ai-matrx/content-ir";
 import type {
   ReferenceItem,
   ReferenceType,

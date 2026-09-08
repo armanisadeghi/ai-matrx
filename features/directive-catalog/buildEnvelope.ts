@@ -21,7 +21,7 @@ import {
   type KindDirectiveShell,
   buildDirectiveSlug,
   buildKindDirective,
-} from "@/features/content-ir/directives/grammar";
+} from "@ai-matrx/content-ir";
 import type {
   DirectiveVerb,
   NounDirectives,

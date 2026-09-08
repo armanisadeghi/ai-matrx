@@ -1,34 +1,35 @@
 /**
- * THE SIDE-EFFECT CARD — a person is never asked to approve a write they
- * cannot identify.
+ * THE HOST WIRING for the side-effect card — a person is never asked to approve
+ * a write they cannot identify, IN THIS APP.
  *
  * Arman, 2026-08-26: the previous floor gave "a name and then an apply button,
  * which essentially tells the user to click apply and conduct a potentially
  * destructive action without any clue as to what this thing is."
  *
- * These tests pin the promises that fix, using the REAL 22KB Masterwork
- * Conductor item (the same canonical example the `agent_definition` kind
- * carries) — not a two-line toy that makes everything look fine.
+ * The CARD is now `@ai-matrx/content-ir-react`'s (0.11.0) and the package's own
+ * tests pin its behaviour. What only this repo can prove is that the four seams
+ * it refuses to own are actually plugged in here: rendering a real ```matrx
+ * fence through `MatrxEnvelopeBlock` — the production entry point, nothing
+ * mocked — must name the write, offer Apply (the `confirm` seam), open the item
+ * into the real overlay (the `openItem` seam), and resolve the item's kind from
+ * the server-derived map (THE DIRECTIVE⇄KIND SEAM).
+ *
+ * The fixture is the REAL 22KB Masterwork Conductor item (the same canonical
+ * example the `agent_definition` kind carries) — not a two-line toy that makes
+ * everything look fine.
  */
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
+import { asKindInstance } from "@ai-matrx/content-ir";
 
 import apiConfigReducer from "@/lib/redux/slices/apiConfigSlice";
 import overlayReducer from "@/lib/redux/slices/overlaySlice";
+import { setStoreSingleton } from "@/lib/redux/store-singleton";
 
-import { decodeDirective } from "@/features/content-ir/directives/decode";
-import {
-  asKindInstance,
-  directiveItemKind,
-} from "@/features/content-ir/directives/itemKind";
-import {
-  itemFacts,
-  itemTitle,
-} from "@/features/content-ir/directives/itemSummary";
-import { SideEffectDirectiveCard } from "@/features/matrx-envelope/directives/sideEffect/SideEffectDirectiveCard";
-import { getDirectiveRenderer } from "@/features/matrx-envelope/registry";
+import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
+import { matrxDirectiveItemKind } from "@/features/matrx-envelope/directiveHost";
 import AGENT_DEFINITION_ITEM from "@/app/(dev)/demos/kind-directives/agent-definition-item.json";
 
 (
@@ -41,23 +42,33 @@ function shell(kind: string, items: unknown[]) {
   return { __kind: kind, items };
 }
 
-/** The card wires the REAL ApplyDirectiveButton (which reads the API base URL)
- *  and the REAL window opener (which dispatches an overlay), so the test mounts
- *  a real store rather than mocking either away — mocking them would stop the
- *  test proving the two things that matter most: that Apply is wired, and that
- *  the item can be opened. */
+type TestStore = ReturnType<typeof makeStore>;
+
+function makeStore() {
+  return configureStore({
+    reducer: { apiConfig: apiConfigReducer, overlays: overlayReducer },
+  });
+}
+
+/**
+ * The block wires the REAL host: the Apply control reads the API base URL out
+ * of the store and the item row dispatches a real overlay action. So the test
+ * mounts a real store AND registers it as the singleton the host reads —
+ * mocking either away would stop the test proving the two things that matter
+ * most: that Apply is wired, and that the item can be opened.
+ */
 function render(node: React.ReactElement): {
   host: HTMLDivElement;
   root: Root;
+  store: TestStore;
 } {
-  const store = configureStore({
-    reducer: { apiConfig: apiConfigReducer, overlays: overlayReducer },
-  });
+  const store = makeStore();
+  setStoreSingleton(store);
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root = createRoot(host);
   act(() => root.render(<Provider store={store}>{node}</Provider>));
-  return { host, root };
+  return { host, root, store };
 }
 
 function cleanup(host: HTMLDivElement, root: Root) {
@@ -65,124 +76,74 @@ function cleanup(host: HTMLDivElement, root: Root) {
   host.remove();
 }
 
-describe("THE DIRECTIVE⇄KIND SEAM", () => {
+describe("THE DIRECTIVE⇄KIND SEAM, as this host supplies it", () => {
   it("resolves a kind-backed shape's item kind from the server-derived map", () => {
-    expect(directiveItemKind(AGENT_SLUG)).toBe("agent_definition");
+    expect(matrxDirectiveItemKind(AGENT_SLUG)).toBe("agent_definition");
   });
 
   it("reports null for a shape with no item kind — honest, never invented", () => {
-    expect(directiveItemKind("directive_v1_create_task")).toBeNull();
-    expect(asKindInstance("directive_v1_create_task", { title: "x" })).toBeNull();
+    expect(matrxDirectiveItemKind("directive_v1_create_task")).toBeNull();
+    expect(
+      asKindInstance({ title: "x" }, matrxDirectiveItemKind("directive_v1_create_task")),
+    ).toBeNull();
   });
 
   it("stamps __kind FIRST so a consumer types the item from its own first key", () => {
-    const stamped = asKindInstance(AGENT_SLUG, { name: "X" });
+    const stamped = asKindInstance({ name: "X" }, matrxDirectiveItemKind(AGENT_SLUG));
     expect(stamped).not.toBeNull();
     expect(Object.keys(stamped!)[0]).toBe("__kind");
     expect(stamped!.__kind).toBe("agent_definition");
   });
 
   it("never overwrites a marker the item was emitted with", () => {
-    const stamped = asKindInstance(AGENT_SLUG, { __kind: "already_set", name: "X" });
+    const stamped = asKindInstance(
+      { __kind: "already_set", name: "X" },
+      matrxDirectiveItemKind(AGENT_SLUG),
+    );
     expect(stamped!.__kind).toBe("already_set");
   });
 });
 
-describe("the card is registered for every side-effect class", () => {
-  it.each(["create", "update", "delete", "action"] as const)(
-    "%s resolves a renderer through the prefix rule",
-    (directiveClass) => {
-      const renderer = getDirectiveRenderer({
-        slug: `directive_v1_${directiveClass}_anything_at_all`,
-        directiveClass,
-      });
-      expect(renderer).not.toBeNull();
-    },
-  );
-
-  it("does not steal a shape that registered by exact slug", () => {
-    const generic = getDirectiveRenderer({
-      slug: "directive_v1_action_unregistered_probe",
-      directiveClass: "action",
-    });
-    const bespoke = getDirectiveRenderer({
-      slug: "directive_v1_action_plan_tree",
-      directiveClass: "action",
-    });
-    expect(bespoke).not.toBe(generic);
-  });
-});
-
-describe("naming an item — from authority, never a guess", () => {
-  it("uses the item's own identity field", () => {
-    expect(itemTitle(AGENT_DEFINITION_ITEM as Record<string, unknown>, "create_agent_definition", 0, 1)).toBe(
-      "Masterwork Conductor",
+describe("the production entry point draws the real card", () => {
+  it("names the write, counts the items, and offers Apply (the confirm seam)", () => {
+    const { host, root } = render(
+      <MatrxEnvelopeBlock content={shell(AGENT_SLUG, [AGENT_DEFINITION_ITEM])} />,
     );
-  });
-
-  it("falls back to a POSITIONAL label, never a blank and never a slug", () => {
-    expect(itemTitle({ some: "payload" }, "unknown_noun", 1, 3)).toBe("Item 2 of 3");
-  });
-
-  it("NEVER renders a UUID as a fact chip (THE UUID RULE)", () => {
-    // Found in production 2026-09-08: `model_id` is 36 chars, the scalar cutoff
-    // was 40, so the full UUID rendered inside the card. An id is shown as its
-    // first segment + copy + hover — which a chip cannot do — so it is never a
-    // chip at all. Regression guard for a rule, not a preference.
-    const facts = itemFacts({
-      model_id: "1a6229af-cb0c-488a-8fef-d669b37c908a",
-      messages: [1, 2],
-    });
-    expect(facts.map((f) => f.key)).not.toContain("model_id");
-    for (const fact of facts) {
-      expect(fact.value).not.toMatch(
-        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
-      );
-    }
-  });
-
-  it("the real agent item carries no UUID in any chip", () => {
-    for (const fact of itemFacts(AGENT_DEFINITION_ITEM as Record<string, unknown>)) {
-      expect(fact.value).not.toMatch(
-        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
-      );
-    }
-  });
-
-  it("summarizes collections as counts and skips nested objects", () => {
-    const facts = itemFacts(AGENT_DEFINITION_ITEM as Record<string, unknown>);
-    const keys = facts.map((f) => f.key);
-    // Collections become counts...
-    expect(keys).toContain("messages");
-    // ...identity/prose never becomes a chip...
-    expect(keys).not.toContain("name");
-    expect(keys).not.toContain("description");
-    // ...and every value is a scalar string, never "[object Object]".
-    for (const fact of facts) {
-      expect(fact.value).not.toContain("[object");
-    }
-  });
-});
-
-describe("the card renders the real thing", () => {
-  it("names the write, counts the items, and offers Apply", () => {
-    const directive = decodeDirective(shell(AGENT_SLUG, [AGENT_DEFINITION_ITEM]));
-    expect(directive).not.toBeNull();
-    const { host, root } = render(<SideEffectDirectiveCard directive={directive!} />);
     const text = host.textContent ?? "";
 
     expect(text).toContain("Masterwork Conductor"); // WHAT it is
     expect(text).toContain("1 item"); // HOW MUCH
-    expect(text.toLowerCase()).toContain("apply"); // the action
+    expect(text.toLowerCase()).toContain("apply"); // the confirm seam is wired
     // Facts, not novels: the 800-char description must not be in the card.
     expect(text).not.toContain("The ONE canonical Masterwork system");
     cleanup(host, root);
   });
 
+  it("opens the item into the REAL overlay, kind-stamped (the openItem seam)", () => {
+    const { host, root, store } = render(
+      <MatrxEnvelopeBlock content={shell(AGENT_SLUG, [AGENT_DEFINITION_ITEM])} />,
+    );
+    const row = Array.from(host.querySelectorAll("button")).find((b) =>
+      (b.textContent ?? "").includes("Masterwork Conductor"),
+    );
+    expect(row).toBeDefined();
+    act(() => {
+      row!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const overlays = store.getState().overlays;
+    const open = JSON.stringify(overlays);
+    expect(open).toContain("directiveItemWindow");
+    expect(open).toContain("agent_definition"); // itemKind travelled through
+    expect(open).toContain("Masterwork Conductor"); // the same title the card shows
+    cleanup(host, root);
+  });
+
   it("folds a long batch instead of dumping every row", () => {
     const items = Array.from({ length: 7 }, (_, i) => ({ title: `Task ${i + 1}` }));
-    const directive = decodeDirective(shell("directive_v1_create_task", items));
-    const { host, root } = render(<SideEffectDirectiveCard directive={directive!} />);
+    const { host, root } = render(
+      <MatrxEnvelopeBlock content={shell("directive_v1_create_task", items)} />,
+    );
     const text = host.textContent ?? "";
 
     expect(text).toContain("Task 1");
@@ -193,10 +154,21 @@ describe("the card renders the real thing", () => {
   });
 
   it("NEVER returns null — an empty batch is stated, not silent", () => {
-    const directive = decodeDirective(shell("directive_v1_create_task", []));
-    const { host, root } = render(<SideEffectDirectiveCard directive={directive!} />);
+    const { host, root } = render(
+      <MatrxEnvelopeBlock content={shell("directive_v1_create_task", [])} />,
+    );
     expect(host.textContent).toContain("nothing would be written");
     expect(host.innerHTML.length).toBeGreaterThan(0);
+    cleanup(host, root);
+  });
+
+  it("names an unknown noun from the catalog seam, never as a raw token", () => {
+    // THE AUTO-VIEW: `matrxDirectiveHost.nouns` mirrors platform.entity_types,
+    // so a shape this app has never heard of still reads as a sentence.
+    const { host, root } = render(
+      <MatrxEnvelopeBlock content={shell("directive_v1_create_agent", [{ name: "Zed" }])} />,
+    );
+    expect(host.textContent).toContain("Create Agent");
     cleanup(host, root);
   });
 });

@@ -15,7 +15,7 @@
  *                              appends to a message it is about to send
  *
  * Fail-safe by the protocol rule: the gate is the ONE decoder
- * (`features/content-ir/directives/decode`) — a reserved `__kind` slug, or a
+ * (`@ai-matrx/content-ir`) — a reserved `__kind` slug, or a
  * stored 4-key fence it translates. Anything it does not recognize stays
  * verbatim text; nothing is ever dropped.
  */
@@ -23,7 +23,7 @@
 import {
   type DecodedDirective,
   tryDecodeDirective,
-} from "@/features/content-ir/directives/decode";
+} from "@ai-matrx/content-ir";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 import { buildReferenceFence } from "@/features/matrx-envelope/referenceFence";
 import {

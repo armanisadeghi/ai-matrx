@@ -4,8 +4,9 @@
  * The grammar (`RESERVED_PREFIX`, the version, the CLOSED class vocabulary,
  * `CAPABILITY_BY_CLASS`, `IN_CONTENT_CLASSES`) is declared ONCE, in aidream's
  * `packages/matrx-graph/matrx_graph/content_ir/directives.py`. The client
- * mirrors it in `features/content-ir/directives/grammar.ts` because the client
- * has to parse a slug to route a directive. Two declarations of one grammar is
+ * mirrors it in `@ai-matrx/content-ir/directives` (this repo CONSUMES that
+ * package; it no longer keeps a copy) because the client has to parse a slug to
+ * route a directive. Two declarations of one grammar is
  * exactly the split THE Kind Directives merge exists to close, so this script
  * makes the second one derived rather than hand-kept:
  *
@@ -123,7 +124,9 @@ if (committed !== serialized) {
       `committed:\n${committed}\nlive aidream source:\n${serialized}\n` +
       `Fix: aidream owns the grammar. Land the change there, then run\n` +
       `  pnpm sync:directive-grammar\n` +
-      `and update features/content-ir/directives/grammar.ts to match.`,
+      `and update the grammar in @ai-matrx/content-ir (aidream\n` +
+      `apps/shared/content-ir-core/directives/grammar.ts), release it, and adopt\n` +
+      `the new version here in the SAME session.`,
   );
   process.exit(1);
 }

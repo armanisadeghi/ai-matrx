@@ -1,26 +1,21 @@
 "use client";
 
 /**
- * Kind Directives — the FE renderer registry, and THE PREFIX TIER.
+ * Kind Directives — this app's HOST-SPECIFIC renderers, registered into the
+ * package registry.
  *
- * One identity, one lookup. A directive IS a kind instance
- * (`{"__kind":"directive_v1_<class>_<noun>","items":[…]}`), so the renderer for
- * one is resolved from its SLUG, in the same shape the kind component resolver
- * uses:
+ * The registry itself, THE PREFIX TIER, the side-effect card and the never-null
+ * floor all live in `@ai-matrx/content-ir-react/directives` (0.11.0) — one
+ * implementation for every AI Matrx client. What stays here is only what is
+ * genuinely this app's property: the live reference chip (which resolves an
+ * entity out of Supabase and opens it in a window panel), the context-groom
+ * receipt, and the content-planning renderers.
  *
- *   getDirectiveRenderer(slug)
- *     → an exact-slug renderer            (directive_v1_action_plan_tree)
- *     → else the CLASS prefix rule        (every directive_v1_reference_* )
- *     → else null — the graceful floor    (EnvelopeFallbackCard)
- *
- * THE PREFIX RULE is the point, and it is Arman's routing-language ruling made
- * real: registering `reference` once gives EVERY enrolled noun a live chip
- * renderer for free, and a custom renderer for one slug overrides it. 419
- * catalogued nouns do not need 419 registrations, and a brand-new server noun
- * renders with ZERO frontend edits.
- *
- * A null result is the graceful-fallback signal — `MatrxEnvelopeBlock` shows the
- * neutral card so an unknown shape is still displayed, never dropped.
+ * THE PREFIX RULE still does the work: registering `reference` ONCE gives every
+ * one of the 419 catalogued nouns a live chip, and a noun that needs something
+ * richer registers by name and wins. The four side-effect classes are NOT
+ * registered here — the package's own side-effect tier covers them, so a
+ * brand-new server shape renders with zero edits on either side.
  *
  * Add a renderer = one `registerDirectiveRenderer(...)` call. No switch to edit.
  * Spec: docs/protocol/KIND_DIRECTIVES.md (renderer registry + class prefix tier).
@@ -52,11 +47,10 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
-import type { DecodedDirective } from "@/features/content-ir/directives/decode";
 import {
-  type DirectiveClass,
-  buildDirectiveSlug,
-} from "@/features/content-ir/directives/grammar";
+  type DirectiveRenderer,
+  registerDirectiveRenderer,
+} from "@ai-matrx/content-ir-react";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 import {
   coerceRefToStrings,
@@ -87,53 +81,6 @@ const PlanNodePatchRenderer = dynamic(
     import("@/features/matrx-envelope/directives/planTree/PlanNodePatchRenderer"),
   { ssr: false, loading: () => null },
 );
-const SideEffectDirectiveCard = dynamic(
-  () =>
-    import(
-      "@/features/matrx-envelope/directives/sideEffect/SideEffectDirectiveCard"
-    ),
-  { ssr: false, loading: () => null },
-);
-
-export interface DirectiveRendererProps {
-  /** The decoded two-key shell — slug, class, noun, items, position law. */
-  directive: DecodedDirective;
-}
-
-export type DirectiveRenderer = ComponentType<DirectiveRendererProps>;
-
-/** Exact-slug renderers. */
-const _bySlug = new Map<string, DirectiveRenderer>();
-/** THE PREFIX TIER: one renderer for a whole class. */
-const _byClass = new Map<DirectiveClass, DirectiveRenderer>();
-
-/**
- * Register a renderer for a whole CLASS (the prefix rule — every
- * `directive_v1_<class>_*` renders through it), or for one exact `(class, noun)`
- * pair, which wins.
- *
- * `noun` is passed as a noun, never as a hand-typed slug: the slug is BUILT by
- * the grammar, so a registration whose slug could not be parsed back is
- * unconstructable rather than silently unreachable.
- */
-export function registerDirectiveRenderer(
-  directiveClass: DirectiveClass,
-  renderer: DirectiveRenderer,
-  noun?: string,
-): void {
-  if (noun) _bySlug.set(buildDirectiveSlug(directiveClass, noun), renderer);
-  else _byClass.set(directiveClass, renderer);
-}
-
-/** The renderer for a slug: exact → class prefix rule → null (the floor). */
-export function getDirectiveRenderer(
-  directive: Pick<DecodedDirective, "slug" | "directiveClass">,
-): DirectiveRenderer | null {
-  return (
-    _bySlug.get(directive.slug) ?? _byClass.get(directive.directiveClass) ?? null
-  );
-}
-
 // ── Built-in renderers ───────────────────────────────────────────────────────
 
 const UUID_RE =
@@ -335,33 +282,24 @@ registerDirectiveRenderer("action", ContextGroomRenderer, "context_groom");
 // live plan.node routes and deep-link into /content-plan. Both arrived under
 // two encodings before the merge (`output_directive:` and `function:`); the
 // merge gave them ONE identity — class `action` — so there is one registration
-// each, not two. An unregistered action falls to EnvelopeFallbackCard, whose
-// Apply button posts /directives/confirm: a brand-new server action renders and
-// applies with ZERO frontend edits.
+// each, not two. An unregistered action falls to the package's side-effect card,
+// whose Apply posts /directives/confirm through the host confirm seam: a
+// brand-new server action renders and applies with ZERO frontend edits.
 registerDirectiveRenderer("action", PlanTreeRenderer, "plan_tree");
 registerDirectiveRenderer("action", PlanNodePatchRenderer, "plan_node_patch");
 
 /**
- * THE SIDE-EFFECT FLOOR — the prefix rule doing the real work.
+ * THE SIDE-EFFECT FLOOR lives in the PACKAGE, deliberately.
  *
- * One card for every `create` / `update` / `delete` / `action` shape the server
- * can register (56 today), so a person is never asked to approve a write they
- * cannot identify. Registered LAST and by CLASS, so every exact-slug renderer
- * above still wins: `plan_tree` keeps its bespoke card, and a shape that needs
- * something richer than the generic card simply registers by name.
+ * `create` / `update` / `delete` / `action` are claimed by the package's own
+ * `SideEffectDirectiveCard` tier inside `DirectiveRender`, so a person is never
+ * asked to approve a write they cannot identify — on any AI Matrx client, not
+ * just this one. Registering them here again would only re-create the drift the
+ * package was extracted to end. The exact-slug renderers ABOVE still win.
  *
- * Before this, an unregistered side effect fell all the way to
- * `EnvelopeFallbackCard` — a title and an Apply button. That card remains the
- * genuine floor for a class nothing registers at all (and for a registered
- * renderer that must degrade), which is a different and still necessary job.
- *
- * Why the card can be generic at all: the ITEM carries the specificity. Its
- * kind comes from THE DIRECTIVE⇄KIND SEAM (`directives/itemKind.ts`), so the
- * panel renders each item through the kind system's own component. The
- * directive layer owns the ACTION; the kind system owns the DISPLAY. That is
- * what makes these one system rather than two.
+ * Why the package card can be generic at all: the ITEM carries the specificity.
+ * Its kind comes from THE DIRECTIVE⇄KIND SEAM, supplied by this app through
+ * `matrxDirectiveHost.itemKind`, so the panel renders each item through the
+ * kind system's own component. The directive layer owns the ACTION; the kind
+ * system owns the DISPLAY.
  */
-registerDirectiveRenderer("create", SideEffectDirectiveCard);
-registerDirectiveRenderer("update", SideEffectDirectiveCard);
-registerDirectiveRenderer("delete", SideEffectDirectiveCard);
-registerDirectiveRenderer("action", SideEffectDirectiveCard);

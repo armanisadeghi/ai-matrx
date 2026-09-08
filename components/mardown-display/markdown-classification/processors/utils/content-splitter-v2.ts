@@ -23,8 +23,7 @@
  * Legacy V1 parser available in content-splitter.ts for rollback if needed.
  */
 
-import { tryDecodeDirective } from "@/features/content-ir/directives/decode";
-import { RESERVED_PREFIX } from "@/features/content-ir/directives/grammar";
+import { RESERVED_PREFIX, tryDecodeDirective } from "@ai-matrx/content-ir";
 import { isJsonObject } from "@/types/json";
 import type {
   TypedRenderBlock,

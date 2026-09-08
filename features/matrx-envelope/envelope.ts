@@ -3,7 +3,7 @@
  *
  * 🚨 THE SHELL NO LONGER LIVES HERE. A directive is
  * `{"__kind":"directive_v1_<class>_<noun>","items":[…]}` and its grammar,
- * detector and decoder are `features/content-ir/directives/` — one shape, one
+ * detector and decoder are `@ai-matrx/content-ir/directives` — one shape, one
  * discriminator, shared with every other kind. What remains in this module is
  * what is genuinely reference-specific: the reference NOUN taxonomy and the
  * per-noun item shapes the chips render, plus the typed stream receipts.
@@ -114,7 +114,7 @@ import {
   type DirectiveClass,
   KIND_KEY,
   buildDirectiveSlug,
-} from "@/features/content-ir/directives/grammar";
+} from "@ai-matrx/content-ir";
 
 // ── Reference item (in a ```matrx fence) ─────────────────────────────────────
 //

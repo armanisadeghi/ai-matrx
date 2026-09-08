@@ -20,7 +20,7 @@ import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import {
   buildDirectiveSlug,
   buildKindDirective,
-} from "@/features/content-ir/directives/grammar";
+} from "@ai-matrx/content-ir";
 import { cn } from "@/utils/cn";
 import { parseReferenceCellValue } from "@/features/scopes/utils/referenceCell";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";

@@ -16,8 +16,8 @@ import { useState } from "react";
 import { Check, ListChecks, Loader2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-import { isDirectiveClass } from "@/features/content-ir/directives/grammar";
-import { directiveDisplay } from "@/features/content-ir/directives/nounDisplay";
+import { directiveDisplay, isDirectiveClass } from "@ai-matrx/content-ir";
+import { matrxDirectiveNouns } from "@/features/matrx-envelope/directiveHost";
 import { confirmDirective } from "@/features/directive-catalog/service";
 import type { DirectiveConfirmRequest } from "@/features/directive-catalog/types";
 import {
@@ -58,7 +58,7 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
   // the card can never name the action differently from what it will apply,
   // and the catalog supplies the human label ("Create Agent", not "create agent").
   const title = isDirectiveClass(proposal.directiveClass)
-    ? directiveDisplay(proposal.directiveClass, proposal.noun).title
+    ? directiveDisplay(proposal.directiveClass, proposal.noun, matrxDirectiveNouns).title
     : proposal.directive;
   const itemLabel = `${proposal.itemCount} item${proposal.itemCount === 1 ? "" : "s"}`;
 

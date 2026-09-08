@@ -39,7 +39,7 @@ import {
 import {
   buildDirectiveSlug,
   buildKindDirective,
-} from "@/features/content-ir/directives/grammar";
+} from "@ai-matrx/content-ir";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import { getReferenceResolver } from "@/features/matrx-envelope/referenceResolvers";
 import { StateBadge } from "@/features/directive-catalog/components/StateCell";

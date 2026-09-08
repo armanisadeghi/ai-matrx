@@ -48,7 +48,7 @@ import {
   type LegResult,
 } from "@ai-matrx/content-ir";
 import { RESERVED_SHAPE_SLUGS } from "@/features/content-ir/studio/constants";
-import { isReservedDirectiveSlug } from "@/features/content-ir/directives/grammar";
+import { isReservedDirectiveSlug } from "@ai-matrx/content-ir";
 
 import type { ShapeWriteClient } from "@/features/content-ir/studio/shape-authoring-service";
 import {

@@ -541,7 +541,8 @@ export interface CatalogNounDisplay {
 /**
  * Every catalogued noun's display identity — what THE AUTO-VIEW names a shape
  * with when no custom renderer claims it. Read through
- * `features/content-ir/directives/nounDisplay.ts`, never directly.
+ * `features/matrx-envelope/directiveHost.tsx` (matrxDirectiveNouns),
+ * never directly.
  */
 export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "agent": {
@@ -3266,7 +3267,8 @@ export const CATALOG_ALIASES: Record<string, string> = {
  *
  * An ABSENT slug has no kind — honest, not unknown; the consumer falls to the
  * generic structured viewer. Read through
- * `features/content-ir/directives/itemKind.ts`, never directly.
+ * `features/matrx-envelope/directiveHost.tsx` (matrxDirectiveItemKind),
+ * never directly.
  */
 export const DIRECTIVE_ITEM_KINDS: Record<string, string> = {
  "directive_v1_action_create_agent_definition": "agent_definition"

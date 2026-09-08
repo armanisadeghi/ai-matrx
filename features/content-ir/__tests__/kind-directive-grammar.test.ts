@@ -1,11 +1,16 @@
 /**
  * THE GRAMMAR MAY NOT DRIFT FROM THE SERVER.
  *
- * `features/content-ir/directives/grammar.ts` is the client mirror of aidream's
+ * `@ai-matrx/content-ir/directives` (the grammar this repo now CONSUMES rather
+ * than copies) is the client mirror of aidream's
  * `matrx_graph/content_ir/directives.py`. A mirror that is only hand-kept is a
  * second source of truth waiting to disagree — and a disagreement here means a
  * server-minted directive routes to nothing and the user sees raw JSON, which
  * is precisely the break this campaign closed.
+ *
+ * The mirror moved into the package on 2026-09-08; this test stayed HERE
+ * because the artifact it checks against is this repo's committed protocol
+ * snapshot, and the parity claim is about what this app actually installs.
  *
  * So the mirror is asserted against `docs/protocol/kind_directive_grammar.
  * generated.json`, which `pnpm sync:directive-grammar` extracts from the Python
@@ -33,7 +38,7 @@ import {
   isReservedDirectiveSlug,
   parseDirectiveSlug,
   resolvesInContent,
-} from "@/features/content-ir/directives/grammar";
+} from "@ai-matrx/content-ir";
 
 interface GrammarMirror {
   reserved_prefix: string;

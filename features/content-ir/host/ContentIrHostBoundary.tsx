@@ -29,6 +29,7 @@ import { ShimmerText } from "@/components/loaders/ShimmerText";
 import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
 import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
+import { matrxDirectiveHost } from "@/features/matrx-envelope/directiveHost";
 import { kindRegistry } from "../registry/kind-registry";
 import { componentRegistry } from "../registry/component-registry";
 import { MATRX_CONTENT_IR_PLATFORM } from "./route-env";
@@ -46,6 +47,12 @@ export const matrxContentIrHost: ContentIrHost = {
   kinds: kindRegistry,
   components: componentRegistry,
   reportError: captureError,
+
+  // THE KIND DIRECTIVES SEAMS. `KindInstanceRender` draws a reserved
+  // `directive_v…` slug through the package's `DirectiveRender`, so every
+  // subtree under this provider gets Apply / open-item / copy / the noun
+  // catalog without mounting `DirectiveHostProvider` itself.
+  directives: matrxDirectiveHost,
 
   // The production render path: SafeBlockRenderer owns the `ssr:false` dynamic
   // boundary, and BlockRenderer inside it runs `applyIrKindRoute` exactly as it
