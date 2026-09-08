@@ -2971,3 +2971,30 @@ Both are genuine defects, not guard noise: each is a call that cannot do what it
 it does. Neither is fixable from a docs PR — (2) needs DDL. The same run also reports 87 call sites
 UNMEASURED and a STALE SNAPSHOT (38 doors absent from `types/database.types.ts`, refresh with
 `pnpm hr:door-snapshot` + `pnpm db-types`), which are warnings today but hide the same class.
+
+## 2026-09-08 — `check:kind-type-twins` is also red on `main` (`cms_html_page_result`)
+
+Second base-branch-red CI gate found in the same sweep as the HR entry above.
+`features/content-ir/kinds/cms-html-page-result.ts:29` hand-declares
+`CmsHtmlPageResultData` (`pages`, `page`, `isComplete`), which the guard reports as a 67%
+overlap twin of the registered kind `cms_html_page_result`. Both the hand-written file and
+`features/content-ir/kinds/generated/kinds.generated.ts` are byte-identical to `origin/main`
+at `a04e1f92`, so this predates any branch cut from it.
+
+The fix is not purely mechanical, which is why it is logged rather than swept: the generated
+`CmsHtmlPageResult` declares `page`/`pages` as **optional and nullable**, while the twin
+declares them required and non-null, and `isComplete` exists only in the twin (it is local view
+state, not a registered field). Deriving the type correctly therefore changes what the one
+consumer — `components/mardown-display/blocks/cms-html-page-result/CmsHtmlPageResultBlock.tsx:16`
+— must handle at the boundary. Shape:
+
+```ts
+import type { CmsHtmlPageResult } from "@/features/content-ir/kinds/generated/kinds.generated";
+
+export type CmsHtmlPageResultData = Pick<CmsHtmlPageResult, "page" | "pages"> & {
+  /** Local view state — deliberately not part of the registered kind. */
+  isComplete: boolean;
+} & Record<string, unknown>;
+```
+
+Whoever takes it must re-check the block's null handling, not just swap the declaration.
