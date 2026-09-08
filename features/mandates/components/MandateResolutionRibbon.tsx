@@ -2,27 +2,46 @@
 
 /**
  * MandateResolutionRibbon — the canonical, truthful agent-mandate precedence chain:
- * run-scope → your override → org override → system default. Highest
- * precedence renders first. Pass `provenance` to highlight the layer that
- * actually decides the agent for the current viewer; omit it for a pure
- * precedence reference (no highlight). Surfaces with their own name for a
+ * run-scope → your override → org override → platform-wide override → system
+ * default. Highest precedence renders first. Pass `provenance` to highlight the
+ * layer that actually decides the agent for the current viewer; omit it for a
+ * pure precedence reference (no highlight). Surfaces with their own name for a
  * layer (research calls run-scope "Topic override") relabel via `labels`.
  *
+ * 🚨 THIS COMPONENT MUST CARRY EVERY RUNG THE RUNTIME CAN NAME. It shipped with
+ * four while the runtime stamps five: `global` — the GLOBAL BINDING rung, a row
+ * somebody edits at runtime — was missing, so a `global` verdict highlighted
+ * NOTHING and the reader was shown a chain that did not contain the answer they
+ * had just been given. `global` and `system` are deliberately distinct
+ * (V3-CORRECTNESS N1: collapsing them let a stale global binding pass for a
+ * built-in default for a whole verification round), so the fix is a fifth link,
+ * never a relabel of `system`. The rung vocabulary is frozen —
+ * `ResolvedMandate["provenance"]` in `features/mandates/service.ts` and
+ * `mandate.resolve`'s `rung` column are the same five words; when one gains a
+ * rung, so does this.
+ *
  * Shape absorbed from research's per-topic agents page; content is the ONE
- * platform precedence chain (SoR common-docs/systems/mandates/FEATURE.md)
+ * platform precedence chain (SoR common-docs/systems/mandates/FEATURE.md,
+ * ruling common-docs/projects/workflow-mandate-program/DESIGN-one-resolution.md)
  * — never restate the chain in prose beside this component.
  */
 
 import { ArrowRight, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type MandateResolutionLayer = "run" | "user" | "org" | "system";
+export type MandateResolutionLayer =
+  | "run"
+  | "user"
+  | "org"
+  | "global"
+  | "system";
 
 /** Highest precedence first — the order the runtime consults layers. */
 export const MANDATE_RESOLUTION_LAYERS: readonly MandateResolutionLayer[] = [
   "run",
   "user",
   "org",
+  "global",
   "system",
 ];
 
@@ -30,6 +49,7 @@ const DEFAULT_LABELS: Record<MandateResolutionLayer, string> = {
   run: "Run scope",
   user: "Your override",
   org: "Org override",
+  global: "Platform-wide override",
   system: "System default",
 };
 
