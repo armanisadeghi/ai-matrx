@@ -43,11 +43,14 @@ function firstIdentityValue(
 
 /**
  * Tolerant reader for the provider account identity metadata contract.
- * Prefers the display-safe `provider_account_label` when present, falls back
- * to the opaque fingerprint keys (canonical `provider_account_key`, then the
- * historical `provider_account_fingerprint` / `account_fingerprint`), and
- * never renders emails, tokens, or arbitrary metadata. Both the metadata root
- * and the nested `source_metadata` record are honored.
+ * Prefers `provider_account_label` — the account as the person knows it, the
+ * full signed-in email or org id (Arman's ruling 2026-09-07: an account name
+ * is not a secret, so nothing masks it) — and falls back to the opaque
+ * fingerprint keys (canonical `provider_account_key`, then the historical
+ * `provider_account_fingerprint` / `account_fingerprint`) only for rows that
+ * were delivered before the label existed. Tokens and arbitrary metadata are
+ * never rendered. Both the metadata root and the nested `source_metadata`
+ * record are honored.
  */
 export function providerAccountIdentity(
   metadata: Json | null,

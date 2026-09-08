@@ -23,80 +23,109 @@ export const CONVERSATION_LIST_SCOPES: ListScopeKind[] = [
   "shared",
 ];
 
-// ── THE HONESTY AXIS ────────────────────────────────────────────────────────
+// ── THE THREE BUCKETS ───────────────────────────────────────────────────────
 //
-// `conversation_type` splits the corpus into work a PERSON did and runs a
-// MACHINE did on their behalf. On Arman's account that is 5,911 vs 2,486: an
-// unfiltered list is 30% internal batch derivations, sweeps and meta-builder
-// calls, each carrying a "Subagent" pill that says nothing because every row
-// says it.
+// Arman's ruling (2026-09-07): the top of the list splits the way a person
+// thinks about their conversations, not the way the database types them.
 //
-// So the default list is the human-relevant subset — expressed as a REAL entry
-// in the filter bag, never a hidden SQL predicate — and the machine runs keep a
-// visible, counted door (`ConversationAudienceFilter`).
+//   internal — runs the platform started for itself while the app works:
+//              subagents, workflow steps, scheduled jobs, podcast builds,
+//              research sweeps, page-automatic runs, hindsight replays.
+//   chat     — conversations a PERSON started directly, from any AI Matrx
+//              surface: chat, agent run, build, the extension, the desktop.
+//   external — sessions mirrored from an outside coding app: Claude Code,
+//              Codex, Cursor, VS Code.
+//
+// Everything else (which app, which run type, which provider) is a SECOND cut
+// inside a bucket, never a peer of it.
+//
+// The bucket is DERIVED SERVER-SIDE (`public.cvx_audience`, one expression
+// shared by the list RPC and the facets RPC) from facts the row already has:
+// a coding-session binding or a coding source_app is external no matter what
+// else the row says; a machine origin_class is internal; a human origin is
+// chat; pre-provenance rows fall back to conversation_type. The client only
+// ever names the bucket — it never re-derives it, so a chip's count is exactly
+// what clicking it shows.
+//
+// The filter key is `audience`, a REAL entry in the filter bag (never a hidden
+// SQL predicate), so the Filters panel, the URL and the chips all agree.
 
-/** Conversation types a person recognizes as their own work. */
-export const HUMAN_CONVERSATION_TYPES = [
-  "standard",
-  "workflow",
-  "research",
-  "scheduled",
-  "podcast",
-] as const;
+export const CONVERSATION_AUDIENCES = ["chat", "external", "internal"] as const;
+export type ConversationAudienceId = (typeof CONVERSATION_AUDIENCES)[number];
 
-/** Conversation types the platform generates for itself. */
-export const MACHINE_CONVERSATION_TYPES = [
+/** The chip vocabulary: one of the three buckets, all of them, or a hand-built set. */
+export type ConversationAudience = ConversationAudienceId | "all" | "custom";
+
+/**
+ * Conversation types the platform generates for itself. Still the definition
+ * behind `isMachineConversationType` (provenance panel copy) and the internal
+ * bucket's run-type chips; the BUCKET itself is derived on the server.
+ */
+export const INTERNAL_CONVERSATION_TYPES = [
   "subagent",
   "auto",
   "system",
   "hindsight_replay",
+  "workflow",
+  "scheduled",
+  "research",
+  "podcast",
 ] as const;
 
-export type ConversationAudience = "people" | "machine" | "all" | "custom";
-
-/** The surface's honest starting point. See `EntityListConfig.defaultFilters`. */
-export const DEFAULT_CONVERSATION_FILTERS: EntityFilters = {
-  conversation_type: {
-    kind: "select",
-    values: [...HUMAN_CONVERSATION_TYPES],
-  },
-};
-
-function sameSet(a: readonly string[], b: readonly string[]): boolean {
-  return a.length === b.length && [...a].sort().join() === [...b].sort().join();
-}
+/** Apps whose sessions are mirrored from outside AI Matrx. Mirrors `cvx_audience`. */
+export const EXTERNAL_SOURCE_APPS = [
+  "claude-code",
+  "codex",
+  "cursor",
+  "vscode",
+] as const;
 
 /**
- * Which audience the CURRENT filter bag represents. Derived, never stored — two
- * controls (this one and the column header) write one filter, and a derived
- * reading is the only way they cannot disagree. A hand-built selection reads
- * back as "custom" rather than being silently rounded to a preset.
+ * The surface's honest starting point: the conversations a person had
+ * themselves. The other two buckets keep a visible, counted door. See
+ * `EntityListConfig.defaultFilters`.
+ */
+export const DEFAULT_CONVERSATION_FILTERS: EntityFilters = {
+  audience: { kind: "select", values: ["chat"] },
+};
+
+/**
+ * Which audience the CURRENT filter bag represents. Derived, never stored — the
+ * chips, the Filters panel and the URL write one filter, and a derived reading
+ * is the only way they cannot disagree. A hand-built selection reads back as
+ * "custom" rather than being silently rounded to a preset.
  */
 export function readAudience(filters: EntityFilters): ConversationAudience {
-  const value = filters.conversation_type;
+  const value = filters.audience;
   if (!value) return "all";
   if (value.kind !== "select") return "custom";
-  if (sameSet(value.values, HUMAN_CONVERSATION_TYPES)) return "people";
-  if (sameSet(value.values, MACHINE_CONVERSATION_TYPES)) return "machine";
+  if (value.values.length === 1) {
+    const only = value.values[0];
+    if ((CONVERSATION_AUDIENCES as readonly string[]).includes(only)) {
+      return only as ConversationAudienceId;
+    }
+  }
   return "custom";
 }
 
-/** The filter bag for one audience. "all" removes the axis entirely. */
+/**
+ * The filter bag for one audience. "all" removes the axis entirely. Switching
+ * buckets also drops the second-cut filters (app, run type) that only make
+ * sense inside the bucket being left — otherwise "External" could arrive
+ * pre-narrowed to "Workflow run" and show nothing, which reads as a broken
+ * page rather than a filter.
+ */
 export function applyAudience(
   filters: EntityFilters,
-  audience: Exclude<ConversationAudience, "custom">,
+  audience: ConversationAudienceId | "all",
 ): EntityFilters {
   const next = { ...filters };
+  delete next.source_app;
+  delete next.conversation_type;
   if (audience === "all") {
-    delete next.conversation_type;
+    delete next.audience;
     return next;
   }
-  next.conversation_type = {
-    kind: "select",
-    values:
-      audience === "people"
-        ? [...HUMAN_CONVERSATION_TYPES]
-        : [...MACHINE_CONVERSATION_TYPES],
-  };
+  next.audience = { kind: "select", values: [audience] };
   return next;
 }

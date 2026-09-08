@@ -90,15 +90,9 @@ export function useConversationRowActions(
                 source_app: { kind: "select", values: [row.source_app] },
               })
           : undefined,
-        onHide: row.conversation_type
-          ? () =>
-              list.setFilters(
-                applyAudience(
-                  list.query.filters,
-                  row.conversation_type === "subagent" ? "people" : "all",
-                ),
-              )
-          : undefined,
+        // "Hide" returns to the honest default — the person's own chats —
+        // which is the one bucket where a machine row can never appear.
+        onHide: () => list.setFilters(applyAudience(list.query.filters, "chat")),
       },
       onAddToProject: () => setProjectPickerRow(row),
       onMutationSuccess: list.refresh,

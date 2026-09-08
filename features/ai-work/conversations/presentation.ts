@@ -10,7 +10,10 @@ import {
   type CodingSessionProvider,
 } from "@/features/agent-connections/coding-sessions/catalog";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { MACHINE_CONVERSATION_TYPES } from "./types";
+import {
+  INTERNAL_CONVERSATION_TYPES,
+  type ConversationAudienceId,
+} from "./types";
 
 /** Plain-language name for a `chat.conversation.conversation_type`. */
 export function conversationTypeLabel(value: string | null): string {
@@ -39,9 +42,26 @@ export function conversationTypeLabel(value: string | null): string {
 }
 
 export function isMachineConversationType(value: string | null): boolean {
-  return (MACHINE_CONVERSATION_TYPES as readonly string[]).includes(
+  return (INTERNAL_CONVERSATION_TYPES as readonly string[]).includes(
     value ?? "",
   );
+}
+
+/**
+ * Plain-language name for one of THE THREE BUCKETS (`audience`, derived by
+ * `public.cvx_audience`). Ruled by Arman 2026-09-07; see ./types.ts.
+ */
+export function audienceLabel(value: ConversationAudienceId | string): string {
+  switch (value) {
+    case "chat":
+      return "AI chats";
+    case "external":
+      return "External app runs";
+    case "internal":
+      return "Internal Matrx runs";
+    default:
+      return value ? formatText(value) : "Unknown";
+  }
 }
 
 /** Plain-language name for `chat.conversation.origin_class`. */

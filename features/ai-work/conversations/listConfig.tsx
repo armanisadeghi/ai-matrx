@@ -28,6 +28,7 @@ import {
   saveConversationTitle,
 } from "./service";
 import {
+  audienceLabel,
   conversationTypeLabel,
   originClassLabel,
   providerLabel,
@@ -94,6 +95,16 @@ export const conversationListConfig: EntityListConfig<ConversationBrowseRow> = {
   },
   deepSearch: { label: "Also search inside messages" },
   facetSections: [
+    {
+      // THE BUCKET. The same `audience` filter the chips above the table
+      // write, so the panel and the chips can never disagree.
+      facet: "audience",
+      filterId: "audience",
+      label: "Bucket",
+      noneLabel: "Unbucketed",
+      formatValue: audienceLabel,
+      searchPlaceholder: "Find bucket…",
+    },
     {
       facet: "conversation_type",
       filterId: "conversation_type",
@@ -168,6 +179,6 @@ export const conversationListConfig: EntityListConfig<ConversationBrowseRow> = {
   emptyState: {
     title: "No conversations here",
     description:
-      "Nothing matches this scope and filter combination. Internal machine runs are excluded by default — the switch above includes them.",
+      "Nothing matches this scope and filter combination. The list opens on AI chats — the buckets above switch to external app runs or internal Matrx runs.",
   },
 };
