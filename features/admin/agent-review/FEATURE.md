@@ -95,8 +95,8 @@ Both routes are agent-aware surfaces, and they are TWO surfaces on purpose: the 
 
 ## The middle stage — the queue's structural weakness
 
-Arman, 2026-09-07: *"I'm trying to find what you need me to review in agent-review
-but I can't seem to find it — it's one of the biggest weaknesses of the system."*
+Arman, 2026-09-07: _"I'm trying to find what you need me to review in agent-review
+but I can't seem to find it — it's one of the biggest weaknesses of the system."_
 Measured that day: **573 rows at `submitted` against 74 at `ready_for_human`**,
 oldest submission 2026-07-24. Only `ready_for_human` reaches him, and the single
 recurring promoter (`agent-review-first-pass`) moves ONE row per 30 minutes and
@@ -121,6 +121,10 @@ no-unapproved-schedules law.
 
 ## Change log
 
+- 2026-09-08 — Tightened the list page's bottom edge to a 4px page gutter after
+  the table-owned pagination footer (the table itself contributes no outer
+  padding), and made the header actions and workflow rail horizontally usable
+  on narrow screens instead of crushing labels into vertical text.
 - 2026-09-07 — Search stopped hiding: it widens to every non-archived step with a visible match-count line and a narrow-back control, and now covers instructions, lane, notes and thread/branch instead of only the rendered columns (`row-text.ts`). Added the **Filed by / lane** and **Filed** columns and a per-row copy-link button; Copy-as/AI payloads carry the row's direct URL. Shipped `pnpm review-queue:sweep` for the unmanned promotion stage and recorded the three communication rules in the shared skill.
 - 2026-08-31 — Put the review queue, taxonomy, and repository list reads behind the canonical session-retry boundary so an expired admin session cannot fan out anonymous permission errors.
 - 2026-08-30 — Wired the five workflow count cards to the canonical URL-backed table status filter, including the combined Changes statuses and active-card state; switching to Ready for you or All activity clears that workflow-card filter.

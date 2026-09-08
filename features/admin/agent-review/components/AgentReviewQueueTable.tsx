@@ -463,15 +463,15 @@ export default function AgentReviewQueueTable() {
       getScope={getSurfaceScope}
       isEditable={false}
     >
-      <div className="flex h-full min-h-0 flex-col gap-4 p-4">
-        <div className="flex items-start justify-between gap-4">
+      <div className="flex h-full min-h-0 flex-col gap-4 px-4 pb-1 pt-4">
+        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:gap-4">
           <div>
             <h1 className="text-xl font-semibold">Agent Review</h1>
             <p className="text-sm text-muted-foreground">
               Agents prepare and verify every item before it reaches you.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
             <Button
               size="sm"
               variant={view === "inbox" ? "default" : "outline"}
@@ -494,7 +494,7 @@ export default function AgentReviewQueueTable() {
 
         <nav
           aria-label="Agent review workflow"
-          className="flex items-stretch gap-2"
+          className="flex items-stretch gap-2 overflow-x-auto pb-1"
         >
           {FLOW.map((step, index) => {
             const count = activeRows.filter((row) =>
@@ -524,7 +524,7 @@ export default function AgentReviewQueueTable() {
                     setStatusFilter(step.statuses);
                   }}
                   className={cn(
-                    "min-h-11 min-w-0 flex-1 rounded-md border bg-card px-3 py-2 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    "min-h-11 min-w-32 flex-1 rounded-md border bg-card px-3 py-2 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-w-0",
                     isActive && "border-primary bg-accent",
                   )}
                 >
@@ -618,7 +618,6 @@ export default function AgentReviewQueueTable() {
                     icon: ArrowRight,
                     href: clickedRow ? reviewItemPath(clickedRow.id) : "#",
                     disabled: !clickedRow,
-                    description: "Open the review's own page",
                   },
                   {
                     kind: "link",
@@ -630,7 +629,6 @@ export default function AgentReviewQueueTable() {
                       : "#",
                     target: "_blank",
                     disabled: !clickedRow,
-                    description: "Open the surface this item reviews",
                   },
                 ] satisfies ContextMenuExtraItem[],
               },
