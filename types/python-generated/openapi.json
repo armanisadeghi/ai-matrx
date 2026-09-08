@@ -16664,6 +16664,27 @@
         }
       }
     },
+    "/logseq/public/release": {
+      "get": {
+        "tags": [
+          "Logseq Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_logseq_public_release_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogseqPublicRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -20061,6 +20082,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HashnodeServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bombbomb/public/status": {
+      "get": {
+        "tags": [
+          "BombBomb Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_bombbomb_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BombBombServiceStatus"
                 }
               }
             }
@@ -29825,6 +29867,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__sphinx_docs_integrations__service__QuickstartContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pandas-docs/public/tutorial": {
+      "get": {
+        "tags": [
+          "pandas Documentation Integrations"
+        ],
+        "summary": "Public Tutorial",
+        "operationId": "public_tutorial_pandas_docs_public_tutorial_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TutorialContent"
                 }
               }
             }
@@ -98551,6 +98614,47 @@
         ],
         "title": "BoldSignServiceStatus"
       },
+      "BombBombServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "bombbomb_public_service_status",
+            "title": "Kind",
+            "default": "bombbomb_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "BombBomb",
+            "title": "Provider",
+            "default": "BombBomb"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.bombbomb.com",
+            "title": "Status Page",
+            "default": "https://status.bombbomb.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "BombBombServiceStatus",
+        "description": "Safe aggregate status projection for BombBomb's fixed status page."
+      },
       "BookWyrmInstanceStatistics": {
         "properties": {
           "__kind": {
@@ -165808,6 +165912,48 @@
           "indicator"
         ],
         "title": "LogRocketServiceStatus"
+      },
+      "LogseqPublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "logseq_public_release",
+            "title": "Kind",
+            "default": "logseq_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Logseq",
+            "title": "Provider",
+            "default": "Logseq"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag",
+          "release_url",
+          "published_at"
+        ],
+        "title": "LogseqPublicRelease"
       },
       "LoomVideoResult": {
         "properties": {
@@ -235083,6 +235229,47 @@
         ],
         "title": "TurnRange",
         "description": "Identify one or more contiguous turns to compact.\n\n``from_user_message_id`` — the user message that starts the first\nturn in the range. Required.\n\n``to_user_message_id`` — the user message that starts the FIRST turn\nAFTER the range. The turn-range covers everything from\n``from_user_message_id`` up to but NOT including\n``to_user_message_id``. If omitted, the range extends to the end of\nthe conversation (inclusive of the final turn)."
+      },
+      "TutorialContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pandas_docs_tutorial_content",
+            "title": "Kind",
+            "default": "pandas_docs_tutorial_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "pandas Documentation",
+            "title": "Provider",
+            "default": "pandas Documentation"
+          },
+          "tutorial": {
+            "type": "string",
+            "const": "table_oriented",
+            "title": "Tutorial",
+            "default": "table_oriented"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "TutorialContent",
+        "description": "Safe projection of the fixed public pandas tutorial."
       },
       "TwistServiceStatus": {
         "properties": {

@@ -6625,6 +6625,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/logseq/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_logseq_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -8834,6 +8851,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_hashnode_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bombbomb/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_bombbomb_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15379,6 +15413,23 @@ export interface paths {
         };
         /** Public Quickstart */
         get: operations["public_quickstart_sphinx_docs_public_quickstart_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pandas-docs/public/tutorial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Tutorial */
+        get: operations["public_tutorial_pandas_docs_public_tutorial_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -43467,6 +43518,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.boldsign.com";
+        };
+        /**
+         * BombBombServiceStatus
+         * @description Safe aggregate status projection for BombBomb's fixed status page.
+         */
+        BombBombServiceStatus: {
+            /**
+             * Kind
+             * @default bombbomb_public_service_status
+             * @constant
+             */
+            __kind?: "bombbomb_public_service_status";
+            /**
+             * Provider
+             * @default BombBomb
+             * @constant
+             */
+            provider?: "BombBomb";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.bombbomb.com
+             * @constant
+             */
+            status_page?: "https://status.bombbomb.com";
         };
         /**
          * BookWyrmInstanceStatistics
@@ -72736,6 +72819,33 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.logrocket.com";
+        };
+        /** LogseqPublicRelease */
+        LogseqPublicRelease: {
+            /**
+             * Kind
+             * @default logseq_public_release
+             * @constant
+             */
+            __kind?: "logseq_public_release";
+            /**
+             * Provider
+             * @default Logseq
+             * @constant
+             */
+            provider?: "Logseq";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
         };
         /**
          * LoomVideoResult
@@ -104366,6 +104476,38 @@ export interface components {
             to_user_message_id?: string | null;
         };
         /**
+         * TutorialContent
+         * @description Safe projection of the fixed public pandas tutorial.
+         */
+        TutorialContent: {
+            /**
+             * Kind
+             * @default pandas_docs_tutorial_content
+             * @constant
+             */
+            __kind?: "pandas_docs_tutorial_content";
+            /**
+             * Provider
+             * @default pandas Documentation
+             * @constant
+             */
+            provider?: "pandas Documentation";
+            /**
+             * Tutorial
+             * @default table_oriented
+             * @constant
+             */
+            tutorial?: "table_oriented";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
+        };
+        /**
          * TwistServiceStatus
          * @description Safe aggregate status projection for Twist's fixed status page.
          */
@@ -124477,6 +124619,26 @@ export interface operations {
             };
         };
     };
+    public_release_logseq_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogseqPublicRelease"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -127328,6 +127490,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HashnodeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_bombbomb_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BombBombServiceStatus"];
                 };
             };
         };
@@ -135845,6 +136027,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__sphinx_docs_integrations__service__QuickstartContent"];
+                };
+            };
+        };
+    };
+    public_tutorial_pandas_docs_public_tutorial_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TutorialContent"];
                 };
             };
         };
