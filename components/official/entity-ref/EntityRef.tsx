@@ -207,6 +207,9 @@ export function EntityRef({
   const labelBody = children ?? label;
   const Icon = info?.Icon ?? null;
 
+  const showNewTab = Boolean(resolvedHref) && !disableNewTab && !openInNewTab;
+  const hasControls = canPeek || showNewTab || Boolean(extraActions);
+
   const stop = (e: React.MouseEvent) => e.stopPropagation();
   const stopAny = (e: React.SyntheticEvent) => e.stopPropagation();
   // One string carries BOTH label decisions so the three label branches
@@ -276,50 +279,57 @@ export function EntityRef({
         </span>
       )}
 
-      <span
-        className={cn(
-          "inline-flex shrink-0 items-center gap-0.5",
-          // `opacity-0` alone still takes pointer events, which on a touch
-          // device leaves an invisible new-tab link sitting beside every name:
-          // a tap that lands there opens a tab with nothing to explain why.
-          // `pointer-events-none` closes that; it does not affect the keyboard,
-          // so the controls stay tab-reachable and `focus-within` restores them.
-          !alwaysShowActions &&
-            "pointer-events-none opacity-0 transition-opacity " +
-              "group-hover/entity-ref:pointer-events-auto group-hover/entity-ref:opacity-100 " +
-              "focus-within:pointer-events-auto focus-within:opacity-100",
-        )}
-      >
-        {canPeek && (
-          <button
-            type="button"
-            title={`Quick look at ${label}`}
-            aria-label={`Quick look at ${label}`}
-            onClick={(e) => {
-              stop(e);
-              setPeekOpen(true);
-            }}
-            className={CONTROL_CLASS}
-          >
-            <Lightbulb className="h-3 w-3" />
-          </button>
-        )}
-        {resolvedHref && !disableNewTab && !openInNewTab && (
-          <Link
-            href={resolvedHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            prefetch={false}
-            onClick={stop}
-            title={`Open ${label} in a new tab`}
-            aria-label={`Open ${label} in a new tab`}
-            className={CONTROL_CLASS}
-          >
-            <ExternalLink className="h-3 w-3" />
-          </Link>
-        )}
-        {extraActions}
-      </span>
+      {/* An EMPTY controls span is not free: it is still a flex child, so the
+          wrapper's `gap-1` reserves a space after the label. In a table cell
+          that is invisible; inside a SENTENCE (`TextWithDoors`) it opens a
+          hole in the middle of the server's words. Render nothing when there
+          is nothing to render. */}
+      {hasControls && (
+        <span
+          className={cn(
+            "inline-flex shrink-0 items-center gap-0.5",
+            // `opacity-0` alone still takes pointer events, which on a touch
+            // device leaves an invisible new-tab link sitting beside every name:
+            // a tap that lands there opens a tab with nothing to explain why.
+            // `pointer-events-none` closes that; it does not affect the keyboard,
+            // so the controls stay tab-reachable and `focus-within` restores them.
+            !alwaysShowActions &&
+              "pointer-events-none opacity-0 transition-opacity " +
+                "group-hover/entity-ref:pointer-events-auto group-hover/entity-ref:opacity-100 " +
+                "focus-within:pointer-events-auto focus-within:opacity-100",
+          )}
+        >
+          {canPeek && (
+            <button
+              type="button"
+              title={`Quick look at ${label}`}
+              aria-label={`Quick look at ${label}`}
+              onClick={(e) => {
+                stop(e);
+                setPeekOpen(true);
+              }}
+              className={CONTROL_CLASS}
+            >
+              <Lightbulb className="h-3 w-3" />
+            </button>
+          )}
+          {showNewTab && (
+            <Link
+              href={resolvedHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              prefetch={false}
+              onClick={stop}
+              title={`Open ${label} in a new tab`}
+              aria-label={`Open ${label} in a new tab`}
+              className={CONTROL_CLASS}
+            >
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          )}
+          {extraActions}
+        </span>
+      )}
 
       {/*
         The peek dialog is PORTALED to the document body, but React events
