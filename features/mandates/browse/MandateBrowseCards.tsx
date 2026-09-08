@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
-import { healthMeta, layerMeta, type MandateListRow } from "./types";
+import { healthExplanation, healthMeta, layerMeta, type MandateListRow } from "./types";
 import { MandateCoverageBadge } from "./CoverageBadge";
 
 export function MandateBrowseCards({
@@ -29,6 +29,8 @@ export function MandateBrowseCards({
       {rows.map((row) => {
         const layer = layerMeta(row.resolved_layer);
         const health = healthMeta(row.health);
+        // See MandateBrowseRows: a dropped rung gets words, not just a colour.
+        const dropped = healthExplanation(row.health);
         return (
           <article
             key={row.id}
@@ -95,6 +97,11 @@ export function MandateBrowseCards({
                 </Badge>
               ) : null}
             </div>
+            {dropped ? (
+              <p className="mt-2 text-[11.5px] leading-snug text-amber-700 dark:text-amber-400">
+                {dropped}
+              </p>
+            ) : null}
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground/80">
               {row.provision_key ? (
                 <span className="inline-flex items-center gap-1">

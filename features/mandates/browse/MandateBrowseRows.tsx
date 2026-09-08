@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
-import { healthMeta, layerMeta, type MandateListRow } from "./types";
+import { healthExplanation, healthMeta, layerMeta, type MandateListRow } from "./types";
 import { MandateCoverageBadge } from "./CoverageBadge";
 
 export function MandateBrowseRows({
@@ -24,6 +24,10 @@ export function MandateBrowseRows({
       {rows.map((row) => {
         const layer = layerMeta(row.resolved_layer);
         const health = healthMeta(row.health);
+        // A dropped rung is not a badge colour, it is news: somebody's choice
+        // for this job could not be used. Say it in words on the row itself —
+        // the campaign's own law is that a screen is absent or honest.
+        const dropped = healthExplanation(row.health);
         return (
           <div
             key={row.id}
@@ -75,6 +79,11 @@ export function MandateBrowseRows({
                 {row.mandate_key}
                 {row.resolved_agent_name ? ` · ${row.resolved_agent_name}` : ""}
               </div>
+              {dropped ? (
+                <p className="mt-0.5 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+                  {dropped}
+                </p>
+              ) : null}
             </div>
             <ItemMenu config={actions.menuFor(row)} align="end">
                 <button

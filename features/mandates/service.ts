@@ -174,6 +174,64 @@ export interface ResolvedMandate {
    * which is the inversion this field closes.
    */
   presentation: BindingPresentation | null;
+  /**
+   * 🚨 EVERY RUNG THE SERVER SET ASIDE, and why (2026-09-08, FIX-R1c).
+   *
+   * Empty on almost every resolution, and that is the point: when it is not
+   * empty, somebody's deliberate choice for this job did not run. Before the
+   * server grew this field the drop existed only as a `logger.error` in a
+   * container log — an organization bound an agent its members could not open,
+   * eight of its nine members silently got the platform default instead, and no
+   * screen anywhere could say so (V-CORRECTNESS §5).
+   *
+   * `reason` is a finished sentence written for a person; show it as-is.
+   */
+  droppedRungs: DroppedRung[];
+}
+
+/**
+ * Read `dropped_rungs` off the verdict WITHOUT trusting the generated types.
+ *
+ * The field is additive on `MandateResolutionResponse` and the committed
+ * `types/python-generated/api-types.ts` is regenerated against a running server
+ * — a heavier, whole-surface operation than this one field deserves — so this
+ * narrows the shape itself. Anything it cannot recognise is dropped rather than
+ * rendered half-parsed: a garbled sentence beside a resolution is worse than
+ * none. The cost of that choice is that an OLD server simply reports no drops,
+ * which is exactly what an old server means.
+ *
+ * 🚨 When the API types are next regenerated, this can become a plain read.
+ */
+function parseDroppedRungs(verdict: unknown): DroppedRung[] {
+  const raw = (verdict as { dropped_rungs?: unknown })?.dropped_rungs;
+  if (!Array.isArray(raw)) return [];
+  const out: DroppedRung[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const e = entry as Record<string, unknown>;
+    const rung = e.rung;
+    const reason = e.reason;
+    if (rung !== "global" && rung !== "org" && rung !== "user") continue;
+    if (typeof reason !== "string" || !reason) continue;
+    out.push({
+      rung,
+      bindingId: typeof e.binding_id === "string" ? e.binding_id : null,
+      organizationId:
+        typeof e.organization_id === "string" ? e.organization_id : null,
+      holderId: typeof e.holder_id === "string" ? e.holder_id : null,
+      reason,
+    });
+  }
+  return out;
+}
+
+/** One rung the server verdict set aside, with the reason. */
+export interface DroppedRung {
+  rung: "global" | "org" | "user";
+  bindingId: string | null;
+  organizationId: string | null;
+  holderId: string | null;
+  reason: string;
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -446,6 +504,7 @@ export async function resolveMandate(
       ? verdict.consumption_map
       : null,
     autoRun: verdict.auto_run ?? null,
+    droppedRungs: parseDroppedRungs(verdict),
     // The contract, input kind and output kind come from the SERVER VERDICT —
     // it applies the fallback chain, so for the 33 definitions carrying a
     // `fallback_mandate_key` these describe the mandate that actually answered,

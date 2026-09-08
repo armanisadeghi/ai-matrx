@@ -151,6 +151,16 @@ interface FulfillmentView {
   refusal: string | null;
   /** The server's published staleness bound, when the answer came from it. */
   freshness: string | null;
+  /**
+   * 🚨 EVERY RUNG THE SERVER SET ASIDE, in its own words (2026-09-08, FIX-R1c).
+   *
+   * Not a refusal — the job DID resolve — but the answer above is not the one
+   * somebody chose, and that is exactly what this screen exists to say. Until
+   * the server grew `dropped_rungs`, an organization could bind an agent its
+   * members could not open and every one of them would be shown the platform
+   * default as if nothing had happened (V-CORRECTNESS §5).
+   */
+  droppedRungs: { rung: string; reason: string }[];
 }
 
 /** How a rung is spoken about on a screen claiming "this is what runs for you". */
@@ -195,6 +205,7 @@ function viewFromVerdict(
       loading: true,
       refusal: null,
       freshness: null,
+      droppedRungs: [],
     };
   }
   if (error || !verdict) {
@@ -205,6 +216,7 @@ function viewFromVerdict(
       loading: false,
       refusal: error ?? "The server returned no verdict for this job.",
       freshness: null,
+      droppedRungs: [],
     };
   }
 
@@ -234,6 +246,10 @@ function viewFromVerdict(
     loading: false,
     refusal: null,
     freshness: verdict.freshness,
+    droppedRungs: verdict.droppedRungs.map((d) => ({
+      rung: d.rung,
+      reason: d.reason,
+    })),
   };
 }
 
@@ -293,6 +309,10 @@ function resolveForOrgPrincipal(
     loading: false,
     refusal: null,
     freshness: null,
+    // This view answers "what does this ORG get", straight from the binding
+    // rows — it asks the server for no verdict, so it has no drop to report.
+    // The server's own answer, drops included, is the one above.
+    droppedRungs: [],
   };
 }
 
@@ -573,6 +593,7 @@ function FulfillmentSection({
     loading,
     refusal,
     freshness,
+    droppedRungs,
   } = resolution;
   // A mandate may exist before its intelligence does (user-created, no Holder
   // yet). That is a normal state, not a read failure — say so plainly.
@@ -600,6 +621,18 @@ function FulfillmentSection({
             {refusal}
           </p>
         ) : null}
+        {/* A rung the server SET ASIDE. The job still runs — so this is amber,
+            not destructive — but somebody's deliberate choice is not the thing
+            running, and that has to be on the screen and not only in a log. */}
+        {droppedRungs.map((dropped) => (
+          <p
+            key={`${dropped.rung}:${dropped.reason}`}
+            className="flex items-start gap-1.5 text-[12.5px] leading-relaxed text-amber-700 dark:text-amber-400"
+          >
+            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            {dropped.reason}
+          </p>
+        ))}
         <div className="flex flex-wrap items-center gap-2">
           {loading ? (
             <SuspenseLoader />

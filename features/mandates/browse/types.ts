@@ -76,7 +76,33 @@ export type MandateListHealth =
   | "holder missing"
   | "holder unreachable"
   | "version unreachable"
+  // 🚨 A RUNG THAT WAS SET ASIDE (2026-09-08, campaign one-resolution FIX-R1c).
+  // Before this the list could say `resolved_layer: "org"` and
+  // `health: "holder unreachable"` in the same row, while the run door dropped
+  // that rung and ran the system default — the list naming a rung that does not
+  // run (V-CORRECTNESS §5d). `resolved_layer` is now always the rung that wins,
+  // and these three say which rung was dropped to get there.
+  | "global rung dropped"
+  | "org rung dropped"
+  | "user rung dropped"
   | "disabled";
+
+/**
+ * What a dropped rung MEANS, in words a person can act on. Rendered as the
+ * badge's tooltip and as the sentence beside a row — the badge alone says a
+ * rung was set aside, and this says whose choice it was and what to do.
+ * The precise, per-binding reason lives on the resolution itself
+ * (`GET /mandates/{key}/resolution` → `dropped_rungs[].reason`) and is what the
+ * workspace shows; this is the list's short form.
+ */
+export const HEALTH_EXPLANATION: Partial<Record<MandateListHealth, string>> = {
+  "org rung dropped":
+    "Your organization chose an agent for this job, but its members cannot open that agent — so the choice could not be used and the job runs the rung below. Share the agent with the organization, or bind one it already has.",
+  "user rung dropped":
+    "Your own choice for this job names an agent you cannot open, so it could not be used and the job runs the rung below. Pick an agent you have access to.",
+  "global rung dropped":
+    "The platform-wide choice for this job names an agent that is not a system agent, so it could not be used and the job runs its own default.",
+};
 
 /**
  * THE OWNERSHIP AXIS. Mandates have no `created_by` scope — a person's
@@ -119,6 +145,9 @@ export const HEALTH_META: Record<MandateListHealth, BadgeMeta> = {
   "holder missing": { label: "Holder missing", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
   "holder unreachable": { label: "Holder unreachable", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
   "version unreachable": { label: "Version unreachable", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
+  "global rung dropped": { label: "Global choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
+  "org rung dropped": { label: "Org choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
+  "user rung dropped": { label: "Your choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
   disabled: { label: "Disabled", className: "border-border/70 text-muted-foreground" },
 };
 
@@ -148,6 +177,9 @@ export function healthMeta(value: string): BadgeMeta {
     case "holder missing":
     case "holder unreachable":
     case "version unreachable":
+    case "global rung dropped":
+    case "org rung dropped":
+    case "user rung dropped":
     case "disabled":
       return HEALTH_META[value];
   }
@@ -155,6 +187,15 @@ export function healthMeta(value: string): BadgeMeta {
     `[mandates] mnd_list_scoped returned an unknown status ${JSON.stringify(value)} — showing it verbatim. Add it to HEALTH_META in features/mandates/browse/types.ts.`,
   );
   return { label: value, className: UNKNOWN_CLASS };
+}
+
+/**
+ * The sentence for a health value, or "" when the badge already says it all.
+ * Kept beside `healthMeta` so a new health value cannot gain a badge without
+ * somebody deciding whether it also needs words.
+ */
+export function healthExplanation(value: string): string {
+  return HEALTH_EXPLANATION[value as MandateListHealth] ?? "";
 }
 
 /** The dedicated per-mandate route (dots are legal path segment characters). */

@@ -146,5 +146,10 @@ export async function resolveMandateServer(
     pins: wave1.pins,
     pinnedContext: wave1.pinnedContext,
     presentation,
+    // EMPTY BECAUSE NOTHING WAS ASKED, not because nothing was dropped: this
+    // path reads the job's own default Holder and consults no rung at all, so
+    // it has no drop to report. The browser's resolution on hydration carries
+    // the real answer, drops included.
+    droppedRungs: [],
   };
 }

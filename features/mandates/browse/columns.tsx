@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import {
   HEALTH_META,
   LAYER_META,
+  healthExplanation,
   healthMeta,
   layerMeta,
   mandateRoute,
@@ -218,8 +219,16 @@ export const MANDATE_COLUMNS: EntityColumnSpec<MandateListRow>[] = [
       width: 130,
       cell: (row) => {
         const meta = healthMeta(row.health);
+        // A table cell has no room for the sentence, so it carries it as the
+        // badge's own title — never nothing. The full words are on the compact
+        // rows, the cards, and the job's own workspace.
+        const words = healthExplanation(row.health);
         return (
-          <Badge variant="outline" className={cn("py-0 text-[10px]", meta.className)}>
+          <Badge
+            variant="outline"
+            className={cn("py-0 text-[10px]", meta.className)}
+            title={words || undefined}
+          >
             {row.health === "drift" && row.drift ? row.drift : meta.label}
           </Badge>
         );

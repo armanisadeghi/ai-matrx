@@ -56,6 +56,21 @@ export interface MandateLadderRow {
   definition_id: string;
   definition_enabled: boolean;
   fallback_mandate_key: string | null;
+  /**
+   * 🚨 WHY THIS RUNG WILL NOT DECIDE — the database's own sentence, or `null`
+   * when it can (the 18th column, added by aidream migration 0593 and recorded
+   * as an amendment to the frozen return shape).
+   *
+   * It is set when the platform turned the binding off with a reason, and when
+   * the rung's Holder is not runnable by THAT RUNG'S OWN principal — an org
+   * rung is judged for the organization, not for whoever is looking, so two
+   * members of one organization now read the same words here.
+   *
+   * Optional on the type because a browser can be newer than the database it
+   * is talking to; when it is absent this screen says exactly what it said
+   * before, never something it cannot back up.
+   */
+  dropped_reason?: string | null;
 }
 
 /** Generated directly from the live `mandate.resolve` RPC contract. */
@@ -216,15 +231,24 @@ export function ladderRowWords(
           : "Your own binding";
 
   if (row.rung !== "system" && !row.is_enabled) {
-    return { title, detail: "Turned off — this rung is not applied." };
+    return {
+      title,
+      // A binding somebody turned off says so and stops there. One the PLATFORM
+      // turned off carries the reason on the row, and the reason is the news.
+      detail: row.dropped_reason || "Turned off — this rung is not applied.",
+    };
   }
   if (ladderRowIsBroken(row)) {
     return {
       title,
+      // The database's sentence when it has one: it knows WHICH principal
+      // cannot open the Holder, which is the whole difference between "broken
+      // for you" and "broken for everyone in your organization".
       detail:
-        row.version_live === false
+        row.dropped_reason ||
+        (row.version_live === false
           ? "Broken — the pinned version it names cannot be read."
-          : "Broken — the agent it names cannot be read.",
+          : "Broken — the agent it names cannot be read."),
     };
   }
   if (row.chose_holder && row.holder_version_id !== null) {
