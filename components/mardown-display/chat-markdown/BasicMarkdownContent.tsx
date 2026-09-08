@@ -130,9 +130,7 @@ const ListItemComponent: React.FC<{
 
   // Check if this is a task list item (contains a checkbox)
   const nodeClassName = node?.properties?.className;
-  const isTaskItem = Array.isArray(nodeClassName)
-    ? nodeClassName.includes("task-list-item")
-    : typeof nodeClassName === "string" && nodeClassName.includes("task-list-item");
+  const isTaskItem = Array.isArray(nodeClassName) && nodeClassName.includes("task-list-item");
 
   // For task items, just return the content without additional styling.
   // NOTE: do NOT use `display: flex` here — it turns every adjacent text/element

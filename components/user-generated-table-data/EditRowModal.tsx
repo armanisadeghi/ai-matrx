@@ -215,7 +215,7 @@ export default function EditRowModal({
                     date ? format(date, "yyyy-MM-dd") : null,
                   )
                 }
-                initialFocus
+                autoFocus
               />
             </PopoverContent>
           </Popover>

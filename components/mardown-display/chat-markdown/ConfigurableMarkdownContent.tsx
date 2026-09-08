@@ -781,9 +781,7 @@ export const ConfigurableMarkdownContent: React.FC<
             const itemText = extractText(children);
             const itemDirection = detectTextDirection(itemText);
             const nodeClassName = node?.properties?.className;
-            const isTaskItem = Array.isArray(nodeClassName)
-              ? nodeClassName.includes("task-list-item")
-              : typeof nodeClassName === "string" && nodeClassName.includes("task-list-item");
+    const isTaskItem = Array.isArray(nodeClassName) && nodeClassName.includes("task-list-item");
 
             if (isTaskItem) {
               return (

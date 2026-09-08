@@ -135,6 +135,18 @@ all `@radix-ui/react-*` to latest 1.x/2.x within current major.
 
 ## 5. Major-version queue (priority order, per Arman)
 
+**September 8 integration sweep:** registry refresh advances compatible dependencies and
+removes stale React/type override patches. The compiler reproduced consumer breaks in
+Cartesia 4 (removed wrapper imports/voice creation), Unsplash 8 (renamed API groups),
+tsParticles 4 (engine initialization/options), DayPicker 10 (calendar class names),
+and mcp-handler 2 (handler signature). Those migrations remain open; this refresh
+retains their preceding major lines. react-icons remains at 5.6.0 because newer
+exports remove the Salesforce, Twilio, and Heroku icons used by integration demos.
+Do not call the dependency fleet fully current until these consumers migrate.
+Recharts tooltip labels now narrow non-date React nodes, Markdown task items use
+HAST class arrays, and calendar consumers use `autoFocus` rather than removed
+`initialFocus`. No casts or compiler suppressions were added.
+
 | Pri | Package | Cares? | Research doc | Route(s) to review (R8) | Status |
 |----|---------|--------|--------------|--------------------------|--------|
 | 1 | **TypeScript 6** | ✅ yes | `research/typescript-6.md` ✅ | whole repo `pnpm type-check` | ✅ **B1 shipped** (`7faeafff8`) — version-only; strictness deferred to B2 |
@@ -238,6 +250,7 @@ Per-package deep-dives produced by research agents. Each doc must contain: exact
 
 | Date | Change | By |
 |------|--------|-----|
+| 2026-09-08 | Refreshed registry dependencies, removed React override patch freezes, and repaired tooltip/Markdown/calendar consumers. Breaking SDK migrations remain explicitly tracked in §5; deployment acceptance is not claimed. | integration maintainer |
 | 2026-07-01 | **Type doctrine consolidated → `type-safety` Claude skill** (`.claude/skills/type-safety/` = SKILL.md doctrine + supabase-patterns.md); cursor skills `type-fixing-agent`/`supabase-type-safety` deleted; all pointers repointed. Doctrine core: real fixes change code + data, escalation-with-decision-brief over silencing, trace to the terminal consumer. | agent + Arman |
 | 2026-07-01 | **Wave 5 status:** 1347 → 7 errors; all 7 = CustomTool/`JsonSchemaProperty` drift in `AgentToolsManager.tsx` (deep fix, queued). **Ratchet extended to 14 categories** (adds `value!` 641, `?? {}` 619, `\|\| {}` 101, `\|\| []` 460, `?? ""` 2071, `\|\| ""` 896 — total visible debt 7,753); baseline re-frozen (down-only; `Record<string, any>` kept red at 238 vs 240). **New track:** `TYPE-DEBT-TRIAGE.md` — human-in-the-loop pipeline (inventory → decision briefs → Arman decides → fix waves). | agent |
 | 2026-06-29 | Phase 0 shipped: lockfile resync + `engines.node: 24.x`. | agent + Arman |

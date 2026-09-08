@@ -629,7 +629,7 @@ function DatePill({
             onChange(d ? toDateOnly(d) : null);
             setOpen(false);
           }}
-          initialFocus
+          autoFocus
         />
         {value && (
           <div className="border-t border-border p-2">

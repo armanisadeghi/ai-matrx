@@ -181,7 +181,7 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: Add
                 mode="single"
                 selected={value ? new Date(value) : undefined}
                 onSelect={(date) => handleValueChange(field.field_name, date ? format(date, 'yyyy-MM-dd') : null)}
-                initialFocus
+                autoFocus
               />
             </PopoverContent>
           </Popover>
