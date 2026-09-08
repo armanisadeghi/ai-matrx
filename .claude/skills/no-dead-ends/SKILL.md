@@ -96,6 +96,28 @@ check** — it statically imports 19 peek components. Import `hasPeek` from
 
 5. **A count is a door.** `3 overrides` reaches those overrides.
 
+6. **A SENTENCE is a door too.** Our servers write refusals and notes for
+   people, and those sentences name records by raw id — "resolved system agent
+   8f0bbfc2-… breaks the mandate contract". Printed as `{message}` that is a
+   dead end with extra steps: the reader is told which record is wrong and then
+   made to hand-copy a uuid into a URL bar. Print server prose through
+   **`TextWithDoors`** (`components/official/entity-ref/TextWithDoors.tsx`)
+   instead — it keeps every character verbatim and turns the ids into doors:
+
+   ```tsx
+   import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
+
+   <p className="text-destructive">
+     <TextWithDoors text={refusal} defaultToken="agent" />
+   </p>
+   ```
+
+   The token comes from the sentence's own words ("… agent <id> …"); pass
+   `defaultToken` only when the SURFACE knows what its sentences are about. An
+   id whose type cannot be established stays plain text — a link to the wrong
+   record reads as a fact and is a lie. `ServerNotes` already renders through
+   it, so every door's notes block inherits this for free.
+
 ## Step 4 — prove it
 
 - Browser: every named record shows Open / new-tab / peek. `read_page` and

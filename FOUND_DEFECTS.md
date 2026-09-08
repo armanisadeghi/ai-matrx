@@ -15,6 +15,37 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D298 — server sentences OUTSIDE the mandate family still print entity ids as flat text
+
+Found 2026-09-07 fixing the mandate refusal on
+`/administration/mandates/research_client.output_slides` ("resolved system agent
+8f0bbfc2-… breaks the mandate contract"). THE DOOR LAW's new corollary 6
+(`../common-docs/policies/no-dead-ends.md`) and the primitive that satisfies it —
+`components/official/entity-ref/TextWithDoors.tsx` — shipped in that change, and the
+mandate/bindings family plus `components/official/ServerNotes.tsx` (7 adopting surfaces) now
+render through it.
+
+**The remainder:** every OTHER surface that prints a server-authored sentence as `{error}` /
+`{err.message}` / `{reason}`. Our servers routinely embed bare ids in those sentences — a
+census of `aidream` alone finds `agent '<id>' not found`
+(`aidream/api/core/exceptions.py`), `agent version <id> does not exist`
+(`services/mandates/testing.py`), `Could not resolve agent <id>`
+(`services/ai_execution/realtime_tools.py`), `agent <id> not found (or archived)`
+(`services/mandates/bindings.py`), `workflow <id> is archived` (`services/mandates/service.py`).
+
+**The fix per site is one line** — wrap the printed string in `<TextWithDoors text={…} />`
+(add `defaultToken` only when the surface knows what its sentences are about). No behaviour
+changes when the sentence carries no resolvable id.
+
+**Where to sweep** (highest signal first, from the grep that found this): `features/agents/**`
+error banners, `features/research/**` (`last_failure_reason`, `rejection_reason`,
+`failure_reason`), `components/admin/**` (`ExecutionInstanceInspector`, `LargeIndicator`,
+`ServerCacheManager`), `components/debug/AgentExecutionDebugPanel.tsx`,
+`features/workflow*/**` run-failure surfaces. A `pnpm check:*` guard for this class does not
+exist yet and would be worth writing: flag JSX that prints an identifier named
+`error|message|reason|detail|sentence|note` without `TextWithDoors`, scoped to files that
+already import from a service/door module.
+
 ### D296 — `mnd_list_facets` / `mnd_list_scope_counts` never grew the `p_home` parameter the list door did
 
 Found 2026-09-07 building the ownership tabs (one-resolution L2). L0 gave
