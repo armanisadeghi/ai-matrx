@@ -30,8 +30,6 @@
  * on the platform at a foreign organization's agent.
  */
 
-import type { Middleware } from "@reduxjs/toolkit";
-
 // ── The fakes ───────────────────────────────────────────────────────────────
 //
 // Only two things are faked, and both are real seams with a real contract:
@@ -181,6 +179,16 @@ import {
 } from "../service";
 import { mandateOrgSwitchCacheMiddleware } from "../redux/org-switch-cache-middleware";
 
+async function rejectedError(promise: Promise<unknown>): Promise<Error> {
+  try {
+    await promise;
+  } catch (error) {
+    if (error instanceof Error) return error;
+    throw new Error(`Expected an Error rejection, received ${String(error)}`);
+  }
+  throw new Error("Expected the promise to reject");
+}
+
 beforeEach(() => {
   admission = "ready";
   selectedOrg = ORG_A;
@@ -215,7 +223,7 @@ describe("resolveMandate refuses without an admitted organization", () => {
   it("says what to do about it, in words a person can act on", async () => {
     admission = "unresolved";
     selectedOrg = null;
-    const error = (await resolveMandate(KEY).catch((e: unknown) => e)) as Error;
+    const error = await rejectedError(resolveMandate(KEY));
     expect(error.message).toContain("no organization is selected");
     expect(error.message).toContain("select a workspace");
   });
@@ -290,9 +298,7 @@ function dispatchOrgChange(nextOrg: string | null): void {
     middlewareState = { appContext: { organization_id: action.payload.id } };
     return action;
   };
-  (mandateOrgSwitchCacheMiddleware as unknown as Middleware)(
-    api as never,
-  )(next as never)({
+  mandateOrgSwitchCacheMiddleware(api as never)(next as never)({
     type: "appContext/setOrganization",
     payload: { id: nextOrg },
   });
@@ -357,7 +363,7 @@ describe("a verdict this client cannot run REFUSES, loudly", () => {
       agent_id: null,
       provenance: "user",
     });
-    const error = (await resolveMandate(KEY).catch((e: unknown) => e)) as Error;
+    const error = await rejectedError(resolveMandate(KEY));
     expect(error.message).toContain("workflow");
     // It names the RUNG, so the person knows which row to fix.
     expect(error.message).toContain("user rung");
@@ -371,7 +377,7 @@ describe("a verdict this client cannot run REFUSES, loudly", () => {
       agent_id: "8f9326a3-fc3f-438b-b742-b9ed28f363d7",
       provenance: "org",
     });
-    const error = (await resolveMandate(KEY).catch((e: unknown) => e)) as Error;
+    const error = await rejectedError(resolveMandate(KEY));
     expect(error.message).toContain("org rung is version-pinned");
     expect(error.message).toContain("8f9326a3-fc3f-438b-b742-b9ed28f363d7");
   });
