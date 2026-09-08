@@ -32,10 +32,8 @@
 
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -59,16 +57,19 @@ export interface MessagingAiDemand {
  */
 export function useMessagingAiDemandCounter(): MessagingAiDemand {
   const [count, setCount] = useState(0);
-  const acquire = useCallback<AcquireMessagingAi>(() => {
-    setCount((n) => n + 1);
-    let released = false;
-    return () => {
-      if (released) return;
-      released = true;
-      setCount((n) => Math.max(0, n - 1));
+  const acquireRef = useRef<AcquireMessagingAi | null>(null);
+  if (acquireRef.current === null) {
+    acquireRef.current = () => {
+      setCount((n) => n + 1);
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        setCount((n) => Math.max(0, n - 1));
+      };
     };
-  }, []);
-  return useMemo(() => ({ demanded: count > 0, acquire }), [count, acquire]);
+  }
+  return { demanded: count > 0, acquire: acquireRef.current };
 }
 
 export function MessagingAiDemandProvider({
