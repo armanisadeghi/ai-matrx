@@ -11,6 +11,16 @@
 // is not a work queue until you can see WHICH mandates and WHOSE Holder is
 // carrying them — so orange names its leader and red names its reason, both
 // one click from the workbench.
+//
+// 🚨 THIS BOARD CANNOT SEE THE SERVER REPORT, BY CONSTRUCTION. It used to take
+// the raw `MandateCoverageResponse` from `GET /mandates/coverage`, which
+// classifies EVERY mandate in the database — so its tiles counted, and its
+// strips NAMED, mandates the console's own table had correctly excluded (a
+// fresh walk of v0.4.1718 caught the "Nothing assigned" tile naming an
+// org-homed mandate on a console listing the `system` home). It now takes a
+// `ScopedMandateCoverage` the host computes from the very rows it is showing.
+// Give it no other shape: a board that cannot reach the whole-corpus payload
+// cannot render an unscoped number.
 
 import { CircleAlert, CircleCheck, CircleDashed } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,14 +28,19 @@ import { cn } from "@/lib/utils";
 import {
   COVERAGE_META,
   type MandateCoverageBucket,
-  type MandateCoverageResponse,
+  type ScopedMandateCoverage,
 } from "@/features/mandates/coverage";
 
 /** How many named rows a strip shows before it counts the rest. */
 export const COVERAGE_NAMED_ROW_CAP = 6;
 
 export interface MandateCoverageBoardProps {
-  report: MandateCoverageResponse | null;
+  /**
+   * The host's OWN rows, bucketed by the server's verdicts. `null` means the
+   * numbers are not known yet (the rows or the verdicts have not both landed),
+   * and the tiles say so rather than printing a confident 0.
+   */
+  view: ScopedMandateCoverage | null;
   loading: boolean;
   /** Verbatim server failure — the board degrades honestly, never to zeros. */
   error: string | null;
@@ -36,7 +51,7 @@ export interface MandateCoverageBoardProps {
 }
 
 export function MandateCoverageBoard({
-  report,
+  view,
   loading,
   error,
   active,
@@ -58,7 +73,7 @@ export function MandateCoverageBoard({
     );
   }
 
-  const counts = report?.counts ?? null;
+  const counts = view?.counts ?? null;
 
   return (
     <div className="space-y-2">
@@ -103,27 +118,25 @@ export function MandateCoverageBoard({
         })}
       </div>
 
-      {report && report.orange.length > 0 ? (
+      {view && view.orange.length > 0 ? (
         <NamedRows
           tone="orange"
-          heading={`${report.orange.length} running on a fallback Holder`}
-          rows={report.orange.map((row) => ({
-            key: row.mandate_key,
-            detail: row.leader_key
-              ? `carried by ${row.leader_key}`
-              : row.reason,
+          heading={`${view.orange.length} running on a fallback Holder`}
+          rows={view.orange.map((row) => ({
+            key: row.mandateKey,
+            detail: row.detail,
           }))}
           onOpenMandate={onOpenMandate}
         />
       ) : null}
 
-      {report && report.red.length > 0 ? (
+      {view && view.red.length > 0 ? (
         <NamedRows
           tone="red"
-          heading={`${report.red.length} with nothing assigned`}
-          rows={report.red.map((row) => ({
-            key: row.mandate_key,
-            detail: row.reason,
+          heading={`${view.red.length} with nothing assigned`}
+          rows={view.red.map((row) => ({
+            key: row.mandateKey,
+            detail: row.detail,
           }))}
           onOpenMandate={onOpenMandate}
         />

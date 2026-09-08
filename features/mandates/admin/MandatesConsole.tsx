@@ -94,6 +94,7 @@ import {
   buildCoverageIndex,
   coverageBucketOf,
   fetchMandateCoverage,
+  scopedCoverageOf,
   type MandateCoverageBucket,
   type MandateCoverageResponse,
 } from "@/features/mandates/coverage";
@@ -494,6 +495,27 @@ export function MandatesConsole() {
           left.mandateKey.localeCompare(right.mandateKey),
       );
   }, [catalogue, codeTruthByMandateKey, coverageIndex, data]);
+
+  // 🚨 THE BOARD COUNTS THIS CONSOLE'S OWN ROWS. `GET /mandates/coverage`
+  // classifies the WHOLE mandate corpus — every organization's — while this
+  // console lists the `system` home of the one list door. Handing the board the
+  // raw report made its tiles count, and its strips NAME, mandates the table
+  // beside them correctly excluded (walk of v0.4.1718: the "Nothing assigned"
+  // tile named an org-homed mandate). The server keeps the classification; the
+  // scope is ours, taken from `allRows` — the rows the door admitted.
+  //
+  // `null` until BOTH have landed: a report with no rows yet is not a zero, and
+  // the board prints "…"/"—" for a count it cannot know.
+  const coverageView = useMemo(
+    () =>
+      coverage && data
+        ? scopedCoverageOf(
+            coverageIndex,
+            allRows.map((row) => row.mandateKey),
+          )
+        : null,
+    [allRows, coverage, coverageIndex, data],
+  );
 
   // A coverage tile narrows the table's DATA (the tiles are the filter, the
   // Coverage column filters further). Same idiom as the surfaces readiness
@@ -1208,7 +1230,7 @@ export function MandatesConsole() {
           </div>
         ) : null}
         <MandateCoverageBoard
-          report={coverage}
+          view={coverageView}
           loading={loading}
           error={coverageError}
           active={coverageFilter}

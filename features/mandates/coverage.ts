@@ -129,6 +129,74 @@ export function coverageBucketOf(
   return index[mandateKey]?.bucket ?? "green";
 }
 
+// ---------------------------------------------------------------------------
+// THE SCOPED VIEW — the server's verdicts, intersected with YOUR corpus.
+// ---------------------------------------------------------------------------
+
+/**
+ * One named row on a coverage strip: the mandate, and why it is in its bucket.
+ */
+export interface MandateCoverageNamedRow {
+  mandateKey: string;
+  /** The Holder carrying it (orange) or the reason nothing does (red). */
+  detail: string;
+}
+
+/**
+ * Coverage for a corpus the caller already owns — counts and named rows that
+ * cannot name a mandate outside it.
+ */
+export interface ScopedMandateCoverage {
+  counts: Record<MandateCoverageBucket, number>;
+  orange: MandateCoverageNamedRow[];
+  red: MandateCoverageNamedRow[];
+}
+
+/**
+ * 🚨 A SCOREBOARD COUNTS THE LIST UNDER IT, NEVER A WIDER CORPUS.
+ *
+ * `GET /mandates/coverage` classifies EVERY mandate definition in the database
+ * — every organization's. A surface that renders `report.counts` therefore
+ * counts rows its own table correctly excluded, and its named strips can name a
+ * mandate that is not on the list at all. That is exactly what the mandates
+ * console shipped: its "Nothing assigned" tile named an org-homed mandate while
+ * the table beside it (the ONE list door, `system` home) showed 410 rows.
+ *
+ * So the classification stays the server's — this never re-derives green,
+ * orange or red — and the SCOPE stays the caller's: pass the mandate keys your
+ * list is actually showing, and every count and every named row is drawn from
+ * them alone.
+ */
+export function scopedCoverageOf(
+  index: MandateCoverageIndex,
+  mandateKeys: readonly string[],
+): ScopedMandateCoverage {
+  const counts: Record<MandateCoverageBucket, number> = {
+    green: 0,
+    orange: 0,
+    red: 0,
+  };
+  const orange: MandateCoverageNamedRow[] = [];
+  const red: MandateCoverageNamedRow[] = [];
+  for (const mandateKey of mandateKeys) {
+    const entry = index[mandateKey];
+    const bucket = coverageBucketOf(index, mandateKey);
+    counts[bucket] += 1;
+    if (!entry) continue;
+    if (entry.bucket === "orange") {
+      orange.push({
+        mandateKey,
+        detail: entry.leaderKey
+          ? `carried by ${entry.leaderKey}`
+          : entry.reason,
+      });
+    } else {
+      red.push({ mandateKey, detail: entry.reason });
+    }
+  }
+  return { counts, orange, red };
+}
+
 /**
  * The live board. Super-admin gated server-side; a non-admin caller gets the
  * error verbatim rather than an empty board that reads as "nothing wrong".

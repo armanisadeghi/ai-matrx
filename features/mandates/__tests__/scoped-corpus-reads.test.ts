@@ -60,6 +60,50 @@ export function unscopedCorpusReads(source: string): string[] {
   return problems;
 }
 
+/**
+ * THE SAME CLASS, ONE LAYER UP: a SCREEN that renders numbers from a wider
+ * corpus than the list it sits on.
+ *
+ * `GET /mandates/coverage` classifies every mandate definition in the database
+ * — 682 rows, every organization's. The mandates console lists the `system`
+ * home of the one list door (~410 rows). While the coverage board took the raw
+ * `MandateCoverageResponse`, its tiles counted that whole corpus and its named
+ * strips could name a mandate the console's own table had excluded — which is
+ * exactly what a walk of v0.4.1718 found the "Nothing assigned" tile doing.
+ *
+ * So a presentation component may not touch the whole-corpus payload at all:
+ * no `MandateCoverageResponse` in its props, and nothing read off `report`.
+ * Scope belongs to the host, which owns the rows.
+ */
+const UNSCOPED_COVERAGE_RENDERS: { pattern: RegExp; why: string }[] = [
+  {
+    pattern: /\bMandateCoverageResponse\b/,
+    why: "takes the whole-corpus server report (GET /mandates/coverage) — it classifies EVERY organization's mandates, not the rows this screen lists",
+  },
+  {
+    pattern: /\breport\s*\??\.\s*counts\b/,
+    why: "renders report.counts — the whole corpus's tallies, not this list's",
+  },
+  {
+    pattern: /\breport\s*\??\.\s*orange\b/,
+    why: "names report.orange rows — it can name a mandate this list excludes",
+  },
+  {
+    pattern: /\breport\s*\??\.\s*red\b/,
+    why: "names report.red rows — it can name a mandate this list excludes",
+  },
+];
+
+export function unscopedCoverageRenders(source: string): string[] {
+  const problems: string[] = [];
+  for (const line of source.split("\n")) {
+    for (const { pattern, why } of UNSCOPED_COVERAGE_RENDERS) {
+      if (pattern.test(line)) problems.push(`${line.trim()} — ${why}`);
+    }
+  }
+  return problems;
+}
+
 /** The belief that produced the class, in the words it was written in. */
 export function rlsNarrowsItBeliefs(source: string): string[] {
   return source
@@ -72,6 +116,7 @@ const ADMIN_SERVICE = "features/mandates/admin/service.ts";
 const CONSOLE = "features/mandates/admin/MandatesConsole.tsx";
 const LIST_DOOR = "features/mandates/list-door.ts";
 const BROWSE_SERVICE = "features/mandates/browse/service.ts";
+const COVERAGE_BOARD = "features/mandates/admin/MandateCoverageBoard.tsx";
 
 function read(relativePath: string): string {
   return withoutComments(readFileSync(join(REPO_ROOT, relativePath), "utf8"));
@@ -98,6 +143,33 @@ describe("the mandate corpus is never read unscoped", () => {
     // A refusal is a settled fact on the page, never a toast over an empty table.
     expect(source).toContain("isMandateListRefusal");
     expect(source).toContain("systemHomeRefusal");
+  });
+});
+
+describe("the console's coverage board counts only the rows the console lists", () => {
+  it("cannot reach the whole-corpus coverage report at all", () => {
+    expect(unscopedCoverageRenders(read(COVERAGE_BOARD))).toEqual([]);
+  });
+
+  it("takes a view scoped to the host's own rows", () => {
+    const source = read(COVERAGE_BOARD);
+    expect(source).toContain("ScopedMandateCoverage");
+    expect(source).toContain("view: ScopedMandateCoverage | null");
+    // A count that is not known is "…"/"—", never a confident 0.
+    expect(source).toContain('count === null ? (loading ? "…" : "—") : count');
+  });
+
+  it("is handed a view the console derives from the scoped rows", () => {
+    const source = read(CONSOLE);
+    expect(source).toContain("scopedCoverageOf(");
+    expect(source).toContain("allRows.map((row) => row.mandateKey)");
+    expect(source).toContain("<MandateCoverageBoard");
+    expect(source).toContain("view={coverageView}");
+    // The raw server report never crosses into the board again.
+    expect(source).not.toContain("report={coverage}");
+    // …and the classification stays aidream's: the console intersects, it
+    // never re-derives green/orange/red.
+    expect(source).toContain("coverageBucketOf");
   });
 });
 
@@ -143,6 +215,56 @@ describe("proven against the code as it shipped", () => {
 
   it("catches the binding read that had no predicate at all", () => {
     expect(unscopedCorpusReads(SHIPPED_BINDING_READ)).toHaveLength(1);
+  });
+
+  /**
+   * The coverage board's props and its two named strips, quoted verbatim from
+   * `features/mandates/admin/MandateCoverageBoard.tsx` as it shipped in
+   * v0.4.1718 — the third unscoped read of the mandate corpus on this page.
+   */
+  const SHIPPED_COVERAGE_BOARD = `
+export interface MandateCoverageBoardProps {
+  report: MandateCoverageResponse | null;
+  loading: boolean;
+  error: string | null;
+}
+
+  const counts = report?.counts ?? null;
+
+      {report && report.orange.length > 0 ? (
+        <NamedRows
+          heading={\`\${report.orange.length} running on a fallback Holder\`}
+          rows={report.orange.map((row) => ({ key: row.mandate_key }))}
+        />
+      ) : null}
+
+      {report && report.red.length > 0 ? (
+        <NamedRows
+          heading={\`\${report.red.length} with nothing assigned\`}
+          rows={report.red.map((row) => ({ key: row.mandate_key }))}
+        />
+      ) : null}
+`;
+
+  it("catches the board taking the whole-corpus report as its props", () => {
+    const problems = unscopedCoverageRenders(SHIPPED_COVERAGE_BOARD);
+    expect(
+      problems.filter((p) => p.includes("MandateCoverageResponse")),
+    ).toHaveLength(1);
+  });
+
+  it("catches the tiles counting report.counts", () => {
+    expect(
+      unscopedCoverageRenders(SHIPPED_COVERAGE_BOARD).filter((p) =>
+        p.includes("report.counts"),
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("catches the strips naming report.orange and report.red rows", () => {
+    const problems = unscopedCoverageRenders(SHIPPED_COVERAGE_BOARD);
+    expect(problems.filter((p) => p.includes("report.orange"))).toHaveLength(3);
+    expect(problems.filter((p) => p.includes("report.red"))).toHaveLength(3);
   });
 
   it("catches the belief in the comment that justified it", () => {
