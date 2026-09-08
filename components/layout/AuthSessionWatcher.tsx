@@ -173,6 +173,12 @@ export default function AuthSessionWatcher() {
         // either one leaves a real hole — if you make those two slices
         // policies, delete these lines rather than leaving both.
         dispatch(clearContext());
+        // The shared active-organization cookie (Domain=.aimatrx.com) is
+        // identity-keyed, but a SIGNED_OUT is the one moment the next person
+        // may be about to sign in on this browser — forget it outright.
+        void import("@/lib/organizations/activeOrgCookie").then((m) =>
+          m.activeOrgCookie.clear(),
+        );
         dispatch(scopesActions.scopesReset());
         dispatch(contextValuesActions.contextValuesReset());
         // Same conditional flush for the Content-IR registries: a session that

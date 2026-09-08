@@ -1,99 +1,47 @@
 "use client";
 
-// OrganizationPickerPanel — the canonical "choose your organization" body:
-// a selectable list of the user's orgs + the "Set as my default" switch.
-// Rendered inside the header reminder's popover; reusable anywhere an org
-// chooser is needed. Selecting an org writes the global active org via the
-// sanctioned switcher (chooseActiveOrganization); the default switch persists
-// the preference. Active org = Check; default org = Star badge.
+// OrganizationPickerPanel — the canonical "choose your organization" body.
+// It is the platform's ONE shared control (`OrganizationPicker` from
+// `@ai-matrx/design-system`, identical in Workflow Studio's sidebar and the
+// admin dashboard's settings) bound to THIS app's state: active org from
+// appContextSlice, memberships from the scope tree, the default from user
+// preferences, writes via the sanctioned switcher. Rendered inside the header
+// reminder's popover and the user menu; reusable anywhere an org chooser is
+// needed. The choice also lands in the shared apex cookie (via
+// `activeOrgCookieMiddleware`), so Studio wakes up in the same organization.
 
-import { Check, Star } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { OrganizationPicker } from "@ai-matrx/design-system";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
-import { DefaultOrgSwitch } from "./DefaultOrgSwitch";
-import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
+import { useDefaultOrganization } from "@/features/organizations/hooks/useDefaultOrganization";
 
-export function OrganizationPickerPanel() {
-  const {
-    activeOrgId,
-    organizations,
-    loading,
-    loadFailed,
-    isDefault,
-    selectOrganization,
-  } = useActiveOrganizationPicker();
+export function OrganizationPickerPanel({
+  hideHeading = false,
+  itemClassName,
+}: {
+  hideHeading?: boolean;
+  itemClassName?: string;
+}) {
+  const { activeOrgId, organizations, loading, loadFailed, selectOrganization } =
+    useActiveOrganizationPicker();
+  const { defaultOrganizationId, setDefaultOrganization } =
+    useDefaultOrganization();
 
   return (
-    <div className="flex flex-col">
-      <p className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        Organization
-      </p>
-
-      {loading ? (
-        <div className="space-y-1 px-1 py-1">
-          <div className="h-7 animate-pulse rounded-md bg-muted" />
-          <div className="h-7 animate-pulse rounded-md bg-muted" />
-        </div>
-      ) : loadFailed ? (
-        <p className="px-2 py-2 text-xs text-destructive">
-          Could not load organizations.
-        </p>
-      ) : organizations.length === 0 ? (
-        <p className="px-2 py-2 text-xs text-muted-foreground">
-          No organizations found.
-        </p>
-      ) : (
-        <ul className="max-h-72 overflow-y-auto">
-          {organizations.map((org) => {
-            const isActive = org.id === activeOrgId;
-            return (
-              <li key={org.id}>
-                <button
-                  type="button"
-                  aria-pressed={isActive}
-                  onClick={() => selectOrganization(org.id, org.name)}
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent",
-                    isActive && "bg-primary/10 font-medium text-primary",
-                  )}
-                >
-                  <OrganizationAbbreviation
-                    abbreviation={org.abbreviation}
-                    className={cn(
-                      "h-5 min-w-8 rounded border px-1 text-[9px]",
-                      isActive ? "text-primary" : "text-muted-foreground",
-                    )}
-                  />
-                  <span className="min-w-0 flex-1 truncate">{org.name}</span>
-                  {org.is_personal && (
-                    <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      Personal
-                    </span>
-                  )}
-                  {isDefault(org.id) && (
-                    <Star
-                      size={13}
-                      strokeWidth={2}
-                      className="shrink-0 fill-amber-400 text-amber-400"
-                      aria-label="Default organization"
-                    />
-                  )}
-                  {isActive && (
-                    <Check
-                      size={15}
-                      strokeWidth={2}
-                      className="shrink-0 text-primary"
-                    />
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      <div className="my-1 border-t border-border" />
-      <DefaultOrgSwitch />
-    </div>
+    <OrganizationPicker
+      hideHeading={hideHeading}
+      itemClassName={itemClassName}
+      organizations={organizations.map((org) => ({
+        id: org.id,
+        name: org.name,
+        abbreviation: org.abbreviation,
+        isPersonal: org.is_personal,
+      }))}
+      activeOrganizationId={activeOrgId}
+      defaultOrganizationId={defaultOrganizationId}
+      loading={loading}
+      loadFailed={loadFailed}
+      onSelect={(org) => selectOrganization(org.id, org.name)}
+      onSetDefault={setDefaultOrganization}
+    />
   );
 }

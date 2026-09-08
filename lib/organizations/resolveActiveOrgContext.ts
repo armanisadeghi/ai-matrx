@@ -6,7 +6,13 @@
 // `appContextPolicy` sync `remote.fetch` runs on cold-boot + stale-refresh, and
 // that the back-compat `bootstrapActiveOrganization` thunk delegates to.
 //
-// Precedence for the active org (unchanged from the old island bootstrap):
+// Precedence for the active org — the platform's canonical order (ruling:
+// common-docs/projects/no-db-assigned-org/PLAN.md row EX-T05; the same order
+// Studio, the dashboard and the extension apply):
+//   0. this browser's STORED SELECTION — the shared apex cookie
+//      (`lib/organizations/activeOrgCookie.ts`), identity-keyed, written by
+//      every Matrx surface on aimatrx.com — IF still a membership. This is how
+//      a choice made in Workflow Studio is honoured here, and vice versa;
 //   a. the user's DEFAULT org preference (durable, cross-device) — IF they are
 //      still a member;
 //   b. else, if they belong to exactly ONE org, that org (nothing to choose →
@@ -15,15 +21,16 @@
 //      one. The personal org still rides along on writes via
 //      selectEffectiveOrganizationId / getActiveOrgId.
 //
-// The default org is the single durable "which org am I in" source of truth —
-// read authoritatively from `users.user_preferences` so it never races the
-// client preferences-sync hydration. Cross-session restore = set your default.
+// The default org is the durable cross-DEVICE truth — read authoritatively
+// from `users.user_preferences` so it never races the client preferences-sync
+// hydration. The cookie is the cross-SURFACE truth for this browser.
 
 import { getUserOrganizations } from "@/features/organizations/service";
 import {
   resolvePersonalOrgId,
   primePersonalOrgId,
 } from "@/lib/organizations/personalOrg";
+import { activeOrgCookie } from "@/lib/organizations/activeOrgCookie";
 import { supabase } from "@/utils/supabase/client";
 
 /** The org subset of appContext this resolver produces. */
@@ -94,6 +101,21 @@ export async function resolveActiveOrgContext(
   const resolvedPersonalId =
     personalOrgId ?? (orgs.find((o) => o.isPersonal) ?? orgs[0])?.id ?? null;
   primePersonalOrgId(resolvedPersonalId);
+
+  // 0. This browser's stored selection (the shared apex cookie) — if still a
+  //    member. A stale one is dropped so it cannot shadow the rungs below.
+  const storedOrgId = activeOrgCookie.read(userId);
+  if (storedOrgId) {
+    const match = orgs.find((o) => o.id === storedOrgId);
+    if (match) {
+      return {
+        organization_id: match.id,
+        organization_name: match.name,
+        personal_organization_id: resolvedPersonalId,
+      };
+    }
+    activeOrgCookie.clear();
+  }
 
   // a. Default org preference (durable, cross-device) — if still a member.
   const preferredOrgId = await readDefaultOrgIdFromDb(userId);

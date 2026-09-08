@@ -32,6 +32,7 @@ import { tasksRealtimeMiddleware } from "@/features/tasks/redux/tasksRealtimeMid
 import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/persistence";
 import { agentCacheBustMiddleware } from "@/features/agents/redux/agent-definition/cache-bust-middleware";
 import { mandateOrgSwitchCacheMiddleware } from "@/features/mandates/redux/org-switch-cache-middleware";
+import { activeOrgCookieMiddleware } from "@/lib/organizations/activeOrgCookieMiddleware";
 import { scopeTreeInvalidationMiddleware } from "@/features/scopes/redux/scopeTreeInvalidationMiddleware";
 import { overlayRenderWatchdogMiddleware } from "@/features/window-panels/diagnostics/overlayRenderWatchdog";
 import { windowPersistenceCloseMiddleware } from "@/features/window-panels/persistence/windowPersistenceCloseMiddleware";
@@ -221,6 +222,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         pdfStudioPersistenceMiddleware,
         agentCacheBustMiddleware,
         mandateOrgSwitchCacheMiddleware,
+        activeOrgCookieMiddleware,
         scopeTreeInvalidationMiddleware,
         windowPersistenceCloseMiddleware,
         overlayRenderWatchdogMiddleware,

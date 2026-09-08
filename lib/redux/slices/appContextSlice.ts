@@ -47,6 +47,8 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
+import { getIdentity } from "@/lib/sync/identity";
+import { activeOrgCookie } from "@/lib/organizations/activeOrgCookie";
 import {
   REHYDRATE_ACTION_TYPE,
   type RehydrateAction,
@@ -498,9 +500,28 @@ export const appContextPolicy = definePolicy<AppContextState>({
     const r = raw as Record<string, unknown>;
     const str = (v: unknown): string | null =>
       typeof v === "string" && v.length > 0 ? v : null;
+    let organization_id = str(r.organization_id);
+    let organization_name = str(r.organization_name);
+    // THE SHARED COOKIE BEATS THIS ORIGIN'S CACHE. The record above is what
+    // THIS app last held; the cookie (`lib/organizations/activeOrgCookie.ts`,
+    // Domain=.aimatrx.com) is what the person last chose on ANY Matrx surface
+    // — Workflow Studio included. When they disagree, the cookie is the newer
+    // fact. The name is unknown here (the cookie carries ids only), so it is
+    // left null and `cacheSatisfies` below treats the record as incomplete,
+    // which makes the boot reconcile (`resolveActiveOrgContext`, whose rung 0
+    // is this same cookie) and fill the name in. Identity-keyed: the cookie
+    // answers only for the signed-in person, so a mismatch can never import
+    // somebody else's workspace.
+    const identity = getIdentity();
+    const stored =
+      identity.type === "auth" ? activeOrgCookie.read(identity.userId) : null;
+    if (stored && stored !== organization_id) {
+      organization_id = stored;
+      organization_name = null;
+    }
     return {
-      organization_id: str(r.organization_id),
-      organization_name: str(r.organization_name),
+      organization_id,
+      organization_name,
       personal_organization_id: str(r.personal_organization_id),
       orgBootstrapResolved: r.orgBootstrapResolved === true,
     };
@@ -540,6 +561,10 @@ export const appContextPolicy = definePolicy<AppContextState>({
     // durable default-org preference: the user starred a default, and every
     // subsequent boot restored the org-less cache and nudged them to pick one
     // again (until `staleAfter` finally reconciled, minutes later).
-    cacheSatisfies: (state) => Boolean(state?.organization_id),
+    //
+    // And a record carrying an id but NO name is a cookie override (see
+    // `deserialize`) — half an answer. Reconcile so the name lands.
+    cacheSatisfies: (state) =>
+      Boolean(state?.organization_id) && Boolean(state?.organization_name),
   },
 });

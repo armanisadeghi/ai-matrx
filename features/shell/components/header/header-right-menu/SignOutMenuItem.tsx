@@ -8,6 +8,11 @@ import { MENU_ITEM_CLASS } from "./menuItemClass";
 export function SignOutMenuItem() {
     const handleClick = useCallback(async () => {
         const { supabase } = await import("@/utils/supabase/client");
+        const { activeOrgCookie } = await import("@/lib/organizations/activeOrgCookie");
+        // Forget the shared active-organization cookie outright on an EXPLICIT
+        // sign-out (it is identity-keyed anyway) so the next person on this
+        // browser inherits nothing — on every Matrx surface of the apex.
+        activeOrgCookie.clear();
         await supabase.auth.signOut();
         window.location.href = "/login";
     }, []);
