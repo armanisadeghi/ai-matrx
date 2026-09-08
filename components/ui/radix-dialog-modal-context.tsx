@@ -1,30 +1,22 @@
 "use client";
 
-import * as React from "react";
-
-const RadixDialogModalContext = React.createContext(true);
-
-interface RadixDialogModalProviderProps {
-  children: React.ReactNode;
-  modal: boolean;
-}
-
 /**
- * Keeps our Radix-based content wrappers aligned with the owning Root's
- * modality so ARIA semantics cannot drift from focus/pointer behavior.
+ * HOST RE-EXPORT ONLY — this context lives in `@ai-matrx/design-system`.
+ *
+ * IT MUST BE ONE CONTEXT, NOT TWO. `components/ui/dialog.tsx` is now the
+ * package's Dialog, so `DialogContentPrimitive` reads the PACKAGE's modality
+ * context. A host copy of this provider would silently stop reaching it — the
+ * provider would wrap, the primitive would read its own default, and the
+ * `aria-modal` a non-modal dialog is supposed to drop would come back. Two
+ * React contexts with the same name and different identities fail exactly that
+ * quietly, which is why this file forwards instead of declaring.
+ *
+ * Consumers: `components/ui/drawer.tsx` and `components/ui/matrx/dialog.tsx`,
+ * both of which wrap package-owned content.
  */
-export function RadixDialogModalProvider({
-  children,
-  modal,
-}: RadixDialogModalProviderProps) {
-  return (
-    <RadixDialogModalContext.Provider value={modal}>
-      {children}
-    </RadixDialogModalContext.Provider>
-  );
-}
 
-/** Returns whether the nearest Radix Dialog-derived root is modal. */
-export function useRadixDialogModal(): boolean {
-  return React.useContext(RadixDialogModalContext);
-}
+export {
+  RadixDialogModalProvider,
+  useRadixDialogModal,
+} from "@ai-matrx/design-system";
+export type { RadixDialogModalProviderProps } from "@ai-matrx/design-system";
