@@ -100,6 +100,7 @@ describe("AutomationButton — the key resolves", () => {
       mandate: { agentId: "a1" } as never,
       loading: false,
       error: null,
+      absent: false,
     });
     const { button, text } = mount("mandate.goal_writer");
 
@@ -109,10 +110,18 @@ describe("AutomationButton — the key resolves", () => {
 });
 
 describe("AutomationButton — the key resolves to nothing", () => {
-  // Every dead state reaches the component as the SAME fact: `mandate === null`
-  // from `useMandate({ optional: true })`. `resolveMandate` produces it for a
-  // missing row, a soft-deleted row (it filters `deleted_at`), a disabled row,
-  // and a holderless or version-pinned one.
+  // 🚨 THIS COMMENT USED TO SAY "every dead state reaches the component as the
+  // SAME fact: `mandate === null`" — and that blessing is exactly what became
+  // V-PARITY/UX F4. `mandate === null` is a 404 AND every refusal AND an
+  // unadmitted organization AND a network failure; the screen printed the one
+  // reason it knew, so a LIVE `mandate.goal_writer` wore "no live job has that
+  // name" and told an admin to create a job that already exists.
+  //
+  // The states below are the ones where the DOOR ITSELF said 404 — a missing
+  // row and a soft-deleted row, both of which `_load_definition` answers with
+  // nothing — so `absent` is true and this sentence is the true one. A job that
+  // exists and cannot answer is a different screen, guarded in
+  // `features/mandates/__tests__/automation-availability-honesty.test.tsx`.
   it.each([
     ["a key with no row at all", KIND_CONVERTER_MANDATE_KEY],
     ["the soft-deleted, holderless row Arman hit", "mandates.goal_writer"],
@@ -121,6 +130,7 @@ describe("AutomationButton — the key resolves to nothing", () => {
       mandate: null,
       loading: false,
       error: null,
+      absent: true,
     });
     const { button, text } = mount(key);
 
@@ -138,6 +148,7 @@ describe("AutomationButton — the key resolves to nothing", () => {
       mandate: null,
       loading: true,
       error: null,
+      absent: false,
     });
     const { button, text } = mount(KIND_CONVERTER_MANDATE_KEY);
     // "not read yet" and "does not exist" must never look identical.
@@ -166,6 +177,7 @@ describe("the inline ask captures EVERY character, then submits it", () => {
       mandate: { agentId: "a1" } as never,
       loading: false,
       error: null,
+      absent: false,
     });
     mockedSurface.mockReturnValue({
       status: "ready",

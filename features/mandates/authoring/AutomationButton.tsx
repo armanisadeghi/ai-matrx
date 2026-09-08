@@ -62,10 +62,40 @@ export function notifyMissingAutomationMandate(mandateKey: string): void {
   );
 }
 
-/** The sentence the screen prints when the key resolves to nothing. Exported so
- * the guard asserts the copy a person actually reads, not a paraphrase. */
+/** The sentence the screen prints when the door says NO SUCH JOB — a 404, and
+ * nothing else. Exported so the guard asserts the copy a person actually reads,
+ * not a paraphrase. */
 export function missingAutomationMandateLine(mandateKey: string): string {
   return `Not available yet — this runs the job "${mandateKey}", and no live job has that name. Create it and this button works, with no deploy.`;
+}
+
+/**
+ * 🚨 THE JOB EXISTS AND STILL WILL NOT RUN — the sentence F4 was missing.
+ *
+ * V-PARITY/UX F4 (2026-09-08): this control wore
+ * `missingAutomationMandateLine("mandate.goal_writer")` on the admin panel
+ * while that job was LIVE, enabled and homed in the Matrx System organization.
+ * The probe answered `mandate === null` for the refusal exactly as it does for
+ * a 404, and the screen printed the one reason it knew — telling an admin to
+ * create a job that already exists. A disabled control wearing a false reason
+ * is the fourth law's exact prohibition, and a false reason that is ACTIONABLE
+ * is worse than none.
+ *
+ * So a refusal now prints the DOOR'S OWN sentence, which already names the
+ * cause and the remedy (`user_message`, through `mandate_http_error`), and this
+ * wrapper adds only what the door cannot know: that nothing else on the page is
+ * blocked by it.
+ */
+export function unavailableAutomationMandateLine(
+  mandateKey: string,
+  reason: string,
+): string {
+  const said = reason.trim();
+  return `Can't run "${mandateKey}" right now: ${
+    said.length > 0
+      ? said
+      : "the server refused it and sent no reason, which is itself a defect — please report it"
+  } Nothing else on this page is blocked by it.`;
 }
 
 export function AutomationButton({
@@ -96,8 +126,15 @@ export function AutomationButton({
 }) {
   // optional: an absent automation mandate is the expected starting state —
   // the screen says so; it is not a console error.
-  const { mandate, loading } = useMandate(mandateKey, { optional: true });
+  const { mandate, loading, error, absent } = useMandate(mandateKey, {
+    optional: true,
+  });
   const available = mandate !== null;
+  // THREE FACTS, THREE SENTENCES (F4). "This job does not exist" is `absent`
+  // and only `absent`; anything else that stopped the resolution says so in the
+  // door's own words. Reading `!available` for both is what made this control
+  // tell an admin to create `mandate.goal_writer`, which is live.
+  const refusedReason = !available && !absent ? (error ?? "") : null;
 
   // Only read the surface once the key resolves — a dead key has no inputs to
   // ask about, and reading them would be a request about nothing.
@@ -136,6 +173,10 @@ export function AutomationButton({
         unanswered.length > 0
       }
       onClick={() => {
+        if (refusedReason !== null) {
+          toast.info(unavailableAutomationMandateLine(mandateKey, refusedReason));
+          return;
+        }
         if (!available) {
           notifyMissingAutomationMandate(mandateKey);
           return;
@@ -154,6 +195,17 @@ export function AutomationButton({
   );
 
   if (loading) return button;
+
+  if (refusedReason !== null) {
+    return (
+      <div className="flex flex-wrap items-center gap-1.5">
+        {button}
+        <span className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+          {unavailableAutomationMandateLine(mandateKey, refusedReason)}
+        </span>
+      </div>
+    );
+  }
 
   if (!available) {
     return (
