@@ -140,7 +140,19 @@ export function AgentListDropdown({
     excludeAgentIds,
   });
 
-  const displayLabel = label ?? pinnedAgent?.name ?? "Agents";
+  // 🚨 THE TRIGGER IS THE STATEMENT OF WHO IS ASSIGNED, so it never answers
+  // "Agents" when an agent IS assigned — that reads as nothing selected. The
+  // roster loads on mount (see `useAgentListCore`), so the interim is brief;
+  // an id that never resolves says so rather than hiding behind the catalogue
+  // label. Hosts that pass an explicit `label` are unaffected.
+  const displayLabel =
+    label ??
+    pinnedAgent?.name ??
+    (activeAgentId
+      ? isLoading
+        ? "Naming the agent\u2026"
+        : "An agent this list cannot name"
+      : "Agents");
 
   const showAssignedTooltip =
     Boolean(activeAgentId) &&

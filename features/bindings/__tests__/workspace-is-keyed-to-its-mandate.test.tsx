@@ -116,8 +116,8 @@ jest.mock("@/features/agent-shortcuts/components/AgentVersionPicker", () => ({
 jest.mock("@/features/agent-shortcuts/components/ShortcutScopePicker", () => ({
   ShortcutScopePicker: () => <div data-testid="scope-picker" />,
 }));
-jest.mock("@/features/bindings/WorkflowHolderPicker", () => ({
-  WorkflowHolderPicker: () => <div data-testid="workflow-picker" />,
+jest.mock("@/features/workflow-runtime/listings/WorkflowListDropdown", () => ({
+  WorkflowListDropdown: () => <div data-testid="workflow-picker" />,
 }));
 
 // Leaves. None of them holds a verdict; each is heavy and none is under test.

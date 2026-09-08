@@ -57,8 +57,8 @@ jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
 jest.mock("@/features/agent-shortcuts/components/ShortcutScopePicker", () => ({
   ShortcutScopePicker: () => <div data-testid="scope-picker" />,
 }));
-jest.mock("@/features/bindings/WorkflowHolderPicker", () => ({
-  WorkflowHolderPicker: () => <div data-testid="workflow-picker" />,
+jest.mock("@/features/workflow-runtime/listings/WorkflowListDropdown", () => ({
+  WorkflowListDropdown: () => <div data-testid="workflow-picker" />,
 }));
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({
   EntityRef: ({ name }: { name?: string }) => <span>{name ?? ""}</span>,
@@ -147,14 +147,26 @@ describe("the admin holder section is three controls and nothing else", () => {
     act(() => root.unmount());
   });
 
-  it("names the agent AND its own id — never a version id", () => {
+  /**
+   * 🚨 THE PICKER IS THE WHOLE CONTROL (Arman, 2026-09-08). The trigger names
+   * the assigned agent; the raw uuid, the second copy of the name and the lone
+   * "Open it" link that used to sit beside it are GONE — every one of them is
+   * already inside the dropdown (detail card, peek, doors).
+   *
+   * RED before this ruling: the block printed the name twice plus a bare id.
+   */
+  it("names the agent ON THE PICKER, and prints no id or door beside it", () => {
     const { container, text, root } = renderSystemBar({
       agentId: "8f0bbfc2-85d9-4913-8cea-b09a50c62be6",
     });
-    expect(text).toContain("Research → Slides Generator");
     expect(
-      container.querySelector('[data-testid="holder-agent-id"]')?.textContent,
-    ).toBe("8f0bbfc2-85d9-4913-8cea-b09a50c62be6");
+      container.querySelector('[data-testid="agent-picker"]')?.textContent,
+    ).toBe("Research → Slides Generator");
+    // Said ONCE — the picker's trigger, and nowhere else in the block.
+    expect(text.split("Research → Slides Generator").length - 1).toBe(1);
+    expect(text).not.toContain("8f0bbfc2-85d9-4913-8cea-b09a50c62be6");
+    expect(container.querySelector('[data-testid="holder-agent-id"]')).toBeNull();
+    expect(text).not.toContain("Open it");
     act(() => root.unmount());
   });
 

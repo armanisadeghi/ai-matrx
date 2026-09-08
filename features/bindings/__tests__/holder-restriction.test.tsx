@@ -74,8 +74,8 @@ jest.mock("@/features/agent-shortcuts/components/ShortcutScopePicker", () => ({
   ShortcutScopePicker: () => <div data-testid="scope-picker" />,
 }));
 
-jest.mock("../WorkflowHolderPicker", () => ({
-  WorkflowHolderPicker: () => <div data-testid="workflow-picker" />,
+jest.mock("@/features/workflow-runtime/listings/WorkflowListDropdown", () => ({
+  WorkflowListDropdown: () => <div data-testid="workflow-picker" />,
 }));
 
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({

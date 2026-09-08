@@ -29,6 +29,24 @@
 //  3. LATEST IS A VALUE, NOT A SWITCH. Storage is `default_holder_version_id
 //     IS NULL` ⇒ latest; there is no `use_latest` flag, so the screen does not
 //     invent a second control for one column.
+//  4. 🚨 THE PICKER IS THE WHOLE CONTROL. Arman, 2026-09-08: *"The agent
+//     dropdown is written to be a self-reliant and inclusive system that
+//     doesn't require all of this extra trash around it! … Allow it to work
+//     naturally to show the selected agent and all links and information come
+//     up within it so there is no need for anything else."*
+//
+//     `AgentListDropdown` already names the assigned agent on its own trigger
+//     and carries, INSIDE it, every door and fact a reader could want: the
+//     hover detail card, the sneak peek, open-in-chat, open-in-new-tab,
+//     favorite, categories, tags, search. This screen used to override the
+//     trigger's label with "Change agent" and then rebuild the lost identity
+//     beside it — the name a second time, the raw uuid, and a lone "Open it"
+//     link. All three are DELETED: the label is now the agent's name, and the
+//     row holds one control.
+//
+//     `WorkflowListDropdown` is the same control for the other holder type
+//     (features/workflow-runtime/listings) — built to full parity for exactly
+//     this reason, so the Workflow branch is a picker and not a wall of rows.
 //
 // Every control carries `data-holder-control` — the render guards count them,
 // so a second chooser appearing anywhere in a mandate screen's tree fails a
@@ -36,7 +54,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Select,
   SelectContent,
@@ -51,8 +68,7 @@ import {
   fetchAgentVersionHistory,
   type AgentVersionHistoryItem,
 } from "@/features/agents/redux/agent-definition/thunks";
-import { useAgentHref } from "@/features/agents/addressing/useAgentHref";
-import { WorkflowHolderPicker } from "./WorkflowHolderPicker";
+import { WorkflowListDropdown } from "@/features/workflow-runtime/listings/WorkflowListDropdown";
 import type { HolderDraft } from "./ScopeHolderBar";
 
 /** "Latest" as a select value. `null` is the stored form; this is the option. */
@@ -61,7 +77,11 @@ export const LATEST_VERSION_VALUE = "latest";
 export interface HolderAssignmentProps {
   holder: HolderDraft;
   onHolderChange: (next: HolderDraft) => void;
-  /** The holder agent's real name — never an id where a name exists. */
+  /**
+   * The holder's real name, when the host already knows it — the picker names
+   * the record itself from its own read, so this is a head start, never the
+   * only source.
+   */
   holderName?: string | null;
   /** Identity for the dropdown's consumer slot. */
   mandateKey: string;
@@ -96,43 +116,6 @@ export interface HolderAssignmentProps {
    */
   coverageLine?: string | null;
   disabled?: boolean;
-}
-
-/**
- * 🚨 THE DOOR TO THE ASSIGNED AGENT — the one deleted affordance FIX-R9-UI
- * called *"the one worth arguing about"* (*"Open Research → Slides
- * Generator"*), restored as a LINK beside the name it opens.
- *
- * It goes through FIX-R10-ADDR's `useAgentHref` and nothing else. A hand-built
- * `/agents/${id}` is a bet that the id is a user agent — and the holder of a
- * system-homed job is a BUILTIN agent, which lives only under the
- * administration shell, so that bet is a dead link exactly where this campaign
- * puts it. `scripts/check-agent-links.ts` forbids the hand-built form outright.
- *
- * A link is never dead while it thinks: `resolving` renders the always-valid
- * `/agents/go/<id>`, and only a resolved MISS becomes a refusal in words.
- */
-function AssignedAgentDoor({ agentId }: { agentId: string }) {
-  const door = useAgentHref({ id: agentId, context: "the holder assignment" });
-  if (door.state === "unknown") {
-    return (
-      <span
-        data-testid="holder-agent-link-refusal"
-        className="text-[11px] text-muted-foreground"
-      >
-        {door.reason}
-      </span>
-    );
-  }
-  return (
-    <a
-      data-testid="holder-agent-link"
-      href={door.href}
-      className="text-[11.5px] font-medium text-primary underline-offset-2 hover:underline"
-    >
-      Open it
-    </a>
-  );
 }
 
 function Row({
@@ -228,56 +211,40 @@ export function HolderAssignment({
         control="assignment"
       >
         {isWorkflow ? (
-          <WorkflowHolderPicker
-            mandateOutputKind={outputKind}
-            value={holder.workflowId}
-            onChange={(id) => onHolderChange({ ...holder, workflowId: id })}
+          <WorkflowListDropdown
+            activeWorkflowId={holder.workflowId}
+            label={holder.workflowId ? (holderName ?? undefined) : undefined}
+            placeholder="Choose a workflow"
+            wantedOutputKind={outputKind}
             disabled={disabled}
+            className="max-w-[22rem]"
+            onSelect={(id) =>
+              onHolderChange({ ...holder, workflowId: id })
+            }
           />
         ) : (
-          <>
-            <AgentListDropdown
-              consumerId={`one-binding-holder-${mandateKey}`}
-              activeAgentId={holder.agentId}
-              visibleTabs={agentTabs?.visibleTabs}
-              initialTab={agentTabs?.initialTab}
-              includeSystemInAll={agentTabs?.includeSystemInAll}
-              systemTabLabel="System"
-              label={holder.agentId ? "Change agent" : "Choose an agent"}
-              onSelect={(id) =>
-                onHolderChange({
-                  kind: "agent",
-                  agentId: id,
-                  agentVersionId: null,
-                  useLatest: true,
-                  workflowId: null,
-                })
-              }
-            />
-            {holder.agentId ? (
-              <>
-                <EntityRef
-                  token="agent"
-                  id={holder.agentId}
-                  name={holderName ?? undefined}
-                  wrap
-                  className="min-w-0 text-[12.5px] font-medium"
-                />
-                {/* THE AGENT'S OWN ID, said out loud — Arman: *"Some Agent Name
-                    with Agent ID (Not a version id)"*. The version id is a
-                    different record and belongs to the control below; printing
-                    it here is how the screen used to answer "which agent" with
-                    a number nobody could look up. */}
-                <code
-                  data-testid="holder-agent-id"
-                  className="font-mono text-[10.5px] text-muted-foreground/80"
-                >
-                  {holder.agentId}
-                </code>
-                <AssignedAgentDoor agentId={holder.agentId} />
-              </>
-            ) : null}
-          </>
+          <AgentListDropdown
+            consumerId={`one-binding-holder-${mandateKey}`}
+            activeAgentId={holder.agentId}
+            visibleTabs={agentTabs?.visibleTabs}
+            initialTab={agentTabs?.initialTab}
+            includeSystemInAll={agentTabs?.includeSystemInAll}
+            systemTabLabel="System"
+            className="max-w-[22rem]"
+            // THE NAME IS THE LABEL. Not "Change agent" — the trigger IS the
+            // statement of who holds this job, and the dropdown resolves the
+            // name itself when the host has not got one yet.
+            label={holder.agentId ? (holderName ?? undefined) : "Choose an agent"}
+            onSelect={(id) =>
+              onHolderChange({
+                kind: "agent",
+                agentId: id,
+                agentVersionId: null,
+                useLatest: true,
+                workflowId: null,
+              })
+            }
+          />
         )}
       </Row>
 

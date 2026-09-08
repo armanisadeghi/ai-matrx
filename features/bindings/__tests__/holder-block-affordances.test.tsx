@@ -11,7 +11,9 @@
  *      run would refuse."* It is the ONLY statement on that page of whether
  *      what the job offers actually feeds what the holder needs;
  *   2. **a door to the assigned agent** — FIX-R9-UI called it *"the one worth
- *      arguing about"*.
+ *      arguing about"*. Arman then ruled (2026-09-08) that the door belongs
+ *      INSIDE the picker, which already carries it; section 2 below now pins
+ *      that reading instead.
  *
  * They come back as ONE LINE and ONE LINK, inside the block, and D19 must not
  * regress with them: this file re-counts the three controls and fails on a
@@ -52,8 +54,8 @@ jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
 jest.mock("@/features/agent-shortcuts/components/ShortcutScopePicker", () => ({
   ShortcutScopePicker: () => <div data-testid="scope-picker" />,
 }));
-jest.mock("@/features/bindings/WorkflowHolderPicker", () => ({
-  WorkflowHolderPicker: () => <div data-testid="workflow-picker" />,
+jest.mock("@/features/workflow-runtime/listings/WorkflowListDropdown", () => ({
+  WorkflowListDropdown: () => <div data-testid="workflow-picker" />,
 }));
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({
   EntityRef: ({ name }: { name?: string }) => <span>{name ?? ""}</span>,
@@ -64,15 +66,12 @@ import {
   __resetAgentAddressCache,
   seedAgentAddress,
 } from "@/features/agents/addressing/agentAddressCache";
-import {
-  AGENT_BASE_PATH,
-  SYSTEM_AGENT_BASE_PATH,
-} from "@/features/agents/addressing/agentAddress";
+
 
 /** `research_client.output_slides`' real holder — a BUILTIN (system) agent. */
 const SYSTEM_AGENT = "8f0bbfc2-85d9-4913-8cea-b09a50c62be6";
-const USER_AGENT = "11111111-2222-3333-4444-555555555555";
 
+const HOLDER_NAME = "Research → Slides Generator";
 const COVERAGE = "Every input this holder needs is fed — all 3.";
 const UNFED = "1 required input is still unmapped, and a run would refuse.";
 
@@ -110,7 +109,7 @@ function render(opts: {
           workflowId: null,
         }}
         onHolderChange={() => undefined}
-        holderName="Research → Slides Generator"
+        holderName={HOLDER_NAME}
         job={{ ...JOB, coverageLine: opts.coverageLine ?? COVERAGE }}
         ladderLine="ignored on this host"
       />,
@@ -155,52 +154,48 @@ describe("the coverage fact is inside the holder block, on the host that lost it
   });
 });
 
-// ── 2. THE DOOR TO THE ASSIGNED AGENT, THROUGH THE ADDRESSING HELPER ────────
+// ── 2. THE DOOR LIVES INSIDE THE PICKER, NOT BESIDE IT ──────────────────────
+//
+// 🚨 SUPERSEDED BY ARMAN, 2026-09-08: *"The agent dropdown is written to be a
+// self-reliant and inclusive system that doesn't require all of this extra
+// trash around it! … Allow it to work naturally to show the selected agent and
+// all links and information come up within it so there is no need for anything
+// else."*
+//
+// FIX-R13/B restored the door as a link BESIDE the picker, together with a
+// second copy of the name and the raw uuid. Nothing was gained: the picker's
+// own detail card already carries open-in-chat, open-in-new-tab (through the
+// always-valid `/agents/go/<id>` resolver, which is what made a BUILTIN holder
+// reachable in the first place), the sneak peek, favorite and copy. So the
+// cluster is deleted and what remains is asserted here: the picker NAMES the
+// holder, and nothing outside it repeats the name, prints the id, or offers a
+// second door.
 
-describe("the assigned agent has a working door", () => {
-  it("lands a BUILTIN holder on the administration shell", () => {
-    seedAgentAddress({ agentId: SYSTEM_AGENT, agentType: "builtin" });
-    const { container, root } = render({});
-    const link = container.querySelector<HTMLAnchorElement>(
-      '[data-testid="holder-agent-link"]',
-    );
-    expect(link).not.toBeNull();
-    expect(link?.getAttribute("href")).toBe(
-      `${SYSTEM_AGENT_BASE_PATH}/${SYSTEM_AGENT}`,
-    );
-    // The defect this closes: the hand-built form, which 404s for a builtin.
-    expect(link?.getAttribute("href")).not.toBe(
-      `${AGENT_BASE_PATH}/${SYSTEM_AGENT}`,
-    );
-    act(() => root.unmount());
-  });
-
-  it("lands a USER holder on the user shell", () => {
-    seedAgentAddress({ agentId: USER_AGENT, agentType: "custom" });
-    const { container, root } = render({ agentId: USER_AGENT });
-    expect(
-      container
-        .querySelector('[data-testid="holder-agent-link"]')
-        ?.getAttribute("href"),
-    ).toBe(`${AGENT_BASE_PATH}/${USER_AGENT}`);
-    act(() => root.unmount());
-  });
-
-  it("is never dead while the kind is still unknown", () => {
-    // No seed: the door is `resolving`, and the always-valid `/agents/go/<id>`
-    // is a REAL navigation that resolves server-side.
+describe("the assigned agent is stated by the picker alone", () => {
+  it("puts the holder's name on the picker's trigger", () => {
     const { container, root } = render({});
     expect(
-      container
-        .querySelector('[data-testid="holder-agent-link"]')
-        ?.getAttribute("href"),
-    ).toBe(`${AGENT_BASE_PATH}/go/${SYSTEM_AGENT}`);
+      container.querySelector('[data-testid="agent-picker"]')?.textContent,
+    ).toBe(HOLDER_NAME);
     act(() => root.unmount());
   });
 
-  it("has no door at all when there is no holder", () => {
-    const { container, root } = render({ agentId: null });
+  it("prints no raw id, no second name and no separate door beside it", () => {
+    const { container, root } = render({});
+    const text = container.textContent ?? "";
+    expect(container.querySelector('[data-testid="holder-agent-id"]')).toBeNull();
     expect(container.querySelector('[data-testid="holder-agent-link"]')).toBeNull();
+    expect(text).not.toContain(SYSTEM_AGENT);
+    expect(text).not.toContain("Open it");
+    expect(text.split(HOLDER_NAME).length - 1).toBe(1);
+    act(() => root.unmount());
+  });
+
+  it("says to choose one when there is no holder — never an empty control", () => {
+    const { container, root } = render({ agentId: null });
+    expect(
+      container.querySelector('[data-testid="agent-picker"]')?.textContent,
+    ).toBe("Choose an agent");
     act(() => root.unmount());
   });
 });
@@ -231,9 +226,6 @@ describe("D19 still holds with both affordances back", () => {
     seedAgentAddress({ agentId: SYSTEM_AGENT, agentType: "builtin" });
     const { container, root } = render({});
     expect(container.querySelectorAll('[data-testid="agent-picker"]').length).toBe(
-      1,
-    );
-    expect(container.querySelectorAll('[data-testid="holder-agent-id"]').length).toBe(
       1,
     );
     act(() => root.unmount());
