@@ -134,6 +134,7 @@ if $STRICT; then
         "Authentication destinations and gates|pnpm check:auth-destinations"
         "Auth doors blind to a split cookie jar|pnpm check:split-jar-doors:strict"
         "Package logic re-grown outside its package|pnpm check:package-twins:strict"
+        "A doc or skill teaches a hand-rolled recipe the package owns|pnpm check:docs-twins"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from
@@ -353,6 +354,7 @@ else
         "Authentication destinations and gates|pnpm check:auth-destinations"
         "Auth doors blind to a split cookie jar|pnpm check:split-jar-doors:strict"
         "Package logic re-grown outside its package|pnpm check:package-twins:strict"
+        "A doc or skill teaches a hand-rolled recipe the package owns|pnpm check:docs-twins"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from

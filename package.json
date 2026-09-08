@@ -224,6 +224,8 @@
     "check:package-twins": "node scripts/check-package-twins.mjs",
     "check:package-twins:strict": "node scripts/check-package-twins.mjs --strict",
     "check:package-twins:self-test": "node scripts/check-package-twins.mjs --self-test",
+    "check:docs-twins": "node scripts/check-docs-twins.mjs",
+    "check:docs-twins:self-test": "node scripts/check-docs-twins.mjs --self-test",
     "sync-types": "pnpm sync:matrx-packages && node scripts/sync-types.mjs",
     "sync-types:local": "pnpm sync:matrx-packages && node scripts/sync-types.mjs --local",
     "sync-types:fast": "pnpm sync:matrx-packages && node scripts/sync-types.mjs --fast",

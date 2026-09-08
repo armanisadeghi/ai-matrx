@@ -383,18 +383,29 @@ All four tables are RLS-protected with owner-only policies: a row is readable / 
 
 ## 10. Real-time updates (optional, but recommended)
 
-Subscribe to `sch_run` changes on visible tasks so the UI updates live as runs progress:
+Live updates ride `@ai-matrx/realtime` — never a hand-rolled `supabase.channel(...)` (the
+package owns reconnect, the mandatory `onBackfill` catch-up, echo suppression and dedup; a raw
+channel silently goes stale after a laptop sleep). This repo's scheduler surfaces already do
+this: `lib/scheduler-client/realtime.ts` opens the `scheduler-user` private-broadcast channel
+with `wire: raw` and a `resync` door. For a per-task Run History view, declare a namespace and
+use the hook:
 
 ```ts
-supabase
-  .channel('sch_run-changes')
-  .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'sch_run', filter: `task_id=eq.${taskId}` },
-      (payload) => /* re-render */)
-  .subscribe();
+import { defineChannelNamespace } from "@ai-matrx/realtime";
+import { useChannel } from "@ai-matrx/realtime/react";
+
+const schRuns = defineChannelNamespace("sch-runs");
+
+useChannel(schRuns, {
+  key: taskId,
+  postgresChanges: [{ event: "*", schema: "public", table: "sch_run", filter: `task_id=eq.${taskId}` }],
+  onEvent: () => invalidateRuns(taskId),
+  onBackfill: () => refetchRuns(taskId), // the catch-up read after reconnect / tab wake
+});
 ```
 
-Use this in the detail view's Run History card. For the list view, subscribe to `sch_task` UPDATE events so `next_due_at` and `last_run_at` stay fresh without polling.
+Read the `supabase-realtime` skill before adding any subscription; `check:package-twins` and
+`check:docs-twins` refuse the hand-rolled form in code and in docs.
 
 ---
 
