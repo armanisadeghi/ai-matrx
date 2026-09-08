@@ -88,9 +88,29 @@ export interface ItemFact {
   value: string;
 }
 
+/**
+ * A UUID is never a fact. THE UUID RULE (Arman): an id is shown as its first
+ * segment with a copy control and the full value on hover — which a dense fact
+ * chip cannot do. So a chip NEVER carries one: the id is not a thing a human
+ * reads at a glance, and the panel already renders it properly through the
+ * item's own kind component.
+ *
+ * Found in production 2026-09-08: `model_id` sailed through the 40-char scalar
+ * cutoff (a UUID is 36) and rendered as
+ * `1a6229af-cb0c-488a-8fef-d669b37c908a model id` inside the card.
+ */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** `variable_definitions` → "variables". Underscores read as developer output. */
+const FACT_LABEL_OVERRIDES: Readonly<Record<string, string>> = {
+  variable_definitions: "variables",
+  context_policies: "context",
+  custom_tools: "custom tools",
+};
+
 function factLabel(key: string): string {
-  return key.replace(/_/g, " ");
+  return FACT_LABEL_OVERRIDES[key] ?? key.replace(/_/g, " ");
 }
 
 /**
@@ -112,8 +132,10 @@ export function itemFacts(
       continue;
     }
     if (typeof value === "string") {
-      if (!value.trim() || value.length > 40) continue;
-      facts.push({ key, label: factLabel(key), value: value.trim() });
+      const trimmed = value.trim();
+      if (!trimmed || trimmed.length > 40) continue;
+      if (UUID_RE.test(trimmed)) continue; // see UUID_RE — never a chip.
+      facts.push({ key, label: factLabel(key), value: trimmed });
       continue;
     }
     if (typeof value === "number" || typeof value === "boolean") {

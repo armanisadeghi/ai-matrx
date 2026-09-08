@@ -103,15 +103,24 @@ function ItemRow({
         className="flex min-w-0 flex-1 items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-accent hover:text-accent-foreground"
         title="Open to read it"
       >
-        <span className="truncate font-medium text-foreground">{title}</span>
-        {facts.map((fact) => (
-          <span
-            key={fact.key}
-            className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline"
-          >
-            {fact.value} {fact.label}
-          </span>
-        ))}
+        {/* THE IDENTITY WINS THE SPACE. Facts are context; the name is the whole
+            point of the row, and a card that renders "Mas…" beside four fact
+            chips has inverted its own job (found in production 2026-09-08:
+            "Masterwork Conductor" rendered 37px wide inside a 141px need).
+            The title keeps its intrinsic width and the FACTS give way. */}
+        <span className="min-w-0 shrink-0 truncate font-medium text-foreground">
+          {title}
+        </span>
+        <span className="hidden min-w-0 flex-1 items-baseline gap-2 overflow-hidden sm:flex">
+          {facts.map((fact) => (
+            <span
+              key={fact.key}
+              className="truncate text-[11px] text-muted-foreground"
+            >
+              {fact.value} {fact.label}
+            </span>
+          ))}
+        </span>
         {subtitle && facts.length === 0 ? (
           <span className="hidden truncate text-[11px] text-muted-foreground sm:inline">
             {subtitle}

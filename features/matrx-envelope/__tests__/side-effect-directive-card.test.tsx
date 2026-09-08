@@ -124,6 +124,31 @@ describe("naming an item — from authority, never a guess", () => {
     expect(itemTitle({ some: "payload" }, "unknown_noun", 1, 3)).toBe("Item 2 of 3");
   });
 
+  it("NEVER renders a UUID as a fact chip (THE UUID RULE)", () => {
+    // Found in production 2026-09-08: `model_id` is 36 chars, the scalar cutoff
+    // was 40, so the full UUID rendered inside the card. An id is shown as its
+    // first segment + copy + hover — which a chip cannot do — so it is never a
+    // chip at all. Regression guard for a rule, not a preference.
+    const facts = itemFacts({
+      model_id: "1a6229af-cb0c-488a-8fef-d669b37c908a",
+      messages: [1, 2],
+    });
+    expect(facts.map((f) => f.key)).not.toContain("model_id");
+    for (const fact of facts) {
+      expect(fact.value).not.toMatch(
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+      );
+    }
+  });
+
+  it("the real agent item carries no UUID in any chip", () => {
+    for (const fact of itemFacts(AGENT_DEFINITION_ITEM as Record<string, unknown>)) {
+      expect(fact.value).not.toMatch(
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+      );
+    }
+  });
+
   it("summarizes collections as counts and skips nested objects", () => {
     const facts = itemFacts(AGENT_DEFINITION_ITEM as Record<string, unknown>);
     const keys = facts.map((f) => f.key);
