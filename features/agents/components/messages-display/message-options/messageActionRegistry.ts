@@ -1805,7 +1805,7 @@ function serverApiTestItems(ctx: MessageActionContext): MenuItem[] {
         // at z-index 9999 and the menu sits at the same layer.
         onClose();
         const { confirm } =
-          await import("@ai-matrx/kit/confirm");
+          await import("@/components/dialogs/confirm/ConfirmDialogHost");
         const ok = await confirm({
           title: "Delete this message?",
           description:
@@ -1835,7 +1835,7 @@ function serverApiTestItems(ctx: MessageActionContext): MenuItem[] {
       action: async () => {
         onClose();
         const { confirm } =
-          await import("@ai-matrx/kit/confirm");
+          await import("@/components/dialogs/confirm/ConfirmDialogHost");
         const ok = await confirm({
           title: "Truncate conversation from here?",
           description:

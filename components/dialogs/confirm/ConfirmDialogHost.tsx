@@ -1,15 +1,20 @@
 /**
- * components/dialogs/confirm/ConfirmDialogHost.tsx — HOST WIRING for
- * @ai-matrx/kit/confirm.
+ * components/dialogs/confirm/ConfirmDialogHost.tsx — HOST WIRING for the
+ * global confirm dialog, which is TWO packages on purpose (2026-09-07):
+ * `@ai-matrx/kit/confirm-opener` owns the imperative `confirm()` and its
+ * registry; `@ai-matrx/design-system` owns the dialog BODY, because the surface
+ * needs that package's AlertDialog, motion layer and overlay scrim token. kit's
+ * old `./confirm` — a second inlined AlertDialog wearing `tw-animate-css`
+ * utilities and a hardcoded opaque black scrim — is gone.
  *
  * Slim client shell + public entry point for the global confirm dialog.
  * Statically importable from anywhere — it does NOT pull the dialog body,
  * radix-alert-dialog, or the host state machinery into the static graph of
  * route entries that mount it: the imperative API comes from the kit's pure
  * `confirm-opener` entry (zero React, zero dialog markup), and the heavy
- * host loads via `next/dynamic({ ssr: false })` from the kit's `confirm`
- * entry. The two entries share ONE opener state by construction (a
- * `Symbol.for` globalThis slot inside the package).
+ * host loads via `next/dynamic({ ssr: false })` from `@ai-matrx/design-system`.
+ * The two packages share ONE opener state by construction (a `Symbol.for`
+ * globalThis slot inside kit, which design-system's host registers into).
  *
  * Render `<ConfirmDialogHost />` once, near the root of every provider tree
  * (Providers, EntityProviders, PublicProviders) so the imperative
@@ -38,7 +43,7 @@ export async function confirm(options: ConfirmOptions): Promise<boolean> {
 }
 
 const ConfirmDialogHostImpl = dynamic(
-  () => import("@ai-matrx/kit/confirm").then((m) => m.ConfirmDialogHost),
+  () => import("@ai-matrx/design-system").then((m) => m.ConfirmDialogHost),
   { ssr: false, loading: () => null },
 );
 

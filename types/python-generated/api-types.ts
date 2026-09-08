@@ -8519,6 +8519,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/feathery/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_feathery_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/monday/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_monday_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/zulip-cloud/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_zulip_cloud_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -14554,6 +14605,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/kodi-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_kodi_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/nobel-prize/latest-award": {
         parameters: {
             query?: never;
@@ -16960,6 +17028,23 @@ export interface paths {
         };
         /** Public Package */
         get: operations["public_package_hex_pm_public_package_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clojars/public/artifact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Artifact */
+        get: operations["public_artifact_clojars_public_artifact_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -47921,6 +48006,44 @@ export interface components {
             /** Duration Ms */
             duration_ms?: number | null;
         };
+        /**
+         * ClojarsArtifactMetadata
+         * @description Safe bounded projection of one public Clojars artifact.
+         */
+        ClojarsArtifactMetadata: {
+            /**
+             * Kind
+             * @default clojars_public_artifact_metadata
+             * @constant
+             */
+            __kind?: "clojars_public_artifact_metadata";
+            /**
+             * Provider
+             * @default clojars
+             * @constant
+             */
+            provider?: "clojars";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Group */
+            group: string;
+            /** Artifact */
+            artifact: string;
+            /** Description */
+            description: string;
+            /** Latest Version */
+            latest_version: string;
+            /** Downloads */
+            downloads: number;
+            /** Licenses */
+            licenses: string[];
+            /** Clojars Url */
+            clojars_url: string;
+        };
         /** CloneTemplateResponse */
         CloneTemplateResponse: {
             /** Workflow Id */
@@ -59922,6 +60045,38 @@ export interface components {
             fault_domain: string;
             /** Count */
             count: number;
+        };
+        /**
+         * FeatheryServiceStatus
+         * @description Safe aggregate status projection for Feathery's fixed status page.
+         */
+        FeatheryServiceStatus: {
+            /**
+             * Kind
+             * @default feathery_public_service_status
+             * @constant
+             */
+            __kind?: "feathery_public_service_status";
+            /**
+             * Provider
+             * @default Feathery
+             * @constant
+             */
+            provider?: "Feathery";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.feathery.io
+             * @constant
+             */
+            status_page?: "https://status.feathery.io";
         };
         /**
          * FeatureFmServiceStatus
@@ -74917,6 +75072,40 @@ export interface components {
              * @constant
              */
             status_page?: "https://molin.statuspage.io";
+        };
+        /** MondayServiceStatus */
+        MondayServiceStatus: {
+            /**
+             * Kind
+             * @default monday_official_collaborative_work_status
+             * @constant
+             */
+            __kind?: "monday_official_collaborative_work_status";
+            /**
+             * Provider
+             * @default monday.com
+             * @constant
+             */
+            provider?: "monday.com";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.monday.com
+             * @constant
+             */
+            status_page?: "https://status.monday.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * MoodlePublicConfigResult
@@ -108457,6 +108646,38 @@ export interface components {
             items: components["schemas"]["ZoteroPublicItem"][];
         };
         /**
+         * ZulipCloudServiceStatus
+         * @description Safe aggregate status projection for Zulip Cloud's fixed status page.
+         */
+        ZulipCloudServiceStatus: {
+            /**
+             * Kind
+             * @default zulip_cloud_public_service_status
+             * @constant
+             */
+            __kind?: "zulip_cloud_public_service_status";
+            /**
+             * Provider
+             * @default Zulip Cloud
+             * @constant
+             */
+            provider?: "Zulip Cloud";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.zulip.com
+             * @constant
+             */
+            status_page?: "https://status.zulip.com";
+        };
+        /**
          * ZulipServerResult
          * @description Safe bounded projection of the public Zulip Community server.
          */
@@ -109494,6 +109715,31 @@ export interface components {
             limit: number;
             /** Offset */
             offset: number;
+        };
+        /** PageMetadata */
+        aidream__services__kodi_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default kodi_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "kodi_wiki_page_metadata";
+            /**
+             * Provider
+             * @default Kodi Wiki
+             * @constant
+             */
+            provider?: "Kodi Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
         };
         /** PageMetadata */
         aidream__services__libreoffice_wiki_integrations__service__PageMetadata: {
@@ -124509,6 +124755,66 @@ export interface operations {
             };
         };
     };
+    public_status_feathery_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatheryServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_monday_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MondayServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_zulip_cloud_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZulipCloudServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -132294,6 +132600,37 @@ export interface operations {
             };
         };
     };
+    public_page_kodi_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__kodi_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     latest_award_nobel_prize_latest_award_get: {
         parameters: {
             query?: never;
@@ -135712,6 +136049,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HexPackageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_artifact_clojars_public_artifact_get: {
+        parameters: {
+            query: {
+                group: string;
+                artifact: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClojarsArtifactMetadata"];
                 };
             };
             /** @description Validation Error */

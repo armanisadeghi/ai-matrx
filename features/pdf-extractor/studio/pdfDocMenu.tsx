@@ -23,7 +23,7 @@ import {
   FILE_CONTEXT_MENU_LABEL,
   FileContextMenuIcon,
 } from "@/features/files/components/FileContextSection";
-import { confirm } from "@ai-matrx/kit/confirm";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { StudioDocSummary } from "./hooks/usePdfStudioDocs";
 
 function resolveAbsoluteHref(href: string): string {

@@ -19669,6 +19669,69 @@
         }
       }
     },
+    "/feathery/public/status": {
+      "get": {
+        "tags": [
+          "Feathery Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_feathery_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatheryServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/monday/public/status": {
+      "get": {
+        "tags": [
+          "monday.com Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_monday_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MondayServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/zulip-cloud/public/status": {
+      "get": {
+        "tags": [
+          "Zulip Cloud Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_zulip_cloud_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZulipCloudServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -28528,6 +28591,49 @@
         }
       }
     },
+    "/kodi-wiki/public/page": {
+      "get": {
+        "tags": [
+          "Kodi Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_kodi_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__kodi_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/nobel-prize/latest-award": {
       "get": {
         "tags": [
@@ -32788,6 +32894,61 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HexPackageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clojars/public/artifact": {
+      "get": {
+        "tags": [
+          "Clojars Integrations"
+        ],
+        "summary": "Public Artifact",
+        "operationId": "public_artifact_clojars_public_artifact_get",
+        "parameters": [
+          {
+            "name": "group",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Group"
+            }
+          },
+          {
+            "name": "artifact",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Artifact"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClojarsArtifactMetadata"
                 }
               }
             }
@@ -110168,6 +110329,83 @@
         ],
         "title": "ClientToolResult"
       },
+      "ClojarsArtifactMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "clojars_public_artifact_metadata",
+            "title": "Kind",
+            "default": "clojars_public_artifact_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "clojars",
+            "title": "Provider",
+            "default": "clojars"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "group": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Group"
+          },
+          "artifact": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Artifact"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Description"
+          },
+          "latest_version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Latest Version"
+          },
+          "downloads": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Downloads"
+          },
+          "licenses": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Licenses"
+          },
+          "clojars_url": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Clojars Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "group",
+          "artifact",
+          "description",
+          "latest_version",
+          "downloads",
+          "licenses",
+          "clojars_url"
+        ],
+        "title": "ClojarsArtifactMetadata",
+        "description": "Safe bounded projection of one public Clojars artifact."
+      },
       "CloneTemplateResponse": {
         "properties": {
           "workflow_id": {
@@ -138547,6 +138785,47 @@
           "count"
         ],
         "title": "FaultDomainCount"
+      },
+      "FeatheryServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "feathery_public_service_status",
+            "title": "Kind",
+            "default": "feathery_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Feathery",
+            "title": "Provider",
+            "default": "Feathery"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.feathery.io",
+            "title": "Status Page",
+            "default": "https://status.feathery.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "FeatheryServiceStatus",
+        "description": "Safe aggregate status projection for Feathery's fixed status page."
       },
       "FeatureFmServiceStatus": {
         "properties": {
@@ -171235,6 +171514,55 @@
           "indicator"
         ],
         "title": "MolinServiceStatus"
+      },
+      "MondayServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "monday_official_collaborative_work_status",
+            "title": "Kind",
+            "default": "monday_official_collaborative_work_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "monday.com",
+            "title": "Provider",
+            "default": "monday.com"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.monday.com",
+            "title": "Status Page",
+            "default": "https://status.monday.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "MondayServiceStatus"
       },
       "MoodlePublicConfigResult": {
         "properties": {
@@ -246058,6 +246386,47 @@
         ],
         "title": "ZoteroPublicLibraryResponse"
       },
+      "ZulipCloudServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "zulip_cloud_public_service_status",
+            "title": "Kind",
+            "default": "zulip_cloud_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Zulip Cloud",
+            "title": "Provider",
+            "default": "Zulip Cloud"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.zulip.com",
+            "title": "Status Page",
+            "default": "https://status.zulip.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ZulipCloudServiceStatus",
+        "description": "Safe aggregate status projection for Zulip Cloud's fixed status page."
+      },
       "ZulipServerResult": {
         "properties": {
           "__kind": {
@@ -248422,6 +248791,52 @@
           "offset"
         ],
         "title": "MentionsPage"
+      },
+      "aidream__services__kodi_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "kodi_wiki_page_metadata",
+            "title": "Kind",
+            "default": "kodi_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Kodi Wiki",
+            "title": "Provider",
+            "default": "Kodi Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
       },
       "aidream__services__libreoffice_wiki_integrations__service__PageMetadata": {
         "properties": {
