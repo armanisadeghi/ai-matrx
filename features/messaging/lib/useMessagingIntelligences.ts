@@ -18,8 +18,15 @@
 // 🚨 NO FALLBACK. A mandate that will not resolve leaves its capability OUT of
 // the identity map, and the package then does not render that chip at all — an
 // absent affordance, never a dead button, and never a hardcoded agent id
-// standing in. `unresolved` names the ones that refused so the host can say so
-// where saying so belongs (the Agents menu / diagnostics), never on the page.
+// standing in.
+//
+// The LOUD channel for a refusal is already `useMandateSet`'s console error,
+// which names the key and carries the server's reason — one reporter, not two.
+// `unresolved` is this hook's ANSWER to "which of the four refused, and why",
+// for a caller that needs the reason as data (a diagnostics panel, a test).
+// Nothing on the messages page reads it, and nothing should: a job with no
+// Holder is a platform-configuration fact, not something to tell a person
+// mid-conversation.
 
 import { useMemo } from "react";
 import type {
