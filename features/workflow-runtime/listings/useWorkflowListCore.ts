@@ -28,6 +28,7 @@ import {
   fetchWorkflowPickerCounts,
   fetchWorkflowPickerFacets,
   fetchWorkflowPickerPage,
+  fetchWorkflowRecordById,
   type WorkflowPickerQuery,
 } from "./service";
 import type {
@@ -171,10 +172,40 @@ export function useWorkflowListCore({
       ? records
       : records.filter((record) => !excluded.has(record.id));
 
-  const pinnedWorkflow =
-    (activeWorkflowId
-      ? (visible.find((record) => record.id === activeWorkflowId) ?? null)
-      : null) ?? null;
+  // 🚨 THE ASSIGNED RECORD IS NAMED WHETHER OR NOT THE FILTER CONTAINS IT.
+  // The trigger of this picker IS the statement of what is assigned, so the
+  // assigned workflow is resolved on its own read the moment an id arrives —
+  // not only when it happens to fall inside the open tab. Without this, a
+  // holder assigned from "Team" reads as unassigned the moment the picker
+  // sits on "Mine".
+  const [resolvedActive, setResolvedActive] =
+    useState<WorkflowListRecord | null>(null);
+  const inPage = activeWorkflowId
+    ? (visible.find((record) => record.id === activeWorkflowId) ?? null)
+    : null;
+
+  useEffect(() => {
+    if (!activeWorkflowId) {
+      setResolvedActive(null);
+      return undefined;
+    }
+    if (resolvedActive?.id === activeWorkflowId) return undefined;
+    let live = true;
+    void (async () => {
+      try {
+        const record = await fetchWorkflowRecordById(activeWorkflowId);
+        if (live) setResolvedActive(record);
+      } catch {
+        // The picker still lists and still selects; the trigger falls back to
+        // whatever name the host passed in.
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [activeWorkflowId, resolvedActive?.id]);
+
+  const pinnedWorkflow = inPage ?? resolvedActive;
   const listed = pinnedWorkflow
     ? visible.filter((record) => record.id !== pinnedWorkflow.id)
     : visible;
