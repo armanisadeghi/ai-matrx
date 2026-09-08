@@ -6523,6 +6523,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/conceptboard/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_conceptboard_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -8630,6 +8647,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_stormboard_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/geekbot/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_geekbot_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15073,6 +15107,23 @@ export interface paths {
         };
         /** Public Chapter */
         get: operations["public_chapter_openbsd_faq_public_chapter_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openwrt-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_openwrt_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -51110,6 +51161,40 @@ export interface components {
             /** Id */
             id: string;
         };
+        /** ConceptboardServiceStatus */
+        ConceptboardServiceStatus: {
+            /**
+             * Kind
+             * @default conceptboard_public_service_status
+             * @constant
+             */
+            __kind?: "conceptboard_public_service_status";
+            /**
+             * Provider
+             * @default Conceptboard
+             * @constant
+             */
+            provider?: "Conceptboard";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Service
+             * @default Conceptboard Web Application
+             * @constant
+             */
+            service?: "Conceptboard Web Application";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major";
+            /** Operational */
+            operational: boolean;
+        };
         /** ConfirmCandidateRequest */
         ConfirmCandidateRequest: {
             /**
@@ -63259,6 +63344,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.geckoboard.com";
+        };
+        /**
+         * GeekbotServiceStatus
+         * @description Safe aggregate status projection for Geekbot's fixed status page.
+         */
+        GeekbotServiceStatus: {
+            /**
+             * Kind
+             * @default geekbot_public_service_status
+             * @constant
+             */
+            __kind?: "geekbot_public_service_status";
+            /**
+             * Provider
+             * @default Geekbot
+             * @constant
+             */
+            provider?: "Geekbot";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.geekbot.com
+             * @constant
+             */
+            status_page?: "https://status.geekbot.com";
         };
         /** GemServiceStatus */
         GemServiceStatus: {
@@ -111281,6 +111398,28 @@ export interface components {
             /** Language */
             language: string;
         };
+        /**
+         * PageContent
+         * @description Safe projection for one exact public OpenWrt Wiki page.
+         */
+        aidream__services__openwrt_wiki_integrations__service__PageContent: {
+            /**
+             * Kind
+             * @default openwrt_wiki_page_content
+             * @constant
+             */
+            __kind?: "openwrt_wiki_page_content";
+            /**
+             * Provider
+             * @default OpenWrt Wiki
+             * @constant
+             */
+            provider?: "OpenWrt Wiki";
+            /** Page */
+            page: string;
+            /** Content */
+            content: string;
+        };
         /** PageMetadata */
         aidream__services__osgeo_wiki_integrations__service__PageMetadata: {
             /**
@@ -123500,6 +123639,26 @@ export interface operations {
             };
         };
     };
+    public_status_conceptboard_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConceptboardServiceStatus"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -126231,6 +126390,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StormboardServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_geekbot_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeekbotServiceStatus"];
                 };
             };
         };
@@ -134597,6 +134776,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChapterMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_openwrt_wiki_public_page_get: {
+        parameters: {
+            query: {
+                page: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__openwrt_wiki_integrations__service__PageContent"];
                 };
             };
             /** @description Validation Error */

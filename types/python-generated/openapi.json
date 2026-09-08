@@ -16538,6 +16538,27 @@
         }
       }
     },
+    "/conceptboard/public/status": {
+      "get": {
+        "tags": [
+          "Conceptboard Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_conceptboard_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConceptboardServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -19809,6 +19830,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StormboardServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/geekbot/public/status": {
+      "get": {
+        "tags": [
+          "Geekbot Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_geekbot_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeekbotServiceStatus"
                 }
               }
             }
@@ -29391,6 +29433,50 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ChapterMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openwrt-wiki/public/page": {
+      "get": {
+        "tags": [
+          "OpenWrt Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_openwrt_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Page"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__openwrt_wiki_integrations__service__PageContent"
                 }
               }
             }
@@ -117433,6 +117519,54 @@
         "title": "ComputeTargetRef",
         "description": "Compact reference posted by clients when they bind a target to a\nconversation. The full binding (base_url / access_token / root_path) is\nresolved server-side from this ref."
       },
+      "ConceptboardServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "conceptboard_public_service_status",
+            "title": "Kind",
+            "default": "conceptboard_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Conceptboard",
+            "title": "Provider",
+            "default": "Conceptboard"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "service": {
+            "type": "string",
+            "const": "Conceptboard Web Application",
+            "title": "Service",
+            "default": "Conceptboard Web Application"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "ConceptboardServiceStatus"
+      },
       "ConfirmCandidateRequest": {
         "properties": {
           "organization_id": {
@@ -145597,6 +145731,47 @@
           "indicator"
         ],
         "title": "GeckoboardServiceStatus"
+      },
+      "GeekbotServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "geekbot_public_service_status",
+            "title": "Kind",
+            "default": "geekbot_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Geekbot",
+            "title": "Provider",
+            "default": "Geekbot"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.geekbot.com",
+            "title": "Status Page",
+            "default": "https://status.geekbot.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "GeekbotServiceStatus",
+        "description": "Safe aggregate status projection for Geekbot's fixed status page."
       },
       "GemServiceStatus": {
         "properties": {
@@ -251333,6 +251508,42 @@
           "language"
         ],
         "title": "PageMetadata"
+      },
+      "aidream__services__openwrt_wiki_integrations__service__PageContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "openwrt_wiki_page_content",
+            "title": "Kind",
+            "default": "openwrt_wiki_page_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "OpenWrt Wiki",
+            "title": "Provider",
+            "default": "OpenWrt Wiki"
+          },
+          "page": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Page"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page",
+          "content"
+        ],
+        "title": "PageContent",
+        "description": "Safe projection for one exact public OpenWrt Wiki page."
       },
       "aidream__services__osgeo_wiki_integrations__service__PageMetadata": {
         "properties": {
