@@ -71,7 +71,10 @@ if (!window.matchMedia) {
 
 const toastError = jest.fn();
 jest.mock("@/lib/toast", () => ({
-  toast: { error: (...args: unknown[]) => toastError(...args), success: () => undefined },
+  toast: {
+    error: (...args: unknown[]) => toastError(...args),
+    success: () => undefined,
+  },
   toastErrorAlreadyCaptured: () => undefined,
 }));
 
@@ -257,7 +260,9 @@ describe("a list read that broke", () => {
 
   it("still prints its sentence once, and still does not blame filters", () => {
     expect(countOccurrences(screenText(), "The gateway timed out.")).toBe(1);
-    expect(screenText()).not.toContain("Clear the filters to see the full registry");
+    expect(screenText()).not.toContain(
+      "Clear the filters to see the full registry",
+    );
   });
 });
 

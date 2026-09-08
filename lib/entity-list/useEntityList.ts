@@ -12,10 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
-import {
-  commitUrlParams,
-  useUrlSearchParams,
-} from "@ai-matrx/kit/url-state";
+import { commitUrlParams, useUrlSearchParams } from "@ai-matrx/kit/url-state";
 import type { EntityListController, EntityListService } from "./config";
 import { toEntityListFailure, type EntityListFailure } from "./failure";
 import {
@@ -27,7 +24,11 @@ import {
   type EntityListQuery,
   type EntityScopeCounts,
 } from "./types";
-import { historyModeFor, queryToParamPatch, readQueryFromParams } from "./urlQuery";
+import {
+  historyModeFor,
+  queryToParamPatch,
+  readQueryFromParams,
+} from "./urlQuery";
 import type { ListScope } from "@/lib/list-scope/types";
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -352,22 +353,16 @@ export function useEntityList<TRow>({
     }));
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), []);
 
-  const removeRow = useCallback(
-    (id: string) => {
-      setRows((prev) => prev.filter((r) => getRowId(r) !== id));
-      setTotal((prev) => Math.max(prev - 1, 0));
-    },
-    [],
-  );
+  const removeRow = useCallback((id: string) => {
+    setRows((prev) => prev.filter((r) => getRowId(r) !== id));
+    setTotal((prev) => Math.max(prev - 1, 0));
+  }, []);
 
-  const patchRow = useCallback(
-    (id: string, patch: Partial<TRow>) => {
-      setRows((prev) =>
-        prev.map((r) => (getRowId(r) === id ? { ...r, ...patch } : r)),
-      );
-    },
-    [],
-  );
+  const patchRow = useCallback((id: string, patch: Partial<TRow>) => {
+    setRows((prev) =>
+      prev.map((r) => (getRowId(r) === id ? { ...r, ...patch } : r)),
+    );
+  }, []);
 
   return {
     query,

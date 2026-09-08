@@ -256,32 +256,34 @@ export function EntityListPage<TRow>({
       }
     : null;
 
-  const resolvedEmptyState = failureEmptyState ?? (isNarrowed
-    ? {
-        title: `No ${config.entityLabel.plural} match`,
-        description:
-          "Nothing matched your current search and filters. Widen them, or check a different scope.",
-        // Clears the SEARCH too — `resetFilters` alone leaves the search term
-        // in place, so the "way out" button would have left the user staring at
-        // the same empty result.
-        action: (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              list.setSearch("");
-              list.resetFilters();
-            }}
-          >
-            Clear search and filters
-          </Button>
-        ),
-      }
-    : {
-        ...config.emptyState,
-        action:
-          typeof emptyAction === "function" ? emptyAction(list) : emptyAction,
-      });
+  const resolvedEmptyState =
+    failureEmptyState ??
+    (isNarrowed
+      ? {
+          title: `No ${config.entityLabel.plural} match`,
+          description:
+            "Nothing matched your current search and filters. Widen them, or check a different scope.",
+          // Clears the SEARCH too — `resetFilters` alone leaves the search term
+          // in place, so the "way out" button would have left the user staring at
+          // the same empty result.
+          action: (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                list.setSearch("");
+                list.resetFilters();
+              }}
+            >
+              Clear search and filters
+            </Button>
+          ),
+        }
+      : {
+          ...config.emptyState,
+          action:
+            typeof emptyAction === "function" ? emptyAction(list) : emptyAction,
+        });
 
   const cardsView = config.views?.cards;
   const rowsView = config.views?.rows;

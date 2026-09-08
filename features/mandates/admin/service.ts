@@ -696,9 +696,27 @@ function structuredCloneJson(value: unknown): JsonObject {
  * (nine of them, censused 2026-08-31), so stamping it removes the mandate from
  * the console, the pickers, the resolver and the run door in one move, while
  * the row and its history survive for anyone who has to answer "what happened
- * to it". Its BINDINGS are deliberately left alone: they are scoped to the
- * mandate and become unreachable with it, and cascading a delete across rows
- * other people own is a bigger decision than this button should make.
+ * to it".
+ *
+ * 🚨 THIS ONE WRITE IS THE WHOLE DELETE, AND THAT IS DELIBERATE. Until
+ * 2026-09-08 this function said its bindings were "deliberately left alone" —
+ * and they were, along with the mandate's treatments, exemplars and notes. Four
+ * lanes of the one-resolution campaign each obeyed the fixture law exactly:
+ * removed their scratch job here, re-read, confirmed it gone — and each left
+ * live rows behind. Nothing on any screen could show them.
+ *
+ * The fix is NOT more writes here. A mandate can be removed through at least
+ * three doors that share no code — this one, `public.entity_soft_delete`, and
+ * aidream/psql stamping the column directly — so any answer written in one of
+ * them leaves the other two wrong. What removal MEANS now lives beside the row,
+ * in `platform.soft_delete_edge`, and `platform._cascade_soft_delete` carries it
+ * out for every door: bindings, treatments, exemplars and notes follow the job
+ * down (and back up if it is restored), while an app that merely USES the job,
+ * and any job copied FROM it, are declared `keep` and survive on purpose.
+ * Adding a cascade here would be a second, competing answer.
+ *
+ * Migration: `migrations/platform_soft_delete_cascade.sql`.
+ * Liveness: `pnpm check:soft-delete-cascade` (strict lane runs in CI).
  */
 export async function softDeleteMandate(mandateId: string): Promise<void> {
   const supabase = createClient();

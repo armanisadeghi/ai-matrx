@@ -26,6 +26,7 @@ import {
   Building2,
   Contact,
   Trash2,
+  AlertCircle,
   ArchiveRestore,
   FileUp,
   Inbox,
@@ -1238,20 +1239,33 @@ export function CrmListPage({
                   showToolbar: false,
                 }}
                 emptyState={
-                  inTrash
+                  // A FAILED READ IS NOT AN EMPTY LIST — the same class the
+                  // shared entity-list shell now states (one-resolution R-O1).
+                  // Without this branch a broken read printed "No records here
+                  // — Nothing matches this scope and filter combination" beside
+                  // its own error banner: two sentences blaming the user's
+                  // filters for a list that was never read.
+                  list.error
                     ? {
-                        icon: <Trash2 className="h-5 w-5" />,
-                        title: "Trash is empty",
+                        icon: <AlertCircle className="h-5 w-5" />,
+                        title: "No records could be listed",
                         description:
-                          "Deleted records land here and can be restored or permanently deleted.",
+                          "The read failed, so nothing came back. This is not an empty result and no filter is hiding anything — the reason is at the top of this list.",
                       }
-                    : {
-                        icon: <Plus className="h-5 w-5" />,
-                        title: "No records here",
-                        description:
-                          "Nothing matches this scope and filter combination. Create the first one.",
-                        action: newButtons,
-                      }
+                    : inTrash
+                      ? {
+                          icon: <Trash2 className="h-5 w-5" />,
+                          title: "Trash is empty",
+                          description:
+                            "Deleted records land here and can be restored or permanently deleted.",
+                        }
+                      : {
+                          icon: <Plus className="h-5 w-5" />,
+                          title: "No records here",
+                          description:
+                            "Nothing matches this scope and filter combination. Create the first one.",
+                          action: newButtons,
+                        }
                 }
               />
             </div>

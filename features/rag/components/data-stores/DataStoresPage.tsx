@@ -173,9 +173,18 @@ export function DataStoresPage() {
             <AlertCircle className="h-3.5 w-3.5" /> {list.error}
           </div>
         )}
+        {/*
+          A FAILED READ IS NOT AN EMPTY LIST (one-resolution R-O1's class, as
+          the shared entity-list shell now states it). This used to print "No
+          data stores yet. Create your first one above." underneath its own
+          error, telling someone whose read had just failed that they own
+          nothing — the same sentence a genuinely empty account gets.
+        */}
         {!list.loading && list.stores.length === 0 && (
           <div className="px-3 py-3 text-xs text-muted-foreground">
-            No data stores yet. Create your first one above.
+            {list.error
+              ? "Nothing was listed, because the read above failed — this is not an empty list."
+              : "No data stores yet. Create your first one above."}
           </div>
         )}
         {list.stores.map((s) => (

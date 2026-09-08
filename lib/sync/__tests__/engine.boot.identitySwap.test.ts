@@ -151,7 +151,6 @@ describe("resyncForIdentity", () => {
         const result = await bootSync({
             store,
             identity: guest,
-            previousIdentity: authed,
             policies: [policy],
             openChannel: () => channel,
             // The store has already moved on to the signed-in user.

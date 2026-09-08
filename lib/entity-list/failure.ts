@@ -59,7 +59,8 @@ export function isEntityListRefusal(error: unknown): boolean {
   };
   if (door.refused === true) return true;
   if (door.retryable === false) return true;
-  if (typeof door.code === "string" && REFUSAL_CODES.has(door.code)) return true;
+  if (typeof door.code === "string" && REFUSAL_CODES.has(door.code))
+    return true;
   return door.status === 401 || door.status === 403;
 }
 

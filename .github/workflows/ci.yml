@@ -341,6 +341,47 @@ jobs:
           pnpm check:migration-slot-guard:strict
 
   # ---------------------------------------------------------------------------
+  # soft-delete-cascade — liveness for platform.soft_delete_edge and the two
+  # generic triggers that read it (migrations/platform_soft_delete_cascade.sql,
+  # 2026-09-08). Removing a mandate used to leave every row hanging off it LIVE:
+  # four campaign lanes each removed a scratch job through the UI, re-read, saw it
+  # gone, and each left bindings and treatments behind. Measured RED on production
+  # before the fix — 1 binding, 1 treatment, 1 exemplar, 1 note still live, and
+  # attaching a NEW part to an already-removed job accepted.
+  #
+  # Credential-gated, and UNMEASURED is a hard fail, for the same reason as the
+  # job above: a gate that cannot reach its dependency fails, it does not degrade
+  # into a warning that reads as a pass.
+  #
+  # Falsifiability proven 2026-09-08 on the live database: disabling
+  # `_cascade_softdelete` on mandate.definition and `_guard_soft_delete_parent` on
+  # mandate.binding turned cascade_trigger_installed and child_guard_installed
+  # false, naming both relations; re-enabling them turned all five checks green.
+  # ---------------------------------------------------------------------------
+  soft-delete-cascade:
+    name: removing a thing still removes its parts (UNMEASURED without the secret)
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Soft-deleting a parent still removes everything declared part of it
+        run: |
+          if [ -z "$SUPABASE_SECRET_KEY" ]; then
+            echo "::error title=UNMEASURED — the soft-delete cascade was NOT verified::SUPABASE_SECRET_KEY is not configured for this repo, so pnpm check:soft-delete-cascade:strict could not run and removing a job may again leave its bindings, treatments, exemplars and notes alive underneath it — invisible on every screen and still real in the database. This job reports UNMEASURED, never success (THE STRICTNESS LAW clause 7). Fix: add the SUPABASE_SECRET_KEY and NEXT_PUBLIC_SUPABASE_URL repo secrets."
+            exit 2
+          fi
+          pnpm check:soft-delete-cascade:strict
+
+  # ---------------------------------------------------------------------------
   # type-check — `next.config.js` sets `ignoreBuildErrors: true`, so a green
   # build proves NOTHING about types and Vercel will happily deploy a repo full
   # of type errors. `pnpm type-check` is the only type gate this repo has.

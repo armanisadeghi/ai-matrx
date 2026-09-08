@@ -424,6 +424,11 @@ const claims: Claim[] = [
         // collisions. The guard shipped 2026-08-29 with NOTHING asserting it was
         // still bound — dropped or disabled, the collisions resume in silence.
         "check:migration-slot-guard:strict",
+        // Liveness for the soft-delete cascade primitive. Removing a job used to
+        // leave its bindings, treatments, exemplars and notes alive underneath
+        // it; four campaign lanes each proved the removal on screen and each left
+        // live rows behind (2026-09-08). Dropped from CI, that returns in silence.
+        "check:soft-delete-cascade:strict",
         // The five HR guards that were invoked by NOTHING until 2026-08-29: two
         // jest files jest only sees in an unscoped `pnpm test` (which nothing
         // runs), and three `pnpm` scripts whose only references were their own
