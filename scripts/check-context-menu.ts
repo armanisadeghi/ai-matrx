@@ -256,6 +256,28 @@ const EXEMPT_RE =
  * leaves every population, and the reason is printed so the decision stays
  * visible and reviewable rather than becoming invisible.
  */
+/**
+ * VERIFIED DELEGATION — the menu is real, it just lives more than one hop away.
+ *
+ * The delegation net walks ONE hop: this file renders <X>, and X mounts a menu.
+ * Real trees are deeper. `ListManagerWindow` renders
+ * `ListManagerFloatingWorkspace`, which renders `ListDetailClient`, which
+ * mounts four menus; `MarkdownEditorWindow` reaches `MarkdownInput` the same
+ * way. Both were reported menu-less and both are genuinely covered.
+ *
+ * Widening the net to a transitive closure would credit any page that renders
+ * anything that eventually contains a menu — over-crediting hides real gaps,
+ * which is worse than a false alarm. So the claim is recorded per-file instead,
+ * and it names the carrier so the next reader can check it in one grep:
+ *
+ *   // context-menu: covered-by features/user-lists/components/ListDetailClient.tsx
+ */
+const COVERED_BY_RE = /context-menu:\s*covered-by\s+(\S+)/;
+
+function coveredBy(src: string): string | null {
+  return src.match(COVERED_BY_RE)?.[1] ?? null;
+}
+
 const DELIBERATELY_ABSENT_RE =
   /context-menu:\s*deliberately-absent\s*[—-]\s*(.+)/;
 
@@ -531,6 +553,16 @@ function main() {
       findings.push({ population: "density", file: path, detail: v });
 
     if (!population) continue;
+
+    const delegate = coveredBy(src);
+    if (delegate) {
+      covered.push({
+        population,
+        file: path,
+        detail: `covered by ${delegate} (verified delegation)`,
+      });
+      continue;
+    }
 
     const refusal = deliberateAbsence(src);
     if (refusal) {

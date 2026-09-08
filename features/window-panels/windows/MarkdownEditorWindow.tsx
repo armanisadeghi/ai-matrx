@@ -1,5 +1,8 @@
 "use client";
 
+// context-menu: covered-by components/mardown-display/markdown-classification/MarkdownInput.tsx
+// MarkdownClassificationTester -> MarkdownInput, which owns the textarea ref and mounts EditableContextMenu. Verified 2026-09-08; the census walks one hop and cannot see it.
+
 import React from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import MarkdownClassificationTester from "@/components/mardown-display/markdown-classification/MarkdownClassificationTester";

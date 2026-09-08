@@ -1,5 +1,8 @@
 "use client";
 
+// context-menu: covered-by features/user-lists/components/ListDetailClient.tsx
+// ListManagerFloatingWorkspace -> ListDetailClient, which mounts the canonical per-row list menu. Verified 2026-09-08; the census walks one hop and cannot see it.
+
 import React, { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
