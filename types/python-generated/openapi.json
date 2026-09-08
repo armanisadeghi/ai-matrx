@@ -19522,6 +19522,69 @@
         }
       }
     },
+    "/slab/public/status": {
+      "get": {
+        "tags": [
+          "Slab Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_slab_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlabServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wordtune/public/status": {
+      "get": {
+        "tags": [
+          "Wordtune Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_wordtune_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordtuneServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/twist/public/status": {
+      "get": {
+        "tags": [
+          "Twist Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_twist_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwistServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/airtable/public/status": {
       "get": {
         "tags": [
@@ -28638,6 +28701,94 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__kodi_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/elinux-wiki/public/page": {
+      "get": {
+        "tags": [
+          "eLinux Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_elinux_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__elinux_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/linuxtv-wiki/public/page": {
+      "get": {
+        "tags": [
+          "LinuxTV Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_linuxtv_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__linuxtv_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -216784,6 +216935,47 @@
         "title": "SkippedRow",
         "description": "An opportunity row we deliberately did NOT fold, in the words a user reads."
       },
+      "SlabServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "slab_public_service_status",
+            "title": "Kind",
+            "default": "slab_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Slab",
+            "title": "Provider",
+            "default": "Slab"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://slabstatus.com",
+            "title": "Status Page",
+            "default": "https://slabstatus.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SlabServiceStatus",
+        "description": "Safe aggregate status projection for Slab's fixed status page."
+      },
       "SleekplanServiceStatus": {
         "properties": {
           "__kind": {
@@ -232570,6 +232762,47 @@
         "title": "TurnRange",
         "description": "Identify one or more contiguous turns to compact.\n\n``from_user_message_id`` — the user message that starts the first\nturn in the range. Required.\n\n``to_user_message_id`` — the user message that starts the FIRST turn\nAFTER the range. The turn-range covers everything from\n``from_user_message_id`` up to but NOT including\n``to_user_message_id``. If omitted, the range extends to the end of\nthe conversation (inclusive of the final turn)."
       },
+      "TwistServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "twist_public_service_status",
+            "title": "Kind",
+            "default": "twist_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Twist",
+            "title": "Provider",
+            "default": "Twist"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.twist.io",
+            "title": "Status Page",
+            "default": "https://status.twist.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "TwistServiceStatus",
+        "description": "Safe aggregate status projection for Twist's fixed status page."
+      },
       "TwitchStream": {
         "properties": {
           "id": {
@@ -243784,6 +244017,55 @@
         "title": "WordPressOrgPlugin",
         "description": "Safe factual projection of one WordPress.org plugin-directory entry."
       },
+      "WordtuneServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wordtune_official_writing_productivity_status",
+            "title": "Kind",
+            "default": "wordtune_official_writing_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wordtune",
+            "title": "Provider",
+            "default": "Wordtune"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.wordtune.com",
+            "title": "Status Page",
+            "default": "https://status.wordtune.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "WordtuneServiceStatus"
+      },
       "WorkCastServiceStatus": {
         "properties": {
           "__kind": {
@@ -248195,6 +248477,60 @@
         ],
         "title": "PageMetadata"
       },
+      "aidream__services__elinux_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "elinux_wiki_page_metadata",
+            "title": "Kind",
+            "default": "elinux_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "eLinux Wiki",
+            "title": "Provider",
+            "default": "eLinux Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata",
+        "description": "Safe projection for one exact public eLinux Wiki page."
+      },
       "aidream__services__freecad_wiki_integrations__service__PageMetadata": {
         "properties": {
           "__kind": {
@@ -248953,6 +249289,60 @@
           "language"
         ],
         "title": "PageMetadata"
+      },
+      "aidream__services__linuxtv_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "linuxtv_wiki_page_metadata",
+            "title": "Kind",
+            "default": "linuxtv_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "LinuxTV Wiki",
+            "title": "Provider",
+            "default": "LinuxTV Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata",
+        "description": "Safe projection for one exact public LinuxTV Wiki page."
       },
       "aidream__services__mame_wiki_integrations__service__PageMetadata": {
         "properties": {

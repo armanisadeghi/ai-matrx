@@ -8400,6 +8400,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/slab/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_slab_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wordtune/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_wordtune_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/twist/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_twist_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/airtable/public/status": {
         parameters: {
             query?: never;
@@ -14631,6 +14682,40 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_kodi_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/elinux-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_elinux_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/linuxtv-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_linuxtv_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -95310,6 +95395,38 @@ export interface components {
             reason: string;
         };
         /**
+         * SlabServiceStatus
+         * @description Safe aggregate status projection for Slab's fixed status page.
+         */
+        SlabServiceStatus: {
+            /**
+             * Kind
+             * @default slab_public_service_status
+             * @constant
+             */
+            __kind?: "slab_public_service_status";
+            /**
+             * Provider
+             * @default Slab
+             * @constant
+             */
+            provider?: "Slab";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://slabstatus.com
+             * @constant
+             */
+            status_page?: "https://slabstatus.com";
+        };
+        /**
          * SleekplanServiceStatus
          * @description Safe aggregate status projection for Sleekplan' fixed status page.
          */
@@ -102656,6 +102773,38 @@ export interface components {
             to_user_message_id?: string | null;
         };
         /**
+         * TwistServiceStatus
+         * @description Safe aggregate status projection for Twist's fixed status page.
+         */
+        TwistServiceStatus: {
+            /**
+             * Kind
+             * @default twist_public_service_status
+             * @constant
+             */
+            __kind?: "twist_public_service_status";
+            /**
+             * Provider
+             * @default Twist
+             * @constant
+             */
+            provider?: "Twist";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.twist.io
+             * @constant
+             */
+            status_page?: "https://status.twist.io";
+        };
+        /**
          * TwitchStream
          * @description Safe projection of one public Twitch stream record.
          */
@@ -107588,6 +107737,40 @@ export interface components {
             /** Directory Page */
             directory_page: string;
         };
+        /** WordtuneServiceStatus */
+        WordtuneServiceStatus: {
+            /**
+             * Kind
+             * @default wordtune_official_writing_productivity_status
+             * @constant
+             */
+            __kind?: "wordtune_official_writing_productivity_status";
+            /**
+             * Provider
+             * @default Wordtune
+             * @constant
+             */
+            provider?: "Wordtune";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.wordtune.com
+             * @constant
+             */
+            status_page?: "https://status.wordtune.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** WorkCastServiceStatus */
         WorkCastServiceStatus: {
             /**
@@ -109454,6 +109637,34 @@ export interface components {
             /** Language */
             language: string;
         };
+        /**
+         * PageMetadata
+         * @description Safe projection for one exact public eLinux Wiki page.
+         */
+        aidream__services__elinux_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default elinux_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "elinux_wiki_page_metadata";
+            /**
+             * Provider
+             * @default eLinux Wiki
+             * @constant
+             */
+            provider?: "eLinux Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /** PageMetadata */
         aidream__services__freecad_wiki_integrations__service__PageMetadata: {
             /**
@@ -109806,6 +110017,34 @@ export interface components {
              * @constant
              */
             provider?: "LibreOffice Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /**
+         * PageMetadata
+         * @description Safe projection for one exact public LinuxTV Wiki page.
+         */
+        aidream__services__linuxtv_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default linuxtv_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "linuxtv_wiki_page_metadata";
+            /**
+             * Provider
+             * @default LinuxTV Wiki
+             * @constant
+             */
+            provider?: "LinuxTV Wiki";
             /** Page Id */
             page_id: number;
             /** Title */
@@ -124666,6 +124905,66 @@ export interface operations {
             };
         };
     };
+    public_status_slab_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlabServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_wordtune_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WordtuneServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_twist_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwistServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_airtable_public_status_get: {
         parameters: {
             query?: never;
@@ -132689,6 +132988,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__kodi_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_elinux_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__elinux_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_linuxtv_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__linuxtv_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
