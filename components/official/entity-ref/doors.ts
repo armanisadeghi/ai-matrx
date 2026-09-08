@@ -155,3 +155,111 @@ export function hasAnyDoor(token: string): boolean {
     hasRegistryPeek(info)
   );
 }
+
+// ── Ids inside SENTENCES ─────────────────────────────────────────────────────
+//
+// 🚨 THE DEFECT THIS CLOSES: our servers write refusals for people —
+// "resolved system agent 8f0bbfc2-… breaks the mandate contract" — and every
+// screen printed them as flat text. The sentence NAMES a record that has an
+// identity in our system, so THE DOOR LAW applies to it exactly as it does to
+// a table cell: the person reading the refusal must be able to open the agent
+// it is accusing, without hand-copying a uuid into a URL bar.
+//
+// A server sentence is verbatim by policy (`ServerNotes`, `RunFailureCard`),
+// so nothing here rewrites, shortens or re-orders a word — the only change is
+// that the ids inside it become reachable.
+
+/**
+ * Everyday nouns that name a registered entity by a different word than its
+ * canonical token. Only add an entry you have VERIFIED points at the same
+ * record type — a wrong door is worse than no door.
+ */
+const NOUN_ALIASES: Record<string, string> = {
+  org: "organization",
+  organisation: "organization",
+  bot: "agent",
+  workflow_definition: "workflow",
+};
+
+/** A word as it appears in prose → a candidate entity token. */
+function nounToToken(word: string): string {
+  const bare = word.toLowerCase().replace(/[^a-z0-9_]/g, "");
+  // "agents" / "mandates" — prose pluralises, tokens don't.
+  const singular =
+    bare.length > 3 && bare.endsWith("s") && !bare.endsWith("ss")
+      ? bare.slice(0, -1)
+      : bare;
+  return NOUN_ALIASES[singular] ?? singular;
+}
+
+/**
+ * The entity token a sentence was talking about right before it printed an id.
+ *
+ * Deliberately conservative — it reads at most the four words in front of the
+ * id, nearest first, and accepts only a word that resolves to a token the
+ * platform can actually OPEN (`hasAnyDoor`). Anything else returns null and
+ * the caller prints the id as it always did. Guessing here would mint links to
+ * `/agents/<a workflow id>`: a door onto the wrong record, which reads as a
+ * fact and is a lie.
+ */
+export function tokenFromPrecedingWords(preceding: string): string | null {
+  const words = preceding.trim().split(/\s+/).filter(Boolean).slice(-4);
+  for (let i = words.length - 1; i >= 0; i--) {
+    // Nearest noun first, then the compound it may be part of
+    // ("agent version" → `agent_version` before falling back to `version`).
+    const single = nounToToken(words[i]);
+    if (single && hasAnyDoor(single)) return single;
+    const phrase = words.slice(i).map(nounToToken).filter(Boolean).join("_");
+    if (phrase && phrase !== single && hasAnyDoor(phrase)) return phrase;
+  }
+  return null;
+}
+
+/** One piece of a sentence: plain prose, or an id we can open a door on. */
+export type SentenceSegment =
+  | { kind: "text"; text: string }
+  | { kind: "ref"; id: string; token: string };
+
+const UUID_IN_TEXT_RE =
+  /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi;
+
+/**
+ * Split a server-authored sentence into prose and openable ids.
+ *
+ * `defaultToken` is what the CALL SITE knows that the sentence does not — a
+ * mandate-resolution refusal is always about an agent, so its screen may say
+ * so. It is used only when the prose itself names nothing openable.
+ *
+ * Every character of the input survives into the output in order, so a caller
+ * that joins the segments back together gets the server's words unchanged.
+ */
+export function segmentSentenceIds(
+  text: string,
+  defaultToken?: string | null,
+): SentenceSegment[] {
+  const segments: SentenceSegment[] = [];
+  let cursor = 0;
+  UUID_IN_TEXT_RE.lastIndex = 0;
+  for (
+    let match = UUID_IN_TEXT_RE.exec(text);
+    match !== null;
+    match = UUID_IN_TEXT_RE.exec(text)
+  ) {
+    const id = match[0];
+    const start = match.index;
+    const token =
+      tokenFromPrecedingWords(text.slice(cursor, start)) ??
+      (defaultToken && hasAnyDoor(defaultToken) ? defaultToken : null);
+    if (token === null) continue; // No door we trust — leave it in the prose.
+    if (start > cursor) {
+      segments.push({ kind: "text", text: text.slice(cursor, start) });
+    }
+    segments.push({ kind: "ref", id, token });
+    cursor = start + id.length;
+  }
+  if (segments.length === 0) return [{ kind: "text", text }];
+  if (cursor < text.length) {
+    segments.push({ kind: "text", text: text.slice(cursor) });
+  }
+  return segments;
+}

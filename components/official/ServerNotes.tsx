@@ -27,6 +27,7 @@
 //
 // Renders NOTHING when there is nothing to say: no empty box, no "no notes".
 
+import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { cn } from "@/lib/utils";
 
 export interface ServerNotesProps {
@@ -39,6 +40,13 @@ export interface ServerNotesProps {
   className?: string;
   /** Test/automation hook; defaults to `server-notes`. */
   testId?: string;
+  /**
+   * The entity type this door's notes are about, for any id the prose itself
+   * does not name a type for. Notes routinely name the record they acted on —
+   * THE DOOR LAW says the reader must be able to open it — and ids whose type
+   * cannot be established stay plain text rather than becoming a wrong link.
+   */
+  idToken?: string | null;
 }
 
 /** The sentences worth printing — the server's words, minus anything blank. */
@@ -53,6 +61,7 @@ export function ServerNotes({
   notes,
   className,
   testId = "server-notes",
+  idToken,
 }: ServerNotesProps) {
   const usable = usableServerNotes(notes);
   if (usable.length === 0) return null;
@@ -72,7 +81,7 @@ export function ServerNotes({
           key={note}
           className="text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400"
         >
-          {note}
+          <TextWithDoors text={note} defaultToken={idToken} />
         </p>
       ))}
     </div>

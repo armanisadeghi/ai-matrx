@@ -22,6 +22,7 @@ import { AlertTriangle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { ServerNotes } from "@/components/official/ServerNotes";
+import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import {
   mandateRefusalHeadline,
   type MandateRunFailure,
@@ -56,9 +57,11 @@ export function RunFailureCard({
         ) : null}
       </div>
 
-      {/* Verbatim. The server's words, not ours — and they stay put. */}
+      {/* Verbatim. The server's words, not ours — and they stay put. Every id
+          inside them is a door (THE DOOR LAW): a refusal that names the agent
+          or mandate at fault must let the reader go and look at it. */}
       <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words rounded bg-destructive/10 p-2 text-[11.5px] text-destructive">
-        {failure.sentence}
+        <TextWithDoors text={failure.sentence} />
       </pre>
 
       <ServerNotes

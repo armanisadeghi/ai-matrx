@@ -50,6 +50,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { cn } from "@/lib/utils";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -618,7 +619,13 @@ function FulfillmentSection({
         {refusal ? (
           <p className="flex items-start gap-1.5 text-[12.5px] leading-relaxed text-destructive">
             <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            {refusal}
+            {/* The refusal NAMES records — "resolved system agent <id> breaks
+                the mandate contract". THE DOOR LAW applies to a sentence as
+                much as to a cell: the reader opens the accused agent from
+                here, verbatim words intact. */}
+            <span>
+              <TextWithDoors text={refusal} defaultToken="agent" />
+            </span>
           </p>
         ) : null}
         {/* A rung the server SET ASIDE. The job still runs — so this is amber,
@@ -630,7 +637,9 @@ function FulfillmentSection({
             className="flex items-start gap-1.5 text-[12.5px] leading-relaxed text-amber-700 dark:text-amber-400"
           >
             <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            {dropped.reason}
+            <span>
+              <TextWithDoors text={dropped.reason} defaultToken="agent" />
+            </span>
           </p>
         ))}
         <div className="flex flex-wrap items-center gap-2">

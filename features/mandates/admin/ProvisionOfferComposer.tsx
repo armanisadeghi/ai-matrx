@@ -38,6 +38,7 @@ import {
   fetchProvision,
   type ProvisionOffer,
 } from "@/features/mandates/provisions";
+import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 
 const KindInputForm = dynamic(
   () => import("@/features/content-ir/input/KindInputForm"),
@@ -269,7 +270,9 @@ function ScaffoldForm({
       {problem && (
         <p className="flex items-start gap-1.5 text-[11px] text-destructive">
           <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
-          {problem}
+          <span>
+            <TextWithDoors text={problem} />
+          </span>
         </p>
       )}
       <Button size="sm" className="h-7 gap-1 text-xs" onClick={apply}>

@@ -126,6 +126,7 @@ import { unfedRequiredTargets } from "./batch/batch-model";
 import { ModeToggle, type BindingMode } from "./batch/ModeToggle";
 import { offeredValuesToSurfaceValues } from "./offered-adapter";
 import { useHolderInputs } from "./useHolderInputs";
+import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 
 /**
  * THE MAPPER'S NOUNS ON A MANDATE SCREEN. The mechanic is the surface bind
@@ -1237,7 +1238,9 @@ function BindingDraft({
                       className="flex items-start gap-1.5 text-[12px] leading-relaxed text-destructive"
                     >
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      {problem}
+                      <span>
+                        <TextWithDoors text={problem} defaultToken="agent" />
+                      </span>
                     </li>
                   ))}
                   <li className="pl-5 text-[11.5px] text-muted-foreground">

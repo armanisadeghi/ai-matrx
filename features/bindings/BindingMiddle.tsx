@@ -69,6 +69,7 @@ import {
   removeSourceAt,
   sourcesFor,
 } from "./consumption-writer";
+import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 
 export interface BindingMiddleProps {
   /** Agent or workflow — only the wording of the "own default" source differs. */
@@ -277,7 +278,11 @@ export function BindingMiddleRow({
           className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-destructive"
         >
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          {problem}
+          {/* A contract problem NAMES the agent/holder it is about — the
+              reader opens it from here (THE DOOR LAW). */}
+          <span>
+            <TextWithDoors text={problem} defaultToken="agent" />
+          </span>
         </p>
       ))}
 

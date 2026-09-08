@@ -33,6 +33,7 @@ import { agentHref } from "./mandate-health";
 import { useGuardedRebind } from "./useGuardedRebind";
 import { promoteMandateToSystem } from "./promotion";
 import type { MandateCodeTruth, MandateDefinitionRow } from "./service";
+import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 
 /** A lineage relative, always rendered with a door. */
 export function LineageChip({
@@ -347,9 +348,13 @@ export function PromoteToSystemMandateButton({
       </div>
       {refusal ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-[11.5px] text-destructive">
-          <p>{refusal.message}</p>
+          <p>
+            <TextWithDoors text={refusal.message} />
+          </p>
           {refusal.hint ? (
-            <p className="mt-1 text-destructive/80">{refusal.hint}</p>
+            <p className="mt-1 text-destructive/80">
+              <TextWithDoors text={refusal.hint} />
+            </p>
           ) : null}
         </div>
       ) : null}
