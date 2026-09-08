@@ -100,6 +100,18 @@ export function useOpenAgentRunWindow() {
             initialAutoRun: opts.initialAutoRun,
             mandateKey: opts.mandateKey ?? undefined,
             surfaceName: opts.surfaceName ?? undefined,
+            // ONE PRESS, ONE RUN. A seeded window (draft / variables / auto-run)
+            // consumes its seed exactly once per open; a remount of the same
+            // instance (HMR, tray restore, a host re-render) must NOT mint a
+            // fresh conversation and re-fire the run. A new press mints a new
+            // nonce, which is what makes "refine again" a deliberate act.
+            seedNonce:
+              opts.initialAutoRun ||
+              opts.initialDraftText ||
+              (opts.initialVariableValues &&
+                Object.keys(opts.initialVariableValues).length > 0)
+                ? Date.now()
+                : undefined,
           },
         }),
       );

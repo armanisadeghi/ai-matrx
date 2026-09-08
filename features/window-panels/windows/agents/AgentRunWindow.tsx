@@ -553,6 +553,16 @@ interface AgentRunWindowProps {
   mandateKey?: string | null;
   /** Adopt a mounted surface — see `OpenAgentRunWindowOptions.surfaceName`. */
   surfaceName?: string | null;
+  /**
+   * Identity of THIS press's seed (draft / variables / auto-run). The seed is
+   * consumed once per nonce: a remount of the same instance (HMR, tray
+   * restore, host re-render) sees the seed as spent and re-binds the existing
+   * conversation instead of minting a fresh one and re-firing the run — the
+   * defect an independent walk caught on 2026-09-08 (restore from the tray
+   * silently replaced a finished mandate with a brand-new run). A new press
+   * carries a new nonce.
+   */
+  seedNonce?: number | null;
 }
 
 export default function AgentRunWindow({
@@ -567,6 +577,7 @@ export default function AgentRunWindow({
   initialAutoRun = false,
   mandateKey = null,
   surfaceName = null,
+  seedNonce = null,
 }: AgentRunWindowProps) {
   if (!isOpen) return null;
   return (
@@ -581,9 +592,13 @@ export default function AgentRunWindow({
       initialAutoRun={initialAutoRun}
       mandateKey={mandateKey}
       surfaceName={surfaceName}
+      seedNonce={seedNonce}
     />
   );
 }
+
+/** Seeds already consumed this page-life, keyed `instanceId:nonce`. */
+const consumedSeeds = new Set<string>();
 
 function AgentRunWindowInner({
   instanceId,
@@ -596,6 +611,7 @@ function AgentRunWindowInner({
   initialAutoRun,
   mandateKey,
   surfaceName,
+  seedNonce,
 }: {
   instanceId: string;
   onClose: () => void;
@@ -607,7 +623,22 @@ function AgentRunWindowInner({
   initialAutoRun: boolean;
   mandateKey: string | null;
   surfaceName: string | null;
+  seedNonce: number | null;
 }) {
+  // ONE PRESS, ONE RUN — see `seedNonce` on the props. Decided once per
+  // mount from the module-level ledger, then the seed is recorded as spent
+  // so the NEXT mount of this instance (not this render) sees it spent.
+  const seedKey = seedNonce !== null ? `${instanceId}:${seedNonce}` : null;
+  const [seedLive] = useState(
+    () => seedKey !== null && !consumedSeeds.has(seedKey),
+  );
+  useEffect(() => {
+    if (seedKey !== null) consumedSeeds.add(seedKey);
+  }, [seedKey]);
+  const liveDraftText = seedLive ? initialDraftText : null;
+  const liveVariableValues = seedLive ? initialVariableValues : null;
+  const liveAutoRun = seedLive ? initialAutoRun : false;
+
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
@@ -725,9 +756,9 @@ function AgentRunWindowInner({
           agentId={agentId}
           surfaceKey={surfaceKey}
           selectedConversationId={selectedConversationId}
-          initialDraftText={initialDraftText}
-          initialVariableValues={initialVariableValues}
-          initialAutoRun={initialAutoRun}
+          initialDraftText={liveDraftText}
+          initialVariableValues={liveVariableValues}
+          initialAutoRun={liveAutoRun}
           // The mandate door only applies to the job the window was opened
           // on. Picking a different agent from the title bar is a plain agent
           // chat again — a mandate key must never ride along to a holder it

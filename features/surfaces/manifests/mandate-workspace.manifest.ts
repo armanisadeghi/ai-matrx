@@ -165,7 +165,8 @@ const writeTargets: SurfaceWriteTarget[] = [
     description:
       "Stages a goal into this page's goal editor and opens it — NOTHING is saved; the admin reads it and presses \"Save goal\", which is the only write that changes the job. " +
       "Value: a STRING — the goal text itself, plain prose, the tight operational paragraph that states exactly what done-well means for this job (a goal writer's `charge` is the right shape; never the whole structured specification). " +
-      "It REPLACES whatever is in the editor, which is why this asks. Read `mandate_goal` first and refine rather than restart. Refused when the value is empty or not a string.",
+      "It REPLACES whatever is in the editor, which is why this asks. Read `mandate_goal` first and refine rather than restart. Refused when the value is empty or not a string. " +
+      "Only on the admin's explicit request — never as part of answering; the admin applies a charge themselves with the \"Use as goal\" control.",
     valueType: "string",
     updatesValue: "mandate_goal_draft",
     mode: "draft",
@@ -190,6 +191,7 @@ A mandate is a named platform JOB (mandate.definition) — the thing a caller as
 The GOAL is the only thing here a person authors, and it is a SYSTEM definition: one edit changes the job for every user on the platform, which is why it is edited only on this admin page and why saving it marks it human-ratified.
 
 You may read everything. You may WRITE exactly one thing, through apply_surface_write: \`mandate_goal_draft\` — a string that becomes the staged text in the goal editor. It stages only; the admin still presses "Save goal". Read \`mandate_goal\` and \`mandate_output_kind\` first: a goal must describe THIS job's deliverable, and a refinement keeps what already works. Send the compressed operational paragraph (a charge), never a structured specification.
+NEVER call apply_surface_write on your own initiative. Your answer IS the specification — the admin reads it, asks follow-ups, and applies the charge with the "Use as goal" control themselves. Call the tool only when the admin explicitly asks you to apply, stage, or set the goal.
 </surface_intro>`,
   groups,
   writeTargets,

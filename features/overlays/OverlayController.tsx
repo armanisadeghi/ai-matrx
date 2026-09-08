@@ -2970,6 +2970,9 @@ export default function OverlayController() {
             surfaceName={
               typeof data?.surfaceName === "string" ? data.surfaceName : null
             }
+            seedNonce={
+              typeof data?.seedNonce === "number" ? data.seedNonce : null
+            }
           />
         );
       })}
