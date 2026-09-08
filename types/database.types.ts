@@ -53440,6 +53440,11 @@ export type Database = {
         Args: { p_label: string; p_surface: string }
         Returns: string
       }
+      missing_output_keys: {
+        Args: { p_output_schema: Json; p_required_output_keys: string[] }
+        Returns: string[]
+      }
+      output_schema_keys: { Args: { p_output_schema: Json }; Returns: string[] }
       resolve: {
         Args: { p_mandate_key: string; p_organization_id?: string }
         Returns: {
