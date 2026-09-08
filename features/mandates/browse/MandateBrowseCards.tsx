@@ -10,8 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
-import { healthExplanation, healthMeta, layerMeta, type MandateListRow } from "./types";
+import {
+  healthExplanation,
+  healthMeta,
+  layerMeta,
+  type MandateListRow,
+} from "./types";
 import { MandateCoverageBadge } from "./CoverageBadge";
+import { MandateHomeBadge } from "./MandateHome";
 
 export function MandateBrowseCards({
   rows,
@@ -81,7 +87,13 @@ export function MandateBrowseCards({
               </p>
             ) : null}
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              <Badge variant="outline" className={cn("py-0 text-[10px]", layer.className)}>
+              {/* WHOSE JOB THIS IS — the home (D-R3), first, because it decides
+                  how to read every other badge on the card. */}
+              <MandateHomeBadge homeOrganizationId={row.home_organization_id} />
+              <Badge
+                variant="outline"
+                className={cn("py-0 text-[10px]", layer.className)}
+              >
                 {layer.label}
               </Badge>
               <MandateCoverageBadge mandateKey={row.mandate_key} />
@@ -92,8 +104,13 @@ export function MandateBrowseCards({
                 </span>
               ) : null}
               {row.health !== "ok" ? (
-                <Badge variant="outline" className={cn("py-0 text-[10px]", health.className)}>
-                  {row.health === "drift" && row.drift ? row.drift : health.label}
+                <Badge
+                  variant="outline"
+                  className={cn("py-0 text-[10px]", health.className)}
+                >
+                  {row.health === "drift" && row.drift
+                    ? row.drift
+                    : health.label}
                 </Badge>
               ) : null}
             </div>

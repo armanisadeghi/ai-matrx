@@ -26,10 +26,7 @@ import { Button } from "@/components/ui/button";
 import { ItemContextMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import {
-  commitUrlParams,
-  useUrlSearchParams,
-} from "@ai-matrx/kit/url-state";
+import { commitUrlParams, useUrlSearchParams } from "@ai-matrx/kit/url-state";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { defaultHiddenColumns } from "../columns";
 import type { ListScope, ListScopeKind } from "@/lib/list-scope/types";
@@ -344,6 +341,11 @@ export function EntityListPage<TRow>({
           columns={config.columns}
           defaultHidden={defaultHidden}
           facetSections={config.facetSections}
+          // The panel narrows the SCOPE through the same setter and the same
+          // counts the tabs use — one state, two entry points.
+          scopeSections={config.scopeSections}
+          counts={list.counts}
+          onScopeChange={list.setScope}
           hasFavorites={Boolean(config.favorite)}
           hasArchived={config.supportsArchived !== false}
           searchPlaceholder={`Search ${config.entityLabel.plural}…`}

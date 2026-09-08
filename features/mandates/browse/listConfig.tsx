@@ -47,7 +47,9 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
     canListSystemHome: false,
   }),
   columns: MANDATE_COLUMNS,
-  prefsVersion: 1,
+  // 2 — the Home column (FIX-R3/W1). Bumped so existing users get the new
+  // default column set instead of silently never seeing it.
+  prefsVersion: 2,
   getRowId: (row) => row.id,
   getRowName: (row) => row.label,
   // THE DOOR LAW: the Job cell is a real anchor onto the dedicated route.
@@ -59,6 +61,23 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
   // be a lie — none offered.
   supportsArchived: false,
   urlState: true,
+  // 🚨 THE ORGANIZATION SECTION IS THE OWNERSHIP AXIS, IN THE PANEL
+  // (one-resolution FIX-R3/W1). It narrows `p_home` — the SAME state the
+  // ownership tab's dropdown writes — so choosing an organization here re-asks
+  // `mnd_list_scoped(p_home => 'org:<id>')`. Nothing is filtered in the
+  // browser: a home is the door's decision and only the door's.
+  //
+  // It is NOT in `facetSections`, deliberately: a facet writes `p_filters`, and
+  // a second way to say "whose mandates" would be a second answer to the one
+  // question `p_home` owns.
+  scopeSections: [
+    {
+      scope: "orgs",
+      label: "Organization",
+      allLabel: "All homes",
+      hint: "Whose job it is. Choosing one organization shows only the jobs that organization added; All homes also includes the jobs the platform ships, so an organization's count never sums to it.",
+    },
+  ],
   facetSections: [
     {
       facet: "feature",
@@ -112,6 +131,7 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
       label: row.label,
       description: row.description,
       feature: row.feature,
+      home_organization_id: row.home_organization_id,
       provision_key: row.provision_key,
       offered_count: row.offered_count,
       output_kind: row.output_kind,
@@ -125,6 +145,7 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
       id: row.id,
       key: row.mandate_key,
       label: row.label,
+      home: row.home_organization_id,
       layer: row.resolved_layer,
       health: row.health,
     }),

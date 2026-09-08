@@ -25,12 +25,16 @@ import type { ItemMenuConfig } from "@/components/official/item/types";
 import { mandateListConfig } from "@/features/mandates/browse/listConfig";
 import type { MandateListRow } from "@/features/mandates/browse/types";
 import { MandateCoverageProvider } from "@/features/mandates/browse/CoverageBadge";
+import { MandateHomeNamesProvider } from "@/features/mandates/browse/MandateHome";
 import {
   MandateCoverageNotice,
   useCoverageList,
 } from "@/features/mandates/browse/useCoverageList";
 
-function orgMandateRoute(orgId: string, row: Pick<MandateListRow, "mandate_key">) {
+function orgMandateRoute(
+  orgId: string,
+  row: Pick<MandateListRow, "mandate_key">,
+) {
   return `/organizations/${encodeURIComponent(orgId)}/settings/mandates/${encodeURIComponent(row.mandate_key)}`;
 }
 
@@ -39,9 +43,11 @@ export default function OrgMandatesPage() {
   const orgId = params.orgId as string;
   const { organization, organizationId, loading, error, refresh } =
     useResolvedOrganization(orgId);
-  const { loading: roleLoading, isOwner, isAdmin } = useUserRole(
-    organizationId ?? undefined,
-  );
+  const {
+    loading: roleLoading,
+    isOwner,
+    isAdmin,
+  } = useUserRole(organizationId ?? undefined);
 
   // THE OWNERSHIP LAW (THE-MODEL law 5: screams follow ownership) — an org page
   // shows the ORG's coverage, so the report is scoped to this organization's
@@ -90,7 +96,9 @@ export default function OrgMandatesPage() {
                 icon: Link2,
                 onSelect: () => {
                   void navigator.clipboard
-                    .writeText(`${window.location.origin}${orgMandateRoute(orgId, row)}`)
+                    .writeText(
+                      `${window.location.origin}${orgMandateRoute(orgId, row)}`,
+                    )
                     .then(() => toast.success("Link copied."));
                 },
               },
@@ -106,7 +114,13 @@ export default function OrgMandatesPage() {
 
   if (loading || roleLoading) return null;
   if (error || !organization || !organizationId || !(isOwner || isAdmin)) {
-    return <OrganizationAccessGate orgSlugOrId={orgId} organizationId={organizationId} onRetry={refresh} />;
+    return (
+      <OrganizationAccessGate
+        orgSlugOrId={orgId}
+        organizationId={organizationId}
+        onRetry={refresh}
+      />
+    );
   }
 
   return (
@@ -120,36 +134,41 @@ export default function OrgMandatesPage() {
           ]}
         />
       </PageHeader>
-      <MandateCoverageProvider value={coverage}>
-        <EntityListPage
-          config={{
-            ...mandateListConfig,
-            surfaceKey: "org-mandates",
-            // THE ORG'S resolution, not the admin's. "Fulfilled by" and
-            // "Decided by" on this page must answer for every member of this
-            // organization; asking for the caller's own scope showed the admin
-            // their personal override winning on an org-settings page.
-            service,
-            door: { hrefFor: (row) => orgMandateRoute(orgId, row) },
-            useRowActions: useOrgRowActions,
-          }}
-          notice={(list) => (
-            <div className="space-y-2">
-              <p className="rounded-lg border border-border/60 bg-card px-3 py-2 text-[12px] text-muted-foreground">
-                Bindings made here apply to every member of{" "}
-                <span className="font-medium text-foreground">
-                  {organization.name}
-                </span>{" "}
-                (a member&apos;s personal override still wins for themselves).{" "}
-                <Link href="/mandates" className="underline">
-                  Your personal surface
-                </Link>
-              </p>
-              <MandateCoverageNotice list={list} />
-            </div>
-          )}
-        />
-      </MandateCoverageProvider>
+      {/* The Home badge on every row: this page lists the caller's FULL
+          corpus (an org's admins bind the platform's jobs here), so a row has
+          to say whether the platform ships it or this organization added it. */}
+      <MandateHomeNamesProvider>
+        <MandateCoverageProvider value={coverage}>
+          <EntityListPage
+            config={{
+              ...mandateListConfig,
+              surfaceKey: "org-mandates",
+              // THE ORG'S resolution, not the admin's. "Fulfilled by" and
+              // "Decided by" on this page must answer for every member of this
+              // organization; asking for the caller's own scope showed the admin
+              // their personal override winning on an org-settings page.
+              service,
+              door: { hrefFor: (row) => orgMandateRoute(orgId, row) },
+              useRowActions: useOrgRowActions,
+            }}
+            notice={(list) => (
+              <div className="space-y-2">
+                <p className="rounded-lg border border-border/60 bg-card px-3 py-2 text-[12px] text-muted-foreground">
+                  Bindings made here apply to every member of{" "}
+                  <span className="font-medium text-foreground">
+                    {organization.name}
+                  </span>{" "}
+                  (a member&apos;s personal override still wins for themselves).{" "}
+                  <Link href="/mandates" className="underline">
+                    Your personal surface
+                  </Link>
+                </p>
+                <MandateCoverageNotice list={list} />
+              </div>
+            )}
+          />
+        </MandateCoverageProvider>
+      </MandateHomeNamesProvider>
     </>
   );
 }

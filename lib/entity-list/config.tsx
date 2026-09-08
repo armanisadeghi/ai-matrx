@@ -125,6 +125,38 @@ export interface EntityFacetSection {
   formatValue?: (value: string) => string;
 }
 
+/**
+ * A filter-panel section that narrows the SCOPE rather than the filter bag.
+ *
+ * 🚨 WHY THIS EXISTS (one-resolution FIX-R3/W1, 2026-09-08). A narrowable scope
+ * — "My Orgs" with a per-org choice, "Industry" with a per-industry one —
+ * carried its narrowing ONLY in a chevron dropdown welded to the tab. A walker
+ * driving `/mandates` never found it, and reported the page as having no
+ * per-organization view at all: the tab said "My Orgs" with one blended number,
+ * and the whole point of that page is which organization a job is HOMED in.
+ *
+ * So the narrowing also appears where a person looks for narrowing — the
+ * Filters panel — and it is THE SAME STATE, not a copy: this section reads and
+ * writes `query.scope`, exactly as the tab's dropdown does. There is no second
+ * filter to drift, and no client-side re-filtering of loaded rows: choosing an
+ * option re-asks the surface's own service with that scope, which is the only
+ * thing that decides ownership.
+ *
+ * The options and their counts come from the SAME counts query the tab uses
+ * (`EntityScopeCounts.narrow`), so a number here and a number on the tab can
+ * never disagree. Generic on purpose — every surface with a narrowable scope
+ * inherits it.
+ */
+export interface EntityScopeFacetSection {
+  /** Which scope kind this narrows. Rendered only while that scope is active. */
+  scope: ListScopeKind;
+  label: string;
+  /** The un-narrowed choice ("All homes") — never left unnamed. */
+  allLabel: string;
+  /** One sentence saying what choosing one of these actually changes. */
+  hint?: string;
+}
+
 export interface EntityListConfig<TRow> {
   /** Stable id for prefs storage. One key per list surface, never reused. */
   surfaceKey: string;
@@ -242,6 +274,12 @@ export interface EntityListConfig<TRow> {
 
   /** Facet-chip sections for the Filters & Sort panel, in display order. */
   facetSections: EntityFacetSection[];
+
+  /**
+   * Scope-narrowing sections for the Filters & Sort panel, above the facets.
+   * Absent → the tab's own dropdown is the only place the scope narrows.
+   */
+  scopeSections?: EntityScopeFacetSection[];
 
   /** `__none__` display labels per column id, for table filter options. */
   noneLabels?: Record<string, string>;

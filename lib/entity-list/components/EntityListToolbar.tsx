@@ -41,8 +41,13 @@ import {
 import { cn } from "@/lib/utils";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { EntityColumnSpec } from "../columns";
-import type { EntityFacetSection } from "../config";
-import type { EntityFacets, EntityListQuery } from "../types";
+import type { EntityFacetSection, EntityScopeFacetSection } from "../config";
+import type {
+  EntityFacets,
+  EntityListQuery,
+  EntityScopeCounts,
+} from "../types";
+import type { ListScope } from "@/lib/list-scope/types";
 import { EntityFilterPanel } from "./EntityFilterPanel";
 import { EntityColumnPicker } from "./EntityColumnPicker";
 
@@ -55,6 +60,11 @@ interface Props<TRow> {
   columns: EntityColumnSpec<TRow>[];
   defaultHidden: string[];
   facetSections: EntityFacetSection[];
+  /** Scope-narrowing sections for the Filters panel. */
+  scopeSections?: EntityScopeFacetSection[];
+  /** The scope counts the tabs read — the panel shares them, never re-counts. */
+  counts?: EntityScopeCounts;
+  onScopeChange?: (scope: ListScope) => void;
   hasFavorites: boolean;
   hasArchived: boolean;
   /** "Search agents…" */
@@ -114,6 +124,9 @@ export function EntityListToolbar<TRow>({
   columns,
   defaultHidden,
   facetSections,
+  scopeSections,
+  counts,
+  onScopeChange,
   hasFavorites,
   hasArchived,
   searchPlaceholder,
@@ -179,6 +192,9 @@ export function EntityListToolbar<TRow>({
           facets={facets}
           columns={columns}
           facetSections={facetSections}
+          scopeSections={scopeSections}
+          counts={counts}
+          onScopeChange={onScopeChange}
           hasFavorites={hasFavorites}
           hasArchived={hasArchived}
           sort={prefs.sort}

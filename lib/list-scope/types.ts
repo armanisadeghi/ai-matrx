@@ -40,12 +40,7 @@
 // changes the declared query, never silently reinterprets RLS output.
 
 export type ListScopeKind =
-  | "mine"
-  | "orgs"
-  | "shared"
-  | "industry"
-  | "public"
-  | "system";
+  "mine" | "orgs" | "shared" | "industry" | "public" | "system";
 
 export type ListScope =
   | { kind: "mine" }
@@ -128,6 +123,19 @@ export function scopeIndustryId(scope: ListScope): string | null {
   return scope.kind === "industry" ? scope.industryId : null;
 }
 
+/**
+ * The id this scope is narrowed to, whatever axis it narrows on — or null when
+ * it is blended or has no narrowing axis at all. The kind-specific readers
+ * above stay, because a caller that KNOWS it is looking at organizations should
+ * say so; this one is for the shell, which renders a narrowing control without
+ * knowing which axis it belongs to.
+ */
+export function scopeNarrowId(scope: ListScope): string | null {
+  if (scope.kind === "orgs") return scope.organizationId;
+  if (scope.kind === "industry") return scope.industryId;
+  return null;
+}
+
 /** Stable identity for tab selection / React keys. */
 export function scopeKey(scope: ListScope): string {
   if (scope.kind === "orgs")
@@ -157,7 +165,9 @@ export function makeScope(
       return { kind: "system" };
     default: {
       const _exhaustive: never = kind;
-      throw new Error(`[list-scope] unknown scope kind: ${String(_exhaustive)}`);
+      throw new Error(
+        `[list-scope] unknown scope kind: ${String(_exhaustive)}`,
+      );
     }
   }
 }

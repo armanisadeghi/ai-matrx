@@ -10,8 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
-import { healthExplanation, healthMeta, layerMeta, type MandateListRow } from "./types";
+import {
+  healthExplanation,
+  healthMeta,
+  layerMeta,
+  type MandateListRow,
+} from "./types";
 import { MandateCoverageBadge } from "./CoverageBadge";
+import { MandateHomeBadge } from "./MandateHome";
 
 export function MandateBrowseRows({
   rows,
@@ -59,6 +65,13 @@ export function MandateBrowseRows({
                 <Badge variant="outline" className="shrink-0 py-0 text-[10px]">
                   {row.feature.replace(/_/g, " ")}
                 </Badge>
+                {/* WHOSE JOB THIS IS — the home (D-R3). On a blended list the
+                    platform's jobs and an organization's own sit side by side,
+                    and the row has to say which it is. */}
+                <MandateHomeBadge
+                  homeOrganizationId={row.home_organization_id}
+                  className="shrink-0"
+                />
                 <Badge
                   variant="outline"
                   className={cn("shrink-0 py-0 text-[10px]", layer.className)}
@@ -69,9 +82,14 @@ export function MandateBrowseRows({
                 {row.health !== "ok" ? (
                   <Badge
                     variant="outline"
-                    className={cn("shrink-0 py-0 text-[10px]", health.className)}
+                    className={cn(
+                      "shrink-0 py-0 text-[10px]",
+                      health.className,
+                    )}
                   >
-                    {row.health === "drift" && row.drift ? row.drift : health.label}
+                    {row.health === "drift" && row.drift
+                      ? row.drift
+                      : health.label}
                   </Badge>
                 ) : null}
               </div>
@@ -86,15 +104,15 @@ export function MandateBrowseRows({
               ) : null}
             </div>
             <ItemMenu config={actions.menuFor(row)} align="end">
-                <button
-                  type="button"
-                  aria-label={`Actions for ${row.label}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              </ItemMenu>
+              <button
+                type="button"
+                aria-label={`Actions for ${row.label}`}
+                onClick={(e) => e.stopPropagation()}
+                className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </ItemMenu>
           </div>
         );
       })}

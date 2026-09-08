@@ -35,6 +35,7 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { ListScope, ListScopeKind } from "@/lib/list-scope/types";
 import { mandateListConfig } from "./listConfig";
 import { MandateCoverageProvider } from "./CoverageBadge";
+import { MandateHomeNamesProvider } from "./MandateHome";
 import { MandateCoverageNotice, useCoverageList } from "./useCoverageList";
 import type { MandateHomeOrganization } from "./service";
 
@@ -102,22 +103,24 @@ export function MandatesBrowsePage() {
       <PageHeader>
         <MandatesHeader />
       </PageHeader>
-      <MandateCoverageProvider value={view}>
-        <EntityListPage
-          config={{ ...mandateListConfig, service }}
-          scopes={scopes}
-          defaultScope={{ kind: "orgs", organizationId: null }}
-          notice={(list) => (
-            <div className="space-y-2">
-              <HomeNotice
-                scope={list.query.scope}
-                organizations={organizations}
-              />
-              <MandateCoverageNotice list={list} />
-            </div>
-          )}
-        />
-      </MandateCoverageProvider>
+      <MandateHomeNamesProvider>
+        <MandateCoverageProvider value={view}>
+          <EntityListPage
+            config={{ ...mandateListConfig, service }}
+            scopes={scopes}
+            defaultScope={{ kind: "orgs", organizationId: null }}
+            notice={(list) => (
+              <div className="space-y-2">
+                <HomeNotice
+                  scope={list.query.scope}
+                  organizations={organizations}
+                />
+                <MandateCoverageNotice list={list} />
+              </div>
+            )}
+          />
+        </MandateCoverageProvider>
+      </MandateHomeNamesProvider>
     </>
   );
 }

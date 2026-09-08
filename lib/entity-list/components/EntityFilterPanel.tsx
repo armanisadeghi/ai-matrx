@@ -32,7 +32,12 @@ import {
 import { cn } from "@/lib/utils";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { EntityColumnSpec } from "../columns";
-import type { EntityFacetSection } from "../config";
+import type { EntityFacetSection, EntityScopeFacetSection } from "../config";
+import {
+  makeScope,
+  scopeNarrowId,
+  type ListScope,
+} from "@/lib/list-scope/types";
 import {
   countActiveFilters,
   facetCount,
@@ -41,6 +46,7 @@ import {
   type EntityFacets,
   type EntityFilters,
   type EntityListQuery,
+  type EntityScopeCounts,
 } from "../types";
 
 type SortKey = `${string}-${ListViewPrefs["direction"]}`;
@@ -69,6 +75,12 @@ interface Props<TRow> {
   facets: EntityFacets;
   columns: EntityColumnSpec<TRow>[];
   facetSections: EntityFacetSection[];
+  /** Scope-narrowing sections. Empty → the panel narrows no scope. */
+  scopeSections?: EntityScopeFacetSection[];
+  /** The same counts the scope tabs read — options AND their numbers. */
+  counts?: EntityScopeCounts;
+  /** Writes the scope a section chose. Same setter the tabs use. */
+  onScopeChange?: (scope: ListScope) => void;
   /** Offer the Favorites section + pin toggle. */
   hasFavorites: boolean;
   /** Offer the Archived section. */
@@ -102,6 +114,9 @@ export function EntityFilterPanel<TRow>({
   facets,
   columns,
   facetSections,
+  scopeSections = [],
+  counts,
+  onScopeChange,
   hasFavorites,
   hasArchived,
   sort,
@@ -180,7 +195,9 @@ export function EntityFilterPanel<TRow>({
           )}
           <span className="mx-0.5 hidden h-4 w-px bg-border sm:block" />
           <ArrowUpDown className="h-3.5 w-3.5" />
-          <span className="hidden max-w-28 truncate lg:inline">{sortLabel}</span>
+          <span className="hidden max-w-28 truncate lg:inline">
+            {sortLabel}
+          </span>
         </button>
       </PopoverTrigger>
 
@@ -278,7 +295,10 @@ export function EntityFilterPanel<TRow>({
           )}
 
           {hasArchived && (
-            <FilterSection label="Archived" active={query.archived !== "active"}>
+            <FilterSection
+              label="Archived"
+              active={query.archived !== "active"}
+            >
               <RadioSelect<ArchivedFilter>
                 value={query.archived}
                 onChange={(v) => onPatchQuery({ archived: v })}
@@ -286,13 +306,61 @@ export function EntityFilterPanel<TRow>({
                   o.value === "archived"
                     ? {
                         ...o,
-                        hint: String(facetCount(facets, "archived", "archived")),
+                        hint: String(
+                          facetCount(facets, "archived", "archived"),
+                        ),
                       }
                     : o,
                 )}
               />
             </FilterSection>
           )}
+
+          {/* SCOPE NARROWING, in the panel — the SAME state the tab's dropdown
+              writes, never a second filter. Rendered only while its own scope
+              is the active one: offering "narrow to an organization" from a tab
+              that is not about organizations would silently change the tab. */}
+          {scopeSections.map((section) => {
+            if (!onScopeChange) return null;
+            if (query.scope.kind !== section.scope) return null;
+            const options = counts?.narrow[section.scope] ?? [];
+            if (options.length === 0) return null;
+            const narrowedTo = scopeNarrowId(query.scope) ?? "";
+            const total = counts?.byKind[section.scope];
+            return (
+              <FilterSection
+                key={`scope:${section.scope}`}
+                label={section.label}
+                active={narrowedTo !== ""}
+              >
+                {section.hint ? (
+                  <p className="pb-1 text-[11px] leading-snug text-muted-foreground">
+                    {section.hint}
+                  </p>
+                ) : null}
+                <RadioSelect
+                  value={narrowedTo}
+                  onChange={(id) =>
+                    onScopeChange(makeScope(section.scope, id || null))
+                  }
+                  options={[
+                    {
+                      value: "",
+                      label: section.allLabel,
+                      // A count is shown only when the counts query answered
+                      // for it — never a 0 standing in for "not known yet".
+                      hint: total === undefined ? undefined : String(total),
+                    },
+                    ...options.map((option) => ({
+                      value: option.id,
+                      label: option.label,
+                      hint: String(option.count),
+                    })),
+                  ]}
+                />
+              </FilterSection>
+            );
+          })}
 
           {facetSections.map((section) => {
             const values = facetValues(facets, section.facet);
@@ -308,7 +376,11 @@ export function EntityFilterPanel<TRow>({
                 active={selectedOf(section.filterId).length > 0}
               >
                 <FacetChips
-                  options={toOptions(values, section.noneLabel, section.formatValue)}
+                  options={toOptions(
+                    values,
+                    section.noneLabel,
+                    section.formatValue,
+                  )}
                   selected={selectedOf(section.filterId)}
                   onChange={(v) => setSelect(section.filterId, v)}
                   searchPlaceholder={
