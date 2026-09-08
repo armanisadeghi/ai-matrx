@@ -16,7 +16,7 @@
 //   - AI runtime v1 / v2 API-version toggle (self-gates to admin)
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -41,7 +41,7 @@ export default function AdminSidebarSection() {
 
   return (
     <div className="shell-admin-section">
-      <Link
+      <AppLink
         href={ADMIN_LAUNCHPAD_PATH}
         target="_blank"
         rel="noopener noreferrer"
@@ -55,7 +55,7 @@ export default function AdminSidebarSection() {
         <span className="shell-nav-external">
           <ShellIcon name="ArrowUpRight" size={14} strokeWidth={1.75} />
         </span>
-      </Link>
+      </AppLink>
       <AdminMenu />
       <SidebarErrorInspectorToggle />
       <SidebarCreatorHubToggle />

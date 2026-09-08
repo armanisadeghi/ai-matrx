@@ -77,6 +77,19 @@ const DOOR_ELEMENTS = new Set([
 ]);
 const SPLIT_HREF =
   /href\s*=\s*[{]?\s*[`"']((?:\/administration|\/demos)[^`"'{]*)/;
+
+/**
+ * `export const NAME = "/administration…"` — a split path reached through a
+ * CONSTANT, which no literal search can see.
+ *
+ * 🚨 This is not hypothetical tidiness. The first census of this defect missed
+ * `AdminSidebarSection`'s `href={ADMIN_LAUNCHPAD_PATH}` — the sidebar's Admin
+ * Launchpad button, which is the EXACT link whose hover produced the CORS error
+ * in the console. A literal-only guard would have reported the class closed
+ * while the reproduction still fired.
+ */
+const SPLIT_CONSTANT_DECL =
+  /export\s+const\s+([A-Z][A-Z_0-9]*)\s*(?::[^=]+)?=\s*["'](?:\/administration|\/demos)/g;
 const OFFENDING_PUSH =
   /router\s*\.\s*(?:push|replace)\s*\(\s*[`"']((?:\/administration|\/demos)[^`"']*)/;
 
@@ -90,6 +103,21 @@ interface Offence {
   line: number;
   text: string;
   why: string;
+}
+
+/** Every exported constant in the repo whose value is a split-surface path. */
+function splitConstants(files: readonly string[]): Set<string> {
+  const names = new Set<string>();
+  for (const file of files) {
+    let source: string;
+    try {
+      source = readFileSync(file, "utf8");
+    } catch {
+      continue;
+    }
+    for (const decl of source.matchAll(SPLIT_CONSTANT_DECL)) names.add(decl[1]);
+  }
+  return names;
 }
 
 function sourceFiles(): string[] {
@@ -106,12 +134,20 @@ function exempt(file: string): boolean {
 }
 
 /** Every offence in one file's text — exported so `--self-test` can drive it. */
-export function scanSource(file: string, source: string): Offence[] {
+export function scanSource(
+  file: string,
+  source: string,
+  constants: ReadonlySet<string> = new Set(),
+): Offence[] {
   const found: Offence[] = [];
+  const constantHref = constants.size
+    ? new RegExp(`href\\s*=\\s*[{]\\s*(${[...constants].join("|")})\\s*[}]`)
+    : null;
   for (const tag of source.matchAll(LINK_TAG)) {
     const element = tag[1];
     if (DOOR_ELEMENTS.has(element)) continue;
-    const href = SPLIT_HREF.exec(tag[2]);
+    const href =
+      SPLIT_HREF.exec(tag[2]) ?? (constantHref ? constantHref.exec(tag[2]) : null);
     if (!href) continue;
     found.push({
       file,
@@ -151,18 +187,23 @@ function selfTest(): number {
     'import Link from "next/link";',
     '<Link\n  href="/administration/launchpad"\n  data-nav-href="/administration"\n>Admin Launchpad</Link>',
     'router.push("/administration/mandates");',
+    // The sidebar button whose hover produced the console error, reached
+    // through a constant rather than a literal.
+    "<Link href={ADMIN_LAUNCHPAD_PATH} target=\"_blank\">Admin Launchpad</Link>",
   ].join("\n");
   const fixed = [
     'import AppLink from "@/components/navigation/AppLink";',
     '<AppLink href="/administration/launchpad">Admin Launchpad</AppLink>',
     'pushAppHref(router, "/administration/mandates");',
+    "<AppLink href={ADMIN_LAUNCHPAD_PATH} target=\"_blank\">Admin Launchpad</AppLink>",
   ].join("\n");
-  const onDefect = scanSource("selftest.tsx", defect);
-  const onFixed = scanSource("selftest.tsx", fixed);
+  const known = new Set(["ADMIN_LAUNCHPAD_PATH"]);
+  const onDefect = scanSource("selftest.tsx", defect, known);
+  const onFixed = scanSource("selftest.tsx", fixed, known);
   const problems: string[] = [];
-  if (onDefect.length !== 2)
+  if (onDefect.length !== 3)
     problems.push(
-      `expected 2 offences in the production defect, detector found ${onDefect.length}`,
+      `expected 3 offences in the production defect, detector found ${onDefect.length}`,
     );
   if (onFixed.length !== 0)
     problems.push(
@@ -174,7 +215,7 @@ function selfTest(): number {
     return 2;
   }
   console.log(
-    "✓ Self-test: the detector still catches the 2026-09-08 defect (2 offences) and passes its fix (0).",
+    "✓ Self-test: the detector still catches the 2026-09-08 defect — literal href, router push, and the constant href of the very button that reproduced it (3 offences) — and passes its fix (0).",
   );
   return 0;
 }
@@ -183,7 +224,9 @@ function main(): number {
   if (process.argv.includes("--self-test")) return selfTest();
   const strict = process.argv.includes("--strict");
   const offences: Offence[] = [];
-  for (const file of sourceFiles()) {
+  const files = sourceFiles();
+  const constants = splitConstants(files);
+  for (const file of files) {
     if (exempt(file)) continue;
     let source: string;
     try {
@@ -191,8 +234,7 @@ function main(): number {
     } catch {
       continue;
     }
-    if (!SPLIT_PREFIXES.some((prefix) => source.includes(prefix))) continue;
-    offences.push(...scanSource(file, source));
+    offences.push(...scanSource(file, source, constants));
   }
 
   if (offences.length === 0) {

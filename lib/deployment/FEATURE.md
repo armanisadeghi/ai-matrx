@@ -42,7 +42,14 @@ own their own anchor and route it through `AppLink` are listed in the script's
 `DOOR_ELEMENTS`; adding a name there that does NOT go through the door re-opens
 the class.
 
-**RED 78 offences (exit 2) at `71986f3eab`; GREEN 0 (exit 0) at `cc2e23adce`.**
+It also knows the split-surface CONSTANTS (`export const X = "/administration…"`),
+because the first census missed `AdminSidebarSection`'s
+`href={ADMIN_LAUNCHPAD_PATH}` — the Admin Launchpad button whose hover produced
+the console error. A literal-only guard would have called the class closed while
+the reproduction still fired.
+
+**RED 78 offences (exit 2) at `71986f3eab`; GREEN 0 (exit 0) at `cc2e23adce`,
+plus the 79th the constant-aware pass found.**
 `/demos` was breaking identically on www and is fixed by the same table.
 
 **Verified:** 2026-09-08.
