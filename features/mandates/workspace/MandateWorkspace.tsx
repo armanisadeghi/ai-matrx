@@ -33,16 +33,15 @@
 //
 // No prose paragraphs. Sections state facts; the data does the talking.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Building2,
-  ChevronDown,
-  CircleCheck,
   Copy,
   Expand,
+  Layers,
   ShieldCheck,
+  TriangleAlert,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,6 +51,7 @@ import { cn } from "@/lib/utils";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { MandateResolutionRibbon } from "../components/MandateResolutionRibbon";
 import { MandateNotesPanel } from "../components/MandateNotesPanel";
 import {
@@ -73,10 +73,18 @@ import { RunThisJobSection } from "./RunThisJobSection";
 import { Section } from "./Section";
 import {
   useMandateWorkspaceData,
-  type MandateBindingRowDb,
   type MandateWorkspaceData,
+  type WorkspaceAgentInfo,
 } from "./useMandateWorkspaceData";
 import { loadFailedFailure } from "../mandate-address";
+import { useMandate } from "../useMandate";
+import type { ResolvedMandate } from "../service";
+import {
+  ladderRowIsBroken,
+  ladderRowWords,
+  useMandateLadder,
+  type MandateLadderRow,
+} from "./useMandateLadder";
 
 /**
  * Which principal a HOST speaks for. It PRE-SELECTS the rung in the binding
@@ -103,62 +111,158 @@ export interface MandateWorkspaceProps {
 }
 
 /**
- * The layer that decides the Holder, plus the winning ref — FOR THE PRINCIPAL
- * THIS SURFACE SPEAKS FOR.
+ * ── WHAT THE "FULFILLED BY" SECTION RENDERS ──────────────────────────────────
  *
- * On the personal route that is the caller: their own binding wins, then any
- * of their orgs', then the system default. On the ORG route it is the
- * organization: the admin's personal binding is not part of the answer at all,
- * and only the route's org may decide. This page used to compute the caller's
- * own resolution either way, so an org admin with a personal override saw
- * "Fulfilled by <their own agent> — yours" on a page that binds for everyone.
+ * One shape, two honest sources, because the two hosts answer two DIFFERENT
+ * questions:
+ *
+ *  · the personal principal asks *"what runs for ME, right now"* — and that
+ *    answer comes from the SERVER VERDICT (`useMandate` → `resolveMandate` →
+ *    `GET /mandates/{key}/resolution`), the same verdict the runtime executes.
+ *    It is never recomputed here: this screen used to walk a third hand-written
+ *    ladder that took `orgBindings[0]` across ANY org the caller belonged to —
+ *    the exact lie the one-resolution campaign exists to kill (D-R1/D-R2,
+ *    Arman 2026-09-01).
+ *  · the ORG principal asks *"what runs for every member of THIS org"*, which
+ *    no per-caller door can answer (`mandate.resolve` resolves for `auth.uid()`
+ *    and would fold in the viewing admin's own personal binding). That answer
+ *    is computed below from the route's org rows alone — deliberate, and the
+ *    reason `resolveForOrgPrincipal` still exists.
  */
-function resolveForPrincipal(
-  data: MandateWorkspaceData,
-  userId: string | null,
-  orgIds: ReadonlySet<string>,
-  principal: WorkspacePrincipal,
-) {
-  const swapping = (b: MandateBindingRowDb) => {
-    const holder = agentHolderOfBinding(b);
-    return b.is_enabled && (holder.holderId !== null || holder.versionId !== null);
-  };
-  const userBinding =
-    principal.kind === "org"
-      ? null
-      : (data.bindings.find(
-          (b) =>
-            b.principal_type === "user" &&
-            b.subject_user_id === userId &&
-            swapping(b),
-        ) ?? null);
-  const orgBindings = data.bindings.filter(
-    (b) =>
-      b.principal_type === "org" &&
-      swapping(b) &&
-      (principal.kind === "org"
-        ? b.organization_id === principal.orgId
-        : orgIds.has(b.organization_id)),
-  );
+interface FulfillmentView {
+  /** The rung that decides. `null` while it is still being asked for. */
+  rung: "system" | "global" | "org" | "user" | "run" | null;
+  /** One sentence naming WHO decides — the active org by name, never by id. */
+  sentence: string;
+  agent: WorkspaceAgentInfo | null;
+  agentId: string | null;
+  useLatest: boolean;
+  pinned: number | null;
+  drift: string | null;
+  loading: boolean;
+  /**
+   * The one resolver refused, in its own words. Shown as-is: a refusal that
+   * names the rung and the pin is the honest answer to "what runs for you", and
+   * the ladder beneath it shows which row to go fix.
+   */
+  refusal: string | null;
+  /** The server's published staleness bound, when the answer came from it. */
+  freshness: string | null;
+}
 
-  const winner = userBinding ?? orgBindings[0] ?? null;
-  const layer: "user" | "org" | "system" = userBinding
-    ? "user"
-    : orgBindings.length > 0
-      ? "org"
-      : "system";
+/** How a rung is spoken about on a screen claiming "this is what runs for you". */
+function verdictSentence(
+  rung: NonNullable<FulfillmentView["rung"]>,
+  activeOrgLabel: string,
+): string {
+  switch (rung) {
+    case "user":
+      return "Your own binding decides this job — it wins in every organization you work in.";
+    case "org":
+      return `${activeOrgLabel} overrides this job.`;
+    case "global":
+      return "A global binding overrides this job for everyone on the platform.";
+    case "run":
+      return "A choice made for this run decides the job — just for that run.";
+    case "system":
+      return `No override applies in ${activeOrgLabel} — this job runs the system default.`;
+  }
+}
+
+/** THE PERSONAL ANSWER — read off the server verdict, never recomputed. */
+function viewFromVerdict(
+  data: MandateWorkspaceData,
+  verdict: ResolvedMandate | null,
+  loading: boolean,
+  error: string | null,
+  nameOfOrg: (id: string) => string | null,
+): FulfillmentView {
+  const empty = {
+    agent: null,
+    agentId: null,
+    useLatest: true,
+    pinned: null,
+    drift: null,
+  };
+  if (loading) {
+    return {
+      ...empty,
+      rung: null,
+      sentence: "Asking the server what runs for you…",
+      loading: true,
+      refusal: null,
+      freshness: null,
+    };
+  }
+  if (error || !verdict) {
+    return {
+      ...empty,
+      rung: null,
+      sentence: "This job has no answer for you right now.",
+      loading: false,
+      refusal: error ?? "The server returned no verdict for this job.",
+      freshness: null,
+    };
+  }
+
+  const orgName = verdict.organizationId
+    ? nameOfOrg(verdict.organizationId)
+    : null;
+  const activeOrgLabel = verdict.organizationId
+    ? orgName
+      ? `${orgName} (your active org)`
+      : "your active organization"
+    : // A verdict resolved with NO organization in play is a platform default,
+      // not an answer for a workspace — and it must never be printed as one.
+      "no organization (a platform default, not a workspace answer)";
+
+  const agent = data.agentsById[verdict.agentId] ?? null;
+  // A verdict that reached this screen is FLOATING by construction: the client
+  // door refuses a version-pinned winner (it has no channel to run one), so the
+  // refusal branch above owns that case and there is no pin to drift from here.
+  return {
+    rung: verdict.provenance,
+    sentence: verdictSentence(verdict.provenance, activeOrgLabel),
+    agent,
+    agentId: verdict.agentId,
+    useLatest: true,
+    pinned: null,
+    drift: null,
+    loading: false,
+    refusal: null,
+    freshness: verdict.freshness,
+  };
+}
+
+/**
+ * THE ORGANIZATION'S ANSWER — for every member of the route's org, personal
+ * bindings excluded. Only the route's own org may decide here; an org admin
+ * with a personal override must not see their own agent on a page that binds
+ * for everyone.
+ */
+function resolveForOrgPrincipal(
+  data: MandateWorkspaceData,
+  orgId: string,
+  orgName: string | null,
+): FulfillmentView {
+  const orgBinding =
+    data.bindings.find((b) => {
+      if (b.principal_type !== "org") return false;
+      if (b.organization_id !== orgId) return false;
+      if (!b.is_enabled) return false;
+      const holder = agentHolderOfBinding(b);
+      return holder.holderId !== null || holder.versionId !== null;
+    }) ?? null;
 
   // The WINNING layer answers alone: a binding that wins supplies its own
   // Holder and its own float/pin state, and the mandate default is consulted
   // only when no binding won at all.
   const systemHolder = holderOfMandate(data.mandate);
-  const winnerHolder = winner ? agentHolderOfBinding(winner) : null;
-  const versionId = winnerHolder
-    ? winnerHolder.versionId
-    : systemHolder.versionId;
+  const winnerHolder = orgBinding ? agentHolderOfBinding(orgBinding) : null;
+  const versionId = winnerHolder ? winnerHolder.versionId : systemHolder.versionId;
   const agentIdRaw = winnerHolder ? winnerHolder.holderId : systemHolder.holderId;
-  const useLatest = winner
-    ? isFloatingBinding(winner)
+  const useLatest = orgBinding
+    ? isFloatingBinding(orgBinding)
     : isFloatingMandate(data.mandate);
 
   const version = versionId ? (data.versionsById[versionId] ?? null) : null;
@@ -172,7 +276,21 @@ function resolveForPrincipal(
       ? `v${pinned} → v${latest}`
       : null;
 
-  return { layer, agent, agentId, useLatest, pinned, latest, drift, orgBindings, userBinding };
+  const who = orgName ?? "This organization";
+  return {
+    rung: orgBinding ? "org" : "system",
+    sentence: orgBinding
+      ? `${who} overrides this job for everyone in it.`
+      : `${who} has no override — its members run the system default.`,
+    agent,
+    agentId,
+    useLatest,
+    pinned,
+    drift,
+    loading: false,
+    refusal: null,
+    freshness: null,
+  };
 }
 
 export function MandateWorkspace({
@@ -182,12 +300,21 @@ export function MandateWorkspace({
 }: MandateWorkspaceProps) {
   const { data, loading, failure, refresh } =
     useMandateWorkspaceData(mandateKeyOrId);
-  const userId = useAppSelector(selectUserId);
   const { organizations } = useUserOrganizations();
-  const orgIds = useMemo(
-    () => new Set(organizations.map((o) => o.id)),
-    [organizations],
-  );
+  // The ACTIVE org — the org rung IS this one, and only this one (D-R1).
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const nameOfOrg = useMemo(() => {
+    const byId = new Map(organizations.map((o) => [o.id, o.name]));
+    return (id: string) => byId.get(id) ?? null;
+  }, [organizations]);
+
+  // ONE ASK, ONE VIEW. The personal principal's answer is the server verdict;
+  // the ladder beside it is the database's own rung list. The empty key is the
+  // documented disabled sentinel for both, so the org route asks for neither.
+  const personalKey =
+    principal.kind === "user" && data ? data.mandate.mandate_key : "";
+  const verdict = useMandate(personalKey);
+  const ladder = useMandateLadder(personalKey, activeOrganizationId);
 
   if (loading && !data) {
     return (
@@ -229,7 +356,16 @@ export function MandateWorkspace({
     );
   }
 
-  const resolution = resolveForPrincipal(data, userId, orgIds, principal);
+  const resolution: FulfillmentView =
+    principal.kind === "org"
+      ? resolveForOrgPrincipal(data, principal.orgId, nameOfOrg(principal.orgId))
+      : viewFromVerdict(
+          data,
+          verdict.mandate,
+          verdict.loading,
+          verdict.error,
+          nameOfOrg,
+        );
   const feature = splitMandateKey(data.mandate.mandate_key).feature;
   // WHERE, not who: a mandate's goal, its declared inputs and running it are
   // SYSTEM management, so they exist only on the admin route. The user route
@@ -299,10 +435,11 @@ export function MandateWorkspace({
             is require_super_admin). */}
         {authoring ? <RunThisJobSection data={data} /> : null}
         {principal.kind === "user" ? (
-          <OrgOverridesDisclosure
-            resolution={resolution}
+          <LadderSection
+            ladder={ladder}
             agentsById={data.agentsById}
-            orgNames={organizations}
+            nameOfOrg={nameOfOrg}
+            activeOrganizationId={activeOrganizationId}
           />
         ) : null}
 
@@ -397,6 +534,10 @@ function BindingSection({
 }
 
 // ── §2 Current fulfillment ───────────────────────────────────────────────────
+//
+// "Fulfilled by" answers ONE question — what runs — and it answers it from the
+// one resolver. Everything it can say is in `FulfillmentView`; this component
+// only paints it, so there is no place left for a second opinion to grow.
 
 function FulfillmentSection({
   data,
@@ -405,28 +546,64 @@ function FulfillmentSection({
   authoring = false,
 }: {
   data: MandateWorkspaceData;
-  resolution: ReturnType<typeof resolveForPrincipal>;
+  resolution: FulfillmentView;
   onChanged: () => void;
   authoring?: boolean;
 }) {
   const { copying, copyAndOpen } = useCopyMandateAgent();
-  const { agent, agentId, layer, useLatest, pinned, drift } = resolution;
+  const {
+    agent,
+    agentId,
+    rung,
+    sentence,
+    useLatest,
+    pinned,
+    drift,
+    loading,
+    refusal,
+    freshness,
+  } = resolution;
   // A mandate may exist before its intelligence does (user-created, no Holder
   // yet). That is a normal state, not a read failure — say so plainly.
-  const holderless = agentId === null && holderOfMandate(data.mandate).versionId === null;
+  const holderless =
+    agentId === null && holderOfMandate(data.mandate).versionId === null;
 
   return (
     <Section title="Fulfilled by">
       <div className="space-y-3 rounded-xl border border-border/60 bg-card p-4">
-        <MandateResolutionRibbon provenance={layer} />
+        {/* The ribbon carries the four PRECEDENCE layers. `global` is a real
+            rung of its own and is deliberately NOT one of them — relabelling it
+            `system` is exactly the lie this campaign closes — so a global
+            verdict highlights nothing here and the sentence below names it. */}
+        <MandateResolutionRibbon
+          provenance={
+            rung === "user" || rung === "org" || rung === "system" || rung === "run"
+              ? rung
+              : undefined
+          }
+        />
+        <p className="text-[13px] leading-relaxed text-foreground">{sentence}</p>
+        {refusal ? (
+          <p className="flex items-start gap-1.5 text-[12.5px] leading-relaxed text-destructive">
+            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            {refusal}
+          </p>
+        ) : null}
         <div className="flex flex-wrap items-center gap-2">
-          {agent ? (
+          {loading ? (
+            <SuspenseLoader />
+          ) : refusal ? null : agent ? (
             <EntityRef
               token="agent"
               id={agent.id}
               name={agent.name}
               className="text-[13.5px] font-medium"
             />
+          ) : agentId ? (
+            // The verdict named an agent this page did not load a name for —
+            // the door still opens, and inventing "could not be read" would be
+            // a different, false statement.
+            <EntityRef token="agent" id={agentId} className="text-[13.5px] font-medium" />
           ) : holderless ? (
             authoring ? (
               <div className="flex flex-wrap items-center gap-3">
@@ -470,9 +647,11 @@ function FulfillmentSection({
               Archived
             </Badge>
           ) : null}
-          <Badge variant="outline" className="py-0 font-mono text-[10px]">
-            {useLatest ? "latest" : pinned !== null ? `v${pinned}` : "pinned"}
-          </Badge>
+          {loading || refusal ? null : (
+            <Badge variant="outline" className="py-0 font-mono text-[10px]">
+              {useLatest ? "latest" : pinned !== null ? `v${pinned}` : "pinned"}
+            </Badge>
+          )}
           {drift ? (
             <Badge
               variant="outline"
@@ -485,8 +664,15 @@ function FulfillmentSection({
         {drift ? (
           <p className="text-[12px] leading-relaxed text-muted-foreground">
             This job runs the pinned version; the agent has moved on. Updating
-            the pin is {layer === "system" ? "an admin decision" : "yours"} —
+            the pin is {rung === "system" ? "an admin decision" : "yours"} —
             nothing changes until it is made deliberately.
+          </p>
+        ) : null}
+        {freshness ? (
+          // The server publishes its own staleness bound with the answer. Print
+          // it rather than implying the verdict is instantaneous.
+          <p className="text-[11px] text-muted-foreground/80">
+            Answered by the server, {freshness}.
           </p>
         ) : null}
         {agent ? (
@@ -521,84 +707,112 @@ function FulfillmentSection({
   );
 }
 
-// ── §3 Organization context — one line, collapsed ────────────────────────────
+// ── §3 The ladder, as the database tells it ──────────────────────────────────
+//
+// WHAT THIS REPLACED, 2026-09-07, and must never come back: an "N of your
+// organizations override this job" fold. It listed org bindings from ANY org
+// the caller belonged to and told the reader they were what applies to THEM —
+// "the first matching organization above". Under D-R1 only the ACTIVE org has a
+// rung, so that line was a lie about other people's organizations.
+//
+// What stands here instead is the one ladder, read from `mandate.resolve`: the
+// rungs that exist for this person in the org they are actually in. It states
+// what each rung SAYS and never which one wins — the verdict above owns that,
+// and a second opinion computed here would be the fourth ladder.
 
-function OrgOverridesDisclosure({
-  resolution,
+function LadderSection({
+  ladder,
   agentsById,
-  orgNames,
+  nameOfOrg,
+  activeOrganizationId,
 }: {
-  resolution: ReturnType<typeof resolveForPrincipal>;
-  agentsById: MandateWorkspaceData["agentsById"];
-  orgNames: { id: string; name: string }[];
+  ladder: ReturnType<typeof useMandateLadder>;
+  agentsById: Record<string, WorkspaceAgentInfo>;
+  nameOfOrg: (id: string) => string | null;
+  activeOrganizationId: string | null;
 }) {
-  const [open, setOpen] = useState(false);
-  const { orgBindings, userBinding } = resolution;
-
-  if (orgBindings.length === 0) {
+  if (ladder.loading) {
     return (
-      <p className="flex items-center gap-1.5 px-1 text-[12px] text-muted-foreground">
-        <Building2 className="h-3.5 w-3.5" />
-        No organization overrides.
+      <div className="flex items-center gap-2 px-1 py-2">
+        <SuspenseLoader />
+      </div>
+    );
+  }
+  if (ladder.error) {
+    return (
+      <p className="flex items-start gap-1.5 px-1 text-[12px] leading-relaxed text-destructive">
+        <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        The rungs behind this job could not be read: {ladder.error}
+      </p>
+    );
+  }
+  if (!activeOrganizationId) {
+    return (
+      <p className="flex items-start gap-1.5 px-1 text-[12px] leading-relaxed text-muted-foreground">
+        <Layers className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        No workspace is selected, so this job has no organization rung to show —
+        pick a workspace to see how it is decided for you.
       </p>
     );
   }
 
-  const nameOf = (id: string) => orgNames.find((o) => o.id === id)?.name ?? "Organization";
-
   return (
     <div className="rounded-lg border border-border/50 bg-card/50">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left"
-      >
-        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="flex-1 text-[12.5px] text-foreground">
-          {orgBindings.length === 1
-            ? `${nameOf(orgBindings[0].organization_id)} overrides this job`
-            : `${orgBindings.length} of your organizations override this job`}
+      <div className="flex items-center gap-2 border-b border-border/40 px-3 py-2">
+        <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-[12.5px] text-foreground">
+          How this job is decided for you
         </span>
-        <ChevronDown
-          className={cn(
-            "h-3.5 w-3.5 text-muted-foreground transition-transform",
-            open && "rotate-180",
-          )}
-        />
-      </button>
-      {open ? (
-        <div className="space-y-2 border-t border-border/40 px-3 py-2.5">
-          {orgBindings.map((b) => {
-            const bindingHolder = agentHolderOfBinding(b);
-            const agentId = bindingHolder.versionId
-              ? null // version identity resolves via the workspace load when needed
-              : bindingHolder.holderId;
-            const agent = agentId ? agentsById[agentId] : null;
-            return (
-              <div key={b.id} className="flex flex-wrap items-center gap-2 text-[12px]">
-                <EntityRef
-                  token="organization"
-                  id={b.organization_id}
-                  name={nameOf(b.organization_id)}
-                  showIcon={false}
-                  className="font-medium"
-                />
-                <span className="text-muted-foreground">runs</span>
-                {agent ? (
-                  <EntityRef token="agent" id={agent.id} name={agent.name} showIcon={false} />
-                ) : (
-                  <span className="text-muted-foreground">a pinned version</span>
-                )}
-              </div>
-            );
-          })}
-          <p className="flex items-start gap-1.5 text-[11.5px] leading-relaxed text-muted-foreground/80">
-            <CircleCheck className="mt-0.5 h-3 w-3 shrink-0" />
-            {userBinding
-              ? "Your personal override wins over these for everything you run."
-              : "What applies to you: the first matching organization above — unless you set a personal override below, which then wins everywhere you run."}
-          </p>
-        </div>
+      </div>
+      <div className="space-y-2 px-3 py-2.5">
+        {ladder.rows.map((row) => (
+          <LadderRow
+            key={`${row.rung}:${row.binding_id ?? "default"}`}
+            row={row}
+            agentsById={agentsById}
+            nameOfOrg={nameOfOrg}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LadderRow({
+  row,
+  agentsById,
+  nameOfOrg,
+}: {
+  row: MandateLadderRow;
+  agentsById: Record<string, WorkspaceAgentInfo>;
+  nameOfOrg: (id: string) => string | null;
+}) {
+  const words = ladderRowWords(
+    row,
+    row.rung === "org" && row.organization_id
+      ? nameOfOrg(row.organization_id)
+      : null,
+  );
+  const broken = ladderRowIsBroken(row);
+  const agent = row.holder_id ? (agentsById[row.holder_id] ?? null) : null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px]">
+      <span className="font-medium text-foreground">{words.title}</span>
+      {broken ? (
+        <Badge
+          variant="outline"
+          className="gap-1 py-0 text-[10px] text-destructive"
+        >
+          <TriangleAlert className="h-2.5 w-2.5" />
+          Broken
+        </Badge>
+      ) : null}
+      <span className={broken ? "text-destructive" : "text-muted-foreground"}>
+        {words.detail}
+      </span>
+      {!broken && agent ? (
+        <EntityRef token="agent" id={agent.id} name={agent.name} showIcon={false} />
       ) : null}
     </div>
   );
