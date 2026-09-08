@@ -13,7 +13,7 @@ function localPcSeedState(): RootState {
       byConversationId: {
         [CONVERSATION_ID]: {
           conversationId: CONVERSATION_ID,
-          sourceFeature: "chat",
+          sourceFeature: "chat-route",
           isEphemeral: false,
           sandboxBinding: null,
         },
@@ -43,6 +43,24 @@ describe("local-PC binding resolution", () => {
     clearSandboxBindingCache();
     global.fetch = realFetch;
     jest.restoreAllMocks();
+  });
+
+  it("preserves the local-machine namespace and reported root in the outbound binding", async () => {
+    const payload = {
+      sandbox_id: "desktop-device", base_url: "https://server.example.test/api/local-proxy/device",
+      access_token: "session-jwt", root_path: "C:\\Users\\Owner", target_kind: "local_machine",
+    };
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => payload });
+    await expect(getActiveSandboxBinding(localPcSeedState(), CONVERSATION_ID)).resolves.toEqual(payload);
+  });
+
+  it("refuses a cloud binding returned for a selected local machine", async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({
+      sandbox_id: "desktop-device", base_url: "https://server.example.test/api/local-proxy/device",
+      access_token: "session-jwt", root_path: "/", target_kind: "sandbox",
+    }) });
+    jest.spyOn(console, "error").mockImplementation();
+    await expect(getActiveSandboxBinding(localPcSeedState(), CONVERSATION_ID)).resolves.toBeNull();
   });
 
   it("suppresses an offline device after one 410 instead of resolving it twice", async () => {

@@ -16853,6 +16853,48 @@
         }
       }
     },
+    "/trilium-notes/public/release": {
+      "get": {
+        "tags": [
+          "Trilium Notes Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_trilium_notes_public_release_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriliumNotesPublicRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/siyuan/public/release": {
+      "get": {
+        "tags": [
+          "SiYuan Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_siyuan_public_release_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiYuanPublicRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -20439,6 +20481,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MindsServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dub/public/status": {
+      "get": {
+        "tags": [
+          "Dub Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_dub_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DubServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rebrandly/public/status": {
+      "get": {
+        "tags": [
+          "Rebrandly Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_rebrandly_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RebrandlyServiceStatus"
                 }
               }
             }
@@ -30392,6 +30476,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__werkzeug_docs_integrations__service__GettingStartedContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jinja-docs/public/getting-started": {
+      "get": {
+        "tags": [
+          "Jinja Documentation Integrations"
+        ],
+        "summary": "Public Getting Started",
+        "operationId": "public_getting_started_jinja_docs_public_getting_started_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__jinja_docs_integrations__service__GettingStartedContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/itsdangerous-docs/public/getting-started": {
+      "get": {
+        "tags": [
+          "ItsDangerous Documentation Integrations"
+        ],
+        "summary": "Public Getting Started",
+        "operationId": "public_getting_started_itsdangerous_docs_public_getting_started_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__itsdangerous_docs_integrations__service__GettingStartedContent"
                 }
               }
             }
@@ -134040,6 +134166,51 @@
         "title": "DryadPublicDataset",
         "description": "Safe factual projection of one published public Dryad dataset."
       },
+      "DubServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dub_public_service_status",
+            "title": "Kind",
+            "default": "dub_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Dub",
+            "title": "Provider",
+            "default": "Dub"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.dub.co/",
+            "title": "Status Page",
+            "default": "https://status.dub.co/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "DubServiceStatus",
+        "description": "Safe aggregate status projection for Dub's fixed status page."
+      },
       "DudaServiceStatus": {
         "properties": {
           "__kind": {
@@ -200903,6 +201074,51 @@
         ],
         "title": "RealtimeToolsResponse"
       },
+      "RebrandlyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "rebrandly_public_service_status",
+            "title": "Kind",
+            "default": "rebrandly_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Rebrandly",
+            "title": "Provider",
+            "default": "Rebrandly"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.rebrandly.com",
+            "title": "Status Page",
+            "default": "https://status.rebrandly.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "RebrandlyServiceStatus",
+        "description": "Safe aggregate status projection for Rebrandly's fixed status page."
+      },
       "RecentExecutionsResponse": {
         "properties": {
           "count": {
@@ -217894,6 +218110,48 @@
         ],
         "title": "ShortcutStatusResult",
         "description": "Safe projection of Shortcut's high-level service status."
+      },
+      "SiYuanPublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "siyuan_public_release",
+            "title": "Kind",
+            "default": "siyuan_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "SiYuan",
+            "title": "Provider",
+            "default": "SiYuan"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag",
+          "release_url",
+          "published_at"
+        ],
+        "title": "SiYuanPublicRelease"
       },
       "SignNowServiceStatus": {
         "properties": {
@@ -236268,6 +236526,48 @@
         "title": "TriggerReviewRequest",
         "description": "Optional body for a manual review.\n\n``example_ids`` is the \"review THIS conversation\" door: the automatic window\nfilters ``updated_at <= settle_cutoff`` so a session someone is still using\nis never reviewed mid-thought — correct for the drain, and exactly wrong for\na person staring at a bad conversation right now. Naming ids reviews those\nand only those, and never advances the watermark."
       },
+      "TriliumNotesPublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "trilium_notes_public_release",
+            "title": "Kind",
+            "default": "trilium_notes_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Trilium Notes",
+            "title": "Provider",
+            "default": "Trilium Notes"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag",
+          "release_url",
+          "published_at"
+        ],
+        "title": "TriliumNotesPublicRelease"
+      },
       "TriviaQuestion": {
         "properties": {
           "__kind": {
@@ -252994,6 +253294,86 @@
           "language"
         ],
         "title": "PageMetadata"
+      },
+      "aidream__services__itsdangerous_docs_integrations__service__GettingStartedContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "itsdangerous_docs_getting_started_content",
+            "title": "Kind",
+            "default": "itsdangerous_docs_getting_started_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "ItsDangerous Documentation",
+            "title": "Provider",
+            "default": "ItsDangerous Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "stable",
+            "title": "Version",
+            "default": "stable"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "GettingStartedContent"
+      },
+      "aidream__services__jinja_docs_integrations__service__GettingStartedContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "jinja_docs_getting_started_content",
+            "title": "Kind",
+            "default": "jinja_docs_getting_started_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Jinja Documentation",
+            "title": "Provider",
+            "default": "Jinja Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "stable",
+            "title": "Version",
+            "default": "stable"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 96000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "GettingStartedContent"
       },
       "aidream__services__jsdelivr_integrations__service__PackageMetadata": {
         "properties": {

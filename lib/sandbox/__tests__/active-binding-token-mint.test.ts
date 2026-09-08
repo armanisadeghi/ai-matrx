@@ -62,6 +62,7 @@ describe("sandbox token mint recovery", () => {
       base_url: "https://orchestrator.example/sandboxes/sbx-live",
       access_token: "sandbox-token",
       root_path: "/home/agent",
+      target_kind: "sandbox",
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);

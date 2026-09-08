@@ -50,10 +50,11 @@
 
 import { useCallback, useMemo, useRef, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { MeetProvider, IncomingCallHost } from "@ai-matrx/meet/react";
+import { MeetProvider } from "@ai-matrx/meet/react";
 import type { MeetDiagnostic } from "@ai-matrx/meet/react";
 import { supabase } from "@/utils/supabase/client";
 import { meetClient } from "@/features/meet/lib/meetClient";
+import { MeetIncomingCalls } from "@/features/meet/components/MeetCallSurfaces";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import {
@@ -137,8 +138,10 @@ export function MeetHost({ children }: MeetHostProps) {
       agents={agents}
       onDiagnostic={onDiagnostic}
     >
-      {/* Mount ONCE, high in the tree — a call rings on every surface. */}
-      <IncomingCallHost />
+      {/* Mount ONCE, high in the tree — a call rings on every surface.
+          Wrapped because the package's own component throws while the provider
+          is inert; see features/meet/components/MeetCallSurfaces.tsx. */}
+      <MeetIncomingCalls />
       {children}
     </MeetProvider>
   );

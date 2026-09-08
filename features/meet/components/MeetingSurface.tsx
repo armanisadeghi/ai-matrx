@@ -31,8 +31,7 @@ import {
 import type { MeetDiagnostic } from "@ai-matrx/meet/react";
 import { meetClient } from "@/features/meet/lib/meetClient";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button, Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { meetBaseUrl } from "@/features/meet/lib/meetBaseUrl";
 import { useAppStore } from "@/lib/redux/hooks";

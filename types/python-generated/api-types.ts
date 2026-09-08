@@ -6778,6 +6778,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/trilium-notes/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_trilium_notes_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/siyuan/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_siyuan_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -9140,6 +9174,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_minds_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dub/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_dub_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rebrandly/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_rebrandly_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15838,6 +15906,40 @@ export interface paths {
         };
         /** Public Getting Started */
         get: operations["public_getting_started_werkzeug_docs_public_getting_started_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jinja-docs/public/getting-started": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Getting Started */
+        get: operations["public_getting_started_jinja_docs_public_getting_started_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/itsdangerous-docs/public/getting-started": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Getting Started */
+        get: operations["public_getting_started_itsdangerous_docs_public_getting_started_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -58620,6 +58722,41 @@ export interface components {
              */
             license_url: string;
         };
+        /**
+         * DubServiceStatus
+         * @description Safe aggregate status projection for Dub's fixed status page.
+         */
+        DubServiceStatus: {
+            /**
+             * Kind
+             * @default dub_public_service_status
+             * @constant
+             */
+            __kind?: "dub_public_service_status";
+            /**
+             * Provider
+             * @default Dub
+             * @constant
+             */
+            provider?: "Dub";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.dub.co/
+             * @constant
+             */
+            status_page?: "https://status.dub.co/";
+        };
         /** DudaServiceStatus */
         DudaServiceStatus: {
             /**
@@ -89432,6 +89569,41 @@ export interface components {
             /** Tools */
             tools: components["schemas"]["RealtimeTool"][];
         };
+        /**
+         * RebrandlyServiceStatus
+         * @description Safe aggregate status projection for Rebrandly's fixed status page.
+         */
+        RebrandlyServiceStatus: {
+            /**
+             * Kind
+             * @default rebrandly_public_service_status
+             * @constant
+             */
+            __kind?: "rebrandly_public_service_status";
+            /**
+             * Provider
+             * @default Rebrandly
+             * @constant
+             */
+            provider?: "Rebrandly";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.rebrandly.com
+             * @constant
+             */
+            status_page?: "https://status.rebrandly.com";
+        };
         /** RecentExecutionsResponse */
         RecentExecutionsResponse: {
             /** Count */
@@ -96659,6 +96831,33 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /** SiYuanPublicRelease */
+        SiYuanPublicRelease: {
+            /**
+             * Kind
+             * @default siyuan_public_release
+             * @constant
+             */
+            __kind?: "siyuan_public_release";
+            /**
+             * Provider
+             * @default SiYuan
+             * @constant
+             */
+            provider?: "SiYuan";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
         };
         /**
          * SignNowServiceStatus
@@ -105280,6 +105479,33 @@ export interface components {
             /** Example Ids */
             example_ids?: string[] | null;
         };
+        /** TriliumNotesPublicRelease */
+        TriliumNotesPublicRelease: {
+            /**
+             * Kind
+             * @default trilium_notes_public_release
+             * @constant
+             */
+            __kind?: "trilium_notes_public_release";
+            /**
+             * Provider
+             * @default Trilium Notes
+             * @constant
+             */
+            provider?: "Trilium Notes";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
+        };
         /** TriviaQuestion */
         TriviaQuestion: {
             /**
@@ -112732,6 +112958,64 @@ export interface components {
             content_model: string;
             /** Language */
             language: string;
+        };
+        /** GettingStartedContent */
+        aidream__services__itsdangerous_docs_integrations__service__GettingStartedContent: {
+            /**
+             * Kind
+             * @default itsdangerous_docs_getting_started_content
+             * @constant
+             */
+            __kind?: "itsdangerous_docs_getting_started_content";
+            /**
+             * Provider
+             * @default ItsDangerous Documentation
+             * @constant
+             */
+            provider?: "ItsDangerous Documentation";
+            /**
+             * Version
+             * @default stable
+             * @constant
+             */
+            version?: "stable";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
+        };
+        /** GettingStartedContent */
+        aidream__services__jinja_docs_integrations__service__GettingStartedContent: {
+            /**
+             * Kind
+             * @default jinja_docs_getting_started_content
+             * @constant
+             */
+            __kind?: "jinja_docs_getting_started_content";
+            /**
+             * Provider
+             * @default Jinja Documentation
+             * @constant
+             */
+            provider?: "Jinja Documentation";
+            /**
+             * Version
+             * @default stable
+             * @constant
+             */
+            version?: "stable";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
         };
         /** PackageMetadata */
         aidream__services__jsdelivr_integrations__service__PackageMetadata: {
@@ -125996,6 +126280,46 @@ export interface operations {
             };
         };
     };
+    public_release_trilium_notes_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriliumNotesPublicRelease"];
+                };
+            };
+        };
+    };
+    public_release_siyuan_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiYuanPublicRelease"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -129027,6 +129351,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MindsServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_dub_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DubServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_rebrandly_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RebrandlyServiceStatus"];
                 };
             };
         };
@@ -137724,6 +138088,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__werkzeug_docs_integrations__service__GettingStartedContent"];
+                };
+            };
+        };
+    };
+    public_getting_started_jinja_docs_public_getting_started_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__jinja_docs_integrations__service__GettingStartedContent"];
+                };
+            };
+        };
+    };
+    public_getting_started_itsdangerous_docs_public_getting_started_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__itsdangerous_docs_integrations__service__GettingStartedContent"];
                 };
             };
         };

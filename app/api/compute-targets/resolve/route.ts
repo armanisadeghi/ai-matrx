@@ -18,18 +18,10 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/utils/supabase/server";
 import { resolveOrchestratorByTier } from "@/lib/sandbox/orchestrator-routing";
+import type { components } from "@/types/python-generated/api-types";
+import { isJsonObject } from "@/types/json";
 
-export interface SandboxBindingPayload {
-  sandbox_id: string;
-  base_url: string;
-  access_token: string;
-  root_path: string;
-}
-
-interface ResolveBody {
-  kind?: string;
-  id?: string;
-}
+export type SandboxBindingPayload = Required<components["schemas"]["SandboxBindingRequest"]>;
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -44,15 +36,15 @@ export async function POST(request: Request) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  let body: ResolveBody;
+  let body: unknown;
   try {
-    body = (await request.json()) as ResolveBody;
+    body = await request.json();
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
-  const kind = body.kind;
-  const id = body.id;
-  if (!kind || !id) {
+  const kind = isJsonObject(body) ? body.kind : null;
+  const id = isJsonObject(body) ? body.id : null;
+  if (typeof kind !== "string" || typeof id !== "string" || !kind || !id) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
 
@@ -73,15 +65,13 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
-    const resolvedTier: "ec2" | "hosted" =
-      row.tier === "ec2" || row.tier === "hosted" ? row.tier : "ec2";
     if (row.tier !== "ec2" && row.tier !== "hosted") {
-      console.error(
-        `[POST /api/compute-targets/resolve] sandbox row ${id} has no valid tier (got: ${JSON.stringify(row.tier)}). ` +
-          "Falling back to 'ec2'. This sandbox was created without an explicit tier — update the row.",
-      );
+      return NextResponse.json({ error: "sandbox_tier_not_configured" }, { status: 503 });
     }
-    const orchestrator = resolveOrchestratorByTier(resolvedTier);
+    if (row.tier !== kind) {
+      return NextResponse.json({ error: "sandbox_tier_mismatch" }, { status: 409 });
+    }
+    const orchestrator = resolveOrchestratorByTier(row.tier);
     if (!orchestrator.url || !orchestrator.apiKey) {
       return NextResponse.json(
         { error: "orchestrator_not_configured" },
@@ -123,12 +113,19 @@ export async function POST(request: Request) {
         { status: 502 },
       );
     }
-    const data = (await resp.json()) as Partial<SandboxBindingPayload>;
+    const data: unknown = await resp.json().catch(() => null);
+    if (!isJsonObject(data) || data.sandbox_id !== sandboxId ||
+        typeof data.base_url !== "string" || !data.base_url ||
+        typeof data.access_token !== "string" || !data.access_token ||
+        typeof data.root_path !== "string" || !data.root_path) {
+      return NextResponse.json({ error: "invalid_orchestrator_binding" }, { status: 502 });
+    }
     const payload: SandboxBindingPayload = {
-      sandbox_id: data.sandbox_id ?? sandboxId,
-      base_url: data.base_url ?? "",
-      access_token: data.access_token ?? "",
-      root_path: data.root_path ?? "/home/agent",
+      sandbox_id: data.sandbox_id,
+      base_url: data.base_url,
+      access_token: data.access_token,
+      root_path: data.root_path,
+      target_kind: "sandbox",
     };
     return NextResponse.json(payload);
   }
@@ -137,7 +134,7 @@ export async function POST(request: Request) {
     const { data: row, error } = await supabase
       .from("app_instances")
       .select(
-        "id, instance_id, tunnel_active, tunnel_url, last_seen, is_active",
+        "id, instance_id, tunnel_active, tunnel_url, last_seen, is_active, home_dir",
       )
       .is("deleted_at", null)
       .eq("id", id)
@@ -155,6 +152,9 @@ export async function POST(request: Request) {
     if (!accessToken) {
       return NextResponse.json({ error: "no_session_token" }, { status: 401 });
     }
+    if (typeof row.home_dir !== "string" || !row.home_dir.trim()) {
+      return NextResponse.json({ error: "device_home_not_reported" }, { status: 503 });
+    }
     const aidreamBase =
       process.env.AIDREAM_PUBLIC_URL ||
       process.env.NEXT_PUBLIC_AIDREAM_URL ||
@@ -164,7 +164,8 @@ export async function POST(request: Request) {
       sandbox_id: row.instance_id ?? String(row.id),
       base_url: baseUrl,
       access_token: accessToken,
-      root_path: "/",
+      root_path: row.home_dir.trim(),
+      target_kind: "local_machine",
     };
     return NextResponse.json(payload);
   }

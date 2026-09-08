@@ -22,7 +22,8 @@ import type {
   MessageWrapperProps,
 } from "@ai-matrx/messaging/react";
 // ONE ENTRY POINT ONLY — see `features/meet/lib/meetClient.ts` (MRI-A5).
-import { asUserId, CallButton } from "@ai-matrx/meet/react";
+import { asUserId } from "@ai-matrx/meet/react";
+import { PersonCallButton } from "@/features/meet/components/MeetCallSurfaces";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
@@ -94,7 +95,7 @@ export function MessagingConversationRowChrome({
       className="flex items-center pr-2"
     >
       {children}
-      <CallButton
+      <PersonCallButton
         person={{
           userId: asUserId(String(callable.userId)),
           displayName: callable.displayName,
