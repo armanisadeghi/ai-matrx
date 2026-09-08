@@ -96,10 +96,12 @@
  */
 
 import type {
+  SurfaceAgentRole,
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
 } from "@/features/surfaces/types";
+import { MESSAGING_MANDATE_KEYS, MESSAGING_MANDATE_ROLES } from "@/features/messaging/lib/messagingMandates";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const surfaceSpecific: SurfaceValue[] = [
@@ -195,8 +197,38 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * THE DISCLOSURE LAW (2026-09-07). The conversation pane runs four FIXED AI
+ * jobs that already exist in the product — the AI bar `@ai-matrx/messaging`
+ * renders above a thread. A page that quietly calls a model is a black box, so
+ * each job registers here and appears in the shell's existing top Agents menu,
+ * where the user can open its Mandate in place.
+ *
+ * 🚨 This adds NOTHING to the page. No chip, badge, row, label, or section on
+ * the conversation pane — disclosure never changes a surface's visible content.
+ *
+ * Every role names a `mandateKey` and NO `defaultAgentId`: the Holder is
+ * DB-managed and moves without a deploy. The keys and their sentences come from
+ * `features/messaging/lib/messagingMandates.ts`, which the provider hook also
+ * reads, so the menu and the runtime can never name different jobs.
+ */
+const agentRoles: SurfaceAgentRole[] = MESSAGING_MANDATE_ROLES.map(
+  (role, index) => ({
+    name: role.name,
+    label: role.label,
+    description: role.description,
+    kind: "single",
+    defaultAgentId: null,
+    mandateKey: MESSAGING_MANDATE_KEYS[role.capability],
+    // Every one of the four is pressed by a person, never on a timer.
+    autoRun: "never",
+    sortOrder: 100 + index * 10,
+  }),
+);
+
 export const messagesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/messages",
+  agentRoles,
   readiness: "partial",
   readinessNote:
     "Audited against the live page 2026-08-11; read gap closed and write targets re-evaluated 2026-08-12. TWO emitters: the thread route emits all 9 surface-specific values, the list route only total_unread_count + all_conversations (there is no open conversation there). current_conversation_message_count is the LOADED window size, not a conversation total — the thread paginates and no total exists on the client. Still `partial` rather than `verified` because the list mount is a deliberate 2-of-9. Write targets evaluated twice and deliberately not declared — see the docblock.",

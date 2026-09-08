@@ -14,9 +14,20 @@
 // creation, and the backfill door on every reconnect. This file injects
 // IDENTITY and APP CHROME (C22) and nothing else:
 //
-//   identity — the Supabase browser singleton, the signed-in user, the active org
+//   identity — the Supabase browser singleton, the signed-in user, the active
+//              org, the API transport, and WHO fulfils each of the package's
+//              four conversation intelligences
 //   chrome   — reference opening, the notification sound/desktop sink, action
 //              surfaces, and a diagnostic sink that screams with a remedy
+//
+// 🚨 THE AI IDENTITY COMES FROM MANDATES, NEVER FROM A CONFIG LINE. An agent's
+// definition lives in the DATABASE; a UUID in this file would be the exact
+// thing the Mandate system exists to prevent. `useMessagingIntelligences`
+// resolves the four `messaging.*` mandates and injects the resolved Holder AND
+// its `config_overrides` — both halves, because passing the id alone drops
+// whatever settings the winning binding decided. A job with no Holder is simply
+// absent from the map, and the package then renders no chip for it: an absent
+// affordance, never a dead button, never a fallback agent.
 //
 // It is mounted app-wide, not on /messages, because the unread badge in the
 // header, the messages window panel, and the "Message" buttons in member panels
@@ -29,7 +40,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { MessagingProvider } from "@ai-matrx/messaging/react";
 import type {
@@ -38,7 +49,9 @@ import type {
   Message,
 } from "@ai-matrx/messaging/react";
 import { supabase } from "@/utils/supabase/client";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { createMatrxTransport } from "@/lib/api/matrx-transport";
+import { useMessagingIntelligences } from "@/features/messaging/lib/useMessagingIntelligences";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { MESSAGE_ACTION_SURFACES } from "@/features/messaging/actions/messageActionSurfaces";
@@ -60,6 +73,21 @@ export function MessagingHost({ children }: MessagingHostProps) {
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectActiveOrganizationId);
   const notifyIncoming = useIncomingMessageNotifier();
+  const store = useAppStore();
+
+  // The app's ONE production transport for `@ai-matrx/agents` calls — the same
+  // pipeline `useRunAgent` and the execution system ride, so a token refresh,
+  // the AI-version flag, org admission and error capture all behave here
+  // exactly as they do everywhere else. Built once: a new transport identity
+  // per render would rebuild the package's AI client on every render.
+  const transport = useMemo(() => createMatrxTransport(store.getState, {
+    source: "messagingHost",
+  }), [store]);
+
+  const { agents, maxTranscriptMessages } = useMessagingIntelligences({
+    organizationId,
+    userId,
+  });
 
   // A background failure is never silent, and never a wall of red either: the
   // package classifies a missing session as a WARNING because it is a normal
@@ -125,6 +153,16 @@ export function MessagingHost({ children }: MessagingHostProps) {
       client={supabase}
       userId={userId}
       organizationId={organizationId}
+      // The AI seam: the transport, WHO fulfils each job (from Mandates, both
+      // halves), how much history an organization is willing to send, and the
+      // producer slugs the server's register accepts. An unregistered producer
+      // is a 422, not a lost analytic — `matrx-frontend` / `messages` are the
+      // registered pair for this surface (aidream source_attribution).
+      transport={transport}
+      agents={agents}
+      maxTranscriptMessages={maxTranscriptMessages}
+      sourceApp="matrx-frontend"
+      sourceFeature="messages"
       actionRenderers={MESSAGE_ACTION_SURFACES}
       // App chrome around the package's own surfaces: the data attributes the
       // v3 right-click menu resolves its target from, and this app's ONE

@@ -38,12 +38,34 @@ components — was DELETED, not wrapped. Roughly 5,900 lines.
 4. **One realtime manager.** `MessagingHost` sits under `RealtimeHost` and the package detects it.
    Do not mount a second `RealtimeProvider` anywhere.
 
+## The four AI actions — wired to Mandates (2026-09-07)
+
+Catch me up · Summarize · Action items · Draft a reply. Their identity comes from the **Mandate**
+system, never from a config line and never from a UUID in this repo.
+
+| | |
+|---|---|
+| The four jobs, named once | [`lib/messagingMandates.ts`](./lib/messagingMandates.ts) — the capability→mandate map, the product sentences, and the knob address. **Two readers, one list**: the surface manifest (disclosure) and the provider hook (runtime), so the Agents menu and the thing that actually runs can never name different jobs. |
+| Identity injection | [`lib/useMessagingIntelligences.ts`](./lib/useMessagingIntelligences.ts) — `useMandateSet` over the four keys, plus the org/user knob. Injects the resolved Holder **and** its `config_overrides`; passing the agent id alone would drop the settings half of the winning binding. |
+| The mount | [`providers/MessagingHost.tsx`](../../providers/MessagingHost.tsx) — transport, `agents`, `maxTranscriptMessages`, and the registered producer slugs `matrx-frontend` / `messages`. |
+| Disclosure | [`features/surfaces/manifests/messages.manifest.ts`](../surfaces/manifests/messages.manifest.ts) — four `agentRoles`, each carrying a `mandateKey` and a NULL `defaultAgentId`. They appear in the shell's top Agents menu and add **nothing** to the page. Guarded by `manifests/messages-agent-roles.test.ts`. |
+| The one knob | `platform.feature_knob` → `messaging.conversation_ai.transcript_message_cap` (default 200, org- and user-overridable). The package's hardcoded 200 was a behavioural opinion; it is now a row. |
+
+Server side: the four mandates and their shared Provision (`messaging.conversation`) are declared
+in aidream `services/mandates/client_mandates.py`. Rebind them per organization or per user at
+`/mandates?feature=messaging` — no deploy.
+
+🚨 **A job with no Holder is ABSENT, never a dead button.** An unresolved mandate leaves its
+capability out of the identity map and the package renders no chip for it, with a loud console
+error carrying the remedy. **As of 2026-09-07 all four are unresolved**: the four Holder agents
+could not be authored because the platform's agent-authoring door
+(`agent_factory.structure_builder`) is pinned to `claude-opus-5` with `model_tiers` NULL and the
+Anthropic account is out of credit. The four mandates are declared and recorded as
+`mandate_unprovisioned` findings; binding a Holder turns the AI bar on with no deploy. The agent
+specifications to build are in the cross-repo handoff.
+
 ## What this app deliberately does not have yet
 
-- **The four AI actions** (catch me up, summarize, action items, draft a reply) render NOTHING,
-  because the provider is passed no `transport`/`agents`. Their agent ids must come from
-  **Mandates** — never a hardcoded UUID — so wiring them is Mandate work, not a config line. An
-  absent action is the honest state; a dead button would not be.
 - **Reactions, per-message read receipts, edit history, pinning, attachment upload** — the
   canonical `communication.dm_*` schema has no columns for the first four, and upload belongs on
   `@ai-matrx/data/files`. This app never had them either.
