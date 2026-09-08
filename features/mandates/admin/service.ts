@@ -1051,7 +1051,18 @@ function metadataWithUpdatedResult(
     found = true;
     return { ...entry, ...patch };
   });
-  if (!found) throw new Error(`Bench result ${resultId} was not found.`); // access-errors: ok — verified absence: the id is searched in metadata already fetched into memory, not an ambiguous DB read
+  if (!found) {
+    // access-errors: ok — verified absence: the id is searched in metadata
+    // already fetched into memory, not an ambiguous DB read.
+    // The id is a DIAGNOSTIC, not the sentence: this throw reaches the bench
+    // panel, and "Bench result <uuid> was not found" gives its reader nothing
+    // to do. (Class guard: __tests__/no-uuid-in-sentences.test.ts.)
+    console.error("[mandates] bench result not found on exemplar:", resultId);
+    throw new Error(
+      "That bench result is no longer on this exemplar — someone else may " +
+        "have removed it. Reload the bench and try again.",
+    );
+  }
   return { ...metadata, test_bench_results: next };
 }
 

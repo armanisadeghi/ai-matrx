@@ -371,7 +371,15 @@ describe("a verdict this client cannot run REFUSES, loudly", () => {
     expect(error.message).not.toContain(SYSTEM_AGENT);
   });
 
-  it("refuses a version-pinned verdict and names the rung and the version", async () => {
+  // 🚨 FIX-R6 F2, the frontend sibling. This refusal is NOT a developer log: it
+  // is `useMandate().error`, printed verbatim on screen by ChatNewClient,
+  // EducationTutorClient, ConductorPanel and every other consumer. It used to
+  // read "(version 8f9326a3-fc3f-438b-b742-b9ed28f363d7)" — a uuid at a person,
+  // the exact string the second walk read on production. The reader cannot act
+  // on it; what they CAN act on is the rung and the remedy, both of which the
+  // sentence already carries. The pinned id stays available to a developer
+  // through the console, never through the sentence.
+  it("refuses a version-pinned verdict, names the rung, and prints no uuid", async () => {
     verdictByOrg[ORG_A] = verdictFor({
       is_version: true,
       agent_id: "8f9326a3-fc3f-438b-b742-b9ed28f363d7",
@@ -379,7 +387,14 @@ describe("a verdict this client cannot run REFUSES, loudly", () => {
     });
     const error = await rejectedError(resolveMandate(KEY));
     expect(error.message).toContain("org rung is version-pinned");
-    expect(error.message).toContain("8f9326a3-fc3f-438b-b742-b9ed28f363d7");
+    // The remedy, in the rung vocabulary — what the person is to DO.
+    expect(error.message).toContain("Unpin the org rung");
+    expect(error.message).not.toContain("8f9326a3-fc3f-438b-b742-b9ed28f363d7");
+    expect(error.message).not.toMatch(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+    );
+    // …and never the word the fallback must not become.
+    expect(error.message.toLowerCase()).not.toContain("unknown");
   });
 
   it("carries the winning rung through, without relabelling global as system", async () => {

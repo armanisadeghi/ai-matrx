@@ -64,6 +64,18 @@ export function RunFailureCard({
         <TextWithDoors text={failure.sentence} />
       </pre>
 
+      {/* THE REMEDY, only where one is honest. A run that never got an HTTP
+          answer is the one transient class here (FIX-R2: only a transient
+          outcome may invite a retry) — and it used to show the browser's own
+          "Failed to fetch" and nothing to do about it. A SERVER refusal gets
+          no retry line: 409/422 will refuse again until something changes. */}
+      {failure.status == null ? (
+        <p className="text-[11.5px] text-muted-foreground">
+          Nothing was run and nothing was charged. Check your connection and run
+          it again; if it keeps failing, the server is unreachable from here.
+        </p>
+      ) : null}
+
       <ServerNotes
         heading="What the server also said"
         notes={failure.notes}

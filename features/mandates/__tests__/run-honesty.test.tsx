@@ -194,7 +194,15 @@ describe("RunFailureCard — the refusal STAYS on the screen", () => {
     ).not.toBeNull();
   });
 
-  it("says plainly when the run never reached an HTTP answer", () => {
+  // 🚨 FIX-R6 named "a `Failed to fetch` save with no remedy that succeeded on
+  // retry" as a finding it did NOT absorb. This is that finding's home: the
+  // transport case printed the browser's own four words and a headline, and
+  // nothing a person could do about it. `Failed to fetch` is evidence, not a
+  // sentence — a screen that shows only evidence is the quiet screen the
+  // nothing-fails-silently law forbids. A transport failure is also the ONE
+  // class allowed to invite a retry (FIX-R2's rule: only a transient outcome
+  // says "try again"), so the remedy here is a real one.
+  it("says plainly when the run never reached an HTTP answer, WITH the remedy", () => {
     act(() => {
       root.render(
         <RunFailureCard
@@ -204,6 +212,24 @@ describe("RunFailureCard — the refusal STAYS on the screen", () => {
     });
     const text = container.textContent ?? "";
     expect(text).toContain("The run never reached the server");
+    // The raw cause stays — as evidence, beneath the words.
     expect(text).toContain("Failed to fetch");
+    // …and the person is told what to do about it.
+    expect(text).toContain("run it again");
+  });
+
+  it("offers no retry remedy when the SERVER refused — that is not transient", () => {
+    act(() => {
+      root.render(
+        <RunFailureCard
+          failure={describeMandateRunFailure(
+            new MandateRunRefusal({ message: UNFULFILLED, status: 409 }),
+          )}
+        />,
+      );
+    });
+    const text = container.textContent ?? "";
+    expect(text).toContain(UNFULFILLED);
+    expect(text).not.toContain("run it again");
   });
 });

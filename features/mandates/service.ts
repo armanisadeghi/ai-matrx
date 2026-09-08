@@ -338,9 +338,19 @@ function assertRunnableVerdict(
     );
   }
   if (verdict.is_version) {
+    // 🚨 NO UUID IN A SENTENCE A PERSON READS (FIX-R6 F2). This throw is not a
+    // developer log: `useMandate` hands `.message` straight to consumers that
+    // print it on screen. It used to say "(version <uuid>)" — unreadable, and
+    // unactionable next to a remedy that names the rung. The pinned id is a
+    // DIAGNOSTIC, so it goes to the console, where developers look, and the
+    // sentence keeps only what the reader can act on.
+    console.error(
+      `[mandates] ${mandateKey}: the ${rung} rung is pinned to holder version`,
+      verdict.agent_id,
+    );
     throw new Error(
-      `mandate "${mandateKey}": the ${rung} rung is version-pinned ` +
-        `(version ${verdict.agent_id}), and this screen has no channel to run a ` +
+      `mandate "${mandateKey}": the ${rung} rung is version-pinned to a ` +
+        `specific Holder version, and this screen has no channel to run a ` +
         `pinned version — client-run mandates must be floating. Unpin the ` +
         `${rung} rung, or route this consumer through the server.`,
     );
