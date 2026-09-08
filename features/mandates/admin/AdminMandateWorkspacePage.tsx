@@ -21,7 +21,7 @@
 // fold, which is where Arman found "the actual things I need" hiding).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -50,6 +50,7 @@ import {
   type MandateCodeTruth,
   type MandateConsoleData,
 } from "./service";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 export interface AdminMandateWorkspacePageProps {
   /** Mandate key ("podcast.multihost_script") or the row uuid — both open. */
@@ -62,13 +63,13 @@ export function AdminMandateWorkspacePage({
   return (
     <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto">
       <div className="mx-auto w-full max-w-3xl px-4 pt-3 sm:px-6">
-        <Link
+        <AppLink
           href="/administration/mandates"
           className="inline-flex items-center gap-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           All mandates
-        </Link>
+        </AppLink>
       </div>
       {/* THE ONE workspace — identical to /mandates/[key]. */}
       <MandateWorkspace mandateKeyOrId={mandateKey} host="admin-route" />
@@ -309,7 +310,7 @@ function RemoveMandate({ row }: { row: MandateRow }) {
       toast.success(`Removed "${row.mandateKey}" — nothing runs it now.`);
       // The page it was on describes a job that no longer exists; go back to
       // the list rather than leaving a screen about a removed thing.
-      router.push("/administration/mandates");
+      pushAppHref(router, "/administration/mandates");
     } catch (error: unknown) {
       // The service's own sentence (RLS refusal, already removed) reaches the
       // person; nothing is invented here.

@@ -37,6 +37,7 @@ import {
   SeedTaskChip,
   formatDateRange,
 } from "./rule-chrome";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 const ALL = "__all__";
 
@@ -118,7 +119,7 @@ export function JurisdictionRulesLibraryClient() {
   );
 
   const openRule = (id: string) =>
-    router.push(`/administration/hr/jurisdiction-rules/${id}`);
+    pushAppHref(router, `/administration/hr/jurisdiction-rules/${id}`);
 
   return (
     <div className="flex h-full flex-col">

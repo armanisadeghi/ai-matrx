@@ -50,6 +50,7 @@ if $STRICT; then
         # builds locally and dies on Vercel (v0.4.194, 2026-07-28).
         "Untracked-import breakage|bash scripts/check-untracked-imports.sh"
         "Parked route groups (a group deleted from main)|pnpm check:parked-routes:strict"
+        "Cross-deployment links (a CORS preflight on every www hover)|pnpm check:cross-deployment-links:strict"
         "TypeScript type-check|pnpm type-check"
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts --strict"

@@ -42,7 +42,7 @@ import {
   ShieldCheck,
   UserCheck,
 } from "lucide-react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -430,12 +430,12 @@ function SituationalEngineView({
             {/* No dollars are spent here, so the only ceiling worth showing is
                 how much one pass may write. It is a knob, and it is named. */}
             up to {formatCount(capCeiling)} stamps per pass
-            <Link
+            <AppLink
               href="/administration/users/limits"
               className="ml-1 text-primary underline-offset-2 hover:underline"
             >
               knobs
-            </Link>
+            </AppLink>
           </span>
         </div>
       </header>
@@ -758,12 +758,12 @@ function TopicPlacementConsole({
             <Gauge className="h-3 w-3" />
             floor {minImpressions} impressions · ceiling{" "}
             {formatCount(dailyCeiling)}/day
-            <Link
+            <AppLink
               href="/administration/users/limits"
               className="ml-1 text-primary underline-offset-2 hover:underline"
             >
               knobs
-            </Link>
+            </AppLink>
           </span>
 
           <div className="flex items-center gap-1.5">

@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   Check,
   ChevronDown,
@@ -278,12 +278,12 @@ export default function KindIncidentsTab() {
                 >
                   {copy.label}
                 </span>
-                <Link
+                <AppLink
                   href={`/administration/utilities/kind-registry/${encodeURIComponent(row.kind)}`}
                   className="shrink-0 font-mono text-sm font-medium text-foreground underline-offset-2 hover:underline"
                 >
                   {row.kind}
-                </Link>
+                </AppLink>
                 <span className="shrink-0 text-[11px] text-muted-foreground">
                   {row.platform ?? "web"}/{row.role ?? "output"}
                   {row.componentKey ? ` · ${row.componentKey}` : ""}
@@ -318,13 +318,13 @@ export default function KindIncidentsTab() {
                         Seen on
                       </span>
                       {row.routes.map((route) => (
-                        <Link
+                        <AppLink
                           key={route}
                           href={route}
                           className="rounded border border-border px-1.5 py-0.5 font-mono text-[11px] text-foreground transition-colors hover:bg-accent"
                         >
                           {route}
-                        </Link>
+                        </AppLink>
                       ))}
                     </div>
                   )}
@@ -334,13 +334,13 @@ export default function KindIncidentsTab() {
                     </p>
                   )}
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link
+                    <AppLink
                       href={`/shapes/${encodeURIComponent(row.kind)}`}
                       target="_blank"
                       className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-accent"
                     >
                       <ExternalLink className="h-3.5 w-3.5" /> Open the Shape
-                    </Link>
+                    </AppLink>
                     <KindAgentButton
                       kind={row.kind}
                       label={row.kind}

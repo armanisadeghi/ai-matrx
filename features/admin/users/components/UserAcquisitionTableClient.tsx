@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Cpu, ExternalLink, Route, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ import {
   AcquisitionJourneySchema,
   AdminUserAcquisitionRowSchema,
 } from "../types";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 type Timeframe = "7d" | "30d" | "90d" | "all";
 
@@ -305,7 +306,7 @@ export function UserAcquisitionTableClient() {
         width: 220,
         cell: (row) =>
           row.landing_path ? (
-            <Link
+            <AppLink
               href={row.landing_path}
               target="_blank"
               className="flex items-center gap-1 truncate text-xs text-primary hover:underline"
@@ -313,7 +314,7 @@ export function UserAcquisitionTableClient() {
             >
               <span className="truncate">{row.landing_path}</span>
               <ExternalLink className="h-3 w-3 shrink-0" />
-            </Link>
+            </AppLink>
           ) : (
             <span className="text-xs text-muted-foreground">
               Historical — not collected
@@ -470,7 +471,7 @@ export function UserAcquisitionTableClient() {
             size="sm"
             variant="ghost"
             className="ml-auto h-6 gap-1 px-2 text-xs"
-            onClick={() => router.push("/administration/users/acquisition")}
+            onClick={() => pushAppHref(router, "/administration/users/acquisition")}
           >
             <X className="h-3 w-3" /> Clear
           </Button>

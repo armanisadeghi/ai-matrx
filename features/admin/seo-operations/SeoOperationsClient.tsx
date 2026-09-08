@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -135,7 +135,7 @@ function AutomationsPanel() {
               {runningId === row.id ? "Queuing…" : "Run now"}
             </Button>
             <Button size="sm" variant="ghost" asChild>
-              <Link href={`/schedules/${row.id}`}>Open</Link>
+              <AppLink href={`/schedules/${row.id}`}>Open</AppLink>
             </Button>
           </div>
         ),
@@ -166,12 +166,12 @@ function AutomationsPanel() {
         Every recurring SEO/web task, including the ones switched off in the
         2026-08-20 governance pass. <strong>Run now</strong> queues one manual
         execution without enabling the schedule — watch it under{" "}
-        <Link
+        <AppLink
           className="underline underline-offset-2"
           href="/administration/automation/scheduling/runs"
         >
           Scheduling › Runs
-        </Link>
+        </AppLink>
         .
       </p>
       <NonEditableContextMenu
@@ -289,11 +289,11 @@ function MandatesPanel() {
         filter: false,
         cell: (row) => (
           <Button size="sm" variant="ghost" asChild>
-            <Link
+            <AppLink
               href={`/administration/mandates?mandate=${encodeURIComponent(row.mandate_key)}`}
             >
               Open
-            </Link>
+            </AppLink>
           </Button>
         ),
       },
@@ -307,12 +307,12 @@ function MandatesPanel() {
         Every <span className="font-mono">seo.*</span> mandate with its
         judge-grade goal, its provision (the declared input menu), and its
         output contract. Rebinding, test runs, and version pins live in the{" "}
-        <Link
+        <AppLink
           className="underline underline-offset-2"
           href="/administration/mandates"
         >
           full mandates console
-        </Link>
+        </AppLink>
         .
       </p>
       {/* `mandate` also renders on `features/mandates/admin/MandatesConsole.tsx`

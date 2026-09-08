@@ -22,7 +22,7 @@
  *    noise on their screen.
  */
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useQuery } from "@tanstack/react-query";
 import { BadgeCheck, BookOpenCheck, Library } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -60,13 +60,13 @@ export function ValueDoors({
         variant="outline"
         className="h-8 gap-1.5 text-xs"
       >
-        <Link
+        <AppLink
           href={marketingRoutes.site(brandId, siteId, "/value/guidelines")}
           title="The prose this site's expert wrote about what it sells and who it serves. Every AI classification and valuation run reads it first."
         >
           <BookOpenCheck className="h-3.5 w-3.5" />
           Business guidelines
-        </Link>
+        </AppLink>
       </Button>
       {brandValue ? (
         <Button
@@ -75,7 +75,7 @@ export function ValueDoors({
           variant="outline"
           className="h-8 gap-1.5 text-xs"
         >
-          <Link
+          <AppLink
             href={dimensionValueHref(
               { brandId, siteId },
               "traffic_class",
@@ -86,7 +86,7 @@ export function ValueDoors({
           >
             <BadgeCheck className="h-3.5 w-3.5" />
             Brand identity
-          </Link>
+          </AppLink>
         </Button>
       ) : null}
       {isSuperAdmin ? (
@@ -96,13 +96,13 @@ export function ValueDoors({
           variant="outline"
           className="h-8 gap-1.5 text-xs"
         >
-          <Link
+          <AppLink
             href="/administration/knowledge/seo-facets"
             title="Platform facet registry — the universal vocabularies every tenant shares. Super admins only."
           >
             <Library className="h-3.5 w-3.5" />
             Facet registry
-          </Link>
+          </AppLink>
         </Button>
       ) : null}
     </div>

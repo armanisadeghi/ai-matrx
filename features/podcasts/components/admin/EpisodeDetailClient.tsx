@@ -8,6 +8,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { EpisodeForm } from "./PodcastForm";
 import { podcastService } from "../../service";
 import type { PcShow, PcEpisodeWithShow } from "../../types";
+import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
 
 interface EpisodeDetailClientProps {
   showId: string;
@@ -53,15 +54,14 @@ export function EpisodeDetailClient({
 
   const back = () =>
     startTransition(() =>
-      router.push(`/administration/knowledge/podcasts/shows/${showId}?panel=episodes`),
+      pushAppHref(router, `/administration/knowledge/podcasts/shows/${showId}?panel=episodes`),
     );
 
   const handleSaved = (saved: PcEpisodeWithShow) => {
     // After creating a new episode, navigate to its real edit route
     if (isNew) {
       startTransition(() =>
-        router.replace(
-          `/administration/knowledge/podcasts/shows/${showId}/episodes/${saved.id}`,
+        replaceAppHref(router, `/administration/knowledge/podcasts/shows/${showId}/episodes/${saved.id}`,
         ),
       );
     } else {

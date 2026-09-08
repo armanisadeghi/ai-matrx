@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ExternalLink, Loader2, Plus, Search } from "lucide-react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -224,7 +224,7 @@ export function ToolSearchDialog({
                             <div className="flex-1 min-w-0 basis-full sm:basis-auto">
                               <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                                 {tool.id ? (
-                                  <Link
+                                  <AppLink
                                     href={`/administration/agents/mcp-tools/${tool.id}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -233,7 +233,7 @@ export function ToolSearchDialog({
                                   >
                                     <span className="truncate">{label}</span>
                                     <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
-                                  </Link>
+                                  </AppLink>
                                 ) : (
                                   <span
                                     className="text-xs font-medium text-foreground truncate"

@@ -96,6 +96,7 @@ import {
   removeMandateBinding,
   type BindingWriteReport,
 } from "@/features/mandates/overrides";
+import { toastFailure } from "@/lib/failure/toastFailure";
 import { buildBindingSavePayload } from "@/features/mandates/workspace/save-payload";
 import { EffectiveConfigLayers } from "@/features/mandates/components/EffectiveConfigLayers";
 import { useGuardedRebind } from "@/features/mandates/admin/useGuardedRebind";
@@ -1040,9 +1041,22 @@ function BindingDraft({
       announceSaved(await writeBinding(bindAgentId));
       onChanged();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Save failed.";
-      setSaveError(message);
-      toast.error(message);
+      // THE 2026-09-08 DEFECT: this printed `Failed to fetch` at a person, with
+      // no remedy, on a save that succeeded on an identical retry. A transport
+      // refusal now says what it is and offers the retry inline; a DOOR'S OWN
+      // refusal still passes through word for word, which is the whole point of
+      // keeping this sentence on the page as well as in a toast.
+      const failure = toastFailure(err, {
+        action: "saving this holder",
+        // The write is an upsert of one rung's holder — the same click twice
+        // leaves the same row, so a retry can be offered without hedging.
+        retrySafe: true,
+        fallback: "Save failed.",
+        retry: () => void doSave(bindAgentId),
+      });
+      setSaveError(
+        failure.remedy ? `${failure.sentence} ${failure.remedy}` : failure.sentence,
+      );
     } finally {
       setBusy(false);
     }
@@ -1076,7 +1090,13 @@ function BindingDraft({
       toast.success("Removed — the layer below fulfils this job again.");
       onChanged();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Remove failed.");
+      toastFailure(err, {
+        action: "removing this holder",
+        // Removing a rung that is already gone is a no-op at the door.
+        retrySafe: true,
+        fallback: "Remove failed.",
+        retry: () => void remove(),
+      });
     } finally {
       setBusy(false);
     }

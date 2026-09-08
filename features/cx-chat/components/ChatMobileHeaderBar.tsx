@@ -11,7 +11,7 @@
 // The tiny ChatMobileAgentName client island hydrates the agent-name button in-place
 // with the same size/shape as the static text, so there is zero layout shift.
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   MenuTapButton,
   SquarePenTapButton,
@@ -33,13 +33,13 @@ export default function ChatMobileHeaderBar() {
         />
       </span>
 
-      <Link
+      <AppLink
         href="/demos/chat"
         aria-label="New chat"
         className="flex-shrink-0 pointer-events-auto"
       >
         <SquarePenTapButton ariaLabel="New chat" />
-      </Link>
+      </AppLink>
 
       <div className="flex-1 flex items-center justify-center min-w-0 pointer-events-auto">
         <ChatMobileAgentName />

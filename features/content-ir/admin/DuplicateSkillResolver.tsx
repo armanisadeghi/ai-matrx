@@ -27,7 +27,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import dynamic from "next/dynamic";
 import {
   BadgeCheck,
@@ -275,12 +275,12 @@ function CaseCard({ item }: { item: DuplicateSkillCase }) {
   return (
     <section className="rounded-lg border border-border bg-card">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-2">
-        <Link
+        <AppLink
           href={`/administration/utilities/kind-registry/${encodeURIComponent(item.kind)}`}
           className="font-mono text-sm font-semibold text-foreground underline-offset-2 hover:text-primary hover:underline"
         >
           {item.kind}
-        </Link>
+        </AppLink>
         <span className="text-xs text-muted-foreground">{item.kindLabel}</span>
         <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
           {item.syntax}

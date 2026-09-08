@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { toast } from "@/lib/toast";
 import {
   AlertTriangle,
@@ -111,7 +111,7 @@ function KpiTile({
     </div>
   );
 
-  return href ? <Link href={href}>{content}</Link> : content;
+  return href ? <AppLink href={href}>{content}</AppLink> : content;
 }
 
 export function CanonicalizationOverview() {
@@ -392,22 +392,22 @@ export function CanonicalizationOverview() {
             <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs text-muted-foreground">
               <li>
                 Run{" "}
-                <Link
+                <AppLink
                   href="/administration/database/canonicalization/verify"
                   className="text-primary hover:underline"
                 >
                   Verify
-                </Link>{" "}
+                </AppLink>{" "}
                 for the table to get the full fix list.
               </li>
               <li>
                 Run{" "}
-                <Link
+                <AppLink
                   href="/administration/database/canonicalization/table-impact"
                   className="text-primary hover:underline"
                 >
                   Table impact
-                </Link>{" "}
+                </AppLink>{" "}
                 to see every dependent function + exact columns before editing.
               </li>
               <li>

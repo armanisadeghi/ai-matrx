@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { SettingsRow } from "../SettingsRow";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,7 @@ export function SettingsLink({
           <Icon className="h-3.5 w-3.5" />
         </a>
       ) : (
-        <Link
+        <AppLink
           href={href}
           className={anchorClasses}
           onClick={(e) => {
@@ -68,7 +68,7 @@ export function SettingsLink({
         >
           <span>{labelText}</span>
           <Icon className="h-3.5 w-3.5" />
-        </Link>
+        </AppLink>
       )}
     </SettingsRow>
   );

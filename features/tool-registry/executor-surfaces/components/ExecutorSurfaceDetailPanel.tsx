@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   AlertCircle,
   ExternalLink,
@@ -180,7 +180,7 @@ export function ExecutorSurfaceDetailPanel({
               </p>
             )}
             {executor.mcp_server_id && (
-              <Link
+              <AppLink
                 href={`/administration/agents/mcp-servers/${executor.mcp_server_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -188,7 +188,7 @@ export function ExecutorSurfaceDetailPanel({
               >
                 <ExternalLink className="h-3 w-3" />
                 MCP server: {executor.mcp_server_id}
-              </Link>
+              </AppLink>
             )}
           </div>
           {onClose && (

@@ -23,6 +23,7 @@ import {
   originClassLabel,
   sortByOriginOrder,
 } from "@/lib/usage/originClass";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 type Timeframe = "all" | "30d" | "7d" | "24h";
 
@@ -324,7 +325,7 @@ export function UsageTableClient() {
             size="sm"
             variant="ghost"
             className="ml-auto h-6 gap-1 px-2 text-xs"
-            onClick={() => router.push("/administration/users/usage")}
+            onClick={() => pushAppHref(router, "/administration/users/usage")}
           >
             <X className="h-3 w-3" /> Clear
           </Button>

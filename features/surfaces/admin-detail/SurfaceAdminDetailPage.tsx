@@ -6,7 +6,7 @@ import React, {
   useState,
   useTransition,
 } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -120,6 +120,7 @@ import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { replaceAppHref } from "@/lib/deployment/navigate";
 
 const NONE = "__none__";
 
@@ -129,7 +130,7 @@ const ACTIVE_FIELD =
 
 /**
  * A `urlPattern` like `/marketing/brands/[brandId]/sites/[siteId]/backlinks`
- * is a route TEMPLATE. Passing one to `<Link href>` throws Next's E267
+ * is a route TEMPLATE. Passing one to `<AppLink href>` throws Next's E267
  * (`app-dir-dynamic-href`) and takes the whole page down, so every caller must
  * check first.
  */
@@ -323,8 +324,7 @@ export function SurfaceAdminDetailPage({
       await renameSurface(surface.name, target);
       toast.success(`Renamed to ${target}`);
       startTransition(() =>
-        router.replace(
-          `/administration/ui/surfaces/${target.split("/").map(encodeURIComponent).join("/")}`,
+        replaceAppHref(router, `/administration/ui/surfaces/${target.split("/").map(encodeURIComponent).join("/")}`,
         ),
       );
     } catch (e) {
@@ -352,7 +352,7 @@ export function SurfaceAdminDetailPage({
     try {
       await deleteSurface(surface.name);
       toast.success(`${surface.name} deleted`);
-      startTransition(() => router.replace("/administration/ui/surfaces"));
+      startTransition(() => replaceAppHref(router, "/administration/ui/surfaces"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Delete failed");
       setBusy(false);
@@ -469,14 +469,14 @@ export function SurfaceAdminDetailPage({
                   size="sm"
                   className="h-7 gap-1.5 text-xs"
                 >
-                  <Link
+                  <AppLink
                     href={surface.url_pattern}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                     Open live page
-                  </Link>
+                  </AppLink>
                 </Button>
               ))}
             <Button
@@ -1166,13 +1166,13 @@ function HierarchySection({
                       <span className="text-muted-foreground select-none shrink-0">
                         {i === 0 ? "└─" : "  └─"}
                       </span>
-                      <Link
+                      <AppLink
                         href={surfaceAdminHref(a.name)}
                         className="text-foreground hover:text-primary hover:underline truncate min-w-0"
                         title={a.description ?? a.name}
                       >
                         {a.name}
-                      </Link>
+                      </AppLink>
                     </li>
                   ))}
                   <li
@@ -1254,13 +1254,13 @@ function HierarchySection({
                     {children.map((child) => (
                       <tr key={child.name} className="hover:bg-muted/30">
                         <td className="px-2 py-1.5 font-mono align-middle">
-                          <Link
+                          <AppLink
                             href={surfaceAdminHref(child.name)}
                             className="text-foreground hover:text-primary hover:underline sm:truncate block sm:max-w-[280px]"
                             title={child.name}
                           >
                             {child.name}
-                          </Link>
+                          </AppLink>
                         </td>
                         <td className="px-2 py-1.5 text-muted-foreground align-middle">
                           {child.client_name}
@@ -1275,12 +1275,12 @@ function HierarchySection({
                             size="sm"
                             className="h-6 w-6 p-0"
                           >
-                            <Link
+                            <AppLink
                               href={surfaceAdminHref(child.name)}
                               aria-label={`Open ${child.name}`}
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
-                            </Link>
+                            </AppLink>
                           </Button>
                         </td>
                       </tr>
@@ -2439,7 +2439,7 @@ function UsageSection({
               <ul className="rounded-md border border-border bg-card divide-y divide-border">
                 {usage.agents.map((a) => (
                   <li key={a.id} className="px-2 py-1.5">
-                    <Link
+                    <AppLink
                       href={`/agents/${a.id}/surfaces?surface=${encodeURIComponent(surfaceName)}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -2447,7 +2447,7 @@ function UsageSection({
                     >
                       <span className="truncate">{a.name}</span>
                       <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
-                    </Link>
+                    </AppLink>
                   </li>
                 ))}
               </ul>
@@ -2469,7 +2469,7 @@ function UsageSection({
                     key={`${t.id}-${t.via}-${t.bundle_name ?? ""}`}
                     className={`px-2 py-1.5 ${t.is_active === false ? "opacity-60" : ""}`}
                   >
-                    <Link
+                    <AppLink
                       href={`/administration/agents/mcp-tools/${t.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -2477,7 +2477,7 @@ function UsageSection({
                     >
                       <span className="truncate">{t.name}</span>
                       <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
-                    </Link>
+                    </AppLink>
                     {t.via === "always_include_bundles" && (
                       <div className="text-[10px] text-muted-foreground">
                         via bundle {t.bundle_name}

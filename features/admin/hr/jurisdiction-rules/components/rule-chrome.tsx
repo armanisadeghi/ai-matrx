@@ -7,7 +7,7 @@
 
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   AlertTriangle,
   ExternalLink,
@@ -149,12 +149,12 @@ export function FixtureSummary({
 export function SeedTaskChip({ task }: { task: string | null }) {
   if (!task) return null;
   return (
-    <Link
+    <AppLink
       href={`/administration/hr/jurisdiction-rules/verification#${task}`}
       className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground hover:text-foreground"
     >
       {task}
-    </Link>
+    </AppLink>
   );
 }
 

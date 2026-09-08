@@ -16,6 +16,10 @@ import {
   applyAcquisitionCookie,
   prepareAcquisitionCapture,
 } from "@/lib/product-analytics/server/request-capture";
+import {
+  BUILD_PROFILE,
+  DEPLOYMENT_SURFACES,
+} from "@/lib/deployment/surfaces";
 
 // ---------------------------------------------------------------------------
 // Edu host gate — learn.aimatrx.com (Arman's decision, 2026-07)
@@ -74,28 +78,40 @@ const MAIN_HOST = (() => {
 //      every profile compiles so login works on every host) redirects to the
 //      main origin. Auth carries across hosts via the domain-wide cookie
 //      (utils/supabase/authCookie.ts).
-const ADMIN_ORIGIN =
-  process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.trim() || "https://manage.aimatrx.com";
-const DEMOS_ORIGIN =
-  process.env.NEXT_PUBLIC_DEMOS_ORIGIN?.trim() || "https://demos.aimatrx.com";
-const ADMIN_HOST = (() => {
-  try {
-    return new URL(ADMIN_ORIGIN).host;
-  } catch {
-    return null;
-  }
-})();
-const DEMOS_HOST = (() => {
-  try {
-    return new URL(DEMOS_ORIGIN).host;
-  } catch {
-    return null;
-  }
-})();
+// The split table itself lives in `lib/deployment/surfaces.ts`, because the
+// CLIENT needs it too: a <Link> to a surface this build does not compile must
+// carry the sibling's ABSOLUTE url, or the redirect below lands on a
+// preflighted RSC prefetch and the browser refuses it (the production CORS
+// break of 2026-09-08). One table, so the redirect and the link can never
+// disagree about which origin owns a path.
+function surfaceNamed(prefix: string) {
+  const surface = DEPLOYMENT_SURFACES.find((s) => s.prefix === prefix);
+  if (!surface)
+    throw new Error(
+      `[matrx] lib/deployment/surfaces.ts no longer declares ${prefix}. ` +
+        `The proxy gate and the link door read the same table; removing a ` +
+        `surface from it without removing the gate here would silently stop ` +
+        `handing that path to the deployment that serves it.`,
+    );
+  return surface;
+}
 
-const BUILD_PROFILE = process.env.NEXT_PUBLIC_MATRX_PROFILE || "full";
-const BUILD_HAS_ADMIN = ["full", "core", "admin"].includes(BUILD_PROFILE);
-const BUILD_HAS_DEMOS = ["full", "user", "demos"].includes(BUILD_PROFILE);
+const ADMIN_SURFACE = surfaceNamed("/administration");
+const DEMOS_SURFACE = surfaceNamed("/demos");
+const ADMIN_ORIGIN = ADMIN_SURFACE.origin;
+const DEMOS_ORIGIN = DEMOS_SURFACE.origin;
+const hostOf = (origin: string) => {
+  try {
+    return new URL(origin).host;
+  } catch {
+    return null;
+  }
+};
+const ADMIN_HOST = hostOf(ADMIN_ORIGIN);
+const DEMOS_HOST = hostOf(DEMOS_ORIGIN);
+
+const BUILD_HAS_ADMIN = ADMIN_SURFACE.profiles.includes(BUILD_PROFILE);
+const BUILD_HAS_DEMOS = DEMOS_SURFACE.profiles.includes(BUILD_PROFILE);
 
 // These public routes previously bypassed Proxy entirely. They now pass
 // through only for first-touch capture; skip the Supabase session refresh so

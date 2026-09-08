@@ -39,6 +39,7 @@ import { podcastEpisodeAdminHref, podcastPublicHref } from "../../utils";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name.
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
 
 /** An episode length reads at a glance: "45 min" / "1h 30m". */
 function formatDuration(seconds: number): string {
@@ -93,8 +94,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
       const params = new URLSearchParams(searchParams.toString());
       params.set("panel", value);
       // Discrete panel switch — Back returns to the previous panel.
-      router.push(
-        `/administration/knowledge/podcasts/shows/${showId}?${params.toString()}`,
+      pushAppHref(router, `/administration/knowledge/podcasts/shows/${showId}?${params.toString()}`,
       );
     });
   };
@@ -127,7 +127,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
       startTransition(() =>
         // Programmatic: the "new" URL is consumed once the show exists;
         // Back must not return to a create route for a saved record.
-        router.replace(`/administration/knowledge/podcasts/shows/${saved.id}?panel=show`),
+        replaceAppHref(router, `/administration/knowledge/podcasts/shows/${saved.id}?panel=show`),
       );
     }
   };
@@ -147,7 +147,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
   };
 
   const back = () =>
-    startTransition(() => router.push("/administration/knowledge/podcasts/shows"));
+    startTransition(() => pushAppHref(router, "/administration/knowledge/podcasts/shows"));
 
   return (
     <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "podcasts_show_detail", podcast_current_show_id: showId, ...(show ? { podcast_current_show: show } : {}), podcast_current_show_episodes: episodes, podcast_active_panel: panel === "episodes" ? "episodes" : "show" })}>
@@ -251,8 +251,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                 className="h-8 gap-1.5"
                 onClick={() =>
                   startTransition(() =>
-                    router.push(
-                      `/administration/knowledge/podcasts/shows/${showId}/episodes/new`,
+                    pushAppHref(router, `/administration/knowledge/podcasts/shows/${showId}/episodes/new`,
                     ),
                   )
                 }
@@ -271,8 +270,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                   variant="outline"
                   onClick={() =>
                     startTransition(() =>
-                      router.push(
-                        `/administration/knowledge/podcasts/shows/${showId}/episodes/new`,
+                      pushAppHref(router, `/administration/knowledge/podcasts/shows/${showId}/episodes/new`,
                       ),
                     )
                   }

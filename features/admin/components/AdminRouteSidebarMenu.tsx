@@ -6,7 +6,7 @@
  * the reversible Main Menu control; this component only renders registry data.
  */
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
 import { IconResolver } from "@ai-matrx/icons";
 import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
@@ -39,7 +39,7 @@ export default function AdminRouteSidebarMenu({
   if (!expanded) {
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto scrollbar-thin-auto">
-        <Link
+        <AppLink
           href="/administration"
           title="Administration"
           aria-label="Administration"
@@ -60,10 +60,10 @@ export default function AdminRouteSidebarMenu({
             />
           </span>
           <span className="shell-nav-label">Administration</span>
-        </Link>
+        </AppLink>
 
         {adminNavigationRegistry.map((domain) => (
-          <Link
+          <AppLink
             key={domain.name}
             href={adminDomainHref(domain)}
             target={domain.slug === "launchpad" ? "_blank" : undefined}
@@ -89,7 +89,7 @@ export default function AdminRouteSidebarMenu({
               />
             </span>
             <span className="shell-nav-label">{domain.name}</span>
-          </Link>
+          </AppLink>
         ))}
       </div>
     );
@@ -101,7 +101,7 @@ export default function AdminRouteSidebarMenu({
         <div className="px-1.5 py-2 text-xs uppercase tracking-[0.12em] text-foreground">
           Overview
         </div>
-        <Link
+        <AppLink
           href="/administration"
           aria-current={pathname === "/administration" ? "page" : undefined}
           className={cn(
@@ -121,8 +121,8 @@ export default function AdminRouteSidebarMenu({
             }}
           />
           <span className="min-w-0 flex-1 truncate">Dashboard</span>
-        </Link>
-        <Link
+        </AppLink>
+        <AppLink
           href={ADMIN_LAUNCHPAD_PATH}
           target="_blank"
           rel="noopener noreferrer"
@@ -144,7 +144,7 @@ export default function AdminRouteSidebarMenu({
           />
           <span className="min-w-0 flex-1 truncate">Launchpad</span>
           <IconResolver iconName="ArrowUpRight" className="h-3.5 w-3.5" />
-        </Link>
+        </AppLink>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-1 scrollbar-thin-auto">
@@ -171,7 +171,7 @@ export default function AdminRouteSidebarMenu({
                     section.destinations.map((item) => {
                       const active = destinationOwnsPathname(item, pathname);
                       return (
-                        <Link
+                        <AppLink
                           key={item.link}
                           href={item.link}
                           aria-current={active ? "page" : undefined}
@@ -193,7 +193,7 @@ export default function AdminRouteSidebarMenu({
                           <span className="min-w-0 flex-1 truncate">
                             {item.title}
                           </span>
-                        </Link>
+                        </AppLink>
                       );
                     }),
                   )}

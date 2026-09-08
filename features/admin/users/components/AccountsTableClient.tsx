@@ -60,6 +60,7 @@ import type { AdminUserRow } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { adminUserMenuSection } from "./admin-user-menu-section";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 const ROSTER_PAGE_SIZE = 50;
 
@@ -340,8 +341,7 @@ export function AccountsTableClient() {
                 className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 onClick={(event) => {
                   event.stopPropagation();
-                  router.push(
-                    `/administration/users/organizations?user=${row.id}`,
+                  pushAppHref(router, `/administration/users/organizations?user=${row.id}`,
                   );
                 }}
               >
@@ -709,8 +709,7 @@ export function AccountsTableClient() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() =>
-                    router.push(
-                      `/administration/users/organizations?user=${row.id}`,
+                    pushAppHref(router, `/administration/users/organizations?user=${row.id}`,
                     )
                   }
                 >
@@ -730,7 +729,7 @@ export function AccountsTableClient() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
-                    router.push(`/administration/users/email?userId=${row.id}`)
+                    pushAppHref(router, `/administration/users/email?userId=${row.id}`)
                   }
                   disabled={!row.email}
                 >
@@ -748,8 +747,7 @@ export function AccountsTableClient() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() =>
-                    router.push(
-                      `/administration/users/preferences?user=${row.id}`,
+                    pushAppHref(router, `/administration/users/preferences?user=${row.id}`,
                     )
                   }
                 >
@@ -757,14 +755,14 @@ export function AccountsTableClient() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
-                    router.push(`/administration/users/usage?user=${row.id}`)
+                    pushAppHref(router, `/administration/users/usage?user=${row.id}`)
                   }
                 >
                   <Gauge className="mr-2 h-4 w-4" /> Usage & cost
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
-                    router.push(`/administration/users/admins?user=${row.id}`)
+                    pushAppHref(router, `/administration/users/admins?user=${row.id}`)
                   }
                 >
                   <ShieldCheck className="mr-2 h-4 w-4" /> Admin level

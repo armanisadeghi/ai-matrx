@@ -16,7 +16,7 @@
 
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import {

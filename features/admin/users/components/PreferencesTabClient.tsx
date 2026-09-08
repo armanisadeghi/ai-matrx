@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -35,6 +35,7 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 // ── drift dashboard ────────────────────────────────────────────────────────
 
@@ -299,11 +300,11 @@ function DriftDashboard() {
                       asChild
                       className="h-6 text-xs"
                     >
-                      <Link
+                      <AppLink
                         href={`/administration/users/preferences?user=${r.user_id}`}
                       >
                         View
-                      </Link>
+                      </AppLink>
                     </Button>
                   </td>
                 </tr>
@@ -411,7 +412,7 @@ function UserPreferencesView({ userId }: { userId: string }) {
           size="sm"
           variant="ghost"
           className="gap-1"
-          onClick={() => router.push("/administration/users/preferences")}
+          onClick={() => pushAppHref(router, "/administration/users/preferences")}
         >
           <ArrowLeft className="h-4 w-4" /> Drift overview
         </Button>
@@ -425,7 +426,7 @@ function UserPreferencesView({ userId }: { userId: string }) {
           size="sm"
           variant="ghost"
           className="ml-auto h-7 gap-1 px-2 text-xs"
-          onClick={() => router.push("/administration/users")}
+          onClick={() => pushAppHref(router, "/administration/users")}
         >
           <X className="h-3 w-3" /> Back to Accounts
         </Button>

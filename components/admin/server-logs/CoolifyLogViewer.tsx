@@ -61,6 +61,7 @@ import {
   type LogCategory,
   type LogUrgency,
 } from "@/features/server-logs/log-rules";
+import { replaceAppHref } from "@/lib/deployment/navigate";
 
 // ─── App registry ─────────────────────────────────────────────────────────────
 
@@ -1042,7 +1043,7 @@ export default function CoolifyLogViewer({
     (app: AppKey) => {
       setSelectedApp(app);
       if (!hideAppSelector) {
-        router.replace(`/administration/compute/server-logs/${app}`, {
+        replaceAppHref(router, `/administration/compute/server-logs/${app}`, {
           scroll: false,
         });
       }

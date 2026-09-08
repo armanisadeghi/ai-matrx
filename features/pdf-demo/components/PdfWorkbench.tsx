@@ -23,7 +23,7 @@
  */
 
 import { ReactNode, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -111,12 +111,12 @@ export function PdfWorkbench({
       <header className="flex items-center justify-between gap-3 border-b border-border bg-background/70 px-4 py-2 backdrop-blur">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
-            <Link
+            <AppLink
               href="/demos/pdf-processing"
               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-3.5 w-3.5" /> Back
-            </Link>
+            </AppLink>
             <h1 className="truncate text-lg font-semibold">{title}</h1>
             <code className="hidden truncate rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground sm:inline-block">
               {endpoint}

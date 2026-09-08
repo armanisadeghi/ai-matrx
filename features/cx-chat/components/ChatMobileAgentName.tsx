@@ -11,6 +11,7 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 const AgentPickerSheet = dynamic(
   () =>
@@ -39,7 +40,7 @@ export default function ChatMobileAgentName() {
   const handleAgentSelect = useCallback(
     (agent: { promptId: string }) => {
       setIsPickerOpen(false);
-      router.push(`/demos/chat/a/${agent.promptId}`);
+      pushAppHref(router, `/demos/chat/a/${agent.promptId}`);
     },
     [router],
   );

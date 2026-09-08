@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 
 import { EntityRelationshipOrbit } from "./EntityRelationshipOrbit";
 import type { RelationshipRule } from "../types";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 interface Props {
   token: string;
@@ -28,7 +29,7 @@ export function EntityRelationshipOrbitPageBody({ token, rules }: Props) {
       rules={rules}
       onSelectToken={(next) =>
         startTransition(() =>
-          router.push(`/administration/database/relationships/explorer/${next}`),
+          pushAppHref(router, `/administration/database/relationships/explorer/${next}`),
         )
       }
     />

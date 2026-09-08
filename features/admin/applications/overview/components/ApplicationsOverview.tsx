@@ -13,7 +13,7 @@
 // operational fact that must never be a number you have to go looking for.
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   ChevronRight,
@@ -75,7 +75,7 @@ function SectionLink({
   children: React.ReactNode;
 }) {
   return (
-    <Link
+    <AppLink
       href={href}
       className="group flex items-start gap-3 rounded-md border border-border bg-card px-3 py-2.5 transition-colors hover:bg-accent/50"
     >
@@ -85,7 +85,7 @@ function SectionLink({
         {children}
       </div>
       <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-    </Link>
+    </AppLink>
   );
 }
 
@@ -281,12 +281,12 @@ export function ApplicationsOverview({
                   {s.fleetBelow === 1 ? "instance is" : "instances are"} below
                   the minimum supported version{" "}
                   <code className="font-mono">{s.minVersion}</code>.{" "}
-                  <Link
+                  <AppLink
                     href="/administration/applications/installations"
                     className="underline underline-offset-2"
                   >
                     Review the fleet
-                  </Link>
+                  </AppLink>
                   .
                 </span>
               </div>

@@ -15,7 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   AppWindow,
   Cpu,
@@ -513,7 +513,7 @@ function LineageRow({
   badge?: string;
 }) {
   return (
-    <Link
+    <AppLink
       href={href}
       className={cn(
         "flex items-center gap-2 px-2 py-1.5 rounded-md",
@@ -535,7 +535,7 @@ function LineageRow({
         </Badge>
       ) : null}
       <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
-    </Link>
+    </AppLink>
   );
 }
 

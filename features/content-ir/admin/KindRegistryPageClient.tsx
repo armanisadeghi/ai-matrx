@@ -23,7 +23,7 @@
 
 import { useState } from "react";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import dynamic from "next/dynamic";
 import { Boxes, CircleAlert, Hammer, Loader2 } from "lucide-react";
 import type { KindStatusBoardModel } from "@/features/content-ir/admin/kind-detail-types";
@@ -144,13 +144,13 @@ export default function KindRegistryPageClient({
             </span>
           )}
           <nav className="ml-auto flex items-end gap-1">
-            <Link
+            <AppLink
               href="/administration/utilities/kind-registry/build"
               className="mb-0.5 mr-2 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <Hammer className="h-4 w-4" />
               Build a kind
-            </Link>
+            </AppLink>
             {TABS.map((id) => (
               <button
                 key={id}

@@ -16,6 +16,7 @@ import { Columns3, Link2, ShieldCheck } from "lucide-react";
 
 import { ShareableRegistryPanel } from "./ShareableRegistryPanel";
 import type { SharePolicyRow, ShareableRegistryRow } from "../types";
+import { replaceAppHref } from "@/lib/deployment/navigate";
 
 interface Props {
   registry: ShareableRegistryRow[];
@@ -41,7 +42,7 @@ export function RelationshipSharingClient({
     if (!initialRegisterToken || consumedToken.current) return;
     consumedToken.current = true;
     setPendingToken(initialRegisterToken);
-    router.replace("/administration/database/relationships/sharing");
+    replaceAppHref(router, "/administration/database/relationships/sharing");
   }, [initialRegisterToken, router]);
 
   const shareableCount = policies.filter((p) => p.is_link_shareable).length;

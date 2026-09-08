@@ -19,7 +19,7 @@
 
 import { useMemo, useState } from "react";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import dynamic from "next/dynamic";
 import { ChevronRight, Loader2 } from "lucide-react";
 import type { KindDetailData } from "@/features/content-ir/admin/kind-detail-types";
@@ -204,12 +204,12 @@ export default function KindDetailClient({
             aria-label="Breadcrumb"
             className="flex w-full min-w-0 flex-wrap items-center gap-1 text-sm sm:w-auto"
           >
-            <Link
+            <AppLink
               href="/administration/utilities/kind-registry"
               className="inline-flex min-h-10 items-center text-muted-foreground underline-offset-2 hover:text-foreground hover:underline sm:min-h-0"
             >
               Kind Registry
-            </Link>
+            </AppLink>
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
             <h1 className="min-w-0 break-words font-semibold text-foreground">
               {detail.label}

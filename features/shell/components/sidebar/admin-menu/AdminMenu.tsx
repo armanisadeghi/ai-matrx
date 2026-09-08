@@ -13,7 +13,7 @@
  * tokens) so it matches the rest of the menu.
  */
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
 import {
   DropdownMenu,
@@ -77,12 +77,12 @@ export default function AdminMenu() {
       >
         <DropdownMenuLabel>Administration</DropdownMenuLabel>
         <DropdownMenuItem asChild className="gap-2">
-          <Link href="/administration">
+          <AppLink href="/administration">
             <span className={iconSlot}>
               <IconResolver iconName="LayoutDashboard" />
             </span>
             <span className="truncate">Dashboard</span>
-          </Link>
+          </AppLink>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="gap-2">
           <a href={ADMIN_APP_URL} target="_blank" rel="noopener noreferrer">
@@ -121,14 +121,14 @@ export default function AdminMenu() {
               <DropdownMenuPortal>
                 <DropdownMenuSubContent className="max-h-[80dvh] w-72 overflow-y-auto">
                   <DropdownMenuItem asChild className="gap-2 font-medium">
-                    <Link href={adminDomainHref(domain)}>
+                    <AppLink href={adminDomainHref(domain)}>
                       <span className={iconSlot}>
                         <IconResolver iconName={domain.iconName} />
                       </span>
                       <span className="flex-1 truncate">
                         {domain.name} overview
                       </span>
-                    </Link>
+                    </AppLink>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {domain.sections.map((section, sectionIndex) => (
@@ -148,7 +148,7 @@ export default function AdminMenu() {
                             asChild
                             className={cn("gap-2", active && "bg-accent/60")}
                           >
-                            <Link href={item.link}>
+                            <AppLink href={item.link}>
                               <span className={iconSlot}>
                                 <IconResolver iconName={item.iconName} />
                               </span>
@@ -160,7 +160,7 @@ export default function AdminMenu() {
                                   New
                                 </span>
                               )}
-                            </Link>
+                            </AppLink>
                           </DropdownMenuItem>
                         );
                       })}

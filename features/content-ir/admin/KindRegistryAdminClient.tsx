@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -353,14 +353,14 @@ export default function KindRegistryAdminClient() {
                       <Badge variant="outline">{selected.tier}</Badge>
                     )}
                     {selected.dbRowId && (
-                      <Link
+                      <AppLink
                         href={`/administration/utilities/kind-registry/${selected.kind}`}
                         className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                         title="Open the per-kind admin page (Preview / Gate / Schema / Assets)"
                       >
                         <ExternalLink className="h-3 w-3" />
                         Detail page
-                      </Link>
+                      </AppLink>
                     )}
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">

@@ -20,7 +20,7 @@
 // not to wrap children in `dynamic()` from inside this client component.
 //
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Mic, Bug, Shield } from "lucide-react";
@@ -390,7 +390,7 @@ export default function DesktopLayout({
             <div className="flex-shrink-0 mb-1">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link
+                  <AppLink
                     href="/administration"
                     className={`relative flex items-center px-2 py-2 rounded-lg transition-all duration-200 ease-in-out transform hover:scale-[1.02] active:scale-[0.98] ${
                       isLinkActive("/administration")
@@ -410,7 +410,7 @@ export default function DesktopLayout({
                     >
                       Admin
                     </span>
-                  </Link>
+                  </AppLink>
                 </TooltipTrigger>
                 {isSidebarCollapsed && !isTransitioning && (
                   <TooltipContent
@@ -428,7 +428,7 @@ export default function DesktopLayout({
           <div className="flex-shrink-0 border-t border-gray-300 dark:border-gray-700 pt-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link
+                <AppLink
                   href="/settings/preferences"
                   className="relative flex items-center px-2 py-2 rounded-lg transition-all duration-200 ease-in-out transform hover:scale-[1.02] active:scale-[0.98] hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 hover:shadow-sm"
                 >
@@ -456,7 +456,7 @@ export default function DesktopLayout({
                   >
                     {displayName}
                   </span>
-                </Link>
+                </AppLink>
               </TooltipTrigger>
               {isSidebarCollapsed && !isTransitioning && (
                 <TooltipContent

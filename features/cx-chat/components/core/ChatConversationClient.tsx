@@ -29,6 +29,7 @@ import { ArrowDown } from "lucide-react";
 import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 const AgentPickerSheet = dynamic(
   () =>
@@ -160,7 +161,7 @@ export default function ChatConversationClient({
   }, [requestStatus, latestConversationId, turnCount]);
 
   const handleNewChat = useCallback(() => {
-    router.push(`/demos/chat/a/${agentId}`);
+    pushAppHref(router, `/demos/chat/a/${agentId}`);
   }, [router, agentId]);
 
   return (
@@ -169,7 +170,7 @@ export default function ChatConversationClient({
         open={isPickerOpen}
         onOpenChange={setIsPickerOpen}
         selectedAgent={null}
-        onSelect={(agent) => router.push(`/demos/chat/a/${agent.promptId}`)}
+        onSelect={(agent) => pushAppHref(router, `/demos/chat/a/${agent.promptId}`)}
       />
 
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">

@@ -57,6 +57,7 @@ import { MandateUserTextLine } from "../components/MandateUserTextLine";
 import { Section } from "./Section";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { toastFailure } from "@/lib/failure/toastFailure";
 
 /** Plain words for H/V/A — never the letter alone. */
 export function GroundingBadge({ grounding }: { grounding: string | null }) {
@@ -114,7 +115,12 @@ export function TriadInputSection({
       setEditing(false);
       onChanged();
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : String(error));
+      toastFailure(error, {
+        action: "saving these inputs",
+        retrySafe: true,
+        fallback: "Save failed.",
+        retry: () => void save(),
+      });
     } finally {
       setSaving(false);
     }
@@ -159,7 +165,12 @@ export function TriadInputSection({
       setDraft(applyConversion(draftInputs, text));
       setEditing(true);
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : String(error));
+      toastFailure(error, {
+        action: "asking for a structure proposal",
+        retrySafe: true,
+        fallback: "The proposal could not be produced.",
+        retry: () => void runConvert(variables),
+      });
     } finally {
       setConverting(false);
     }
@@ -411,7 +422,12 @@ export function TriadGoalSection({
       setEditing(false);
       onChanged();
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : String(error));
+      toastFailure(error, {
+        action: "saving this goal",
+        retrySafe: true,
+        fallback: "Save failed.",
+        retry: () => void save(),
+      });
     } finally {
       setSaving(false);
     }
@@ -518,7 +534,12 @@ export function TriadGoalSection({
       setEditing(true);
       toast.success("Draft ready — review, then save.");
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : String(error));
+      toastFailure(error, {
+        action: "asking for a goal draft",
+        retrySafe: true,
+        fallback: "The draft could not be produced.",
+        retry: () => void runRefine(variables),
+      });
     } finally {
       setRefining(false);
     }

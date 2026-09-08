@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useSearchParams } from "next/navigation";
 
 import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
@@ -201,12 +201,12 @@ export function BrokenFunctionsPage() {
         align: "right",
         render: (r) =>
           r.function_name ? (
-            <Link
+            <AppLink
               href={`/administration/database/canonicalization/function-deps?fn=${encodeURIComponent(r.function_name)}`}
               className="text-xs text-primary hover:underline"
             >
               View →
-            </Link>
+            </AppLink>
           ) : null,
       },
     ],

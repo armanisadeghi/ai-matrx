@@ -18,7 +18,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -190,12 +190,12 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
     return (
       <div className="p-6 text-sm text-muted-foreground">
         No rule with this id is in the library.{" "}
-        <Link
+        <AppLink
           href="/administration/hr/jurisdiction-rules"
           className="text-primary hover:underline"
         >
           Back to the rule library
-        </Link>
+        </AppLink>
         .
       </div>
     );
@@ -239,13 +239,13 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
     <div className="space-y-3 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <Link
+          <AppLink
             href="/administration/hr/jurisdiction-rules"
             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-3 w-3" />
             Rule library
-          </Link>
+          </AppLink>
           <h1 className="mt-0.5 flex flex-wrap items-center gap-2 text-lg font-semibold">
             {rule.rule_class_label}
             <span className="text-muted-foreground">·</span>
@@ -502,24 +502,24 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
         <Section title="Lineage">
           <Field label="Supersedes">
             {rule.supersedes_id ? (
-              <Link
+              <AppLink
                 href={`/administration/hr/jurisdiction-rules/${rule.supersedes_id}`}
                 className="font-mono text-xs text-primary hover:underline"
               >
                 {rule.supersedes_id}
-              </Link>
+              </AppLink>
             ) : (
               "—"
             )}
           </Field>
           <Field label="Correction of">
             {rule.correction_of_id ? (
-              <Link
+              <AppLink
                 href={`/administration/hr/jurisdiction-rules/${rule.correction_of_id}`}
                 className="font-mono text-xs text-primary hover:underline"
               >
                 {rule.correction_of_id}
-              </Link>
+              </AppLink>
             ) : (
               "—"
             )}

@@ -13,7 +13,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   ExternalLink,
   Loader2,
@@ -198,7 +198,7 @@ export function AutonomyModesEditor({
                             <span className="text-muted-foreground">
                               Mandate
                             </span>
-                            <Link
+                            <AppLink
                               href={`/administration/mandates?mandate=${encodeURIComponent(mandateKey)}`}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -210,7 +210,7 @@ export function AutonomyModesEditor({
                                 className="h-2.5 w-2.5"
                                 aria-hidden
                               />
-                            </Link>
+                            </AppLink>
                             <span className="text-muted-foreground">
                               · Agent
                             </span>

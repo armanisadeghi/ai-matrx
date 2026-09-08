@@ -24,7 +24,7 @@ import React, {
   useState,
   useTransition,
 } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter, useSearchParams } from "next/navigation";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 import {
@@ -1221,9 +1221,9 @@ export function MandatesConsole() {
               <div className="text-muted-foreground">{systemHomeRefusal}</div>
               <div className="text-muted-foreground">
                 The jobs your own organizations run are yours to manage at{" "}
-                <Link href="/mandates" className="underline">
+                <AppLink href="/mandates" className="underline">
                   /mandates
-                </Link>
+                </AppLink>
                 .
               </div>
             </div>
@@ -1329,10 +1329,10 @@ export function MandatesConsole() {
                     {/* Declaring a job is admin work, so the New button lives
                       here — the user route has none. */}
                     <Button asChild size="sm">
-                      <Link href="/administration/mandates/new">
+                      <AppLink href="/administration/mandates/new">
                         <Plus className="w-4 h-4" />
                         New Mandate
-                      </Link>
+                      </AppLink>
                     </Button>
                     <Button
                       size="sm"

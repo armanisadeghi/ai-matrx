@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart3, MessageSquare, Send, AlertCircle, DollarSign } from "lucide-react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 const LINKS = [
   { href: "/administration/chat/cx-dashboard", label: "Overview Dashboard", icon: BarChart3, description: "KPIs, cost trends, model usage" },
@@ -24,7 +25,7 @@ export default function CxDashboardRedirect() {
           <p className="text-sm text-muted-foreground">Monitor conversations, usage, costs, and errors</p>
         </div>
         <button
-          onClick={() => router.push("/administration/chat/cx-dashboard")}
+          onClick={() => pushAppHref(router, "/administration/chat/cx-dashboard")}
           className="px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           Open Dashboard
@@ -32,7 +33,7 @@ export default function CxDashboardRedirect() {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {LINKS.map((link) => (
-          <Link
+          <AppLink
             key={link.href}
             href={link.href}
             className="flex items-start gap-3 p-3 rounded-md border border-border bg-card hover:border-primary/40 transition-colors group"
@@ -44,7 +45,7 @@ export default function CxDashboardRedirect() {
               <p className="text-sm font-medium">{link.label}</p>
               <p className="text-xs text-muted-foreground">{link.description}</p>
             </div>
-          </Link>
+          </AppLink>
         ))}
       </div>
     </div>

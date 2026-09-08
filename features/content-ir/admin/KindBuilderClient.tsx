@@ -29,6 +29,7 @@ import {
   ADMIN_KIND_REGISTRY_SURFACE_NAME,
   createAdminKindRegistryScope,
 } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 /**
  * The admin one-shot kind builder (agent.definition 'kind_architect', builtin).
@@ -133,7 +134,7 @@ export default function KindBuilderClient() {
             variant="outline"
             size="sm"
             className="gap-1.5"
-            onClick={() => router.push("/administration/utilities/kind-registry")}
+            onClick={() => pushAppHref(router, "/administration/utilities/kind-registry")}
           >
             <Table2 className="h-4 w-4" />
             Kind Registry

@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { AiProvider, ProviderModelEntry } from "../types";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 
 type Position = { x: number; y: number };
 
@@ -203,10 +203,10 @@ function ProviderTab({ provider }: { provider: AiProvider }) {
           </p>
         </div>
         <Button asChild size="sm" variant="outline">
-          <Link href="/administration/ai/ai-models/provider-sync">
+          <AppLink href="/administration/ai/ai-models/provider-sync">
             <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
             Go to Provider Sync
-          </Link>
+          </AppLink>
         </Button>
       </div>
     );
@@ -339,10 +339,10 @@ export default function ProviderReferenceModal({ providers, onClose }: Props) {
           size="sm"
           className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
         >
-          <Link href="/administration/ai/ai-models/provider-sync">
+          <AppLink href="/administration/ai/ai-models/provider-sync">
             <RefreshCw className="h-3 w-3 mr-1" />
             Sync
-          </Link>
+          </AppLink>
         </Button>
         <button
           onClick={onClose}

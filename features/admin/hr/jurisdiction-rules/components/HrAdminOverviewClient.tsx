@@ -6,7 +6,7 @@
 
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { AlertTriangle, ClipboardCheck, Scale } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -96,12 +96,12 @@ export function HrAdminOverviewClient() {
             Verification dates are the promise that a cited rule still says what
             we recorded. The oldest is {Math.max(...overdue.map((row) => row.days_overdue))} days
             past due —{" "}
-            <Link
+            <AppLink
               href="/administration/hr/jurisdiction-rules/verification"
               className="text-primary hover:underline"
             >
               open the verification board
-            </Link>
+            </AppLink>
             .
           </p>
         </div>
@@ -122,7 +122,7 @@ export function HrAdminOverviewClient() {
       ) : null}
 
       <div className="grid gap-2 sm:grid-cols-2">
-        <Link
+        <AppLink
           href="/administration/hr/jurisdiction-rules"
           className="group rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/50"
         >
@@ -135,8 +135,8 @@ export function HrAdminOverviewClient() {
             class, jurisdiction and status; open a rule to review its citation
             and promote or demote it.
           </p>
-        </Link>
-        <Link
+        </AppLink>
+        <AppLink
           href="/administration/hr/jurisdiction-rules/verification"
           className="group rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/50"
         >
@@ -149,7 +149,7 @@ export function HrAdminOverviewClient() {
             {seedProgress.filter((task) => task.task_complete).length} complete.
             Plus every rule past its verification date.
           </p>
-        </Link>
+        </AppLink>
       </div>
     </div>
   );

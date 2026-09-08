@@ -102,7 +102,10 @@ describe("the delete is DISCOVERABLE, not only in a right-click menu", () => {
   });
 
   it("leaves the page rather than describing a job that no longer exists", () => {
-    expect(page).toContain('router.push("/administration/mandates")');
+    // Through the deployment door: a bare router.push to /administration from
+    // a build that does not compile it is an RSC fetch into a cross-origin
+    // redirect (lib/deployment/surfaces.ts).
+    expect(page).toContain('pushAppHref(router, "/administration/mandates")');
   });
 
   it("shows the service's own refusal rather than inventing one", () => {

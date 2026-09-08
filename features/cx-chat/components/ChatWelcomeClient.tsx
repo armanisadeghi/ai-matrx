@@ -18,6 +18,7 @@ import { selectAgentById } from "@/features/agents/redux/agent-definition/select
 import { selectLatestConversationId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 import { setInputPlaceholder } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
 
 const AgentPickerSheet = dynamic(
   () =>
@@ -72,12 +73,12 @@ export default function ChatWelcomeClient({
   useEffect(() => {
     if (!latestConversationId || hasNavigated.current) return;
     hasNavigated.current = true;
-    router.replace(`/demos/chat/c/${latestConversationId}?agent=${agentId}`);
+    replaceAppHref(router, `/demos/chat/c/${latestConversationId}?agent=${agentId}`);
   }, [latestConversationId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAgentSelect = useCallback(
     (picked: { promptId: string }) => {
-      router.push(`/demos/chat/a/${picked.promptId}`);
+      pushAppHref(router, `/demos/chat/a/${picked.promptId}`);
     },
     [router],
   );

@@ -22,7 +22,7 @@
 // Starter packs tab (`?tab=packs&pack=<id>`).
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -93,7 +93,7 @@ function ResourceName({ r, className }: { r: Resource; className?: string }) {
     );
   }
   return (
-    <Link
+    <AppLink
       href={packHref(r.id)}
       className={`inline-flex items-center gap-1 underline-offset-2 hover:underline ${className ?? ""}`}
     >
@@ -102,7 +102,7 @@ function ResourceName({ r, className }: { r: Resource; className?: string }) {
       <span className="text-[10px] text-muted-foreground">
         starter pack{r.status ? ` · ${r.status}` : ""}
       </span>
-    </Link>
+    </AppLink>
   );
 }
 
@@ -379,7 +379,7 @@ export function AccessExplorerTab({
                   ? "none assigned"
                   : (industriesByOrg.get(orgId) ?? []).length}
                 {" · "}
-                <Link
+                <AppLink
                   href={`/administration/users/organizations?org=${encodeURIComponent(orgId)}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -392,7 +392,7 @@ export function AccessExplorerTab({
                       (m) => m.organization_id === orgId,
                     ).length
                   }
-                </Link>
+                </AppLink>
               </div>
               {renderEntitlements(
                 entitlementsForOrg(orgId),

@@ -37,6 +37,7 @@ import { PublicPageLink } from "./PublicPageLink";
 import { podcastShowAdminHref } from "../../utils";
 import { cn } from "@/lib/utils";
 import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
+import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
 
 function CopyLinkButton({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
@@ -78,7 +79,7 @@ export function ShowsClient() {
       if (value) params.set("q", value);
       else params.delete("q");
       // Free-text search — replace so typing does not push per keystroke.
-      router.replace(`/administration/knowledge/podcasts/shows?${params.toString()}`);
+      replaceAppHref(router, `/administration/knowledge/podcasts/shows?${params.toString()}`);
     });
   };
 
@@ -162,7 +163,7 @@ export function ShowsClient() {
           className="h-8 gap-1.5"
           onClick={() =>
             startTransition(() =>
-              router.push("/administration/knowledge/podcasts/shows/new"),
+              pushAppHref(router, "/administration/knowledge/podcasts/shows/new"),
             )
           }
         >
@@ -221,7 +222,7 @@ export function ShowsClient() {
                   key={show.id}
                   onClick={() =>
                     startTransition(() =>
-                      router.push(`/administration/knowledge/podcasts/shows/${show.id}`),
+                      pushAppHref(router, `/administration/knowledge/podcasts/shows/${show.id}`),
                     )
                   }
                   className="border-b cursor-pointer group transition-colors hover:bg-muted/40"
@@ -281,8 +282,7 @@ export function ShowsClient() {
                         onClick={(e) => {
                           e.stopPropagation();
                           startTransition(() =>
-                            router.push(
-                              `/administration/knowledge/podcasts/shows/${show.id}`,
+                            pushAppHref(router, `/administration/knowledge/podcasts/shows/${show.id}`,
                             ),
                           );
                         }}

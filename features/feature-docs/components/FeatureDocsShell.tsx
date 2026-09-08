@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
@@ -85,12 +85,12 @@ export default function FeatureDocsShell({
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-background">
       <header className="border-b border-border px-4 py-3 shrink-0 space-y-2">
         <div className="flex items-baseline gap-2 flex-wrap">
-          <Link
+          <AppLink
             href="/administration/documentation/feature-docs"
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             Feature Docs
-          </Link>
+          </AppLink>
           <span className="text-xs text-muted-foreground">/</span>
           <h1 className="text-sm font-bold tracking-tight">{title}</h1>
           {subtitle && (
@@ -104,7 +104,7 @@ export default function FeatureDocsShell({
               zone === tab.zone ||
               (tab.zone === "dotdir" && zone === "dotdir" && !dotDir);
             return (
-              <Link
+              <AppLink
                 key={tab.href}
                 href={tab.href}
                 className={cn(
@@ -115,7 +115,7 @@ export default function FeatureDocsShell({
                 )}
               >
                 {tab.label}
-              </Link>
+              </AppLink>
             );
           })}
         </nav>
@@ -126,7 +126,7 @@ export default function FeatureDocsShell({
               const href = `/administration/documentation/feature-docs/dotdirs/${dotDirRouteSlug(dir)}`;
               const active = dotDir === dir || pathname === href;
               return (
-                <Link
+                <AppLink
                   key={dir}
                   href={href}
                   className={cn(
@@ -137,7 +137,7 @@ export default function FeatureDocsShell({
                   )}
                 >
                   {dir}
-                </Link>
+                </AppLink>
               );
             })}
           </nav>

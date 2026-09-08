@@ -9,7 +9,7 @@
 
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { AlertTriangle, CheckCircle2, Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -181,12 +181,12 @@ export function JurisdictionVerificationClient() {
                     className="border-b border-border/60"
                   >
                     <td className="px-3 py-1.5">
-                      <Link
+                      <AppLink
                         href={`/administration/hr/jurisdiction-rules/${row.rule_id}`}
                         className="text-primary hover:underline"
                       >
                         {row.rule_class_label}
-                      </Link>
+                      </AppLink>
                     </td>
                     <td className="px-3 py-1.5">
                       {row.jurisdiction_name ?? row.jurisdiction_key}{" "}

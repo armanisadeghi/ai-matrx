@@ -8,7 +8,7 @@
  * AdminMobileMenuItem only for admins. Icons resolve by name via IconResolver.
  */
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { IconResolver } from "@ai-matrx/icons";
 import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
 import {
@@ -28,7 +28,7 @@ export default function AdminMobileMenu() {
       <div className="shell-mobile-section-divider" />
       <div className="shell-mobile-section-label">Admin</div>
 
-      <Link
+      <AppLink
         href="/administration"
         data-nav-href="/administration"
         className="shell-mobile-nav-item"
@@ -38,9 +38,9 @@ export default function AdminMobileMenu() {
           <IconResolver iconName="ShieldCheck" className="h-5 w-5" />
         </span>
         <span>Admin Dashboard</span>
-      </Link>
+      </AppLink>
 
-      <Link
+      <AppLink
         href={ADMIN_LAUNCHPAD_PATH}
         target="_blank"
         rel="noopener noreferrer"
@@ -52,7 +52,7 @@ export default function AdminMobileMenu() {
         </span>
         <span className="flex-1 font-medium">Admin Launchpad</span>
         <IconResolver iconName="ArrowUpRight" className="h-4 w-4" />
-      </Link>
+      </AppLink>
 
       <button
         type="button"
@@ -108,7 +108,7 @@ export default function AdminMobileMenu() {
               />
             </summary>
             <div className="shell-mobile-nav-children">
-              <Link
+              <AppLink
                 href={adminDomainHref(domain)}
                 data-nav-href={adminDomainHref(domain)}
                 className="shell-mobile-nav-item shell-mobile-nav-child font-medium"
@@ -121,7 +121,7 @@ export default function AdminMobileMenu() {
                   />
                 </span>
                 <span>{domain.name} overview</span>
-              </Link>
+              </AppLink>
               {domain.sections.map((section) => (
                 <div key={section.name}>
                   <div className="flex items-center gap-2 px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -132,7 +132,7 @@ export default function AdminMobileMenu() {
                     <span>{section.name}</span>
                   </div>
                   {section.destinations.map((item) => (
-                    <Link
+                    <AppLink
                       key={item.link}
                       href={item.link}
                       data-nav-href={item.link}
@@ -146,7 +146,7 @@ export default function AdminMobileMenu() {
                         />
                       </span>
                       <span>{item.title}</span>
-                    </Link>
+                    </AppLink>
                   ))}
                 </div>
               ))}

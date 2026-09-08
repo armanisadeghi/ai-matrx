@@ -1,4 +1,4 @@
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { cn } from "@/lib/utils";
 import { getMenuIcon, type MenuIconKey } from "./menuIconRegistry";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
@@ -19,10 +19,10 @@ export function LinkMenuItem({
   const Icon = getMenuIcon(icon);
   return (
     <label htmlFor="shell-user-menu" className="block">
-      <Link href={href} className={cn(MENU_ITEM_CLASS, className)}>
+      <AppLink href={href} className={cn(MENU_ITEM_CLASS, className)}>
         <Icon />
         {label}
-      </Link>
+      </AppLink>
     </label>
   );
 }

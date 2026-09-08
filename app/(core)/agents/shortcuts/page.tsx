@@ -15,6 +15,7 @@ import type {
 } from "@/features/agents/redux/agent-shortcuts/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 const SCOPE = "user" as const;
 
@@ -67,7 +68,7 @@ export default function UserShortcutsPage() {
   const handlePromoteSuccess = (newId: string) => {
     setPromoteTarget(null);
     startTransition(() => {
-      router.push(`/administration/agents/system-agents/edit/${newId}`);
+      pushAppHref(router, `/administration/agents/system-agents/edit/${newId}`);
     });
   };
 

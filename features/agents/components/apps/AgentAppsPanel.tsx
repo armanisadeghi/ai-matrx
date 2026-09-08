@@ -8,7 +8,7 @@
  * handled by RLS on the server side.
  */
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { ExternalLink, LayoutGrid, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,12 +51,12 @@ export function AgentAppsPanel({
             </p>
           </div>
           <div className="shrink-0 flex gap-2">
-            <Link href={`/agent-apps/new?agent_id=${agentId}`}>
+            <AppLink href={`/agent-apps/new?agent_id=${agentId}`}>
               <Button size="sm">
                 <Plus className="h-3.5 w-3.5 mr-1.5" />
                 New app
               </Button>
-            </Link>
+            </AppLink>
           </div>
         </header>
 
@@ -112,12 +112,12 @@ export function AgentAppsPanel({
             <div className="text-xs text-muted-foreground flex-1">
               Looking for the platform-wide admin view?
             </div>
-            <Link href="/administration/agents/agent-apps/apps">
+            <AppLink href="/administration/agents/agent-apps/apps">
               <Button size="sm" variant="outline">
                 <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                 Open admin
               </Button>
-            </Link>
+            </AppLink>
           </CardContent>
         </Card>
       </div>

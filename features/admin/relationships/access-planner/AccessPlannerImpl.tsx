@@ -17,7 +17,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import dagre from "dagre";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useEffect, useState } from "react";
 import {
   AlertCircle,
@@ -1518,7 +1518,7 @@ function Door({
   detail: string;
 }) {
   return (
-    <Link
+    <AppLink
       href={href}
       target="_blank"
       rel="noreferrer"
@@ -1532,6 +1532,6 @@ function Door({
         </span>
       </span>
       <ChevronRight className="h-4 w-4 text-muted-foreground" />
-    </Link>
+    </AppLink>
   );
 }

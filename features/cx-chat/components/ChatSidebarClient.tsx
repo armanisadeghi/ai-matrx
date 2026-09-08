@@ -38,6 +38,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 // ============================================================================
 // NAVIGATION HELPERS
@@ -197,7 +198,7 @@ export function ChatPanelContent() {
     (agent: { promptId: string }) => {
       closeMobilePanel();
       // Navigation triggers ChatInstanceManager on the new page to handle instance lifecycle.
-      router.push(`/demos/chat/a/${agent.promptId}`);
+      pushAppHref(router, `/demos/chat/a/${agent.promptId}`);
     },
     [router],
   );
@@ -304,7 +305,7 @@ export function ChatDesktopHeader() {
   const handleAgentSelect = useCallback(
     (agent: { promptId: string }) => {
       setIsPickerOpen(false);
-      router.push(`/demos/chat/a/${agent.promptId}`);
+      pushAppHref(router, `/demos/chat/a/${agent.promptId}`);
     },
     [router],
   );

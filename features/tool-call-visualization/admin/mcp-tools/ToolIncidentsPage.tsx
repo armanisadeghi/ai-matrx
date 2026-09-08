@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToolUiIncidentViewer } from "@/features/tool-call-visualization/admin/ToolUiIncidentViewer";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 interface Props {
     toolId: string;
@@ -22,7 +23,7 @@ export function ToolIncidentsPage({ toolId, toolName }: Props) {
                 <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => startTransition(() => router.push(`/administration/agents/mcp-tools/${toolId}`))}
+                    onClick={() => startTransition(() => pushAppHref(router, `/administration/agents/mcp-tools/${toolId}`))}
                     disabled={isPending}
                     className="gap-1.5 h-8"
                 >
