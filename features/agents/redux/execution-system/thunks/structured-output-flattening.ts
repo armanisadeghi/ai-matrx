@@ -30,8 +30,13 @@
  * Output kinds that ARE prose. `null` (undeclared) counts as prose because a
  * job that declares nothing has not promised a shape; `"json"` does NOT — it
  * is a promise of structure, and flattening it is the same defect.
+ * `"markdown"` is a value the catalogue actually carries and is prose by
+ * definition (a text run renders it through the ONE markdown pipeline).
  */
-export const PROSE_OUTPUT_KINDS: ReadonlySet<string> = new Set(["text"]);
+export const PROSE_OUTPUT_KINDS: ReadonlySet<string> = new Set([
+  "text",
+  "markdown",
+]);
 
 /** True when a declared output kind promises a SHAPE, not prose. */
 export function isStructuredOutputKind(
@@ -57,7 +62,12 @@ export interface FlatteningVerdict {
   message: string;
 }
 
-const REMEDY =
+/**
+ * THE remedy sentence — shared verbatim with the static guard
+ * (`scripts/check-flattened-shapes.ts`, `pnpm check:flattened-shapes`) so the
+ * console, the Error Inspector and the CI report all say the same thing.
+ */
+export const FLATTENING_REMEDY =
   "Remedy: do NOT run a shaped job headless-for-text. Give the run a requestId and let the ONE pipeline render it — open the conversation in the agent run window (`useOpenAgentRunWindow` with `mandateKey`, so the person can keep talking) or float it with `useOpenLiveRunWindow`; read the fields you need from the extracted object (`expect: \"json\"` / `selectFirstExtractedObject`), never from the answer string; and if the page must receive one field, declare a surface write target and let the kind component apply it. See features/content-ir/FEATURE.md § No bespoke stream renderers.";
 
 /**
@@ -78,7 +88,7 @@ export function judgeDeclaredFlattening(args: {
     kind: args.outputKind,
     message:
       `[flattening] "${args.surfaceKey}" ran mandate "${args.mandateKey}" with expect:"text", but that job declares output_kind "${args.outputKind}" — a registered shape with its own component. The structured answer is being flattened into a string and rendered by hand. ` +
-      REMEDY,
+      FLATTENING_REMEDY,
   };
 }
 
@@ -100,6 +110,6 @@ export function judgeHarvestedFlattening(args: {
     kind,
     message:
       `[flattening] "${args.surfaceKey}" asked "${args.agentRef}" for text, and the answer is a "${kind}" shape. Resolving it as a string discards the kind component, its parts and its actions. ` +
-      REMEDY,
+      FLATTENING_REMEDY,
   };
 }
