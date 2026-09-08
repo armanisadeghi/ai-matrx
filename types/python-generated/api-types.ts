@@ -6676,6 +6676,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/standard-notes/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_standard_notes_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -8936,6 +8953,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_switcherstudio_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/disqus/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_disqus_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15532,6 +15566,23 @@ export interface paths {
         };
         /** Public Quickstart */
         get: operations["public_quickstart_requests_docs_public_quickstart_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pytest-docs/public/getting-started": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Getting Started */
+        get: operations["public_getting_started_pytest_docs_public_getting_started_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -57107,6 +57158,38 @@ export interface components {
             /** Items */
             items: components["schemas"]["DispositionItem"][];
         };
+        /**
+         * DisqusServiceStatus
+         * @description Safe aggregate status projection for Disqus's fixed status page.
+         */
+        DisqusServiceStatus: {
+            /**
+             * Kind
+             * @default disqus_public_service_status
+             * @constant
+             */
+            __kind?: "disqus_public_service_status";
+            /**
+             * Provider
+             * @default Disqus
+             * @constant
+             */
+            provider?: "Disqus";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.disqus.com
+             * @constant
+             */
+            status_page?: "https://status.disqus.com";
+        };
         /** DissolvePlanRequest */
         DissolvePlanRequest: {
             /**
@@ -64451,6 +64534,38 @@ export interface components {
             } | string;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * GettingStartedContent
+         * @description Safe projection of the fixed public pytest getting-started guide.
+         */
+        GettingStartedContent: {
+            /**
+             * Kind
+             * @default pytest_docs_getting_started_content
+             * @constant
+             */
+            __kind?: "pytest_docs_getting_started_content";
+            /**
+             * Provider
+             * @default pytest Documentation
+             * @constant
+             */
+            provider?: "pytest Documentation";
+            /**
+             * Version
+             * @default stable
+             * @constant
+             */
+            version?: "stable";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
         };
         /**
          * GettyAatBroaderConcept
@@ -98976,6 +99091,33 @@ export interface components {
              */
             status_page?: "https://status.stan.store/";
         };
+        /** StandardNotesPublicRelease */
+        StandardNotesPublicRelease: {
+            /**
+             * Kind
+             * @default standard_notes_public_release
+             * @constant
+             */
+            __kind?: "standard_notes_public_release";
+            /**
+             * Provider
+             * @default StandardNotes
+             * @constant
+             */
+            provider?: "StandardNotes";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
+        };
         /** StartLoopRequest */
         StartLoopRequest: {
             /**
@@ -124963,6 +125105,26 @@ export interface operations {
             };
         };
     };
+    public_release_standard_notes_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardNotesPublicRelease"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -127874,6 +128036,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SwitcherStudioServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_disqus_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisqusServiceStatus"];
                 };
             };
         };
@@ -136451,6 +136633,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__requests_docs_integrations__service__QuickstartContent"];
+                };
+            };
+        };
+    };
+    public_getting_started_pytest_docs_public_getting_started_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GettingStartedContent"];
                 };
             };
         };

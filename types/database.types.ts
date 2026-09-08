@@ -60180,6 +60180,51 @@ export type Database = {
           },
         ]
       }
+      soft_delete_edge: {
+        Row: {
+          action: string
+          child_column: string
+          child_schema: string
+          child_table: string
+          declared_at: string
+          declared_by: string
+          id: string
+          parent_column: string
+          parent_noun: string
+          parent_schema: string
+          parent_table: string
+          reason: string
+        }
+        Insert: {
+          action: string
+          child_column: string
+          child_schema: string
+          child_table: string
+          declared_at?: string
+          declared_by: string
+          id?: string
+          parent_column?: string
+          parent_noun?: string
+          parent_schema: string
+          parent_table: string
+          reason: string
+        }
+        Update: {
+          action?: string
+          child_column?: string
+          child_schema?: string
+          child_table?: string
+          declared_at?: string
+          declared_by?: string
+          id?: string
+          parent_column?: string
+          parent_noun?: string
+          parent_schema?: string
+          parent_table?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       source_authority: {
         Row: {
           blurb: string
@@ -60793,6 +60838,17 @@ export type Database = {
         }
         Relationships: []
       }
+      v_soft_delete_edge_unclassified: {
+        Row: {
+          child_column: unknown
+          child_schema: string | null
+          child_table: unknown
+          parent_column: unknown
+          parent_schema: string | null
+          parent_table: unknown
+        }
+        Relationships: []
+      }
       v_table_access_stats: {
         Row: {
           last_read: string | null
@@ -60986,6 +61042,14 @@ export type Database = {
         Args: { p_source_key: string }
         Returns: boolean
       }
+      attach_soft_delete_cascade: {
+        Args: { p_schema: string; p_table: string }
+        Returns: undefined
+      }
+      attach_soft_delete_child_guard: {
+        Args: { p_schema: string; p_table: string }
+        Returns: undefined
+      }
       backfill_record_names: {
         Args: { p_batch?: number; p_definition_id: string }
         Returns: Json
@@ -61154,6 +61218,21 @@ export type Database = {
       declare_custom_record_edge: {
         Args: { p_target_token: string }
         Returns: Json
+      }
+      declare_soft_delete_edge: {
+        Args: {
+          p_action: string
+          p_child_column: string
+          p_child_schema: string
+          p_child_table: string
+          p_declared_by: string
+          p_parent_column?: string
+          p_parent_noun?: string
+          p_parent_schema: string
+          p_parent_table: string
+          p_reason: string
+        }
+        Returns: undefined
       }
       definer_guard_revoke_notice: {
         Args: {
@@ -61668,6 +61747,14 @@ export type Database = {
           p_timeout_minutes?: number
         }
         Returns: Json
+      }
+      soft_delete_orphan_census: {
+        Args: never
+        Returns: {
+          action: string
+          edge: string
+          live_rows_under_removed_parent: number
+        }[]
       }
       sweep_orphaned_associations: {
         Args: { p_dry_run?: boolean }
@@ -63276,6 +63363,15 @@ export type Database = {
               type: string
             }[]
           }
+      __soft_delete_cascade_conformance: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: Json
+          ok: boolean
+          severity: string
+        }[]
+      }
       _count_super_admins: { Args: never; Returns: number }
       _d31_impl_add_data_row_to_user_table: {
         Args: { p_data: Json; p_table_id: string }

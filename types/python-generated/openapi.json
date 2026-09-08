@@ -16727,6 +16727,27 @@
         }
       }
     },
+    "/standard-notes/public/release": {
+      "get": {
+        "tags": [
+          "Standard Notes Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_standard_notes_public_release_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardNotesPublicRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -20187,6 +20208,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SwitcherStudioServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/disqus/public/status": {
+      "get": {
+        "tags": [
+          "Disqus Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_disqus_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisqusServiceStatus"
                 }
               }
             }
@@ -30014,6 +30056,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__requests_docs_integrations__service__QuickstartContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pytest-docs/public/getting-started": {
+      "get": {
+        "tags": [
+          "pytest Documentation Integrations"
+        ],
+        "summary": "Public Getting Started",
+        "operationId": "public_getting_started_pytest_docs_public_getting_started_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GettingStartedContent"
                 }
               }
             }
@@ -130855,6 +130918,47 @@
         ],
         "title": "DispositionsBody"
       },
+      "DisqusServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "disqus_public_service_status",
+            "title": "Kind",
+            "default": "disqus_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Disqus",
+            "title": "Provider",
+            "default": "Disqus"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.disqus.com",
+            "title": "Status Page",
+            "default": "https://status.disqus.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "DisqusServiceStatus",
+        "description": "Safe aggregate status projection for Disqus's fixed status page."
+      },
       "DissolvePlanRequest": {
         "properties": {
           "organization_id": {
@@ -147583,6 +147687,47 @@
           "related"
         ],
         "title": "GetToolResponse"
+      },
+      "GettingStartedContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pytest_docs_getting_started_content",
+            "title": "Kind",
+            "default": "pytest_docs_getting_started_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "pytest Documentation",
+            "title": "Provider",
+            "default": "pytest Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "stable",
+            "title": "Version",
+            "default": "stable"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "GettingStartedContent",
+        "description": "Safe projection of the fixed public pytest getting-started guide."
       },
       "GettyAatBroaderConcept": {
         "properties": {
@@ -223027,6 +223172,48 @@
         ],
         "title": "StanServiceStatus",
         "description": "Safe aggregate status projection for Stan's fixed status page."
+      },
+      "StandardNotesPublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "standard_notes_public_release",
+            "title": "Kind",
+            "default": "standard_notes_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "StandardNotes",
+            "title": "Provider",
+            "default": "StandardNotes"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag",
+          "release_url",
+          "published_at"
+        ],
+        "title": "StandardNotesPublicRelease"
       },
       "StartLoopRequest": {
         "properties": {
