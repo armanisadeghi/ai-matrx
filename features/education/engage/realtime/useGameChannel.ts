@@ -1,29 +1,54 @@
 // features/education/engage/realtime/useGameChannel.ts
 //
-// The realtime spine of a multiplayer game room: ONE Supabase Broadcast channel
-// (`edu-game:<roomId>`) carrying ephemeral game state. Per CLAUDE.md's realtime
-// rule, live state (roster, scores, start/end) is Broadcast — NOT Postgres.
-// Presence backs the ROSTER (identity + host flag, and auto-recovers it on
-// reconnect); throttled `score` broadcasts carry the mutable scoreboard.
+// The realtime spine of a multiplayer game room: ONE Broadcast + Presence
+// channel (`mx:edu-game:<roomId>`) carrying ephemeral game state. Per CLAUDE.md's
+// realtime rule, live state (roster, scores, start/end) is Broadcast — NOT
+// Postgres. Presence backs the ROSTER (identity + host flag, and auto-recovers
+// it on reconnect); throttled `score` broadcasts carry the mutable scoreboard.
+//
+// REALTIME: `@ai-matrx/realtime` owns the channel. THE TOPIC IS THE ROOM here —
+// broadcast and presence route on it — so the package puts the declared topic on
+// the wire verbatim and ref-counts one underlying channel per room inside this
+// client (README rule 7, the topic-semantics split). What this replaced was a
+// raw `.channel(...).subscribe()` with a hand-rolled presence roster rebuild,
+// manual `track`/`untrack`, manual teardown and a status callback — plus GHOST
+// PLAYERS: a client that crashed or lost its tab left its presence entry in the
+// roster with nothing to expire it. The package's presence runtime carries
+// heartbeat + local-clock expiry, so a crashed player leaves.
+//
+// ECHO SUPPRESSION IS NOW ON (it was `broadcast: {self: true}` before). The old
+// channel needed its own score broadcast echoed back because `sendScore` updated
+// the local score map but never rebuilt the roster — so the sender's own row only
+// refreshed after a network round trip. It now rebuilds locally on send, which is
+// both instant and the doctrine's default (README rule 2: opting out of echo
+// suppression is the discouraged path, never the fix for something else).
 //
 // Reconnect recovery is free: presence re-syncs the full roster on resubscribe,
-// so a refreshed/dropped client rejoins and sees everyone again (DoD #5).
+// so a refreshed/dropped client rejoins and sees everyone again (DoD #5). The
+// backfill door is declared explicitly with that reason rather than omitted.
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
-import type { RealtimeChannel, RealtimePresenceState } from "@supabase/supabase-js";
+import { useRef, useState } from "react";
+import { defineChannelNamespace, type PresenceMember } from "@ai-matrx/realtime";
+import { useChannel } from "@ai-matrx/realtime/react";
 import type { GameBroadcastEvent, LivePlayer, RoomPhase } from "../types";
 
-interface PresenceIdentity {
+interface PresenceIdentity extends Record<string, unknown> {
   userId: string;
   displayName: string;
   isHost: boolean;
   online_at: number;
 }
+
+/** One place names this channel. A second, different declaration throws. */
+const gameChannel = defineChannelNamespace({
+  namespace: "edu-game",
+  parts: ["roomId"],
+  description: "Multiplayer education game room — roster presence + score broadcast",
+});
 
 export interface UseGameChannelArgs {
   roomId: string | null;
@@ -58,111 +83,108 @@ export function useGameChannel({
   roomId,
   me,
 }: UseGameChannelArgs): UseGameChannelResult {
-  const [connected, setConnected] = useState(false);
   const [phase, setPhase] = useState<RoomPhase>("lobby");
   const [players, setPlayers] = useState<LivePlayer[]>([]);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [durationMs, setDurationMs] = useState<number | null>(null);
 
-  const channelRef = useRef<RealtimeChannel | null>(null);
   // Last-known mutable score fields per user, survive presence re-syncs.
   const scoresRef = useRef<Record<string, Omit<LivePlayer, "userId" | "displayName" | "isHost" | "updatedAt">>>({});
+  const membersRef = useRef<readonly PresenceMember<PresenceIdentity>[]>([]);
 
   const meKey = me ? `${me.userId}` : null;
 
-  useEffect(() => {
-    if (!roomId || !me || !meKey) return;
-    const supabase = createClient();
-    const channelName = `edu-game:${roomId}`;
-    const channel = supabase.channel(channelName, {
-      // self:true echoes our own score broadcasts back so the sender's OWN row
-      // in the live scoreboard updates from their answers (presence sync alone
-      // wouldn't refresh it until someone else scored).
-      config: { presence: { key: me.userId }, broadcast: { self: true } },
-    });
-    channelRef.current = channel;
+  /** Fold the presence roster + the score map into the live player list. */
+  const rebuildRoster = (
+    members: readonly PresenceMember<PresenceIdentity>[],
+  ): void => {
+    membersRef.current = members;
+    const seen = new Set<string>();
+    const next: LivePlayer[] = [];
+    for (const member of members) {
+      const id = member.state;
+      if (!id?.userId) continue;
+      // A user may have multiple tabs; take the first identity.
+      if (seen.has(id.userId)) continue;
+      seen.add(id.userId);
+      const score = scoresRef.current[id.userId] ?? EMPTY_SCORE;
+      next.push({
+        userId: id.userId,
+        displayName: id.displayName,
+        isHost: id.isHost,
+        score: score.score,
+        correctCount: score.correctCount,
+        answeredCount: score.answeredCount,
+        streak: score.streak,
+        currency: score.currency,
+        updatedAt: id.online_at,
+      });
+    }
+    setPlayers(next);
+  };
 
-    const rebuildRoster = () => {
-      const state = channel.presenceState() as RealtimePresenceState<PresenceIdentity>;
-      const next: LivePlayer[] = [];
-      for (const presences of Object.values(state)) {
-        // A user may have multiple tabs; take the first identity.
-        const id = (presences as PresenceIdentity[])[0];
-        if (!id) continue;
-        const score = scoresRef.current[id.userId] ?? EMPTY_SCORE;
-        next.push({
-          userId: id.userId,
-          displayName: id.displayName,
-          isHost: id.isHost,
-          score: score.score,
-          correctCount: score.correctCount,
-          answeredCount: score.answeredCount,
-          streak: score.streak,
-          currency: score.currency,
-          updatedAt: id.online_at,
-        });
-      }
-      setPlayers(next);
-    };
+  const { status, send: sendOnChannel } = useChannel<PresenceIdentity>(
+    roomId && me && meKey
+      ? {
+          topic: gameChannel.topic({ roomId }),
+          presence: {
+            key: me.userId,
+            state: {
+              userId: me.userId,
+              displayName: me.displayName,
+              isHost: me.isHost,
+              online_at: Date.now(),
+            },
+            onChange: rebuildRoster,
+          },
+          broadcast: [
+            {
+              event: "game",
+              onMessage: ({ data }) => {
+                const evt = data as GameBroadcastEvent | undefined;
+                if (!evt) return;
+                if (evt.type === "game_started") {
+                  setPhase("active");
+                  setStartedAt(evt.startedAt);
+                  setDurationMs(evt.durationMs);
+                } else if (evt.type === "game_ended") {
+                  setPhase("ended");
+                } else if (evt.type === "score") {
+                  scoresRef.current[evt.userId] = {
+                    score: evt.score,
+                    correctCount: evt.correctCount,
+                    answeredCount: evt.answeredCount,
+                    streak: evt.streak,
+                    currency: evt.currency,
+                  };
+                  rebuildRoster(membersRef.current);
+                }
+              },
+            },
+          ],
+          // Nothing durable backs this room — the roster is presence and the
+          // scoreboard is ephemeral broadcast, both of which the package
+          // re-syncs on resubscribe. Declared with the reason rather than
+          // omitted, since an omitted door warns about a channel that has none.
+          onBackfill: () => {
+            // Intentionally nothing — see above.
+          },
+        }
+      : null,
+  );
 
-    channel.on("presence", { event: "sync" }, rebuildRoster);
-    channel.on("presence", { event: "join" }, rebuildRoster);
-    channel.on("presence", { event: "leave" }, rebuildRoster);
-
-    channel.on("broadcast", { event: "game" }, (payload) => {
-      const evt = payload.payload as GameBroadcastEvent | undefined;
-      if (!evt) return;
-      if (evt.type === "game_started") {
-        setPhase("active");
-        setStartedAt(evt.startedAt);
-        setDurationMs(evt.durationMs);
-      } else if (evt.type === "game_ended") {
-        setPhase("ended");
-      } else if (evt.type === "score") {
-        scoresRef.current[evt.userId] = {
-          score: evt.score,
-          correctCount: evt.correctCount,
-          answeredCount: evt.answeredCount,
-          streak: evt.streak,
-          currency: evt.currency,
-        };
-        rebuildRoster();
-      }
-    });
-
-    channel.subscribe((status) => {
-      if (status === "SUBSCRIBED") {
-        setConnected(true);
-        void channel.track({
-          userId: me.userId,
-          displayName: me.displayName,
-          isHost: me.isHost,
-          online_at: Date.now(),
-        } satisfies PresenceIdentity);
-      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        setConnected(false);
-        console.warn(`[useGameChannel] ${status} on ${channelName} — will retry`);
-      }
-    });
-
-    return () => {
-      void channel.untrack();
-      supabase.removeChannel(channel);
-      channelRef.current = null;
-      setConnected(false);
-    };
-  }, [roomId, meKey, me]);
+  const connected = status === "connected";
 
   const send = (event: GameBroadcastEvent): void => {
-    const channel = channelRef.current;
-    if (!channel) return;
-    void channel.send({ type: "broadcast", event: "game", payload: event });
+    sendOnChannel("game", event);
   };
 
   const sendScore: UseGameChannelResult["sendScore"] = (fields) => {
     if (!me) return;
-    // Update my own row locally immediately (don't wait for the echo).
+    // Update my own row locally and REBUILD — instant, and the reason this
+    // channel no longer needs its own broadcasts echoed back to it.
     scoresRef.current[me.userId] = { ...fields };
+    rebuildRoster(membersRef.current);
     send({ type: "score", userId: me.userId, ...fields });
   };
 
