@@ -576,6 +576,17 @@ export function MandateWorkspace({
 // job" jump. That button (and the `matrx:open-mandate-pin` event any surface
 // may fire) now scrolls to THIS section — the one place a holder is chosen.
 
+/** The two rungs that decide for everybody, ordered by which one answers now. */
+const SYSTEM_PERSPECTIVE_RUNGS_DEFAULT_FIRST = ["system", "global"] as const;
+const SYSTEM_PERSPECTIVE_RUNGS_GLOBAL_FIRST = ["global", "system"] as const;
+
+/** Does a live platform-wide binding sit above this job's own default? */
+export function hasGlobalBinding(data: MandateWorkspaceData): boolean {
+  return data.bindings.some(
+    (b) => b.principal_type === "global" && b.is_enabled !== false,
+  );
+}
+
 function BindingSection({
   data,
   principal,
@@ -614,24 +625,31 @@ function BindingSection({
       >
         <OneBindingWorkspace
           data={data}
-          initialRung={
-            perspective === "system"
-              ? "global"
-              : principal.kind === "org"
-                ? "org"
-                : "user"
-          }
+          // Ignored under the system perspective — `fixedRung` names the
+          // rungs and its first entry is where the page opens.
+          initialRung={principal.kind === "org" ? "org" : "user"}
           initialOrganizationId={
             principal.kind === "org" ? principal.orgId : null
           }
           // The admin door offers the system rung; the server's super-admin
           // gate is the authority and the workspace re-checks it too.
           allowGlobal={authoring}
-          // 🚨 THE ADMIN PANEL IS THE SYSTEM RUNG AND NOTHING ELSE. With the
-          // rung pinned the bar STATES it ("System — decides for every user")
+          // 🚨 THE ADMIN PANEL IS THE PLATFORM'S OWN RUNGS AND NOTHING ELSE.
+          // Two rungs decide for everybody: the job's OWN default holder
+          // (`mandate.definition.default_holder_*`, holder-only) and the
+          // platform-wide binding above it (which also carries the map, the
+          // settings and auto-run). Pinning to that pair states each by name
           // and offers no User/Org — an admin managing what the platform
           // assigns is never one click away from writing a personal override.
-          fixedRung={perspective === "system" ? "global" : undefined}
+          // The rung that ACTUALLY decides today is first, so the page opens on
+          // the answer it just described above.
+          fixedRung={
+            perspective === "system"
+              ? hasGlobalBinding(data)
+                ? SYSTEM_PERSPECTIVE_RUNGS_GLOBAL_FIRST
+                : SYSTEM_PERSPECTIVE_RUNGS_DEFAULT_FIRST
+              : undefined
+          }
           onChanged={onChanged}
         />
       </Section>

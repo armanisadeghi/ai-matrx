@@ -42,9 +42,28 @@ import {
   SYSTEM_RUNG_TITLE,
   systemRungHolderIsPersonal,
 } from "./system-rung";
+import {
+  DEFAULT_HOLDER_RUNG,
+  type DefaultHolderRungOffer,
+} from "./default-holder-rung";
 
 /** The rungs a mandate binding can actually be written at. */
 export type BindingRung = "global" | "org" | "user";
+
+/**
+ * Every rung this bar can STAND ON — the three binding rungs plus the mandate's
+ * own default (`system`), which is not a binding at all but the three
+ * `mandate.definition.default_holder_*` columns beneath them.
+ *
+ * 🔶 THE NAMING COLLISION, NAMED. The campaign's frozen ladder is `system` ·
+ * `global` · `org` · `user`, and the register says `global` is never
+ * relabelled `system`. `system-rung.ts` nonetheless titles the **global**
+ * binding rung "System — decides for every user". Nothing here renames it —
+ * that lane is live in these same files — so this rung leads with the word
+ * "default" in every sentence a reader sees, and the collision travels to the
+ * register as a finding. See `default-holder-rung.ts`.
+ */
+export type WorkspaceRung = BindingRung | typeof DEFAULT_HOLDER_RUNG;
 
 export interface HolderDraft {
   kind: "agent" | "workflow";
@@ -55,7 +74,7 @@ export interface HolderDraft {
 }
 
 export interface ScopeHolderBarProps {
-  rung: BindingRung;
+  rung: WorkspaceRung;
   organizationId: string | null;
   /** Super-admin authority — the system rung is theirs alone (server 403s). */
   allowGlobal: boolean;
@@ -71,8 +90,23 @@ export interface ScopeHolderBarProps {
    * `undefined` (the default) keeps P13's movable control for every host whose
    * question really is "which rung am I setting".
    */
-  fixedRung?: BindingRung;
-  onRungChange: (rung: BindingRung, organizationId: string | null) => void;
+  fixedRung?: WorkspaceRung | readonly WorkspaceRung[];
+  onRungChange: (rung: WorkspaceRung, organizationId: string | null) => void;
+  /**
+   * 🚨 THE BOTTOM RUNG — the mandate's OWN default holder — AS A FOURTH CHOICE
+   * (FIX-R3/W3).
+   *
+   * `defaultHolderRungOffer()` has already decided whether this caller may set
+   * it, and carries the words for either answer: the label and what it covers
+   * when it is offered, or the refusal naming WHO may decide and what the
+   * reader can do instead. The bar renders one or the other and never both —
+   * a rung that is neither offered nor explained is the dead control the
+   * fourth law forbids.
+   *
+   * `null`/absent = this host does not manage the bottom rung at all, and the
+   * cell says nothing about it.
+   */
+  defaultHolderOffer?: DefaultHolderRungOffer | null;
   /**
    * F3 — the standing sentence about what moving the rung costs, printed
    * whenever there IS something to lose. `null` when the draft is clean, so it
@@ -180,13 +214,43 @@ function scopeToRung(scope: AgentScope): BindingRung {
  *   · **user rung** — your own answer, your own agents. Unrestricted, and
  *     correctly so (VISION-RECONCILIATION D3).
  */
-function holderRestriction(rung: BindingRung): {
+function holderRestriction(
+  rung: WorkspaceRung,
+  /**
+   * The bottom rung's own offer, when that is the rung being stood on — it
+   * carries the holder rule, which differs by HOME: a system-homed default runs
+   * for every user on the platform (system agents only), an org-homed one runs
+   * for one organization (shared or system agents, the org rung's rule).
+   */
+  defaultHolderOffer?: DefaultHolderRungOffer | null,
+): {
   visibleTabs?: readonly AgentTab[];
   initialTab?: AgentTab;
   includeSystemInAll?: boolean;
   /** The sentence printed beside the picker. `null` at the unrestricted rung. */
   sentence: string | null;
 } {
+  if (rung === DEFAULT_HOLDER_RUNG) {
+    // 🚨 RESTRICT AS FAR AS WE CAN HONESTLY SEE, NEVER WARN-AND-ALLOW. The
+    // server judges containment for real (409, FIX-R1's one predicate) and its
+    // sentence is printed verbatim; this is the door in front of it.
+    if (defaultHolderOffer?.systemHomed) {
+      return {
+        visibleTabs: ["system"],
+        initialTab: "system",
+        includeSystemInAll: true,
+        sentence: defaultHolderOffer.holderRule,
+      };
+    }
+    return {
+      visibleTabs: ["shared", "system"],
+      initialTab: "shared",
+      includeSystemInAll: true,
+      sentence:
+        defaultHolderOffer?.holderRule ??
+        "An organization's default runs for everyone in it, so only agents shared with the organization — or system agents — can hold it.",
+    };
+  }
   switch (rung) {
     case "global":
       return {
@@ -213,6 +277,7 @@ export function ScopeHolderBar({
   organizationId,
   allowGlobal,
   fixedRung,
+  defaultHolderOffer = null,
   onRungChange,
   unsavedNote = null,
   appliesIn = null,
@@ -225,7 +290,15 @@ export function ScopeHolderBar({
   disabled = false,
 }: ScopeHolderBarProps) {
   const dispatch = useAppDispatch();
-  const restriction = holderRestriction(rung);
+  const pinnedList: readonly WorkspaceRung[] | null = !fixedRung
+    ? null
+    : typeof fixedRung === "string"
+      ? [fixedRung]
+      : fixedRung.length > 0
+        ? fixedRung
+        : null;
+  const onDefaultHolderRung = rung === DEFAULT_HOLDER_RUNG;
+  const restriction = holderRestriction(rung, defaultHolderOffer);
   /**
    * 🚨 A NAME IS NEVER A UUID WHERE A NAME EXISTS (V1 round 3; the G2 class
    * again, one cell over). `applies_in` is the SERVER'S sentence and is printed
@@ -261,7 +334,14 @@ export function ScopeHolderBar({
   // list is "not loaded", never "not a system agent".
   const builtinAgents = useAppSelector(selectBuiltinAgents);
   const systemHolderViolation = useMemo(() => {
-    if (rung !== "global") return false;
+    // The SAME violation at both rungs whose blast radius is the whole
+    // platform: the `global` binding rung, and a SYSTEM-homed mandate's own
+    // default. An org-homed default is a different scope and a different rule,
+    // judged by the server's containment predicate rather than here.
+    const platformWide =
+      rung === "global" ||
+      (onDefaultHolderRung && Boolean(defaultHolderOffer?.systemHomed));
+    if (!platformWide) return false;
     if (holder.kind !== "agent") return false;
     // ONE RULE, shared with the save refusal in `OneBindingWorkspace` — the
     // alert and the thing that actually stops the write cannot disagree.
@@ -269,7 +349,14 @@ export function ScopeHolderBar({
       holder.agentId,
       builtinAgents.map((a) => a.id),
     );
-  }, [rung, holder.kind, holder.agentId, builtinAgents]);
+  }, [
+    rung,
+    onDefaultHolderRung,
+    defaultHolderOffer?.systemHomed,
+    holder.kind,
+    holder.agentId,
+    builtinAgents,
+  ]);
 
   return (
     <section className="rounded-xl border border-border bg-card">
@@ -295,21 +382,57 @@ export function ScopeHolderBar({
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
             Rung
           </p>
-          {fixedRung ? (
-            /* THE RUNG IS STATED, NOT CHOSEN. A host that stands on one rung
-               offers no move — a selector here would be a control the page
-               cannot mean. */
+          {pinnedList ? (
+            /* THE RUNGS ARE STATED, NOT SEARCHED FOR. A pinned host manages a
+               FIXED set — the admin route manages the job's own default and the
+               platform-wide binding, and nothing else — so the cell names the
+               rung it is standing on and, when there is a sibling, offers that
+               one by name. A scope select would offer rungs this page does not
+               mean. */
+            <div className="space-y-1.5 rounded-md border border-border bg-muted/40 px-2 py-1.5">
+              <p className="text-[12px] font-medium text-foreground">
+                {pinnedRungWords(rung, defaultHolderOffer).noun}
+              </p>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                {pinnedRungWords(rung, defaultHolderOffer).covers}
+              </p>
+              {pinnedList
+                .filter((other) => other !== rung)
+                .map((other) => (
+                  <Button
+                    key={other}
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-[11px]"
+                    disabled={disabled}
+                    onClick={() => onRungChange(other, null)}
+                  >
+                    Set {pinnedRungWords(other, defaultHolderOffer).noun.toLowerCase()} instead
+                  </Button>
+                ))}
+            </div>
+          ) : onDefaultHolderRung ? (
+            /* STANDING ON THE BOTTOM RUNG. The scope select cannot represent it
+               — it is not a binding principal — so the rung is STATED here, in
+               the words `defaultHolderRungOffer()` chose for this reader's own
+               situation, with the way back beside it. */
             <div className="rounded-md border border-border bg-muted/40 px-2 py-1.5">
               <p className="text-[12px] font-medium text-foreground">
-                {fixedRung === "global"
-                  ? SYSTEM_RUNG_TITLE
-                  : rungWords(fixedRung).noun}
+                {defaultHolderOffer?.label ?? "The job's own default"}
               </p>
               <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                {fixedRung === "global"
-                  ? SYSTEM_RUNG_COVERS
-                  : rungWords(fixedRung).covers}
+                {defaultHolderOffer?.covers ??
+                  "Whoever this names runs the job wherever no binding above it answers."}
               </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-1 h-6 px-1.5 text-[11px] text-muted-foreground"
+                disabled={disabled}
+                onClick={() => onRungChange("user", null)}
+              >
+                Set a binding above it instead
+              </Button>
             </div>
           ) : (
             <ShortcutScopePicker
@@ -331,7 +454,7 @@ export function ScopeHolderBar({
           {/* A fixed-rung host has already said what the rung covers, and the
               ladder line is about rungs it does not manage — so it is dropped
               rather than restated. */}
-          {fixedRung ? null : (
+          {pinnedList || onDefaultHolderRung ? null : (
             <p className="text-[11px] leading-relaxed text-muted-foreground">
               {ladderLine}
             </p>
@@ -356,11 +479,51 @@ export function ScopeHolderBar({
               </p>
             </details>
           ) : null}
-          {!allowGlobal && !fixedRung ? (
+          {/* 🚨 WHY THE BLANKET SENTENCE IS GONE (FIX-R3/W3). This cell used to
+              print, to every reader who was not a super admin, "The system rung
+              — the answer everybody gets — is a super-admin decision, so it is
+              not offered here." One sentence, two rungs, and wrong about both
+              of them for an org-homed job: the mandate's own default belongs to
+              the HOME organization's administrators, and the reader was told a
+              platform administrator owned it. Each rung now speaks for itself,
+              about the situation actually in front of this reader. */}
+          {!allowGlobal && !pinnedList && !onDefaultHolderRung ? (
             <p className="text-[10.5px] leading-snug text-muted-foreground/80">
-              The system rung — the answer everybody gets — is a super-admin
-              decision, so it is not offered here.
+              &ldquo;{SYSTEM_RUNG_TITLE}&rdquo; is a platform-wide binding, and
+              only a super admin may write one — so that rung is absent from the
+              list above.
             </p>
+          ) : null}
+          {/* ── THE BOTTOM RUNG, OFFERED OR EXPLAINED ── */}
+          {defaultHolderOffer && !pinnedList && !onDefaultHolderRung ? (
+            <div className="space-y-1 rounded-md border border-dashed border-border px-2 py-1.5">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                The job&apos;s own default
+              </p>
+              {defaultHolderOffer.offered ? (
+                <>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    {defaultHolderOffer.covers}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-[11px]"
+                    disabled={disabled}
+                    onClick={() => onRungChange(DEFAULT_HOLDER_RUNG, null)}
+                  >
+                    Set {defaultHolderOffer.label.toLowerCase()}
+                  </Button>
+                </>
+              ) : (
+                /* NOT OFFERED, AND THE SENTENCE SAYS WHO MAY DECIDE — plus
+                   what this reader can still do. A refusal without a remedy is
+                   the half that always goes missing. */
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  {defaultHolderOffer.refusal}
+                </p>
+              )}
+            </div>
           ) : null}
           {unsavedNote ? (
             <p className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
@@ -556,9 +719,48 @@ export function ScopeHolderBar({
   );
 }
 
+/**
+ * The words for a rung a PINNED host is standing on, or offering as its
+ * sibling. The bottom rung's words come from `defaultHolderRungOffer()`, which
+ * already knows whether this job is homed in the Matrx System organization or
+ * in somebody's workspace — so a pinned host never invents a sentence about a
+ * rung whose decider it has not established.
+ */
+export function pinnedRungWords(
+  rung: WorkspaceRung,
+  defaultHolderOffer: DefaultHolderRungOffer | null,
+): { noun: string; covers: string } {
+  if (rung === DEFAULT_HOLDER_RUNG) {
+    return {
+      noun: defaultHolderOffer?.label ?? "The job's own default",
+      covers:
+        defaultHolderOffer?.covers ??
+        "Whoever this names runs the job wherever no binding above it answers.",
+    };
+  }
+  if (rung === "global") {
+    return { noun: SYSTEM_RUNG_TITLE, covers: SYSTEM_RUNG_COVERS };
+  }
+  return rungWords(rung);
+}
+
 /** What each rung covers, in one sentence — the ladder, said out loud (P13). */
-export function rungWords(rung: BindingRung): { noun: string; covers: string } {
+export function rungWords(rung: WorkspaceRung): {
+  noun: string;
+  covers: string;
+} {
   switch (rung) {
+    case DEFAULT_HOLDER_RUNG:
+      // Generic on purpose: the bottom rung's real words NAME ITS HOME, and
+      // only `defaultHolderRungOffer()` knows that. Anything printed beside the
+      // rung itself uses the offer's `label`/`covers`; this exists so a caller
+      // reaching for the ladder's vocabulary at this rung is never handed the
+      // user rung's words by a `default:` branch.
+      return {
+        noun: "the job's own default",
+        covers:
+          "Whoever this names runs the job wherever no binding above it answers.",
+      };
     case "global":
       return {
         noun: "the system answer",

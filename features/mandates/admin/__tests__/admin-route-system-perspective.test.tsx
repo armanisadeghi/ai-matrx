@@ -91,9 +91,13 @@ jest.mock("@/components/official/entity-ref/TextWithDoors", () => ({
  * (`fixedRung`, `initialRung`), and the bar's own rendered copy is proven on
  * the real component in the second describe below.
  */
-let bindingProps: { initialRung?: string; fixedRung?: string } | null = null;
+type BindingProbe = {
+  initialRung?: string;
+  fixedRung?: string | readonly string[];
+};
+let bindingProps: BindingProbe | null = null;
 jest.mock("@/features/bindings/OneBindingWorkspace", () => ({
-  OneBindingWorkspace: (props: { initialRung?: string; fixedRung?: string }) => {
+  OneBindingWorkspace: (props: BindingProbe) => {
     bindingProps = props;
     return <div data-testid="one-binding" />;
   },
@@ -256,10 +260,14 @@ describe("the admin route renders the SYSTEM's answer and only that", () => {
     act(() => root.unmount());
   });
 
-  it("pins the binding UI to the system rung", async () => {
+  it("pins the binding UI to the two rungs that decide for everybody, and to nothing else", async () => {
     const { root } = await renderWorkspace("admin-route");
-    expect(bindingProps?.fixedRung).toBe("global");
-    expect(bindingProps?.initialRung).toBe("global");
+    // `research_client.output_slides` has NO platform-wide binding, so the job's
+    // own default is what answers — and it is where the page opens.
+    expect(bindingProps?.fixedRung).toEqual(["system", "global"]);
+    // Never a person's or an organization's rung.
+    expect(bindingProps?.fixedRung).not.toContain("user");
+    expect(bindingProps?.fixedRung).not.toContain("org");
     act(() => root.unmount());
   });
 

@@ -65,6 +65,7 @@ import { RunConfigOverrides } from "@/features/agents/components/run-controls/Ru
 import { isJsonObject, type JsonObject } from "@/types/json";
 import {
   agentHolderOfBinding,
+  holderOfMandate,
   isFloatingBinding,
 } from "@/lib/supabase/mandateStorage";
 import { compareStoredContract } from "@/features/mandates/contract-compare";
@@ -91,6 +92,7 @@ import { useMandateInputSurface } from "@/features/mandates/input-surface";
 import type { ProvisionOffer } from "@/features/mandates/provisions";
 import {
   putMandateBinding,
+  putMandateDefaultHolder,
   removeMandateBinding,
   type BindingWriteReport,
 } from "@/features/mandates/overrides";
@@ -99,6 +101,7 @@ import { EffectiveConfigLayers } from "@/features/mandates/components/EffectiveC
 import { useGuardedRebind } from "@/features/mandates/admin/useGuardedRebind";
 import type {
   MandateBindingRowDb,
+  MandateRowDb,
   MandateWorkspaceData,
 } from "@/features/mandates/workspace/useMandateWorkspaceData";
 
@@ -112,11 +115,18 @@ import {
   rungWords,
   type BindingRung,
   type HolderDraft,
+  type WorkspaceRung,
 } from "./ScopeHolderBar";
 import {
   SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL,
   systemRungHolderIsPersonal,
 } from "./system-rung";
+import {
+  DEFAULT_HOLDER_IS_HOLDER_ONLY,
+  DEFAULT_HOLDER_PERSONAL_HOLDER_REFUSAL,
+  DEFAULT_HOLDER_RUNG,
+  defaultHolderRungOffer,
+} from "./default-holder-rung";
 import {
   applySuggestions,
   seedAutoBinds,
@@ -162,8 +172,22 @@ export interface OneBindingWorkspaceProps {
    * other rung can be reached from this screen. Additive; every existing host
    * leaves it undefined and keeps the movable control (P13/D1).
    */
-  fixedRung?: BindingRung;
+  fixedRung?: WorkspaceRung | readonly WorkspaceRung[];
   onChanged: () => void;
+}
+
+/**
+ * A host's pinned rungs as a list. One value pins; several mean "these and
+ * ONLY these" — the admin route manages the job's own default AND the
+ * platform-wide binding, and must be able to move between exactly those two
+ * without ever being offered an organization or a person.
+ */
+function pinnedRungs(
+  fixedRung: WorkspaceRung | readonly WorkspaceRung[] | undefined,
+): readonly WorkspaceRung[] | null {
+  if (!fixedRung) return null;
+  const list = typeof fixedRung === "string" ? [fixedRung] : fixedRung;
+  return list.length > 0 ? list : null;
 }
 
 /**
@@ -186,8 +210,9 @@ export function OneBindingWorkspace({
   const userId = useAppSelector(selectUserId);
   const { organizations } = useUserOrganizations();
 
-  const [rung, setRung] = useState<BindingRung>(
-    fixedRung ??
+  const pinned = pinnedRungs(fixedRung);
+  const [rung, setRung] = useState<WorkspaceRung>(
+    pinned?.[0] ??
       (initialRung === "global" && !allowGlobal ? "user" : initialRung),
   );
   const [organizationId, setOrganizationId] = useState<string | null>(
@@ -270,10 +295,10 @@ export function OneBindingWorkspace({
         setWrittenSignature(null);
       }}
       onRungChange={(nextRung, nextOrgId) => {
-        // A pinned rung cannot move. The bar offers no control at all when it
-        // is pinned, so this is a belt: no path may quietly relocate the
-        // answer this host exists to manage.
-        if (fixedRung) return;
+        // A pinned host may move only WITHIN the rungs it manages. The bar
+        // offers nothing else, so this is a belt: no path may quietly relocate
+        // the answer this host exists to manage.
+        if (pinned && !pinned.includes(nextRung)) return;
         setWriteReport(null);
         setWrittenSignature(null);
         setRung(nextRung);
@@ -282,6 +307,10 @@ export function OneBindingWorkspace({
             ? (nextOrgId ?? organizations[0]?.id ?? null)
             : null,
         );
+        // The bottom rung is not a binding, so leaving batch mode with it is
+        // not a preference to preserve: batch WRITES bindings, and standing on
+        // this rung there would be a grid that can save nothing.
+        if (nextRung === DEFAULT_HOLDER_RUNG) setMode("map");
       }}
       onChanged={onChanged}
     />
@@ -307,11 +336,11 @@ function BindingDraft({
 }: {
   data: MandateWorkspaceData;
   binding: MandateBindingRowDb | null;
-  rung: BindingRung;
+  rung: WorkspaceRung;
   organizationId: string | null;
   allowGlobal: boolean;
-  /** The one rung this host manages, when it manages exactly one. */
-  fixedRung?: BindingRung;
+  /** The rung(s) this host manages, when it manages a fixed set of them. */
+  fixedRung?: WorkspaceRung | readonly WorkspaceRung[];
   mode: BindingMode;
   onModeChange: (next: BindingMode) => void;
   /** A batch wrote rows — the single-place view is stale until it is left. */
@@ -324,7 +353,7 @@ function BindingDraft({
   onWrote: (report: BindingWriteReport, signature: string) => void;
   /** The draft moved away from what was written — the report stops being true. */
   onDraftMoved: () => void;
-  onRungChange: (rung: BindingRung, organizationId: string | null) => void;
+  onRungChange: (rung: WorkspaceRung, organizationId: string | null) => void;
   onChanged: () => void;
 }) {
   const dispatch = useAppDispatch();
@@ -340,11 +369,50 @@ function BindingDraft({
     [organizations],
   );
   const canBindGlobal = allowGlobal && isSuperAdmin;
+  const pinnedHere = pinnedRungs(fixedRung);
+
+  /**
+   * 🚨 THE BOTTOM RUNG — the mandate's own default holder (FIX-R3/W3).
+   *
+   * The HOME organization is the mandate's own `organization_id`, never the
+   * caller's active workspace: the server reads the home off the row and
+   * decides the scope from it, so a screen that asked the active org would
+   * offer a control for the wrong organization's floor.
+   *
+   * The ROLE comes from the same `OrganizationWithRole` list `canBindThisOrg`
+   * reads, so the screen knows before the click — and if the client rule and
+   * the server ever disagree, the server refuses in its own words and those
+   * words are printed rather than swallowed.
+   */
+  const homeOrganizationId = data.mandate.organization_id ?? null;
+  const defaultHolderOffer = useMemo(
+    () =>
+      defaultHolderRungOffer({
+        homeOrganizationId,
+        homeOrganizationName:
+          organizations.find((o) => o.id === homeOrganizationId)?.name ?? null,
+        homeOrganizationRole:
+          organizations.find((o) => o.id === homeOrganizationId)?.role ?? null,
+        isSuperAdmin,
+      }),
+    [homeOrganizationId, organizations, isSuperAdmin],
+  );
+  const onDefaultHolderRung = rung === DEFAULT_HOLDER_RUNG;
 
   // ── The holder draft — seeded once, from the row this instance is keyed to ─
-  const [holder, setHolder] = useState<HolderDraft>(() =>
-    holderDraftOf(binding),
+  //
+  // At the BOTTOM RUNG there is no binding row: the answer lives on the mandate
+  // definition itself, so the draft is seeded from `default_holder_*` — the
+  // thing this rung actually edits. Seeding it from `null` would show an empty
+  // holder cell on a job that already has a default.
+  const seedHolder = useMemo<HolderDraft>(
+    () =>
+      onDefaultHolderRung
+        ? defaultHolderDraftOf(data.mandate)
+        : holderDraftOf(binding),
+    [onDefaultHolderRung, data.mandate, binding],
   );
+  const [holder, setHolder] = useState<HolderDraft>(() => seedHolder);
   const [draftMap, setDraftMap] = useState<ConsumptionMap>(
     () => parseBindingWave1(binding).consumptionMap,
   );
@@ -427,6 +495,11 @@ function BindingDraft({
   // defect this repo has fixed twice already.
   const seedKey = `${holder.kind}:${holder.agentId ?? holder.workflowId ?? ""}|${holderInputs.targets.map((t) => t.name).join(",")}`;
   if (
+    // 🚨 NEVER AT THE BOTTOM RUNG. The definition default has no
+    // `consumption_map` column, so a seeded map here would be invisible work
+    // that the door cannot receive — and it would make the draft dirty against
+    // a baseline nothing can ever save.
+    !onDefaultHolderRung &&
     holderInputs.status === "ready" &&
     holderInputs.targets.length > 0 &&
     offeredValues.length > 0 &&
@@ -674,8 +747,30 @@ function BindingDraft({
       builtinAgents.map((a) => a.id),
     );
 
+  /**
+   * Why Save cannot act AT THE BOTTOM RUNG — checked before the binding
+   * ladder's own refusals, because none of those apply to a rung that is not a
+   * binding. The server is still the authority (403 / 409) and its sentence is
+   * printed when it disagrees.
+   */
+  const defaultHolderRefusal = !onDefaultHolderRung
+    ? null
+    : !holderChosen
+      ? "Choose an agent or a workflow first — this default names who runs the job."
+      : !defaultHolderOffer.offered
+        ? defaultHolderOffer.refusal
+        : defaultHolderOffer.systemHomed && systemHolderIsPersonal
+          ? DEFAULT_HOLDER_PERSONAL_HOLDER_REFUSAL
+          : holder.kind === "agent" && !verdict.passed
+            ? verdict.checking
+              ? "Checking whether this agent meets the mandate…"
+              : "This agent does not meet the mandate yet — see the problems above."
+            : null;
+
   /** Why Save cannot act — adjacent to the button, never a transient toast. */
-  const saveRefusal = !holderChosen
+  const saveRefusal = onDefaultHolderRung
+    ? defaultHolderRefusal
+    : !holderChosen
     ? "Choose an agent or a workflow first — a binding names who runs the job."
     : !rungReady
       ? "Pick the organization this answer is for."
@@ -720,6 +815,48 @@ function BindingDraft({
    */
   async function writeBinding(bindAgentId?: string | null) {
     const overriding = bindAgentId != null && bindAgentId !== agentId;
+    // ── THE BOTTOM RUNG GOES THROUGH ITS OWN DOOR, WITH THE HOLDER ALONE ────
+    //
+    // 🚨 `mandate.definition` has no `consumption_map`, no `config_overrides`
+    // and no `auto_run`. `putMandateDefaultHolder` carries the holder and
+    // nothing else by construction, so this path cannot smuggle a map the
+    // definition could never store — and the screen above it does not offer
+    // one. The server's `applies_in` is read back and printed verbatim, exactly
+    // as `BindingResult.applies_in` is.
+    if (onDefaultHolderRung) {
+      const writingAgentId = overriding ? bindAgentId : agentId;
+      const result = await putMandateDefaultHolder(
+        dispatch,
+        data.mandate.mandate_key,
+        holder.kind === "workflow"
+          ? {
+              holderType: "workflow",
+              agentId: null,
+              agentVersionId: null,
+              useLatest: true,
+              holderId: holder.workflowId,
+              holderVersionId: null,
+            }
+          : {
+              holderType: "agent",
+              agentId: overriding || holder.useLatest ? writingAgentId : null,
+              agentVersionId:
+                overriding || holder.useLatest ? null : holder.agentVersionId,
+              // An override always binds the agent itself (latest): the twin
+              // has its own version history and this draft's pin does not name
+              // it.
+              useLatest: overriding ? true : holder.useLatest,
+              holderId: null,
+              holderVersionId: null,
+            },
+      );
+      const report: BindingWriteReport = {
+        notes: [],
+        appliesIn: result.appliesIn,
+      };
+      onWrote(report, draftSignature);
+      return report;
+    }
     const captured = overridesReady
       ? selectSettingsOverridesForApi(overridesId)(store.getState())
       : undefined;
@@ -779,10 +916,10 @@ function BindingDraft({
   function announceSaved(report: BindingWriteReport | null) {
     const notes = report?.notes ?? [];
     if (notes.length === 0) {
-      toast.success(savedWords(rung));
+      toast.success(savedWords(rung, defaultHolderOffer.label));
       return;
     }
-    toast.warning(savedWords(rung), {
+    toast.warning(savedWords(rung, defaultHolderOffer.label), {
       description: notes.join(" "),
       duration: 12_000,
     });
@@ -838,7 +975,14 @@ function BindingDraft({
       toast.error(saveRefusal);
       return;
     }
-    if (rung === "global" && holder.kind === "agent" && agentId) {
+    // The guard fires wherever the write decides for EVERY user on the platform
+    // — the `global` binding rung, and a SYSTEM-homed mandate's own default.
+    // Same blast radius, same audit; an org-homed default is a different scope
+    // and the server's containment predicate is what judges it.
+    const platformWideWrite =
+      rung === "global" ||
+      (onDefaultHolderRung && defaultHolderOffer.systemHomed);
+    if (platformWideWrite && holder.kind === "agent" && agentId) {
       setGlobalGuardOpen(true);
       return;
     }
@@ -857,7 +1001,7 @@ function BindingDraft({
             data.agentsById[writingAgentId]?.name ?? "the selected agent",
           versionId: bindAgentId ? null : holder.useLatest ? null : holder.agentVersionId,
           useLatest: bindAgentId ? true : holder.useLatest,
-          successMessage: savedWords(rung),
+          successMessage: savedWords(rung, defaultHolderOffer.label),
         });
         return;
       }
@@ -926,7 +1070,7 @@ function BindingDraft({
    * one may be pending, and the cell says so while it is.
    */
   const [pendingRung, setPendingRung] = useState<{
-    rung: BindingRung;
+    rung: WorkspaceRung;
     organizationId: string | null;
   } | null>(null);
 
@@ -980,8 +1124,11 @@ function BindingDraft({
     withoutUnpicked(draftMap),
     autoRun,
   ]);
+  // At the bottom rung the baseline is the mandate definition's own stored
+  // default, not a binding row that does not exist — otherwise every visit to
+  // this rung would open dirty against an empty holder.
   const storedSignature = JSON.stringify([
-    holderDraftOf(binding),
+    seedHolder,
     storedDraft.consumptionMap,
     storedDraft.autoRun,
   ]);
@@ -1007,7 +1154,7 @@ function BindingDraft({
   }, [draftSignature, writtenSignature, writeReport]);
 
   async function requestRungChange(
-    nextRung: BindingRung,
+    nextRung: WorkspaceRung,
     nextOrgId: string | null,
   ) {
     if (nextRung === rung && (nextRung !== "org" || nextOrgId === organizationId)) {
@@ -1188,6 +1335,15 @@ function BindingDraft({
         organizationId={organizationId}
         allowGlobal={allowGlobal}
         fixedRung={fixedRung}
+        // THE FOURTH RUNG — offered to whoever may actually set it, and
+        // explained (with who may, and what this reader can do instead) to
+        // everybody else. A pinned host is shown it only when it is one of the
+        // rungs that host actually manages.
+        defaultHolderOffer={
+          pinnedHere && !pinnedHere.includes(DEFAULT_HOLDER_RUNG)
+            ? null
+            : defaultHolderOffer
+        }
         onRungChange={(nextRung, nextOrgId) =>
           void requestRungChange(nextRung, nextOrgId)
         }
@@ -1227,10 +1383,16 @@ function BindingDraft({
       />
 
       {/* ONE SCREEN, TWO MODES (P17). The rung and the holder above hold still;
-          only the shape of the match changes. */}
-      <ModeToggle mode={mode} onChange={onModeChange} disabled={disabled} />
+          only the shape of the match changes.
+          🚨 ABSENT AT THE BOTTOM RUNG, never disabled-looking: batch mode
+          writes BINDINGS across many jobs, and the mandate's own default is not
+          a binding. A toggle that cannot mean anything here is exactly the dead
+          control the fourth law forbids. */}
+      {onDefaultHolderRung ? null : (
+        <ModeToggle mode={mode} onChange={onModeChange} disabled={disabled} />
+      )}
 
-      {mode === "batch" ? (
+      {mode === "batch" && !onDefaultHolderRung ? (
         <BatchMode
           rung={rung}
           organizationId={organizationId}
@@ -1295,6 +1457,20 @@ function BindingDraft({
             </div>
           ) : null}
 
+          {/* 🚨 THE BOTTOM RUNG IS HOLDER-ONLY, AND THE SCREEN SAYS SO
+          (FIX-R3/W3). `mandate.definition` has no `consumption_map`, no
+          `config_overrides` and no `auto_run` — those columns are on
+          `agent.mandate_binding`. So the whole map/settings/auto-run half is
+          ABSENT here and one honest sentence stands in its place. Rendering the
+          editors disabled, or rendering them live and dropping their contents
+          at the door, are both the same defect: a control that appears to save
+          something the door never receives. */}
+          {onDefaultHolderRung ? (
+            <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
+              {DEFAULT_HOLDER_IS_HOLDER_ONLY}
+            </p>
+          ) : (
+          <>
           {/* TWO SIDES AND A MIDDLE — both inventories permanently open (P1).
           🚨 CONTAINER query, not a viewport one. This workspace is hosted in a
           3xl reading column, in the admin shell, and inside a draggable window
@@ -1553,6 +1729,8 @@ function BindingDraft({
               disabled={disabled}
             />
           ) : null}
+          </>
+          )}
 
           {/* 🚨 G6 — WHAT THE LOAD THREW AWAY, ON THE SCREEN. The parse drops
           stored sources it cannot feed an input with (a legacy `surface_value`,
@@ -1623,9 +1801,13 @@ function BindingDraft({
             >
               {busy
                 ? "Saving…"
-                : binding
-                  ? "Save"
-                  : `Set ${rungWords(rung).noun}`}
+                : onDefaultHolderRung
+                  ? seedHolder.agentId || seedHolder.workflowId
+                    ? "Save"
+                    : `Set ${defaultHolderOffer.label.toLowerCase()}`
+                  : binding
+                    ? "Save"
+                    : `Set ${rungWords(rung).noun}`}
             </Button>
           </div>
         </>
@@ -1759,10 +1941,14 @@ function withoutUnpicked(map: ConsumptionMap): ConsumptionMap {
 
 function findBinding(
   bindings: readonly MandateBindingRowDb[],
-  rung: BindingRung,
+  rung: WorkspaceRung,
   userId: string | null,
   organizationId: string | null,
 ): MandateBindingRowDb | null {
+  // The BOTTOM RUNG is not a binding at all — it is the mandate definition's
+  // own `default_holder_*`. There is no row to find, and answering with the
+  // user's row would edit the wrong rung.
+  if (rung === DEFAULT_HOLDER_RUNG) return null;
   if (rung === "global") {
     return bindings.find((b) => b.principal_type === "global") ?? null;
   }
@@ -1794,6 +1980,28 @@ function holderDraftOf(binding: MandateBindingRowDb | null): HolderDraft {
   };
 }
 
+/**
+ * THE BOTTOM RUNG'S CURRENT ANSWER — the mandate definition's own default
+ * holder, read through the one accessor (`holderOfMandate`) so no screen names
+ * `default_holder_*` a second time.
+ *
+ * 🚨 A pinned default stores BOTH the agent's definition id and the version:
+ * `mandate._rungs` reads `chose_holder = (default_holder_id IS NOT NULL)`, so a
+ * version-only default would return a bottom rung that names nobody. `useLatest`
+ * is therefore derived from the VERSION being absent, never from a stored flag.
+ */
+function defaultHolderDraftOf(mandate: MandateRowDb): HolderDraft {
+  const held = holderOfMandate(mandate);
+  const isWorkflow = held.holderType === "workflow";
+  return {
+    kind: isWorkflow ? "workflow" : "agent",
+    agentId: isWorkflow ? null : held.holderId,
+    agentVersionId: isWorkflow ? null : held.versionId,
+    useLatest: held.versionId === null,
+    workflowId: isWorkflow ? held.holderId : null,
+  };
+}
+
 /** A pinned version resolves to its master for everything the UI reasons about. */
 function effectiveAgentId(
   holder: HolderDraft,
@@ -1807,8 +2015,11 @@ function effectiveAgentId(
   return null;
 }
 
-function savedWords(rung: BindingRung): string {
+function savedWords(rung: WorkspaceRung, defaultHolderLabel?: string): string {
   switch (rung) {
+    case DEFAULT_HOLDER_RUNG:
+      // Named by its HOME, because "the default" alone does not say whose.
+      return `Saved — ${defaultHolderLabel ?? "the job's own default"} now names who runs this job.`;
     case "global":
       return "Saved — everybody gets this holder now.";
     case "org":
@@ -1824,7 +2035,7 @@ function savedWords(rung: BindingRung): string {
  */
 function ladderLine(
   bindings: readonly MandateBindingRowDb[],
-  rung: BindingRung,
+  rung: WorkspaceRung,
   userId: string | null,
   organizationId: string | null,
 ): string {

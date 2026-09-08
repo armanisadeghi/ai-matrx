@@ -15,12 +15,23 @@
 // an agent arriving from an older draft, from the API, or from the guard dialog
 // could still be written as the answer every user on the platform gets.
 
-/** The bar's own statement of the rung, where a rung SELECTOR must not exist. */
-export const SYSTEM_RUNG_TITLE = "System — decides for every user";
+/**
+ * The bar's own statement of the rung, where a rung SELECTOR must not exist.
+ *
+ * 🔶 A DECLARED DEVIATION FROM THE BRIEF'S WORDING, and why. FIX-R4 was written
+ * to say "System — decides for every user"; FIX-R3 landed the mandate's OWN
+ * default holder as a fourth rung in the same files, correctly labelled "System
+ * default". Two rungs called "System" on one screen is the very confusion this
+ * lane exists to remove, so the word survives and the noun is made specific:
+ * "decides for every user" is verbatim, and nothing can now be mistaken for the
+ * job's own default. Recorded on the register as FIX-R4's deviation.
+ */
+export const SYSTEM_RUNG_TITLE =
+  "System-wide binding — decides for every user";
 
 /** What the system rung covers, said once. */
 export const SYSTEM_RUNG_COVERS =
-  "Everybody on the platform runs this answer unless something below it is set elsewhere.";
+  "Everybody on the platform runs this, unless their organization or they themselves override it. Unlike the job's own default, it can also carry the mapping, the settings and the auto-run promise.";
 
 /** Why only a system agent may hold it — printed beside the picker. */
 export const SYSTEM_RUNG_HOLDER_RULE =

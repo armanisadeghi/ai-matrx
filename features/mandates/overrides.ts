@@ -26,6 +26,7 @@ import { parseCallApiError } from "@/lib/api/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
+import type { paths } from "@/types/python-generated/api-types";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import { invalidateMandateCache } from "./service";
 import type { ConsumptionMap } from "./provision-shapes";
@@ -535,6 +536,146 @@ export async function putMandateBinding(
   if (result.error) throw new Error(bindGateMessage(result.error));
   invalidateMandateCache(mandateKey);
   return parseBindingWriteReport(result.data);
+}
+
+// ── THE BOTTOM RUNG — the mandate's OWN default holder ──────────────────────
+//
+// 🚨 THE FOURTH RUNG ARRIVES AT THE SAME KIND OF DOOR (FIX-R3/W3, 2026-09-08).
+// A mandate's bottom rung is `mandate.definition.default_holder_*`, which
+// `mandate._rungs` returns as the `system` rung; per FIX-R1 its principal is
+// the mandate's HOME organization. Until now there was NO server door for it
+// and NO client seam: the admin console wrote `mandate.definition` straight
+// through PostgREST, gated only by RLS — which gives an organization's own
+// admins nothing to write with on a mandate their organization homes.
+//
+// This is that seam, and it is the ONLY one: nothing on the binding path may
+// write `default_holder_*` directly. It reuses `bindGateMessage` verbatim, so
+// the four refusals this door can answer with (403 platform-admin-required,
+// 403 org-admin-required, 409 containment, 422 contract/ambiguous holder)
+// reach the screen as the sentences the server authored — the same courtesy the
+// binding door already pays.
+
+/**
+ * 🚨 LOCAL PATH LITERAL — delete the cast on the next api-types regeneration.
+ *
+ * `types/python-generated/api-types.ts` is regenerated against a RUNNING server
+ * and does not carry this route yet (the aidream half ships in parallel). The
+ * `as keyof paths` cast is the repo's own precedent for exactly this window
+ * (`UNDERSTUDY_REFRESH_PATH`, `EXPERT_CORPUS_PATH`); it becomes a plain
+ * `satisfies keyof paths` once `pnpm sync-types` picks the route up.
+ */
+export const MANDATE_DEFAULT_HOLDER_PATH =
+  "/mandates/{mandate_key}/default-holder" as keyof paths;
+
+/** The holder half of a binding write — ONE holder shape for all four rungs. */
+export interface MandateDefaultHolderInput {
+  holderType: "agent" | "workflow";
+  agentId: string | null;
+  agentVersionId: string | null;
+  useLatest: boolean;
+  holderId: string | null;
+  holderVersionId: string | null;
+}
+
+/**
+ * What the bottom rung now says, in the SERVER'S words
+ * (`MandateDefaultHolderResult`).
+ *
+ * `appliesIn` is the server's own sentence about where this default answers,
+ * printed verbatim exactly as `BindingResult.applies_in` is — and `null` when
+ * the server said nothing, never a client-invented scope sentence. This rung's
+ * scope is the least obvious of the four: the row's `organization_id` IS the
+ * scope here, which is the opposite of what it means on a user binding.
+ */
+export interface DefaultHolderWriteReport {
+  /** The mandate's HOME organization — the scope this write decided for. */
+  homeOrganizationId: string | null;
+  holderType: "agent" | "workflow";
+  holderId: string | null;
+  holderVersionId: string | null;
+  useLatest: boolean | null;
+  appliesIn: string | null;
+}
+
+/**
+ * Narrow the response at the client seam rather than trusting generated types
+ * that do not carry this route yet — the `parseDroppedRungs` precedent. It can
+ * become a plain read after the next regeneration; until then a field the
+ * server did not send reads as absent rather than as an invented promise.
+ */
+export function parseDefaultHolderResult(
+  raw: unknown,
+): DefaultHolderWriteReport {
+  const record = isJsonObject(raw) ? raw : {};
+  const appliesIn =
+    typeof record.applies_in === "string" && record.applies_in.trim().length > 0
+      ? record.applies_in
+      : null;
+  return {
+    homeOrganizationId:
+      typeof record.home_organization_id === "string" &&
+      record.home_organization_id
+        ? record.home_organization_id
+        : null,
+    holderType: record.holder_type === "workflow" ? "workflow" : "agent",
+    holderId: typeof record.holder_id === "string" ? record.holder_id : null,
+    holderVersionId:
+      typeof record.holder_version_id === "string"
+        ? record.holder_version_id
+        : null,
+    useLatest:
+      typeof record.use_latest === "boolean" ? record.use_latest : null,
+    appliesIn,
+  };
+}
+
+/**
+ * Set the mandate's own default holder — the rung below every binding.
+ *
+ * 🚨 HOLDER ONLY, BY CONSTRUCTION. The definition default has no
+ * `consumption_map`, no `config_overrides` and no `auto_run` — those columns
+ * live on `agent.mandate_binding`. The body below carries the holder and
+ * nothing else, so a screen standing on this rung cannot appear to save
+ * something the door never receives.
+ *
+ * 🚨 `organization_id` IS NOT SENT AND WOULD DECIDE NOTHING IF IT WERE. The
+ * scope of this write is the mandate's HOME organization, read off the row
+ * server-side. `callApi` still injects the caller's ACTIVE organization as the
+ * request context (that is what the transport needs); no `scopeOverrides` is
+ * set here, because the caller's active workspace must never pick which
+ * organization's floor is being rebound.
+ */
+export async function putMandateDefaultHolder(
+  dispatch: AppDispatch,
+  mandateKey: string,
+  input: MandateDefaultHolderInput,
+): Promise<DefaultHolderWriteReport> {
+  const isWorkflow = input.holderType === "workflow";
+  const result = await dispatch(
+    callApi({
+      path: MANDATE_DEFAULT_HOLDER_PATH,
+      method: "PUT",
+      pathParams: { mandate_key: mandateKey },
+      body: {
+        holder_type: input.holderType,
+        // ONE OF TWO, NEVER BOTH — the door answers 422
+        // `mandate_binding_ambiguous_holder` when both arrive, and the same
+        // rule the binding door states: the agent (always its latest version)
+        // OR one pinned version.
+        agent_id: isWorkflow || !input.useLatest ? null : input.agentId,
+        agent_version_id:
+          isWorkflow || input.useLatest ? null : input.agentVersionId,
+        holder_id: isWorkflow ? input.holderId : null,
+        holder_version_id: isWorkflow ? input.holderVersionId : null,
+        use_latest: input.useLatest,
+      } as never,
+    }),
+  );
+  // The SAME refusal reader the binding door uses — a second one would be a
+  // second source of truth about what the server said.
+  if (result.error) throw new Error(bindGateMessage(result.error));
+  invalidateMandateCache(mandateKey);
+  return parseDefaultHolderResult(result.data);
 }
 
 /** Remove the principal's binding — back to the layer below (org default or
