@@ -496,3 +496,83 @@ describe("the one-binding UI's refusals speak the person's words, not the machin
     expect(looksLikeCopy("features/mandates/provision-shapes.ts")).toBe(false);
   });
 });
+
+/**
+ * ── NO SCREEN PRINTS AN ORGANIZATION'S ID AT A PERSON (FIX-R6/F2) ────────────
+ *
+ * A walker on production v0.4.1722 read two sentences that named an
+ * organization by uuid — one from the server's resolution note, one from the
+ * containment refusal — and could act on neither. aidream now names the
+ * organization by its display name (`services/mandates/org_names.py`), and this
+ * is the client half of the same class: a mandate screen must not build a
+ * sentence that interpolates an organization id, and must not carry a literal
+ * uuid in copy either.
+ *
+ * `ScopeHolderBar`'s `appliesInResolved` is the belt on the other side — it
+ * substitutes names into a SERVER sentence that still carries an id — and it is
+ * a display resolution of somebody else's words, not a sentence this repo
+ * builds. It is unaffected by this rule because it interpolates nothing.
+ */
+const ORG_ID_INTERPOLATION =
+  /\$\{[^}]*(?:organization_?id|organisation_?id|\borgId\b|home_?organization(?!_?name))[^}]*\}/i;
+const LITERAL_UUID =
+  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+/**
+ * A SENTENCE ABOUT AN ORGANIZATION — not a cache key that happens to contain an
+ * org id, and not a `[mandates] …` console line (the repo's diagnostic
+ * convention, written for whoever opens the console and legitimately naming
+ * records by id). The rule is about what a PERSON reads on a screen.
+ */
+function isOrgSentence(text: string): boolean {
+  // 🚨 A KNOWN, NAMED BLIND SPOT. `copyStringsOf`'s literal scanner is a regex,
+  // and an apostrophe inside a double-quoted sentence ("the job's own default")
+  // opens a phantom single-quoted run that swallows the following lines. Those
+  // mis-parses span newlines; a real one-sentence screen string does not, so
+  // multi-line captures are skipped rather than reported as findings nobody can
+  // act on. A genuine sentence written across source lines is therefore NOT
+  // swept by this rule — fix the scanner if that day comes.
+  if (text.includes("\n")) return false;
+  if (/^\[[a-z-]+\]/i.test(text.trim())) return false;
+  if (!/organi[sz]ation/i.test(text)) return false;
+  return text.split(/\s+/).filter((w) => /^[a-z']{2,}$/i.test(w)).length >= 5;
+}
+
+describe("no mandate screen prints an organization id at a person", () => {
+  it("sweeps every rendered sentence for an interpolated org id or a literal uuid", () => {
+    const offenders: string[] = [];
+    for (const file of SWEPT_TREES.flatMap(sourceFilesUnder)) {
+      const source = readFileSync(file, "utf8");
+      for (const { line, text } of copyStringsOf(source)) {
+        if (!looksLikeCopy(text)) continue;
+        if (!isOrgSentence(text)) continue;
+        if (!ORG_ID_INTERPOLATION.test(text) && !LITERAL_UUID.test(text)) {
+          continue;
+        }
+        offenders.push(`${relative(REPO_ROOT, file)}:${line} — "${text}"`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("would catch the two sentences the walker actually read", () => {
+    // Kept executable, in the shapes a client would have built them.
+    const asClientCopy = [
+      "the org rung for ${organizationId} (no binding for this org)",
+      "this job is homed in organization ${homeOrganizationId}, so its default decides for EVERY member",
+      "this job is homed in organization 2643e470-b275-47f3-95f3-ae275ad3ca47, so its default decides",
+    ];
+    for (const text of asClientCopy) {
+      expect(looksLikeCopy(text)).toBe(true);
+      expect(isOrgSentence(text)).toBe(true);
+      expect(
+        ORG_ID_INTERPOLATION.test(text) || LITERAL_UUID.test(text),
+      ).toBe(true);
+    }
+    // And it does NOT fire on the honest replacement.
+    const fixed =
+      "this job is homed in ${homeOrganizationName}, so its default decides for EVERY member";
+    expect(ORG_ID_INTERPOLATION.test(fixed)).toBe(false);
+    expect(LITERAL_UUID.test(fixed)).toBe(false);
+  });
+});
