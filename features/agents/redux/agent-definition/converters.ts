@@ -42,11 +42,16 @@ import type { MatrxDirectivesConfig } from "@/features/agents/types/matrx-direct
 import { isJsonObject } from "@/types/json";
 import type {
   AgentDefinition,
+  AgentDefinitionDataIssue,
   AgentType,
   AgentVersionSnapshot,
   ModelTier,
   ModelTiers,
 } from "../../types/agent-definition.types";
+import {
+  recordAgentDataIssue,
+  recoverAgentDataField,
+} from "./data-issue-recovery";
 
 // ---------------------------------------------------------------------------
 // settings sanitizer — settings holds ONLY server-consumed model params.
@@ -239,8 +244,82 @@ function parseModelTiersJson(raw: unknown): ModelTiers | null {
  * Closed JSONB contracts are parsed here; their keys are never case-converted.
  */
 export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
-  // Tools come from the authoritative columns — never from tool_config.
   const ingress = { agentId: row.id, relation: "agent.definition" };
+  const dataIssues: AgentDefinitionDataIssue[] = [];
+  const recover = <T>(
+    field: string,
+    raw: unknown,
+    parse: () => T,
+    fallback: () => T,
+    recovery: string,
+  ): T =>
+    recoverAgentDataField({
+      context: ingress,
+      field,
+      raw,
+      parse,
+      fallback,
+      recovery,
+      issues: dataIssues,
+    });
+
+  // Every independently-authored JSON field crosses its own recovery boundary.
+  // One malformed sibling therefore cannot erase the rest of the definition or
+  // throw from a Server Component render.
+  const messages = recover(
+    "messages",
+    row.messages,
+    () => parseAgentMessages(row.messages),
+    () => [],
+    "Messages were omitted from this view. Re-save them in the agent builder after correcting the stored shape.",
+  );
+  const variableDefinitions = recover(
+    "variable_definitions",
+    row.variable_definitions,
+    () => parseAgentVariableDefinitions(row.variable_definitions),
+    () => null,
+    "Variable definitions were omitted from this view. Re-save them in the agent builder after correcting the stored shape.",
+  );
+  const modelTiers = recover(
+    "model_tiers",
+    row.model_tiers,
+    () => parseModelTiersJson(row.model_tiers),
+    () => null,
+    "Model tiers were disabled for this view. Re-save the model configuration after correcting the stored shape.",
+  );
+  const outputSchema = recover(
+    "output_schema",
+    row.output_schema,
+    () =>
+      parseAgentOutputSchema(row.output_schema, (notice) =>
+        recordAgentDataIssue({
+          context: ingress,
+          field: "output_schema",
+          message: notice.message,
+          recovery: notice.recovery,
+          offending: row.output_schema,
+          issues: dataIssues,
+        }),
+      ),
+    () => null,
+    "Structured output was disabled for this view. Correct and re-save the Output Schema before running the agent.",
+  );
+  const matrxDirectives = recover(
+    "matrx_actions",
+    row.matrx_actions,
+    () => parseMatrxDirectives(row.matrx_actions),
+    () => ({}),
+    "Matrx Actions were disabled for this view. Re-save them after correcting the stored shape.",
+  );
+  const uiGates = recover(
+    "ui_gates",
+    row.ui_gates,
+    () => parseUiGates(row.ui_gates),
+    () => ({}),
+    "Invalid UI capability gates were disabled for this view. Re-save them after correcting the stored shape.",
+  );
+
+  // Tools come from the authoritative columns — never from tool_config.
   const tools = row.tools ?? [];
   const customTools = parseCustomTools(row.custom_tools, ingress);
 
@@ -264,13 +343,17 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     isActive: row.is_active,
     isArchived: row.is_archived,
     isFavorite: row.is_favorite,
-    agentType: parseAgentType(row.agent_type),
+    agentType: recover(
+      "agent_type",
+      row.agent_type,
+      () => parseAgentType(row.agent_type),
+      () => "user",
+      'The record was treated as a personal agent (the least-privileged fallback). Correct its agent_type to "user" or "builtin".',
+    ),
 
     modelId: row.model_id,
-    messages: parseAgentMessages(row.messages),
-    variableDefinitions: parseAgentVariableDefinitions(
-      row.variable_definitions,
-    ),
+    messages,
+    variableDefinitions,
     settings: parseAgentSettings(row.settings, ingress),
     tools,
 
@@ -278,13 +361,13 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     autoContextDisabled: row.auto_context_disabled === true,
     inputKind: row.input_kind ?? null,
 
-    modelTiers: parseModelTiersJson(row.model_tiers),
-    outputSchema: parseAgentOutputSchema(row.output_schema),
+    modelTiers,
+    outputSchema,
     customTools,
     autoToolsDisabled,
     skillConfig,
-    uiGates: parseUiGates(row.ui_gates),
-    matrxDirectives: parseMatrxDirectives(row.matrx_actions),
+    uiGates,
+    matrxDirectives,
     mcpServers: row.mcp_servers ?? [],
 
     createdBy: row.created_by,
@@ -314,6 +397,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     // pass it through.
     defaultRagBoost: row.default_rag_boost ?? 0,
     ragAwarenessMode: row.rag_awareness_mode ?? "none",
+    dataIssues,
   };
 }
 
@@ -503,7 +587,7 @@ export function versionSnapshotRowToAgentDefinition(
     changedAt: row.changed_at,
     changeNote: row.change_note,
 
-    agentType: parseAgentType(row.agent_type),
+    agentType: row.agent_type === "builtin" ? "builtin" : "user",
     name: row.name,
     description: row.description,
     category: row.category,
@@ -528,13 +612,13 @@ export function versionSnapshotRowToAgentDefinition(
     contextPolicies: row.context_policies ?? [],
     autoContextDisabled: row.auto_context_disabled === true,
     inputKind: row.input_kind ?? null,
-    modelTiers: parseModelTiersJson(row.model_tiers),
+    modelTiers: row.model_tiers,
     outputSchema: row.output_schema,
     customTools: row.custom_tools ?? [],
     autoToolsDisabled: parseAgentAutoToolsDisabled(row.tool_config),
     skillConfig: parseSkillConfig(row.skill_config),
     uiGates: parseUiGates(row.ui_gates),
-    matrxDirectives: parseMatrxDirectives(row.matrx_actions),
+    matrxDirectives: row.matrx_actions,
     mcpServers: row.mcp_servers ?? [],
 
     isOwner: null,
@@ -542,5 +626,6 @@ export function versionSnapshotRowToAgentDefinition(
     sharedByEmail: null,
     defaultRagBoost: row.default_rag_boost,
     ragAwarenessMode: row.rag_awareness_mode,
+    dataIssues: row.data_issues ?? [],
   };
 }

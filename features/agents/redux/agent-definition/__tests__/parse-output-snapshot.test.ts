@@ -113,10 +113,34 @@ describe("parseAgentOutputSchema", () => {
     );
   });
 
-  it("rejects an invalid envelope name", () => {
-    expect(() =>
-      parseAgentOutputSchema({ name: "contains spaces", schema: {} }),
-    ).toThrow("output_schema.name");
+  it("recovers an invalid envelope name without losing its schema", () => {
+    const notices: Array<{ message: string; recovery: string }> = [];
+
+    expect(
+      parseAgentOutputSchema(
+        { name: "contains spaces", schema: { type: "string" } },
+        (notice) => notices.push(notice),
+      ),
+    ).toEqual({ name: "structured_output", schema: { type: "string" } });
+    expect(notices).toHaveLength(1);
+  });
+
+  it("lifts a bare JSON Schema into the editor envelope", () => {
+    const notices: Array<{ message: string; recovery: string }> = [];
+
+    expect(
+      parseAgentOutputSchema(
+        { type: "object", properties: { answer: { type: "string" } } },
+        (notice) => notices.push(notice),
+      ),
+    ).toEqual({
+      name: "structured_output",
+      schema: {
+        type: "object",
+        properties: { answer: { type: "string" } },
+      },
+    });
+    expect(notices).toHaveLength(1);
   });
 });
 
@@ -126,6 +150,7 @@ describe("parseAgentVersionSnapshot", () => {
 
     expect(parseAgentVersionSnapshot(raw)).toEqual({
       ...raw,
+      data_issues: [],
       // The column's `'{}'` default IS the empty config, not a parse failure.
       skill_config: {
         included: [],

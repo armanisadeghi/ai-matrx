@@ -23,6 +23,7 @@
 
 import type {
   AgentDefinition,
+  AgentDefinitionDataIssue,
   AgentVersionSnapshot,
   ModelTier,
   ModelTiers,
@@ -39,8 +40,14 @@ import {
   parseAgentContextPolicies,
   parseAgentSettings,
 } from "./parse-settings-context";
+import { recordAgentDataIssue } from "./data-issue-recovery";
 
 const OUTPUT_SCHEMA_NAME = /^[a-zA-Z0-9_-]{1,64}$/;
+
+export interface AgentOutputSchemaRecovery {
+  message: string;
+  recovery: string;
+}
 
 const JSON_SCHEMA_TYPES = new Set([
   "string",
@@ -261,11 +268,42 @@ function parseSchemaNode(value: unknown, path: string): SchemaNode {
 /** Parse the nullable `agent.definition.output_schema` JSON envelope. */
 export function parseAgentOutputSchema(
   raw: unknown,
+  onRecovery?: (notice: AgentOutputSchemaRecovery) => void,
 ): AgentDefinition["outputSchema"] {
   if (raw === null) return null;
   if (!isRecord(raw)) fail("output_schema", "null or an object");
-  if (typeof raw.name !== "string" || !OUTPUT_SCHEMA_NAME.test(raw.name)) {
-    fail("output_schema.name", "1-64 letters, numbers, underscores, or dashes");
+
+  // The server execution boundary intentionally accepts BOTH stored forms:
+  //   1. provider envelope: { name, schema, strict? }
+  //   2. bare JSON Schema:  { type, properties, required, ... }
+  // `matrx_ai.agents.output.resolve_output_schema` and
+  // `matrx_ai.kinds.agent_output_contract` both unwrap either form. Refusing
+  // form 2 here took every route that hydrated one of 209 live agents down.
+  // Lift it losslessly into the frontend's editor envelope and keep the
+  // recovery visible to the admin rather than throwing during RSC render.
+  const hasSchemaEnvelope = Object.prototype.hasOwnProperty.call(raw, "schema");
+  if (!hasSchemaEnvelope) {
+    const schema = parseSchemaNode(raw, "output_schema");
+    onRecovery?.({
+      message: "output_schema is stored as a bare JSON Schema",
+      recovery:
+        'Read it losslessly as { name: "structured_output", schema: <stored value> }. Re-save the Output Schema to normalize the row.',
+    });
+    return { name: "structured_output", schema };
+  }
+
+  const rawName = raw.name;
+  const name =
+    typeof rawName === "string" && OUTPUT_SCHEMA_NAME.test(rawName)
+      ? rawName
+      : "structured_output";
+  if (name !== rawName) {
+    onRecovery?.({
+      message:
+        "output_schema has a missing or invalid provider-envelope name",
+      recovery:
+        'Used the safe name "structured_output". Re-save the Output Schema to normalize the row.',
+    });
   }
   if (raw.description !== undefined && typeof raw.description !== "string") {
     fail("output_schema.description", "a string");
@@ -276,11 +314,11 @@ export function parseAgentOutputSchema(
 
   const schema = parseSchemaNode(raw.schema, "output_schema.schema");
   const parsed: NonNullable<AgentDefinition["outputSchema"]> = {
-    name: raw.name,
+    name,
     schema,
   };
   Object.assign(parsed, raw);
-  parsed.name = raw.name;
+  parsed.name = name;
   parsed.schema = schema;
   return parsed;
 }
@@ -400,10 +438,22 @@ export function parseAgentVersionSnapshot(raw: unknown): AgentVersionSnapshot {
   if (!isRecord(raw)) fail("RPC row", "an object");
 
   const versionId = requiredString(raw, "version_id");
+  const dataIssues: AgentDefinitionDataIssue[] = [];
   const parseContext = {
     agentId: versionId,
     relation: "agx_get_version_snapshot",
   };
+  const rawOutputSchema = requiredField(raw, "output_schema");
+  const outputSchema = parseAgentOutputSchema(rawOutputSchema, (notice) =>
+    recordAgentDataIssue({
+      context: parseContext,
+      field: "output_schema",
+      message: notice.message,
+      recovery: notice.recovery,
+      offending: rawOutputSchema,
+      issues: dataIssues,
+    }),
+  );
 
   return {
     version_id: versionId,
@@ -418,7 +468,7 @@ export function parseAgentVersionSnapshot(raw: unknown): AgentVersionSnapshot {
     model_id: requiredNullableString(raw, "model_id"),
     model_tiers: parseModelTiers(requiredField(raw, "model_tiers")),
     settings: parseAgentSettings(requiredField(raw, "settings"), parseContext),
-    output_schema: parseAgentOutputSchema(requiredField(raw, "output_schema")),
+    output_schema: outputSchema,
     tools: requiredStringArray(raw, "tools"),
     custom_tools: parseCustomTools(
       requiredField(raw, "custom_tools"),
@@ -445,5 +495,6 @@ export function parseAgentVersionSnapshot(raw: unknown): AgentVersionSnapshot {
     default_rag_boost: requiredNumber(raw, "default_rag_boost"),
     rag_awareness_mode: requiredString(raw, "rag_awareness_mode"),
     input_kind: requiredNullableString(raw, "input_kind"),
+    data_issues: dataIssues,
   };
 }

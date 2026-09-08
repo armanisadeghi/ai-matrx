@@ -31,6 +31,11 @@ import { supabase } from "@/utils/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -51,6 +56,7 @@ import {
   Archive,
   Folder,
   AlignLeft,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -346,6 +352,7 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
     selectAgentChangeNote(state, agentId),
   );
   const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const dataIssues = agent?.dataIssues ?? [];
 
   const handleCopy = async (key: string, text: string, message: string) => {
     try {
@@ -481,6 +488,33 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
             )}
           </div>
         </div>
+
+        {dataIssues.length > 0 && (
+          <Alert className="border-amber-500/50 bg-amber-500/10 text-amber-950 dark:text-amber-100">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>
+              Recovered {dataIssues.length} stored data{" "}
+              {dataIssues.length === 1 ? "issue" : "issues"}
+            </AlertTitle>
+            <AlertDescription>
+              <p className="mb-2 text-xs">
+                The agent remains available. Correct and re-save the named
+                fields to normalize the stored definition.
+              </p>
+              <ul className="space-y-1 text-xs">
+                {dataIssues.map((issue, index) => (
+                  <li key={`${issue.field}-${index}`}>
+                    <span className="font-mono font-semibold">
+                      {issue.field}
+                    </span>
+                    {": "}
+                    {issue.message}. {issue.recovery}
+                  </li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {effectiveView === "json" ? (
           <div className="h-[calc(100dvh-12rem)]">

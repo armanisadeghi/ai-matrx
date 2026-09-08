@@ -222,6 +222,17 @@ export interface ModelTiers {
   tiers?: Record<string, ModelTier>;
 }
 
+/**
+ * A stored field that could not be read in its preferred shape without a
+ * recovery. The definition remains usable; admin surfaces show these issues so
+ * a defensive read never turns into silent data loss.
+ */
+export interface AgentDefinitionDataIssue {
+  field: string;
+  message: string;
+  recovery: string;
+}
+
 // ---------------------------------------------------------------------------
 // AgentDefinition — single unified type for both live agents and version snapshots.
 //
@@ -387,6 +398,12 @@ export interface AgentDefinition {
    * linked-agent comparison cannot report a false match when the modes differ.
    */
   ragAwarenessMode: string;
+
+  /**
+   * Read-boundary recoveries applied while hydrating this definition. This is
+   * diagnostic metadata only and is never persisted by agent write converters.
+   */
+  dataIssues?: AgentDefinitionDataIssue[];
 }
 
 // ---------------------------------------------------------------------------
@@ -610,6 +627,7 @@ export interface AgentVersionSnapshot {
   // Supabase models RETURNS TABLE text as non-null, but older version rows
   // legitimately retain SQL NULL because their input contract is inline.
   input_kind: string | null;
+  data_issues?: AgentDefinitionDataIssue[];
 }
 
 /**
