@@ -9,14 +9,20 @@
  * (RLS-scoped to the user). A realtime subscription keeps the list fresh so
  * in-session agent edits surface without a manual refresh.
  *
+ * REALTIME: `@ai-matrx/realtime` owns the channel (`useChannel`). What was here
+ * was a raw `.channel(...).subscribe()` with a manual `removeChannel` teardown
+ * and no catch-up read — so a sandbox that synced its memory back while this tab
+ * was asleep left the list silently stale. `onBackfill` re-reads on every
+ * recovery path.
+ *
  * See docs/sandbox/MEMORY_API.md.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Plus, Save, Trash2, Loader2, Brain } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { supabase } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@ai-matrx/data/db";
+import { defineChannelNamespace } from "@ai-matrx/realtime";
+import { useChannel } from "@ai-matrx/realtime/react";
 import { getUserId } from "@/utils/auth/getUserId";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
@@ -28,6 +34,13 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 const PATH_RE = /^[A-Za-z0-9._/-]+$/;
+
+/** One place names this channel. A second, different declaration throws. */
+const memoryChannel = defineChannelNamespace({
+  namespace: "user-memory",
+  parts: ["userId"],
+  description: "users.user_memory rows for one user",
+});
 
 export default function MemoryManager() {
   const [entries, setEntries] = useState<MemoryEntry[]>([]);
@@ -62,28 +75,32 @@ export default function MemoryManager() {
   // Realtime — the orchestrator rewrites rows on sandbox teardown; reflect
   // those edits live. RLS scopes the stream to the user's own rows; we add an
   // explicit owner filter as well.
-  useEffect(() => {
-    const userId = getUserId();
-    if (!userId) return undefined;
-    const channel = supabase
-      .channel(uniqueChannelTopic(`user-memory:${userId}`))
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "users",
-          table: "user_memory",
-          filter: `created_by=eq.${userId}`,
-        },
-        () => {
-          void refresh();
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [refresh]);
+  const userId = getUserId();
+  useChannel(
+    userId
+      ? {
+          topic: memoryChannel.topic({ userId }),
+          postgresChanges: [
+            {
+              event: "*",
+              schema: "users",
+              table: "user_memory",
+              filter: `created_by=eq.${userId}`,
+              rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+              fingerprint: (row) => String(row.content ?? ""),
+              onChange: () => {
+                void refresh();
+              },
+            },
+          ],
+          // Realtime has no replay. A sandbox syncing memory back while this tab
+          // slept would otherwise never show up.
+          onBackfill: () => {
+            void refresh();
+          },
+        }
+      : null,
+  );
 
   const selectEntry = useCallback(
     (entry: MemoryEntry) => {

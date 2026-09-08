@@ -5,16 +5,31 @@
  *   subscribeAgentLists(conversationId)  — opens Supabase Realtime channels
  *   unsubscribeAgentLists(conversationId)— tears them down
  *
- * Realtime: one channel per (conversationId, table) is overkill — Supabase
- * recommends one channel per page that filters per-table. We collapse to one
- * channel `agent-lists:<conversationId>` with multiple postgres_changes
- * subscriptions, one per table, all scoped by `conversation_id = ...`.
+ * Realtime: ONE channel per conversation carrying three postgres_changes
+ * bindings (plan / task / user_todo), all scoped by `conversation_id = ...`.
+ *
+ * `@ai-matrx/realtime` owns that channel — unique instance topic, echo
+ * suppression, dedup, the decoupled ordered handler queue, jittered reconnect,
+ * tab sleep, diagnostics. What was here before was a raw
+ * `.channel(...).subscribe()` on a STATIC topic (`agent-lists:<id>`, which
+ * React 19's double-invoked effects can collide on), three `as any` casts to
+ * get past the `.on("postgres_changes")` types, a module-level channel map, and
+ * NO catch-up read: an agent that planned and executed a dozen tasks while the
+ * tab was asleep left the plan panel permanently showing the pre-sleep state,
+ * looking perfectly healthy. `onBackfill` re-hydrates — that is the fix.
+ *
+ * These are thunks, not components, so the manager arrives through the
+ * package's ambient door (`subscribeToRealtimeManager`, realtime 0.6.0) rather
+ * than a second manager of our own (which would be a second write ledger).
  */
 
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import { supabase } from "@/utils/supabase/client";
+import {
+  defineChannelNamespace,
+  subscribeToRealtimeManager,
+} from "@ai-matrx/realtime";
 import { getCurrentPlan } from "../service/agent-plan.service";
 import { listTasks } from "../service/agent-task.service";
 import { listUserTodos } from "../service/user-todo.service";
@@ -69,7 +84,16 @@ export const hydrateAgentLists =
 
 // ── Realtime subscription tracking ──────────────────────────────────────────
 
-const activeChannels = new Map<string, ReturnType<typeof supabase.channel>>();
+/** One place names this channel. A second, different declaration throws. */
+const agentListsChannel = defineChannelNamespace({
+  namespace: "agent-lists",
+  parts: ["conversationId"],
+  description:
+    "chat.agent_plan + chat.agent_task + chat.user_todo rows for one conversation",
+});
+
+/** Per-conversation stop functions — one open channel each. */
+const activeChannels = new Map<string, () => void>();
 
 export function subscribeAgentLists(
   conversationId: string,
@@ -77,77 +101,76 @@ export function subscribeAgentLists(
   return (dispatch) => {
     if (activeChannels.has(conversationId)) return;
 
-    const channel = supabase
-      .channel(`agent-lists:${conversationId}`)
-      .on(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        "postgres_changes" as any,
+    const scoped = `conversation_id=eq.${conversationId}`;
+    const rowId = (row: Record<string, unknown>): string | undefined =>
+      typeof row.id === "string" ? row.id : undefined;
+
+    const stop = subscribeToRealtimeManager(() => ({
+      topic: agentListsChannel.topic({ conversationId }),
+      postgresChanges: [
         {
           event: "*",
           schema: "chat",
           table: "agent_plan",
-          filter: `conversation_id=eq.${conversationId}`,
+          filter: scoped,
+          rowId,
+          fingerprint: (row) => JSON.stringify(row.steps ?? row.updated_at ?? null),
+          onChange: ({ payload, row }) => {
+            if (payload.eventType === "DELETE") {
+              // Plan deleted — re-hydrate (cheaper than tracking which plan id
+              // was the current one for handling supersession).
+              void dispatch(hydrateAgentLists(conversationId));
+            } else if (row) {
+              dispatch(upsertPlan(row as unknown as CxAgentPlanRow));
+            }
+          },
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (payload: any) => {
-          if (payload.eventType === "DELETE") {
-            // Plan deleted — re-hydrate (cheaper than tracking which plan id
-            // was the current one for handling supersession).
-            void dispatch(hydrateAgentLists(conversationId));
-          } else if (payload.new) {
-            dispatch(upsertPlan(payload.new as CxAgentPlanRow));
-          }
-        },
-      )
-      .on(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        "postgres_changes" as any,
         {
           event: "*",
           schema: "chat",
           table: "agent_task",
-          filter: `conversation_id=eq.${conversationId}`,
+          filter: scoped,
+          rowId,
+          fingerprint: (row) => JSON.stringify([row.status ?? null, row.title ?? null]),
+          onChange: ({ payload, row }) => {
+            if (payload.eventType === "DELETE") {
+              const old = payload.old as Partial<CxAgentTaskRow> | undefined;
+              if (old?.id) {
+                dispatch(removeTask({ conversationId, id: old.id }));
+              }
+            } else if (row) {
+              dispatch(upsertTask(row as unknown as CxAgentTaskRow));
+            }
+          },
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (payload: any) => {
-          if (payload.eventType === "DELETE") {
-            dispatch(
-              removeTask({
-                conversationId,
-                id: (payload.old as CxAgentTaskRow).id,
-              }),
-            );
-          } else if (payload.new) {
-            dispatch(upsertTask(payload.new as CxAgentTaskRow));
-          }
-        },
-      )
-      .on(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        "postgres_changes" as any,
         {
           event: "*",
           schema: "chat",
           table: "user_todo",
-          filter: `conversation_id=eq.${conversationId}`,
+          filter: scoped,
+          rowId,
+          fingerprint: (row) => JSON.stringify([row.status ?? null, row.title ?? null]),
+          onChange: ({ payload, row }) => {
+            if (payload.eventType === "DELETE") {
+              const old = payload.old as Partial<CxUserTodoRow> | undefined;
+              if (old?.id) {
+                dispatch(removeUserTodo({ conversationId, id: old.id }));
+              }
+            } else if (row) {
+              dispatch(upsertUserTodo(row as unknown as CxUserTodoRow));
+            }
+          },
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (payload: any) => {
-          if (payload.eventType === "DELETE") {
-            dispatch(
-              removeUserTodo({
-                conversationId,
-                id: (payload.old as CxUserTodoRow).id,
-              }),
-            );
-          } else if (payload.new) {
-            dispatch(upsertUserTodo(payload.new as CxUserTodoRow));
-          }
-        },
-      )
-      .subscribe();
+      ],
+      // Realtime has no replay: everything the agent did while the socket was
+      // down is gone. Re-hydrate the whole conversation's lists on every
+      // recovery path (reconnect, tab wake, network restore, queue overflow).
+      onBackfill: () => {
+        void dispatch(hydrateAgentLists(conversationId));
+      },
+    }));
 
-    activeChannels.set(conversationId, channel);
+    activeChannels.set(conversationId, stop);
   };
 }
 
@@ -155,9 +178,9 @@ export function unsubscribeAgentLists(
   conversationId: string,
 ): ThunkAction<void, RootState, unknown, UnknownAction> {
   return () => {
-    const channel = activeChannels.get(conversationId);
-    if (!channel) return;
-    void supabase.removeChannel(channel);
+    const stop = activeChannels.get(conversationId);
+    if (!stop) return;
+    stop();
     activeChannels.delete(conversationId);
   };
 }

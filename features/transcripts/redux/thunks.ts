@@ -1,18 +1,29 @@
 /**
  * Transcripts list thunks + realtime subscription.
  *
- * The subscription is owned here (module-level channel, started by
- * `initializeTranscripts` on first list mount) — the strategy is the same as
- * the retired context's: any change on `transcripts.transcripts` triggers a
- * list refetch, now DEBOUNCED (500ms trailing) so event bursts (imports,
- * chunked saves, own-write echoes) collapse into one fetch instead of a
- * fetch-per-event storm. Refetch-the-list means there is no stale row merge,
- * so no per-row echo suppression is needed (supabase-realtime skill, Rule 1
- * alternative) — the fetch always returns fresh rows.
+ * The subscription is owned here (started by `initializeTranscripts` on first
+ * list mount): any change on `transcripts.transcripts` triggers a list refetch,
+ * DEBOUNCED (500ms trailing) so event bursts (imports, chunked saves) collapse
+ * into one fetch instead of a fetch-per-event storm. Refetch-the-list means
+ * there is no stale row merge, so no per-row state reconciliation is needed —
+ * the fetch always returns fresh rows.
+ *
+ * REALTIME: `@ai-matrx/realtime` owns the channel — echo suppression, dedup,
+ * the decoupled ordered handler queue, jittered reconnect with the stability
+ * reset, tab sleep, diagnostics. What was here was a module-level
+ * `.channel(...).subscribe()`, its own `removeChannel` teardown, and NO catch-up
+ * read: a transcript created on another device while this tab slept never
+ * appeared, and the list looked perfectly healthy. `onBackfill` is that fix.
+ *
+ * These are thunks, not components, so the manager arrives through the
+ * package's ambient door (`subscribeToRealtimeManager`, realtime 0.6.0) — never
+ * a second manager, which would be a second write ledger.
  */
 
-import { supabase } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@ai-matrx/data/db";
+import {
+  defineChannelNamespace,
+  subscribeToRealtimeManager,
+} from "@ai-matrx/realtime";
 import type { AppThunk } from "@/lib/redux/store";
 import type { ListScope } from "@/lib/list-scope/types";
 import type {
@@ -36,7 +47,14 @@ import {
 
 // ── Realtime channel (module singleton) ─────────────────────────────────────
 
-let channel: ReturnType<typeof supabase.channel> | null = null;
+/** One place names this channel. A second, different declaration throws. */
+const transcriptsChannel = defineChannelNamespace({
+  namespace: "transcripts",
+  parts: [],
+  description: "transcripts.transcripts rows visible to this user",
+});
+
+let stopChannel: (() => void) | null = null;
 let refetchTimer: ReturnType<typeof setTimeout> | null = null;
 
 function stopRealtime(): void {
@@ -44,9 +62,9 @@ function stopRealtime(): void {
     clearTimeout(refetchTimer);
     refetchTimer = null;
   }
-  if (channel) {
-    void supabase.removeChannel(channel);
-    channel = null;
+  if (stopChannel) {
+    stopChannel();
+    stopChannel = null;
   }
 }
 
@@ -78,21 +96,32 @@ export const initializeTranscripts = (): AppThunk => {
     void dispatch(fetchTranscripts());
 
     stopRealtime();
-    channel = supabase
-      .channel(uniqueChannelTopic("transcripts-changes"))
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "transcripts", table: "transcripts" },
-        () => {
-          // Debounced list refetch — collapse event bursts into one fetch.
-          if (refetchTimer) clearTimeout(refetchTimer);
-          refetchTimer = setTimeout(() => {
-            refetchTimer = null;
-            void dispatch(fetchTranscripts());
-          }, 500);
+    // Debounced list refetch — collapse event bursts into one fetch.
+    const refetchSoon = (): void => {
+      if (refetchTimer) clearTimeout(refetchTimer);
+      refetchTimer = setTimeout(() => {
+        refetchTimer = null;
+        void dispatch(fetchTranscripts());
+      }, 500);
+    };
+    stopChannel = subscribeToRealtimeManager(() => ({
+      topic: transcriptsChannel.topic(),
+      postgresChanges: [
+        {
+          // No owner filter: RLS gates delivery, so shared-with-me transcripts
+          // arrive too.
+          event: "*",
+          schema: "transcripts",
+          table: "transcripts",
+          rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+          fingerprint: (row) => String(row.updated_at ?? ""),
+          onChange: refetchSoon,
         },
-      )
-      .subscribe();
+      ],
+      // Realtime has no replay. Reconnect, tab wake, network restore and queue
+      // overflow all land here — the list is one read away from correct.
+      onBackfill: refetchSoon,
+    }));
   };
 };
 
