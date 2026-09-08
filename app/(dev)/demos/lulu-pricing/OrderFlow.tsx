@@ -13,7 +13,12 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { CreditCard, PackageCheck, RefreshCcw, XCircle } from "lucide-react";
+import {
+  CreditCard,
+  PackageCheck,
+  RefreshCcw,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -125,6 +130,20 @@ function StatusChip({ status }: { status: string }) {
   );
 }
 
+function stripeCheckoutMode(url: string): "live" | "test" | null {
+  try {
+    const checkout = new URL(url);
+    if (checkout.protocol !== "https:" || checkout.hostname !== "checkout.stripe.com") {
+      return null;
+    }
+    if (checkout.pathname.includes("cs_live_")) return "live";
+    if (checkout.pathname.includes("cs_test_")) return "test";
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function OrderFlow({
   podPackageId,
   pageCount,
@@ -200,6 +219,30 @@ export function OrderFlow({
         success_url: `${origin}${here}?ordered=1`,
         cancel_url: `${origin}${here}?ordered=0`,
       });
+      const checkoutMode = stripeCheckoutMode(checkout.checkout_url);
+      if (checkoutMode === null) {
+        setSubmitError(
+          "The server returned an unrecognized checkout address. The order remains unpaid and checkout was not opened.",
+        );
+        setSubmitting(false);
+        return;
+      }
+      if (checkoutMode === "live") {
+        const proceed = await confirm({
+          title: "This charges a real card",
+          description:
+            `The server created a LIVE Stripe checkout. Paying it charges the card ` +
+            `you enter and Lulu prints and ships "${form.title.trim()}" for real. ` +
+            `Cancelling the order later refunds it, but the print may already have started.`,
+          confirmLabel: "Open the live checkout",
+          cancelLabel: "Not now",
+          variant: "destructive",
+        });
+        if (!proceed) {
+          setSubmitting(false);
+          return;
+        }
+      }
       window.location.assign(checkout.checkout_url);
     } catch (error: unknown) {
       const state = toFetchState<never>(error);
@@ -248,8 +291,7 @@ export function OrderFlow({
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
           Pays through secure checkout; printing starts only after payment, and
-          a file we can&apos;t print is refunded in full automatically. Orders
-          currently run against the print sandbox — nothing physical ships yet.
+          a file we can&apos;t print is refunded in full automatically.
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
