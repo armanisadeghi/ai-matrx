@@ -46,7 +46,7 @@ export default function ConversationPage() {
   const conversation =
     conversations.find((item) => item.conversation.id === conversationId) ?? null;
   const otherParticipant =
-    conversation?.conversation.kind === "direct"
+    conversation?.conversation.type === "direct"
       ? (conversation.participants.find(
           (participant) => participant.userId !== userId,
         ) ?? null)

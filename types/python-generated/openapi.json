@@ -19117,6 +19117,27 @@
         }
       }
     },
+    "/stan/public/status": {
+      "get": {
+        "tags": [
+          "Stan Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_stan_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StanServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -24787,6 +24808,27 @@
         }
       }
     },
+    "/kantata-ox/public/status": {
+      "get": {
+        "tags": [
+          "Kantata OX Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_kantata_ox_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KantataOXServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -27552,6 +27594,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__winehq_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/postgresql-wiki/public/page": {
+      "get": {
+        "tags": [
+          "PostgreSQL Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_postgresql_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__postgresql_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -154040,6 +154125,55 @@
         "title": "KalturaServiceStatus",
         "description": "Safe aggregate status projection for Kaltura's fixed status page."
       },
+      "KantataOXServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "kantata_ox_official_project_collaboration_status",
+            "title": "Kind",
+            "default": "kantata_ox_official_project_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Kantata OX",
+            "title": "Provider",
+            "default": "Kantata OX"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.mavenlink.com",
+            "title": "Status Page",
+            "default": "https://status.mavenlink.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "KantataOXServiceStatus"
+      },
       "KayakoServiceStatus": {
         "properties": {
           "__kind": {
@@ -217685,6 +217819,47 @@
         ],
         "title": "StagesStatusResponse"
       },
+      "StanServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "stan_public_service_status",
+            "title": "Kind",
+            "default": "stan_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Stan",
+            "title": "Provider",
+            "default": "Stan"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.stan.store/",
+            "title": "Status Page",
+            "default": "https://status.stan.store/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "StanServiceStatus",
+        "description": "Safe aggregate status projection for Stan's fixed status page."
+      },
       "StartLoopRequest": {
         "properties": {
           "organization_id": {
@@ -246381,6 +246556,52 @@
             "const": "OSGeo Wiki",
             "title": "Provider",
             "default": "OSGeo Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__postgresql_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "postgresql_wiki_page_metadata",
+            "title": "Kind",
+            "default": "postgresql_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "PostgreSQL Wiki",
+            "title": "Provider",
+            "default": "PostgreSQL Wiki"
           },
           "page_id": {
             "type": "integer",

@@ -8165,6 +8165,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stan/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_stan_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12755,6 +12772,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/kantata-ox/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_kantata_ox_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -14005,6 +14039,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_winehq_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/postgresql-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_postgresql_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -67193,6 +67244,40 @@ export interface components {
              */
             status_page?: "https://status.kaltura.com";
         };
+        /** KantataOXServiceStatus */
+        KantataOXServiceStatus: {
+            /**
+             * Kind
+             * @default kantata_ox_official_project_collaboration_status
+             * @constant
+             */
+            __kind?: "kantata_ox_official_project_collaboration_status";
+            /**
+             * Provider
+             * @default Kantata OX
+             * @constant
+             */
+            provider?: "Kantata OX";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.mavenlink.com
+             * @constant
+             */
+            status_page?: "https://status.mavenlink.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** KayakoServiceStatus */
         KayakoServiceStatus: {
             /**
@@ -95566,6 +95651,38 @@ export interface components {
             /** Stages */
             stages: components["schemas"]["StageStatus"][];
         };
+        /**
+         * StanServiceStatus
+         * @description Safe aggregate status projection for Stan's fixed status page.
+         */
+        StanServiceStatus: {
+            /**
+             * Kind
+             * @default stan_public_service_status
+             * @constant
+             */
+            __kind?: "stan_public_service_status";
+            /**
+             * Provider
+             * @default Stan
+             * @constant
+             */
+            provider?: "Stan";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.stan.store/
+             * @constant
+             */
+            status_page?: "https://status.stan.store/";
+        };
         /** StartLoopRequest */
         StartLoopRequest: {
             /**
@@ -108287,6 +108404,31 @@ export interface components {
              * @constant
              */
             provider?: "OSGeo Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
+        aidream__services__postgresql_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default postgresql_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "postgresql_wiki_page_metadata";
+            /**
+             * Provider
+             * @default PostgreSQL Wiki
+             * @constant
+             */
+            provider?: "PostgreSQL Wiki";
             /** Page Id */
             page_id: number;
             /** Title */
@@ -122509,6 +122651,26 @@ export interface operations {
             };
         };
     };
+    public_status_stan_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StanServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -127909,6 +128071,26 @@ export interface operations {
             };
         };
     };
+    public_status_kantata_ox_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KantataOXServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -129973,6 +130155,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__winehq_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_postgresql_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__postgresql_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
