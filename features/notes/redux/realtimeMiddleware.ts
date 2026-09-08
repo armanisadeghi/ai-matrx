@@ -1,11 +1,46 @@
 // features/notes/redux/realtimeMiddleware.ts
-// Single Supabase realtime subscription for notes, managed as Redux middleware.
+//
+// Single realtime subscription for notes, managed as Redux middleware.
 // Starts on fetchNotesList.fulfilled, stops on resetNotesState (logout).
-// Echo suppression: content-aware while `_savingNoteIds` / sync-engine
-// `isPendingEcho` — only drop payloads that match local content+label.
 //
 // No `created_by=` filter — RLS + REPLICA IDENTITY FULL gates events so both
 // owned notes and shared-with-me notes arrive. Filter-by-owner hid sharee updates.
+//
+// REALTIME — THIS FILE USED TO BE THE DOCTRINE; NOW THE PACKAGE IS.
+// -----------------------------------------------------------------
+// `@ai-matrx/realtime` owns the channel and everything this module used to
+// hand-roll: unique instance topics, the write ledger, dedup, the decoupled
+// ordered handler queue, jittered reconnect WITH the stability reset (and its
+// own sustained-outage alarm), tab-sleep and network awareness, diagnostics.
+// What was deleted from here, and where it lives now:
+//
+//   isOwnEcho (~60 lines)        -> manager.ledger.classify. Every leg of it:
+//                                   the monotonic updated_at guard, the
+//                                   equal-timestamp content match, and the
+//                                   same-actor-while-a-write-is-pending test
+//                                   (the package reads `updated_by`, stamped by
+//                                   the DB `_stamp_actor` trigger, against the
+//                                   provider's actorId). Own echoes never reach
+//                                   the handler at all now.
+//   scheduleReconnect + backoff  -> the package's jittered backoff. Its
+//   + BACKOFF_RESET_AFTER_MS        30s stability reset is the same rule, for
+//   + RECONNECT_ALARM_ATTEMPT       the same reason: resetting on SUBSCRIBED
+//                                   let a flapping channel cycle at the 1s
+//                                   floor forever, firing a full catch-up each
+//                                   time.
+//   the catchUp flag             -> onBackfill, which also fires on tab wake,
+//                                   network restore and queue overflow — none
+//                                   of which the status callback could see.
+//
+// THE WRITES ARE REGISTERED ON THE LEDGER, and this is the load-bearing half:
+// classify can only recognize an echo of a write it was told about. Notes has
+// several write paths (the autosave middleware's INSERT and UPDATE, the
+// saveNote thunk, notesService for legacy surfaces) and they all converge on
+// `markNoteSaving` / `markNoteSaved`, so the registration happens THERE, in one
+// place, rather than being copied into each writer.
+//
+// Live-editor attribution ("X is editing") is NOT echo suppression and stays
+// here — it is this feature's UX, built on the same `updated_by` stamp.
 
 import type {
   Middleware,
@@ -14,9 +49,12 @@ import type {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { RootState } from "@/lib/redux/rootReducer";
-import type { RealtimeChannel } from "@supabase/supabase-js";
-import { uniqueChannelTopic } from "@ai-matrx/data/db";
-import type { SyncEngineApi } from "@/lib/sync/engine/middleware";
+import {
+  currentRealtimeManager,
+  defineChannelNamespace,
+  subscribeToRealtimeManager,
+  type WriteLedger,
+} from "@ai-matrx/realtime";
 import {
   upsertNoteFromServer,
   removeNote,
@@ -29,23 +67,34 @@ import { fetchNotesList, fetchSharedNotesList } from "./thunks";
 /** Thunk-aware dispatch — this middleware refreshes lists via async thunks. */
 type NotesDispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
 
-let channel: RealtimeChannel | null = null;
+/** One place names this channel. A second, different declaration throws. */
+const notesChannel = defineChannelNamespace({
+  namespace: "notes",
+  parts: ["userId"],
+  description: "workbench.notes rows visible to one user (owned + shared)",
+});
+
+const NOTES_TABLE = "workbench.notes";
+
+/** Ledger tickets for saves currently in flight, keyed by note id. */
+const openWrites = new Map<string, ReturnType<WriteLedger["begin"]>>();
+
+let stopChannel: (() => void) | null = null;
 let subscribedUserId: string | null = null;
-let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-let reconnectAttempt = 0;
-// Backoff resets only after the channel stays healthy for this long. Resetting
-// on SUBSCRIBED alone let a flapping channel (SUBSCRIBED → CHANNEL_ERROR →
-// SUBSCRIBED …) cycle at the 1s backoff floor forever — each cycle firing a
-// full-list catch-up fetch, a self-sustaining fetch storm.
-const BACKOFF_RESET_AFTER_MS = 30_000;
-let backoffResetTimer: ReturnType<typeof setTimeout> | null = null;
-// Reconnect attempts before a dropped channel stops being routine and becomes a
-// captured error. The alarm must not fire inside the same 30s stability window
-// used to decide whether a connection is healthy: attempts 1-5 span ~31s of
-// backoff (1+2+4+8+16), covering ordinary laptop wake and network handoff. A
-// sixth consecutive failure is a sustained outage and still screams. CAPS
-// constant, never an env var.
-const RECONNECT_ALARM_ATTEMPT = 5;
+
+/**
+ * The content a save can change. This is what the package's ledger compares to
+ * decide own-echo vs a same-millisecond collaborator write, so it must cover
+ * every field the autosave path writes and nothing volatile.
+ */
+function noteFingerprint(row: Record<string, unknown>): string {
+  return JSON.stringify([
+    row.label ?? null,
+    row.content ?? null,
+    row.folder_name ?? null,
+    row.tags ?? null,
+  ]);
+}
 
 // ── Live-editor attribution ─────────────────────────────────────────────
 // `workbench.notes._stamp_actor` (DB trigger) writes `updated_by` on every
@@ -64,99 +113,6 @@ function clearAllEditorTimers() {
   editorClearTimers.clear();
 }
 
-type StoreWithSync = {
-  getState: () => unknown;
-  dispatch: (action: unknown) => unknown;
-  _sync?: { engineApi?: () => SyncEngineApi | null };
-};
-
-function isOwnEcho(
-  storeApi: StoreWithSync,
-  noteId: string,
-  newRecord?: Record<string, unknown>,
-): boolean {
-  const state = storeApi.getState() as RootState;
-  const local = state.notes.notes[noteId];
-
-  // ── Monotonic updated_at guard — runs UNCONDITIONALLY ─────────────────
-  // Our own UPDATE's realtime echo lands 50–500ms AFTER the REST response
-  // already delivered the fresh `updated_at` via markNoteSaved — so by the
-  // time the echo arrives, `_savingNoteIds` is empty and any saving-gated
-  // check misses it. THE 2026-07 /notes BROWSER-FREEZE REGRESSION was
-  // exactly this: unsuppressed self-echoes flagged false conflicts on every
-  // autosave while typing (see FEATURE.md § Realtime echo doctrine).
-  // The timestamp is the reliable key: a payload that is not strictly newer
-  // than the state we already hold carries zero new information.
-  //  - strictly older  → stale out-of-order echo, drop.
-  //  - equal timestamp → drop only when content+label also match (a
-  //    same-millisecond collaborator write must still land).
-  if (local && newRecord) {
-    const remoteTs = Date.parse(String(newRecord.updated_at ?? ""));
-    const localTs = Date.parse(local.updated_at ?? "");
-    const contentMatches =
-      newRecord.content === undefined || newRecord.content === local.content;
-    const labelMatches =
-      newRecord.label === undefined || newRecord.label === local.label;
-    if (Number.isFinite(remoteTs) && Number.isFinite(localTs)) {
-      if (remoteTs < localTs) return true;
-      if (remoteTs === localTs && contentMatches && labelMatches) return true;
-    }
-  }
-
-  // ── Own-user guard (`updated_by`, stamped by the DB `_stamp_actor`
-  // trigger) ───────────────────────────────────────────────────────────
-  // While THIS tab is mid-edit (dirty) or mid-save, an echo of the current
-  // user's OWN write is never news: the REST response is the authority for
-  // updated_at, and the user's live buffer is the authority for content.
-  // Without this, a big paste produced the freeze-class false conflict —
-  // the save is slow, the user keeps typing/naming, the echo lands with
-  // in-flight (stale) content that no longer matches local → treated as a
-  // collaborator write → conflict. Same-user cross-TAB races are still
-  // caught by the save's optimistic `updated_at` lock, and a clean record
-  // still receives own-user echoes (cross-tab sync).
-  const saving = state.notes._savingNoteIds.includes(noteId);
-
-  if (local && newRecord) {
-    const selfId = state.userAuth?.id;
-    if (
-      selfId &&
-      newRecord.updated_by === selfId &&
-      (saving || local._dirty)
-    ) {
-      return true;
-    }
-  }
-
-  const engineApi = storeApi._sync?.engineApi?.() ?? null;
-  const syncPending = engineApi?.isPendingEcho?.("notes", noteId) ?? false;
-
-  if (!saving && !syncPending) return false;
-
-  // While a local save is in flight, only suppress payloads that match our
-  // live local content (true echo). A collaborator's divergent write must
-  // reach upsertNoteFromServer so dirty locals surface as conflict.
-  if (newRecord) {
-    if (!local) return true;
-    const remoteContent = newRecord.content;
-    const remoteLabel = newRecord.label;
-    const contentMatches =
-      remoteContent === undefined || remoteContent === local.content;
-    const labelMatches =
-      remoteLabel === undefined || remoteLabel === local.label;
-    if (contentMatches && labelMatches) return true;
-    return false;
-  }
-
-  return true;
-}
-
-function clearReconnectTimer() {
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer);
-    reconnectTimer = null;
-  }
-}
-
 /**
  * Middleware that manages a single Supabase realtime channel for notes.
  * - Subscribes when fetchNotesList completes successfully
@@ -169,27 +125,6 @@ export const notesRealtimeMiddleware: Middleware<
   RootState,
   NotesDispatch
 > = (storeApi) => {
-  const storeWithSync = storeApi as typeof storeApi & StoreWithSync;
-
-  function scheduleReconnect(userId: string, reason: string) {
-    clearReconnectTimer();
-    // A failure within the healthy window cancels the pending backoff reset —
-    // this is a flap, so the attempt counter must keep climbing.
-    if (backoffResetTimer) {
-      clearTimeout(backoffResetTimer);
-      backoffResetTimer = null;
-    }
-    const attempt = reconnectAttempt++;
-    const delayMs = Math.min(30_000, 1_000 * 2 ** Math.min(attempt, 5));
-    console.warn(
-      `[Notes RT] ${reason} — reconnecting in ${delayMs}ms (attempt ${attempt + 1})`,
-    );
-    reconnectTimer = setTimeout(() => {
-      reconnectTimer = null;
-      subscribe(userId, { catchUp: true });
-    }, delayMs);
-  }
-
   /** Surface "X is editing" for a non-self realtime UPDATE, resolve the
    *  editor's email once (cached), and arm the idle-clear timer. */
   function announceEditor(noteId: string, editorId: string) {
@@ -268,11 +203,6 @@ export const notesRealtimeMiddleware: Middleware<
     if (eventType === "UPDATE" && newRecord) {
       const noteId = newRecord.id as string;
 
-      if (isOwnEcho(storeWithSync, noteId, newRecord)) {
-        console.log("[Notes RT] Echo suppressed for", noteId);
-        return;
-      }
-
       if (newRecord.deleted_at) {
         storeApi.dispatch(removeNote(noteId));
         return;
@@ -315,10 +245,6 @@ export const notesRealtimeMiddleware: Middleware<
     if (eventType === "INSERT" && newRecord) {
       if (newRecord.deleted_at) return;
       const noteId = newRecord.id as string;
-      if (isOwnEcho(storeWithSync, noteId, newRecord)) {
-        console.log("[Notes RT] INSERT echo suppressed for", noteId);
-        return;
-      }
       console.log("[Notes RT] INSERT", noteId);
       storeApi.dispatch(
         upsertNoteFromServer({
@@ -360,118 +286,137 @@ export const notesRealtimeMiddleware: Middleware<
     }
   }
 
-  function subscribe(userId: string, opts: { catchUp?: boolean } = {}) {
-    clearReconnectTimer();
-    if (channel) {
-      supabase.removeChannel(channel);
-      channel = null;
-    }
+  function subscribe(userId: string) {
+    unsubscribe();
     subscribedUserId = userId;
 
-    // No created_by filter: RLS + REPLICA IDENTITY FULL delivers owned AND
-    // shared-with-me rows. Filtering by owner was the collaboration data-loss hole.
-    channel = supabase
-      .channel(uniqueChannelTopic(`notes-rt:${userId}`))
-      .on(
-        "postgres_changes",
+    stopChannel = subscribeToRealtimeManager(() => ({
+      topic: notesChannel.topic({ userId }),
+      postgresChanges: [
         {
+          // No created_by filter: RLS + REPLICA IDENTITY FULL delivers owned
+          // AND shared-with-me rows. Filtering by owner was the collaboration
+          // data-loss hole.
           event: "*",
           schema: "workbench",
           table: "notes",
-        },
-        (payload) => {
-          handlePayload(
-            payload as {
-              eventType: string;
-              new: Record<string, unknown>;
-              old: Record<string, unknown>;
-            },
-          );
-        },
-      )
-      .subscribe((status, err) => {
-        if (status === "SUBSCRIBED") {
-          const currentUserId = (storeApi.getState() as RootState).userAuth?.id;
-          if (!currentUserId || currentUserId !== subscribedUserId) {
-            // Supabase may deliver a stale SUBSCRIBED callback after logout or
-            // an account switch. Never let that old channel issue authenticated
-            // catch-up reads under the new (or absent) identity.
-            unsubscribe();
-            return;
-          }
-          console.log("[Notes RT] Connected");
-          if (backoffResetTimer) clearTimeout(backoffResetTimer);
-          backoffResetTimer = setTimeout(() => {
-            backoffResetTimer = null;
-            reconnectAttempt = 0;
-          }, BACKOFF_RESET_AFTER_MS);
-          storeApi.dispatch(setRealtimeConnected(true));
-          if (opts.catchUp) {
-            // Missed events while disconnected — refresh lists loudly.
-            void storeApi.dispatch(fetchNotesList());
-            void storeApi.dispatch(fetchSharedNotesList());
-          }
-        } else if (status === "CHANNEL_ERROR") {
-          // A dropped websocket is ROUTINE — a laptop sleeping, a tab
-          // backgrounding, a wifi handoff all close with 1006, and the backoff
-          // below reconnects within seconds. Logging the first flap as an ERROR
-          // meant every commute filed a system_error row for a self-healing
-          // event (the /notes "socket closed: 1006" noise, 2026-08-11), which
-          // buries the outages that ARE real. Loud recovery means screaming when
-          // recovery FAILS: warn while the backoff is doing its job, escalate to
-          // a captured error once we've failed past RECONNECT_ALARM_ATTEMPT.
-          const failing = reconnectAttempt >= RECONNECT_ALARM_ATTEMPT;
-          if (failing) {
-            console.error(
-              `[Notes RT] realtime still down after ${reconnectAttempt} reconnect ` +
-                `attempts — live note sync is broken for this session:`,
-              err,
+          rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+          fingerprint: noteFingerprint,
+          // Own echoes never arrive here — the ledger classified them first,
+          // using the writes registered from markNoteSaving / markNoteSaved.
+          onChange: ({ payload }) => {
+            handlePayload(
+              payload as {
+                eventType: string;
+                new: Record<string, unknown>;
+                old: Record<string, unknown>;
+              },
             );
-          } else {
-            console.warn("[Notes RT] channel dropped (reconnecting):", err);
-          }
-          storeApi.dispatch(setRealtimeConnected(false));
-          if (subscribedUserId) {
-            scheduleReconnect(subscribedUserId, "CHANNEL_ERROR");
-          }
-        } else if (status === "TIMED_OUT") {
-          console.warn("[Notes RT] Timed out");
-          storeApi.dispatch(setRealtimeConnected(false));
-          if (subscribedUserId) {
-            scheduleReconnect(subscribedUserId, "TIMED_OUT");
-          }
-        }
-      });
+          },
+        },
+      ],
+      onStatusChange: (status) => {
+        storeApi.dispatch(setRealtimeConnected(status === "connected"));
+      },
+      // THE CATCH-UP READ. Realtime has no replay, and this now fires on tab
+      // wake, network restore and queue overflow as well as reconnect — the
+      // old catchUp flag only fired on a re-SUBSCRIBED after an error.
+      onBackfill: () => {
+        const currentUserId = (storeApi.getState() as RootState).userAuth?.id;
+        if (!currentUserId || currentUserId !== subscribedUserId) return;
+        void storeApi.dispatch(fetchNotesList());
+        void storeApi.dispatch(fetchSharedNotesList());
+      },
+    }));
   }
 
   function unsubscribe() {
-    clearReconnectTimer();
-    if (backoffResetTimer) {
-      clearTimeout(backoffResetTimer);
-      backoffResetTimer = null;
-    }
     subscribedUserId = null;
-    reconnectAttempt = 0;
     clearAllEditorTimers();
-    if (channel) {
-      supabase.removeChannel(channel);
-      channel = null;
+    if (stopChannel) {
+      stopChannel();
+      stopChannel = null;
       storeApi.dispatch(setRealtimeConnected(false));
-      console.log("[Notes RT] Disconnected");
+    }
+  }
+
+  /**
+   * REGISTER OUR OWN WRITES ON THE PACKAGE'S LEDGER — the load-bearing half of
+   * echo suppression, in the ONE place every notes write path converges.
+   *
+   * `markNoteSaving` opens the ticket with the content we are about to write;
+   * `markNoteSaved` settles it with what the server returned. Between those two
+   * the row is "pending", which is what lets classify tell our own in-flight
+   * write from a genuine collaborator write that happens to share a timestamp.
+   */
+  function registerWrite(action: UnknownAction): void {
+    const manager = currentRealtimeManager();
+    if (!manager) return;
+    const type = (action as { type?: string }).type;
+
+    if (type === "notes/markNoteSaving") {
+      const id = (action as { payload?: string }).payload;
+      if (typeof id !== "string") return;
+      const local = (storeApi.getState() as RootState).notes.notes[id];
+      if (!local) return;
+      const ticket = manager.ledger.begin({
+        table: NOTES_TABLE,
+        id,
+        fingerprint: noteFingerprint(local as unknown as Record<string, unknown>),
+      });
+      openWrites.set(id, ticket);
+      return;
+    }
+
+    if (type === "notes/markNoteSaved") {
+      const payload = (action as {
+        payload?: { id?: string; updatedAt?: string };
+      }).payload;
+      const id = payload?.id;
+      if (typeof id !== "string") return;
+      // The reducer has already applied updatedAt + cleared dirty, so state
+      // now holds exactly what the server has. Teach the ledger that, and the
+      // echo landing 50-500ms from now is silent.
+      const local = (storeApi.getState() as RootState).notes.notes[id];
+      const fingerprint = local
+        ? noteFingerprint(local as unknown as Record<string, unknown>)
+        : undefined;
+      const ticket = openWrites.get(id);
+      if (ticket) {
+        openWrites.delete(id);
+        manager.ledger.settle(ticket, {
+          ...(payload?.updatedAt !== undefined
+            ? { updatedAt: payload.updatedAt }
+            : {}),
+          ...(fingerprint !== undefined ? { fingerprint } : {}),
+        });
+        return;
+      }
+      // A save that never announced itself (a legacy surface calling
+      // notesService directly) still gets its echo suppressed.
+      manager.ledger.observe({
+        table: NOTES_TABLE,
+        id,
+        updatedAt: payload?.updatedAt ?? null,
+        ...(fingerprint !== undefined ? { fingerprint } : {}),
+      });
     }
   }
 
   return (next) => (action) => {
+    // The reducer must run FIRST for markNoteSaved (we read the settled state),
+    // and for markNoteSaving the pre-save content is what we want — both are
+    // satisfied by registering after `next`.
     const result = next(action);
+    registerWrite(action as UnknownAction);
 
     if (fetchNotesList.fulfilled.match(action)) {
       const state = storeApi.getState() as RootState;
       const userId = state.userAuth?.id;
       // Don't tear down a healthy channel just because a catch-up list refresh
       // completed — only (re)subscribe when missing or for a different user.
-      if (userId && (subscribedUserId !== userId || !channel)) {
-        // Catch-up closes the gap between the list query and SUBSCRIBED.
-        subscribe(userId, { catchUp: true });
+      if (userId && (subscribedUserId !== userId || !stopChannel)) {
+        subscribe(userId);
       }
     }
 
