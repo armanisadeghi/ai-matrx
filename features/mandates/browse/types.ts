@@ -33,8 +33,16 @@ export interface MandateListRow {
   input_kind: string | null;
   output_kind: string | null;
   is_enabled: boolean;
-  /** Which RUNG decides the Holder for the subject this list resolved for. */
-  resolved_layer: string;
+  /**
+   * Which RUNG decides the Holder for the subject this list resolved for.
+   *
+   * 🚨 NULL IS A REAL ANSWER (2026-09-08, FIX-R7): no rung decides. It happens
+   * when the mandate's own default holder cannot produce the output the job
+   * requires — the run door refuses that holder for everybody, so naming its
+   * rung here was the list telling a lie the server contradicts. `health` says
+   * `output contract unmet` on exactly those rows.
+   */
+  resolved_layer: string | null;
   resolved_agent_id: string | null;
   resolved_agent_name: string | null;
   resolved_agent_type: string | null;
@@ -163,7 +171,16 @@ export const HEALTH_META: Record<MandateListHealth, BadgeMeta> = {
 const UNKNOWN_CLASS = "border-border/70 text-muted-foreground";
 
 /** Every render of a rung badge goes through here. See the header. */
-export function layerMeta(value: string): BadgeMeta {
+export function layerMeta(value: string | null | undefined): BadgeMeta {
+  // 🚨 NO RUNG DECIDES — and the screen says so, rather than crashing the row
+  // or (worse) picking a rung to show. `mnd_list_scoped` returns a NULL
+  // `resolved_layer` for a mandate whose own default holder fails the output
+  // half of its contract: the run door refuses it, so there is genuinely no
+  // answer to name. The `health` badge beside this one carries the reason and
+  // the remedy (HEALTH_EXPLANATION["output contract unmet"]).
+  if (value === null || value === undefined || value === "") {
+    return { label: "No rung decides", className: UNKNOWN_CLASS };
+  }
   switch (value) {
     case "user":
     case "org":

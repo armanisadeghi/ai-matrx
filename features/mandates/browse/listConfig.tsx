@@ -123,7 +123,7 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
     listDescription:
       "The mandate registry as currently filtered and sorted, with per-caller resolution (who decides each job).",
     humanRow: (row) =>
-      `${row.label} (${row.mandate_key}) — ${row.resolved_layer} · ` +
+      `${row.label} (${row.mandate_key}) — ${layerMeta(row.resolved_layer).label} · ` +
       `${row.resolved_agent_name ?? "no holder"}${row.drift ? ` · ${row.drift}` : ""}`,
     agentRow: (row) => ({
       id: row.id,
