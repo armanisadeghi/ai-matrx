@@ -1,5 +1,7 @@
 # Context Menu v3 — the universal right-click / floating menu
 
+> **Rollout status lives elsewhere.** This file is the menu's own contract. Which surfaces have a menu, what remains, and the registry of shared per-identity section builders are tracked in [`SECTIONS.md`](./SECTIONS.md) and the program handoff [`docs/handoffs/context-menu-everywhere-rollout.md`](../../docs/handoffs/context-menu-everywhere-rollout.md). Run `pnpm check:context-menu` for the live census.
+
 **Status:** live everywhere — the ONLY context menu (`features/context-menu-v2/` deleted 2026-07-19). One menu for every surface: a near-zero shell on mount, full power on first open, all modals through the OverlayController.
 
 `EditableContextMenu` / `NonEditableContextMenu` wrap children; the menu does everything automatically from `surfaceName` + a few value props. **The single most important contract is value mapping** (below) — the AI shortcuts and bound agents depend on it.
@@ -395,6 +397,8 @@ v3 is the only UNIVERSAL menu. Full-repo census 2026-08-25 (`onContextMenu=` swe
 ---
 
 ## Change Log
+
+- 2026-09-08 — Rollout program handoff written (`docs/handoffs/context-menu-everywhere-rollout.md`) and the census docstring re-synced with what the script actually reports (`form-fields`, `attribution`, plus the `deliberately-absent` / `covered-by` markers). Verified live: 6 rollout primitives intact, 119/119 tests, type-check green, 39 registered identities.
 
 - `2026-08-31` — **Mobile long-press has a deterministic touch-path witness.** A focused component test dispatches a real `touchstart`, proves the drawer stays closed through 479 ms, and proves it opens at the canonical 480 ms threshold for `matrx-user/settings`. This distinguishes genuine press-and-hold behavior from the separate mobile `contextmenu` compatibility path.
 - `2026-08-31` — **Desktop multi-child surfaces honor Radix's slot contract.** The shell gives `ContextMenuTrigger asChild` one layout-neutral `display:contents` element when a consumer supplies sibling surface/loading/empty nodes; single elements still receive handlers directly, preserving legal table-row markup. A forcing DOM test pins both siblings and the trigger wrapper.
