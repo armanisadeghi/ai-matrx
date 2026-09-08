@@ -91,7 +91,7 @@ export async function resolveMandateServer(
   const systemHolder = holderOfMandate(mandate);
   if (!isFloatingMandate(mandate) || !systemHolder.holderId) {
     throw new Error(
-      `mandate "${mandateKey}" is version-pinned — a server-rendered mandate must be floating (no pinned Holder version), because the client run path this page hands off to has no version channel; unpin the job's default Holder, or render this surface from useMandate instead of before first paint (${MANDATE_STORAGE_LABEL})`,
+      `mandate "${mandateKey}" is version-pinned — a server-rendered mandate must be floating (no pinned Holder version), because the client run path this page hands off to has no version channel; unpin the job's default Holder, or render this screen from useMandate instead of before first paint (${MANDATE_STORAGE_LABEL})`,
     );
   }
 

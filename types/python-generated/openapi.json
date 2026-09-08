@@ -19075,6 +19075,48 @@
         }
       }
     },
+    "/statusbrew/public/status": {
+      "get": {
+        "tags": [
+          "Statusbrew Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_statusbrew_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusbrewServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/codeclimate/public/status": {
+      "get": {
+        "tags": [
+          "Code Climate Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_codeclimate_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodeClimateServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -24703,6 +24745,48 @@
         }
       }
     },
+    "/launchdarkly/public/status": {
+      "get": {
+        "tags": [
+          "LaunchDarkly Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_launchdarkly_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchDarklyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/harness/public/status": {
+      "get": {
+        "tags": [
+          "Harness Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_harness_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HarnessServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/justcall/public/status": {
       "get": {
         "tags": [
@@ -27382,6 +27466,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__samba_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openssl-wiki/public/page": {
+      "get": {
+        "tags": [
+          "OpenSSL Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_openssl_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__openssl_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/winehq-wiki/public/page": {
+      "get": {
+        "tags": [
+          "WineHQ Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_winehq_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__winehq_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -111665,6 +111835,47 @@
         "title": "CodeAgentUsage",
         "description": "One declared code usage — mirrors a row of public.agx_usage_registry."
       },
+      "CodeClimateServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "codeclimate_public_service_status",
+            "title": "Kind",
+            "default": "codeclimate_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Code Climate",
+            "title": "Provider",
+            "default": "Code Climate"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.codeclimate.com/",
+            "title": "Status Page",
+            "default": "https://status.codeclimate.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "CodeClimateServiceStatus",
+        "description": "Safe aggregate status projection for Code Climate's fixed status page."
+      },
       "CodeDeclaration": {
         "properties": {
           "name": {
@@ -146319,6 +146530,55 @@
         ],
         "title": "HappeoServiceStatus"
       },
+      "HarnessServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "harness_official_developer_productivity_status",
+            "title": "Kind",
+            "default": "harness_official_developer_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Harness",
+            "title": "Provider",
+            "default": "Harness"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.harness.io",
+            "title": "Status Page",
+            "default": "https://status.harness.io"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "HarnessServiceStatus"
+      },
       "HarvardDataversePublicDataset": {
         "properties": {
           "__kind": {
@@ -158092,6 +158352,55 @@
         ],
         "title": "LatticeServiceStatus",
         "description": "Safe aggregate status projection for Lattice's fixed status page."
+      },
+      "LaunchDarklyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "launchdarkly_official_developer_productivity_status",
+            "title": "Kind",
+            "default": "launchdarkly_official_developer_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "LaunchDarkly",
+            "title": "Provider",
+            "default": "LaunchDarkly"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.launchdarkly.com",
+            "title": "Status Page",
+            "default": "https://status.launchdarkly.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "LaunchDarklyServiceStatus"
       },
       "LeakRule": {
         "type": "string",
@@ -218115,6 +218424,47 @@
         ],
         "title": "StatusResponse"
       },
+      "StatusbrewServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "statusbrew_public_service_status",
+            "title": "Kind",
+            "default": "statusbrew_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Statusbrew",
+            "title": "Provider",
+            "default": "Statusbrew"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.statusbrew.com/",
+            "title": "Status Page",
+            "default": "https://status.statusbrew.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "StatusbrewServiceStatus",
+        "description": "Safe aggregate status projection for Statusbrew's fixed status page."
+      },
       "StonlyServiceStatus": {
         "properties": {
           "__kind": {
@@ -245880,6 +246230,52 @@
         ],
         "title": "PageMetadata"
       },
+      "aidream__services__openssl_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "openssl_wiki_page_metadata",
+            "title": "Kind",
+            "default": "openssl_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "OpenSSL Wiki",
+            "title": "Provider",
+            "default": "OpenSSL Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
       "aidream__services__openstreetmap_wiki_integrations__service__PageMetadata": {
         "properties": {
           "__kind": {
@@ -247267,6 +247663,47 @@
           "namespace",
           "content_model",
           "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__winehq_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "winehq_wiki_page_metadata",
+            "title": "Kind",
+            "default": "winehq_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "WineHQ Wiki",
+            "title": "Provider",
+            "default": "WineHQ Wiki"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "title",
+          "format",
+          "page_id"
         ],
         "title": "PageMetadata"
       },

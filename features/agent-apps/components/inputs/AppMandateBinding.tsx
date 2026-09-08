@@ -24,10 +24,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { AppHolder } from "@/features/agent-apps/lib/appHolder";
 
+/**
+ * One label per RUNG the server verdict can name. `global` and `system` are
+ * different answers — a global binding is a row somebody edited at runtime,
+ * the system default is the job's own pin — and this map says so rather than
+ * printing "System default" over both.
+ */
 const PROVENANCE_LABEL: Record<string, string> = {
   system: "System default",
+  global: "Platform-wide override",
   org: "Organization override",
   user: "Your override",
+  run: "Chosen for this run",
 };
 
 export function AppMandateBinding({

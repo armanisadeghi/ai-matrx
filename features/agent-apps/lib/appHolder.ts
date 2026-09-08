@@ -50,6 +50,7 @@
 import { useMemo } from "react";
 
 import { useMandate } from "@/features/mandates/useMandate";
+import type { ResolvedMandate } from "@/features/mandates/service";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/slices/userSlice";
@@ -90,8 +91,15 @@ export interface AppHolder {
   /** The job behind the app, for doors and notes. Null on the pinned path. */
   mandateId: string | null;
   mandateKey: string | null;
-  /** Which layer decided, for the provenance pill. Null on the pinned path. */
-  provenance: "system" | "org" | "user" | null;
+  /**
+   * WHICH RUNG DECIDED, for the provenance pill — the server verdict's own five
+   * values (`ResolvedMandate["provenance"]`), never a client re-labelling.
+   * `global` is the GLOBAL BINDING rung and `system` is the job's own default
+   * pin: they are deliberately distinct, and collapsing them is how a stale
+   * global binding passed for a built-in default for a whole verification round
+   * (V3-CORRECTNESS N1). Null on the pinned path.
+   */
+  provenance: ResolvedMandate["provenance"] | null;
   loading: boolean;
   error: string | null;
 }

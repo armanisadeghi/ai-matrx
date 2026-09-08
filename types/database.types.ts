@@ -50831,8 +50831,28 @@ export type Database = {
           version: number
         }[]
       }
+      runnable_agent_fields_for: {
+        Args: { p_agent_id: string; p_user_id: string }
+        Returns: {
+          auto_context_disabled: boolean
+          context_policies: Json
+          name: string
+          variable_definitions: Json
+          version: number
+        }[]
+      }
       runnable_version_fields: {
         Args: { p_version_id: string }
+        Returns: {
+          auto_context_disabled: boolean
+          context_policies: Json
+          name: string
+          variable_definitions: Json
+          version_number: number
+        }[]
+      }
+      runnable_version_fields_for: {
+        Args: { p_user_id: string; p_version_id: string }
         Returns: {
           auto_context_disabled: boolean
           context_policies: Json
@@ -52637,6 +52657,35 @@ export type Database = {
       }
     }
     Functions: {
+      _rungs: {
+        Args: {
+          p_mandate_ids: string[]
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: {
+          auto_run: boolean
+          binding_id: string
+          chose_holder: boolean
+          config_overrides: Json
+          consumption_map: Json
+          definition_enabled: boolean
+          definition_id: string
+          fallback_mandate_key: string
+          holder_id: string
+          holder_live: boolean
+          holder_type: string
+          holder_version_id: string
+          is_enabled: boolean
+          mandate_id: string
+          mandate_key: string
+          organization_id: string
+          rung: string
+          rung_order: number
+          subject_user_id: string
+          version_live: boolean
+        }[]
+      }
       generate_app_mandate_key: {
         Args: { p_name: string; p_slug: string }
         Returns: string
@@ -52644,6 +52693,54 @@ export type Database = {
       generate_shortcut_mandate_key: {
         Args: { p_label: string; p_surface: string }
         Returns: string
+      }
+      resolve: {
+        Args: { p_mandate_key: string; p_organization_id?: string }
+        Returns: {
+          auto_run: boolean
+          binding_id: string
+          chose_holder: boolean
+          config_overrides: Json
+          consumption_map: Json
+          definition_enabled: boolean
+          definition_id: string
+          fallback_mandate_key: string
+          holder_id: string
+          holder_live: boolean
+          holder_type: string
+          holder_version_id: string
+          is_enabled: boolean
+          organization_id: string
+          rung: string
+          subject_user_id: string
+          version_live: boolean
+        }[]
+      }
+      resolve_for: {
+        Args: {
+          p_mandate_key: string
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: {
+          auto_run: boolean
+          binding_id: string
+          chose_holder: boolean
+          config_overrides: Json
+          consumption_map: Json
+          definition_enabled: boolean
+          definition_id: string
+          fallback_mandate_key: string
+          holder_id: string
+          holder_live: boolean
+          holder_type: string
+          holder_version_id: string
+          is_enabled: boolean
+          organization_id: string
+          rung: string
+          subject_user_id: string
+          version_live: boolean
+        }[]
       }
       sanitize_app_segment: { Args: { p_seg: string }; Returns: string }
       sanitize_shortcut_segment: { Args: { p_seg: string }; Returns: string }
@@ -69044,9 +69141,11 @@ export type Database = {
         Args: {
           p_dir?: string
           p_filters?: Json
+          p_home?: string
           p_limit?: number
           p_offset?: number
           p_org_id?: string
+          p_resolution_for?: string
           p_scope?: string
           p_search?: string
           p_sort?: string
@@ -69057,6 +69156,8 @@ export type Database = {
           feature: string
           has_settings_override: boolean
           health: string
+          holder_live: boolean
+          home_organization_id: string
           id: string
           input_kind: string
           is_enabled: boolean
@@ -69074,6 +69175,7 @@ export type Database = {
           resolved_use_latest: boolean
           total_count: number
           updated_at: string
+          version_live: boolean
         }[]
       }
       move_site_to_organization: {

@@ -8131,6 +8131,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/statusbrew/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_statusbrew_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/codeclimate/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_codeclimate_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -12687,6 +12721,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/launchdarkly/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_launchdarkly_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/harness/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_harness_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/justcall/public/status": {
         parameters: {
             query?: never;
@@ -13903,6 +13971,40 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_samba_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openssl-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_openssl_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/winehq-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_winehq_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -48351,6 +48453,38 @@ export interface components {
             /** Code Path */
             code_path: string;
         };
+        /**
+         * CodeClimateServiceStatus
+         * @description Safe aggregate status projection for Code Climate's fixed status page.
+         */
+        CodeClimateServiceStatus: {
+            /**
+             * Kind
+             * @default codeclimate_public_service_status
+             * @constant
+             */
+            __kind?: "codeclimate_public_service_status";
+            /**
+             * Provider
+             * @default Code Climate
+             * @constant
+             */
+            provider?: "Code Climate";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.codeclimate.com/
+             * @constant
+             */
+            status_page?: "https://status.codeclimate.com/";
+        };
         /** CodeDeclaration */
         CodeDeclaration: {
             /** Name */
@@ -63303,6 +63437,40 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** HarnessServiceStatus */
+        HarnessServiceStatus: {
+            /**
+             * Kind
+             * @default harness_official_developer_productivity_status
+             * @constant
+             */
+            __kind?: "harness_official_developer_productivity_status";
+            /**
+             * Provider
+             * @default Harness
+             * @constant
+             */
+            provider?: "Harness";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.harness.io
+             * @constant
+             */
+            status_page?: "https://status.harness.io";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * HarvardDataversePublicDataset
          * @description Safe factual projection of one public released dataset.
@@ -68761,6 +68929,40 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.lattice.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /** LaunchDarklyServiceStatus */
+        LaunchDarklyServiceStatus: {
+            /**
+             * Kind
+             * @default launchdarkly_official_developer_productivity_status
+             * @constant
+             */
+            __kind?: "launchdarkly_official_developer_productivity_status";
+            /**
+             * Provider
+             * @default LaunchDarkly
+             * @constant
+             */
+            provider?: "LaunchDarkly";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.launchdarkly.com
+             * @constant
+             */
+            status_page?: "https://status.launchdarkly.com";
             /**
              * Indicator
              * @enum {string}
@@ -95672,6 +95874,38 @@ export interface components {
             status: string;
         };
         /**
+         * StatusbrewServiceStatus
+         * @description Safe aggregate status projection for Statusbrew's fixed status page.
+         */
+        StatusbrewServiceStatus: {
+            /**
+             * Kind
+             * @default statusbrew_public_service_status
+             * @constant
+             */
+            __kind?: "statusbrew_public_service_status";
+            /**
+             * Provider
+             * @default Statusbrew
+             * @constant
+             */
+            provider?: "Statusbrew";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.statusbrew.com/
+             * @constant
+             */
+            status_page?: "https://status.statusbrew.com/";
+        };
+        /**
          * StonlyServiceStatus
          * @description Safe aggregate status projection for Stonly's fixed status page.
          */
@@ -107965,6 +108199,31 @@ export interface components {
             language: string;
         };
         /** PageMetadata */
+        aidream__services__openssl_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default openssl_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "openssl_wiki_page_metadata";
+            /**
+             * Provider
+             * @default OpenSSL Wiki
+             * @constant
+             */
+            provider?: "OpenSSL Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
         aidream__services__openstreetmap_wiki_integrations__service__PageMetadata: {
             /**
              * Kind
@@ -108706,6 +108965,29 @@ export interface components {
             content_model: string;
             /** Language */
             language: string;
+        };
+        /** PageMetadata */
+        aidream__services__winehq_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default winehq_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "winehq_wiki_page_metadata";
+            /**
+             * Provider
+             * @default WineHQ Wiki
+             * @constant
+             */
+            provider?: "WineHQ Wiki";
+            /** Slug */
+            slug: string;
+            /** Title */
+            title: string;
+            /** Format */
+            format: string;
+            /** Page Id */
+            page_id: number;
         };
         /** ExtractRequest */
         aidream__services__workflow_extract__materialize__ExtractRequest: {
@@ -122187,6 +122469,46 @@ export interface operations {
             };
         };
     };
+    public_status_statusbrew_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusbrewServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_codeclimate_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeClimateServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -127547,6 +127869,46 @@ export interface operations {
             };
         };
     };
+    public_status_launchdarkly_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LaunchDarklyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_harness_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HarnessServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_justcall_public_status_get: {
         parameters: {
             query?: never;
@@ -129549,6 +129911,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__samba_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_openssl_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__openssl_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_winehq_wiki_public_page_get: {
+        parameters: {
+            query: {
+                slug: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__winehq_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */

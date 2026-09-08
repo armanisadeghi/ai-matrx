@@ -56,7 +56,7 @@ import { createClient } from "@/utils/supabase/client";
 import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
-import { getJson } from "@/lib/python-client";
+import { apiGet, buildPath } from "@/lib/api/typed-client";
 import { BackendApiError } from "@/lib/api/errors";
 import {
   peekSelectedOrganizationId,
@@ -74,7 +74,6 @@ import {
   parseMandateWave1,
   type MandateWave1Fields,
 } from "./provision-shapes";
-import type { Json } from "@/types/database.types";
 import type { JsonObject } from "@/types/json";
 import {
   MANDATE_HOLDER_COLUMNS,
@@ -276,14 +275,14 @@ function assertRunnableVerdict(
   if (verdict.holder_type !== "agent" || !verdict.agent_id) {
     throw new Error(
       `mandate "${mandateKey}": the ${rung} rung names a ${verdict.holder_type} ` +
-        `Holder, and this surface can only run an agent. Rebind the ${rung} rung ` +
+        `Holder, and this screen can only run an agent. Rebind the ${rung} rung ` +
         `to an agent, or route this consumer through the server.`,
     );
   }
   if (verdict.is_version) {
     throw new Error(
       `mandate "${mandateKey}": the ${rung} rung is version-pinned ` +
-        `(version ${verdict.agent_id}), and this surface has no channel to run a ` +
+        `(version ${verdict.agent_id}), and this screen has no channel to run a ` +
         `pinned version — client-run mandates must be floating. Unpin the ` +
         `${rung} rung, or route this consumer through the server.`,
     );
@@ -341,9 +340,15 @@ export async function resolveMandate(
   // maps every other refusal to its own status).
   let verdict: MandateResolutionResponse;
   try {
-    const { data } = await getJson<MandateResolutionResponse>(
-      `/mandates/${encodeURIComponent(mandateKey)}/resolution`,
-      { expectedErrorStatuses: options.optional ? [404] : [] },
+    const { data } = await apiGet(
+      buildPath("/mandates/{mandate_key}/resolution", {
+        mandate_key: mandateKey,
+      }),
+      // The OPTIONAL lane owns its own outcome: a deliberately-unassigned key
+      // answering 404 is the documented result, not a system error, so it must
+      // not enter the global Error Inspector. Anything that is not a 404 is
+      // re-thrown below and captured by the consumer that asked.
+      { captureErrors: !options.optional },
     );
     verdict = data;
   } catch (error) {
@@ -361,7 +366,7 @@ export async function resolveMandate(
 
   const agentId = assertRunnableVerdict(mandateKey, verdict);
   const provenance = verdict.provenance;
-  const holderType = verdict.holder_type;
+  const holderType: string = verdict.holder_type ?? "agent";
   const configOverrides: Partial<FeLlmParams> | null = isJsonObject(
     verdict.config_overrides,
   )
@@ -435,10 +440,10 @@ export async function resolveMandate(
     // it applies the fallback chain, so for the 33 definitions carrying a
     // `fallback_mandate_key` these describe the mandate that actually answered,
     // which the local definition row cannot know (review §4).
-    contract: parseMandateContract(verdict.contract as Json),
-    inputKind: verdict.input_kind,
-    outputKind: verdict.output_kind,
-    provisionKey: verdict.provision_key,
+    contract: parseMandateContract(verdict.contract ?? null),
+    inputKind: verdict.input_kind ?? null,
+    outputKind: verdict.output_kind ?? null,
+    provisionKey: verdict.provision_key ?? null,
     pins: wave1.pins,
     pinnedContext: wave1.pinnedContext,
     presentation,

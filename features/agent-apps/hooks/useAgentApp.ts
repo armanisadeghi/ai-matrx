@@ -97,6 +97,7 @@ import {
 } from "@/features/agent-apps/surface/agent-app-surface";
 import {
   useAppHolder,
+  type AppHolder,
   type AppHolderSource,
 } from "@/features/agent-apps/lib/appHolder";
 
@@ -199,7 +200,7 @@ export interface UseAgentAppReturn {
    */
   mandateId: string | null;
   mandateKey: string | null;
-  holderProvenance: "system" | "org" | "user" | null;
+  holderProvenance: AppHolder["provenance"];
   surfaceKey: string;
   conversationId: string | null;
 
