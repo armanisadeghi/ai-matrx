@@ -22,6 +22,12 @@
  * character in order. The only change is that the ids become openable, with the
  * full id still on screen (`name={id}`), never truncated to `8f0bbfc2…`.
  *
+ * THE AUTHOR'S OWN MARKS ARE HONOURED, NOT PRINTED. A sentence that says its
+ * field names in markdown backticks meant them as code; this is the one place
+ * that renders them as `<code>`, so no surface needs — or is allowed to grow —
+ * a second inline-markdown renderer of its own. See `doors.ts`
+ * § INLINE CODE, THE WAY ITS AUTHOR WROTE IT.
+ *
  * CONSERVATIVE. An id becomes a door only when the sentence's own words name an
  * entity type the platform can actually open, or the call site declares one via
  * `defaultToken`. Anything else stays plain text: a link to the wrong record
@@ -66,6 +72,18 @@ export function TextWithDoors({
           // Position IS the identity of a prose run — the segments are a
           // deterministic split of one immutable string, never a reorderable list.
           <React.Fragment key={`t${index}`}>{segment.text}</React.Fragment>
+        ) : segment.kind === "code" ? (
+          // 🚨 THE AUTHOR'S BACKTICKS ARE MARKUP, NOT WORDS (R-O2). A sentence
+          // naming `title` and `slides` reaches a subject matter expert, and
+          // the marks are how its author said "these are field names" — so
+          // they become a `<code>`, not two stray punctuation characters on
+          // the screen. Same font treatment as an id, one class of thing.
+          <code
+            key={`c${index}`}
+            className="rounded bg-muted px-1 py-px font-mono text-[0.95em]"
+          >
+            {segment.text}
+          </code>
         ) : (
           <EntityRef
             key={`r${index}:${segment.id}`}

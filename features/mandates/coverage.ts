@@ -8,7 +8,14 @@
 //   green   Assigned          an enabled binding, or its own default holder
 //   orange  Running on fallback  nothing assigned here; another mandate's
 //                                holder is carrying it — that leader is NAMED
-//   red     Nothing assigned  no holder and no fallback that resolves
+//   red     Holder missing    no Holder and no fallback that resolves
+//
+// 🚨 ONE FACT, ONE WORD (FIX-R17). `red` had THREE names on one screen —
+// this tile said "Nothing assigned", the per-row badge said "Unassigned", and
+// the list's own Status column said "Holder missing" about the same rows. The
+// surviving word is the list's, because it is the only one built from the
+// platform's approved noun; `RED_WORD` below is the single place it lives, and
+// `__tests__/mandate-screen-vocabulary.test.ts` refuses a fourth.
 //
 // Server truth, never re-derived here. TWO shapes of the SAME classification
 // (aidream services/mandates/coverage.py — one implementation, two payloads):
@@ -55,6 +62,14 @@ export interface MandateCoverageBucketMeta {
   iconClassName: string;
 }
 
+/**
+ * THE WORD FOR `red`, in one place. The machine state stays `red` — that is the
+ * server's own name for it and nothing on a screen shows it — but every human
+ * rendering of that state says this, so the badge, the tile and the list's
+ * Status column can never again be three different words for one fact.
+ */
+export const RED_WORD = "Holder missing";
+
 export const COVERAGE_META: Record<
   MandateCoverageBucket,
   MandateCoverageBucketMeta
@@ -75,7 +90,7 @@ export const COVERAGE_META: Record<
     iconClassName: "text-amber-600 dark:text-amber-400",
   },
   red: {
-    label: "Nothing assigned",
+    label: RED_WORD,
     description:
       "No Holder and no fallback that resolves — this Mandate cannot run.",
     toneClassName: "border-rose-500/40 text-rose-700 dark:text-rose-400",

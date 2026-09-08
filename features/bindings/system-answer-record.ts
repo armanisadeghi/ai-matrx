@@ -80,13 +80,44 @@ export function systemAnswerRecord(draft: SystemAnswerDraft): SystemAnswerRecord
  * WHAT THE SAVE BUTTON SAYS. The record is not a question, but it is not a
  * secret either — a save that creates a row deciding for every user on the
  * platform names that on the control that does it. Labels, not paragraphs.
+ *
+ * 🚨 AND WHOSE ANSWER IT IS COMES FROM THE JOB'S HOME (FIX-R17/R-O4 — F3's
+ * class, caught a fourth time by the closing lens). This button read
+ * *"Set the system answer"* on an ORG-HOMED job whose own coverage line, three
+ * inches above, correctly said *"every member of Write Target Sandbox"*. The
+ * bottom rung of an org-homed mandate decides for ONE organization (FIX-R1), so
+ * "system" there is not vocabulary drift in a button — it is the screen naming
+ * the wrong blast radius on the control that causes it.
+ *
+ * The home is NOT re-derived here: `home` is `defaultHolderRungOffer()`'s own
+ * answer, the one place on this screen that reads `mandate.definition`'s home,
+ * so the label and the sentence beside it cannot disagree.
+ *
+ * The `global-binding` record is the exception that proves it: a
+ * `principal_type = 'global'` row genuinely decides for everybody, and the
+ * database refuses one on an org-homed mandate outright
+ * (`mandate.guard_binding_containment`), so its words stay platform-wide.
  */
 export function systemAnswerSaveWords(
   record: SystemAnswerRecord,
-  { exists }: { exists: boolean },
+  {
+    exists,
+    home,
+  }: {
+    exists: boolean;
+    /** `defaultHolderRungOffer()`'s reading of the job's home. */
+    home: { systemHomed: boolean; homeName: string };
+  },
 ): string {
   if (record === "global-binding") {
     return exists ? "Save the system answer" : "Set the system answer for everyone";
+  }
+  if (!home.systemHomed) {
+    // NOT lowercased and never abbreviated: the label carries the home
+    // organization's NAME, exactly as the bottom rung's own words do.
+    return exists
+      ? `Save ${home.homeName}'s answer`
+      : `Set ${home.homeName}'s answer`;
   }
   return exists ? "Save the system answer" : "Set the system answer";
 }

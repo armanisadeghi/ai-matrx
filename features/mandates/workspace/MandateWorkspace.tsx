@@ -347,7 +347,26 @@ function resolveForOrgPrincipal(
   };
 }
 
-export function MandateWorkspace({
+/**
+ * 🚨 THE WHOLE SCREEN IS ABOUT ONE JOB, SO IT IS KEYED TO THAT JOB (R-O6).
+ *
+ * The closing lens navigated from one mandate to another WITHOUT a reload and
+ * the first job's refusal was still on screen. `OneBindingWorkspace` was the
+ * instance it caught, and it is keyed at its own boundary now — but it is not
+ * the only slot on this page holding a verdict about one mandate:
+ * `RunThisJobSection` holds a run's `result` and `failure`, `TriadSections`
+ * hold an unsaved edit, and `useMandateWorkspaceData` holds the previous job's
+ * rows until the next fetch lands. Every one of them is wrong the instant the
+ * job changes, and none of them opted in to noticing.
+ *
+ * A key on the whole workspace is the one statement that covers them all, and
+ * covers whatever is added below it tomorrow.
+ */
+export function MandateWorkspace(props: MandateWorkspaceProps) {
+  return <OneMandateWorkspace key={props.mandateKeyOrId} {...props} />;
+}
+
+function OneMandateWorkspace({
   mandateKeyOrId,
   host,
   principal = { kind: "user" },

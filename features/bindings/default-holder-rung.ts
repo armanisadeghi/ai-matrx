@@ -75,6 +75,15 @@ export interface DefaultHolderRungInput {
 export interface DefaultHolderRungOffer {
   /** Is the mandate homed in the Matrx System organization? */
   systemHomed: boolean;
+  /**
+   * WHOSE JOB THIS IS, in the words a control may carry — the home
+   * organization's own name once it has been read, and an honest stand-in
+   * before that. This is THE home derivation on this screen: anything that
+   * labels a control for this job (the Save button included, FIX-R17/R-O4)
+   * reads it here rather than deriving the home a second time, which is how
+   * "Set the system answer" ended up on an org-homed job.
+   */
+  homeName: string;
   /** May this caller set it — the predicate the screen and the guard share. */
   offered: boolean;
   /** The rung's name, for the reader in front of it. */
@@ -118,6 +127,8 @@ export function defaultHolderRungOffer(
   if (!homeOrganizationId) {
     return {
       systemHomed: false,
+      // Not read yet — and a control must never guess it is the platform's.
+      homeName: "this job's home organization",
       offered: false,
       label: "The job's own default",
       covers:
@@ -137,6 +148,7 @@ export function defaultHolderRungOffer(
   if (systemHomed) {
     return {
       systemHomed: true,
+      homeName: homeName,
       offered: isSuperAdmin,
       label: "System default",
       covers:
@@ -151,6 +163,7 @@ export function defaultHolderRungOffer(
   const allowed = isSuperAdmin || isOrgAdminRole(homeOrganizationRole);
   return {
     systemHomed: false,
+    homeName,
     offered: allowed,
     label: `Default for ${homeName}`,
     covers: `Everyone in ${homeName} runs this, wherever no binding above it answers.`,

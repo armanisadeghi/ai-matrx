@@ -713,3 +713,58 @@ describe("no mandate screen renders the declaration's own field names", () => {
     ).toEqual([]);
   });
 });
+
+/**
+ * ── ONE FACT, ONE WORD: THE `red` COVERAGE STATE ─────────────────────────────
+ *
+ * 🚨 THE DEFECT (FIX-R17, the split FIX-R11 flagged and nothing owned). A
+ * mandate with no Holder and no fallback was called THREE different things on
+ * ONE row of `/mandates`: the coverage badge said **Unassigned**, the coverage
+ * tile it filters said **Nothing assigned**, and the Status column beside it
+ * said **Holder missing** — and the server's own sentence in the badge's
+ * tooltip phrased it a fourth way. A reader has no way to know those are one
+ * fact, and each new surface invented its own wording because nothing said
+ * where the word lived.
+ *
+ * `red` stays the machine's name for the state (no person ever sees it).
+ * `RED_WORD` is the human one, and these pin every human rendering of it to
+ * that constant so a fifth cannot grow.
+ */
+describe("the red coverage state has exactly one human word", () => {
+  const { COVERAGE_META, RED_WORD } = require("@/features/mandates/coverage");
+  const { HEALTH_META } = require("@/features/mandates/browse/types");
+
+  it("is the platform's own noun, and the list's Status column already said it", () => {
+    expect(RED_WORD).toBe("Holder missing");
+    // The list's Status badge for the same shape — the word that survived,
+    // because it is the only one of the three built from an approved noun.
+    expect(HEALTH_META["holder missing"].label).toBe(RED_WORD);
+  });
+
+  it("is what the coverage tile and the per-row badge both say", () => {
+    expect(COVERAGE_META.red.label).toBe(RED_WORD);
+    const badge = readFileSync(
+      join(REPO_ROOT, "features/mandates/browse/CoverageBadge.tsx"),
+      "utf8",
+    );
+    // The badge IMPORTS the word rather than typing one, so the two can never
+    // drift again. Its two retired spellings are gone from the rendered copy.
+    expect(badge).toContain("RED_WORD");
+    const rendered = stripComments(badge);
+    expect(rendered).not.toContain("Unassigned");
+    expect(rendered).not.toContain("Nothing assigned");
+  });
+
+  it("has no second spelling anywhere a mandate screen renders", () => {
+    const offences: string[] = [];
+    for (const file of SWEPT_TREES.flatMap(sourceFilesUnder)) {
+      const src = stripComments(readFileSync(file, "utf8"));
+      for (const banned of ["Unassigned", "Nothing assigned"]) {
+        if (src.includes(banned)) {
+          offences.push(`${relative(REPO_ROOT, file)}: ${banned}`);
+        }
+      }
+    }
+    expect(offences).toEqual([]);
+  });
+});

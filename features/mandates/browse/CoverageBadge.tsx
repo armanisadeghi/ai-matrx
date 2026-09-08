@@ -11,7 +11,7 @@
 //   running on fallback    amber, and it NAMES the leader whose Holder carries
 //                          this mandate (FALLBACK-MANDATES.md: a fallback that
 //                          runs unnamed is silent permanent mediocrity).
-//   nothing assigned       red. No Holder, no fallback that resolves.
+//   Holder missing         red. No Holder, no fallback that resolves.
 //
 // ONE fetch per page (useMandateCoverageStates), ONE classification (the
 // server's — see ../coverage.ts). Clicking a badge narrows the list to that
@@ -27,6 +27,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { cn } from "@/lib/utils";
 import {
   COVERAGE_META,
+  RED_WORD,
   buildCoverageStateIndex,
   fetchMandateCoverageStates,
   type MandateCoverageStateIndex,
@@ -174,7 +175,10 @@ export function coverageBadgeVerdict(
         ? nameLeader && row.leader_key
           ? row.leader_key
           : "Fallback"
-        : "Unassigned",
+        // ONE WORD FOR `red` (FIX-R17) — the same one the list's Status
+        // column and the coverage tile use. It used to say "Unassigned" here,
+        // "Nothing assigned" on the tile and "Holder missing" one column over.
+        : RED_WORD,
     title: `${row.reason ?? meta.description} — click to ${
       isActive ? "clear this filter" : `show only "${meta.label}"`
     }`,

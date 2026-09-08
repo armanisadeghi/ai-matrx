@@ -1035,12 +1035,15 @@ function StatusBanner({
               <p className="text-muted-foreground">
                 {HEALTH_HINT["output contract unmet"]}
               </p>
+              {/* R-O2's sibling: this built the backticks itself and printed
+                  them into JSX, so the marks landed on screen as characters.
+                  One renderer for a marked sentence — never a second one. */}
               <p className="text-muted-foreground">
-                This job requires{" "}
-                {row.requiredOutputKeys
-                  .map((key) => `\`${key}\``)
-                  .join(", ")}
-                .
+                <TextWithDoors
+                  text={`This job requires ${row.requiredOutputKeys
+                    .map((key) => `\`${key}\``)
+                    .join(", ")}.`}
+                />
               </p>
             </div>
           </div>

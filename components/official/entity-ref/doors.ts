@@ -215,25 +215,79 @@ export function tokenFromPrecedingWords(preceding: string): string | null {
   return null;
 }
 
-/** One piece of a sentence: plain prose, or an id we can open a door on. */
+/**
+ * One piece of a sentence: plain prose, an id we can open a door on, or a run
+ * the author marked as CODE with markdown backticks.
+ */
 export type SentenceSegment =
   | { kind: "text"; text: string }
+  | { kind: "code"; text: string }
   | { kind: "ref"; id: string; token: string };
 
 const UUID_IN_TEXT_RE =
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi;
 
 /**
- * Split a server-authored sentence into prose and openable ids.
+ * INLINE CODE, THE WAY ITS AUTHOR WROTE IT.
+ *
+ * 🚨 THE DEFECT (V-PARITY/UX R-O2, both walk rounds). Sentences that name a
+ * field, a key or a variable mark it the one way every author on this platform
+ * marks it — markdown backticks:
+ *
+ *     Its structured output is missing `title`, `slides` — whatever reads this
+ *     job's result requires them.
+ *
+ * Printed through a plain `<span>` the backtick CHARACTERS land on a subject
+ * matter expert's screen. There is no second renderer for this: every sentence
+ * somebody else wrote already reaches a person through `TextWithDoors`, so the
+ * marks are understood HERE, beside the ids, and every one of its ~10 adopting
+ * surfaces is fixed by the same three lines.
+ *
+ * Deliberately ONLY single-backtick spans, and never across a newline: this is
+ * a sentence renderer, not a markdown engine. Anything else — an unmatched
+ * backtick, a fenced block — stays exactly as it was typed.
+ */
+const INLINE_CODE_RE = /`([^`\n]+)`/g;
+
+/**
+ * Split a server-authored sentence into prose, inline code and openable ids.
  *
  * `defaultToken` is what the CALL SITE knows that the sentence does not — a
  * mandate-resolution refusal is always about an agent, so its screen may say
  * so. It is used only when the prose itself names nothing openable.
  *
- * Every character of the input survives into the output in order, so a caller
+ * Every character of the input survives into the output in order — apart from
+ * the two backticks delimiting an inline-code run, which are MARKUP the author
+ * wrote to say "this is code" and were never words meant to be read. A caller
  * that joins the segments back together gets the server's words unchanged.
  */
 export function segmentSentenceIds(
+  text: string,
+  defaultToken?: string | null,
+): SentenceSegment[] {
+  const out: SentenceSegment[] = [];
+  let prose = 0;
+  INLINE_CODE_RE.lastIndex = 0;
+  for (
+    let match = INLINE_CODE_RE.exec(text);
+    match !== null;
+    match = INLINE_CODE_RE.exec(text)
+  ) {
+    if (match.index > prose) {
+      out.push(...segmentIdsOnly(text.slice(prose, match.index), defaultToken));
+    }
+    out.push({ kind: "code", text: match[1] });
+    prose = match.index + match[0].length;
+  }
+  if (out.length === 0) return segmentIdsOnly(text, defaultToken);
+  if (prose < text.length) {
+    out.push(...segmentIdsOnly(text.slice(prose), defaultToken));
+  }
+  return out;
+}
+
+/** The id half, run over one run of prose that carries no code marks. */
+function segmentIdsOnly(
   text: string,
   defaultToken?: string | null,
 ): SentenceSegment[] {

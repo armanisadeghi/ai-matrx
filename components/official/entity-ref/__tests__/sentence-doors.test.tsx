@@ -60,9 +60,18 @@ describe("segmentSentenceIds — the server's words, plus doors", () => {
 
   it("keeps every character, in order — nothing is paraphrased or dropped", () => {
     const rejoined = segmentSentenceIds(REFUSAL)
-      .map((s) => (s.kind === "text" ? s.text : s.id))
+      .map((s) => (s.kind === "ref" ? s.id : s.text))
       .join("");
     expect(rejoined).toBe(REFUSAL);
+  });
+
+  it("turns single-backtick field names into inline-code segments", () => {
+    expect(segmentSentenceIds("requires `title` and `slides`")).toEqual([
+      { kind: "text", text: "requires " },
+      { kind: "code", text: "title" },
+      { kind: "text", text: " and " },
+      { kind: "code", text: "slides" },
+    ]);
   });
 
   it("leaves an id alone when nothing establishes what it points at", () => {
@@ -117,5 +126,32 @@ describe("TextWithDoors — the refusal is openable", () => {
     // Truncating would destroy the very string the reader came to copy.
     expect(host.textContent).toContain(AGENT_ID);
     expect(host.textContent).toContain("breaks the mandate contract");
+  });
+
+  /**
+   * 🚨 R-O2, read off production twice. The admin mandate page printed
+   *
+   *   Its structured output is missing `title`, `slides` — whatever reads this
+   *   job's result requires them.
+   *
+   * inside a plain `<span>`, so the BACKTICKS were on a subject matter
+   * expert's screen as characters. Every sentence somebody else wrote already
+   * comes through this component, so the marks are understood here and nowhere
+   * else — there is exactly one inline renderer, and this is it.
+   */
+  it("renders the author's backticked field names as code, not as backticks", () => {
+    const sentence =
+      "Its structured output is missing `title`, `slides` — whatever reads this job's result requires them.";
+    act(() => {
+      root.render(<TextWithDoors text={sentence} />);
+    });
+    const codes = Array.from(host.querySelectorAll("code")).map(
+      (el) => el.textContent,
+    );
+    expect(codes).toEqual(["title", "slides"]);
+    // The marks are markup; the words are the author's and survive intact.
+    expect(host.textContent).not.toContain("`");
+    expect(host.textContent).toContain("Its structured output is missing");
+    expect(host.textContent).toContain("whatever reads this job's result");
   });
 });

@@ -90,20 +90,39 @@ describe("which record the system answer is written to", () => {
   });
 
   it("names the record on the SAVE BUTTON — a label, never a paragraph", () => {
-    const creating = systemAnswerSaveWords("global-binding", { exists: false });
+    const systemHome = { systemHomed: true, homeName: "Matrx System" };
+    const creating = systemAnswerSaveWords("global-binding", {
+      exists: false,
+      home: systemHome,
+    });
     expect(creating).toBe("Set the system answer for everyone");
     expect(creating.split(".").length).toBe(1);
-    expect(systemAnswerSaveWords("definition-default", { exists: false })).toBe(
-      "Set the system answer",
-    );
+    expect(
+      systemAnswerSaveWords("definition-default", {
+        exists: false,
+        home: systemHome,
+      }),
+    ).toBe("Set the system answer");
     // Once it exists, both records are just "the system answer" — the reader
     // is never asked to think about storage twice.
-    expect(systemAnswerSaveWords("global-binding", { exists: true })).toBe(
-      "Save the system answer",
-    );
     expect(
-      systemAnswerSaveWords("definition-default", { exists: true }),
+      systemAnswerSaveWords("global-binding", {
+        exists: true,
+        home: systemHome,
+      }),
     ).toBe("Save the system answer");
+    expect(
+      systemAnswerSaveWords("definition-default", {
+        exists: true,
+        home: systemHome,
+      }),
+    ).toBe("Save the system answer");
+    expect(
+      systemAnswerSaveWords("definition-default", {
+        exists: false,
+        home: { systemHomed: false, homeName: "Write Target Sandbox" },
+      }),
+    ).toBe("Set Write Target Sandbox's answer");
   });
 });
 

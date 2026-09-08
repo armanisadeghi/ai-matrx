@@ -218,7 +218,37 @@ function pinnedRungs(
  * fix, and it also guarantees the org answer never starts from the user
  * answer's draft.
  */
-export function OneBindingWorkspace({
+/**
+ * 🚨 EVERY PIECE OF THIS WORKSPACE'S STATE IS ABOUT ONE MANDATE — SO IT IS
+ * KEYED TO THAT MANDATE (V-PARITY/UX R-O6, closing-lens round 2).
+ *
+ * THE DEFECT, measured. The walker triggered the server's containment refusal
+ * on `zzz_vpux2.scratch`, then let the SPA navigate to `zzz_vpux2.scratch_2` —
+ * a props change, not a remount, because both mandates live on the same route
+ * segment. The refusal about the FIRST job was still on the screen describing
+ * the SECOND. Only a hard reload cleared it.
+ *
+ * THE ROOT CAUSE was one absent token. The draft below is keyed by
+ * `bindingIdentity` — rung, organization, binding id, `updated_at` — and a
+ * mandate with no binding at that rung produces the identical key on EVERY
+ * mandate (`system::new:`), so React reused the instance and every `useState`
+ * inside it, `saveError` included. And the state held OUT here (the report of
+ * the last write, the signature it was written at, the mode, the rung) is
+ * deliberately above that key, so it would have survived even a fixed one.
+ *
+ * THE CLASS FIX is this wrapper, not a `saveError` reset: a mandate change
+ * invalidates EVERYTHING this component knows, so a `key` on the whole
+ * workspace is the honest statement of that, and a slot added tomorrow cannot
+ * forget to opt in. `bindingIdentity` names the mandate too, because a key
+ * that is ambiguous across rows is a defect whether or not anything remounts.
+ *
+ * Guard: `__tests__/workspace-is-keyed-to-its-mandate.test.tsx`.
+ */
+export function OneBindingWorkspace(props: OneBindingWorkspaceProps) {
+  return <OneMandateBindingWorkspace key={props.data.mandate.id} {...props} />;
+}
+
+function OneMandateBindingWorkspace({
   data,
   initialRung = "user",
   initialOrganizationId = null,
@@ -300,7 +330,9 @@ export function OneBindingWorkspace({
   const [writtenSignature, setWrittenSignature] = useState<string | null>(null);
 
   const binding = findBinding(data.bindings, rung, userId, organizationId);
-  const bindingIdentity = `${rung}:${organizationId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}`;
+  // The mandate leads the key: without it two different jobs with no binding
+  // at the same rung are the SAME row to React (R-O6).
+  const bindingIdentity = `${data.mandate.id}:${rung}:${organizationId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}`;
 
   return (
     <BindingDraft
@@ -1947,7 +1979,10 @@ function BindingDraft({
           {saveError ? (
             <p className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] leading-relaxed text-destructive">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              {saveError}
+              {/* Through the ONE sentence renderer (R-O2): the door's refusal
+                  names ids and field names, and printed bare it showed the
+                  author's backticks and made the reader hand-copy a uuid. */}
+              <TextWithDoors text={saveError} defaultToken="agent" />
             </p>
           ) : null}
 
@@ -1955,7 +1990,7 @@ function BindingDraft({
             {saveRefusal ? (
               <p className="mr-auto flex items-start gap-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                {saveRefusal}
+                <TextWithDoors text={saveRefusal} defaultToken="agent" />
               </p>
             ) : null}
             {binding ? (
@@ -1989,6 +2024,8 @@ function BindingDraft({
                         answerRecord === "global-binding"
                           ? binding !== null
                           : Boolean(seedHolder.agentId || seedHolder.workflowId),
+                      // R-O4: the home, from the ONE place that reads it.
+                      home: defaultHolderOffer,
                     })
                   : onDefaultHolderRung
                     ? seedHolder.agentId || seedHolder.workflowId
