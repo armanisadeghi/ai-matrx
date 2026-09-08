@@ -31,9 +31,15 @@ const FIELD_HELP_OPEN = "matrx:field-help-open";
 export function FieldHelp({
   label,
   children,
+  triggerIcon,
+  triggerLabel,
+  unavailable = false,
 }: {
   label: string;
   children: ReactNode;
+  triggerIcon?: ReactNode;
+  triggerLabel?: string;
+  unavailable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -93,7 +99,8 @@ export function FieldHelp({
         <button
           ref={trigger}
           type="button"
-          aria-label={`Help: ${label}`}
+          aria-label={triggerLabel ?? `Help: ${label}`}
+          aria-disabled={unavailable || undefined}
           className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onPointerEnter={(event) => {
             if (event.pointerType === "mouse") {
@@ -124,7 +131,9 @@ export function FieldHelp({
             changeOpen(true);
           }}
         >
-          <CircleHelp className="size-3.5" aria-hidden="true" />
+          {triggerIcon ?? (
+            <CircleHelp className="size-3.5" aria-hidden="true" />
+          )}
         </button>
       </PopoverTrigger>
       <PopoverContent

@@ -23,7 +23,7 @@
 // to happen.
 
 import { useMemo, useState } from "react";
-import { ArrowDown, Check, Pencil, X } from "lucide-react";
+import { ArrowDown, Check, X } from "lucide-react";
 import {
   FieldHelp,
   PropertyRow,
@@ -78,7 +78,7 @@ function goalSectionScope(
   return values as SurfaceScopePayload;
 }
 import { MandateUserTextLine } from "../components/MandateUserTextLine";
-import { Section } from "./Section";
+import { Section, SectionEditAction } from "./Section";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toastFailure } from "@/lib/failure/toastFailure";
@@ -213,17 +213,24 @@ export function TriadInputSection({
     <Section
       title="Inputs"
       actions={
-        data.offer ? (
-          <div className="flex items-center gap-1 text-xs text-foreground">
-            <span>
-              <span className="font-semibold">Editing:</span> Code
-            </span>
-            <FieldHelp label="Input editing">
-              These inputs are declared by the calling code. This page can map
-              them to a holder, but cannot change the provision.
-            </FieldHelp>
-          </div>
-        ) : undefined
+        <SectionEditAction
+          label="Edit inputs"
+          unavailable={
+            data.offer
+              ? "Defined in code."
+              : !authoring
+                ? "System admin only."
+                : editing
+                  ? "Editor open."
+                  : undefined
+          }
+          onEdit={() => {
+            setDraft(
+              draftInputs.length > 0 ? draftInputs : [{ description: "" }],
+            );
+            setEditing(true);
+          }}
+        />
       }
     >
       <div className="space-y-3">
@@ -319,20 +326,6 @@ export function TriadInputSection({
 
         {authoring && !data.offer && !editing ? (
           <div className="flex items-center gap-1.5 pt-0.5">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 gap-1 text-[12px]"
-              onClick={() => {
-                setDraft(
-                  draftInputs.length > 0 ? draftInputs : [{ description: "" }],
-                );
-                setEditing(true);
-              }}
-            >
-              <Pencil className="h-3 w-3" />
-              {draftInputs.length > 0 ? "Edit inputs" : "Describe inputs"}
-            </Button>
             {draftInputs.length > 0 ? (
               <AutomationButton
                 mandateKey={KIND_CONVERTER_MANDATE_KEY}
@@ -670,24 +663,26 @@ export function TriadGoalSection({
   };
 
   return (
-    <Section title="Goal">
-      <div className="relative space-y-3 rounded-xl border border-border bg-card p-4">
-        {authoring && !editing ? (
-          <div className="absolute right-3 top-3">
-            <Button
-              size="icon"
-              variant="outline"
-              className="size-8 rounded-md"
-              aria-label="Edit goal"
-              onClick={() => {
-                setDraft(goal ?? "");
-                setEditing(true);
-              }}
-            >
-              <Pencil className="size-4" aria-hidden="true" />
-            </Button>
-          </div>
-        ) : null}
+    <Section
+      title="Goal"
+      actions={
+        <SectionEditAction
+          label="Edit goal"
+          unavailable={
+            !authoring
+              ? "System admin only."
+              : editing
+                ? "Editor open."
+                : undefined
+          }
+          onEdit={() => {
+            setDraft(goal ?? "");
+            setEditing(true);
+          }}
+        />
+      }
+    >
+      <div className="space-y-3 rounded-xl border border-border bg-card p-4">
         {editing ? (
           <div className="space-y-2">
             <ProTextarea
@@ -728,7 +723,7 @@ export function TriadGoalSection({
           </div>
         ) : (
           <>
-            <p className="whitespace-pre-wrap pr-12 text-base leading-relaxed text-foreground">
+            <p className="whitespace-pre-wrap text-base leading-relaxed text-foreground">
               {goal || "Not specified"}
             </p>
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -771,15 +766,10 @@ export function TriadOutputSection({ data }: { data: MandateWorkspaceData }) {
     <Section
       title="Output"
       actions={
-        <div className="flex items-center gap-1 text-xs text-foreground">
-          <span>
-            <span className="font-semibold">Editing:</span> Not available
-          </span>
-          <FieldHelp label="Output editing">
-            The output contract is read-only on this page. There is currently no
-            output contract editor.
-          </FieldHelp>
-        </div>
+        <SectionEditAction
+          label="Edit output"
+          unavailable="Output editing is not available yet."
+        />
       }
     >
       <ConfigurationTable label="Output contract" columns={OUTPUT_COLUMNS}>

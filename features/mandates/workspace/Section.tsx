@@ -1,5 +1,8 @@
 "use client";
 
+import { Pencil } from "lucide-react";
+import { FieldHelp } from "@/components/official/ConfigurationFields";
+
 // features/mandates/workspace/Section.tsx
 //
 // The workspace's section chrome (ShortcutEditorNext anatomy — eyebrow title,
@@ -28,5 +31,40 @@ export function Section({
       </div>
       {children}
     </section>
+  );
+}
+
+/** The same small edit affordance for every definition section. */
+export function SectionEditAction({
+  label,
+  onEdit,
+  unavailable,
+}: {
+  label: string;
+  onEdit?: () => void;
+  unavailable?: string;
+}) {
+  if (unavailable)
+    return (
+      <FieldHelp
+        label={label}
+        triggerLabel={`${label} (unavailable)`}
+        unavailable
+        triggerIcon={
+          <Pencil className="size-3 opacity-40" aria-hidden="true" />
+        }
+      >
+        {unavailable}
+      </FieldHelp>
+    );
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onEdit}
+      className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <Pencil className="size-3" aria-hidden="true" />
+    </button>
   );
 }
