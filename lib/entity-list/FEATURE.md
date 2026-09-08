@@ -227,6 +227,32 @@ how that savior page gets built.
 
 ## Change log
 
+- 2026-09-08 — **A SERVICE'S OWN INPUTS ARE PART OF THE FETCH KEY, AND A
+  DECLARED SCOPE SECTION IS NEVER ABSENT** (one-resolution FIX-R6/F1, from a
+  Sonnet walk of production v0.4.1722). `/mandates` declares an **Organization**
+  scope section and, for an admin who belongs to nine organizations, it did not
+  render at all. Two shell defects, both fixed as a class. (1) Every fetch here
+  was keyed by the QUERY alone; `/mandates` builds its service from
+  `useUserOrganizations()`, which answers AFTER the first render, so the
+  scope-counts call went out once knowing about ZERO organizations and never
+  again — the query had not changed. `UseEntityListArgs.serviceKey` (surfaced as
+  `EntityListConfig.serviceKey`) is the declared identity of what a service was
+  built FROM; it joins `queryKey`/`countsKey`, and the shell re-asks the moment
+  it changes. The service object itself cannot be the dependency — hosts build
+  it inline, so it is a new object every render. (2) `EntityFilterPanel`
+  rendered a declared scope section only `if (options.length > 0)`, so "no
+  options" and "this page cannot narrow by that" looked identical and neither
+  said anything. Empty is now a STATE with a sentence — still reading, refused
+  in the SERVICE'S own words, or genuinely none — carried by
+  `EntityScopeCounts.narrowUnavailable`, with the shell printing its own
+  "this is a defect" line when a surface supplies no reason at all. The counts
+  query also gained its own `countsLoading` (derived from an answered-for key,
+  never written from an effect body) and `countsError` on the controller.
+  Guards: `__tests__/scope-section-loud.test.tsx` drives the real panel through
+  its own popover, and `__tests__/service-key-refetch.test.tsx` drives the real
+  hook across a late-arriving organization list — RED 4 failed / 1 passed at
+  `0d57acc92e`, GREEN 5 passed.
+
 - 2026-08-29 — Inline edit drafts retain their source row across server-page
   reconciliation, preventing refresh/realtime/page movement from rejecting a save.
 
