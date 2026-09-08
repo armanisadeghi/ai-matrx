@@ -3663,6 +3663,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/meet/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Meeting End
+         * @description A HOST ends the meeting for everyone (MRI-A6).
+         *
+         *     Host power is re-checked HERE, exactly as `/recording/*` re-checks it —
+         *     being a host on the screen is not the decision. The service stamps
+         *     `ended_at` under a compare-and-swap, refuses the note-taker from coming
+         *     back, deletes the LiveKit room so the meeting actually stops, and enqueues
+         *     the one wrap-up run. Calling it twice returns the ORIGINAL `ended_at`:
+         *     ending an ended meeting is a no-op that reports the truth.
+         */
+        post: operations["meeting_end_v1_meet_end_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/meet/agent/start": {
         parameters: {
             query?: never;
@@ -76201,6 +76228,33 @@ export interface components {
             question: string;
         };
         /**
+         * MeetingEndRequest
+         * @description `POST /api/v1/meet/end` — see `endForEveryone` in the package.
+         *
+         *     Exactly two fields, because ending a meeting is a SERVER decision: the
+         *     package sends who and where, never `ended_at`. A client-supplied end time
+         *     would be a guess stamped as a fact.
+         */
+        MeetingEndRequest: {
+            /** Meeting Id */
+            meeting_id: string;
+            /** Organization Id */
+            organization_id: string;
+        };
+        /**
+         * MeetingEndResponse
+         * @description What `endForEveryone` reads back.
+         *
+         *     `ended_at` is not optional and is never null: the package patches its store
+         *     with this exact string, and a null would make the room render as live after
+         *     the host ended it. A repeat call returns the ORIGINAL timestamp — ending an
+         *     ended meeting must not move the clock.
+         */
+        MeetingEndResponse: {
+            /** Ended At */
+            ended_at: string;
+        };
+        /**
          * MemServiceStatus
          * @description Safe aggregate status projection for Mem's fixed status page.
          */
@@ -79054,14 +79108,26 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
-        /** NoteTakerStartRequest */
+        /**
+         * NoteTakerStartRequest
+         * @description `POST /api/v1/meet/agent/start` — see `startNoteTaker` in the package.
+         *
+         *     🚨 **No `agent_id`, and there never will be one again.** The note-taker is a
+         *     RUNTIME ROLE, not an agent definition (D2): its room identity is
+         *     `agent:note_taker:<meeting_id>` and every piece of reasoning about the
+         *     meeting runs behind a Mandate whose Holder the server resolves from the
+         *     database at run time. A caller that could name the agent was a caller that
+         *     could name the WRONG one, and `@ai-matrx/meet` 0.3.0 stopped sending it —
+         *     which this model refused with a 422 until MRI-A7 removed the field.
+         *
+         *     Exactly three fields, matching `core/ai.ts` at the wire — pinned by
+         *     `test_the_note_taker_start_body_is_exactly_what_the_package_sends`.
+         */
         NoteTakerStartRequest: {
             /** Meeting Id */
             meeting_id: string;
             /** Room Name */
             room_name: string;
-            /** Agent Id */
-            agent_id: string;
             /** Organization Id */
             organization_id: string;
         };
@@ -121110,6 +121176,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecordingStateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meeting_end_v1_meet_end_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetingEndRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetingEndResponse"];
                 };
             };
             /** @description Validation Error */

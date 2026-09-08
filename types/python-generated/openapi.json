@@ -8834,6 +8834,48 @@
         }
       }
     },
+    "/v1/meet/end": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Meeting End",
+        "description": "A HOST ends the meeting for everyone (MRI-A6).\n\nHost power is re-checked HERE, exactly as `/recording/*` re-checks it —\nbeing a host on the screen is not the decision. The service stamps\n`ended_at` under a compare-and-swap, refuses the note-taker from coming\nback, deletes the LiveKit room so the meeting actually stops, and enqueues\nthe one wrap-up run. Calling it twice returns the ORIGINAL `ended_at`:\nending an ended meeting is a no-op that reports the truth.",
+        "operationId": "meeting_end_v1_meet_end_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeetingEndRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetingEndResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/meet/agent/start": {
       "post": {
         "tags": [
@@ -172324,6 +172366,39 @@
         "title": "MeetQuestionRequest",
         "description": "`POST /api/v1/meet/intelligence/ask` — a question and nothing else.\n\n🚨 The body carries NO context, NO transcript and NO agent id. Everything the\nanswer is built from is read from durable rows on the server (D16), and which\nholder answers is the Binding's call, not the client's."
       },
+      "MeetingEndRequest": {
+        "properties": {
+          "meeting_id": {
+            "type": "string",
+            "title": "Meeting Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meeting_id",
+          "organization_id"
+        ],
+        "title": "MeetingEndRequest",
+        "description": "`POST /api/v1/meet/end` — see `endForEveryone` in the package.\n\nExactly two fields, because ending a meeting is a SERVER decision: the\npackage sends who and where, never `ended_at`. A client-supplied end time\nwould be a guess stamped as a fact."
+      },
+      "MeetingEndResponse": {
+        "properties": {
+          "ended_at": {
+            "type": "string",
+            "title": "Ended At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ended_at"
+        ],
+        "title": "MeetingEndResponse",
+        "description": "What `endForEveryone` reads back.\n\n`ended_at` is not optional and is never null: the package patches its store\nwith this exact string, and a null would make the room render as live after\nthe host ended it. A repeat call returns the ORIGINAL timestamp — ending an\nended meeting must not move the clock."
+      },
       "MemServiceStatus": {
         "properties": {
           "__kind": {
@@ -178102,10 +178177,6 @@
             "type": "string",
             "title": "Room Name"
           },
-          "agent_id": {
-            "type": "string",
-            "title": "Agent Id"
-          },
           "organization_id": {
             "type": "string",
             "title": "Organization Id"
@@ -178115,10 +178186,10 @@
         "required": [
           "meeting_id",
           "room_name",
-          "agent_id",
           "organization_id"
         ],
-        "title": "NoteTakerStartRequest"
+        "title": "NoteTakerStartRequest",
+        "description": "`POST /api/v1/meet/agent/start` — see `startNoteTaker` in the package.\n\n🚨 **No `agent_id`, and there never will be one again.** The note-taker is a\nRUNTIME ROLE, not an agent definition (D2): its room identity is\n`agent:note_taker:<meeting_id>` and every piece of reasoning about the\nmeeting runs behind a Mandate whose Holder the server resolves from the\ndatabase at run time. A caller that could name the agent was a caller that\ncould name the WRONG one, and `@ai-matrx/meet` 0.3.0 stopped sending it —\nwhich this model refused with a 422 until MRI-A7 removed the field.\n\nExactly three fields, matching `core/ai.ts` at the wire — pinned by\n`test_the_note_taker_start_body_is_exactly_what_the_package_sends`."
       },
       "NoteTakerStopRequest": {
         "properties": {

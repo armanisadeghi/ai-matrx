@@ -2965,6 +2965,16 @@ export type Database = {
           },
         ]
       }
+      ui_enum_drift: {
+        Row: {
+          category: string | null
+          control_key: string | null
+          legacy_enum: Json | null
+          model_name: string | null
+          resolved_enum: Json | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _validate_rules_envelope: {
@@ -9671,6 +9681,13 @@ export type Database = {
             referencedRelation: "tool_call"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_cx_tool_call_parent"
+            columns: ["parent_call_id"]
+            isOneToOne: false
+            referencedRelation: "vw_tool_refetch"
+            referencedColumns: ["repeat_tool_call_id"]
+          },
         ]
       }
       tool_trace: {
@@ -10161,6 +10178,47 @@ export type Database = {
           unknown_cost_calls: number | null
         }
         Relationships: []
+      }
+      vw_tool_refetch: {
+        Row: {
+          arguments: Json | null
+          conversation_id: string | null
+          first_at: string | null
+          first_call_id: string | null
+          first_iteration: number | null
+          first_output_chars: number | null
+          first_result_trimmed_before_repeat: boolean | null
+          first_tool_call_id: string | null
+          prior_identical_calls: number | null
+          repeat_at: string | null
+          repeat_call_id: string | null
+          repeat_iteration: number | null
+          repeat_tool_call_id: string | null
+          tool_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
