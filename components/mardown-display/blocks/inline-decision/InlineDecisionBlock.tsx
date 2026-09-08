@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/ButtonMine";
+import { Button } from "@/components/ui/button";
 import type { InlineDecision, InlineDecisionOption } from "./types";
 
 interface InlineDecisionBlockProps {

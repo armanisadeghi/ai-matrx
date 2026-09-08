@@ -14,7 +14,7 @@ import {
   GitCompareArrows,
   FolderPlus,
 } from "lucide-react";
-import { Button } from "@/components/ui/ButtonMine";
+import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";

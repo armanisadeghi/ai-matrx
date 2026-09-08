@@ -4,7 +4,7 @@ import React, { useState, useCallback } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NotesWindow } from "@/features/window-panels/windows/notes/NotesWindow";
 import { Plus, Trash2, FileText } from "lucide-react";
-import { Button } from "@/components/ui/ButtonMine";
+import { Button } from "@/components/ui/button";
 import { DEMO_WINDOWS } from "./demo-windows";
 
 const NOTES_WINDOW_ID = "window-notes";

@@ -2,7 +2,7 @@
 
 import {
     Button,
-} from '@/components/ui/ButtonMine';
+} from '@/components/ui/button';
 import { useState } from 'react';
 import { Copy, CheckCircle2 } from 'lucide-react';
 

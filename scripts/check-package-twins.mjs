@@ -120,7 +120,7 @@ if (SELF_TEST) {
 }
 
 function trackedFiles() {
-  const out = execFileSync("git", ["ls-files", "*.ts", "*.tsx"], {
+  const out = execFileSync("git", ["ls-files", "*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs", "*.cjs"], {
     cwd: ROOT,
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,

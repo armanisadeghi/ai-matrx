@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/ButtonMine";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,

@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Button } from "@/components/ui/ButtonMine";
+import { Button } from "@/components/ui/button";
 import { getDataAtPath } from "./utils/json-path-navigation-util";
 import { PathArray } from "./types";
 

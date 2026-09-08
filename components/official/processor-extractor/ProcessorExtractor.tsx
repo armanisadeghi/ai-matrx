@@ -8,7 +8,7 @@ import {
   isPathHidden as checkPathHidden, 
 } from "./utils/hidden-path-utils";
 import { extractValueByPath } from "./utils/wildcard-utils";
-import { Button } from "@/components/ui/ButtonMine";
+import { Button } from "@/components/ui/button";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 

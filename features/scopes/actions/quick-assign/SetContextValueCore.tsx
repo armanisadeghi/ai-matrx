@@ -17,7 +17,7 @@ import {
   RotateCcw,
   GitCompareArrows,
 } from "lucide-react";
-import { Button } from "@/components/ui/ButtonMine";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import IconButton from "@/components/official/IconButton";

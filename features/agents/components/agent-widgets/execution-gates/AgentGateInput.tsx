@@ -21,7 +21,7 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { SmartAgentInput } from "../../inputs/smart-input/SmartAgentInput";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { PaperPlaneIcon } from "@radix-ui/react-icons";
-import { Button } from "@/components/ui/ButtonMine";
+import { Button } from "@/components/ui/button";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {

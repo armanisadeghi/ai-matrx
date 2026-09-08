@@ -26,7 +26,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Button } from "@/components/ui/ButtonMine";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AgentVariableEditor } from "./AgentVariableEditor";
 import { useIsMobile } from "@/hooks/use-mobile";

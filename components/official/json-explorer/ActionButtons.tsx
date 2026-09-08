@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Button } from "@/components/ui/ButtonMine";
+import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { CopyIcon, RefreshCw, BookmarkIcon, Brackets } from "lucide-react";
 import { IoBookmarks } from "react-icons/io5";
