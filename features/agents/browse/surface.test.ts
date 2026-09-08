@@ -18,6 +18,8 @@ function makeListController(): EntityListSurfaceController<AgentBrowseRow> {
     rows: [],
     total: 0,
     counts: { byKind: { mine: 4, shared: 2 }, narrow: {} },
+    countsLoading: false,
+    countsError: null,
     facets: {
       byKind: {
         category: [{ value: "Analysis", count: 3 }],

@@ -108,6 +108,17 @@ export interface ScopeHolderBarProps {
    */
   defaultHolderOffer?: DefaultHolderRungOffer | null;
   /**
+   * WHO HOLDS THE BOTTOM RUNG RIGHT NOW — the mandate definition's own
+   * `default_holder_*`, resolved to a name by the host (FIX-R6/F3).
+   *
+   * `null` means the host has not read it yet and the cell says so. `set:false`
+   * means it was read and there is nobody. A `set:true` with a null `name` is
+   * an unresolvable holder, and it is stated as unresolvable — never printed as
+   * an id and never quietly rendered as "no holder", which is the lie that sent
+   * a walker looking for a save that had actually worked.
+   */
+  defaultHolderNow?: { set: boolean; name: string | null } | null;
+  /**
    * F3 — the standing sentence about what moving the rung costs, printed
    * whenever there IS something to lose. `null` when the draft is clean, so it
    * is a fact about right now and never decorative noise.
@@ -278,6 +289,7 @@ export function ScopeHolderBar({
   allowGlobal,
   fixedRung,
   defaultHolderOffer = null,
+  defaultHolderNow = null,
   onRungChange,
   unsavedNote = null,
   appliesIn = null,
@@ -500,6 +512,21 @@ export function ScopeHolderBar({
               <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                 The job&apos;s own default
               </p>
+              {/* 🚨 A RUNG DESCRIBED IS A RUNG ANSWERED (FIX-R6/F3). This block
+                  said what the bottom rung COVERS and offered a button to go
+                  set it, and never once said who holds it TODAY — so a reader
+                  standing on a rung above had no way to see the default they
+                  had just saved, and the empty holder cell beside it read as
+                  "there is nothing". The current answer comes from the mandate
+                  definition through the one accessor; an unreadable name says
+                  it is unreadable rather than printing an id. */}
+              <p className="text-[11px] leading-relaxed text-foreground">
+                {defaultHolderNow === null
+                  ? "Reading who holds it…"
+                  : defaultHolderNow.set
+                    ? `Held by ${defaultHolderNow.name ?? "an agent whose name could not be read — reload to see it"} today.`
+                    : "Nobody holds it — this job has no default of its own."}
+              </p>
               {defaultHolderOffer.offered ? (
                 <>
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
@@ -665,9 +692,22 @@ export function ScopeHolderBar({
               </p>
             </div>
           ) : (
+            /* 🚨 AN EMPTY CELL NAMES THE RUNG IT IS EMPTY AT (FIX-R6/F3).
+               This used to read "No holder yet — …" flat, with no subject. A
+               walker who had just set the job's own default holder, watched
+               "Fulfilled by" name it, reloaded, and then read this sentence
+               beside a block headed "The job's own default" concluded the save
+               had not taken. It had: this cell was answering about the USER
+               rung, which is empty and correctly so. A sentence whose subject
+               the reader has to guess is a sentence that will be read wrong. */
             <p className="text-[11px] leading-snug text-muted-foreground">
-              No holder yet — pick an agent or a workflow to start mapping, or
-              come back when the intelligence exists.
+              Nothing is set at{" "}
+              {pinnedRungWords(rung, defaultHolderOffer).noun.toLowerCase()} yet
+              — pick an agent or a workflow to set one, or come back when the
+              intelligence exists.
+              {onDefaultHolderRung
+                ? " This is the bottom rung, so while it is empty the job has no holder of its own at all."
+                : " That is only about this rung: whatever a rung below it names is still what runs."}
             </p>
           )}
 

@@ -85,6 +85,12 @@ export type MandateListHealth =
   | "global rung dropped"
   | "org rung dropped"
   | "user rung dropped"
+  // 🚨 THE OUTPUT HALF OF THE CONTRACT (2026-09-08, FIX-R5). Its holder cannot
+  // produce the keys this job's consumers require — `enforced_holder_contract`
+  // keeps that half in force ALWAYS, so the assignment fails at run time. The
+  // list used to call this `ok` while the single-mandate admin page called the
+  // same holder broken, on the same screen (FIX-R4, walk finding 1).
+  | "output contract unmet"
   | "disabled";
 
 /**
@@ -102,6 +108,8 @@ export const HEALTH_EXPLANATION: Partial<Record<MandateListHealth, string>> = {
     "Your own choice for this job names an agent you cannot open, so it could not be used and the job runs the rung below. Pick an agent you have access to.",
   "global rung dropped":
     "The platform-wide choice for this job names an agent that is not a system agent, so it could not be used and the job runs its own default.",
+  "output contract unmet":
+    "The agent fulfilling this job does not declare the structured output the job requires, so whatever reads this job's result cannot be produced and the run fails. Give that agent an output schema declaring the required keys, or assign an agent that already does.",
 };
 
 /**
@@ -148,6 +156,7 @@ export const HEALTH_META: Record<MandateListHealth, BadgeMeta> = {
   "global rung dropped": { label: "Global choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
   "org rung dropped": { label: "Org choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
   "user rung dropped": { label: "Your choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
+  "output contract unmet": { label: "Output contract unmet", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
   disabled: { label: "Disabled", className: "border-border/70 text-muted-foreground" },
 };
 
@@ -180,6 +189,7 @@ export function healthMeta(value: string): BadgeMeta {
     case "global rung dropped":
     case "org rung dropped":
     case "user rung dropped":
+    case "output contract unmet":
     case "disabled":
       return HEALTH_META[value];
   }

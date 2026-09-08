@@ -61,9 +61,10 @@ const DATA = {
 } as unknown as MandateConsoleData;
 
 describe("a holder that cannot produce the job's required output is not healthy", () => {
-  it("RED — with no schema read, the shipped verdict stands (unknown is not a guess)", () => {
-    // This is the call the console still makes, and the exact shape that
-    // produced "Healthy" beside "the assignment fails at run time".
+  it("with NO schema read at all, the verdict is unchanged (unknown is not a guess)", () => {
+    // A console load that carries no `outputSchemas` — the shape that produced
+    // "Healthy" beside "the assignment fails at run time". Absent stays UNKNOWN
+    // rather than becoming an accusation.
     expect(buildRow(MANDATE, DATA).health).toBe("ok");
   });
 
@@ -98,5 +99,61 @@ describe("a holder that cannot produce the job's required output is not healthy"
     expect(
       buildRow(noPromise, DATA, undefined, { [AGENT_ID]: null }).health,
     ).toBe("ok");
+  });
+});
+
+/**
+ * ── AND THE LIST SAYS THE SAME THING (FIX-R5) ───────────────────────────────
+ *
+ * FIX-R4 taught `buildRow` how to judge the output half and then NAMED what it
+ * did not close: the LIST still reported `ok`, because the console load did not
+ * read `output_schema` and only an explicit fourth argument could reach the new
+ * verdict. One screen, two verdicts about one holder — the same defect one
+ * level up.
+ *
+ * `fetchMandateConsoleData` now reads the column on the by-id agent query it was
+ * already making, and `buildRow` uses `data.outputSchemas` when no explicit map
+ * is passed. Every list caller inherits the verdict without changing a line, and
+ * "absent means UNKNOWN" survives: absent from the map is still unknown, and a
+ * load with no map at all still judges nothing.
+ *
+ * The SQL half of the same list — `public.mnd_list_scoped`, which computes
+ * `health` in the database for `/mandates` — is fixed in the same breath and
+ * proven live (RED `health='ok'` → GREEN `health='output contract unmet'` on
+ * `research_client.output_slides`), because a TypeScript guard cannot judge a
+ * verdict Postgres produces.
+ */
+describe("the LIST judges the output half too, not just the single-mandate page", () => {
+  const DATA_WITH_SCHEMAS = {
+    ...(DATA as unknown as Record<string, unknown>),
+    outputSchemas: { [AGENT_ID]: null },
+  } as unknown as MandateConsoleData;
+
+  it("a list row for research_client.output_slides must not read `ok`", () => {
+    // The three-argument call every list surface makes — MandatesConsole and
+    // the mandates window both pass (mandate, data, codeTruth).
+    expect(buildRow(MANDATE, DATA_WITH_SCHEMAS, undefined).health).toBe(
+      "output contract unmet",
+    );
+  });
+
+  it("an explicit map still wins — a fresher read of one holder", () => {
+    const declares = {
+      type: "object",
+      properties: { title: {}, slides: {} },
+      required: ["title", "slides"],
+    };
+    expect(
+      buildRow(MANDATE, DATA_WITH_SCHEMAS, undefined, { [AGENT_ID]: declares })
+        .health,
+    ).toBe("ok");
+  });
+
+  it("an agent the load could not read stays UNKNOWN, never accused", () => {
+    const emptyMap = {
+      ...(DATA as unknown as Record<string, unknown>),
+      outputSchemas: {},
+    } as unknown as MandateConsoleData;
+    expect(buildRow(MANDATE, emptyMap, undefined).health).toBe("ok");
   });
 });
