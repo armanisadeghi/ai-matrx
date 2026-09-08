@@ -74,6 +74,10 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
       // AgentActionModal. Do NOT point the name at Run or Build — those
       // preempt the chooser, which is what this comment originally guarded.
       editTrigger: "pencil",
+      // Names are short; descriptions are not. Cap the name column so the
+      // space it used to take by auto-sizing goes to Description instead.
+      width: 220,
+      className: "max-w-[14rem] overflow-hidden",
       cell: (row) => (
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate font-medium">{row.name}</span>
@@ -100,8 +104,8 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
       editTrigger: "pencil",
       // Cap the column: some agents ship multi-page descriptions, and without
       // a bound the table sizes to min-content and scrolls forever sideways.
-      width: 320,
-      className: "max-w-[20rem] overflow-hidden",
+      width: 420,
+      className: "max-w-[26rem] overflow-hidden",
       cell: (row) => {
         const preview = cleanMarkdownPreview(row.description);
         return (
