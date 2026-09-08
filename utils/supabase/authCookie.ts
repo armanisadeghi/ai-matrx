@@ -43,14 +43,6 @@ export const supabaseNext = createNextSupabase<Database>({
 export const AUTH_COOKIE_NAME = supabaseNext.cookieName;
 
 /**
- * Compatibility export for @ai-matrx/data 0.10.1. That release implements
- * and stamps this header inside middlewareSession, but its package build omits
- * the constant from both the runtime and declaration export lists. Keep the
- * value at this single app binding until the package export is repaired.
- */
-export const AMBIGUOUS_AUTH_COOKIE_HEADER = "x-matrx-auth-ambiguous";
-
-/**
  * Cookie options for the host serving the current request.
  * @param host `Host` header or `window.location.hostname` (port tolerated).
  */

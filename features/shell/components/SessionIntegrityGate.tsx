@@ -15,9 +15,11 @@
  */
 
 import { headers } from "next/headers";
-import { SPLIT_COOKIE_JAR_HEADER } from "@ai-matrx/data/next";
+import {
+  AMBIGUOUS_AUTH_COOKIE_HEADER,
+  SPLIT_COOKIE_JAR_HEADER,
+} from "@ai-matrx/data/next";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
-import { AMBIGUOUS_AUTH_COOKIE_HEADER } from "@/utils/supabase/authCookie";
 import SessionIntegrityBanner from "./SessionIntegrityBanner";
 
 export default async function SessionIntegrityGate() {
