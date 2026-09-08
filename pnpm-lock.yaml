@@ -58,7 +58,7 @@ importers:
         version: 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/realtime':
         specifier: latest
-        version: 0.7.0(react@19.2.7)
+        version: 0.7.1(react@19.2.7)
       '@ai-matrx/tap-target':
         specifier: latest
         version: 0.2.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -956,8 +956,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/realtime@0.7.0':
-    resolution: {integrity: sha512-FxMRGE6We4tlQ9aH6QEAi4R9qYzTww/8M97JVvstYpKLz2uSn5z2Q5Hn+UjXJU2N2Pr9ZgVKIbGZk15JMmwTJQ==}
+  '@ai-matrx/realtime@0.7.1':
+    resolution: {integrity: sha512-hfK/0irMBY52t8LAO4aQcogE7srTwaVAtpuVyU0jopoBrqYBUccQMwJZRMpoKSQmVNtCdeXs03HHW2WeEGxnlQ==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -13551,7 +13551,7 @@ snapshots:
 
   '@ai-matrx/data@0.10.2(@supabase/supabase-js@2.108.2)(react@19.2.7)':
     dependencies:
-      '@ai-matrx/realtime': 0.7.0(react@19.2.7)
+      '@ai-matrx/realtime': 0.7.1(react@19.2.7)
       '@supabase/ssr': 0.12.0(@supabase/supabase-js@2.108.2)
     optionalDependencies:
       react: 19.2.7
@@ -13691,7 +13691,7 @@ snapshots:
     dependencies:
       '@ai-matrx/agents': 0.6.2(@supabase/supabase-js@2.108.2)(react@19.2.7)
       '@ai-matrx/kit': 0.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@ai-matrx/realtime': 0.7.0(react@19.2.7)
+      '@ai-matrx/realtime': 0.7.1(react@19.2.7)
     optionalDependencies:
       react: 19.2.7
     transitivePeerDependencies:
@@ -13719,7 +13719,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@ai-matrx/realtime@0.7.0(react@19.2.7)':
+  '@ai-matrx/realtime@0.7.1(react@19.2.7)':
     optionalDependencies:
       react: 19.2.7
 
