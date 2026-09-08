@@ -21,6 +21,30 @@
  *   already reflects the change. Non-matches are dispatched normally, so
  *   changes originating from other devices / the server / share-link
  *   visitors always reach our state.
+ *
+ *   THAT LEDGER IS NOT A SECOND COPY OF THE PACKAGE'S. `@ai-matrx/realtime`'s
+ *   write ledger correlates on (table, id, updated_at, content fingerprint);
+ *   this one correlates on `metadata.request_id`, an end-to-end write id the
+ *   Python backend stamps on every cloud_sync write under a documented wire
+ *   contract (common-docs systems/media/file-service/WIRE_CONTRACT.md). That is
+ *   strictly more precise than a timestamp+fingerprint inference and the package
+ *   has no equivalent, so it stays — as the FEATURE's correlation, on top of
+ *   everything the package does. (A consumer-supplied own-write predicate is a
+ *   fair candidate for the package; until then this is the honest home.)
+ *
+ * REALTIME
+ * --------
+ *   `@ai-matrx/realtime` owns the channel: unique instance topic (this used a
+ *   STATIC `cloud-files:<userId>`, which React 19's double-invoked effects can
+ *   collide on), dedup, the decoupled ordered handler queue, jittered reconnect
+ *   with the stability reset, tab sleep and network awareness, diagnostics.
+ *
+ *   The reconcile that used to hang off the SUBSCRIBED callback is now the
+ *   package's `onBackfill` door, which is a strictly larger set of recovery
+ *   paths: it also fires on tab wake, network restore and queue overflow, none
+ *   of which the old status callback could see. Its cooldown and in-flight
+ *   guards are kept — they are about not storming an expensive tree RPC, which
+ *   is the feature's own economics, not reconnect logic.
  */
 
 "use client";
@@ -30,7 +54,10 @@ import type {
   ThunkDispatch,
   UnknownAction,
 } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
+import {
+  defineChannelNamespace,
+  subscribeToRealtimeManager,
+} from "@ai-matrx/realtime";
 import type { CloudFilesState } from "@/features/files/types";
 
 // Minimal local state type — avoids importing RootState from store.ts which
@@ -41,10 +68,7 @@ type StateWithCloudFiles = { cloudFiles: CloudFilesState };
 // (which don't know about thunk middleware) aren't enough. Same local
 // pattern as thunks.ts's `AppDispatch`, to avoid the store.ts import cycle.
 type AppDispatch = ThunkDispatch<StateWithCloudFiles, unknown, UnknownAction>;
-import type {
-  RealtimeChannel,
-  RealtimePostgresChangesPayload,
-} from "@supabase/supabase-js";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 import {
   canonicalShareLinkToCloudShareLink,
@@ -181,8 +205,16 @@ let lastReconcileAt = 0;
 // guarantee; this keeps both properties.)
 let initialSnapshotDoneAt: number | null = null;
 
+/** One place names this channel. A second, different declaration throws. */
+const cloudFilesChannel = defineChannelNamespace({
+  namespace: "cloud-files",
+  parts: ["userId"],
+  description:
+    "files.files / folders / file_versions + iam.permissions + platform.share_links for one user",
+});
+
 export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
-  let channel: RealtimeChannel | null = null;
+  let stopChannel: (() => void) | null = null;
   let subscribedUserId: string | null = null;
 
   // Local typed dispatcher — `store.dispatch` comes in through the plain
@@ -192,132 +224,128 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
   const dispatch = store.dispatch as AppDispatch;
 
   async function teardown(): Promise<void> {
-    if (channel) {
-      try {
-        await supabase.removeChannel(channel);
-      } catch {
-        /* noop */
-      }
-      channel = null;
+    if (stopChannel) {
+      stopChannel();
+      stopChannel = null;
     }
     subscribedUserId = null;
     dispatch(setRealtimeStatus({ status: "detached", userId: null }));
   }
 
   async function setup(userId: string): Promise<void> {
-    if (subscribedUserId === userId && channel) return;
+    if (subscribedUserId === userId && stopChannel) return;
     await teardown();
 
     subscribedUserId = userId;
     initialSnapshotDoneAt = null;
     dispatch(setRealtimeStatus({ status: "connecting", userId }));
 
-    channel = supabase
-      .channel(`cloud-files:${userId}`)
-      // Files — no server-side column filter (a created_by filter would drop
-      // updates to explicitly-shared files), BUT RLS alone is NOT the listing
-      // boundary: the `pub_read` policy makes every public file SELECT-visible,
-      // so handleFilePayload applies the LISTING gate client-side (owner or
-      // already-in-store only — mirror of DB `files.is_listable_for`). Never
-      // remove that gate; without it public files from other users stream
-      // into everyone's tree.
-      .on(
-        "postgres_changes",
+    const rowId = (row: Record<string, unknown>): string | undefined =>
+      typeof row.id === "string" ? row.id : undefined;
+
+    stopChannel = subscribeToRealtimeManager(() => ({
+      topic: cloudFilesChannel.topic({ userId }),
+      postgresChanges: [
+        // Files — no server-side column filter (a created_by filter would drop
+        // updates to explicitly-shared files), BUT RLS alone is NOT the listing
+        // boundary: the `pub_read` policy makes every public file SELECT-visible,
+        // so handleFilePayload applies the LISTING gate client-side (owner or
+        // already-in-store only — mirror of DB `files.is_listable_for`). Never
+        // remove that gate; without it public files from other users stream
+        // into everyone's tree.
         {
           event: "*",
           schema: "files",
           table: "files",
+          rowId,
+          onChange: ({ payload }) =>
+            handleFilePayload(
+              payload as unknown as RealtimePostgresChangesPayload<CloudFileRow>,
+            ),
         },
-        (payload) => handleFilePayload(payload),
-      )
-      // Folders — NO owner filter, same RLS-bounded rationale as files.
-      .on(
-        "postgres_changes",
+        // Folders — NO owner filter, same RLS-bounded rationale as files.
         {
           event: "*",
           schema: "files",
           table: "folders",
+          rowId,
+          onChange: ({ payload }) =>
+            handleFolderPayload(
+              payload as unknown as RealtimePostgresChangesPayload<CloudFolderRow>,
+            ),
         },
-        (payload) => handleFolderPayload(payload),
-      )
-      // Versions — no owner filter (FK to files.files; RLS enforces).
-      .on(
-        "postgres_changes",
+        // Versions — no owner filter (FK to files.files; RLS enforces).
         {
           event: "*",
           schema: "files",
           table: "file_versions",
+          rowId,
+          onChange: ({ payload }) =>
+            handleVersionPayload(
+              payload as unknown as RealtimePostgresChangesPayload<CloudFileVersionRow>,
+            ),
         },
-        (payload) => handleVersionPayload(payload),
-      )
-      // Permissions — canonical grant store `iam.permissions`. Filtered to
-      // grants made TO this user; the handler additionally guards
-      // `resource_type === 'file'` since this table holds grants for every
-      // resource type. (org-grant rows have no granted_to_user_id, so they
-      // won't arrive on this channel — the share panel reload picks them up.)
-      .on(
-        "postgres_changes",
+        // Permissions — canonical grant store `iam.permissions`. Filtered to
+        // grants made TO this user; the handler additionally guards
+        // `resource_type === 'file'` since this table holds grants for every
+        // resource type. (org-grant rows have no granted_to_user_id, so they
+        // won't arrive on this channel — the share panel reload picks them up.)
         {
           event: "*",
           schema: "iam",
           table: "permissions",
           filter: `granted_to_user_id=eq.${userId}`,
+          rowId,
+          onChange: ({ payload }) =>
+            handlePermissionPayload(
+              payload as unknown as RealtimePostgresChangesPayload<Record<string, unknown>>,
+            ),
         },
-        (payload) => handlePermissionPayload(payload),
-      )
-      // Share links — canonical platform.share_links. RLS (owner-only
-      // SELECT) bounds delivery to links this user created. Requires the
-      // table in the realtime publication.
-      .on(
-        "postgres_changes",
+        // Share links — canonical platform.share_links. RLS (owner-only
+        // SELECT) bounds delivery to links this user created. Requires the
+        // table in the realtime publication.
         {
           event: "*",
           schema: "platform",
           table: "share_links",
+          rowId,
+          onChange: ({ payload }) =>
+            handleShareLinkPayload(
+              payload as unknown as RealtimePostgresChangesPayload<Record<string, unknown>>,
+            ),
         },
-        (payload) => handleShareLinkPayload(payload),
-      )
-      .subscribe((status, error) => {
-        if (status === "SUBSCRIBED") {
-          dispatch(
-            setRealtimeStatus({
-              status: "subscribed",
-              userId: subscribedUserId,
-            }),
-          );
-          // On (re)subscribe, reconcile — but debounced (P1-10): skip if we
-          // reconciled recently or a mutation is in flight, so a flapping
-          // connection can't storm the RPC or revert optimistic edits.
-          // First subscribe: reconcile ONLY if the initial snapshot already
-          // resolved (its data predates the live channel — the gap window);
-          // a snapshot still in flight reads post-subscribe state, so firing
-          // here would only duplicate the RPC it is racing.
-          const now = Date.now();
-          if (
-            initialSnapshotDoneAt !== null &&
-            now - lastReconcileAt >= RECONCILE_COOLDOWN_MS &&
-            ledgerSize() === 0
-          ) {
-            lastReconcileAt = now;
-            void dispatch(reconcileTree({ userId }));
-          }
-        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          dispatch(
-            setRealtimeStatus({
-              status: "errored",
-              userId: subscribedUserId,
-              error: error?.message ?? status,
-            }),
-          );
-        } else if (status === "CLOSED") {
-          dispatch(
-            setRealtimeStatus({
-              status: "closed",
-              userId: subscribedUserId,
-            }),
-          );
+      ],
+      onStatusChange: (status) => {
+        dispatch(
+          setRealtimeStatus({
+            status: status === "connected" ? "subscribed" : status === "connecting" ? "connecting" : "errored",
+            userId: subscribedUserId,
+          }),
+        );
+      },
+      // THE BACKFILL DOOR — reconnect, tab wake, network restore, queue
+      // overflow. The old code hung this off SUBSCRIBED only, so a slept tab
+      // never reconciled and the tree silently drifted.
+      //
+      // The cooldown and in-flight guards below are NOT reconnect logic (the
+      // package owns that): they exist so a flapping connection cannot storm an
+      // expensive tree RPC or revert optimistic edits mid-write. First
+      // subscribe reconciles ONLY if the initial snapshot already resolved —
+      // its data predates the live channel, which is the gap window; a snapshot
+      // still in flight reads post-subscribe state, so firing here would only
+      // duplicate the RPC it is racing.
+      onBackfill: () => {
+        const now = Date.now();
+        if (
+          initialSnapshotDoneAt !== null &&
+          now - lastReconcileAt >= RECONCILE_COOLDOWN_MS &&
+          ledgerSize() === 0
+        ) {
+          lastReconcileAt = now;
+          void dispatch(reconcileTree({ userId }));
         }
-      });
+      },
+    }));
   }
 
   // -------------------------------------------------------------------------
