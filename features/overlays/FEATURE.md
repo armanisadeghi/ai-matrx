@@ -367,6 +367,8 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-09-08** — **`agentRunWindow` opens ON A MANDATE and can adopt a page.** `OpenAgentRunWindowOptions` gained `mandateKey` (threaded to the managed `useAgentLauncher` so every run in the fresh conversation goes through the server's mandate door — the Holder and its `config_overrides` are the server's decision, `initialAgentId` only paints the chrome; a title-bar agent switch drops the key) and `surfaceName` (replaces the hardcoded `runtime: { surfaceName: null }` opt-out with an explicit adoption of a mounted surface, so a chat ABOUT a page reads its scope and is offered its write targets). First caller: the mandate workspace's *Refine with AI* (`TriadGoalSection`). Controller mapping in `OverlayController`; pass-through pinned in `agentRunWindowOpener.test.tsx`.
+
 - **2026-09-01** — Added the singleton `shareLinkDialog` overlay as the durable
   owner for app-level share-link management launched from transient package
   media popovers. The media lightbox may close its Share popover immediately
