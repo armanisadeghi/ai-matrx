@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   CreditCard,
   PackageCheck,
+  ShieldAlert,
   RefreshCcw,
   XCircle,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/utils/cn";
 import { formatMoney, toFetchState } from "./lulu-api";
+import { ORDERING_ALLOWED, ORDERING_OFF_MESSAGE } from "./ordering-gate";
 import {
   ORDER_STATUS_LABELS,
   cancelOrder,
@@ -178,7 +180,11 @@ export function OrderFlow({
     pageCount !== null &&
     shippingLevel !== null;
 
+  // LIVE-MONEY GATE — do not remove (reviewed 2026-09-07, review row d6a2d36d).
+  // See ./ordering-gate.ts: ordering stays shut until the backend can say which
+  // payment mode it is in. A complete form is not permission to spend money.
   const formComplete =
+    ORDERING_ALLOWED &&
     ready &&
     form.title.trim().length > 0 &&
     form.name.trim().length > 0 &&
@@ -294,6 +300,17 @@ export function OrderFlow({
           a file we can&apos;t print is refunded in full automatically.
         </p>
 
+        {/* LIVE-MONEY GATE — do not remove (review row d6a2d36d). */}
+        {!ORDERING_ALLOWED ? (
+          <div
+            data-testid="ordering-off-notice"
+            className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive"
+          >
+            <ShieldAlert className="mt-px size-4 shrink-0" />
+            <span>{ORDERING_OFF_MESSAGE}</span>
+          </div>
+        ) : null}
+
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field
             id="order-title"
@@ -356,7 +373,11 @@ export function OrderFlow({
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Button onClick={submit} disabled={!formComplete || submitting}>
+          <Button
+            data-testid="order-and-pay"
+            onClick={submit}
+            disabled={!formComplete || submitting}
+          >
             <CreditCard className="size-4" />
             {submitting ? "Opening checkout…" : "Order & pay"}
           </Button>
