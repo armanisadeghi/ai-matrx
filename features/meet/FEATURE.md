@@ -17,7 +17,6 @@ chrome, and the routes.
 | `<IncomingCallHost>` — mounted ONCE, directly | [`../../providers/MeetHost.tsx`](../../providers/MeetHost.tsx) |
 | The room, both lanes | [`components/MeetingSurface.tsx`](./components/MeetingSurface.tsx) |
 | Create a meeting, get its link | [`components/MeetingsWorkspace.tsx`](./components/MeetingsWorkspace.tsx) → `/meetings` |
-| Agent identity from Mandates | [`lib/meetMandates.ts`](./lib/meetMandates.ts) + [`lib/useMeetIntelligences.ts`](./lib/useMeetIntelligences.ts) |
 | aidream base URL | [`lib/meetBaseUrl.ts`](./lib/meetBaseUrl.ts) |
 | Stylesheets (tokens → brand → structure) | `app/layout.tsx` imports 1 and 3; the brand map is the `--mx-meet-*` block in `app/globals.css` |
 
@@ -37,11 +36,13 @@ deployed. The satellite hosts still hand `/meet/*` back to the main origin.
 
 ## The laws this binding keeps
 
-- **No agent id in code.** `MeetAgents` is filled from `mandate.definition` rows
-  via `useMandateSet`, resolved ONLY while a `/meet/*` surface is mounted. No
-  `meet.*` mandate exists yet, so the identity map is empty, every AI capability
-  reports unavailable, and the package renders **no** meeting-assistant control.
-  Absent, never a dead button. Declaring those rows is **MRI-A5**.
+- **No agent id in code, and no prop to put one in.** Since `@ai-matrx/meet`
+  0.3.0 every meeting capability is a Mandate the SERVER resolves at run time
+  (`meet.live_notes`, `meet.live_intelligence`, `meet.wrap_up`), so this app
+  injects nothing at all and an organization rebinds a job in the Mandate admin
+  with no deploy here. `lib/meetMandates.ts` and `lib/useMeetIntelligences.ts`
+  are DELETED; a Mandate with no Holder now produces the server's own refusal on
+  the meeting screen, which is more honest than a control that never appeared.
 - **Every write carries an explicit `organization_id`** — the package's RPCs take
   it, and `/meetings` refuses to render the form until an org is active.
 - **A guest is a first-class identity.** The guest provider is room-scoped, has
@@ -63,12 +64,25 @@ belonged (C22, THE SAME-SESSION LAW):
 | `lib/meetClient.ts` — one cast, because the public `client` prop sent tsc into TS2589 | Deleted. `<MeetProvider client={supabase}>` and `createMeetRepository({ client: supabase })` take the app's own client directly. |
 | `components/MeetCallSurfaces.tsx` — guards, because `<IncomingCallHost/>` and `<CallButton/>` threw while the provider was inert | Deleted. Both are mounted directly; they render nothing on their own until there is a runtime. |
 | The house rule "import everything from `@ai-matrx/meet/react`", because two declaration files re-declared every branded type | No longer required (one dts pass). Still the tidier habit in a React file, and still what these files do. |
+| `NoteTakerConsentNotice` in `MeetingSurface.tsx` — a documented stand-in, because 0.2.0 shipped a notice for RECORDING only | Deleted. `<MeetingRoom>` renders the package's own consent banner and People-panel row for every participant (D10). |
+| `lib/meetMandates.ts` + `lib/useMeetIntelligences.ts` — four mandate lookups per meeting surface, to fill `MeetAgents` | Deleted. There is no `agents` prop and no `transport` prop; capabilities are server-owned. |
 
 If a future defect tempts a fifth wrapper, the answer is the same: fix it in the
 package, release, adopt — never a crossing in here.
 
 ## Change log
 
+- `2026-09-08` — claude: **adopted `@ai-matrx/meet` 0.3.0 (MRI-A5), same
+  session.** The assistant is server-owned: `agents` and `transport` are gone
+  from `<MeetHost>` and both host modules that existed only to fill them
+  (`lib/meetMandates.ts`, `lib/useMeetIntelligences.ts`) are deleted, as is the
+  `NoteTakerConsentNotice` stand-in in `MeetingSurface.tsx` — the package now
+  renders the consent banner and the People-panel row itself (D10). The room
+  additionally gained live captions reconciled against durable transcript rows
+  (D16), the note-taker's five honest states with the server's refusal verbatim,
+  a streamed answer in the assistant panel, and a host "End meeting for
+  everyone" control whose 404 (the `/v1/meet/end` route is MRI-A6's and is not
+  served yet) renders a sentence instead of a dead button.
 - `2026-09-08` — claude: **all four package workarounds deleted (MRI-A5a).**
   `@ai-matrx/meet` 0.2.1 memoizes the device snapshot (the loop that killed
   every room), stops throwing while the provider is inert, takes a shallow

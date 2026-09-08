@@ -24,18 +24,20 @@
 //
 //   identity — the Supabase browser singleton, the signed-in user and their
 //              display name, the active org, aidream's base URL (the same
-//              `resolveBaseUrl` every `callApi` request uses), the access-token
-//              source, the app's ONE production transport, and WHO fulfils each
-//              of the package's four in-meeting jobs
+//              `resolveBaseUrl` every `callApi` request uses), and the
+//              access-token source
 //   chrome   — a router so an accepted call lands on `/meet/<room>`, and a
 //              diagnostic sink that screams with a remedy
 //
-// 🚨 THE AI IDENTITY COMES FROM MANDATES, NEVER FROM A CONFIG LINE. See
-// `features/meet/lib/meetMandates.ts`: no `meet.*` mandate row exists yet
-// (MRI-A5 declares them and 0.3.0 removes `MeetAgents` entirely), so today the
-// identity map is empty, `createMeetAi` reports every capability unavailable,
-// and the package's `AiControl` renders NOTHING. Absent, never a dead button,
-// never a hardcoded agent id.
+// 🚨 THIS APP INJECTS NO AI IDENTITY AT ALL, and as of `@ai-matrx/meet` 0.3.0
+// there is no prop for one. Which agent takes notes, answers a question, or
+// writes the wrap-up is a Mandate binding the SERVER resolves at run time
+// (`meet.live_notes`, `meet.live_intelligence`, `meet.wrap_up`), so an
+// organization rebinds a job in the Mandate admin with no deploy of this app.
+// `features/meet/lib/meetMandates.ts` and `useMeetIntelligences.ts` existed
+// only to inject those ids and were DELETED when 0.3.0 was adopted — a mandate
+// with no Holder now produces the server's own refusal on the meeting screen,
+// which is more honest than a control that silently never appeared.
 //
 // 🚨 A SIGNED-OUT VISITOR GETS NO ENGINE. The provider stays inert until userId
 // and organizationId are both real. The GUEST meeting path does not come
@@ -48,21 +50,18 @@
 
 "use client";
 
-import { useCallback, useMemo, useRef, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { useCallback, useRef, type ReactNode } from "react";
 import { MeetProvider } from "@ai-matrx/meet/react";
 import type { MeetDiagnostic } from "@ai-matrx/meet/react";
 import { supabase } from "@/utils/supabase/client";
 import { IncomingCallHost } from "@ai-matrx/meet/react";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import {
   selectActiveUserAvatarUrl,
   selectDisplayName,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { useMeetIntelligences } from "@/features/meet/lib/useMeetIntelligences";
 import { meetBaseUrl } from "@/features/meet/lib/meetBaseUrl";
 import { toast } from "@/lib/toast";
 
@@ -71,30 +70,11 @@ export interface MeetHostProps {
 }
 
 export function MeetHost({ children }: MeetHostProps) {
-  const pathname = usePathname();
   const store = useAppStore();
   const userId = useAppSelector(selectUserId);
   const displayName = useAppSelector(selectDisplayName);
   const avatarUrl = useAppSelector(selectActiveUserAvatarUrl);
   const organizationId = useAppSelector(selectActiveOrganizationId);
-
-  // The app's ONE production transport for `@ai-matrx/agents` calls — the same
-  // pipeline `useRunAgent`, the execution system and `<MessagingHost>` ride, so
-  // a token refresh, the AI-version flag, org admission and error capture all
-  // behave here exactly as they do everywhere else.
-  const transport = useMemo(
-    () => createMatrxTransport(store.getState, { source: "meetHost" }),
-    [store],
-  );
-
-  // A MEETING SURFACE IS THE ONLY PLACE THE MEET AI CAN APPEAR, so it is the
-  // only place the four mandates are asked about. This provider is app-wide (a
-  // call must ring everywhere); resolving on mount would fire four requests on
-  // every route in the app, which is the exact defect `<MessagingHost>` was
-  // repaired for on 2026-09-08.
-  const { agents } = useMeetIntelligences({
-    enabled: pathname?.startsWith("/meet/") === true,
-  });
 
   const accessToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -133,8 +113,6 @@ export function MeetHost({ children }: MeetHostProps) {
       displayName={displayName}
       avatarUrl={avatarUrl}
       accessToken={accessToken}
-      transport={transport}
-      agents={agents}
       onDiagnostic={onDiagnostic}
     >
       {/* Mount ONCE, high in the tree — a call rings on every surface. Mounted

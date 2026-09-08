@@ -24,7 +24,6 @@ import {
   MeetingRoom,
   createMeetRepository,
   useMeetHost,
-  useMeetSnapshot,
   type MeetingRecord,
 } from "@ai-matrx/meet/react";
 import type { MeetDiagnostic } from "@ai-matrx/meet/react";
@@ -157,7 +156,10 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
 
   return (
     <div className="h-dvh w-full">
-      <NoteTakerConsentNotice />
+      {/* NO CONSENT BANNER HERE. `<MeetingRoom>` renders the package's own
+          notice for every participant since @ai-matrx/meet 0.3.0 (D10) — the
+          host stand-in that used to live in this file was deleted in the same
+          session that adopted it. */}
       <MeetingRoom
         roomName={meeting.roomName}
         meetingId={meeting.id}
@@ -239,7 +241,6 @@ function GuestRoom({ meeting, slug }: { meeting: MeetingRecord; slug: string }) 
       onDiagnostic={onDiagnostic}
     >
       <div className="h-dvh w-full">
-        <NoteTakerConsentNotice />
         <MeetingRoom
           roomName={meeting.roomName}
           meetingId={meeting.id}
@@ -247,35 +248,5 @@ function GuestRoom({ meeting, slug }: { meeting: MeetingRecord; slug: string }) 
         />
       </div>
     </MeetProvider>
-  );
-}
-
-/**
- * CONSENT IS TABLE STAKES (D10) — every participant sees a notice while the AI
- * note-taker is in the room.
- *
- * 🚨 THIS BANNER IS A HOST STAND-IN, AND IT ANNOUNCES ITSELF AS ONE. Consent is
- * a property of the package, not a prop (README rule 8), and 0.2.0 ships a
- * notice for RECORDING only (`useRecording().consentNotice`, rendered on
- * `<PreJoin>`) — there is no note-taker notice in the package yet. Until there
- * is, this reads the `is_agent` participant the package already publishes and
- * says the true thing to everyone in the room, guests included. Removing it is
- * only correct once the package renders its own: that is register item
- * **MRI-A5**, and this component dies in the same commit that adopts it.
- */
-function NoteTakerConsentNotice() {
-  const snapshot = useMeetSnapshot();
-  const agent = (snapshot?.participants ?? []).find(
-    (participant) => participant.isAgent,
-  );
-  if (agent === undefined) return null;
-  return (
-    <p
-      role="status"
-      className="bg-warning/15 px-4 py-2 text-center text-sm text-foreground"
-    >
-      {agent.displayName} is in this meeting and is transcribing it and taking
-      notes. Everyone here can see the notes it writes.
-    </p>
   );
 }
