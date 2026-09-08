@@ -482,6 +482,13 @@ export function useProjectsWithTasks() {
  * A burst of DISTINCT remote rows deserves ONE reload. This is list-shaped
  * consumer logic, not realtime plumbing — the package's own queue coalesces
  * nothing, deliberately, because only the consumer knows what a reload costs.
+ *
+ * A debounce and NOT the min-interval floor that
+ * `../redux/tasksRealtimeMiddleware` puts on its backfill, deliberately: a flap
+ * announces several recoveries seconds apart, and there the read is the whole
+ * `get_user_full_context` (measured 2026-09-08: five of them for one
+ * interruption). Here it is one scoped list — cheap enough that paying it per
+ * recovery beats delaying a legitimate reload. Revisit if these lists grow.
  */
 function useDebouncedRefetch(run: () => void | Promise<void>): () => void {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

@@ -83,6 +83,24 @@ const tasksContextChannel = defineChannelNamespace({
 const REFETCH_DEBOUNCE_MS = 300;
 
 /**
+ * A FLOOR BETWEEN CATCH-UP READS, because a debounce alone does not hold one.
+ *
+ * Measured live 2026-09-08: one offline -> 30s -> online cycle produced FOUR
+ * reconnects and FIVE backfill calls, spread SECONDS apart — so a 300ms
+ * debounce coalesced none of them and `get_user_full_context` ran five times
+ * for one interruption. The package is right to announce every recovery; how
+ * many whole-context reads that is worth is this consumer's call.
+ *
+ * The floor NEVER cancels a read, it only delays a REPEAT one: a backfill after
+ * a genuine outage finds the last read long past and runs at the debounce, and
+ * the last backfill of a flap always gets its read. So the list cannot go stale
+ * — it only stops paying for the same catch-up several times in a row. This is
+ * the "min-interval gate or debounce" the realtime doctrine asks for on every
+ * event-driven refetch (skill Rule 2).
+ */
+const MIN_CATCH_UP_INTERVAL_MS = 15_000;
+
+/**
  * The RPC keeps a closed task visible for 90 days after it closed, so a remote
  * "completed" does NOT evict the row — matching `get_user_full_context`.
  */
@@ -91,6 +109,7 @@ const CLOSED_TASK_WINDOW_MS = 90 * 24 * 60 * 60 * 1000;
 let stopChannel: (() => void) | null = null;
 let subscribedUserId: string | null = null;
 let refetchTimer: ReturnType<typeof setTimeout> | null = null;
+let lastCatchUpAt = 0;
 
 function idOf(value: unknown): string | undefined {
   if (value === null || typeof value !== "object") return undefined;
@@ -183,12 +202,18 @@ export const tasksRealtimeMiddleware: Middleware<
 > = (storeApi) => {
   function scheduleCatchUp() {
     if (refetchTimer) clearTimeout(refetchTimer);
+    const sinceLast = Date.now() - lastCatchUpAt;
+    const wait = Math.max(
+      REFETCH_DEBOUNCE_MS,
+      MIN_CATCH_UP_INTERVAL_MS - sinceLast,
+    );
     refetchTimer = setTimeout(() => {
       refetchTimer = null;
       const state = storeApi.getState();
       if (!state.userAuth?.id || state.userAuth.id !== subscribedUserId) return;
+      lastCatchUpAt = Date.now();
       void storeApi.dispatch(invalidateAndRefetchFullContext());
-    }, REFETCH_DEBOUNCE_MS);
+    }, wait);
   }
 
   /**
@@ -321,6 +346,7 @@ export const tasksRealtimeMiddleware: Middleware<
       clearTimeout(refetchTimer);
       refetchTimer = null;
     }
+    lastCatchUpAt = 0;
     if (stopChannel) {
       stopChannel();
       stopChannel = null;

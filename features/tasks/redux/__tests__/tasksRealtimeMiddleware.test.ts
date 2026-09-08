@@ -299,15 +299,35 @@ describe("catch-up budget", () => {
     expect(types(dispatched).filter((t) => t === CATCH_UP.type)).toHaveLength(1);
   });
 
-  it("costs ONE read for a whole flap, not one per recovery event", () => {
+  it("collapses a whole flap to one read plus a trailing one — never one read per recovery event", () => {
     // Measured live 2026-09-08: a single offline -> 30s -> online cycle
-    // produced four reconnects and FIVE backfill calls. The package is right to
-    // announce every recovery; how many reads that is worth is this consumer's
-    // call, and it is one.
+    // produced four reconnects and FIVE backfill calls, SECONDS apart — far
+    // enough apart that a debounce alone coalesced none of them, so the route
+    // paid five whole-context reads for one interruption. The floor holds that
+    // to the eager read plus the guaranteed trailing one, and the trailing one
+    // is why the list still cannot end up stale.
     const { dispatched } = harness();
-    for (let i = 0; i < 5; i += 1) captured!.onBackfill();
+    captured!.onBackfill();
+    jest.advanceTimersByTime(400);
+    for (const gap of [1_000, 2_000, 4_000, 6_000]) {
+      captured!.onBackfill();
+      jest.advanceTimersByTime(gap);
+    }
+    jest.runAllTimers();
+    expect(types(dispatched).filter((t) => t === CATCH_UP.type)).toHaveLength(2);
+  });
+
+  it("does NOT swallow a later catch-up — the floor delays a repeat read, it never cancels one", () => {
+    const { dispatched } = harness();
+    captured!.onBackfill();
     jest.runAllTimers();
     expect(types(dispatched).filter((t) => t === CATCH_UP.type)).toHaveLength(1);
+
+    // A genuine interruption long after the last read pays only the debounce.
+    jest.advanceTimersByTime(60_000);
+    captured!.onBackfill();
+    jest.advanceTimersByTime(400);
+    expect(types(dispatched).filter((t) => t === CATCH_UP.type)).toHaveLength(2);
   });
 
   it("takes a read when a held task is re-parented — the org bucket and both projects' counts move", () => {
