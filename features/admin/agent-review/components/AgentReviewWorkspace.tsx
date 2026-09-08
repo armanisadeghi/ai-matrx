@@ -236,7 +236,7 @@ export default function AgentReviewWorkspace({
           <Button
             size="icon"
             variant="ghost"
-            className="shrink-0"
+            className="h-11 w-11 shrink-0 sm:h-9 sm:w-9"
             aria-label="Back to reviews"
             title="Back to reviews"
             onClick={() => router.back()}
@@ -253,7 +253,12 @@ export default function AgentReviewWorkspace({
             </h1>
           </div>
 
-          <Button asChild size="sm" variant="outline" className="shrink-0">
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="h-11 shrink-0 sm:h-9"
+          >
             <AppLink href={row.url} target="_blank" rel="noreferrer">
               <ExternalLink className="mr-1.5 h-4 w-4" /> Open page
             </AppLink>
@@ -366,6 +371,7 @@ export default function AgentReviewWorkspace({
           />
           <div className="mt-3 grid gap-2">
             <Button
+              className="h-11 sm:h-9"
               disabled={
                 saving || status !== "ready_for_human" || !feedback.trim()
               }
@@ -374,6 +380,7 @@ export default function AgentReviewWorkspace({
               Request changes
             </Button>
             <Button
+              className="h-11 sm:h-9"
               variant="outline"
               disabled={saving || status !== "ready_for_human"}
               onClick={() => void act("approved", feedback)}
@@ -381,6 +388,7 @@ export default function AgentReviewWorkspace({
               <Check className="mr-1.5 h-4 w-4" /> Approve
             </Button>
             <Button
+              className="h-11 sm:h-9"
               variant="ghost"
               disabled={saving || status === "archived"}
               onClick={() =>
@@ -395,6 +403,7 @@ export default function AgentReviewWorkspace({
             </Button>
             {status === "approved" ? (
               <Button
+                className="h-11 sm:h-9"
                 variant="secondary"
                 disabled={saving}
                 onClick={() => void act("archived", feedback)}
