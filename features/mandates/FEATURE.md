@@ -509,7 +509,14 @@ commit time.
   `/mandates/new` (`authoring/NewMandatePage.tsx`) creates a mandate before its
   intelligence exists — descriptive inputs, the goal, an output kind + free-text
   constraints — via `POST /mandates` (origin='user'; the server key validator's message
-  renders verbatim). Two automation slots (`authoring/AutomationButton.tsx`) run mandates
+  renders verbatim). 🚨 **That page holds the only copy of the person's work, so two
+  rules bind it** (FIX-R14): `authoring/draft.ts` writes every field as it is typed and
+  puts it back on the next mount with an ANNOUNCED restore + *Start fresh*, so a route
+  that changes for any reason costs nothing; and `authoring/key-availability.ts` makes a
+  key that already names a live job a REFUSAL ON THE FIELD naming that job, with a link
+  that opens in a new tab — the probe holds no router and returns a value, and the page's
+  ONLY navigation is the post-create handoff to the mandate the server said it created.
+  Two automation slots (`authoring/AutomationButton.tsx`) run mandates
   BY KEY (`authoring/constants.ts`: `mandates.goal_writer`, `mandates.kind_converter`) and
   refuse visibly with an informational readiness toast naming the key until those mandates
   exist. Expected absence never uses `toast.error`/`toast.warning`, because the shared toast
