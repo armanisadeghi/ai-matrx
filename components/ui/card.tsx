@@ -1,76 +1,38 @@
-import * as React from "react"
+"use client";
 
-import { cn } from "@/styles/themes/utils"
+/**
+ * HOST BINDING ONLY — the Card implementation lives in
+ * `@ai-matrx/design-system`. This file binds the ONE thing four forked cards
+ * actually disagreed about: density.
+ *
+ * This app is dense on purpose (`p-2` sections), so it binds `size="sm"`;
+ * dashboard binds `lg`. The package declares density once on the root and
+ * every section reads it from context, so a card can no longer end up with a
+ * `p-6` header above a `p-2` body — which is how the forks drifted.
+ *
+ * Pass `size` explicitly on any individual card that wants something else.
+ * `CardAction` (a trailing header control slot) is new and worth reaching for
+ * instead of another one-off absolute wrapper.
+ */
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-xl border bg-card text-card-foreground shadow",
-      className
-    )}
-    {...props}
-  />
-))
-Card.displayName = "Card"
+import { Card as PackageCard, type CardProps } from "@ai-matrx/design-system";
+import * as React from "react";
 
-const CardHeader = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-2 rounded-t-lg", className)}
-    {...props}
-  />
-))
-CardHeader.displayName = "CardHeader"
+export {
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@ai-matrx/design-system";
+export type { CardProps, CardSize } from "@ai-matrx/design-system";
 
-const CardTitle = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <h3
-    ref={ref}
-    className={cn("font-semibold leading-none tracking-tight", className)}
-    {...props}
-  />
-))
-CardTitle.displayName = "CardTitle"
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ size = "sm", ...props }, ref) => (
+    <PackageCard ref={ref} size={size} {...props} />
+  ),
+);
+Card.displayName = "Card";
 
-const CardDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
-CardDescription.displayName = "CardDescription"
-
-const CardContent = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-2 pt-0 rounded-b-lg", className)} {...props} />
-))
-CardContent.displayName = "CardContent"
-
-const CardFooter = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex items-center p-2 pt-0 rounded-b-lg", className)}
-    {...props}
-  />
-))
-CardFooter.displayName = "CardFooter"
-
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+export { Card };

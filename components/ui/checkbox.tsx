@@ -1,37 +1,30 @@
 "use client";
 
-import * as React from "react";
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { CheckIcon, DividerHorizontalIcon } from "@radix-ui/react-icons";
+/**
+ * HOST BINDING ONLY — Checkbox lives in `@ai-matrx/design-system`. This app
+ * uses the dense 14px box, so it binds `size="sm"`; the stock 16px control is
+ * the package default.
+ *
+ * The indeterminate ruling this file used to carry moved into the package with
+ * it: Radix renders the indicator for BOTH `checked` and `"indeterminate"`, so
+ * the two states get DIFFERENT glyphs — a half-selected "select all" wearing a
+ * full check states something false.
+ */
 
-import { cn } from "@/lib/utils";
+import {
+  Checkbox as PackageCheckbox,
+  type CheckboxProps,
+} from "@ai-matrx/design-system";
+import * as React from "react";
+
+export type { CheckboxProps, CheckboxSize } from "@ai-matrx/design-system";
 
 const Checkbox = React.forwardRef<
-  React.ComponentRef<typeof CheckboxPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <CheckboxPrimitive.Root
-    ref={ref}
-    className={cn(
-      "peer h-3.5 w-3.5 shrink-0 rounded-xs border border-primary cursor-pointer shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground",
-      className,
-    )}
-    {...props}
-  >
-    <CheckboxPrimitive.Indicator
-      className={cn("flex items-center justify-center text-current")}
-    >
-      {/* Radix renders the indicator for BOTH checked and indeterminate. A
-          half-selected "select all" showing a full check states something
-          false, so the two states get different glyphs. */}
-      {props.checked === "indeterminate" ? (
-        <DividerHorizontalIcon className="h-3 w-3" />
-      ) : (
-        <CheckIcon className="h-3 w-3" />
-      )}
-    </CheckboxPrimitive.Indicator>
-  </CheckboxPrimitive.Root>
+  React.ComponentRef<typeof PackageCheckbox>,
+  CheckboxProps
+>(({ size = "sm", ...props }, ref) => (
+  <PackageCheckbox ref={ref} size={size} {...props} />
 ));
-Checkbox.displayName = CheckboxPrimitive.Root.displayName;
+Checkbox.displayName = "Checkbox";
 
 export { Checkbox };

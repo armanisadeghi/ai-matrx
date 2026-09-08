@@ -1,29 +1,26 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as SwitchPrimitives from "@radix-ui/react-switch"
+/**
+ * HOST BINDING ONLY — Switch lives in `@ai-matrx/design-system`. This app uses
+ * the compact 16px track with a visible border and an overhanging thumb, so it
+ * binds `size="sm"`; the other three hosts use the 20px `md` track, which is
+ * the package default.
+ *
+ * The OFF track now reads the `input` token in every host — one fork used the
+ * surface token, which makes an off switch disappear into a muted panel.
+ */
 
-import { cn } from "@/lib/utils"
+import { Switch as PackageSwitch, type SwitchProps } from "@ai-matrx/design-system";
+import * as React from "react";
+
+export type { SwitchProps, SwitchSize } from "@ai-matrx/design-system";
 
 const Switch = React.forwardRef<
-  React.ComponentRef<typeof SwitchPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
->(({ className, ...props }, ref) => (
-  <SwitchPrimitives.Root
-    className={cn(
-      "peer inline-flex h-4 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-zinc-300 dark:border-zinc-700 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-zinc-100 dark:data-[state=unchecked]:bg-zinc-800",
-      className
-    )}
-    {...props}
-    ref={ref}
-  >
-    <SwitchPrimitives.Thumb
-      className={cn(
-        "pointer-events-none block h-4 w-4 rounded-full bg-background border border-primary shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
-      )}
-    />
-  </SwitchPrimitives.Root>
-))
-Switch.displayName = SwitchPrimitives.Root.displayName
+  React.ComponentRef<typeof PackageSwitch>,
+  SwitchProps
+>(({ size = "sm", ...props }, ref) => (
+  <PackageSwitch ref={ref} size={size} {...props} />
+));
+Switch.displayName = "Switch";
 
-export { Switch }
+export { Switch };
