@@ -19669,6 +19669,69 @@
         }
       }
     },
+    "/hundredms/public/status": {
+      "get": {
+        "tags": [
+          "100ms Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_hundredms_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HundredMsStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kumospace/public/status": {
+      "get": {
+        "tags": [
+          "Kumospace Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_kumospace_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KumospaceServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plane/public/status": {
+      "get": {
+        "tags": [
+          "Plane Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_plane_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaneServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/samepage/public/status": {
       "get": {
         "tags": [
@@ -29047,6 +29110,94 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__nixos_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/debian-wiki/public/page": {
+      "get": {
+        "tags": [
+          "Debian Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_debian_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Page"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageContent"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/manjaro-wiki/public/page": {
+      "get": {
+        "tags": [
+          "Manjaro Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_manjaro_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__manjaro_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -150530,6 +150681,56 @@
         ],
         "title": "HumanRequiredSignal"
       },
+      "HundredMsStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "hundredms_official_service_status",
+            "title": "Kind",
+            "default": "hundredms_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "100ms",
+            "title": "Provider",
+            "default": "100ms"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.100ms.live",
+            "title": "Status Url",
+            "default": "https://status.100ms.live"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "HundredMsStatusResult",
+        "description": "Safe projection of 100ms Systems's official high-level service status."
+      },
       "HygraphServiceStatus": {
         "properties": {
           "__kind": {
@@ -158920,6 +159121,47 @@
           "indicator"
         ],
         "title": "KontentAIServiceStatus"
+      },
+      "KumospaceServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "kumospace_public_service_status",
+            "title": "Kind",
+            "default": "kumospace_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Kumospace",
+            "title": "Provider",
+            "default": "Kumospace"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.kumospace.com",
+            "title": "Status Page",
+            "default": "https://status.kumospace.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "KumospaceServiceStatus",
+        "description": "Safe aggregate status projection for Kumospace's fixed status page."
       },
       "KustomerServiceStatus": {
         "properties": {
@@ -181479,6 +181721,42 @@
         ],
         "title": "PageCaptureResult"
       },
+      "PageContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "debian_wiki_page_content",
+            "title": "Kind",
+            "default": "debian_wiki_page_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Debian Wiki",
+            "title": "Provider",
+            "default": "Debian Wiki"
+          },
+          "page": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Page"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page",
+          "content"
+        ],
+        "title": "PageContent",
+        "description": "Safe projection for one exact public Debian Wiki page."
+      },
       "PageDetail": {
         "properties": {
           "page_index": {
@@ -187427,6 +187705,55 @@
         ],
         "title": "PlandayServiceStatus",
         "description": "Safe aggregate status projection for Planday's fixed status page."
+      },
+      "PlaneServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "plane_official_project_collaboration_status",
+            "title": "Kind",
+            "default": "plane_official_project_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Plane",
+            "title": "Provider",
+            "default": "Plane"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.plane.so/",
+            "title": "Status Page",
+            "default": "https://status.plane.so/"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "PlaneServiceStatus"
       },
       "PlannedPageResult": {
         "properties": {
@@ -249967,6 +250294,59 @@
           },
           "language": {
             "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__manjaro_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "manjaro_wiki_page_metadata",
+            "title": "Kind",
+            "default": "manjaro_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Manjaro Wiki",
+            "title": "Provider",
+            "default": "Manjaro Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
             "title": "Language"
           }
         },

@@ -8519,6 +8519,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hundredms/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_hundredms_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kumospace/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_kumospace_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plane/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_plane_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/samepage/public/status": {
         parameters: {
             query?: never;
@@ -14869,6 +14920,40 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_nixos_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/debian-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_debian_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manjaro-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_manjaro_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -65794,6 +65879,43 @@ export interface components {
             adapter_version?: string | null;
         };
         /**
+         * HundredMsStatusResult
+         * @description Safe projection of 100ms Systems's official high-level service status.
+         */
+        HundredMsStatusResult: {
+            /**
+             * Kind
+             * @default hundredms_official_service_status
+             * @constant
+             */
+            __kind?: "hundredms_official_service_status";
+            /**
+             * Provider
+             * @default 100ms
+             * @constant
+             */
+            provider?: "100ms";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.100ms.live
+             * @constant
+             */
+            status_url?: "https://status.100ms.live";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * HygraphServiceStatus
          * @description Safe aggregate status projection for Hygraph's fixed status page.
          */
@@ -69781,6 +69903,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.kontent.ai";
+        };
+        /**
+         * KumospaceServiceStatus
+         * @description Safe aggregate status projection for Kumospace's fixed status page.
+         */
+        KumospaceServiceStatus: {
+            /**
+             * Kind
+             * @default kumospace_public_service_status
+             * @constant
+             */
+            __kind?: "kumospace_public_service_status";
+            /**
+             * Provider
+             * @default Kumospace
+             * @constant
+             */
+            provider?: "Kumospace";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.kumospace.com
+             * @constant
+             */
+            status_page?: "https://status.kumospace.com";
         };
         /** KustomerServiceStatus */
         KustomerServiceStatus: {
@@ -79781,6 +79935,28 @@ export interface components {
                 [key: string]: string;
             }[];
         };
+        /**
+         * PageContent
+         * @description Safe projection for one exact public Debian Wiki page.
+         */
+        PageContent: {
+            /**
+             * Kind
+             * @default debian_wiki_page_content
+             * @constant
+             */
+            __kind?: "debian_wiki_page_content";
+            /**
+             * Provider
+             * @default Debian Wiki
+             * @constant
+             */
+            provider?: "Debian Wiki";
+            /** Page */
+            page: string;
+            /** Content */
+            content: string;
+        };
         /** PageDetail */
         PageDetail: {
             /** Page Index */
@@ -82644,6 +82820,40 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.planday.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /** PlaneServiceStatus */
+        PlaneServiceStatus: {
+            /**
+             * Kind
+             * @default plane_official_project_collaboration_status
+             * @constant
+             */
+            __kind?: "plane_official_project_collaboration_status";
+            /**
+             * Provider
+             * @default Plane
+             * @constant
+             */
+            provider?: "Plane";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.plane.so/
+             * @constant
+             */
+            status_page?: "https://status.plane.so/";
             /**
              * Indicator
              * @enum {string}
@@ -110463,6 +110673,31 @@ export interface components {
             language: string;
         };
         /** PageMetadata */
+        aidream__services__manjaro_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default manjaro_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "manjaro_wiki_page_metadata";
+            /**
+             * Provider
+             * @default Manjaro Wiki
+             * @constant
+             */
+            provider?: "Manjaro Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
         aidream__services__mediawiki_integrations__service__PageMetadata: {
             /**
              * Kind
@@ -125476,6 +125711,66 @@ export interface operations {
             };
         };
     };
+    public_status_hundredms_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HundredMsStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_kumospace_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KumospaceServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_plane_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaneServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_samepage_public_status_get: {
         parameters: {
             query?: never;
@@ -133694,6 +133989,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__nixos_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_debian_wiki_public_page_get: {
+        parameters: {
+            query: {
+                page: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageContent"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_manjaro_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__manjaro_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
