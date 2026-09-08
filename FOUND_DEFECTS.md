@@ -15,6 +15,42 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D296 — `mnd_list_facets` / `mnd_list_scope_counts` never grew the `p_home` parameter the list door did
+
+Found 2026-09-07 building the ownership tabs (one-resolution L2). L0 gave
+`public.mnd_list_scoped` a `p_home` ownership parameter, but the two companion RPCs still take
+only `p_search`:
+
+- `mnd_list_facets(p_search)` — so the Filters panel's counts are computed over the caller's
+  whole corpus, not the ownership tab in front of them. On an organization tab holding 0
+  mandates the Feature / Decided by / Output kind / Status options still carry the platform's
+  counts. `features/mandates/browse/service.ts` → `fetchMandateFacets` says so in a comment.
+- `mnd_list_scope_counts(p_search)` — hardcodes `SELECT 'mine' … FROM mnd_list_scoped('mine',
+  …)`. The frontend no longer calls it at all (the tabs count each home through the list door's
+  own `total_count`), so it is now an unreferenced DB function. **Do not delete it on that
+  basis** — `../common-docs/policies/unfinished-work-alarm.md`.
+
+Fix: add `p_home text DEFAULT 'all'` to `mnd_list_facets` with the same predicate and refusal
+`mnd_list_scoped` uses, then pass the active tab's home from `fetchMandateFacets`; decide
+`mnd_list_scope_counts`'s fate in the same migration (it can answer every home in one round
+trip, which would replace the N+1 count fan-out the tabs make today).
+
+### D297 — an organization's mandate settings page lists the caller's OTHER organizations' mandates
+
+Found 2026-09-07 (one-resolution L2). `app/(core)/organizations/[orgId]/settings/mandates`
+resolves for the route's organization (`p_resolution_for => 'org'`, correct and deliberate) but
+its OWNERSHIP stays `p_home => 'all'`, which is "the system organization OR any organization
+the caller belongs to". So an admin of two organizations sees org B's own mandates on org A's
+settings page, under a notice that says *"Bindings made here apply to every member of A"*.
+
+It was left as-is because the frozen spec says not to change that page's semantics in this
+lane, and because the alternative available today is worse: `p_home => 'org:A'` shows only A's
+own mandates and hides the 409 platform jobs an org admin comes here to bind.
+
+Fix (DB): the door needs a home that means *the system organization plus ONE named
+organization* — e.g. `p_home => 'org+system:<uuid>'` — after which the page passes it and the
+notice becomes true. Same migration as D296.
+
 ### D295 — the resolution door does not return a mandate's identity or its pins, so every client resolution still pays a second read
 
 Found 2026-09-07 rewiring `resolveMandate` onto `GET /mandates/{key}/resolution` (the
