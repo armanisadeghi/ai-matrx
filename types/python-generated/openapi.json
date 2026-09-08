@@ -16748,6 +16748,27 @@
         }
       }
     },
+    "/notesnook/public/release": {
+      "get": {
+        "tags": [
+          "Notesnook Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_notesnook_public_release_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotesnookPublicRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -20229,6 +20250,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DisqusServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/firstup/public/status": {
+      "get": {
+        "tags": [
+          "Firstup Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_firstup_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirstupServiceStatus"
                 }
               }
             }
@@ -30077,6 +30119,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GettingStartedContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/python-docs/public/tutorial-introduction": {
+      "get": {
+        "tags": [
+          "Python Documentation Integrations"
+        ],
+        "summary": "Public Tutorial Introduction",
+        "operationId": "public_tutorial_introduction_python_docs_public_tutorial_introduction_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TutorialIntroductionContent"
                 }
               }
             }
@@ -144621,6 +144684,47 @@
         "type": "object",
         "title": "FireTriggerRequest"
       },
+      "FirstupServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "firstup_public_service_status",
+            "title": "Kind",
+            "default": "firstup_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Firstup",
+            "title": "Provider",
+            "default": "Firstup"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.firstup.io",
+            "title": "Status Page",
+            "default": "https://status.firstup.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "FirstupServiceStatus",
+        "description": "Safe aggregate status projection for Firstup's fixed status page."
+      },
       "FlattenAnnotationsRequest": {
         "properties": {
           "output_mode": {
@@ -177166,6 +177270,48 @@
           "type"
         ],
         "title": "NotesInputPart"
+      },
+      "NotesnookPublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "notesnook_public_release",
+            "title": "Kind",
+            "default": "notesnook_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Notesnook",
+            "title": "Provider",
+            "default": "Notesnook"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag",
+          "release_url",
+          "published_at"
+        ],
+        "title": "NotesnookPublicRelease"
       },
       "NounDirectives": {
         "properties": {
@@ -235749,6 +235895,47 @@
         ],
         "title": "TutorialContent",
         "description": "Safe projection of the fixed public pandas tutorial."
+      },
+      "TutorialIntroductionContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "python_docs_tutorial_introduction_content",
+            "title": "Kind",
+            "default": "python_docs_tutorial_introduction_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Python Documentation",
+            "title": "Provider",
+            "default": "Python Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "3",
+            "title": "Version",
+            "default": "3"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "TutorialIntroductionContent",
+        "description": "Safe projection of the fixed public Python tutorial introduction."
       },
       "TwistServiceStatus": {
         "properties": {

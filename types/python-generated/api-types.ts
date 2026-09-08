@@ -6693,6 +6693,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/notesnook/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_notesnook_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -8970,6 +8987,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_disqus_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/firstup/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_firstup_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15583,6 +15617,23 @@ export interface paths {
         };
         /** Public Getting Started */
         get: operations["public_getting_started_pytest_docs_public_getting_started_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/python-docs/public/tutorial-introduction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Tutorial Introduction */
+        get: operations["public_tutorial_introduction_python_docs_public_tutorial_introduction_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -62986,6 +63037,38 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * FirstupServiceStatus
+         * @description Safe aggregate status projection for Firstup's fixed status page.
+         */
+        FirstupServiceStatus: {
+            /**
+             * Kind
+             * @default firstup_public_service_status
+             * @constant
+             */
+            __kind?: "firstup_public_service_status";
+            /**
+             * Provider
+             * @default Firstup
+             * @constant
+             */
+            provider?: "Firstup";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.firstup.io
+             * @constant
+             */
+            status_page?: "https://status.firstup.io";
+        };
         /** FlattenAnnotationsRequest */
         FlattenAnnotationsRequest: {
             /** Output Mode */
@@ -78326,6 +78409,33 @@ export interface components {
             keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
+        };
+        /** NotesnookPublicRelease */
+        NotesnookPublicRelease: {
+            /**
+             * Kind
+             * @default notesnook_public_release
+             * @constant
+             */
+            __kind?: "notesnook_public_release";
+            /**
+             * Provider
+             * @default Notesnook
+             * @constant
+             */
+            provider?: "Notesnook";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
         };
         /**
          * NounDirectives
@@ -104870,6 +104980,38 @@ export interface components {
             content: string;
         };
         /**
+         * TutorialIntroductionContent
+         * @description Safe projection of the fixed public Python tutorial introduction.
+         */
+        TutorialIntroductionContent: {
+            /**
+             * Kind
+             * @default python_docs_tutorial_introduction_content
+             * @constant
+             */
+            __kind?: "python_docs_tutorial_introduction_content";
+            /**
+             * Provider
+             * @default Python Documentation
+             * @constant
+             */
+            provider?: "Python Documentation";
+            /**
+             * Version
+             * @default 3
+             * @constant
+             */
+            version?: "3";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
+        };
+        /**
          * TwistServiceStatus
          * @description Safe aggregate status projection for Twist's fixed status page.
          */
@@ -125125,6 +125267,26 @@ export interface operations {
             };
         };
     };
+    public_release_notesnook_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotesnookPublicRelease"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -128056,6 +128218,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DisqusServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_firstup_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FirstupServiceStatus"];
                 };
             };
         };
@@ -136653,6 +136835,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GettingStartedContent"];
+                };
+            };
+        };
+    };
+    public_tutorial_introduction_python_docs_public_tutorial_introduction_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TutorialIntroductionContent"];
                 };
             };
         };
