@@ -16496,6 +16496,27 @@
         }
       }
     },
+    "/crossref/public/work": {
+      "get": {
+        "tags": [
+          "Crossref Integrations"
+        ],
+        "summary": "Public Work",
+        "operationId": "public_work_crossref_public_work_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrossrefWork"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -19704,6 +19725,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/KumospaceServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spatialchat/public/status": {
+      "get": {
+        "tags": [
+          "SpatialChat Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_spatialchat_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpatialChatServiceStatus"
                 }
               }
             }
@@ -29153,7 +29195,51 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageContent"
+                  "$ref": "#/components/schemas/aidream__services__debian_wiki_integrations__service__PageContent"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/freebsd-wiki/public/page": {
+      "get": {
+        "tags": [
+          "FreeBSD Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_freebsd_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Page"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__freebsd_wiki_integrations__service__PageContent"
                 }
               }
             }
@@ -122642,6 +122728,59 @@
         "type": "object",
         "title": "CrossTopicSourceMatchResponse"
       },
+      "CrossrefWork": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "crossref_public_research_work",
+            "title": "Kind",
+            "default": "crossref_public_research_work"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Crossref",
+            "title": "Provider",
+            "default": "Crossref"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "doi": {
+            "type": "string",
+            "const": "10.1038/nature12373",
+            "title": "Doi",
+            "default": "10.1038/nature12373"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "work_type": {
+            "type": "string",
+            "title": "Work Type"
+          },
+          "publisher": {
+            "type": "string",
+            "title": "Publisher"
+          },
+          "published_year": {
+            "type": "integer",
+            "title": "Published Year"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "work_type",
+          "publisher",
+          "published_year"
+        ],
+        "title": "CrossrefWork"
+      },
       "CrowdcastServiceStatus": {
         "properties": {
           "__kind": {
@@ -181721,42 +181860,6 @@
         ],
         "title": "PageCaptureResult"
       },
-      "PageContent": {
-        "properties": {
-          "__kind": {
-            "type": "string",
-            "const": "debian_wiki_page_content",
-            "title": "Kind",
-            "default": "debian_wiki_page_content"
-          },
-          "provider": {
-            "type": "string",
-            "const": "Debian Wiki",
-            "title": "Provider",
-            "default": "Debian Wiki"
-          },
-          "page": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Page"
-          },
-          "content": {
-            "type": "string",
-            "maxLength": 64000,
-            "minLength": 1,
-            "title": "Content"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "page",
-          "content"
-        ],
-        "title": "PageContent",
-        "description": "Safe projection for one exact public Debian Wiki page."
-      },
       "PageDetail": {
         "properties": {
           "page_index": {
@@ -219878,6 +219981,47 @@
         ],
         "title": "SparkPostServiceStatus"
       },
+      "SpatialChatServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "spatialchat_public_service_status",
+            "title": "Kind",
+            "default": "spatialchat_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "SpatialChat",
+            "title": "Provider",
+            "default": "SpatialChat"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.spatial.chat",
+            "title": "Status Page",
+            "default": "https://status.spatial.chat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SpatialChatServiceStatus",
+        "description": "Safe aggregate status projection for SpatialChat's fixed status page."
+      },
       "SpeakerSpec": {
         "properties": {
           "name": {
@@ -249270,6 +249414,42 @@
         ],
         "title": "PackageMetadata"
       },
+      "aidream__services__debian_wiki_integrations__service__PageContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "debian_wiki_page_content",
+            "title": "Kind",
+            "default": "debian_wiki_page_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Debian Wiki",
+            "title": "Provider",
+            "default": "Debian Wiki"
+          },
+          "page": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Page"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page",
+          "content"
+        ],
+        "title": "PageContent",
+        "description": "Safe projection for one exact public Debian Wiki page."
+      },
       "aidream__services__dogceo_integrations__service__DogImage": {
         "properties": {
           "__kind": {
@@ -249448,6 +249628,42 @@
           "language"
         ],
         "title": "PageMetadata"
+      },
+      "aidream__services__freebsd_wiki_integrations__service__PageContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "freebsd_wiki_page_content",
+            "title": "Kind",
+            "default": "freebsd_wiki_page_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "FreeBSD Wiki",
+            "title": "Provider",
+            "default": "FreeBSD Wiki"
+          },
+          "page": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Page"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page",
+          "content"
+        ],
+        "title": "PageContent",
+        "description": "Safe projection for one exact public FreeBSD Wiki page."
       },
       "aidream__services__freecad_wiki_integrations__service__PageMetadata": {
         "properties": {

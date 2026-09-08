@@ -6489,6 +6489,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/crossref/public/work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Work */
+        get: operations["public_work_crossref_public_work_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -8545,6 +8562,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_kumospace_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/spatialchat/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_spatialchat_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -14937,6 +14971,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_debian_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/freebsd-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_freebsd_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -53238,6 +53289,41 @@ export interface components {
             /** Matches */
             matches?: components["schemas"]["CrossTopicSourceMatch"][];
         };
+        /** CrossrefWork */
+        CrossrefWork: {
+            /**
+             * Kind
+             * @default crossref_public_research_work
+             * @constant
+             */
+            __kind?: "crossref_public_research_work";
+            /**
+             * Provider
+             * @default Crossref
+             * @constant
+             */
+            provider?: "Crossref";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Doi
+             * @default 10.1038/nature12373
+             * @constant
+             */
+            doi?: "10.1038/nature12373";
+            /** Title */
+            title: string;
+            /** Work Type */
+            work_type: string;
+            /** Publisher */
+            publisher: string;
+            /** Published Year */
+            published_year: number;
+        };
         /** CrowdcastServiceStatus */
         CrowdcastServiceStatus: {
             /**
@@ -79935,28 +80021,6 @@ export interface components {
                 [key: string]: string;
             }[];
         };
-        /**
-         * PageContent
-         * @description Safe projection for one exact public Debian Wiki page.
-         */
-        PageContent: {
-            /**
-             * Kind
-             * @default debian_wiki_page_content
-             * @constant
-             */
-            __kind?: "debian_wiki_page_content";
-            /**
-             * Provider
-             * @default Debian Wiki
-             * @constant
-             */
-            provider?: "Debian Wiki";
-            /** Page */
-            page: string;
-            /** Content */
-            content: string;
-        };
         /** PageDetail */
         PageDetail: {
             /** Page Index */
@@ -97020,6 +97084,38 @@ export interface components {
             status_page?: "https://status.sparkpost.com";
         };
         /**
+         * SpatialChatServiceStatus
+         * @description Safe aggregate status projection for SpatialChat's fixed status page.
+         */
+        SpatialChatServiceStatus: {
+            /**
+             * Kind
+             * @default spatialchat_public_service_status
+             * @constant
+             */
+            __kind?: "spatialchat_public_service_status";
+            /**
+             * Provider
+             * @default SpatialChat
+             * @constant
+             */
+            provider?: "SpatialChat";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.spatial.chat
+             * @constant
+             */
+            status_page?: "https://status.spatial.chat";
+        };
+        /**
          * SpeakerSpec
          * @description One requested speaker. `voice` is provider-appropriate: a Gemini
          *     prebuilt voice name for 1–2 hosts (Google TTS), an ElevenLabs voice_id for
@@ -110161,6 +110257,28 @@ export interface components {
             /** Versions */
             versions: components["schemas"]["PackageVersion"][];
         };
+        /**
+         * PageContent
+         * @description Safe projection for one exact public Debian Wiki page.
+         */
+        aidream__services__debian_wiki_integrations__service__PageContent: {
+            /**
+             * Kind
+             * @default debian_wiki_page_content
+             * @constant
+             */
+            __kind?: "debian_wiki_page_content";
+            /**
+             * Provider
+             * @default Debian Wiki
+             * @constant
+             */
+            provider?: "Debian Wiki";
+            /** Page */
+            page: string;
+            /** Content */
+            content: string;
+        };
         /** DogImage */
         aidream__services__dogceo_integrations__service__DogImage: {
             /**
@@ -110255,6 +110373,28 @@ export interface components {
             content_model: string;
             /** Language */
             language: string;
+        };
+        /**
+         * PageContent
+         * @description Safe projection for one exact public FreeBSD Wiki page.
+         */
+        aidream__services__freebsd_wiki_integrations__service__PageContent: {
+            /**
+             * Kind
+             * @default freebsd_wiki_page_content
+             * @constant
+             */
+            __kind?: "freebsd_wiki_page_content";
+            /**
+             * Provider
+             * @default FreeBSD Wiki
+             * @constant
+             */
+            provider?: "FreeBSD Wiki";
+            /** Page */
+            page: string;
+            /** Content */
+            content: string;
         };
         /** PageMetadata */
         aidream__services__freecad_wiki_integrations__service__PageMetadata: {
@@ -123076,6 +123216,26 @@ export interface operations {
             };
         };
     };
+    public_work_crossref_public_work_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrossrefWork"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -125747,6 +125907,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KumospaceServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_spatialchat_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpatialChatServiceStatus"];
                 };
             };
         };
@@ -134019,7 +134199,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PageContent"];
+                    "application/json": components["schemas"]["aidream__services__debian_wiki_integrations__service__PageContent"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_freebsd_wiki_public_page_get: {
+        parameters: {
+            query: {
+                page: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__freebsd_wiki_integrations__service__PageContent"];
                 };
             };
             /** @description Validation Error */
