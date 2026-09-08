@@ -74,6 +74,7 @@ describe("resyncForIdentity", () => {
         await resyncForIdentity({
             store,
             identity: authed,
+            previousIdentity: guest,
             policies: [policy],
             getIdentity: () => authed,
         });
@@ -96,6 +97,7 @@ describe("resyncForIdentity", () => {
         await resyncForIdentity({
             store,
             identity: authed,
+            previousIdentity: guest,
             policies: [policy],
             getIdentity: () => authed,
         });
@@ -117,6 +119,7 @@ describe("resyncForIdentity", () => {
         await resyncForIdentity({
             store,
             identity: guest,
+            previousIdentity: authed,
             policies: [policy],
             getIdentity: () => authed,
         });
@@ -148,6 +151,7 @@ describe("resyncForIdentity", () => {
         const result = await bootSync({
             store,
             identity: guest,
+            previousIdentity: authed,
             policies: [policy],
             openChannel: () => channel,
             // The store has already moved on to the signed-in user.

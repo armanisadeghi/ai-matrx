@@ -131,8 +131,8 @@ function configThatThrows(thrown: unknown): EntityListConfig<Row> {
       } as unknown as EntityListConfig<Row>["columns"][number],
     ],
     prefsVersion: 1,
-    getRowId: (row) => row.id,
-    getRowName: (row) => row.label,
+    getRowId: (row: Row) => row.id,
+    getRowName: (row: Row) => row.label,
     useRowActions: () => ({
       actions: {
         menuFor: () => () => ({ sections: [] }),

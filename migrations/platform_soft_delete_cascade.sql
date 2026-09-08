@@ -402,3 +402,125 @@ begin
     'one-resolution campaign FIX-R15', 'job');
 end;
 $seed$;
+
+-- -----------------------------------------------------------------------------
+-- 7. THE LIVENESS ASSERTION — a guard's source on disk proves nothing.
+-- -----------------------------------------------------------------------------
+-- Read by `pnpm check:soft-delete-cascade`. Everything here is answered from the
+-- CATALOG and from live rows, never from this file, so a trigger someone drops,
+-- disables, or re-creates as AFTER/STATEMENT shows up red.
+create or replace function public.__soft_delete_cascade_conformance()
+returns table (check_key text, ok boolean, severity text, detail jsonb)
+language plpgsql
+security definer
+stable
+set search_path = ''
+as $fn$
+declare
+  v_missing_cascade jsonb;
+  v_missing_guard   jsonb;
+  v_bad_shape       jsonb;
+  v_orphans         jsonb;
+  v_mandate_edges   jsonb;
+begin
+  -- 1. Every cascade edge in the registry has its parent trigger bound, ENABLED,
+  --    AFTER, and FOR EACH ROW. An AFTER-STATEMENT twin still shows in pg_trigger
+  --    while cascading nothing.
+  select coalesce(jsonb_agg(distinct e.parent_schema||'.'||e.parent_table), '[]'::jsonb)
+    into v_missing_cascade
+    from platform.soft_delete_edge e
+   where e.action = 'cascade'
+     and not exists (
+       select 1 from pg_trigger t
+        join pg_class c on c.oid = t.tgrelid
+        join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = e.parent_schema and c.relname = e.parent_table
+         and t.tgname = '_cascade_softdelete'
+         and not t.tgisinternal
+         and t.tgenabled <> 'D'
+         and (t.tgtype & 1) = 1   -- FOR EACH ROW
+         and (t.tgtype & 2) = 0   -- AFTER
+         and (t.tgtype & 16) = 16 -- UPDATE
+     );
+
+  -- 2. Every cascade edge has its child guard bound, ENABLED, BEFORE, FOR EACH ROW.
+  select coalesce(jsonb_agg(distinct e.child_schema||'.'||e.child_table), '[]'::jsonb)
+    into v_missing_guard
+    from platform.soft_delete_edge e
+   where e.action = 'cascade'
+     and not exists (
+       select 1 from pg_trigger t
+        join pg_class c on c.oid = t.tgrelid
+        join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = e.child_schema and c.relname = e.child_table
+         and t.tgname = '_guard_soft_delete_parent'
+         and not t.tgisinternal
+         and t.tgenabled <> 'D'
+         and (t.tgtype & 1) = 1  -- FOR EACH ROW
+         and (t.tgtype & 2) = 2  -- BEFORE
+     );
+
+  -- 3. The two functions are still SECURITY DEFINER. Flipped to INVOKER, the
+  --    cascade silently stops reaching RLS-protected children for real users
+  --    while every privileged test stays green.
+  select coalesce(jsonb_agg(n.nspname||'.'||p.proname), '[]'::jsonb)
+    into v_bad_shape
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'platform'
+     and p.proname in ('_cascade_soft_delete', '_guard_soft_delete_parent')
+     and p.prosecdef is not true;
+
+  -- 4. Zero live rows under a removed parent, on every declared cascade edge.
+  select coalesce(jsonb_agg(jsonb_build_object('edge', c.edge, 'live_rows', c.live_rows_under_removed_parent)), '[]'::jsonb)
+    into v_orphans
+    from platform.soft_delete_orphan_census() c
+   where c.action = 'cascade' and c.live_rows_under_removed_parent > 0;
+
+  -- 5. The mandate edges specifically — the defect this was built for. A row
+  --    quietly flipped to 'keep' would pass every generic check above.
+  select coalesce(jsonb_object_agg(e.child_schema||'.'||e.child_table||'.'||e.child_column, e.action), '{}'::jsonb)
+    into v_mandate_edges
+    from platform.soft_delete_edge e
+   where e.parent_schema = 'mandate' and e.parent_table = 'definition';
+
+  return query
+  select 'cascade_trigger_installed',
+         v_missing_cascade = '[]'::jsonb, 'error',
+         jsonb_build_object('why', 'Parents with a cascade edge but no live AFTER-UPDATE-ROW _cascade_softdelete trigger.',
+                            'parents_missing_trigger', v_missing_cascade)
+  union all
+  select 'child_guard_installed',
+         v_missing_guard = '[]'::jsonb, 'error',
+         jsonb_build_object('why', 'Cascade children with no live BEFORE-ROW _guard_soft_delete_parent trigger — a part could be attached to a removed parent again.',
+                            'children_missing_guard', v_missing_guard)
+  union all
+  select 'functions_security_definer',
+         v_bad_shape = '[]'::jsonb, 'error',
+         jsonb_build_object('why', 'Both trigger functions must stay SECURITY DEFINER; as INVOKER the cascade stops reaching RLS-protected children for real users.',
+                            'not_definer', v_bad_shape)
+  union all
+  select 'no_live_orphans',
+         v_orphans = '[]'::jsonb, 'error',
+         jsonb_build_object('why', 'Live rows sitting under a soft-deleted parent on a declared cascade edge — the original defect, back.',
+                            'edges', v_orphans)
+  union all
+  select 'mandate_edges_declared',
+         v_mandate_edges = jsonb_build_object(
+           'mandate.binding.mandate_id', 'cascade',
+           'mandate.treatment.mandate_id', 'cascade',
+           'agent.exemplar.mandate_id', 'cascade',
+           'agent.mandate_note.mandate_id', 'cascade',
+           'app.definition.mandate_id', 'keep',
+           'mandate.definition.source_mandate_id', 'keep'), 'error',
+         jsonb_build_object('why', 'The six inbound edges of mandate.definition and what each was ruled to mean. A new FK into mandate.definition lands here as a mismatch rather than as silence.',
+                            'declared', v_mandate_edges);
+end;
+$fn$;
+
+revoke all on function public.__soft_delete_cascade_conformance() from public;
+grant execute on function public.__soft_delete_cascade_conformance() to service_role;
+
+comment on function public.__soft_delete_cascade_conformance() is
+  'Liveness assertion for the soft-delete cascade primitive. Read by '
+  'pnpm check:soft-delete-cascade. service_role only — it reports on the whole '
+  'database, so it is never a client door.';
