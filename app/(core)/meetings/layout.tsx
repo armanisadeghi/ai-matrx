@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/meetings", {
   title: "Meetings",
   description:
     "Create a meeting and share its durable link — anyone can join, with or without an account",
-  letter: "MT",
+  letter: "MG",
   additionalMetadata: {
     keywords: ["meetings", "video call", "conference", "meeting link"],
   },
