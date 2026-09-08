@@ -19648,6 +19648,48 @@
         }
       }
     },
+    "/hubstaff/public/status": {
+      "get": {
+        "tags": [
+          "Hubstaff Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_hubstaff_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HubstaffServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/samepage/public/status": {
+      "get": {
+        "tags": [
+          "Samepage Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_samepage_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SamepageServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/marvel-app/public/status": {
       "get": {
         "tags": [
@@ -28961,6 +29003,50 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__fandom_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nixos-wiki/public/page": {
+      "get": {
+        "tags": [
+          "NixOS Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_nixos_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__nixos_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -150147,6 +150233,47 @@
         ],
         "title": "HotjarServiceStatus"
       },
+      "HubstaffServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "hubstaff_public_service_status",
+            "title": "Kind",
+            "default": "hubstaff_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Hubstaff",
+            "title": "Provider",
+            "default": "Hubstaff"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.hubstaff.com",
+            "title": "Status Page",
+            "default": "https://status.hubstaff.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "HubstaffServiceStatus",
+        "description": "Safe aggregate status projection for Hubstaff's fixed status page."
+      },
       "HuggingFaceModelResult": {
         "properties": {
           "__kind": {
@@ -208409,6 +208536,55 @@
         ],
         "title": "SalesloftServiceStatus"
       },
+      "SamepageServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "samepage_official_team_collaboration_status",
+            "title": "Kind",
+            "default": "samepage_official_team_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Samepage",
+            "title": "Provider",
+            "default": "Samepage"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.samepage.io",
+            "title": "Status Page",
+            "default": "https://status.samepage.io"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SamepageServiceStatus"
+      },
       "SandboxBindRequest": {
         "properties": {
           "organization_id": {
@@ -249929,6 +250105,59 @@
           },
           "language": {
             "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__nixos_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "nixos_wiki_page_metadata",
+            "title": "Kind",
+            "default": "nixos_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "NixOS Wiki",
+            "title": "Provider",
+            "default": "NixOS Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
             "title": "Language"
           }
         },

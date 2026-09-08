@@ -8502,6 +8502,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hubstaff/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_hubstaff_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/samepage/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_samepage_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/marvel-app/public/status": {
         parameters: {
             query?: never;
@@ -14818,6 +14852,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_fandom_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nixos-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_nixos_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -65609,6 +65660,38 @@ export interface components {
             status_page?: "https://status.hotjar.com";
         };
         /**
+         * HubstaffServiceStatus
+         * @description Safe aggregate status projection for Hubstaff's fixed status page.
+         */
+        HubstaffServiceStatus: {
+            /**
+             * Kind
+             * @default hubstaff_public_service_status
+             * @constant
+             */
+            __kind?: "hubstaff_public_service_status";
+            /**
+             * Provider
+             * @default Hubstaff
+             * @constant
+             */
+            provider?: "Hubstaff";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.hubstaff.com
+             * @constant
+             */
+            status_page?: "https://status.hubstaff.com";
+        };
+        /**
          * HuggingFaceModelResult
          * @description Safe bounded projection of one public Hugging Face model repository.
          */
@@ -91724,6 +91807,40 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** SamepageServiceStatus */
+        SamepageServiceStatus: {
+            /**
+             * Kind
+             * @default samepage_official_team_collaboration_status
+             * @constant
+             */
+            __kind?: "samepage_official_team_collaboration_status";
+            /**
+             * Provider
+             * @default Samepage
+             * @constant
+             */
+            provider?: "Samepage";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.samepage.io
+             * @constant
+             */
+            status_page?: "https://status.samepage.io";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** SandboxBindRequest */
         SandboxBindRequest: {
             /**
@@ -110421,6 +110538,31 @@ export interface components {
             language: string;
         };
         /** PageMetadata */
+        aidream__services__nixos_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default nixos_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "nixos_wiki_page_metadata";
+            /**
+             * Provider
+             * @default NixOS Wiki
+             * @constant
+             */
+            provider?: "NixOS Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
         aidream__services__openoffice_wiki_integrations__service__PageMetadata: {
             /**
              * Kind
@@ -125314,6 +125456,46 @@ export interface operations {
             };
         };
     };
+    public_status_hubstaff_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubstaffServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_samepage_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SamepageServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_marvel_app_public_status_get: {
         parameters: {
             query?: never;
@@ -133481,6 +133663,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__fandom_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_nixos_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__nixos_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
