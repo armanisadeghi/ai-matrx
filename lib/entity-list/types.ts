@@ -101,6 +101,23 @@ export interface EntityScopeCounts {
   byKind: Partial<Record<ListScopeKind, number>>;
   /** Narrowing options per scope kind, in server order. */
   narrow: Partial<Record<ListScopeKind, ScopeNarrowOption[]>>;
+  /**
+   * WHY a scope has no narrowing options, in a sentence a person can act on.
+   *
+   * 🚨 THE DEFECT THIS CLOSES (one-resolution FIX-R6/F1, 2026-09-08). On
+   * production `/mandates`, `narrow.orgs` came back empty and the declared
+   * **Organization** section simply was not rendered — an admin belonging to
+   * nine organizations saw a Filters panel that never mentioned organizations,
+   * with nothing on screen saying why. "No options, so no section" is the
+   * fourth law's silent failure: a declared narrowing is either offered or it
+   * says what happened.
+   *
+   * A service that CANNOT offer options — the counts were refused, the caller's
+   * organizations have not been read yet, the caller genuinely belongs to none
+   * — sets the reason here and the panel prints it. Absent + no options means
+   * the shell will say so in its own generic words rather than hide.
+   */
+  narrowUnavailable?: Partial<Record<ListScopeKind, string>>;
 }
 
 export const EMPTY_SCOPE_COUNTS: EntityScopeCounts = {

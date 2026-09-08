@@ -52,7 +52,11 @@ import {
 } from "@/features/mandates/provisions";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
-import { parseMandateContract } from "@/features/mandates/overrides";
+import {
+  agentDefaultHolder,
+  parseMandateContract,
+  putMandateDefaultHolder,
+} from "@/features/mandates/overrides";
 import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
 import {
   contractOfMandate,
@@ -175,6 +179,7 @@ function DriftPanel({
   onTest: () => void;
 }) {
   const agentId = row.agentId;
+  const dispatch = useAppDispatch();
   const [versions, setVersions] = useState<MandateVersionInfo[] | null>(null);
   const [diffOpen, setDiffOpen] = useState(false);
   const [diff, setDiff] = useState<{
@@ -254,18 +259,18 @@ function DriftPanel({
   const writeVersionPin = async (mode: "pin" | "latest") => {
     setBusy(mode);
     try {
-      // "pin" stores the newest saved version; "latest" clears the pin. The
-      // storage router decides whether clearing means `use_latest = true` or a
-      // NULL version id — the two schemas say it differently, this surface
-      // says it once.
-      await updateMandateDefinition(row.mandate.id, {
-        holder: {
-          holderType: "agent",
-          holderId: agentId,
-          versionId: mode === "pin" ? (latestSaved?.id ?? null) : null,
-          useLatest: mode === "latest",
-        },
-      });
+      // "pin" stores the newest saved version; "latest" clears the pin. Both
+      // are changes to the mandate's SYSTEM rung, so both go through the one
+      // gated door (AD226, FIX-R5) — a version pin decides for every member of
+      // the home organization exactly as a rebind does.
+      await putMandateDefaultHolder(
+        dispatch,
+        row.mandate.mandate_key,
+        agentDefaultHolder(
+          agentId,
+          mode === "pin" ? (latestSaved?.id ?? null) : null,
+        ),
+      );
       toast.success(
         mode === "pin"
           ? `${row.mandateKey} updated to v${latestSaved?.versionNumber}.`

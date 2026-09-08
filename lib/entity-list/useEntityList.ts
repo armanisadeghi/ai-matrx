@@ -34,6 +34,29 @@ const SEARCH_DEBOUNCE_MS = 250;
 
 export interface UseEntityListArgs<TRow> {
   service: EntityListService<TRow>;
+  /**
+   * WHAT THIS SERVICE IS ASKING ON BEHALF OF — a string that changes whenever
+   * the service's own INPUTS change.
+   *
+   * 🚨 THE DEFECT THIS CLOSES (one-resolution FIX-R6/F1, 2026-09-08, measured
+   * on production `/mandates`). Every fetch here is keyed by the QUERY alone.
+   * A host whose service closes over data that arrives ASYNCHRONOUSLY — the
+   * caller's organizations, an active workspace, a report the page is still
+   * loading — therefore fetches ONCE, with the empty first-render value, and
+   * never again: the query never changed, so nothing re-asked. On `/mandates`
+   * that produced a scope-counts call that knew about zero organizations, an
+   * empty `counts.narrow.orgs`, and a Filters panel with no Organization
+   * section at all for an admin who belongs to nine of them.
+   *
+   * The service object itself cannot be the dependency — hosts build it inline,
+   * so it is a new object every render and would refetch forever. This key is
+   * the honest middle: the host states what its service depends on, and the
+   * shell re-asks exactly when that changes.
+   *
+   * Omit it ONLY when the service is built from module constants or from props
+   * that are settled before mount.
+   */
+  serviceKey?: string;
   getRowId: (row: TRow) => string;
   /** Plural, lowercase — error toasts ("Could not load agents"). */
   entityLabelPlural: string;
@@ -109,6 +132,7 @@ function useQueryState(
 
 export function useEntityList<TRow>({
   service,
+  serviceKey = "",
   getRowId,
   entityLabelPlural,
   view,
@@ -132,6 +156,12 @@ export function useEntityList<TRow>({
   const [rows, setRows] = useState<TRow[]>([]);
   const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState<EntityScopeCounts>(EMPTY_SCOPE_COUNTS);
+  // Counts have their OWN pending and failure state, because a scope section
+  // that has no options yet must be able to tell "still reading" from "read,
+  // and there are none" from "the read was refused" (FIX-R6/F1). One boolean
+  // shared with the row query would answer none of the three.
+  const [countsLoading, setCountsLoading] = useState(true);
+  const [countsError, setCountsError] = useState<string | null>(null);
   const [facets, setFacets] = useState<EntityFacets>(EMPTY_FACETS);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
@@ -158,6 +188,7 @@ export function useEntityList<TRow>({
     favFirst: view.favoritesFirst,
     size: view.pageSize,
     refreshToken,
+    service: serviceKey,
   });
 
   useEffect(() => {
@@ -211,18 +242,37 @@ export function useEntityList<TRow>({
     archived: query.archived,
     filters: query.filters,
   };
-  const countsKey = JSON.stringify({ q: countsQuery, refreshToken });
+  const countsKey = JSON.stringify({
+    q: countsQuery,
+    refreshToken,
+    service: serviceKey,
+  });
 
   useEffect(() => {
     let cancelled = false;
+    setCountsLoading(true);
     void (async () => {
       try {
         const next = await service.fetchCounts(countsQuery);
-        if (!cancelled) setCounts(next);
+        if (!cancelled) {
+          setCounts(next);
+          setCountsError(null);
+        }
       } catch (err) {
         // Counts are an adornment; a failure must not blank the list. Still
-        // reported, never swallowed.
+        // reported, never swallowed — and a scope section that was waiting on
+        // these options now says so instead of waiting forever (FIX-R6/F1).
         console.error(`[entity-list] scope counts failed`, err);
+        if (!cancelled) {
+          setCounts(EMPTY_SCOPE_COUNTS);
+          setCountsError(
+            err instanceof Error
+              ? err.message
+              : "the counts query failed with no message",
+          );
+        }
+      } finally {
+        if (!cancelled) setCountsLoading(false);
       }
     })();
     return () => {
@@ -312,6 +362,8 @@ export function useEntityList<TRow>({
     rows,
     total,
     counts,
+    countsLoading,
+    countsError,
     facets,
     isLoading,
     isFetching,

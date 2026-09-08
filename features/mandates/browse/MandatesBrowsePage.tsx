@@ -75,7 +75,11 @@ export function MandatesBrowsePage() {
   // stricter one the database would then contradict.
   const isPlatformAdmin = useAppSelector(selectAdminLevel) !== null;
   const activeOrganizationId = useAppSelector(selectOrganizationId);
-  const { organizations: memberships } = useUserOrganizations();
+  const {
+    organizations: memberships,
+    loading: organizationsLoading,
+    error: organizationsError,
+  } = useUserOrganizations();
 
   const organizations: MandateHomeOrganization[] = memberships.map((org) => ({
     id: org.id,
@@ -94,8 +98,27 @@ export function MandatesBrowsePage() {
       kind: "homes",
       activeOrganizationId,
       organizations,
+      organizationsLoading,
+      organizationsError,
       canListSystemHome: isPlatformAdmin,
     },
+  });
+
+  // 🚨 WHAT THIS SERVICE WAS BUILT FROM (one-resolution FIX-R6/F1).
+  //
+  // `useUserOrganizations` answers AFTER the first render. Without this key the
+  // shell fetched its scope counts exactly once — with zero organizations —
+  // and never re-asked, because the query had not changed: `counts.narrow.orgs`
+  // stayed empty forever and the declared **Organization** section did not
+  // render at all for an admin who belongs to nine of them. The key changes the
+  // moment the memberships land, so the counts are re-asked with the real
+  // homes. Measured on production v0.4.1722.
+  const serviceKey = JSON.stringify({
+    active: activeOrganizationId,
+    orgs: organizations.map((o) => o.id),
+    loading: organizationsLoading,
+    error: organizationsError,
+    admin: isPlatformAdmin,
   });
 
   return (
@@ -106,7 +129,7 @@ export function MandatesBrowsePage() {
       <MandateHomeNamesProvider>
         <MandateCoverageProvider value={view}>
           <EntityListPage
-            config={{ ...mandateListConfig, service }}
+            config={{ ...mandateListConfig, service, serviceKey }}
             scopes={scopes}
             defaultScope={{ kind: "orgs", organizationId: null }}
             notice={(list) => (

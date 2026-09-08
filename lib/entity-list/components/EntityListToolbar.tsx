@@ -64,6 +64,10 @@ interface Props<TRow> {
   scopeSections?: EntityScopeFacetSection[];
   /** The scope counts the tabs read — the panel shares them, never re-counts. */
   counts?: EntityScopeCounts;
+  /** The counts query is still in flight — a scope section says so. */
+  countsLoading?: boolean;
+  /** The counts query's own failure, printed where its options would be. */
+  countsError?: string | null;
   onScopeChange?: (scope: ListScope) => void;
   hasFavorites: boolean;
   hasArchived: boolean;
@@ -126,6 +130,8 @@ export function EntityListToolbar<TRow>({
   facetSections,
   scopeSections,
   counts,
+  countsLoading,
+  countsError,
   onScopeChange,
   hasFavorites,
   hasArchived,
@@ -194,6 +200,8 @@ export function EntityListToolbar<TRow>({
           facetSections={facetSections}
           scopeSections={scopeSections}
           counts={counts}
+          countsLoading={countsLoading}
+          countsError={countsError}
           onScopeChange={onScopeChange}
           hasFavorites={hasFavorites}
           hasArchived={hasArchived}

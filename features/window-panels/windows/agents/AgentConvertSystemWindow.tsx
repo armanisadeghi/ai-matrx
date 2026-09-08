@@ -17,7 +17,10 @@ import { Link2 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentComingSoonContent } from "@/features/agents/components/coming-soon/AgentComingSoonContent";
 import { AgentSyncBody } from "@/features/agents/components/admin/AgentSyncBody";
-import { updateMandateDefinition } from "@/features/mandates/admin/service";
+import {
+  agentDefaultHolder,
+  putMandateDefaultHolder,
+} from "@/features/mandates/overrides";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
@@ -33,7 +36,8 @@ interface AgentConvertSystemWindowProps {
    * are plain serializable values carried through overlay data — the rebind
    * callback is constructed HERE, never passed through Redux. When `mandateId`
    * is present the sync body offers "Rebind mandate to system side" in place,
-   * writing through the console's canonical `updateMandateDefinition` path.
+   * writing through the ONE gated door for a mandate's default holder
+   * (`putMandateDefaultHolder`), never through the definition row.
    */
   mandateId?: string | null;
   mandateKey?: string | null;
@@ -68,14 +72,22 @@ export default function AgentConvertSystemWindow({
         // Rebinding to the system twin always tracks latest — the twin is the
         // agent we now maintain, so pinning it to the version that existed at
         // conversion time would freeze it immediately.
-        await updateMandateDefinition(mandateId, {
-          holder: {
-            holderType: "agent",
-            holderId: systemAgentId,
-            versionId: null,
-            useLatest: true,
-          },
-        });
+        //
+        // THROUGH THE DOOR (AD226, FIX-R5): this is the mandate's SYSTEM rung,
+        // so it goes through `PUT /mandates/{key}/default-holder` like every
+        // other rebind. The door needs the mandate KEY, which is why this
+        // callback is only offered when the console passed one.
+        if (!mandateKey) {
+          throw new Error(
+            "This window was opened without the mandate's key, so the rebind door " +
+              "cannot be addressed. Open Linked Agent Sync from the mandates console.",
+          );
+        }
+        await putMandateDefaultHolder(
+          dispatch,
+          mandateKey,
+          agentDefaultHolder(systemAgentId),
+        );
       }
     : undefined;
 

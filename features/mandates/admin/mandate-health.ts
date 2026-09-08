@@ -194,10 +194,17 @@ export function buildRow(
   /**
    * The bound holder's declared `output_schema`, by agent id, when the caller
    * has read it (`fetchAgentOutputSchemas`). **Absent means UNKNOWN, never
-   * "fine"** — a caller that has not read it gets exactly the verdict it got
-   * before, and only a caller that HAS read it can report `output contract
-   * unmet`. The single-mandate admin page supplies it; the console list does
-   * not yet, and that gap is named in FEATURE.md rather than papered over.
+   * "fine"** — only a caller that HAS read the schema can report `output
+   * contract unmet`.
+   *
+   * Passing this explicitly is for a caller with a FRESHER read than the
+   * console load carries — the single-mandate admin page, which fetches the one
+   * holder's schema directly. Every LIST caller can now leave it out: the
+   * console load reads `output_schema` on the by-id agent query it was already
+   * making and hands it over as `data.outputSchemas`, which is used when this
+   * argument is omitted. That closes FIX-R4's second finding — the list
+   * reported `ok` for a holder that cannot produce the required keys while the
+   * single-mandate page called the same holder broken.
    */
   outputSchemas?: Record<string, unknown>,
 ): MandateRow {
@@ -276,13 +283,16 @@ export function buildRow(
   // `enforced_holder_contract`), judged by the SHARED mirror of the server's
   // rule so this console and the binding pre-flight cannot disagree.
   const contractForOutput = parseMandateContract(contractOfMandate(mandate));
+  // An explicit map wins (a caller with a fresher read of one holder); otherwise
+  // the console load's own read answers. Neither present = UNKNOWN, unchanged.
+  const schemas = outputSchemas ?? data.outputSchemas;
   const outputContractUnmet =
     hasPin &&
     agentId !== null &&
-    outputSchemas !== undefined &&
-    agentId in outputSchemas &&
+    schemas !== undefined &&
+    agentId in schemas &&
     contractForOutput.requiredOutputKeys.length > 0 &&
-    missingOutputKeys(contractForOutput.requiredOutputKeys, outputSchemas[agentId])
+    missingOutputKeys(contractForOutput.requiredOutputKeys, schemas[agentId])
       .length > 0;
 
   const health: MandateHealth = codeAgentDrift

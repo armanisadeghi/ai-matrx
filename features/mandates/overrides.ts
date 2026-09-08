@@ -567,6 +567,31 @@ export async function putMandateBinding(
 export const MANDATE_DEFAULT_HOLDER_PATH =
   "/mandates/{mandate_key}/default-holder" as keyof paths;
 
+/**
+ * An AGENT default, in the door's one-of-two shape.
+ *
+ * The door refuses `agent_id` and `agent_version_id` together (422
+ * `mandate_binding_ambiguous_holder`), so the choice is made ONCE, here, rather
+ * than at each of the surfaces that rebind a default: pass a version to pin it,
+ * pass none to follow the agent's latest. A caller that says "pin" without
+ * naming a version is asking for latest and gets it, instead of building a body
+ * with neither half and learning about it from a 422.
+ */
+export function agentDefaultHolder(
+  agentId: string,
+  versionId?: string | null,
+): MandateDefaultHolderInput {
+  const pinned = versionId ?? null;
+  return {
+    holderType: "agent",
+    agentId: pinned ? null : agentId,
+    agentVersionId: pinned,
+    useLatest: pinned === null,
+    holderId: null,
+    holderVersionId: null,
+  };
+}
+
 /** The holder half of a binding write — ONE holder shape for all four rungs. */
 export interface MandateDefaultHolderInput {
   holderType: "agent" | "workflow";

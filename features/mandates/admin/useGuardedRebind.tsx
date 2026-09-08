@@ -21,7 +21,11 @@ import { toast } from "@/lib/toast";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { parseMandateContract } from "@/features/mandates/overrides";
+import {
+  agentDefaultHolder,
+  parseMandateContract,
+  putMandateDefaultHolder,
+} from "@/features/mandates/overrides";
 import {
   buildRebindFixBrief,
   computeRebindImpact,
@@ -29,7 +33,6 @@ import {
 } from "./rebind-impact";
 import { VariableVerdictList } from "./variable-verdict-presentation";
 import {
-  updateMandateDefinition,
   type MandateCodeTruth,
   type MandateDefinitionRow,
 } from "./service";
@@ -103,19 +106,23 @@ export function useGuardedRebind({
           onSaved();
           return;
         }
-        // THE REBIND WRITE. An admin rebind always names an AGENT Holder —
-        // this console binds agents, and the workflow/orchestra Holder path is
-        // the binding editor, not the mandate default. `useLatest` decides
-        // whether the version pin is stored or cleared; the storage router
-        // turns that into `use_latest` or a NULL version id per schema.
-        await updateMandateDefinition(mandate.id, {
-          holder: {
-            holderType: "agent",
-            holderId: request.agentId,
-            versionId: request.versionId ?? null,
-            useLatest: request.useLatest ?? true,
-          },
-        });
+        // THE REBIND WRITE — THROUGH THE DOOR, NOT THE ROW (AD226, FIX-R5).
+        // This used to PATCH `mandate.definition`'s three `default_holder_*`
+        // columns straight through PostgREST. That rung decides for every
+        // member of the mandate's home organization, so it now goes through
+        // `PUT /mandates/{key}/default-holder`, which checks who is asking,
+        // re-runs the mandate's contract gate and refuses a Holder the home
+        // organization cannot open — and the database refuses the direct write
+        // outright. The server's refusal sentence reaches the toast below
+        // verbatim, because `putMandateDefaultHolder` throws `bindGateMessage`.
+        await putMandateDefaultHolder(
+          dispatch,
+          mandate.mandate_key,
+          agentDefaultHolder(
+            request.agentId,
+            request.useLatest === false ? (request.versionId ?? null) : null,
+          ),
+        );
         toast.success(request.successMessage);
         setPending(null);
         onSaved();
@@ -127,7 +134,7 @@ export function useGuardedRebind({
         setSaving(false);
       }
     },
-    [onSaved, mandate.id, performWrite],
+    [onSaved, dispatch, mandate.mandate_key, performWrite],
   );
 
   /**

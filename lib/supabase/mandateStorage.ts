@@ -362,21 +362,27 @@ export type HolderWrite = {
   useLatest: boolean;
 };
 
-/** The mandate-default columns a rebind writes, on either schema. */
-export function mandateHolderWrite(holder: HolderWrite): MandateDefinitionUpdate {
-  if (MANDATE_SCHEMA_CUTOVER) {
-    return {
-      default_holder_type: holder.holderType ?? "agent",
-      default_holder_id: holder.holderId,
-      default_holder_version_id: holder.useLatest ? null : holder.versionId,
-    } as MandateDefinitionUpdate;
-  }
-  return {
-    default_agent_id: holder.holderId,
-    default_agent_version_id: holder.versionId,
-    use_latest: holder.useLatest,
-  } as MandateDefinitionUpdate;
-}
+/*
+ * 🚨 THERE IS NO `mandateHolderWrite`, AND THAT IS THE POINT (AD226, FIX-R5).
+ *
+ * A mandate's default Holder is its SYSTEM rung — the floor every member of its
+ * home organization falls to when no other binding answers. It decides for
+ * people other than the writer, so it is set through ONE gated server door,
+ * `PUT /mandates/{mandate_key}/default-holder`
+ * (`features/mandates/overrides.ts::putMandateDefaultHolder`), which checks who
+ * is asking, checks the mandate's contract, and refuses a Holder the home
+ * organization cannot open. A client-side column write skips all three, and it
+ * was skipping all three: measured live, a plain NON-ADMIN member of the home
+ * organization could PATCH those columns on a row somebody else created — HTTP
+ * 200, one row, changed.
+ *
+ * The helper that composed those columns lived here and had three callers. It
+ * is DELETED rather than deprecated: a composer for a write nobody may perform
+ * is an invitation, and `aidream/db/migrations/0596` now refuses the write in
+ * the database anyway, so a fourth caller would only learn about it from a
+ * refusal in production. Read the holder with `holderOfMandate`; change it
+ * through the door.
+ */
 
 /** The binding columns a rebind writes, on either schema. */
 export function bindingHolderWrite(holder: HolderWrite): MandateBindingUpdate {

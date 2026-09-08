@@ -51,6 +51,17 @@ export type MandateListMode =
       activeOrganizationId: string | null;
       /** Every organization the caller belongs to, in tab order. */
       organizations: readonly MandateHomeOrganization[];
+      /**
+       * The membership read has not answered yet.
+       *
+       * 🚨 IT IS NOT THE SAME AS "belongs to none" (FIX-R6/F1). An empty list
+       * during the first render is what silently emptied the Organization
+       * section on production `/mandates`; the counts now SAY which of the two
+       * states they are in, and the shell re-asks when this flips.
+       */
+      organizationsLoading?: boolean;
+      /** The membership read's own failure, in its words. */
+      organizationsError?: string | null;
       /** Whether the door will accept `p_home => 'system'` from this caller. */
       canListSystemHome: boolean;
     }
@@ -153,8 +164,15 @@ export async function fetchMandateScopeCounts(
     });
     // No narrowing options: this page is ABOUT one organization, fixed by the
     // route, so a dropdown offering to switch away from it would be a control
-    // that changes nothing.
-    return { byKind: { orgs: total }, narrow: {} };
+    // that changes nothing. It SAYS that, rather than showing an empty
+    // Organization section the reader has to interpret (FIX-R6/F1).
+    return {
+      byKind: { orgs: total },
+      narrow: {},
+      narrowUnavailable: {
+        orgs: "This page is about one organization, fixed by its address, so there is no other home to narrow to. Your personal surface at /mandates narrows across every organization you belong to.",
+      },
+    };
   }
 
   const shared = {
@@ -180,6 +198,7 @@ export async function fetchMandateScopeCounts(
 
   const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
   const narrowed: ScopeNarrowOption[] = [];
+  const refusedHomes: string[] = [];
   settled.forEach((result, index) => {
     const entry = homes[index];
     if (result.status === "rejected") {
@@ -187,6 +206,15 @@ export async function fetchMandateScopeCounts(
         `[mandates] the list door refused a count for home ${JSON.stringify(entry.home)} — that tab is listed without a number rather than with a wrong one.`,
         result.reason,
       );
+      if (entry.option) {
+        refusedHomes.push(
+          `${entry.option.label} (${
+            result.reason instanceof Error
+              ? result.reason.message
+              : "no message from the door"
+          })`,
+        );
+      }
       return;
     }
     if (entry.option) {
@@ -197,7 +225,33 @@ export async function fetchMandateScopeCounts(
     else counts.byKind.orgs = result.value;
   });
   if (narrowed.length > 0) counts.narrow.orgs = narrowed;
+  // 🚨 WHY THERE IS NOTHING TO NARROW TO, whenever there is nothing (FIX-R6/F1).
+  // The Organization section is DECLARED by this surface, so it always renders;
+  // when it has no options it prints one of these instead of vanishing.
+  else counts.narrowUnavailable = { orgs: unavailableReason(mode, refusedHomes) };
   return counts;
+}
+
+/**
+ * The sentence a reader gets where the organization options would be. Each
+ * branch is a different world, and telling them apart is the whole point: an
+ * unread membership list, a genuinely org-less account and a refusing door all
+ * produced the SAME empty panel before this existed.
+ */
+function unavailableReason(
+  mode: Extract<MandateListMode, { kind: "homes" }>,
+  refusedHomes: readonly string[],
+): string {
+  if (refusedHomes.length > 0) {
+    return `The list door refused a count for ${refusedHomes.join("; ")}. Those organizations are left out rather than shown with a wrong number — reload, and if it persists the door is refusing a membership you do have.`;
+  }
+  if (mode.organizationsError) {
+    return `Your organizations could not be read (${mode.organizationsError}), so there is nothing to narrow to yet. Reload the page — every job you can see is still listed above.`;
+  }
+  if (mode.organizationsLoading) {
+    return "Still reading which organizations you belong to. They will appear here as soon as that answers.";
+  }
+  return "You do not belong to any organization yet, so there is no home to narrow to. Everything above is what the platform itself ships.";
 }
 
 /**

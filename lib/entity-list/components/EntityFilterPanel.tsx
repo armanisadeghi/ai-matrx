@@ -79,6 +79,10 @@ interface Props<TRow> {
   scopeSections?: EntityScopeFacetSection[];
   /** The same counts the scope tabs read — options AND their numbers. */
   counts?: EntityScopeCounts;
+  /** The counts query is in flight — a declared section says so, never hides. */
+  countsLoading?: boolean;
+  /** The counts query's own failure, printed where its options would be. */
+  countsError?: string | null;
   /** Writes the scope a section chose. Same setter the tabs use. */
   onScopeChange?: (scope: ListScope) => void;
   /** Offer the Favorites section + pin toggle. */
@@ -116,6 +120,8 @@ export function EntityFilterPanel<TRow>({
   facetSections,
   scopeSections = [],
   counts,
+  countsLoading = false,
+  countsError = null,
   onScopeChange,
   hasFavorites,
   hasArchived,
@@ -324,8 +330,32 @@ export function EntityFilterPanel<TRow>({
             if (!onScopeChange) return null;
             if (query.scope.kind !== section.scope) return null;
             const options = counts?.narrow[section.scope] ?? [];
-            if (options.length === 0) return null;
             const narrowedTo = scopeNarrowId(query.scope) ?? "";
+            // 🚨 A DECLARED SECTION IS NEVER ABSENT (one-resolution FIX-R6/F1).
+            // This used to `return null` on zero options, so a surface that
+            // declares an Organization section and whose counts came back
+            // without any showed a Filters panel with no organizations in it
+            // and NOTHING saying why — the reader concludes the page cannot do
+            // that at all. Empty is now a STATE with a sentence: still reading,
+            // refused (in the service's own words), or genuinely none.
+            if (options.length === 0) {
+              return (
+                <FilterSection
+                  key={`scope:${section.scope}`}
+                  label={section.label}
+                  active={false}
+                >
+                  <p className="pb-1 text-[11px] leading-snug text-muted-foreground">
+                    {countsLoading
+                      ? `Reading which ${section.label.toLowerCase()} options you can narrow to…`
+                      : (counts?.narrowUnavailable?.[section.scope] ??
+                        (countsError
+                          ? `No ${section.label.toLowerCase()} options could be listed — the counts query failed: ${countsError}. Reload the page; the list itself is unaffected.`
+                          : `No ${section.label.toLowerCase()} options could be listed, and the surface did not say why. This is a defect — the list above still shows everything you can see.`))}
+                  </p>
+                </FilterSection>
+              );
+            }
             const total = counts?.byKind[section.scope];
             return (
               <FilterSection

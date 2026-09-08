@@ -49,8 +49,6 @@ import {
   mandateDefinitions,
   holderOfBinding,
   holderOfMandate,
-  mandateHolderWrite,
-  type HolderWrite,
   type MandateBindingRow,
   type MandateDefinitionRow,
   type MandateDefinitionUpdate,
@@ -113,6 +111,22 @@ export interface MandateConsoleData {
   mandates: MandateDefinitionRow[];
   /** agent.definition rows referenced by any mandate default or binding. */
   agentsById: Record<string, MandateAgentInfo>;
+  /**
+   * Every referenced agent's declared `output_schema`, by agent id — raw, so
+   * the SHARED `missingOutputKeys` judges it and this console cannot disagree
+   * with the server or with the single-mandate page.
+   *
+   * 🚨 IT IS READ HERE SO THE LIST CAN JUDGE THE OUTPUT HALF OF THE CONTRACT.
+   * `enforced_holder_contract` keeps that half in force ALWAYS, so a holder
+   * that cannot produce the mandate's required keys fails at run time — and
+   * until now the LIST called that `ok` while the single-mandate admin page,
+   * three inches away, printed the failure in red (FIX-R4, walk finding 1).
+   * The column rides the by-id agent read that was already happening; a `null`
+   * value means "this agent declares no structured output", which fails every
+   * required key, and an agent MISSING from this map means unreadable — which
+   * `buildRow` still treats as UNKNOWN, never as fine.
+   */
+  outputSchemas: Record<string, unknown>;
   /** agent.definition_version rows referenced by any pinned default/binding. */
   versionsById: Record<string, MandateVersionInfo>;
   bindingsByMandateId: Record<string, MandateBindingRow[]>;
@@ -270,12 +284,13 @@ export async function fetchMandateConsoleData(
   }
 
   const agentsById: Record<string, MandateAgentInfo> = {};
+  const outputSchemas: Record<string, unknown> = {};
   if (agentIds.size > 0) {
     const { data, error } = await supabase
       .schema("agent")
       .from("definition")
       .select(
-        "id, name, version, is_archived, agent_type, auto_context_disabled, variable_definitions, context_policies",
+        "id, name, version, is_archived, agent_type, auto_context_disabled, variable_definitions, context_policies, output_schema",
       )
       .in("id", [...agentIds]);
     if (error) throw error;
@@ -290,6 +305,9 @@ export async function fetchMandateConsoleData(
         variableNames: namesOf(row.variable_definitions, "name"),
         contextPolicyKeys: namesOf(row.context_policies, "key"),
       };
+      // Present-with-null is the honest "declares none"; ABSENT (an agent this
+      // read could not return) stays absent so the verdict stays UNKNOWN.
+      outputSchemas[row.id] = (row as { output_schema?: unknown }).output_schema ?? null;
     }
   }
 
@@ -298,22 +316,28 @@ export async function fetchMandateConsoleData(
     (bindingsByMandateId[binding.mandate_id] ??= []).push(binding);
   }
 
-  return { mandates, agentsById, versionsById, bindingsByMandateId };
+  return { mandates, agentsById, versionsById, bindingsByMandateId, outputSchemas };
 }
 
 /**
- * The write allowlist for a definition edit, in switch-neutral terms.
+ * The write allowlist for a definition edit.
  *
- * The Holder half is ONE field — `holder` — instead of the three columns it
- * used to be, because those columns are named differently on the two schemas
- * and `use_latest` does not survive the cutover at all. `mandateHolderWrite`
- * in the storage router turns the decision ("this Holder, tracking latest or
- * pinned to this version") into whichever columns the ACTIVE schema stores.
+ * 🚨 THE HOLDER IS NOT ON THIS LIST (AD226, FIX-R5). It used to be — one
+ * `holder` field that the storage router turned into the three
+ * `default_holder_*` columns — and that made this function the console's
+ * ungated back road around `PUT /mandates/{mandate_key}/default-holder`. The
+ * default Holder is the mandate's SYSTEM rung: it decides for every member of
+ * the home organization, so it is set through the door that checks who is
+ * asking and whether the Holder can actually be run
+ * (`features/mandates/overrides.ts::putMandateDefaultHolder`). The database
+ * refuses the client-side write outright now
+ * (`aidream/db/migrations/0596`), so a `holder` field here could only ever
+ * produce a refusal in production.
+ *
+ * What is left is what a definition edit legitimately owns: whether the job is
+ * on, what it is called, and its context gate.
  */
-export type MandateDefinitionPatch = {
-  /** Set to REBIND. Omit to leave the mandate's default Holder untouched. */
-  holder?: HolderWrite;
-} & Partial<Pick<
+export type MandateDefinitionPatch = Partial<Pick<
   MandateDefinitionUpdate,
   | "is_enabled"
   | "label"
@@ -328,13 +352,8 @@ export async function updateMandateDefinition(
   patch: MandateDefinitionPatch,
 ): Promise<MandateDefinitionRow> {
   const supabase = createClient();
-  const { holder, ...fields } = patch;
-  const columns: MandateDefinitionUpdate = {
-    ...fields,
-    ...(holder ? mandateHolderWrite(holder) : {}),
-  };
   const { data, error } = await mandateDefinitions(supabase)
-    .update(columns)
+    .update(patch)
     .eq("id", mandateId)
     .select("*")
     .single();

@@ -179,6 +179,7 @@ export function EntityListPage<TRow>({
   // the query lives, and handed to every view so they cannot disagree.
   const list = useEntityList<TRow>({
     service: config.service,
+    serviceKey: config.serviceKey,
     getRowId: config.getRowId,
     entityLabelPlural: config.entityLabel.plural,
     defaultFilters: config.defaultFilters,
@@ -345,6 +346,8 @@ export function EntityListPage<TRow>({
           // counts the tabs use — one state, two entry points.
           scopeSections={config.scopeSections}
           counts={list.counts}
+          countsLoading={list.countsLoading}
+          countsError={list.countsError}
           onScopeChange={list.setScope}
           hasFavorites={Boolean(config.favorite)}
           hasArchived={config.supportsArchived !== false}

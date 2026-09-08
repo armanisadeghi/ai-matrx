@@ -54,6 +54,10 @@ export interface EntityListController<TRow> {
   rows: TRow[];
   total: number;
   counts: EntityScopeCounts;
+  /** The counts query is in flight — distinct from the row query's loading. */
+  countsLoading: boolean;
+  /** The counts query's own failure, in the service's words. */
+  countsError: string | null;
   facets: EntityFacets;
   isLoading: boolean;
   isFetching: boolean;
@@ -173,6 +177,17 @@ export interface EntityListConfig<TRow> {
    */
   scopes: ListScopeKind[];
   service: EntityListService<TRow>;
+  /**
+   * A string identifying what THIS service instance was built from. Changes
+   * when the service's own inputs change (the caller's organizations landing,
+   * an active workspace switching), so the shell re-asks instead of keeping the
+   * answer it got from the empty first render. Full reasoning:
+   * `useEntityList`'s `serviceKey`.
+   *
+   * A module-constant service needs none. A service built inside a component
+   * from asynchronously-loaded data MUST declare one.
+   */
+  serviceKey?: string;
   columns: EntityColumnSpec<TRow>[];
   /**
    * Bump when `columns` gains or loses a column, so existing users get the new
