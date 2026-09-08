@@ -579,26 +579,26 @@ ALTER TABLE notes REPLICA IDENTITY FULL;
 
 ### How the Subscription Works
 
-The realtime subscription in `NotesContext.tsx` uses a single `event: '*'` binding with a `user_id` server-side filter:
+`NotesContext.tsx` no longer owns this — the subscription is
+[`features/notes/redux/realtimeMiddleware.ts`](./redux/realtimeMiddleware.ts), Redux
+middleware built on `@ai-matrx/realtime` (`defineChannelNamespace` + the shared
+`RealtimeManager`). It does **not** hand-roll a `supabase.channel(...)` call, echo
+suppression, or a reconnect/backoff ladder — the package owns all of that (unique
+instance topics, the write ledger that classifies a note's own echo via the
+`updated_by` actor stamp, jittered reconnect with a stability reset, `onBackfill` for
+tab-wake/network-restore/queue-overflow catch-up). Before touching realtime here,
+**invoke the `supabase-realtime` skill** — it is the doctrine, not this file.
 
-```typescript
-supabase
-  .channel(`notes-realtime:${userId}`)
-  .on('postgres_changes', {
-    event: '*',
-    schema: 'public',
-    table: 'notes',
-    filter: `user_id=eq.${userId}`,
-  }, handler)
-  .subscribe();
-```
-
-Key design decisions:
-- **Single `event: '*'` binding** — multiple `.on('postgres_changes', ...)` calls targeting the same table on one channel cause `CHANNEL_ERROR: "mismatch between server and client bindings"` in supabase-js. Always use one binding with `event: '*'` and branch on `payload.eventType` inside the handler.
-- **Server-side `filter`** — reduces traffic; only events for the current user's notes are sent over the WebSocket.
-- **Save echo suppression** — `savingNoteIdsRef` tracks in-flight saves for 2 seconds to ignore the realtime echo from the user's own writes.
-- **Conflict detection** — compares `updated_at` timestamps; shows a toast with a "Refresh" action when the active note is modified externally.
-- **Dirty flag** — `activeNoteIsDirtyRef` prevents `refreshNotes()` from overwriting unsaved editor content.
+What stays feature-specific, on top of the package:
+- **Writes are registered on the ledger at one convergence point** — `markNoteSaving` /
+  `markNoteSaved`, called by every write path (autosave middleware, the `saveNote`
+  thunk, `notesService` for legacy surfaces) — so `classify` can recognize an echo of
+  a write it was told about, without each writer copying the bookkeeping.
+- **Conflict detection** — compares `updated_at` timestamps; shows a toast with a
+  "Refresh" action when the active note is modified externally.
+- **Dirty flag** — prevents a list refresh from overwriting unsaved editor content.
+- **Live-editor attribution** ("X is editing") is feature UX, not echo suppression,
+  and stays here — built on the same `updated_by` stamp.
 
 ### Troubleshooting
 
@@ -610,61 +610,25 @@ Key design decisions:
 | `TIMED_OUT` on subscribe | Network/auth delay | supabase-js auto-retries; check auth session |
 | DELETE payload missing fields | Replica identity is `default` (PK only) | Expected — handler only needs `payload.old.id` |
 
-## Realtime Best Practices (Project-Wide)
+## Realtime — the doctrine lives elsewhere now
 
-These rules apply to ALL Supabase Realtime `postgres_changes` subscriptions in the project.
+🚨 **Do not hand-write a `supabase.channel(...)` subscription anywhere in this
+project.** Every `postgres_changes`, broadcast, and presence subscription rides
+`@ai-matrx/realtime` (`defineChannelNamespace` + `useChannel` / the Redux manager) —
+the package owns the single `event: '*'` binding, unique instance topics, cleanup,
+dedup, echo suppression via the write ledger, and jittered reconnect with
+`onBackfill` catch-up, which a hand-rolled channel structurally cannot have. Before
+writing or modifying ANY channel, **invoke the `supabase-realtime` skill** — that is
+the canonical, project-wide reference; this section used to duplicate it and is now
+a pointer instead.
 
-### 1. Publication Membership
+Two Supabase-side (not application-code) facts still worth keeping local to notes:
 
-Every table you subscribe to MUST be in the `supabase_realtime` publication. Without it, no WAL events are emitted for that table. Currently registered:
-
-`broker_value`, `conversations`, `cx_conversation`, `dm_conversation_participants`, `dm_messages`, `messages`, `note_folders`, `note_shares`, `notes`, `projects`, `tasks`, `transcripts`, `html_extractions` (api schema)
-
-To add a new table:
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE your_table_name;
-```
-
-### 2. One Binding Per Table Per Channel
-
-Never do this:
-```typescript
-// BAD — causes CHANNEL_ERROR
-channel
-  .on('postgres_changes', { event: 'INSERT', table: 'notes' }, handler1)
-  .on('postgres_changes', { event: 'UPDATE', table: 'notes' }, handler2)
-```
-
-Always do this:
-```typescript
-// GOOD — single binding, branch inside handler
-channel
-  .on('postgres_changes', { event: '*', table: 'notes' }, (payload) => {
-    if (payload.eventType === 'INSERT') { /* ... */ }
-    if (payload.eventType === 'UPDATE') { /* ... */ }
-    if (payload.eventType === 'DELETE') { /* ... */ }
-  })
-```
-
-Exception: multiple tables on one channel is fine — each `.on()` targets a different table.
-
-### 3. Unique Channel Names
-
-Channel names must be unique across the app. Use the pattern `feature-realtime:${userId}` or `feature-realtime:${entityId}`. If two components create a channel with the same name, supabase-js returns the existing channel, potentially adding duplicate handlers.
-
-### 4. Always Clean Up
-
-Every subscription MUST have a cleanup in the useEffect return:
-```typescript
-return () => { supabase.removeChannel(channel); };
-```
-
-### 5. Table Name Accuracy
-
-The `table` parameter must match the exact PostgreSQL table name. Check with:
-```sql
-SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;
-```
-
-Common mistake: using plural form (e.g., `cx_conversations`) when the table is singular (`cx_conversation`).
+- **Publication membership** — a table must be in the `supabase_realtime` publication
+  or no WAL events are emitted for it at all, regardless of client code:
+  `ALTER PUBLICATION supabase_realtime ADD TABLE your_table_name;`
+- **Table name accuracy** — the `table` filter must match the exact Postgres table
+  name (a common miss is plural vs. singular, e.g. `cx_conversations` vs.
+  `cx_conversation`); verify with
+  `SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;`
 
