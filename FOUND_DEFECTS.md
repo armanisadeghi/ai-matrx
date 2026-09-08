@@ -15,6 +15,27 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D299 — ESLint is broken repo-wide: `eslint-plugin-react` crashes on ESLint 10
+
+Found 2026-09-08 linting the `@ai-matrx/meet` adoption. EVERY file fails, including
+untouched ones (reproduced on `providers/RealtimeHost.tsx`):
+
+```
+TypeError: Error while loading rule 'react/display-name':
+  contextOrFilename.getFilename is not a function
+    at resolveBasedir (eslint-plugin-react@7.37.5/lib/util/version.js:31:100)
+```
+
+`eslint-plugin-react` 7.37.5 calls the removed ESLint 9 context API; the repo runs
+ESLint 10.10.0. So `pnpm lint` and every per-file lint an agent is told to run
+report NOTHING — not "clean", but "could not measure", which reads as a pass.
+The ~2,400-error lint debt is invisible and no new finding can surface.
+
+**Fix:** bump `eslint-plugin-react` to a release that supports ESLint 10 (or pin
+ESLint back deliberately) in `package.json`, then re-baseline
+`scripts/lint-debt/`. Whoever does it should also make the harness FAIL LOUDLY
+when the linter cannot load, rather than letting a crash read as silence.
+
 ### D298 — server sentences OUTSIDE the mandate family still print entity ids as flat text
 
 Found 2026-09-07 fixing the mandate refusal on
