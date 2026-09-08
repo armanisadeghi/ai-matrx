@@ -100,7 +100,7 @@ function render(
           outputKind: "",
           offeredCount: 0,
           offerSourceLine: "",
-          coverageLine: null,
+          coverageLine: "",
         }}
         ladderLine=""
       />,

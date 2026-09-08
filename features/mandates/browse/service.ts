@@ -170,7 +170,7 @@ export async function fetchMandateScopeCounts(
       byKind: { orgs: total },
       narrow: {},
       narrowUnavailable: {
-        orgs: "This page is about one organization, fixed by its address, so there is no other home to narrow to. Your personal surface at /mandates narrows across every organization you belong to.",
+        orgs: "This page is about one organization, fixed by its address, so there is no other home to narrow to. Your own page at /mandates narrows across every organization you belong to.",
       },
     };
   }
