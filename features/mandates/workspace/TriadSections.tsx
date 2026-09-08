@@ -210,20 +210,23 @@ export function TriadInputSection({
   };
 
   return (
-    <Section title="Inputs">
-      <div className="space-y-2 rounded-xl border border-border/60 bg-card p-4">
-        <PropertyRow
-          label="Declaration source"
-          value={
-            data.offer
-              ? "Provision"
-              : draftInputs.length > 0
-                ? "Mandate draft"
-                : data.contract.requiredVariables.length > 0
-                  ? "Mandate contract"
-                  : "Served input surface"
-          }
-        />
+    <Section
+      title="Inputs"
+      actions={
+        data.offer ? (
+          <div className="flex items-center gap-1 text-xs text-foreground">
+            <span>
+              <span className="font-semibold">Editing:</span> Code
+            </span>
+            <FieldHelp label="Input editing">
+              These inputs are declared by the calling code. This page can map
+              them to a holder, but cannot change the provision.
+            </FieldHelp>
+          </div>
+        ) : undefined
+      }
+    >
+      <div className="space-y-3">
         {data.offer ? (
           <ProvisionOfferList
             values={data.offer.values}
@@ -348,7 +351,7 @@ export function TriadInputSection({
             admin panel said the opposite about the same mandate. */}
         <MandateUserTextLine
           mandateKey={data.mandate.mandate_key}
-          className="border-t border-border/40 pt-2 text-[11.5px] text-muted-foreground/80"
+          className="rounded-lg border border-border bg-card px-3"
         />
       </div>
     </Section>
@@ -667,8 +670,26 @@ export function TriadGoalSection({
   };
 
   return (
-    <Section title="Goal">
-      <div className="space-y-2.5 rounded-xl border border-primary/25 bg-card p-4">
+    <Section
+      title="Goal"
+      actions={
+        authoring && !editing ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => {
+              setDraft(goal ?? "");
+              setEditing(true);
+            }}
+          >
+            <Pencil className="size-3.5" />
+            Edit goal
+          </Button>
+        ) : undefined
+      }
+    >
+      <div className="space-y-2.5 rounded-xl border border-border bg-card p-4">
         {editing ? (
           <div className="space-y-2">
             <ProTextarea
@@ -709,20 +730,9 @@ export function TriadGoalSection({
           </div>
         ) : authoring ? (
           <>
-            <button
-              type="button"
-              className="group w-full rounded-md text-left"
-              onClick={() => {
-                setDraft(goal ?? "");
-                setEditing(true);
-              }}
-              aria-label="Edit goal"
-            >
-              <p className="whitespace-pre-wrap text-[15px] font-medium leading-relaxed text-foreground">
-                {goal || "Not specified"}
-                <Pencil className="ml-1.5 inline h-3 w-3 align-baseline text-muted-foreground/0 transition-colors group-hover:text-muted-foreground" />
-              </p>
-            </button>
+            <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
+              {goal || "Not specified"}
+            </p>
             <div className="space-y-2">
               <GroundingBadge grounding={grounding} />
               <AutomationButton
@@ -751,7 +761,7 @@ export function TriadGoalSection({
           label="Description"
           value={data.mandate.description ? "Provided" : "Not provided"}
           help={data.mandate.description || undefined}
-          className="border-t border-border/40 pt-2"
+          className="border-t border-border pt-2"
         />
       </div>
     </Section>
@@ -763,7 +773,20 @@ export function TriadGoalSection({
 export function TriadOutputSection({ data }: { data: MandateWorkspaceData }) {
   const constraints = outputConstraintsOf(data.mandate);
   return (
-    <Section title="Output">
+    <Section
+      title="Output"
+      actions={
+        <div className="flex items-center gap-1 text-xs text-foreground">
+          <span>
+            <span className="font-semibold">Editing:</span> Not available
+          </span>
+          <FieldHelp label="Output editing">
+            The output contract is read-only on this page. There is currently no
+            output contract editor.
+          </FieldHelp>
+        </div>
+      }
+    >
       <div className="space-y-1.5 rounded-xl border border-border/60 bg-card p-4">
         <PropertyRow
           label="Format"

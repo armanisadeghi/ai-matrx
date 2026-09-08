@@ -32,17 +32,10 @@ export function ProvisionOfferList({
   className,
 }: ProvisionOfferListProps) {
   if (values.length === 0) {
-    return (
-      <PropertyRow label="Available inputs" value="None" source="Provision" />
-    );
+    return <PropertyRow label="Available inputs" value="None" />;
   }
   return (
-    <ul
-      className={cn(
-        "divide-y divide-border/40 rounded-lg border border-border/50",
-        className,
-      )}
-    >
+    <ul className={cn("grid min-w-0 gap-3 sm:grid-cols-2", className)}>
       {values.map((value) => (
         <OfferedValueRow
           key={value.name}
@@ -62,16 +55,16 @@ function OfferedValueRow({
   pinned: boolean;
 }) {
   return (
-    <li className="min-w-0 space-y-2 px-3 py-3">
-      <div className="flex items-center gap-1">
-        <h4 className="min-w-0 break-words text-sm font-medium">
+    <li className="min-w-0 rounded-lg border border-border bg-card px-3 py-3">
+      <div className="mb-1 flex items-center gap-1">
+        <h4 className="min-w-0 break-words text-sm font-semibold">
           {formatVariableDisplayName(value.name) || "Display name missing"}
         </h4>
         <FieldHelp label={formatVariableDisplayName(value.name) || "Input"}>
           {value.description || "No description provided."}
         </FieldHelp>
       </div>
-      <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-x-6">
+      <div className="min-w-0">
         <PropertyRow
           label="Format"
           value={formatVariableDisplayName(value.kind) || "Unknown"}
@@ -100,15 +93,15 @@ function OfferedValueRow({
           label="Automatic context delivery"
           value={pinned ? "Yes" : "No"}
         />
+        <PropertyRow
+          label="Example"
+          value={
+            <span className="whitespace-pre-wrap">
+              {value.example || "Not provided"}
+            </span>
+          }
+        />
       </div>
-      <PropertyRow
-        label="Example"
-        value={
-          <span className="whitespace-pre-wrap">
-            {value.example || "Not provided"}
-          </span>
-        }
-      />
     </li>
   );
 }

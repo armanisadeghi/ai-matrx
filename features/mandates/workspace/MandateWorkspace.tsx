@@ -557,7 +557,7 @@ function OneMandateWorkspace({
             </div>
             {authoring ? adminActions?.(data, refresh) : null}
           </div>
-          <dl className="grid gap-x-8 sm:grid-cols-3">
+          <div className="rounded-lg border border-border bg-card px-3">
             <PropertyRow
               label="Scope"
               value={
@@ -584,7 +584,7 @@ function OneMandateWorkspace({
                     : "No"
               }
             />
-          </dl>
+          </div>
           {host === "window" ? (
             <Link
               href={`/mandates/${encodeURIComponent(data.mandate.mandate_key)}`}

@@ -11,21 +11,20 @@
 export function Section({
   title,
   hint,
+  actions,
   children,
 }: {
   title: string;
   hint?: string;
+  actions?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section className="space-y-2">
-      <div className="flex items-baseline gap-2">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-          {title}
-        </h3>
-        {hint ? (
-          <span className="text-[11px] text-muted-foreground/70">{hint}</span>
-        ) : null}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        {hint ? <span className="text-xs text-foreground">{hint}</span> : null}
+        {actions}
       </div>
       {children}
     </section>

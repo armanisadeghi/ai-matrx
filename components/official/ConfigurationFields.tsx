@@ -36,7 +36,7 @@ export function FieldHelp({
         <button
           type="button"
           aria-label={`Help: ${label}`}
-          className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onPointerEnter={(event) => {
             if (event.pointerType === "mouse") changeOpen(true);
           }}
@@ -70,7 +70,7 @@ export function FieldHelp({
             <X className="size-4" aria-hidden="true" />
           </button>
         </div>
-        <div className="whitespace-pre-wrap break-words text-muted-foreground">
+        <div className="whitespace-pre-wrap break-words text-foreground">
           {children}
         </div>
       </PopoverContent>
@@ -82,7 +82,7 @@ const STATUS = {
   neutral: {
     label: "Not evaluated",
     Icon: Circle,
-    color: "text-muted-foreground",
+    color: "text-foreground",
   },
   ok: { label: "Passed", Icon: CircleCheck, color: "text-success" },
   caution: { label: "Attention", Icon: TriangleAlert, color: "text-warning" },
@@ -90,7 +90,7 @@ const STATUS = {
   unknown: {
     label: "Unknown",
     Icon: CircleHelp,
-    color: "text-muted-foreground",
+    color: "text-foreground",
   },
 } as const;
 
@@ -135,20 +135,28 @@ export function PropertyRow({
   return (
     <div
       className={cn(
-        "grid min-w-0 gap-x-5 gap-y-1 py-1.5 text-xs sm:grid-cols-3",
+        "flex min-w-0 flex-col gap-1 border-b border-border py-2 text-sm last:border-b-0 sm:flex-row sm:gap-4",
         className,
       )}
     >
-      <div className="flex min-w-0 items-center gap-1 text-muted-foreground">
-        <span className="break-words">{label}</span>
+      <div className="flex min-w-0 shrink-0 items-start gap-1 font-semibold text-foreground sm:w-44">
+        <span className="break-words">{label}:</span>
         {help != null ? <FieldHelp label={label}>{help}</FieldHelp> : null}
       </div>
-      <div className="min-w-0 space-y-1 sm:col-span-2">
+      <div className="min-w-0 flex-1 space-y-1 font-normal">
         <div className="break-words text-foreground">{value}</div>
         {source != null || state != null ? (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-            {source != null ? <span>Source: {source}</span> : null}
-            {state != null ? <span>State: {state}</span> : null}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground">
+            {source != null ? (
+              <span>
+                <span className="font-semibold">Source:</span> {source}
+              </span>
+            ) : null}
+            {state != null ? (
+              <span>
+                <span className="font-semibold">State:</span> {state}
+              </span>
+            ) : null}
           </div>
         ) : null}
       </div>
