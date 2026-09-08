@@ -84,6 +84,9 @@ export function definePolicy<TState>(config: PolicyConfig<TState>): Policy<TStat
         fail("config is required");
     }
     const { sliceName, preset, version } = config;
+    // Default TRUE: a slice holds a person's data unless its author says
+    // otherwise in writing. The unsafe answer must be deliberate.
+    const identityScoped = config.identityScoped !== false;
 
     if (!sliceName || typeof sliceName !== "string") {
         fail(`sliceName must be a non-empty string`);
@@ -269,7 +272,7 @@ export function definePolicy<TState>(config: PolicyConfig<TState>): Policy<TStat
     const storageKey = caps.persists ? config.storageKey ?? `matrx:${sliceName}` : "";
 
     const policy: Policy<TState> = Object.freeze({
-        config: Object.freeze({ ...config }) as PolicyConfig<TState>,
+        config: Object.freeze({ ...config, identityScoped }) as PolicyConfig<TState>,
         prePaintDescriptors: Object.freeze([...prePaintDescriptors]) as readonly PrePaintDescriptor[],
         storageKey,
         broadcastActions: new Set<string>(broadcastActions),

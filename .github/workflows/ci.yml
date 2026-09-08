@@ -49,6 +49,24 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Matrx-owned packages are declared and installed at npm latest
         run: pnpm check:matrx-packages
+      - name: EVERY TYPESCRIPT FILE PARSES
+        # ~4s over 14,716 files, zero backlog, and the only finding in this
+        # repo that is not an opinion. On 2026-09-07 the census-H1 codemod
+        # injected its new `@ai-matrx/kit/format` import INSIDE seven
+        # multi-line `import {` statements (repaired in fc9a28a26f); the shared
+        # dev server answered 500 on every route, for every agent working out
+        # of the checkout, until someone traced it by hand. `pnpm type-check`
+        # sees the same TS1003/1005/1128 — but it takes minutes, carries a
+        # large tracked backlog, is advisory by standing ruling (D64/D65), and
+        # nothing ran it between the codemod and the push. This is the guard
+        # that runs. `pnpm check:parse --fix` repairs the injected-import
+        # class; `pnpm check:parse:self-test` proves it can still fail.
+        run: pnpm check:parse
+      - name: the parse guard can still fail (self-test)
+        # A guard you cannot demonstrate failing is not a guard. This plants
+        # the exact 2026-09-07 shape and asserts the detector reports it, that
+        # --fix repairs it, and that the repair is idempotent.
+        run: pnpm check:parse:self-test
       - name: THE `__kind` MARKER LAW — no stripping outside the lawful doors
         run: pnpm check:kind-marker-law
       - name: THE RENDER MATRIX — every recognition path x every shape archetype

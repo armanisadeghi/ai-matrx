@@ -29,6 +29,7 @@ import { openSyncChannel, type SyncChannel } from "../channel";
 import { localStorageAdapter, readLegacyKey, removeLegacyKey } from "../persistence/local-storage";
 import { readSlice as readIdbSlice } from "../persistence/idb";
 import { getPreset } from "../policies/presets";
+import { buildIdentityResetAction } from "./identityReset";
 import { buildRehydrateAction } from "./rehydrate";
 import { createStaleRefreshScheduler, invokeRemoteFetch, type StaleRefreshRegistration } from "./remoteFetch";
 import { extractErrorMessage } from "@/utils/errors";
@@ -377,11 +378,42 @@ function scheduleColdBootFallbacks(
 export async function resyncForIdentity(options: {
     store: Store;
     identity: IdentityKey;
+    /**
+     * The identity being LEFT BEHIND. Required: without it this pass cannot
+     * tell a persona swap from the ordinary anonymous-first-render boot, and
+     * those two need opposite treatment (see `identityReset.ts`).
+     */
+    previousIdentity: IdentityKey;
     policies: readonly Policy<any>[];
     getIdentity: () => IdentityKey;
 }): Promise<void> {
-    const { store, identity, policies, getIdentity } = options;
-    logger.info("boot.identity.resync", { meta: { identity: identity.key } });
+    const { store, identity, previousIdentity, policies, getIdentity } = options;
+    logger.info("boot.identity.resync", {
+        meta: { from: previousIdentity.key, identity: identity.key },
+    });
+
+    // 🚨 RESET BEFORE REHYDRATE — a persisted record belonging to somebody else
+    // is SKIPPED, not replaced, so without this the outgoing person's slice
+    // state simply stays live (2026-09-08: an admin's shell announcing another
+    // user's organization after a magic-link sign-in). Only when the outgoing
+    // identity was a real person: `guest -> auth` is the normal page load.
+    if (previousIdentity.type === "auth") {
+        const sliceNames = policies
+            .filter((p) => p.config.identityScoped !== false)
+            .map((p) => p.config.sliceName);
+        // LOUD: an automatic intervention on what is on the user's screen.
+        logger.info("boot.identity.reset", {
+            meta: {
+                from: previousIdentity.key,
+                to: identity.key,
+                slices: sliceNames.join(","),
+            },
+        });
+        store.dispatch(
+            buildIdentityResetAction(sliceNames, previousIdentity, identity),
+        );
+    }
+
     const fromLocal = new Set(rehydrateFromStorage(policies, identity, store));
     let fromIdb: readonly string[] = [];
     try {

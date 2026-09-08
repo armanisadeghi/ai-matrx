@@ -313,6 +313,24 @@ else
     fail "MATRX PACKAGE VERSION DRIFT — run pnpm sync:matrx-packages, commit package.json + pnpm-lock.yaml, and retry."
 fi
 
+# Also deliberately outside --no-gates, and first because everything after it
+# assumes a tree that compiles. A file that does not PARSE is not a quality
+# opinion: it cannot build, it cannot render, and it takes the shared dev
+# server down for every agent in the checkout. That is exactly what happened
+# on 2026-09-07, when the census-H1 codemod injected its new
+# `@ai-matrx/kit/format` import INSIDE seven multi-line `import {` statements
+# (repaired in fc9a28a26f) — `pnpm type-check` would have caught it as
+# TS1003/1005/1128, but type-check is advisory by standing ruling (D64/D65)
+# and nothing ran it between the codemod and the push. This is ~4s over 14,716
+# files, has zero backlog, and blocks. `pnpm check:parse --fix` repairs the
+# injected-import class.
+info "Verifying every tracked TypeScript file parses..."
+if pnpm check:parse; then
+    ok "Every tracked TypeScript file parses."
+else
+    fail "UNPARSEABLE TYPESCRIPT — release stopped before migrations, version changes, tags, or pushes. Repair the file(s) above (try: pnpm check:parse --fix)."
+fi
+
 info "Enforcing the organization-context transport contract..."
 if pnpm check:organization-context; then
     ok "Organization-context transport contract passed."

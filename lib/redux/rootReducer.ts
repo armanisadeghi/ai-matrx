@@ -13,6 +13,7 @@
 // migration that produced this split.
 
 import { combineReducers, type Reducer } from "@reduxjs/toolkit";
+import { applyIdentityReset } from "@/lib/sync/engine/identityReset";
 import { createModuleSlice } from "./slices/moduleSliceCreator";
 import { moduleSchemas, type ModuleName } from "./dynamic/moduleSchema";
 import layoutReducer from "./slices/layoutSlice";
@@ -401,7 +402,22 @@ export const slimReducerMap = {
   diffCompare: diffCompareReducer,
 };
 
-export const createSlimRootReducer = () => combineReducers(slimReducerMap);
+/**
+ * The root reducer, wrapped so a PERSONA SWAP cannot leave one person's state
+ * standing in another person's session.
+ *
+ * `applyIdentityReset` deletes the named slices from the state object, which
+ * makes `combineReducers` hand those reducers `undefined` and take their
+ * `initialState`. Doing it HERE, rather than as an `extraReducers` case in each
+ * slice, is the whole point: a slice cannot forget to handle an action it never
+ * has to know about. See `lib/sync/engine/identityReset.ts` for what leaked.
+ */
+export const createSlimRootReducer = () => {
+  const combined = combineReducers(slimReducerMap);
+  const withIdentityReset: typeof combined = (state, action) =>
+    combined(applyIdentityReset(state, action), action);
+  return withIdentityReset;
+};
 
 /**
  * Derive RootState from the root reducer directly so that slice files and

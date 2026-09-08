@@ -86,6 +86,29 @@ export interface PolicyConfig<TState = unknown> {
         actions: readonly string[];
     };
 
+    /**
+     * Does this slice hold a PERSON'S data — data that must not outlive their
+     * session in this tab? Defaults to `true`, because that is the safe answer
+     * and the unsafe one must be written down deliberately.
+     *
+     * 🚨 WHY THIS EXISTS (2026-09-08, R-O3): a persisted record is stamped with
+     * an `identityKey` and is correctly SKIPPED when it belongs to somebody
+     * else — but skipping dispatches nothing, so the OUTGOING person's slice
+     * state simply stayed live in Redux across a persona swap. Signing in as
+     * someone else left the previous user's ACTIVE ORGANIZATION on screen
+     * ("Working in content39's Workspace" for an admin who is not a member of
+     * it), and appContext's own rehydrate guard — "respect an org the user has
+     * already actively selected this session" — then refused to overwrite it.
+     * Every identity-scoped persisted slice had the same hole, so the fix is a
+     * reset the engine applies to ALL of them, not a `clearContext` bolted onto
+     * one slice. See `applyIdentityReset` in the root reducer.
+     *
+     * Set `false` only for a DEVICE preference that is genuinely not about the
+     * person (theme is the one). A false answer here leaks one person's data
+     * into another person's session.
+     */
+    identityScoped?: boolean;
+
     // ---- Persisted presets only (boot-critical in Phase 1, warm-cache+ later) ----
 
     /** Defaults to `matrx:${sliceName}`. Explicit for clarity. */

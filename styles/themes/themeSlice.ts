@@ -60,6 +60,11 @@ export default themeSlice.reducer;
 // See `docs/concepts/full-sync-boardcast-storage/phase-1-plan.md` §6.
 
 export const themePolicy = definePolicy<ThemeState>({
+    // The ONE slice that is not about the person. Light/dark belongs to the
+    // screen in front of you: resetting it when somebody else signs in would
+    // flip a light-mode user to dark mid-session for no reason. Every other
+    // persisted slice keeps the safe default (`identityScoped: true`).
+    identityScoped: false,
     sliceName: "theme",
     preset: "boot-critical",
     version: 1, // Bumping destroys persisted theme — see JSDoc on definePolicy.

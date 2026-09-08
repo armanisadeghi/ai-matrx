@@ -11,13 +11,13 @@
 // types fast on a slow connection and the list settles on the wrong results.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "@/lib/toast";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import {
   commitUrlParams,
   useUrlSearchParams,
 } from "@ai-matrx/kit/url-state";
 import type { EntityListController, EntityListService } from "./config";
+import { toEntityListFailure, type EntityListFailure } from "./failure";
 import {
   DEFAULT_ENTITY_LIST_QUERY,
   EMPTY_FACETS,
@@ -58,7 +58,7 @@ export interface UseEntityListArgs<TRow> {
    */
   serviceKey?: string;
   getRowId: (row: TRow) => string;
-  /** Plural, lowercase — error toasts ("Could not load agents"). */
+  /** Plural, lowercase — used in the shell's own failure copy ("No agents could be listed"). */
   entityLabelPlural: string;
   view: Pick<
     ListViewPrefs,
@@ -167,7 +167,7 @@ export function useEntityList<TRow>({
   const [facets, setFacets] = useState<EntityFacets>(EMPTY_FACETS);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<EntityListFailure | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
 
   const generation = useRef(0);
@@ -212,16 +212,23 @@ export function useEntityList<TRow>({
         setError(null);
       } catch (err) {
         if (gen !== generation.current) return;
-        const message =
-          err instanceof Error
-            ? err.message
-            : `Failed to load ${entityLabelPlural}`;
-        setError(message);
-        // Loud recovery: the list going empty must never look like "you have
-        // nothing here" when it was actually a failed read.
-        toast.error(`Could not load ${entityLabelPlural}`, {
-          description: message,
-        });
+        // 🚨 ONE CHANNEL, ONE COPY (one-resolution R-O1). This used to ALSO
+        // fire a toast, on the reasoning that a list going empty must not look
+        // like "you have nothing here". It must not — and the failure slot in
+        // EntityListPage, which renders off this very state, already says so
+        // permanently, where a toast fades. Announcing the same event twice is
+        // not louder, it is duplicated: on production `/mandates?scope=system`
+        // a non-admin met the door's refusal THREE times at once (the banner,
+        // plus one toast per refetch, because a service whose inputs land late
+        // re-asks and every failure toasted again).
+        //
+        // The failure is CLASSIFIED here, not stringified: the shell decides
+        // whether Retry may be offered and whether an empty state is allowed
+        // to blame filters, and it can only decide that if it still knows the
+        // door refused.
+        setError(
+          toEntityListFailure(err, `Failed to load ${entityLabelPlural}`),
+        );
       } finally {
         if (gen === generation.current) {
           hasLoadedOnce.current = true;

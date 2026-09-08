@@ -24,6 +24,7 @@ import type {
   MatrxDataTableMobileCardControls,
 } from "@/components/official/matrx-data-table/types";
 import type { EntityColumnSpec } from "./columns";
+import type { EntityListFailure } from "./failure";
 import type {
   EntityFacets,
   EntityFilters,
@@ -61,7 +62,13 @@ export interface EntityListController<TRow> {
   facets: EntityFacets;
   isLoading: boolean;
   isFetching: boolean;
-  error: string | null;
+  /**
+   * WHY the list has no rows, when it has none for a reason. Not a bare
+   * string: the shell must be able to tell a REFUSAL from a BREAKAGE, because
+   * only one of the two may be offered a Retry and only one of the two lets an
+   * empty state talk about filters (see ../failure.ts, one-resolution R-O1).
+   */
+  error: EntityListFailure | null;
 
   setScope: (scope: EntityListQuery["scope"]) => void;
   setFilters: (filters: EntityFilters) => void;

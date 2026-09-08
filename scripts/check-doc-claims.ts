@@ -388,7 +388,7 @@ const claims: Claim[] = [
   },
   {
     id: "per-pr-ci",
-    claim: "per-PR CI runs Matrx-package freshness, the marker law, the one-type law, the Kind Directives shim containment, the HR punch write-path strict lane, the migration slot-guard liveness lane, the five HR nav/URL/envelope/mock/export guards, org context, type-check, and the content-IR + workflow-runtime suites",
+    claim: "per-PR CI runs Matrx-package freshness, the parse guard and its self-test, the marker law, the one-type law, the Kind Directives shim containment, the HR punch write-path strict lane, the migration slot-guard liveness lane, the five HR nav/URL/envelope/mock/export guards, org context, type-check, and the content-IR + workflow-runtime suites",
     where: "CLAUDE.md § Repo doctrine (Nothing runs at commit time)",
     check: () => {
       // The claim in CLAUDE.md is now the opposite of what it used to be: for
@@ -401,6 +401,17 @@ const claims: Claim[] = [
       }
       const required = [
         "check:matrx-packages",
+        // EVERY FILE PARSES, plus the proof the detector can still fail. The
+        // 2026-09-07 injected-import class broke seven files and the shared dev
+        // server; `pnpm type-check` saw it and was not running. Listing both
+        // here is what makes deleting either step go red instead of quietly
+        // restoring the window in which unparseable TypeScript reaches main.
+        // Matched as whole RUN LINES, not bare names: "check:parse" is a
+        // substring of "check:parse:self-test", so a bare-name entry stayed
+        // green with the real step sabotaged (proven 2026-09-08). Same class
+        // as the comment-satisfies-the-lock note below.
+        "run: pnpm check:parse\n",
+        "run: pnpm check:parse:self-test\n",
         "check:kind-marker-law",
         "check:kind-type-twins",
         "check:kind-types",

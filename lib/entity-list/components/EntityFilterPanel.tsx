@@ -74,7 +74,9 @@ interface Props<TRow> {
   query: EntityListQuery;
   facets: EntityFacets;
   columns: EntityColumnSpec<TRow>[];
-  facetSections: EntityFacetSection[];
+  /** Filter-bag sections. Optional on a config, so optional here — a
+   *  surface that declares none must render a panel, never crash it. */
+  facetSections?: EntityFacetSection[];
   /** Scope-narrowing sections. Empty → the panel narrows no scope. */
   scopeSections?: EntityScopeFacetSection[];
   /** The same counts the scope tabs read — options AND their numbers. */
@@ -117,7 +119,7 @@ export function EntityFilterPanel<TRow>({
   query,
   facets,
   columns,
-  facetSections,
+  facetSections = [],
   scopeSections = [],
   counts,
   countsLoading = false,

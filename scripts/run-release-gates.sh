@@ -45,6 +45,24 @@ done
 
 if $STRICT; then
     declare -a GATES=(
+        # EVERY FILE PARSES — the cheapest gate here (~4s over 14,716 files)
+        # and the only one whose finding is not an opinion. On 2026-09-07 the
+        # census-H1 codemod injected its new `@ai-matrx/kit/format` import
+        # INSIDE seven multi-line `import {` statements; the shared dev server
+        # answered 500 on every route, for every agent in the checkout, until
+        # someone traced it by hand (repaired in fc9a28a26f). `pnpm type-check`
+        # DOES see it — as TS1003/1005/1128 — but it takes minutes, carries a
+        # large tracked backlog, is advisory by standing ruling, and nothing
+        # ran it between the codemod and the push. This runs FIRST because a
+        # tree that does not parse makes every gate below it meaningless.
+        # Zero findings at introduction and no lawful exception, so the script
+        # itself exits 1 in both lanes — there is no `--advisory` on the
+        # command below, unlike the gates that carry a backlog. (The non-strict
+        # RUNNER still exits 0 overall, per this file's header; the hard stop
+        # for this class lives in scripts/release.sh, pre-push.)
+        # `pnpm check:parse --fix` repairs the injected-import class;
+        # `pnpm check:parse:self-test` proves the guard can still fail.
+        "Every TypeScript file parses|pnpm check:parse"
         # First, cheapest, and the one local tsc can't see: the COMMITTED tree
         # must resolve every import — a tracked file importing an untracked one
         # builds locally and dies on Vercel (v0.4.194, 2026-07-28).
@@ -303,6 +321,24 @@ if $STRICT; then
 else
     # Non-strict variants still print the full loud report; they exit 0.
     declare -a GATES=(
+        # EVERY FILE PARSES — the cheapest gate here (~4s over 14,716 files)
+        # and the only one whose finding is not an opinion. On 2026-09-07 the
+        # census-H1 codemod injected its new `@ai-matrx/kit/format` import
+        # INSIDE seven multi-line `import {` statements; the shared dev server
+        # answered 500 on every route, for every agent in the checkout, until
+        # someone traced it by hand (repaired in fc9a28a26f). `pnpm type-check`
+        # DOES see it — as TS1003/1005/1128 — but it takes minutes, carries a
+        # large tracked backlog, is advisory by standing ruling, and nothing
+        # ran it between the codemod and the push. This runs FIRST because a
+        # tree that does not parse makes every gate below it meaningless.
+        # Zero findings at introduction and no lawful exception, so the script
+        # itself exits 1 in both lanes — there is no `--advisory` on the
+        # command below, unlike the gates that carry a backlog. (The non-strict
+        # RUNNER still exits 0 overall, per this file's header; the hard stop
+        # for this class lives in scripts/release.sh, pre-push.)
+        # `pnpm check:parse --fix` repairs the injected-import class;
+        # `pnpm check:parse:self-test` proves the guard can still fail.
+        "Every TypeScript file parses|pnpm check:parse"
         # First, cheapest, and the one local tsc can't see: the COMMITTED tree
         # must resolve every import — a tracked file importing an untracked one
         # builds locally and dies on Vercel (v0.4.194, 2026-07-28).

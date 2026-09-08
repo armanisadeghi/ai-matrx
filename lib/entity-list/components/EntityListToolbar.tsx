@@ -59,7 +59,7 @@ interface Props<TRow> {
   showSharedColumns: boolean;
   columns: EntityColumnSpec<TRow>[];
   defaultHidden: string[];
-  facetSections: EntityFacetSection[];
+  facetSections?: EntityFacetSection[];
   /** Scope-narrowing sections for the Filters panel. */
   scopeSections?: EntityScopeFacetSection[];
   /** The scope counts the tabs read — the panel shares them, never re-counts. */

@@ -28,6 +28,7 @@ import { codeFilesAutoSaveMiddleware } from "@/features/code-files/redux/autoSav
 import { cloudFilesRealtimeMiddleware } from "@/features/files/redux/realtime-middleware";
 import { cloudFilesMutationToastMiddleware } from "@/features/files/redux/mutation-toast-middleware";
 import { transcriptStudioRealtimeMiddleware } from "@/features/transcript-studio/redux/realtimeMiddleware";
+import { tasksRealtimeMiddleware } from "@/features/tasks/redux/tasksRealtimeMiddleware";
 import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/persistence";
 import { agentCacheBustMiddleware } from "@/features/agents/redux/agent-definition/cache-bust-middleware";
 import { mandateOrgSwitchCacheMiddleware } from "@/features/mandates/redux/org-switch-cache-middleware";
@@ -216,6 +217,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         cloudFilesRealtimeMiddleware,
         cloudFilesMutationToastMiddleware,
         transcriptStudioRealtimeMiddleware,
+        tasksRealtimeMiddleware,
         pdfStudioPersistenceMiddleware,
         agentCacheBustMiddleware,
         mandateOrgSwitchCacheMiddleware,
@@ -262,11 +264,16 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
           if (identityWatchAttached) return;
           identityWatchAttached = true;
           onIdentityChange((next) => {
-            if (next.key === syncContext.getIdentity().key) return;
+            const previous = syncContext.getIdentity();
+            if (next.key === previous.key) return;
             syncContext.setIdentity(next);
             void resyncForIdentity({
               store,
               identity: next,
+              // The identity we are LEAVING. `resyncForIdentity` resets every
+              // identity-scoped slice when this was a real person, because a
+              // rehydrate alone cannot clear what it declines to load.
+              previousIdentity: previous,
               policies: syncPolicies,
               getIdentity: () => syncContext.getIdentity(),
             });

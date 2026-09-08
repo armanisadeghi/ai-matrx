@@ -10,6 +10,11 @@
 // per-hook copy of the ledger; the ledger is the shared one, so a write made by
 // one hook is recognized as our own by all three.
 //
+// The table names and the ledger fingerprint are NOT declared here any more:
+// they moved to `../realtime/rowContract`, because the /tasks route's
+// `tasksRealtimeMiddleware` writes the SAME rows and the ledger only recognizes
+// an echo when both sides compute the same fingerprint string.
+//
 // What is NOT the package's job and stays here: the 300ms refetch debounce (a
 // burst of DISTINCT remote rows still deserves one reload), and the scope rules
 // that decide whether a given row belongs in a given list.
@@ -27,12 +32,14 @@ import type { DatabaseTask, DatabaseProject, ProjectWithTasks } from '../types';
 import * as taskService from '../services/taskService';
 import * as projectService from '../services/projectService';
 import { getUserId } from '@/utils/auth/getUserId';
+import {
+  TASKS_TABLE,
+  PROJECTS_TABLE,
+  workspaceRowFingerprint as rowFingerprint,
+} from '../realtime/rowContract';
 
 /** Collapse a burst of row events into a single refetch. */
 const REFETCH_DEBOUNCE_MS = 300;
-
-const TASKS_TABLE = 'workspace.tasks';
-const PROJECTS_TABLE = 'workspace.projects';
 
 /** One place names these channels — a second, different declaration throws. */
 const tasksChannel = defineChannelNamespace({
@@ -67,20 +74,6 @@ function idOf(value: unknown): string | undefined {
   if (value === null || typeof value !== 'object') return undefined;
   const id = (value as Record<string, unknown>).id;
   return typeof id === 'string' ? id : undefined;
-}
-
-/** Content the app can change on a task/project row — the ledger's echo test. */
-function rowFingerprint(row: Record<string, unknown>): string {
-  return JSON.stringify([
-    row.name ?? null,
-    row.title ?? null,
-    row.description ?? null,
-    row.status ?? null,
-    row.priority ?? null,
-    row.due_date ?? null,
-    row.project_id ?? null,
-    row.deleted_at ?? null,
-  ]);
 }
 
 /**

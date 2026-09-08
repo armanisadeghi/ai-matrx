@@ -238,7 +238,25 @@ export function EntityListPage<TRow>({
   const isNarrowed =
     Boolean(list.query.search.trim()) || countActiveFilters(list.query) > 0;
 
-  const resolvedEmptyState = isNarrowed
+  // 🚨 A FAILED READ IS NOT AN EMPTY RESULT (one-resolution R-O1). When the
+  // read broke — or was REFUSED — there is no result at all, so the empty
+  // state must not talk about the query. Production printed *"No mandates
+  // match — … Clear the filters to see the full registry"* to a non-admin who
+  // had been refused the system corpus and had nothing filtered: a sentence
+  // that was false twice over, one line under the door's honest refusal. This
+  // branch comes FIRST, and it never repeats the door's sentence (which the
+  // failure slot above already prints, exactly once) and never offers an
+  // action — a create button under a refused read is a second dead control.
+  const failureEmptyState = list.error
+    ? {
+        title: `No ${config.entityLabel.plural} could be listed`,
+        description: list.error.retryable
+          ? `This list could not be read, so nothing came back. It is not empty and no filter is hiding anything — the reason, and the way to try again, are at the top of this page.`
+          : `You were refused this list, so nothing came back. It is not empty and no filter is hiding anything: clearing your search or filters would change nothing. The reason is at the top of this page — choose a tab you have access to, or ask an administrator for this one.`,
+      }
+    : null;
+
+  const resolvedEmptyState = failureEmptyState ?? (isNarrowed
     ? {
         title: `No ${config.entityLabel.plural} match`,
         description:
@@ -263,7 +281,7 @@ export function EntityListPage<TRow>({
         ...config.emptyState,
         action:
           typeof emptyAction === "function" ? emptyAction(list) : emptyAction,
-      };
+      });
 
   const cardsView = config.views?.cards;
   const rowsView = config.views?.rows;
@@ -364,13 +382,29 @@ export function EntityListPage<TRow>({
           onResetView={reset}
         />
 
+        {/*
+          THE ONE FAILURE SLOT. Every reason this list has no rows is printed
+          here and only here — the shell fires no toast for the same event
+          (useEntityList explains why), and the empty state below deliberately
+          does not repeat this sentence.
+
+          RETRY IS OFFERED ONLY WHERE IT COULD WORK. A refusal will refuse the
+          identical request again, so the control is ABSENT rather than dead —
+          the fourth law's rule that a screen is honest or the control is not
+          there at all.
+        */}
         {list.error && (
-          <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <div
+            role="alert"
+            className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+          >
             <AlertCircle className="h-4 w-4 shrink-0" />
-            <span className="flex-1">{list.error}</span>
-            <Button size="sm" variant="ghost" onClick={list.refresh}>
-              Retry
-            </Button>
+            <span className="flex-1">{list.error.message}</span>
+            {list.error.retryable && (
+              <Button size="sm" variant="ghost" onClick={list.refresh}>
+                Retry
+              </Button>
+            )}
           </div>
         )}
       </div>

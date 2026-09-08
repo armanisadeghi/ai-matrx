@@ -48,10 +48,19 @@ import type { MandateHomeOrganization } from "./service";
 function HomeNotice({
   scope,
   organizations,
+  refused,
 }: {
   scope: ListScope;
   organizations: readonly MandateHomeOrganization[];
+  /** The door refused this home — see below. */
+  refused: boolean;
 }) {
+  // 🚨 ABSENT, NEVER FALSE (one-resolution R-O1). Every sentence below
+  // DESCRIBES WHAT IS IN THE LIST. When the door refused this home there is no
+  // list to describe, and printing "Every job the platform itself ships…" over
+  // a refusal told the reader she was looking at a corpus she had just been
+  // told she may not see. The refusal itself is the honest header.
+  if (refused) return null;
   const narrowedTo =
     scope.kind === "orgs" && scope.organizationId
       ? organizations.find((org) => org.id === scope.organizationId)
@@ -137,6 +146,7 @@ export function MandatesBrowsePage() {
                 <HomeNotice
                   scope={list.query.scope}
                   organizations={organizations}
+                  refused={Boolean(list.error && !list.error.retryable)}
                 />
                 <MandateCoverageNotice list={list} />
               </div>

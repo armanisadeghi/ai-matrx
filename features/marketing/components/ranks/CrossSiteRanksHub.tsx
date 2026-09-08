@@ -33,7 +33,7 @@ export function CrossSiteRanksHub() {
           },
           rank_portfolio: runtime.rows,
           history_window_days: RANK_HISTORY_DAYS,
-          portfolio_load_error: runtime.error ?? undefined,
+          portfolio_load_error: runtime.error?.message ?? undefined,
         });
       }}
     >
