@@ -15,8 +15,10 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   CreditCard,
+  FlaskConical,
   PackageCheck,
   RefreshCcw,
+  ShieldAlert,
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,9 +31,11 @@ import {
   ORDER_STATUS_LABELS,
   cancelOrder,
   createOrder,
+  getPaymentMode,
   isCancelable,
   listOrders,
   type PrintOrder,
+  type PrintPaymentMode,
 } from "./order-api";
 import type { LuluFetchState } from "./types";
 
@@ -144,6 +148,75 @@ function stripeCheckoutMode(url: string): "live" | "test" | null {
   }
 }
 
+/**
+ * The honest answer to "is this real money?", in the buyer's line of sight.
+ *
+ * Every word here comes from the backend — the mode, the Lulu base URL, and the
+ * sentence itself. This component asserts nothing of its own, because the thing
+ * that went wrong on 2026-09-07 was a surface asserting a mode it could not
+ * know. While the backend has not answered, it says so rather than guessing.
+ */
+function PaymentModeBadge({
+  mode,
+  error,
+}: {
+  mode: PrintPaymentMode | null;
+  error: string | null;
+}) {
+  if (error !== null) {
+    return (
+      <div className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+        <ShieldAlert className="mt-px size-4 shrink-0" />
+        <span>
+          Ordering is off: this page could not confirm which payment mode the
+          backend is in. {error}
+        </span>
+      </div>
+    );
+  }
+  if (mode === null) {
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+        <RefreshCcw className="size-4 shrink-0 animate-spin" />
+        Checking which payment mode this backend is in…
+      </div>
+    );
+  }
+
+  const live = mode.charges_real_money;
+  const refused = !mode.pairing_ok;
+  const Icon = refused ? ShieldAlert : live ? CreditCard : FlaskConical;
+
+  return (
+    <div
+      className={cn(
+        "mt-3 flex items-start gap-2 rounded-lg border p-3 text-xs",
+        refused
+          ? "border-destructive/40 bg-destructive/5 text-destructive"
+          : live
+            ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+            : "border-border bg-muted/40 text-muted-foreground",
+      )}
+    >
+      <Icon className="mt-px size-4 shrink-0" />
+      <div className="space-y-1">
+        <div className="font-semibold uppercase tracking-wide">
+          {refused
+            ? "Ordering refused"
+            : live
+              ? "Live mode — real money"
+              : "Test mode — no real money"}
+        </div>
+        <div>{mode.message}</div>
+        <div className="opacity-80">
+          Backend: printing via {mode.lulu_api_base} ({mode.lulu_environment}) ·
+          payments in {mode.payment_mode} mode.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function OrderFlow({
   podPackageId,
   pageCount,
@@ -160,6 +233,31 @@ export function OrderFlow({
     status: "idle",
   });
   const [cancelingId, setCancelingId] = useState<string | null>(null);
+
+  /**
+   * The backend's own answer to "whose money is this?". Null while it is being
+   * asked — and while it is null the order button stays shut, because an
+   * unlabeled payment mode is exactly the state that let a live checkout pass
+   * for a test one on 2026-09-07.
+   */
+  const [paymentMode, setPaymentMode] = useState<PrintPaymentMode | null>(null);
+  const [modeError, setModeError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getPaymentMode(controller.signal)
+      .then(setPaymentMode)
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        const state = toFetchState<never>(error);
+        setModeError(
+          state.status === "error"
+            ? state.headline
+            : "The backend did not report its payment mode.",
+        );
+      });
+    return () => controller.abort();
+  }, []);
 
   const refreshOrders = useCallback(() => {
     setOrdersState({ status: "loading" });
@@ -178,7 +276,13 @@ export function OrderFlow({
     pageCount !== null &&
     shippingLevel !== null;
 
+  // Ordering is offered only when the backend has SAID what mode it is in and
+  // its two money integrations agree. Unknown mode = no button, never a
+  // hopeful one.
+  const orderingAllowed = paymentMode?.pairing_ok === true;
+
   const formComplete =
+    orderingAllowed &&
     ready &&
     form.title.trim().length > 0 &&
     form.name.trim().length > 0 &&
@@ -293,6 +397,8 @@ export function OrderFlow({
           Pays through secure checkout; printing starts only after payment, and
           a file we can&apos;t print is refunded in full automatically.
         </p>
+
+        <PaymentModeBadge mode={paymentMode} error={modeError} />
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field

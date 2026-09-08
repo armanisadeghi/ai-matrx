@@ -13,6 +13,27 @@ import type { components } from "@/types/python-generated/api-types";
 export type PrintOrder = components["schemas"]["PrintOrderPublic"];
 export type PrintOrderCheckout = components["schemas"]["PrintOrderCheckout"];
 export type PrintOrderCreate = components["schemas"]["PrintOrderCreateRequest"];
+export type PrintPaymentMode = components["schemas"]["PrintPaymentMode"];
+
+/**
+ * What the BACKEND's print lane actually is — test or live.
+ *
+ * This surface must never infer the mode from its own hostname. The app's
+ * base-URL resolver follows the admin server toggle, so a page served from
+ * localhost can be talking to production; on 2026-09-07 that is exactly how a
+ * reviewer was handed a real `cs_live_` Stripe session under a screen that
+ * claimed "test mode when pointed at localhost". The server is the only thing
+ * that knows whose money is at stake, so the server is asked.
+ */
+export async function getPaymentMode(
+  signal?: AbortSignal,
+): Promise<PrintPaymentMode> {
+  const { data } = await apiGet("/lulu/payment-mode", {
+    signal,
+    captureErrors: false,
+  });
+  return data;
+}
 
 export async function createOrder(
   body: PrintOrderCreate,
