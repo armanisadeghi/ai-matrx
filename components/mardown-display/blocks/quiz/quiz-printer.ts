@@ -4,7 +4,8 @@
  * Self-contained print logic for quiz blocks.
  */
 
-import { buildPrintDocument, openPrintWindow, escapeHtml, type BlockPrinter } from "@ai-matrx/print/core";
+import { buildPrintDocument, openPrintWindow, type BlockPrinter } from "@ai-matrx/print/core";
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 import type { RawQuizJSON } from "./quiz-parser";
 
 export type QuizVariant = "with-answers" | "blank" | "answer-key";

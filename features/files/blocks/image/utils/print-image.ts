@@ -36,7 +36,7 @@
  * The escaping IS shared — `escapeHtml` below comes from the package.
  */
 
-import { escapeHtml } from "@ai-matrx/print/core";
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 
 export interface PrintImageOptions {
   /** Browser tab title while the print dialog is open. */
