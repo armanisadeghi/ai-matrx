@@ -48,6 +48,10 @@ long-lived media and agent execution stay in aidream.
   register one exact provider/account/call, durably claim call and recording callbacks,
   monotonically preserve terminal state, reject mutated replays and ambiguity, and bind an adopted
   file only to exact completed evidence with the same owner and organization.
+- **The call outlives its recording media.** `interaction_recording_file_id_fkey` uses
+  `ON DELETE SET NULL`, so the one governed Matrx Files purge can expire recording bytes while
+  retaining provider lifecycle, consent, custody time, and immutable activity receipts. File
+  authorization and purge remain entirely owned by Matrx Files.
 - The signed call-status and recording callback POST routes await the database claim before
   returning success. Forged, malformed, uncorrelated, ambiguous, or persistence-failed requests
   return non-success. Provider media URLs are retained only in evidence, never in
@@ -104,6 +108,11 @@ before reference consumption or paid execution. This is readiness only: no token
 content, phone, provider URL, session reference, signature, or credential is returned.
 
 ## Change log
+
+- **2026-09-08** — Proved the first live owner recording through signed consent, dual-channel
+  capture, external S3 storage, canonical file adoption, CRM binding, and owner-authorized WAV
+  playback. Corrected the recording-file FK to `ON DELETE SET NULL` so governed retention can
+  delete media without deleting the call or bypassing Matrx Files.
 
 - **2026-08-17** — Completed the first-call handoff: the signed webhook forwards exact signed form
   material through the typed backend client, aidream independently revalidates and prepares the

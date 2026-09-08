@@ -38,6 +38,10 @@ against canonical `crm.interaction` plus `platform.activity_log`. They do not mi
 logs or invent a call table. Unique provider event keys and monotonic application prevent
 duplicate, out-of-order, regressive, and post-terminal events from moving lifecycle backward.
 
+Recording retention uses the canonical Matrx Files governed purge. The CRM call remains durable;
+deleting expired recording media clears only `crm.interaction.recording_file_id` through its
+`ON DELETE SET NULL` foreign key while preserving consent, provider lifecycle, and audit evidence.
+
 ## Console activation and live test
 
 After the code is deployed:
@@ -70,6 +74,9 @@ exact URL and all form parameters:
 [recording consent guidance](https://help.twilio.com/articles/360011522553).
 
 ## Change log
+
+- 2026-09-08 — Proved the first live owner recording and made its canonical file pointer
+  retention-safe with `ON DELETE SET NULL`, preserving the call when governed media expires.
 
 - 2026-08-17 — Added exact current-call recording disclosure and fail-closed post-consent
   `<Start><Recording>` backed by the existing lifecycle/custody path.
