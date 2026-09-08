@@ -285,7 +285,8 @@ describe("the admin route renders the SYSTEM's answer and only that", () => {
     // Anti-vacuity: a render that produced nothing would pass trivially. The
     // page IS much smaller than it was — the whole "system answer" section is
     // gone — so this floor is the job's identity, not the old prose.
-    expect(text).toContain("research_client.output_slides");
+    expect(text).toContain("Research Output: Slides");
+    expect(text).not.toContain("research_client.output_slides");
     expect(text).toContain("Holder");
     expect(offendingSentences(text)).toEqual([]);
     act(() => root.unmount());

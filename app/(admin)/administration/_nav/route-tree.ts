@@ -165,7 +165,7 @@ export function getAdminCrumbs(
 
     crumbs.push({
       fullPath: accumulated,
-      label: node?.label ?? titleCase(segment),
+      label: i === 2 && segments[1] === "mandates" ? "Mandate" : node?.label ?? titleCase(segment),
       isPage: node?.isPage ?? false,
       isLast,
       children: node?.children ?? [],

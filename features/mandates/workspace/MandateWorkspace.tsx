@@ -36,7 +36,7 @@
 //
 // No prose paragraphs. Sections state facts; the data does the talking.
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -74,13 +74,12 @@ import {
 } from "@/lib/supabase/mandateStorage";
 import { OneBindingWorkspace } from "@/features/bindings/OneBindingWorkspace";
 import { hasLiveGlobalBinding } from "@/features/bindings/system-answer-record";
-import { RunThisJobSection } from "./RunThisJobSection";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PropertyRow } from "@/components/official/ConfigurationFields";
+import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import { Section } from "./Section";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
-import {
-  systemRungHealth,
-  type SystemRungHealth,
-} from "./system-rung-health";
+import { systemRungHealth, type SystemRungHealth } from "./system-rung-health";
 import {
   useMandateWorkspaceData,
   type MandateWorkspaceData,
@@ -103,8 +102,7 @@ import {
  * (UI-STANDARD P13, D1 resolved 2026-08-31) — the routes stay as entry points.
  */
 export type WorkspacePrincipal =
-  | { kind: "user" }
-  | { kind: "org"; orgId: string };
+  { kind: "user" } | { kind: "org"; orgId: string };
 
 /**
  * ── THE HOST DECIDES THE PERSPECTIVE ─────────────────────────────────────────
@@ -130,7 +128,37 @@ export type WorkspacePrincipal =
  */
 export type WorkspacePerspective = "person" | "organization" | "system";
 
+export type MandateWorkspaceTab =
+  | "definition"
+  | "holder"
+  | "overrides"
+  | "display"
+  | "test"
+  | "permissions"
+  | "diagnostics"
+  | "notes";
+
+const WORKSPACE_TABS: {
+  id: MandateWorkspaceTab;
+  label: string;
+  admin?: boolean;
+}[] = [
+  { id: "definition", label: "Definition" },
+  { id: "holder", label: "Holder" },
+  { id: "overrides", label: "Overrides" },
+  { id: "display", label: "Display Options" },
+  { id: "test", label: "Test", admin: true },
+  { id: "permissions", label: "Permissions" },
+  { id: "diagnostics", label: "Diagnostics", admin: true },
+  { id: "notes", label: "Notes" },
+];
+
 export interface MandateWorkspaceProps {
+  adminContent?: (tab: MandateWorkspaceTab) => ReactNode;
+  adminActions?: (
+    data: MandateWorkspaceData,
+    onChanged: () => void,
+  ) => ReactNode;
   /** Mandate key ("podcast.multihost_script") or the row uuid — both open. */
   mandateKeyOrId: string;
   /**
@@ -310,8 +338,12 @@ function resolveForOrgPrincipal(
   // only when no binding won at all.
   const systemHolder = holderOfMandate(data.mandate);
   const winnerHolder = orgBinding ? agentHolderOfBinding(orgBinding) : null;
-  const versionId = winnerHolder ? winnerHolder.versionId : systemHolder.versionId;
-  const agentIdRaw = winnerHolder ? winnerHolder.holderId : systemHolder.holderId;
+  const versionId = winnerHolder
+    ? winnerHolder.versionId
+    : systemHolder.versionId;
+  const agentIdRaw = winnerHolder
+    ? winnerHolder.holderId
+    : systemHolder.holderId;
   const useLatest = orgBinding
     ? isFloatingBinding(orgBinding)
     : isFloatingMandate(data.mandate);
@@ -371,7 +403,17 @@ function OneMandateWorkspace({
   mandateKeyOrId,
   host,
   principal = { kind: "user" },
+  adminContent,
+  adminActions,
 }: MandateWorkspaceProps) {
+  const [activeTab, setActiveTab] = useState<MandateWorkspaceTab>("definition");
+  useEffect(() => {
+    const openHolder = () => setActiveTab("holder");
+    window.addEventListener("matrx:open-mandate-pin", openHolder);
+    if (window.location.hash === "#bind") openHolder();
+    return () =>
+      window.removeEventListener("matrx:open-mandate-pin", openHolder);
+  }, []);
   const { data, loading, failure, refresh } =
     useMandateWorkspaceData(mandateKeyOrId);
   const { organizations } = useUserOrganizations();
@@ -448,7 +490,13 @@ function OneMandateWorkspace({
           </Button>
         ) : (
           <Button variant="outline" size="sm" asChild>
-            <Link href={host === "admin-route" ? "/administration/mandates" : "/mandates"}>
+            <Link
+              href={
+                host === "admin-route"
+                  ? "/administration/mandates"
+                  : "/mandates"
+              }
+            >
               <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
               All mandates
             </Link>
@@ -493,138 +541,196 @@ function OneMandateWorkspace({
         host === "route" && "pt-[calc(var(--shell-header-h)+0.5rem)]",
       )}
     >
-      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-6 pt-2 sm:px-6">
-        {/* Header — identity only. */}
-        <header className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold tracking-tight text-foreground">
-              {data.mandate.label}
-            </h2>
-            <Badge variant="outline" className="py-0 text-[10.5px]">
-              {feature.replace(/_/g, " ")}
-            </Badge>
-            {!data.mandate.is_enabled ? (
-              <Badge variant="outline" className="py-0 text-[10.5px] text-muted-foreground">
-                Disabled
-              </Badge>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <code className="block font-mono text-[11.5px] text-muted-foreground/80">
-              {data.mandate.mandate_key}
-            </code>
-            {host === "window" ? (
+      <div className="mx-auto w-full max-w-6xl px-4 pb-12 pt-3 sm:px-6">
+        <header className="mb-5 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
               <Link
-                href={`/mandates/${encodeURIComponent(data.mandate.mandate_key)}`}
-                className="inline-flex items-center gap-1 text-[11.5px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                href={authoring ? "/administration/mandates" : "/mandates"}
+                className="text-xs text-muted-foreground hover:text-foreground"
               >
-                <Expand className="h-3 w-3" />
-                Open full page
+                All mandates
               </Link>
-            ) : null}
+              <h2 className="mt-1 break-words text-xl font-semibold tracking-tight text-foreground">
+                {data.mandate.label?.trim() || "Display name unavailable"}
+              </h2>
+            </div>
+            {authoring ? adminActions?.(data, refresh) : null}
           </div>
-          {/* LINEAGE — where this job came from and what came from it, read
-              from `source_mandate_id` (aidream 0592). A fact about the corpus,
-              so it belongs here rather than behind the admin fold. */}
-          <MandateLineageLine
-            mandateId={data.mandate.id}
-            sourceMandateId={data.mandate.source_mandate_id ?? null}
-            host={host}
-          />
+          <dl className="grid gap-x-8 sm:grid-cols-3">
+            <PropertyRow
+              label="Scope"
+              value={
+                perspective === "system"
+                  ? "System"
+                  : perspective === "organization"
+                    ? (nameOfOrg(
+                        principal.kind === "org" ? principal.orgId : "",
+                      ) ?? "Organization unavailable")
+                    : "Personal"
+              }
+            />
+            <PropertyRow
+              label="Feature"
+              value={formatVariableDisplayName(feature)}
+            />
+            <PropertyRow
+              label="Enabled"
+              value={
+                data.mandate.is_enabled == null
+                  ? "Unknown"
+                  : data.mandate.is_enabled
+                    ? "Yes"
+                    : "No"
+              }
+            />
+          </dl>
+          {host === "window" ? (
+            <Link
+              href={`/mandates/${encodeURIComponent(data.mandate.mandate_key)}`}
+              className="text-xs text-muted-foreground underline"
+            >
+              Open full page
+            </Link>
+          ) : null}
         </header>
-
-        {/* THE TRIAD — INPUT → GOAL → OUTPUT, the mandate's own order.
-            Editable on the admin route only (see `authoring`). */}
-        <TriadInputSection data={data} onChanged={refresh} authoring={authoring} />
-        <TriadFlowMark />
-        <TriadGoalSection data={data} onChanged={refresh} authoring={authoring} />
-        <TriadFlowMark />
-        <TriadOutputSection data={data} />
-
-        {/* §2 — WHAT RUNS FOR THIS CALLER.
-            🚨 ABSENT ON THE SYSTEM HOST (Arman, 2026-09-08, FIX-R9). The admin
-            page used to carry a whole "The system answer" section — a holder
-            name, a version badge, two paragraphs about where the assignment is
-            written, and a button to go set it — TEN LINES ABOVE the controls
-            that actually set the same three values. *"One place is all we need
-            and it's 3 things, not more."* The three controls are in the holder
-            section below; the verdict rides with them. */}
-        {perspective === "system" ? null : (
-          <FulfillmentSection
-            data={data}
-            resolution={resolution as FulfillmentView}
-            onChanged={refresh}
-            authoring={authoring}
-          />
-        )}
-
-        {/* §3 — THE PERSON'S LADDER. It belongs to the person's perspective and
-            nowhere else: on the admin panel it is a ladder about the reader,
-            on a page whose whole subject is the platform's own answer. */}
-        {perspective === "person" ? (
-          <LadderSection
-            ladder={ladder}
-            agentsById={data.agentsById}
-            nameOfOrg={nameOfOrg}
-            activeOrganizationId={activeOrganizationId}
-          />
-        ) : null}
-
-      </div>
-
-      {/* §4 — THE ONE BINDING UI. One screen, every rung, both holder types:
-          the job's offered inventory on one side, the holder's inputs on the
-          other, the match in the middle by the shared row component. The
-          four-step wizard it replaces is deleted, not deprecated.
-
-          It gets its OWN, WIDER container: the triad is a reading column and
-          3xl is right for it, but two standing inventories with the match
-          between them cannot live in 768px. The columns themselves are
-          container-queried, so this width is an offer, never an assumption —
-          the window panel keeps its own and stacks. */}
-      <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 sm:px-6">
-        <BindingSection
-          data={data}
-          principal={principal}
-          perspective={perspective}
-          authoring={authoring}
-          healthNote={
-            perspective === "system"
-              ? systemRungHealthOf(data, ladder, nameOfOrg)
-              : null
-          }
-          onChanged={refresh}
-        />
-      </div>
-
-      {/* Run it — mandate management, so it lives where management lives: the
-          admin route, BELOW the assignment it runs (it used to sit above the
-          only controls that decide what "run" means). Still super-admin gated
-          inside; the server endpoint is `require_super_admin`. */}
-      {authoring ? (
-        <div className="mx-auto w-full max-w-3xl px-4 pb-6 sm:px-6">
-          <RunThisJobSection
-            data={data}
-            // The system host states the Holder's verdict beside the controls,
-            // so the server's longer version of it is folded rather than
-            // printed a second time (FIX-R9-UI round 3).
-            foldSurfaceNotes={perspective === "system"}
-          />
-        </div>
-      ) : null}
-
-      <div className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">
-        <MandateNotesPanel
-          mandateId={data.mandate.id}
-          mandateKey={data.mandate.mandate_key}
-          surfaceName={
-            host === "window"
-              ? undefined
-              : host === "admin-route"
-                ? MANDATE_WORKSPACE_SURFACE_NAME
-                : "matrx-user/mandate-workspace"
-          }
-        />
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => {
+            const next = WORKSPACE_TABS.find((item) => item.id === value);
+            if (next && (!next.admin || authoring)) setActiveTab(next.id);
+          }}
+        >
+          <TabsList
+            aria-label="Mandate sections"
+            className="mb-5 grid h-auto w-full grid-cols-2 gap-1 bg-muted/60 p-1 sm:flex sm:flex-wrap sm:justify-start"
+          >
+            {WORKSPACE_TABS.filter((item) => !item.admin || authoring).map(
+              (item) => (
+                <TabsTrigger
+                  key={item.id}
+                  value={item.id}
+                  id={`mandate-tab-${item.id}`}
+                  aria-controls={`mandate-panel-${item.id}`}
+                  className="min-h-10 whitespace-normal px-3 text-xs sm:min-h-9 sm:flex-1"
+                >
+                  {item.label}
+                </TabsTrigger>
+              ),
+            )}
+          </TabsList>
+          {/* Draft owners remain mounted across tab changes; no duplicate editors. */}
+          <div
+            role="tabpanel"
+            id="mandate-panel-definition"
+            aria-labelledby="mandate-tab-definition"
+            hidden={activeTab !== "definition"}
+            className={activeTab === "definition" ? "space-y-5" : "hidden"}
+          >
+            <TriadGoalSection
+              data={data}
+              onChanged={refresh}
+              authoring={authoring}
+            />
+            <TriadInputSection
+              data={data}
+              onChanged={refresh}
+              authoring={authoring}
+            />
+            <TriadOutputSection data={data} />
+            <MandateLineageLine
+              mandateId={data.mandate.id}
+              sourceMandateId={data.mandate.source_mandate_id ?? null}
+              host={host}
+            />
+          </div>
+          {perspective !== "system" ? (
+            <div
+              hidden={activeTab !== "holder"}
+              className={activeTab === "holder" ? "mb-4 space-y-3" : "hidden"}
+            >
+              <FulfillmentSection
+                data={data}
+                resolution={resolution as FulfillmentView}
+                onChanged={refresh}
+                authoring={authoring}
+              />
+              {perspective === "person" ? (
+                <LadderSection
+                  ladder={ladder}
+                  agentsById={data.agentsById}
+                  nameOfOrg={nameOfOrg}
+                  activeOrganizationId={activeOrganizationId}
+                />
+              ) : null}
+            </div>
+          ) : null}
+          <div
+            role="tabpanel"
+            id={
+              ["holder", "overrides", "display", "permissions"].includes(
+                activeTab,
+              )
+                ? `mandate-panel-${activeTab}`
+                : undefined
+            }
+            aria-labelledby={`mandate-tab-${activeTab}`}
+            hidden={
+              !["holder", "overrides", "display", "permissions"].includes(
+                activeTab,
+              )
+            }
+            className={
+              ["holder", "overrides", "display", "permissions"].includes(
+                activeTab,
+              )
+                ? "space-y-4"
+                : "hidden"
+            }
+          >
+            <BindingSection
+              data={data}
+              principal={principal}
+              perspective={perspective}
+              authoring={authoring}
+              activeSection={
+                activeTab === "overrides" ||
+                activeTab === "display" ||
+                activeTab === "permissions"
+                  ? activeTab
+                  : "holder"
+              }
+              healthNote={
+                perspective === "system"
+                  ? systemRungHealthOf(data, ladder, nameOfOrg)
+                  : null
+              }
+              onChanged={refresh}
+            />
+          </div>
+          {authoring ? adminContent?.(activeTab) : null}
+          <div
+            role="tabpanel"
+            id="mandate-panel-notes"
+            aria-labelledby="mandate-tab-notes"
+            hidden={activeTab !== "notes"}
+            className={activeTab === "notes" ? "space-y-3" : "hidden"}
+          >
+            <Section title="Notes">
+              <MandateNotesPanel
+                mandateId={data.mandate.id}
+                mandateKey={data.mandate.mandate_key}
+                surfaceName={
+                  host === "window"
+                    ? undefined
+                    : authoring
+                      ? MANDATE_WORKSPACE_SURFACE_NAME
+                      : "matrx-user/mandate-workspace"
+                }
+              />
+            </Section>
+          </div>
+        </Tabs>
       </div>
     </div>
   );
@@ -706,8 +812,10 @@ function BindingSection({
   perspective,
   authoring,
   healthNote,
+  activeSection,
   onChanged,
 }: {
+  activeSection: "holder" | "overrides" | "display" | "permissions";
   data: MandateWorkspaceData;
   principal: WorkspacePrincipal;
   perspective: WorkspacePerspective;
@@ -735,9 +843,19 @@ function BindingSection({
       {/* 🚨 ONE TITLE, ONE PLACE. The admin page's holder used to be described
           under "The system answer" and set again under "Assign the system
           holder" — Arman: *"repeating it in the bottom … that's stupid."* */}
-      <Section title={perspective === "system" ? "Holder" : "Who fulfils this job"}>
+      <Section
+        title={
+          {
+            holder: "Holder",
+            overrides: "Execution overrides",
+            display: "Display Options",
+            permissions: "Permissions",
+          }[activeSection]
+        }
+      >
         <OneBindingWorkspace
           data={data}
+          activeSection={activeSection}
           perspective={perspective}
           healthNote={healthNote}
           // Ignored under the system perspective — `fixedRung` names the
@@ -817,12 +935,17 @@ function FulfillmentSection({
             verdict highlights nothing here and the sentence below names it. */}
         <MandateResolutionRibbon
           provenance={
-            rung === "user" || rung === "org" || rung === "system" || rung === "run"
+            rung === "user" ||
+            rung === "org" ||
+            rung === "system" ||
+            rung === "run"
               ? rung
               : undefined
           }
         />
-        <p className="text-[13px] leading-relaxed text-foreground">{sentence}</p>
+        <p className="text-[13px] leading-relaxed text-foreground">
+          {sentence}
+        </p>
         {refusal ? (
           <p className="flex items-start gap-1.5 text-[12.5px] leading-relaxed text-destructive">
             <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -863,7 +986,11 @@ function FulfillmentSection({
             // The verdict named an agent this page did not load a name for —
             // the door still opens, and inventing "could not be read" would be
             // a different, false statement.
-            <EntityRef token="agent" id={agentId} className="text-[13.5px] font-medium" />
+            <EntityRef
+              token="agent"
+              id={agentId}
+              className="text-[13.5px] font-medium"
+            />
           ) : holderless ? (
             authoring ? (
               <div className="flex flex-wrap items-center gap-3">
@@ -897,13 +1024,19 @@ function FulfillmentSection({
             </span>
           )}
           {agent?.agentType === "builtin" ? (
-            <Badge variant="outline" className="gap-1 py-0 text-[10px] text-muted-foreground">
+            <Badge
+              variant="outline"
+              className="gap-1 py-0 text-[10px] text-muted-foreground"
+            >
               <ShieldCheck className="h-2.5 w-2.5" />
               System agent
             </Badge>
           ) : null}
           {agent?.isArchived ? (
-            <Badge variant="outline" className="py-0 text-[10px] text-rose-600 dark:text-rose-400">
+            <Badge
+              variant="outline"
+              className="py-0 text-[10px] text-rose-600 dark:text-rose-400"
+            >
               Archived
             </Badge>
           ) : null}
@@ -1072,7 +1205,12 @@ function LadderRow({
         {words.detail}
       </span>
       {!broken && agent ? (
-        <EntityRef token="agent" id={agent.id} name={agent.name} showIcon={false} />
+        <EntityRef
+          token="agent"
+          id={agent.id}
+          name={agent.name}
+          showIcon={false}
+        />
       ) : null}
     </div>
   );

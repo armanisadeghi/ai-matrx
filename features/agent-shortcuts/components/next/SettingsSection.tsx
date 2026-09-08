@@ -1,6 +1,7 @@
 "use client";
 
 import { Input } from "@ai-matrx/design-system";
+import { PropertyRow } from "@/components/official/ConfigurationFields";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -73,7 +74,14 @@ export function SettingsSection({
   disabled,
   omitAutoRun = false,
   words,
+  section,
+  fieldMeta,
 }: {
+  section?: "display" | "overrides" | "permissions";
+  fieldMeta?: (field: keyof SettingsFields) => {
+    source: string;
+    state: string;
+  };
   value: SettingsFields;
   onChange: <K extends keyof SettingsFields>(
     field: K,
@@ -106,15 +114,16 @@ export function SettingsSection({
       onChange("showVariablePanel", false);
       return;
     }
-    onChange("showVariablePanel", true);
+    if (!section) onChange("showVariablePanel", true);
     onChange("variablesPanelStyle", next as VariablesPanelStyle);
   };
 
   return (
     <div className="space-y-1">
-      {!omitAutoRun && (
+      {!omitAutoRun && !section && (
         <ToggleRow
           title="Auto run"
+          {...fieldMeta?.("autoRun")}
           hint={w.autoRunHint}
           checked={value.autoRun}
           onChange={(v) => onChange("autoRun", v)}
@@ -122,106 +131,146 @@ export function SettingsSection({
         />
       )}
 
+      {section === "overrides" && (
+        <PropertyRow
+          label="Confirmation active"
+          value={value.autoRun && value.showPreExecutionGate ? "Yes" : "No"}
+          help="The confirmation gate is used only when auto-run and the gate are both enabled."
+        />
+      )}
+
       {/* The GATE is presentation, not the promise: it is what the person sees
           in the moment an auto-run fires. So it survives `omitAutoRun` — the
           host that owns the promise still passes the current `autoRun` fact,
           and the gate is offered exactly while that fact makes it meaningful. */}
-      {value.autoRun && (
-        <Indent>
-          <ToggleRow
-            title="Show pre-execution gate"
-            hint="Show a confirmation step before the auto-run fires."
-            checked={value.showPreExecutionGate}
-            onChange={(v) => onChange("showPreExecutionGate", v)}
-            disabled={disabled}
-          />
-          {value.showPreExecutionGate && (
-            <Indent>
-              <FieldRow
-                title="Pre-execution message"
-                hint="Text shown to the user during the confirmation step."
-              >
-                <Input
-                  value={value.preExecutionMessage ?? ""}
-                  onChange={(e) =>
-                    onChange("preExecutionMessage", e.target.value || null)
-                  }
-                  placeholder="Click anywhere to cancel; runs in 3s…"
-                  disabled={disabled}
-                  className="h-9 text-sm"
-                  style={{ fontSize: "16px" }}
-                />
-              </FieldRow>
-            </Indent>
-          )}
-        </Indent>
-      )}
+      {(value.autoRun || section === "overrides") &&
+        section !== "display" &&
+        section !== "permissions" && (
+          <Indent>
+            <ToggleRow
+              title="Show pre-execution gate"
+              {...fieldMeta?.("showPreExecutionGate")}
+              hint="Show a confirmation step before the auto-run fires."
+              checked={value.showPreExecutionGate}
+              onChange={(v) => onChange("showPreExecutionGate", v)}
+              disabled={disabled}
+            />
+            {(value.showPreExecutionGate || section === "overrides") && (
+              <Indent>
+                <FieldRow
+                  title="Pre-execution message"
+                  {...fieldMeta?.("preExecutionMessage")}
+                  hint="Text shown to the user during the confirmation step."
+                >
+                  <Input
+                    value={value.preExecutionMessage ?? ""}
+                    onChange={(e) =>
+                      onChange("preExecutionMessage", e.target.value || null)
+                    }
+                    placeholder={
+                      section
+                        ? "Not set"
+                        : "Click anywhere to cancel; runs in 3s…"
+                    }
+                    aria-label="Pre-execution message"
+                    disabled={disabled}
+                    className="h-9 text-sm"
+                    style={{ fontSize: "16px" }}
+                  />
+                </FieldRow>
+              </Indent>
+            )}
+          </Indent>
+        )}
 
-      <FieldRow
-        title="Variable panel"
-        hint="How the user supplies variable values before / during the run."
-      >
-        <Select
-          value={panelStyleSelectValue}
-          onValueChange={onPanelStyleChange}
-          disabled={disabled}
+      <div hidden={section === "overrides" || section === "permissions"}>
+        {section && (
+          <ToggleRow
+            title="Show variable panel"
+            hint="Allow inputs to be shown before or during the run."
+            checked={value.showVariablePanel}
+            onChange={(next) => onChange("showVariablePanel", next)}
+            disabled={disabled}
+            {...fieldMeta?.("showVariablePanel")}
+          />
+        )}
+        <FieldRow
+          title={section ? "Variable panel style" : "Variable panel"}
+          {...fieldMeta?.("variablesPanelStyle")}
+          hint="How the user supplies variable values before / during the run."
         >
-          <SelectTrigger className="h-9 text-sm w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={HIDDEN_PANEL_STYLE}>Hide</SelectItem>
-            {VARIABLE_PANEL_STYLE_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </FieldRow>
-
-      <ToggleRow
-        title="Allow chat"
-        hint="Permit the user to continue the conversation after the initial run."
-        checked={value.allowChat}
-        onChange={(v) => onChange("allowChat", v)}
-        disabled={disabled}
-      />
-
-      <ToggleRow
-        title="Show definition messages"
-        hint="Render the agent's instruction / system messages in the result UI."
-        checked={value.showDefinitionMessages}
-        onChange={(v) => onChange("showDefinitionMessages", v)}
-        disabled={disabled}
-      />
-      {value.showDefinitionMessages && (
-        <Indent>
-          <ToggleRow
-            title="Show definition content"
-            hint="Also reveal the body of each definition message (not just titles)."
-            checked={value.showDefinitionMessageContent}
-            onChange={(v) => onChange("showDefinitionMessageContent", v)}
+          <Select
+            value={section ? value.variablesPanelStyle : panelStyleSelectValue}
+            onValueChange={onPanelStyleChange}
             disabled={disabled}
-          />
-        </Indent>
-      )}
+          >
+            <SelectTrigger
+              aria-label="Variable panel style"
+              className="h-9 text-sm w-full"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {!section && (
+                <SelectItem value={HIDDEN_PANEL_STYLE}>Hide</SelectItem>
+              )}
+              {VARIABLE_PANEL_STYLE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FieldRow>
 
-      <ToggleRow
-        title="Hide reasoning"
-        hint="Suppress the agent's intermediate reasoning blocks from the output."
-        checked={value.hideReasoning}
-        onChange={(v) => onChange("hideReasoning", v)}
-        disabled={disabled}
-      />
+        <ToggleRow
+          title="Allow chat"
+          {...fieldMeta?.("allowChat")}
+          hint="Permit the user to continue the conversation after the initial run."
+          checked={value.allowChat}
+          onChange={(v) => onChange("allowChat", v)}
+          disabled={disabled}
+        />
 
-      <ToggleRow
-        title="Hide tool results"
-        hint="Suppress tool-call outputs from the output."
-        checked={value.hideToolResults}
-        onChange={(v) => onChange("hideToolResults", v)}
-        disabled={disabled}
-      />
+        <ToggleRow
+          title="Show definition messages"
+          {...fieldMeta?.("showDefinitionMessages")}
+          hint="Render the agent's instruction / system messages in the result UI."
+          checked={value.showDefinitionMessages}
+          onChange={(v) => onChange("showDefinitionMessages", v)}
+          disabled={disabled}
+        />
+        {(value.showDefinitionMessages || section === "display") && (
+          <Indent>
+            <ToggleRow
+              title="Show definition content"
+              {...fieldMeta?.("showDefinitionMessageContent")}
+              hint="Also reveal the body of each definition message (not just titles)."
+              checked={value.showDefinitionMessageContent}
+              onChange={(v) => onChange("showDefinitionMessageContent", v)}
+              disabled={disabled}
+            />
+          </Indent>
+        )}
+
+        <ToggleRow
+          title={section ? "Show reasoning" : "Hide reasoning"}
+          {...fieldMeta?.("hideReasoning")}
+          hint="Suppress the agent's intermediate reasoning blocks from the output."
+          checked={section ? !value.hideReasoning : value.hideReasoning}
+          onChange={(v) => onChange("hideReasoning", section ? !v : v)}
+          disabled={disabled}
+        />
+
+        <ToggleRow
+          title={section ? "Show tool results" : "Hide tool results"}
+          {...fieldMeta?.("hideToolResults")}
+          hint="Suppress tool-call outputs from the output."
+          checked={section ? !value.hideToolResults : value.hideToolResults}
+          onChange={(v) => onChange("hideToolResults", section ? !v : v)}
+          disabled={disabled}
+        />
+      </div>
     </div>
   );
 }
@@ -232,13 +281,39 @@ function ToggleRow({
   checked,
   onChange,
   disabled,
+  source,
+  state,
 }: {
+  source?: string;
+  state?: string;
   title: string;
   hint: string;
   checked: boolean;
   onChange: (next: boolean) => void;
   disabled?: boolean;
 }) {
+  if (source)
+    return (
+      <PropertyRow
+        label={title}
+        source={source}
+        state={state}
+        help={hint}
+        value={
+          <div className="flex items-center gap-3">
+            <span>
+              {checked === true ? "Yes" : checked === false ? "No" : "Unknown"}
+            </span>
+            <Switch
+              aria-label={title}
+              checked={checked}
+              onCheckedChange={onChange}
+              disabled={disabled}
+            />
+          </div>
+        }
+      />
+    );
   return (
     <div className="flex items-start gap-3 py-2.5">
       <div className="flex-1 min-w-0">
@@ -261,11 +336,25 @@ function FieldRow({
   title,
   hint,
   children,
+  source,
+  state,
 }: {
+  source?: string;
+  state?: string;
   title: string;
   hint?: string;
   children: React.ReactNode;
 }) {
+  if (source)
+    return (
+      <PropertyRow
+        label={title}
+        source={source}
+        state={state}
+        help={hint}
+        value={children}
+      />
+    );
   return (
     <div className="py-2.5 space-y-1.5">
       <div>

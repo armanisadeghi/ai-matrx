@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Loader2, MessageSquarePlus, StickyNote, Trash2 } from "lucide-react";
+import { Loader2, MessageSquarePlus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -31,12 +31,18 @@ import {
   type MandateNote,
   type MandateNoteKind,
 } from "../notes";
+import {
+  PropertyRow,
+  StatusToken,
+} from "@/components/official/ConfigurationFields";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 export interface MandateNotesPanelProps {
   /** The mandate the notes hang off. */
   mandateId: string;
-  /** Shown in the composer placeholder so the note's subject is never ambiguous. */
+  /** Internal subject identity retained for host compatibility; never rendered. */
   mandateKey: string;
   /** Where the note is being written — recorded on the row. */
   surfaceName?: string | null;
@@ -47,16 +53,8 @@ export interface MandateNotesPanelProps {
   className?: string;
 }
 
-const KIND_STYLES: Record<MandateNoteKind, string> = {
-  observation: "border-border text-muted-foreground",
-  issue: "border-rose-500/40 text-rose-600 dark:text-rose-400",
-  idea: "border-amber-500/40 text-amber-600 dark:text-amber-400",
-  praise: "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
-};
-
 export function MandateNotesPanel({
   mandateId,
-  mandateKey,
   surfaceName,
   observedAgentId,
   compact = false,
@@ -67,6 +65,11 @@ export function MandateNotesPanel({
   const [body, setBody] = useState("");
   const [kind, setKind] = useState<MandateNoteKind>("observation");
   const [saving, setSaving] = useState(false);
+  const agentNames = useAgentNames(
+    (notes ?? []).flatMap((note) =>
+      note.observedAgentId ? [note.observedAgentId] : [],
+    ),
+  );
 
   const load = useCallback(async () => {
     try {
@@ -144,16 +147,23 @@ export function MandateNotesPanel({
               void save();
             }
           }}
-          placeholder={`What did you notice about ${mandateKey}?`}
+          placeholder="Add a note"
+          aria-label="Note"
           rows={compact ? 2 : 3}
           className={cn("resize-none", compact && "text-xs")}
         />
-        <div className="flex flex-wrap items-center gap-1">
+        <div
+          className="flex flex-wrap items-center gap-1"
+          role="group"
+          aria-label="Note type"
+        >
+          <span className="mr-1 text-xs text-muted-foreground">Type</span>
           {MANDATE_NOTE_KINDS.map((option) => (
             <button
               key={option}
               type="button"
               onClick={() => setKind(option)}
+              aria-pressed={kind === option}
               className={cn(
                 "rounded-full border px-2 py-0.5 text-[10px] transition-colors",
                 option === kind
@@ -183,7 +193,11 @@ export function MandateNotesPanel({
       </div>
 
       {loadError && (
-        <p className="text-[11px] text-destructive">{loadError}</p>
+        <PropertyRow
+          label="Note history"
+          value={<StatusToken status="error" label="Unavailable" />}
+          help={loadError}
+        />
       )}
 
       {notes === null ? (
@@ -191,11 +205,9 @@ export function MandateNotesPanel({
           <Loader2 className="h-3 w-3 animate-spin" /> Loading notes…
         </div>
       ) : notes.length === 0 ? (
-        <div className="flex items-center gap-2 rounded-md border border-dashed border-border px-2 py-2 text-[11px] text-muted-foreground">
-          <StickyNote className="h-3 w-3 shrink-0" />
-          No notes yet. What you write here is waiting for you when you review
-          this mandate.
-        </div>
+        !loadError ? (
+          <PropertyRow label="Saved notes" value="None" />
+        ) : null
       ) : (
         <ul
           className={cn(
@@ -222,37 +234,52 @@ export function MandateNotesPanel({
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
-                <span
-                  className={cn(
-                    "rounded border px-1 py-px",
-                    KIND_STYLES[note.noteKind],
-                  )}
-                >
-                  {MANDATE_NOTE_KIND_LABELS[note.noteKind]}
-                </span>
-                <span title={new Date(note.createdAt).toLocaleString()}>
-                  {formatDistanceToNow(new Date(note.createdAt), {
+              <div className="mt-2 border-t border-border/40 pt-1">
+                <PropertyRow
+                  label="Type"
+                  value={MANDATE_NOTE_KIND_LABELS[note.noteKind]}
+                />
+                <PropertyRow
+                  label="Author"
+                  value={note.authorName || "Name unavailable"}
+                />
+                <PropertyRow
+                  label="Created"
+                  value={
+                    <time dateTime={note.createdAt}>
+                      {new Date(note.createdAt).toLocaleString()}
+                    </time>
+                  }
+                  help={formatDistanceToNow(new Date(note.createdAt), {
                     addSuffix: true,
                   })}
-                </span>
-                {note.authorName && (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span className="truncate">{note.authorName}</span>
-                  </>
-                )}
-                {note.surfaceName && (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span
-                      className="truncate"
-                      title={note.surfaceName}
-                    >
-                      on {getSurfaceDisplayLabel(note.surfaceName)}
-                    </span>
-                  </>
-                )}
+                />
+                <PropertyRow
+                  label="Origin"
+                  value={
+                    note.surfaceName
+                      ? getSurfaceDisplayLabel(note.surfaceName)
+                      : "Mandate console"
+                  }
+                />
+                <PropertyRow
+                  label="Observed holder"
+                  value={
+                    note.observedAgentId ? (
+                      <EntityRef
+                        token="agent"
+                        id={note.observedAgentId}
+                        name={
+                          agentNames[note.observedAgentId] || "Name unavailable"
+                        }
+                        showIcon={false}
+                        wrap
+                      />
+                    ) : (
+                      "Not recorded"
+                    )
+                  }
+                />
               </div>
             </li>
           ))}

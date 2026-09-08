@@ -1,5 +1,8 @@
-import { ArrowRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import {
+  PropertyRow,
+  StatusToken,
+} from "@/components/official/ConfigurationFields";
+import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 import type { RebindVariableImpact } from "./rebind-impact";
 import type { MandateVariableVerdict } from "./service";
 
@@ -63,36 +66,42 @@ export function VariableVerdictList({
     : items;
   if (visible.length === 0) return null;
   return (
-    <ul className="space-y-1 rounded border border-border bg-muted/30 p-2">
+    <ul className="space-y-2">
       {visible.map((item) => {
         const fact = presentation(item);
         return (
           <li
             key={`${fact.name}-${item.verdict}-${fact.codeName}`}
-            className="flex flex-wrap items-center gap-1.5 py-0.5"
+            className="min-w-0 rounded border border-border p-2"
           >
-            <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
-              {fact.codeName}
-            </code>
-            {fact.suggestedMapping && (
-              <>
-                <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
-                  {fact.suggestedMapping}
-                </code>
-              </>
-            )}
-            <Badge
-              variant={fact.blocking || fact.copy.tone === "bad" ? "destructive" : "outline"}
-              className="h-4 px-1 text-[10px]"
-            >
-              {fact.copy.label}
-            </Badge>
-            {fact.message && (
-              <span className="basis-full text-[11px] text-muted-foreground">
-                {fact.message}
-              </span>
-            )}
+            <PropertyRow
+              label="Input"
+              value={displayLabelForKey(fact.codeName)}
+            />
+            <PropertyRow
+              label="Target"
+              value={
+                fact.suggestedMapping
+                  ? displayLabelForKey(fact.suggestedMapping)
+                  : displayLabelForKey(fact.name)
+              }
+            />
+            <PropertyRow
+              label="Preliminary flow check"
+              value={
+                <StatusToken
+                  status={
+                    fact.blocking || fact.copy.tone === "bad"
+                      ? "error"
+                      : fact.copy.tone === "warn"
+                        ? "caution"
+                        : "ok"
+                  }
+                  label={fact.copy.label}
+                />
+              }
+              help={fact.message ?? undefined}
+            />
           </li>
         );
       })}

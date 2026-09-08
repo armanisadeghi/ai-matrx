@@ -94,6 +94,12 @@ import type {
   MandateTestResponse,
 } from "@/features/mandates/test-run";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import {
+  PropertyRow,
+  FieldHelp,
+  StatusToken,
+} from "@/components/official/ConfigurationFields";
+import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 
 /**
@@ -132,7 +138,7 @@ function benchOverridesId(draftId: string): string {
 }
 
 const SELECTION_LABEL: Record<CandidateSelection, string> = {
-  current: "Current setup (what users get now)",
+  current: "System default",
   mandate_pinned: "Pinned version",
   latest: "Latest version",
   agent: "Different system agent",
@@ -231,7 +237,9 @@ function ResultRow({
   return (
     <details
       className={`rounded-md border ${
-        result.error ? "border-destructive/60 bg-destructive/5" : "border-border"
+        result.error
+          ? "border-destructive/60 bg-destructive/5"
+          : "border-border"
       }`}
     >
       <summary className="flex cursor-pointer flex-wrap items-center gap-1.5 px-2 py-1.5 text-xs hover:bg-accent/40">
@@ -260,12 +268,10 @@ function ResultRow({
             <EntityRef
               token="agent"
               id={agentId}
-              name={agentId}
               href={`/agents/go/${agentId}`}
               openInNewTab
               wrap
               className="min-w-0"
-              labelClassName="font-mono text-[10px]"
             />
           </div>
         )}
@@ -412,7 +418,9 @@ function CandidateEditor({
         );
       }
     }
-    dispatch(initInstanceOverrides({ conversationId: overridesId, baseSettings }));
+    dispatch(
+      initInstanceOverrides({ conversationId: overridesId, baseSettings }),
+    );
   }
 
   useEffect(() => {
@@ -454,7 +462,7 @@ function CandidateEditor({
             })
           }
         >
-          <SelectTrigger size="sm" className="w-64">
+          <SelectTrigger size="sm" className="w-full sm:w-64">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -479,7 +487,12 @@ function CandidateEditor({
           <AgentListDropdown
             consumerId={`mandate-bench-candidate-${draft.draftId}`}
             onSelect={(agentId) =>
-              onChange({ ...draft, agentId, versionId: null, versionNumber: null })
+              onChange({
+                ...draft,
+                agentId,
+                versionId: null,
+                versionNumber: null,
+              })
             }
             activeAgentId={draft.agentId}
             label={draft.agentId ? undefined : "Choose system agent"}
@@ -487,7 +500,7 @@ function CandidateEditor({
             visibleTabs={["system"]}
             systemTabLabel="System"
             contentSide="left"
-            className="h-8 w-56 min-w-0"
+            className="h-8 w-full min-w-0 sm:w-56"
           />
         )}
 
@@ -527,8 +540,8 @@ function CandidateEditor({
         >
           <SlidersHorizontal className="h-3 w-3" />
           {overriddenCount > 0
-            ? `Settings (${overriddenCount} overridden)`
-            : "Settings"}
+            ? `Comparison overrides (${overriddenCount})`
+            : "Comparison overrides"}
         </Button>
 
         <Button
@@ -550,7 +563,7 @@ function CandidateEditor({
         ) : (
           <div className="flex items-center gap-2 p-2 text-xs text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Loading the agent&apos;s settings…
+            Reading comparison overrides
           </div>
         ))}
     </div>
@@ -563,7 +576,9 @@ function ReferenceRow({ exemplar }: { exemplar: MandateExemplarRow }) {
       <summary className="flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs font-semibold hover:bg-accent/40">
         <Star className="h-3.5 w-3.5" /> Reference output
         {!exemplar.reference_output && !exemplar.reference_artifact && (
-          <Badge variant="outline">none yet</Badge>
+          <span className="font-normal text-muted-foreground">
+            Status: Not set
+          </span>
         )}
       </summary>
       <div className="border-t border-border p-2">
@@ -574,9 +589,7 @@ function ReferenceRow({ exemplar }: { exemplar: MandateExemplarRow }) {
           />
         ) : (
           <div className="rounded bg-muted/40 p-2 text-[11px] text-muted-foreground">
-            No reference yet. Mark any good result with &ldquo;Set as
-            reference&rdquo; and it becomes the bar every later run is judged
-            against.
+            <PropertyRow label="Reference output" value="Not set" />
           </div>
         )}
       </div>
@@ -586,7 +599,7 @@ function ReferenceRow({ exemplar }: { exemplar: MandateExemplarRow }) {
 
 export function MandateTestBench({
   mandate,
-  baselineLabel = "Current — what users get now",
+  baselineLabel = "System default",
   presetLatestCandidate = false,
   autoRunSignal = 0,
   passesUserInput,
@@ -666,7 +679,9 @@ export function MandateTestBench({
       benchOverridesId(draft.draftId),
     )(store.getState());
     const configOverrides: MandateTestCandidate["config_overrides"] =
-      overrides && isJsonObject(overrides) ? toJsonRecord(overrides) : undefined;
+      overrides && isJsonObject(overrides)
+        ? toJsonRecord(overrides)
+        : undefined;
     if (draft.selection === "agent" && !draft.agentId) {
       toast.error(`${label}: choose a system agent.`);
       return null;
@@ -923,14 +938,23 @@ export function MandateTestBench({
   }
 
   return (
-    <div className="space-y-3 px-3 py-3">
+    <div className="min-w-0 space-y-6">
+      <TryItNowPanel
+        mandate={mandate}
+        defaultAgentId={defaultAgentId}
+        passesUserInput={passesUserInput}
+        onSavedTestCase={() => void loadExemplars()}
+      />
+
       <div className="flex flex-wrap items-center gap-2">
         <FlaskConical className="h-4 w-4 text-muted-foreground" />
         <div className="min-w-0">
-          <div className="text-sm font-semibold">Compare runs side by side</div>
-          <div className="text-[11px] text-muted-foreground">
-            Each saved test case runs through the current setup and every
-            comparison you add. Runs execute as you.
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            Saved test cases
+            <FieldHelp label="Saved test comparisons">
+              Each case runs through the system default and each selected
+              comparison. Runs execute as the signed-in administrator.
+            </FieldHelp>
           </div>
         </div>
         <Button
@@ -947,13 +971,13 @@ export function MandateTestBench({
         <div className="grid gap-2 rounded-md border border-border bg-muted/20 p-2">
           {contract.requiredVariables.length > 0 && (
             <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-              <span>Variables this mandate expects:</span>
+              <span>Required variables:</span>
               {contract.requiredVariables.map((name) => (
                 <button
                   key={name}
                   type="button"
                   className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] hover:bg-accent"
-                  title={`Add "${name}" to the variables JSON`}
+                  title={`Add ${displayLabelForKey(name)}`}
                   onClick={() =>
                     setNewVariables((current) => {
                       try {
@@ -971,7 +995,7 @@ export function MandateTestBench({
                     })
                   }
                 >
-                  {name}
+                  {displayLabelForKey(name)}
                 </button>
               ))}
             </div>
@@ -979,7 +1003,8 @@ export function MandateTestBench({
           <Input
             value={newLabel}
             onChange={(event) => setNewLabel(event.target.value)}
-            placeholder="Test case name — what does it exercise?"
+            aria-label="Test case name"
+            placeholder="Test case name"
             className="h-8 text-xs"
           />
           {provisionKey && (
@@ -990,8 +1015,7 @@ export function MandateTestBench({
                 onClick={() => setOfferComposerOpen((current) => !current)}
                 aria-expanded={offerComposerOpen}
               >
-                Fill from the offer — structured input generated from provision{" "}
-                <code className="font-mono">{provisionKey}</code>
+                Provision input form
               </button>
               {/* Mounted only when opened — the offer-kind path dynamic-imports
                   the heavy KindInputForm stack. */}
@@ -1013,12 +1037,14 @@ export function MandateTestBench({
           <Textarea
             value={newVariables}
             onChange={(event) => setNewVariables(event.target.value)}
-            placeholder='Variables JSON, e.g. {"image_description": "…"}'
+            aria-label="Test variables as JSON"
+            placeholder="Test variables (JSON)"
             className="min-h-20 font-mono text-xs"
           />
           <ProTextarea
             value={newUserInput}
             onChange={(event) => setNewUserInput(event.target.value)}
+            aria-label="User message"
             placeholder="User message (optional)"
             className="min-h-16 text-xs"
           />
@@ -1032,14 +1058,12 @@ export function MandateTestBench({
         </div>
       )}
 
-      <TryItNowPanel
-        mandate={mandate}
-        defaultAgentId={defaultAgentId}
-        passesUserInput={passesUserInput}
-        onSavedTestCase={() => void loadExemplars()}
-      />
-
       <div className="space-y-2">
+        <PropertyRow
+          label="Comparison baseline"
+          value={baselineLabel}
+          source="System"
+        />
         {candidates.map((candidate) => (
           <CandidateEditor
             key={candidate.draftId}
@@ -1078,7 +1102,7 @@ export function MandateTestBench({
           exemplars.length === 0
             ? "Add a test case first — there is nothing to run yet."
             : candidates.length === 0
-              ? "Add a comparison first — a batch runs your current setup against something. To run the current setup on its own, use “Try it now”."
+              ? "Add a comparison first — a batch runs your current setup against something. Use Run test for a single run."
               : undefined
         }
         onClick={() => void runAll()}
@@ -1099,10 +1123,11 @@ export function MandateTestBench({
         </div>
       ) : exemplars.length === 0 ? (
         <div className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
-          No test cases yet — run the mandate once with &ldquo;Try it now&rdquo;
-          above and save that run, or write one by hand with &ldquo;+ Test
-          case&rdquo;. Production runs also save real examples automatically
-          over time.
+          <PropertyRow
+            label="Saved test cases"
+            value="None"
+            help="Save a successful test result, add a case manually, or use examples captured from production runs."
+          />
         </div>
       ) : (
         exemplars.map((exemplar) => {
@@ -1120,7 +1145,9 @@ export function MandateTestBench({
             >
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="font-semibold">{exemplar.label}</span>
-                <Badge variant="outline">{exemplar.source}</Badge>
+                <span className="text-muted-foreground">
+                  Source: {displayLabelForKey(exemplar.source)}
+                </span>
                 <details className="text-muted-foreground">
                   <summary className="cursor-pointer">inputs</summary>
                   <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/40 p-1.5 text-[10px]">

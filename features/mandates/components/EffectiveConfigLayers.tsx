@@ -17,6 +17,8 @@
  * binding/pin overrides it.
  */
 
+import { PropertyRow } from "@/components/official/ConfigurationFields";
+import { humanizeSettingKey } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 import { Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -33,13 +35,39 @@ export function EffectiveConfigLayers({
   pins,
   bindingOverrides,
   className,
+  pinsOnly = false,
 }: {
   /** `agent.mandate.pins` — pre-filtered by `parseMandateWave1`. */
   pins: JsonObject;
   /** The binding's `config_overrides` for the shown principal, or null. */
   bindingOverrides: JsonObject | null;
   className?: string;
+  pinsOnly?: boolean;
 }) {
+  if (pinsOnly)
+    return (
+      <section className={cn("space-y-1", className)}>
+        <h3 className="text-xs font-semibold">Mandate constraints</h3>
+        {[...ALLOWED_PIN_KEYS].map((key) => (
+          <PropertyRow
+            key={key}
+            label={humanizeSettingKey(key)}
+            value={
+              key in pins
+                ? typeof pins[key] === "boolean"
+                  ? pins[key]
+                    ? "Yes"
+                    : "No"
+                  : display(pins[key])
+                : "Not constrained"
+            }
+            source={key in pins ? "Mandate" : "Holder and overrides"}
+            state={key in pins ? "Locked" : "Not pinned"}
+            help="Code-owned constraints take precedence over holder defaults and binding overrides."
+          />
+        ))}
+      </section>
+    );
   const pinKeys = Object.keys(pins).filter((k) => ALLOWED_PIN_KEYS.has(k));
   const overrideKeys = Object.keys(bindingOverrides ?? {});
   const keys = [...new Set([...overrideKeys, ...pinKeys])];
@@ -53,7 +81,8 @@ export function EffectiveConfigLayers({
       <div className="overflow-hidden rounded-md border border-border">
         {keys.map((key) => {
           const pinned = key in pins;
-          const overridden = bindingOverrides != null && key in bindingOverrides;
+          const overridden =
+            bindingOverrides != null && key in bindingOverrides;
           return (
             <div
               key={key}

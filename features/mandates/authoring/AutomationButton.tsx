@@ -43,6 +43,11 @@
 // for the one call site that exposed it.
 
 import React, { useMemo, useState } from "react";
+import {
+  FieldHelp,
+  PropertyRow,
+  StatusToken,
+} from "@/components/official/ConfigurationFields";
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -174,7 +179,9 @@ export function AutomationButton({
       }
       onClick={() => {
         if (refusedReason !== null) {
-          toast.info(unavailableAutomationMandateLine(mandateKey, refusedReason));
+          toast.info(
+            unavailableAutomationMandateLine(mandateKey, refusedReason),
+          );
           return;
         }
         if (!available) {
@@ -237,9 +244,7 @@ export function AutomationButton({
           </span>
         ) : null}
         {plan && plan.skipped.length > 0 && unanswered.length === 0 ? (
-          <span className="text-[11px] leading-snug text-muted-foreground">
-            {skippedSentence(plan)}
-          </span>
+          <FieldHelp label="Optional inputs">{skippedSentence(plan)}</FieldHelp>
         ) : null}
       </div>
 
@@ -248,7 +253,11 @@ export function AutomationButton({
       {plan && plan.asks.length > 0 ? (
         <div className="space-y-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-2">
           <p className="text-[11px] leading-snug text-muted-foreground">
-            This job asks {plan.asks.length === 1 ? "one thing" : `${plan.asks.length} things`} before it runs.
+            This job asks{" "}
+            {plan.asks.length === 1
+              ? "one thing"
+              : `${plan.asks.length} things`}{" "}
+            before it runs.
           </p>
           {plan.asks.map((ask) => (
             <div key={ask.name} className="space-y-1">
@@ -275,7 +284,10 @@ export function AutomationButton({
                 id={`ask-${mandateKey}-${ask.name}`}
                 value={answers[ask.name] ?? ""}
                 onChange={(e) =>
-                  setAnswers((prev) => ({ ...prev, [ask.name]: e.target.value }))
+                  setAnswers((prev) => ({
+                    ...prev,
+                    [ask.name]: e.target.value,
+                  }))
                 }
                 rows={2}
                 placeholder={ask.placeholder || ""}

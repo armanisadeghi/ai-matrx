@@ -54,6 +54,7 @@ interface VariableInputComponentProps {
   onRequestClose?: () => void;
   helpText?: string;
   compact?: boolean;
+  autoFocus?: boolean;
   hideLabel?: boolean;
   wizardMode?: boolean;
   /**
@@ -83,6 +84,7 @@ export function VariableInputComponent({
   onRequestClose,
   helpText,
   compact = false,
+  autoFocus = true,
   hideLabel = false,
   wizardMode = false,
   onEnterAdvance,
@@ -111,6 +113,7 @@ export function VariableInputComponent({
       variableName={formattedName}
       onRequestClose={onRequestClose}
       onEnterAdvance={onEnterAdvance}
+      autoFocus={autoFocus}
       {...sharedProps}
     />
   );

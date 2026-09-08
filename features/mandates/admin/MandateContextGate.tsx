@@ -25,10 +25,14 @@
  */
 
 import { useState } from "react";
-import { Layers, Lock } from "lucide-react";
+import {
+  PropertyRow,
+  FieldHelp,
+  StatusToken,
+} from "@/components/official/ConfigurationFields";
+import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
 import { updateMandateDefinition } from "./service";
 import type { MandateRow } from "./mandate-health";
 
@@ -67,76 +71,66 @@ export function MandateContextGate({
   }
 
   return (
-    <div className="space-y-1.5">
-      <label
-        htmlFor={`mandate-context-gate-${row.id}`}
-        className={cn(
-          "flex items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-2.5 py-2",
-          holderClosed ? "cursor-default" : "cursor-pointer",
-        )}
-      >
-        <span className="flex items-center gap-2 min-w-0">
-          {effectiveClosed ? (
-            <Lock className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-          ) : (
-            <Layers className="h-3.5 w-3.5 shrink-0 text-primary" />
-          )}
-          <span className="min-w-0">
-            <span className="block text-xs font-medium text-foreground">
-              Allow automated context injection
-            </span>
-            <span
-              className={cn(
-                "block text-[11px] leading-tight",
-                effectiveClosed
-                  ? "text-amber-700 dark:text-amber-300"
-                  : "text-muted-foreground",
-              )}
-            >
-              {holderClosed && gateClosed
-                ? "Off — closed by this Mandate, and the Holder closes it too. Only the Holder's declared context policies deliver."
-                : holderClosed
-                  ? `Off — the Holder (${row.agentName}) refuses automatic context. This Mandate cannot reopen it; a gate may only narrow.`
-                  : gateClosed
-                    ? "Off — this Mandate cuts context off even though its Holder would accept it. Only the Holder's declared context policies deliver."
-                    : // 🚨 THE MANDATE VOCABULARY, NOT THE OLD SYSTEM'S (V2 round 4).
-                      // This said "Surface values" — the last "surface" noun on
-                      // a mandate screen, and the third source of a noun Arman
-                      // rejected by name. The job's own word for that source is
-                      // "Offered Value" (`SOURCE_LABELS` in
-                      // `features/bindings/words.ts`), so it is the word used
-                      // here. `mandate-screen-vocabulary.test.ts` now sweeps the
-                      // rendered copy of every mandate-screen component, not
-                      // just the drawer's words objects, so a fourth source
-                      // cannot appear quietly.
-                      "On — the Holder decides. Scope values and Offered values reach it under its own context policies."}
-            </span>
-          </span>
-        </span>
-        <Switch
-          id={`mandate-context-gate-${row.id}`}
-          checked={!gateClosed}
-          disabled={saving || holderClosed}
-          onCheckedChange={handleChange}
-          className="shrink-0"
-        />
-      </label>
-      {row.requiredContextPolicyKeys.length > 0 && (
-        <p className="text-[11px] text-muted-foreground">
-          This Mandate requires{" "}
-          {row.requiredContextPolicyKeys.map((key, i) => (
-            <span key={key}>
-              {i > 0 && ", "}
-              <code className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[10px]">
-                {key}
-              </code>
-            </span>
-          ))}
-          {effectiveClosed
-            ? " — declared context policies still deliver with the gate closed."
-            : "."}
-        </p>
-      )}
-    </div>
+    <section className="space-y-3">
+      <h3 className="flex items-center gap-2 text-sm font-medium">
+        Automatic context
+        <FieldHelp label="Automatic context">
+          A mandate may block automatic context, but cannot reopen context
+          blocked by its holder. Declared context policies still deliver.
+        </FieldHelp>
+      </h3>
+      <PropertyRow
+        label="Allowed by mandate"
+        source="Mandate"
+        state={saving ? "Saving" : "Saved"}
+        value={
+          <label
+            className="inline-flex items-center gap-2"
+            htmlFor={`mandate-context-gate-${row.id}`}
+          >
+            <Switch
+              id={`mandate-context-gate-${row.id}`}
+              checked={!gateClosed}
+              disabled={saving || holderClosed}
+              onCheckedChange={handleChange}
+            />
+            <span>{gateClosed ? "No" : "Yes"}</span>
+          </label>
+        }
+      />
+      <PropertyRow
+        label="Allowed by holder"
+        value={holderClosed ? "No" : "Yes"}
+        source="Holder"
+        state="Read only"
+      />
+      <PropertyRow
+        label="Effective automatic context"
+        value={
+          <StatusToken
+            status={effectiveClosed ? "neutral" : "ok"}
+            label={effectiveClosed ? "No" : "Yes"}
+          />
+        }
+        source={
+          holderClosed && gateClosed
+            ? "Holder and mandate"
+            : holderClosed
+              ? "Holder"
+              : "Mandate and holder"
+        }
+      />
+      <PropertyRow
+        label="Required context policies"
+        value={
+          row.requiredContextPolicyKeys.length
+            ? row.requiredContextPolicyKeys
+                .map((key) => displayLabelForKey(key))
+                .join(", ")
+            : "None"
+        }
+        source="Mandate"
+      />
+    </section>
   );
 }

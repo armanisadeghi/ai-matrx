@@ -22,7 +22,6 @@ import {
   CheckCircle2,
   ChevronRight,
   ExternalLink,
-  FileCode2,
   GitCompareArrows,
   History,
   Info,
@@ -77,6 +76,12 @@ import {
   computeRebindImpact,
   type RebindImpact,
 } from "./rebind-impact";
+import {
+  PropertyRow,
+  FieldHelp,
+  StatusToken,
+} from "@/components/official/ConfigurationFields";
+import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 import { VariableVerdictList } from "./variable-verdict-presentation";
 import {
   CreateSystemTwinButton,
@@ -800,111 +805,50 @@ function CodeAgentDriftPanel({
     : null;
 
   return (
-    <div className="space-y-3 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-xs">
-      <div className="flex items-start gap-2">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
-        <div>
-          <div className="font-medium text-rose-600">
-            The code and {truth.bound_agent?.name ?? "the bound agent"} do not
-            agree.
-          </div>
-          <div className="mt-0.5 text-muted-foreground">
-            Code passes {truth.code_variables.join(", ") || "no named variables"}; the
-            agent declares {agentVariables.join(", ") || "no variables"}. Pick the
-            intent below—the system will not guess or silently block the mandate.
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="rounded border border-border bg-card p-2">
-          <div className="font-medium">Map to an existing variable</div>
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
-            Keep the code value and route it to a variable the agent already
-            declares.
-          </div>
-          {/* NO DECORATION. When there is nothing to map onto, that is a FACT
-              about this agent, stated — not a button shaped like an action
-              that can never be pressed. */}
-          {agentVariables.length > 0 ? (
-            <CopyButton
-              content={`${brief}\n\nPREFERRED OPTION: map the code value to one of the existing agent variables (${agentVariables.join(", ")}). Confirm meaning before choosing; do not guess from the name alone.`}
-              label="Copy mapping fix"
-              size="sm"
-              className="mt-2"
-            />
-          ) : (
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              Not available here — this agent declares no variables to map
-              onto. Use &ldquo;Declare it on the agent&rdquo; instead.
-            </p>
-          )}
-        </div>
-
-        <div className="rounded border border-border bg-card p-2">
-          <div className="font-medium">Use the agent&apos;s default</div>
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
-            Safe only when the declared agent variable actually has a default.
-          </div>
-          {/* This option is never something to CLICK — it is a state the
-              verdicts above either report or do not. Stated as a fact. */}
-          <p
-            className={cn(
-              "mt-2 text-[11px]",
-              usesDefault
-                ? "text-emerald-700 dark:text-emerald-400"
-                : "text-muted-foreground",
-            )}
-          >
-            {usesDefault
-              ? "Already in effect — the verdicts above report the agent default being used for this value. Nothing to do."
-              : "Not available here — no applicable agent default was reported for this value."}
-          </p>
-        </div>
-
-        <div className="rounded border border-border bg-card p-2">
-          <div className="font-medium">Pass it as user text</div>
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
-            Preserve the value immediately as labeled user_input; keep the
-            caution visible until the contract gains a real variable.
-          </div>
-          <CopyButton
-            content={`${brief}\n\nPREFERRED OPTION: spill the unconsumed code value into user_input as "Name: value" and preserve the caution verdict. Update every discovered call site.`}
-            label="Copy user-text fix"
-            size="sm"
-            className="mt-2"
-          />
-        </div>
-
-        <div className="rounded border border-border bg-card p-2">
-          <div className="font-medium">Declare it on the agent</div>
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
-            Add the variable to the agent and update its prompt to consume it.
-          </div>
-          {agentEditHref ? (
-            <Button asChild size="sm" variant="outline" className="mt-2 h-7 text-xs">
-              <a href={agentEditHref} target="_blank" rel="noopener noreferrer">
-                Open agent builder <ExternalLink className="ml-1 h-3 w-3" />
-              </a>
-            </Button>
-          ) : (
-            <Button size="sm" variant="outline" className="mt-2 h-7 text-xs" disabled>
-              Agent unavailable
-            </Button>
-          )}
-        </div>
-      </div>
-
+    <div className="space-y-3 rounded-md border border-border p-3 text-xs">
+      <PropertyRow
+        label="Preliminary code / agent check"
+        value={<StatusToken status="caution" label="Mismatch" />}
+      />
+      <PropertyRow label="Default in use" value={usesDefault ? "Yes" : "No"} />
       <div className="flex flex-wrap items-center gap-2">
+        {agentVariables.length > 0 ? (
+          <CopyButton
+            content={`${brief}\n\nPREFERRED OPTION: map the code value to one of the existing agent variables (${agentVariables.join(", ")}). Confirm meaning before choosing; do not guess from the name alone.`}
+            label="Copy mapping fix"
+            size="sm"
+          />
+        ) : (
+          <PropertyRow label="Existing mapping target" value="None" />
+        )}
+        <CopyButton
+          content={`${brief}\n\nPREFERRED OPTION: deliver the unconsumed code value through a named variable or a declared context slot. Keep user_input exclusively for human-authored text. Update every discovered call site.`}
+          label="Copy context fix"
+          size="sm"
+        />
+        {agentEditHref ? (
+          <Button asChild size="sm" variant="outline">
+            <a href={agentEditHref} target="_blank" rel="noopener noreferrer">
+              Open agent builder <ExternalLink className="ml-1 size-3" />
+            </a>
+          </Button>
+        ) : (
+          <PropertyRow label="Agent builder" value="Unavailable" />
+        )}
         <CopyButton
           content={brief}
           label="Copy full code-fix brief"
-          tooltip="Includes the runner, live variables, source file, and every discovered call site"
           size="sm"
         />
-        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onOpenRebind}>
-          Choose a different agent
+        <Button size="sm" variant="outline" onClick={onOpenRebind}>
+          Open holder mapping
         </Button>
+        <FieldHelp label="Code repair actions">
+          Mapping keeps the supplied value and routes it to a declared variable.
+          Named context is the alternative when context is intended. Add a
+          missing variable in the agent builder. Default in use reports the
+          computed preliminary flow check.
+        </FieldHelp>
       </div>
     </div>
   );
@@ -976,7 +920,7 @@ function StatusBanner({
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <div>
               <div className="font-medium text-amber-700 dark:text-amber-500">
-                The code declaration could not be loaded.
+                Code declaration: Unavailable
               </div>
               <div className="mt-0.5 text-muted-foreground">
                 {row.codeTruth?.import_error ??
@@ -998,11 +942,25 @@ function StatusBanner({
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <div>
               <div className="font-medium text-amber-700 dark:text-amber-500">
-                Live code and the stored contract cache disagree.
+                Code / stored contract: Mismatch
               </div>
               <div className="mt-0.5 text-muted-foreground">
-                Code is authoritative. Code-only: {row.codeTruth?.code_only_variables.join(", ") || "none"}; contract-only:{" "}
-                {row.codeTruth?.db_only_variables.join(", ") || "none"}.
+                <PropertyRow
+                  label="Code only"
+                  value={
+                    row.codeTruth?.code_only_variables
+                      .map((name) => displayLabelForKey(name))
+                      .join(", ") || "None"
+                  }
+                />
+                <PropertyRow
+                  label="Contract only"
+                  value={
+                    row.codeTruth?.db_only_variables
+                      .map((name) => displayLabelForKey(name))
+                      .join(", ") || "None"
+                  }
+                />
               </div>
             </div>
           </div>
@@ -1163,7 +1121,9 @@ function FactsPanel({
   verdictsLoading,
   verdictsError,
   onSaved,
+  diagnosticsOnly = false,
 }: {
+  diagnosticsOnly?: boolean;
   row: MandateRow;
   /** False on a host whose own controls name the holder — see the prop. */
   showHolderAnswer: boolean;
@@ -1205,168 +1165,181 @@ function FactsPanel({
     };
   }, [factProvisionKey]);
   return (
-    <div className="grid grid-cols-[max-content_1fr] items-center gap-x-4 gap-y-1.5 rounded-md border border-border bg-card px-3 py-2.5">
-      {showHolderAnswer ? (
+    <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)] items-center gap-x-4 gap-y-1.5 rounded-md border border-border bg-card px-3 py-2.5">
+      {!diagnosticsOnly && (
         <>
-      <Fact label="Agent">
-        <div className="flex min-w-0 items-center gap-2">
-          {row.agentId ? (
-            <EntityRef
-              token="agent"
-              id={row.agentId}
-              name={row.agentName}
-              href={agentHref(row.agentId, row.agentType)}
-              alwaysShowActions
+          {showHolderAnswer ? (
+            <>
+              <Fact label="Agent">
+                <div className="flex min-w-0 items-center gap-2">
+                  {row.agentId ? (
+                    <EntityRef
+                      token="agent"
+                      id={row.agentId}
+                      name={row.agentName}
+                      href={agentHref(row.agentId, row.agentType)}
+                      alwaysShowActions
+                    />
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {row.agentName}
+                    </span>
+                  )}
+                  {row.agentId && (
+                    <a
+                      href={getAgentModeHref(
+                        "versions",
+                        row.agentId,
+                        isSystem ? SYSTEM_AGENT_BASE : USER_AGENT_BASE,
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-auto inline-flex h-6 shrink-0 items-center gap-1 rounded border border-border px-1.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
+                      title={`Version history for ${row.agentName}`}
+                    >
+                      <History className="h-3 w-3" />
+                      Versions
+                    </a>
+                  )}
+                </div>
+              </Fact>
+              <Fact label="System agent">
+                {row.agentType == null ? (
+                  <span className="text-muted-foreground">unknown</span>
+                ) : isSystem ? (
+                  "Yes"
+                ) : (
+                  <span className="font-medium text-rose-600">
+                    No — personal agent
+                  </span>
+                )}
+              </Fact>
+              <Fact label="Version">
+                {isFloatingMandate(row.mandate) ? (
+                  <span>
+                    latest
+                    {row.latestVersion != null && (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        (v{row.latestVersion})
+                      </span>
+                    )}
+                  </span>
+                ) : row.pinnedVersionNumber != null ? (
+                  <span className={cn(drifted && "font-medium text-amber-600")}>
+                    v{row.pinnedVersionNumber}
+                    {drifted && (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        — latest is v{row.latestVersion}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {holderOfMandate(row.mandate).versionId
+                      ? "unknown version"
+                      : "latest"}
+                  </span>
+                )}
+              </Fact>
+            </>
+          ) : null}
+          {wave1.provisionKey && (
+            <Fact label="Provision">
+              <span className="inline-flex flex-wrap items-center gap-1.5">
+                <code className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]">
+                  {wave1.provisionKey}
+                </code>
+                <span className="text-muted-foreground">
+                  — the entire input declaration; the binding&apos;s consumption
+                  map decides what the Holder consumes.
+                </span>
+              </span>
+            </Fact>
+          )}
+          {Object.keys(wave1.pins).length > 0 && (
+            <Fact label="Pins">
+              <div className="flex flex-wrap gap-1">
+                {Object.entries(wave1.pins).map(([key, value]) => (
+                  <Badge
+                    key={key}
+                    variant="outline"
+                    className="gap-1 text-[10px] font-mono"
+                    title="Set by the mandate — a code-owned lever; bindings cannot change it. Model ids are never pins."
+                  >
+                    <Pin className="h-2.5 w-2.5" />
+                    {key}=
+                    {typeof value === "string" ? value : JSON.stringify(value)}
+                  </Badge>
+                ))}
+              </div>
+            </Fact>
+          )}
+          {wave1.pinnedContext.length > 0 && (
+            <Fact label="Pinned context">
+              <div className="flex flex-wrap gap-1">
+                {wave1.pinnedContext.map((name) => (
+                  <code
+                    key={name}
+                    className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]"
+                  >
+                    {name}
+                  </code>
+                ))}
+              </div>
+            </Fact>
+          )}
+          <Fact label="Inputs">
+            <MandateInputsCell
+              row={row}
+              maxChips={8}
+              offeredValues={offeredNames}
             />
-          ) : (
-            <span className="text-muted-foreground">{row.agentName}</span>
-          )}
-          {row.agentId && (
-            <a
-              href={getAgentModeHref(
-                "versions",
-                row.agentId,
-                isSystem ? SYSTEM_AGENT_BASE : USER_AGENT_BASE,
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-auto inline-flex h-6 shrink-0 items-center gap-1 rounded border border-border px-1.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
-              title={`Version history for ${row.agentName}`}
-            >
-              <History className="h-3 w-3" />
-              Versions
-            </a>
-          )}
-        </div>
-      </Fact>
-      <Fact label="System agent">
-        {row.agentType == null ? (
-          <span className="text-muted-foreground">unknown</span>
-        ) : isSystem ? (
-          "Yes"
-        ) : (
-          <span className="font-medium text-rose-600">No — personal agent</span>
-        )}
-      </Fact>
-      <Fact label="Version">
-        {isFloatingMandate(row.mandate) ? (
-          <span>
-            latest
-            {row.latestVersion != null && (
-              <span className="text-muted-foreground">
-                {" "}
-                (v{row.latestVersion})
-              </span>
-            )}
-          </span>
-        ) : row.pinnedVersionNumber != null ? (
-          <span className={cn(drifted && "font-medium text-amber-600")}>
-            v{row.pinnedVersionNumber}
-            {drifted && (
-              <span className="text-muted-foreground">
-                {" "}
-                — latest is v{row.latestVersion}
-              </span>
-            )}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">
-            {holderOfMandate(row.mandate).versionId
-              ? "unknown version"
-              : "latest"}
-          </span>
-        )}
-      </Fact>
-        </>
-      ) : null}
-      {wave1.provisionKey && (
-        <Fact label="Provision">
-          <span className="inline-flex flex-wrap items-center gap-1.5">
-            <code className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]">
-              {wave1.provisionKey}
-            </code>
-            <span className="text-muted-foreground">
-              — the entire input declaration; the binding&apos;s consumption
-              map decides what the Holder consumes.
-            </span>
-          </span>
-        </Fact>
-      )}
-      {Object.keys(wave1.pins).length > 0 && (
-        <Fact label="Pins">
-          <div className="flex flex-wrap gap-1">
-            {Object.entries(wave1.pins).map(([key, value]) => (
-              <Badge
-                key={key}
-                variant="outline"
-                className="gap-1 text-[10px] font-mono"
-                title="Set by the mandate — a code-owned lever; bindings cannot change it. Model ids are never pins."
-              >
-                <Pin className="h-2.5 w-2.5" />
-                {key}={typeof value === "string" ? value : JSON.stringify(value)}
-              </Badge>
-            ))}
-          </div>
-        </Fact>
-      )}
-      {wave1.pinnedContext.length > 0 && (
-        <Fact label="Pinned context">
-          <div className="flex flex-wrap gap-1">
-            {wave1.pinnedContext.map((name) => (
-              <code
-                key={name}
-                className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]"
-              >
-                {name}
-              </code>
-            ))}
-          </div>
-        </Fact>
-      )}
-      <Fact label="Inputs">
-        <MandateInputsCell
-          row={row}
-          maxChips={8}
-          offeredValues={offeredNames}
-        />
-      </Fact>
-      <Fact label="Output">
-        <MandateOutputCell row={row} maxChips={8} />
-      </Fact>
-      {/* Context is the THIRD input channel, alongside declared input and user
+          </Fact>
+          <Fact label="Output">
+            <MandateOutputCell row={row} maxChips={8} />
+          </Fact>
+          {/* Context is the THIRD input channel, alongside declared input and user
           text — so it belongs in the facts panel beside Inputs and Output, not
           buried in a settings tab. A gate may only narrow. */}
-      <Fact label="Context">
-        <MandateContextGate row={row} onSaved={onSaved} />
-      </Fact>
-      {/* 🚨 ONE SENTENCE, ONE AUTHORITY (V2-2). This fact used to be rendered
+          <Fact label="Context">
+            <MandateContextGate row={row} onSaved={onSaved} />
+          </Fact>
+          {/* 🚨 ONE SENTENCE, ONE AUTHORITY (V2-2). This fact used to be rendered
           from `code_truth.passes_user_input` inside the code block below —
           a fact about the CALLING CODE, printed as a verdict about the
           mandate, and contradicting the user host on the same mandate in the
           same minute. The served input surface is the authority for both. */}
-      <Fact label="User text">
-        <MandateUserTextLine
-          mandateKey={row.mandateKey}
-          showIcon={false}
-          className="text-xs"
-        />
-      </Fact>
-      {row.codeTruth && (
+          <Fact label="User text">
+            <MandateUserTextLine
+              mandateKey={row.mandateKey}
+              showIcon={false}
+              className="text-xs"
+            />
+          </Fact>
+        </>
+      )}
+      {row.codeTruth ? (
         <>
           <Fact label="Code declaration">
-            {row.codeTruth.source ? (
-              <span className="inline-flex min-w-0 items-center gap-1">
-                <FileCode2 className="h-3 w-3 shrink-0 text-muted-foreground" />
-                <code className="break-all text-[11px]">
-                  {row.codeTruth.source.class_name} ·{" "}
-                  {row.codeTruth.source.source_file}:{row.codeTruth.source.line}
-                </code>
-              </span>
-            ) : (
-              <span className="text-muted-foreground">
-                {row.codeTruth.resolution.replaceAll("_", " ")}
-              </span>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusToken
+                status={row.codeTruth.source ? "ok" : "unknown"}
+                label={
+                  row.codeTruth.source
+                    ? "Available"
+                    : displayLabelForKey(row.codeTruth.resolution)
+                }
+              />
+              {row.codeTruth.source ? (
+                <CopyButton
+                  content={`${row.codeTruth.source.class_name}\n${row.codeTruth.source.source_file}:${row.codeTruth.source.line}`}
+                  label="Copy source location"
+                  size="sm"
+                />
+              ) : null}
+            </div>
           </Fact>
           <Fact label="Code passes">
             {row.codeTruth.code_variables.length > 0 ? (
@@ -1376,7 +1349,7 @@ function FactsPanel({
                     key={name}
                     className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]"
                   >
-                    {name}
+                    {displayLabelForKey(name)}
                   </code>
                 ))}
               </div>
@@ -1392,7 +1365,7 @@ function FactsPanel({
                     key={name}
                     className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]"
                   >
-                    {name}
+                    {displayLabelForKey(name)}
                   </code>
                 ))}
               </div>
@@ -1404,25 +1377,21 @@ function FactsPanel({
               mandate itself accepts free text is the served surface's answer,
               rendered once, above. */}
           <Fact label="Code passes user text">
-            {row.codeTruth.passes_user_input
-              ? "Yes — the call site forwards what the person typed"
-              : "No — the call site sends named variables only"}
+            {row.codeTruth.passes_user_input ? "Yes" : "No"}
           </Fact>
           <Fact label="Call sites">
-            {row.codeTruth.call_sites?.length ? (
-              <div className="space-y-0.5">
-                {row.codeTruth.call_sites.map((site) => (
-                  <div
-                    key={`${site.source_file}:${site.line}`}
-                    className="break-all font-mono text-[11px]"
-                  >
-                    {site.source_file}:{site.line}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <span className="text-muted-foreground">none discovered</span>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <span>{row.codeTruth.call_sites?.length ?? 0} discovered</span>
+              {row.codeTruth.call_sites?.length ? (
+                <CopyButton
+                  content={row.codeTruth.call_sites
+                    .map((site) => `${site.source_file}:${site.line}`)
+                    .join("\n")}
+                  label="Copy call sites"
+                  size="sm"
+                />
+              ) : null}
+            </div>
           </Fact>
           <Fact label="Variable flow">
             {verdictsLoading ? (
@@ -1432,11 +1401,17 @@ function FactsPanel({
               </span>
             ) : verdictsError ? (
               <span className="text-rose-600">{verdictsError}</span>
-            ) : (
+            ) : variableVerdicts.length > 0 ? (
               <VariableVerdictList items={variableVerdicts} />
+            ) : (
+              <StatusToken status="unknown" label="Not yet evaluated" />
             )}
           </Fact>
         </>
+      ) : (
+        <Fact label="Code declaration">
+          <StatusToken status="unknown" label="Unavailable" />
+        </Fact>
       )}
     </div>
   );
@@ -1561,7 +1536,9 @@ function MandateProvisionPanel({ row }: { row: MandateRow }) {
         ) : offer ? (
           <>
             {offer.description ? (
-              <p className="text-xs text-muted-foreground">{offer.description}</p>
+              <p className="text-xs text-muted-foreground">
+                {offer.description}
+              </p>
             ) : null}
             <ProvisionOfferList
               values={offer.values}
@@ -1570,8 +1547,8 @@ function MandateProvisionPanel({ row }: { row: MandateRow }) {
           </>
         ) : (
           <p className="text-xs text-rose-600">
-            This Mandate names Provision <code>{provisionKey}</code>, but no live
-            row exists for it — a data defect, not an empty offer.
+            This Mandate names Provision <code>{provisionKey}</code>, but no
+            live row exists for it — a data defect, not an empty offer.
           </p>
         )}
       </div>
@@ -1591,7 +1568,9 @@ export function MandateDetailView({
   onSaved,
   showGoal = true,
   showHolderAnswer = true,
+  section,
 }: {
+  section?: "diagnostics" | "test" | "overrides";
   row: MandateRow;
   data: MandateConsoleData;
   lineage: AgentLineage;
@@ -1712,6 +1691,68 @@ export function MandateDetailView({
   const verdictsLoading =
     row.codeTruth?.resolution === "code_declaration_found" &&
     liveVerdictState === null;
+
+  if (section) {
+    return (
+      <div className="min-w-0 space-y-4">
+        <div hidden={section !== "diagnostics"} className="space-y-3">
+          <FactsPanel
+            row={row}
+            showHolderAnswer={false}
+            diagnosticsOnly
+            variableVerdicts={variableVerdicts}
+            verdictsLoading={verdictsLoading}
+            verdictsError={liveVerdictState?.error ?? null}
+            onSaved={onSaved}
+          />
+          {row.health === "code ↔ agent drift" ||
+          row.health === "code truth import failed" ||
+          row.health === "code ↔ contract drift" ? (
+            <StatusBanner
+              row={row}
+              showHolderAnswer={false}
+              variableVerdicts={variableVerdicts}
+              lineage={lineage}
+              onSaved={onSaved}
+              onTest={() => setBenchFocus((n) => n + 1)}
+              onOpenRebind={openTheBindingUi}
+            />
+          ) : (
+            <PropertyRow
+              label="Code / contract check"
+              value={
+                <StatusToken
+                  status={
+                    row.codeTruth?.resolution === "code_declaration_found"
+                      ? "neutral"
+                      : "unknown"
+                  }
+                  label={
+                    row.codeTruth?.resolution === "code_declaration_found"
+                      ? "No reported drift"
+                      : "Not yet evaluated"
+                  }
+                />
+              }
+            />
+          )}
+        </div>
+        <div hidden={section !== "test"}>
+          <MandateTestBench
+            key={row.id}
+            mandate={row.mandate}
+            baselineLabel={baselineLabel}
+            presetLatestCandidate={row.drift != null}
+            autoRunSignal={benchFocus}
+            passesUserInput={row.codeTruth?.passes_user_input}
+          />
+        </div>
+        <div hidden={section !== "overrides"}>
+          <MandateContextGate key={row.id} row={row} onSaved={onSaved} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     // SidePanelSurface (and the WindowPanel body) hand children an

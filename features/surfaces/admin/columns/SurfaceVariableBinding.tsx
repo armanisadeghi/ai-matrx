@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  PropertyRow,
+  FieldHelp,
+} from "@/components/official/ConfigurationFields";
 import { useMemo } from "react";
 import { Rocket, Type, MessageCircleQuestion, Zap } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
@@ -60,10 +64,7 @@ export interface BindingTarget {
 }
 
 type FourWayMode =
-  | "agent_default"
-  | "surface_value"
-  | "direct_value"
-  | "prompt_user";
+  "agent_default" | "surface_value" | "direct_value" | "prompt_user";
 
 function modeFromMapping(
   mapping: ValueMapping | undefined,
@@ -123,6 +124,7 @@ export function SurfaceVariableBinding({
   disabled = false,
   sourceLabels,
   valueFieldLabel,
+  structured = false,
   onChange,
 }: {
   target: BindingTarget;
@@ -133,6 +135,7 @@ export function SurfaceVariableBinding({
   sourceLabels?: SourceLabels;
   /** Label over the picker ("Surface value" by default). */
   valueFieldLabel?: string;
+  structured?: boolean;
   onChange: (next: ValueMapping | null) => void;
 }) {
   const surfaceValueIndex = useMemo(() => {
@@ -200,35 +203,31 @@ export function SurfaceVariableBinding({
         {/* Name + required pill */}
         <header className="px-4 pt-3 pb-2 flex items-start gap-2 min-w-0">
           <div className="min-w-0 flex-1">
-            {target.description ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <h4 className="text-sm font-semibold text-foreground truncate cursor-help">
-                    {displayName}
-                  </h4>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  {target.description}
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <h4 className="text-sm font-semibold text-foreground truncate">
-                {displayName}
-              </h4>
-            )}
-            <code className="mt-0.5 block font-mono text-[10px] text-muted-foreground truncate">
-              {target.name}
-            </code>
+            <h4 className="flex items-center gap-1 text-sm font-semibold text-foreground break-words">
+              {displayName}
+              {target.description ? (
+                <FieldHelp label={displayName}>{target.description}</FieldHelp>
+              ) : null}
+            </h4>
+            {!structured ? (
+              <code className="mt-0.5 block font-mono text-[10px] text-muted-foreground">
+                {target.name}
+              </code>
+            ) : null}
           </div>
-          {target.required && (
-            <span className="shrink-0 inline-flex items-center px-1.5 h-5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-600">
-              Required
-            </span>
-          )}
+          <div className="text-xs text-muted-foreground">
+            Required:{" "}
+            {target.required === undefined
+              ? "Unknown"
+              : target.required
+                ? "Yes"
+                : "No"}
+          </div>
         </header>
 
         {/* 4-button source picker */}
         <div className="px-4">
+          <div className="mb-1 text-xs text-muted-foreground">Source</div>
           <ModeButtons
             mode={mode}
             onChange={setMode}
@@ -242,6 +241,7 @@ export function SurfaceVariableBinding({
           {mode === "agent_default" && (
             <AgentDefaultDetail
               autoBindCandidate={autoBindCandidate}
+              structured={structured}
               defaultValue={target.defaultValue}
             />
           )}
@@ -367,7 +367,9 @@ function ModeButtons({
 function AgentDefaultDetail({
   autoBindCandidate,
   defaultValue,
+  structured = false,
 }: {
+  structured?: boolean;
   autoBindCandidate: SurfaceValue | null;
   defaultValue: unknown;
 }) {
@@ -375,6 +377,15 @@ function AgentDefaultDetail({
     ? variableValueToDisplay(defaultValue)
     : null;
 
+  if (structured)
+    return (
+      <PropertyRow
+        label="Holder default"
+        value={defaultPreview ?? "Not set"}
+        source="Holder declaration"
+        state="Inherited"
+      />
+    );
   return (
     <div className="text-xs text-muted-foreground leading-relaxed space-y-2">
       <p>
@@ -464,11 +475,19 @@ function SurfaceValueDetail({
             ))}
           </SelectContent>
         </Select>
-        {selected?.description && (
-          <p className="text-[11px] text-muted-foreground leading-snug">
-            {selected.description}
-          </p>
-        )}
+        {selected ? (
+          <PropertyRow
+            label="Always available"
+            value={
+              selected.alwaysAvailable === undefined
+                ? "Unknown"
+                : selected.alwaysAvailable
+                  ? "Yes"
+                  : "No"
+            }
+            help={selected.description}
+          />
+        ) : null}
       </div>
 
       <RequiredToggle
@@ -518,7 +537,6 @@ function DirectValueDetail({
         }
         disabled={disabled}
         className="text-sm resize-none"
-        style={{ fontSize: "14px" }}
       />
     </div>
   );
@@ -551,7 +569,6 @@ function PromptUserDetail({
           placeholder="What should we ask the user?"
           disabled={disabled}
           className="h-9 text-sm"
-          style={{ fontSize: "14px" }}
         />
       </div>
       <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
@@ -574,7 +591,6 @@ function PromptUserDetail({
             }
             disabled={disabled}
             className="h-9 text-sm"
-            style={{ fontSize: "14px" }}
           />
         </div>
         <RequiredToggle
@@ -615,7 +631,8 @@ function RequiredToggle({
         onCheckedChange={(v) => onChange(v === true)}
         disabled={disabled}
       />
-      <span>Required</span>
+      <span>Required: {checked ? "Yes" : "No"}</span>
+      <FieldHelp label="Required">{hint}</FieldHelp>
     </label>
   );
 }

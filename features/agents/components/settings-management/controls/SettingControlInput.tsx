@@ -23,6 +23,7 @@
  * a change means (agent edit, per-run override, …).
  */
 
+import { humanizeSettingKey } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -48,6 +49,7 @@ import { NumberInput } from "./NumberInput";
 export interface SettingControlInputProps {
   /** Setting key (snake_case) — used for ids and response_format handling. */
   settingKey: string;
+  explicitState?: boolean;
   control: ControlDefinition;
   value: unknown;
   onChange: (value: unknown) => void;
@@ -71,6 +73,7 @@ function flattenTypeObject(value: unknown): unknown {
 
 export function SettingControlInput({
   settingKey,
+  explicitState = false,
   control,
   value,
   onChange,
@@ -102,13 +105,19 @@ export function SettingControlInput({
               ModelListDropdown trigger style for in-row dense controls. */}
           <SelectTrigger className="h-7 flex-1 border-0 bg-transparent px-1 text-xs font-medium text-foreground/80 shadow-none hover:bg-transparent hover:text-foreground focus:ring-0 [&_svg]:h-3 [&_svg]:w-3">
             <SelectValue
-              placeholder={isValueMismatch ? stringValue : "Select..."}
+              placeholder={
+                isValueMismatch
+                  ? stringValue
+                  : explicitState
+                    ? "Not set"
+                    : "Select..."
+              }
             />
           </SelectTrigger>
           <SelectContent className="text-xs">
             {control.enum.map((option) => (
               <SelectItem key={option} value={option} className="py-1 text-xs">
-                {option}
+                {explicitState ? humanizeSettingKey(option) : option}
               </SelectItem>
             ))}
           </SelectContent>
@@ -138,7 +147,9 @@ export function SettingControlInput({
       <div className="flex items-center gap-2">
         <Checkbox
           id={inputId}
-          checked={value === true}
+          checked={
+            explicitState && value == null ? "indeterminate" : value === true
+          }
           onCheckedChange={(c) => onChange(c === true)}
           disabled={disabled}
           className="cursor-pointer"
@@ -147,7 +158,15 @@ export function SettingControlInput({
           htmlFor={inputId}
           className="cursor-pointer text-xs text-muted-foreground"
         >
-          {value === true ? "On" : "Off"}
+          {explicitState
+            ? value == null
+              ? "Unknown"
+              : value === true
+                ? "Yes"
+                : "No"
+            : value === true
+              ? "On"
+              : "Off"}
         </Label>
       </div>
     );
@@ -155,8 +174,24 @@ export function SettingControlInput({
 
   // ── number / integer ──────────────────────────────────────────────────────
   if (control.type === "number" || control.type === "integer") {
-    const numeric =
-      typeof value === "number" ? value : (control.min ?? 0);
+    if (explicitState && typeof value !== "number")
+      return (
+        <Input
+          id={inputId}
+          type="number"
+          value=""
+          placeholder="Not set"
+          min={control.min}
+          max={control.max}
+          step={control.type === "integer" ? 1 : "any"}
+          disabled={disabled}
+          onChange={(event) => {
+            if (event.target.value !== "") onChange(Number(event.target.value));
+          }}
+          className="h-8 text-sm"
+        />
+      );
+    const numeric = typeof value === "number" ? value : (control.min ?? 0);
     const hasRange = control.min !== undefined && control.max !== undefined;
     return (
       <NumberInput

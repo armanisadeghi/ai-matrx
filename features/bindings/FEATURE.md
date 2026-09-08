@@ -21,10 +21,10 @@ Arman's sentence is the spine:
 | File | What it is |
 |---|---|
 | `OneBindingWorkspace.tsx` | The shell. Owns the draft (rung, holder, consumption map, refusals), resolves the offer, runs the agent pre-flight, hosts settings, saves and removes. Every refusal is adjacent to the control it refuses. |
-| `HolderAssignment.tsx` | 🚨 **THE ONE HOLDER CHOOSER.** Three labelled controls and nothing else — **Holder Type** (Agent | Workflow) · **Assigned Agent/Workflow** (ONE dropdown, and only the dropdown: it names the assigned record on its own trigger and carries every fact and door inside it) · **Version** (Latest, or one version, in ONE dropdown; `Latest` stores `default_holder_version_id = NULL`). The version control is ABSENT until a holder is chosen. Every host mounts this; a second picker anywhere in the mandate/bindings trees fails `features/mandates/workspace/__tests__/holder-assignment.test.tsx`. |
+| `HolderAssignment.tsx` | 🚨 **THE ONE HOLDER CHOOSER.** Three labelled controls and nothing else — **Holder Type** (Agent | Workflow) · **Assigned Agent/Workflow** (ONE dropdown, and only the dropdown: it names the assigned record on its own trigger and carries every fact and door inside it) · **Version** (Latest, or one version, in ONE dropdown; `Latest` stores `default_holder_version_id = NULL`). Version remains a labeled value before selection; workflows explicitly state the current latest-only limitation. Every host mounts this; a second picker anywhere in the mandate/bindings trees fails `features/mandates/workspace/__tests__/holder-assignment.test.tsx`. |
 | `ScopeHolderBar.tsx` | RUNG · HOLDER · JOB, where a rung is genuinely a choice. The rung is `ShortcutScopePicker`; the holder cell IS `HolderAssignment`. Under `perspective="system"` (the admin route) it renders the three controls alone, plus the door's verdict — no rung cell (one rung), no job cell (the page's heading is the job). |
-| `OfferedInventoryColumn.tsx` | The offered side, permanently open. |
-| `HolderInputsColumn.tsx` | The consuming side, permanently open: variables then context policies. |
+| `OfferedInventoryColumn.tsx` | The offered reference for untabbed hosts; Definition owns this inventory in the tabbed workspace. |
+| `HolderInputsColumn.tsx` | The consuming reference for untabbed hosts; matching rows own these facts in tabbed workspaces. |
 | `BindingMiddle.tsx` | The match. `SurfaceVariableBinding` rendered **VERBATIM**, plus the many-to-one strip, the absence answer and the per-row problems a job binding needs and a surface binding does not. |
 | `AutoRunBar.tsx` | P14. "Run instantly", live only while the map leaves nothing to ask, narrating the four sentences as the map changes. The FACT is the shared `evaluateBindingAutoRun`; this file owns only the many-source → one-mapping translation. Its own sentences are the PRE-SAVE preview; `serverNotes` (`BindingResult.notes`) is what the write actually did, verbatim. |
 | `consumption-writer.ts` | 🚨 **THE ONE WRITER.** Nothing else builds a `ConsumptionEntry` or mutates a `ConsumptionMap` — the manual row, the many-to-one strip and the AI map's accept all go through it. |
@@ -33,7 +33,7 @@ Arman's sentence is the spine:
 | _(the two pickers)_ | Not in this feature: `AgentListDropdown` (`features/agents/components/agent-listings/`) and `WorkflowListDropdown` (`features/workflow-runtime/listings/`). Both are self-contained — trigger names the record, and the panel carries search, scope tabs, filters, the detail card, the sneak peek, favorite, copy and the doors. **Never wrap either in a name/id/link cluster.** |
 | `described-offer.ts` | What a job offers when no code declared it (D18.1). ONE derivation, shared by both modes. |
 | `words.ts` | The four sources' names and the fill-down limits sentence — one vocabulary, so no two controls name one thing differently. |
-| `BindingOptionsDrawer.tsx` | The folded **OPTIONS** stack (P16). See below. |
+| `BindingOptionsDrawer.tsx` | One persistent treatment draft, sectioned into Overrides, Display Options and Permissions when hosted in tabs; untabbed hosts keep the accordion. |
 | `treatment-shape.ts` | 🚨 **THE ONE CODEC** for `mandate.treatment.config` — a job's presentation. |
 | `treatment-writer.ts` | 🚨 **THE ONE WRITER** for that row, as `consumption-writer` is for the map. |
 | `batch/` | **Batch mode** — the same middle transposed. See below. |
@@ -115,7 +115,7 @@ with `#bind`.
 
 ## The rules this surface must keep
 
-1. **Both inventories stand open, permanently.** Neither side is ever behind a click.
+1. **One concept, one place.** Tabbed hosts put the full provision in Definition and holder targets in Matching; source references remain at their point of use. Untabbed hosts retain both inventories.
 2. **The row is the shared one, verbatim.** If it needs something it does not have, the change
    is made IN `SurfaceVariableBinding` for all five call sites — never forked here.
 3. **Many-to-one is real (D18.2).** Several offered values feed one holder input, joined in
@@ -171,11 +171,9 @@ promise can go stale without anyone touching the binding that carries it. When t
 one fires, its refusal comes back as prose on `BindingResult.notes` and the bar prints it
 verbatim — a `logger.warning` is a scream only the server hears.
 
-## OPTIONS — the folded drawer (P16)
+## Shared treatment configuration
 
-Last on the page, folded shut, and its trigger says how many options this job
-has actually answered, so nobody opens it out of curiosity. Four sections, every
-one of them a component the Gen-A shortcut editor renders, at a new call site:
+`BindingOptionsDrawer.section` selects Display Options, Overrides or Permissions without unmounting the draft. `SettingsSection` and `AdvancedSection` remain canonical editors. State and scope are explicit; false/default/unset fields remain present. Untabbed hosts omit `section` and retain the existing accordion. Storage stays unchanged:
 
 | Section | Composed of | Stored at |
 |---|---|---|
@@ -184,10 +182,7 @@ one of them a component the Gen-A shortcut editor renders, at a new call site:
 | **Write access** | `WritePolicyEditor` | `write_policies` |
 | **Advanced** | `AdvancedSection` (`omit: ["description"]`) | `seeds.*`, `menu.sort_order`, `icon_name`, `keyboard_shortcut`, `json_extraction`, and the row's `is_enabled` |
 
-**Every reveal is caused.** Write access is ABSENT unless this job names a
-surface whose manifest declares write targets — a panel that can only say
-"nothing here" is a reveal nobody asked for. The gate cascade appears only while
-the binding's auto-run fact makes it meaningful. Advanced's raw-JSON fields
+**Explicit states in tabs:** Permissions states when no write targets exist. Gate and dependent display values remain visible even when inactive. Untabbed hosts retain their conditional reveals. Advanced's raw-JSON fields
 parse on every keystroke and never propagate invalid JSON upward.
 
 **Three things are deliberately NOT in the drawer**, each because it already has
@@ -238,6 +233,8 @@ choice (P5), rendered on the offered rail and under the chosen value in the midd
 never become an answer, and absent means the declaration gave none — never invent one.
 
 ## Change Log
+
+- 2026-09-08 — Added sectioned binding/treatment presentation for the shared mandate tabs, preserving existing save boundaries. Name-match display no longer invents an unsaved mandate mapping. Preliminary declaration checks are separate from mapping and full validation. Canonical overrides load the exact selected version and rebase retained edits when the holder changes; failed loads cannot initialize a blank default.
 
 - 2026-09-08 — **THE PICKER IS THE WHOLE CONTROL, AND WORKFLOWS GET A REAL ONE.** Arman, on the live HOLDER section of `/administration/mandates/research_client.output_slides`: *"The agent dropdown is written to be a self-reliant and inclusive system that doesn't require all of this extra trash around it! … Allow it to work naturally to show the selected agent and all links and information come up within it so there is no need for anything else."* Three deletions and one build. (1) `HolderAssignment` had overridden the dropdown's trigger label with **"Change agent"** and then rebuilt the identity it had just thrown away — an `EntityRef` repeating the name, a raw uuid in `<code>`, and a lone **"Open it"** link (FIX-R13/B's `AssignedAgentDoor`). All three are gone: the trigger now carries the agent's NAME, and the name, the id, the peek, favorite, open-in-chat and open-in-new-tab were already inside the dropdown's detail card. (2) `WorkflowHolderPicker.tsx` — an always-expanded inline list with no search, no scopes, no filters, no detail, no peek and no doors — is **deleted**, replaced by the new `WorkflowListDropdown`, built to full parity with the agent picker (see `features/workflow-runtime/listings/`) on the canonical `wfx_list_scoped` RPC that already powers `/workflows/all`. Its host passes the mandate's output kind for the ONE informational line the picker cannot know to say; the picker still narrows nothing, because the server's bind gate also accepts a workflow whose computed deliverables produce the kind. (3) `AgentListDropdown` no longer answers **"Agents"** when an agent IS assigned but its name has not resolved — it says which state it is in. Class fix taken with it: the fixed 528px panel could not fit above a mid-page trigger (measured `top: -76` at 1280x900, losing the search box); `LIST_MAX_HEIGHT` now clamps to `--radix-popper-available-height`, the fix the MODEL picker got alone on 2026-08-31, and the guard covering all three pickers lives at `features/agents/components/agent-listings/__tests__/pickers-stay-in-viewport.test.ts`. Guards updated: `__tests__/holder-block-affordances.test.tsx` (section 2 now pins the opposite reading — no id, no second name, no separate door) and `features/mandates/workspace/__tests__/holder-assignment.test.tsx`.
 

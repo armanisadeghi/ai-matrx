@@ -53,6 +53,10 @@
 // test rather than a walk.
 
 import { useEffect, useRef, useState } from "react";
+import {
+  PropertyRow,
+  FieldHelp,
+} from "@/components/official/ConfigurationFields";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -130,7 +134,7 @@ function Row({
   return (
     <div
       data-holder-control={control}
-      className="flex flex-wrap items-center gap-x-3 gap-y-1.5"
+      className="grid gap-x-3 gap-y-1.5 sm:grid-cols-[9.5rem_minmax(0,1fr)]"
     >
       <span className="w-[9.5rem] shrink-0 text-[12px] font-medium text-foreground">
         {label}
@@ -186,7 +190,8 @@ export function HolderAssignment({
                       agentId: kind === "agent" ? holder.agentId : null,
                       agentVersionId: null,
                       useLatest: true,
-                      workflowId: kind === "workflow" ? holder.workflowId : null,
+                      workflowId:
+                        kind === "workflow" ? holder.workflowId : null,
                     })
               }
               className={cn(
@@ -217,10 +222,8 @@ export function HolderAssignment({
             placeholder="Choose a workflow"
             wantedOutputKind={outputKind}
             disabled={disabled}
-            className="max-w-[22rem]"
-            onSelect={(id) =>
-              onHolderChange({ ...holder, workflowId: id })
-            }
+            className="w-full max-w-[22rem]"
+            onSelect={(id) => onHolderChange({ ...holder, workflowId: id })}
           />
         ) : (
           <AgentListDropdown
@@ -230,11 +233,13 @@ export function HolderAssignment({
             initialTab={agentTabs?.initialTab}
             includeSystemInAll={agentTabs?.includeSystemInAll}
             systemTabLabel="System"
-            className="max-w-[22rem]"
+            className="w-full max-w-[22rem]"
             // THE NAME IS THE LABEL. Not "Change agent" — the trigger IS the
             // statement of who holds this job, and the dropdown resolves the
             // name itself when the host has not got one yet.
-            label={holder.agentId ? (holderName ?? undefined) : "Choose an agent"}
+            label={
+              holder.agentId ? (holderName ?? undefined) : "Choose an agent"
+            }
             onSelect={(id) =>
               onHolderChange({
                 kind: "agent",
@@ -268,7 +273,19 @@ export function HolderAssignment({
             }
           />
         </Row>
-      ) : null}
+      ) : (
+        <Row label="Version" control="version">
+          <span className="text-xs">
+            {isWorkflow && holder.workflowId ? "Latest" : "No holder selected"}
+          </span>
+          {isWorkflow ? (
+            <FieldHelp label="Workflow version">
+              Pinned workflow versions are not supported by this assignment
+              control.
+            </FieldHelp>
+          ) : null}
+        </Row>
+      )}
 
       {/* THE COVERAGE FACT — one line, attached to the assignment it is about.
           It is honest in both directions: "Every input this holder needs is
@@ -330,7 +347,8 @@ function VersionSelect({
       .catch(() => setState("failed"));
   }, [agentId, dispatch]);
 
-  const value = useLatest || !agentVersionId ? LATEST_VERSION_VALUE : agentVersionId;
+  const value =
+    useLatest || !agentVersionId ? LATEST_VERSION_VALUE : agentVersionId;
   const known =
     value === LATEST_VERSION_VALUE ||
     versions.some((v) => v.version_id === value);
@@ -358,7 +376,9 @@ function VersionSelect({
               the control must be able to show it — silently falling back to
               "Latest" would display a version the job is not running. */}
           {!known ? (
-            <SelectItem value={value}>A version this list cannot name</SelectItem>
+            <SelectItem value={value}>
+              A version this list cannot name
+            </SelectItem>
           ) : null}
         </SelectContent>
       </Select>

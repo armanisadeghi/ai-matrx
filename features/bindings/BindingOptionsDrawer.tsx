@@ -1,50 +1,17 @@
 "use client";
 
-// features/bindings/BindingOptionsDrawer.tsx
-//
-// THE FOLDED OPTIONS DRAWER (PLAN-ONE-BINDING-UI §1.3, UI-STANDARD P16).
-//
-// "Nothing new is designed here — the drawer IS `ShortcutEditorNext`'s section
-// stack, minus the sections that belong to the job rather than the binding."
-// So it is: `WidgetPicker` · `SettingsSection` · `CategoryPicker` ·
-// `WritePolicyEditor` · `AdvancedSection`, every one of them the SAME component
-// the Gen-A shortcut editor renders, at a new call site. Four sections, folded:
-//
-//     Display · Visibility · Write access · Advanced
-//
-// P16 — DEPTH IS PROGRESSIVE AND EVERY REVEAL IS CAUSED:
-//   · the whole drawer is folded, and its trigger says how many options this
-//     job has actually answered, so it is never opened out of curiosity;
-//   · a section appears only when this job HAS the thing it governs — Write
-//     access is absent unless the job names a surface that declares write
-//     targets, because a panel that can only say "nothing here" is a reveal
-//     that was not caused;
-//   · inside `SettingsSection` the gate cascade still reveals itself only when
-//     auto-run is on, and inside `AdvancedSection` every raw-JSON field still
-//     parses on each keystroke and refuses to propagate invalid JSON.
-//
-// WHAT IS STORED AND WHERE — the live storage, nothing invented:
-//   · these options are TREATMENT (`mandate.treatment.config`, schema_version
-//     1) — the same table and the same keys the 208 migrated shortcuts have
-//     served out of since the cutover, read back by `mandate.vw_shortcut`.
-//     The codec is `treatment-shape.ts`; the writer is `treatment-writer.ts`.
-//   · WRITE ACCESS specifically follows `SHORTCUT_WRITE_POLICIES_ON_TREATMENT`
-//     (`lib/supabase/shortcutStorage.ts`): a write policy is treatment, never
-//     consumption, so it lives at `config.write_policies` and never inside a
-//     mapping blob.
-//   · "Run instantly" is NOT here. On a job it is a fact about the mapping
-//     (`mandate.binding.auto_run`), narrated by `AutoRunBar` above, refused at
-//     the write and re-checked by the resolver — `omitAutoRun` keeps it a
-//     single control with a single home.
-//
-// 🚨 ONE HONEST SENTENCE THE DRAWER ALWAYS PRINTS: a treatment has no per-person
-// rung. The holder above can differ for you, your organization and everyone;
-// how the job PRESENTS itself is one answer for the whole organization. The
-// drawer says that rather than letting the rung control above imply otherwise.
+// One treatment draft and save boundary, shared by the legacy drawer and
+// the mandate Display Options, Overrides, and Permissions tabs.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Loader2 } from "lucide-react";
 
+import {
+  FieldHelp,
+  PropertyRow,
+  StatusToken,
+} from "@/components/official/ConfigurationFields";
+import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -112,6 +79,8 @@ export interface BindingOptionsDrawerProps {
   /** Fired once the proposals above have been taken into the draft. */
   onProposalsTaken?: () => void;
   disabled?: boolean;
+  /** Keep one instance mounted while changing this section to retain drafts. */
+  section?: "display" | "overrides" | "permissions";
 }
 
 export function BindingOptionsDrawer({
@@ -122,9 +91,11 @@ export function BindingOptionsDrawer({
   proposedWritePolicies = null,
   onProposalsTaken,
   disabled = false,
+  section,
 }: BindingOptionsDrawerProps) {
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
+  const [readAttempt, setReadAttempt] = useState(0);
   const [load, setLoad] = useState<LoadState>({ status: "idle" });
   const [treatmentId, setTreatmentId] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(true);
@@ -181,11 +152,12 @@ export function BindingOptionsDrawer({
       });
     return () => {
       cancelled = true;
+      startedFor.current = null;
     };
     // The latch is the ref; `onSurfaceRead` is a setter and re-running on its
     // identity would re-open the trap this effect's comment describes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [owner.mandateId]);
+  }, [owner.mandateId, readAttempt]);
 
   // F4 — accepted AI write-access proposals merge into THIS draft, and the
   // drawer opens so the person sees what landed. They are never saved from
@@ -206,7 +178,7 @@ export function BindingOptionsDrawer({
   // reason: a single-scope fetch misses two-thirds of what a person may pick.
   const currentUserId = useAppSelector((s) => s.userAuth?.id ?? null);
   useEffect(() => {
-    if (!open) return;
+    if (!open && section !== "display") return;
     void dispatch(fetchCategoriesForScope({ scope: "global", scopeId: null }));
     void dispatch(fetchCategoriesForScope({ scope: "user", scopeId: null }));
     void dispatch(
@@ -215,34 +187,27 @@ export function BindingOptionsDrawer({
         scopeId: owner.organizationId,
       }),
     );
-  }, [dispatch, open, owner.organizationId]);
+  }, [dispatch, open, section, owner.organizationId]);
   const allCategories = useAppSelector(selectAllCategoriesArray);
-  const categories = useMemo(
-    () =>
-      allCategories.filter((c) => {
-        if (!c.isActive) return false;
-        const isGlobal =
-          c.userId == null &&
-          c.organizationId == null &&
-          c.projectId == null &&
-          c.taskId == null;
-        if (isGlobal) return true;
-        if (currentUserId && c.userId === currentUserId) return true;
-        return c.organizationId === owner.organizationId;
-      }),
-    [allCategories, currentUserId, owner.organizationId],
-  );
+  const categories = allCategories.filter((category) => {
+    if (!category.isActive) return false;
+    const isGlobal =
+      category.userId == null &&
+      category.organizationId == null &&
+      category.projectId == null &&
+      category.taskId == null;
+    if (isGlobal) return true;
+    if (currentUserId && category.userId === currentUserId) return true;
+    return category.organizationId === owner.organizationId;
+  });
 
-  const set = useCallback(
-    <K extends keyof BindingPresentation>(
-      field: K,
-      next: BindingPresentation[K],
-    ) => {
-      setDraft((prev) => ({ ...prev, [field]: next }));
-      setSaveError(null);
-    },
-    [],
-  );
+  function set<K extends keyof BindingPresentation>(
+    field: K,
+    next: BindingPresentation[K],
+  ) {
+    setDraft((previous) => ({ ...previous, [field]: next }));
+    setSaveError(null);
+  }
 
   // ── The two verbatim sections' own field shapes ───────────────────────────
   //
@@ -273,16 +238,15 @@ export function BindingOptionsDrawer({
     autoRun,
     showPreExecutionGate: draft.showPreExecutionGate,
     bypassGateSeconds: draft.bypassGateSeconds,
-    defaultVariables: draft.defaultVariables as AgentShortcut["defaultVariables"],
-    contextOverrides: draft.contextOverrides as AgentShortcut["contextOverrides"],
+    defaultVariables:
+      draft.defaultVariables as AgentShortcut["defaultVariables"],
+    contextOverrides:
+      draft.contextOverrides as AgentShortcut["contextOverrides"],
     llmOverrides: draft.llmOverrides as AgentShortcut["llmOverrides"],
     jsonExtraction: draft.jsonExtraction as AgentShortcut["jsonExtraction"],
   };
 
-  // P16 — Write access is REVEALED BY CAUSE. The panel governs a surface's
-  // declared write targets; a job that names no surface, or names one that
-  // declares none, has nothing for it to govern, so the section is absent
-  // rather than present and empty.
+  // Legacy hosts omit empty write sections; the Permissions tab states why it has no targets.
   const writeTargetCount = draft.surfaceName
     ? (getManifest(draft.surfaceName)?.writeTargets?.length ?? 0)
     : 0;
@@ -292,11 +256,10 @@ export function BindingOptionsDrawer({
 
   // How many options this job has actually answered — the trigger says it, so
   // nobody has to open the drawer to find out whether anything is in there.
-  const answeredCount = useMemo(() => {
-    if (load.status !== "ready") return null;
-    if (!savedEnabled) return countAnswered(saved) + 1;
-    return countAnswered(saved);
-  }, [load.status, saved, savedEnabled]);
+  const answeredCount =
+    load.status === "ready"
+      ? countAnswered(saved) + (savedEnabled ? 0 : 1)
+      : null;
 
   async function save() {
     setBusy(true);
@@ -322,82 +285,123 @@ export function BindingOptionsDrawer({
     }
   }
 
-  const coverage = organizationName
-    ? `Everyone in ${organizationName} sees the job this way.`
-    : "Everyone in this job's organization sees it this way.";
+  const sharedSource = treatmentId ? "Mandate shared" : "Platform defaults";
+  const fieldMeta = (field: keyof BindingPresentation) => ({
+    source:
+      JSON.stringify(draft[field]) !== JSON.stringify(saved[field])
+        ? "Mandate shared draft"
+        : sharedSource,
+    state:
+      JSON.stringify(draft[field]) !== JSON.stringify(saved[field])
+        ? "Unsaved draft"
+        : treatmentId
+          ? "Saved; inheritance unknown"
+          : "Inherited default",
+  });
+  const settingsMeta = (field: keyof SettingsFields) =>
+    field === "autoRun"
+      ? { source: "Binding", state: "Saved separately" }
+      : fieldMeta(field);
+  const advancedMeta = (field: keyof AdvancedFields) => {
+    if (field === "isActive")
+      return {
+        source: sharedSource,
+        state:
+          enabled !== savedEnabled
+            ? "Unsaved draft"
+            : treatmentId
+              ? "Saved"
+              : "Inherited default",
+      };
+    if (field === "autoRun")
+      return { source: "Binding", state: "Saved separately" };
+    if (field === "description")
+      return { source: "Mandate", state: "Not applicable" };
+    return fieldMeta(field);
+  };
+  const activeSection = section ?? "display";
 
   return (
-    <section className="rounded-xl border border-border bg-card">
-      {/* `aria-expanded` states the fold's own state to anyone not looking at
-          the chevron (V2 round-2 residual 9). A disclosure that only says
-          "open" in a rotation is silent to a screen reader — the same class as
-          a control that looks disabled without saying why. */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left"
-      >
-        <ChevronDown
-          className={cn(
-            "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
-            !open && "-rotate-90",
-          )}
-        />
-        <span className="text-[12.5px] font-semibold text-foreground">
-          Options
-        </span>
-        <span className="text-[11px] text-muted-foreground">
-          Display · Visibility{writeTargetCount > 0 ? " · Write access" : ""} ·
-          Advanced
-        </span>
-        {/* WHAT THE CLOSED TRIGGER SAYS. Every state is a word: how many
-            options this job answers, that it answers none, or that the answer
-            could not be read — never nothing, which would leave "empty" and
-            "unknown" looking identical. */}
-        {load.status === "error" ? (
-          <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium text-destructive">
-            <AlertTriangle className="h-3 w-3" />
-            Couldn&rsquo;t read
+    <section
+      className={
+        section
+          ? "space-y-4 min-w-0"
+          : "rounded-xl border border-border bg-card"
+      }
+    >
+      {!section && (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="flex w-full flex-wrap items-center gap-2 px-3 py-2 text-left"
+        >
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              !open && "-rotate-90",
+            )}
+          />
+          <span className="text-sm font-semibold">Options</span>
+          <span className="text-xs text-muted-foreground">
+            Display · Visibility · Write access · Advanced
           </span>
-        ) : answeredCount === null ? null : answeredCount > 0 ? (
-          <span className="ml-auto rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-            {answeredCount} set
+          <span className="ml-auto">
+            <StatusToken
+              status={
+                load.status === "error"
+                  ? "error"
+                  : answeredCount === null
+                    ? "unknown"
+                    : "neutral"
+              }
+              label={
+                load.status === "error"
+                  ? "Read failed"
+                  : answeredCount === null
+                    ? "Reading"
+                    : `${answeredCount} configured`
+              }
+            />
           </span>
-        ) : (
-          <span className="ml-auto text-[10px] text-muted-foreground">
-            All platform defaults
-          </span>
-        )}
-      </button>
-
-      {open ? (
-        <div className="space-y-5 border-t border-border px-3 py-3">
-          {/* 🚨 WHO THESE OPTIONS COVER, said out loud. A treatment has no
-              per-person rung, so the rung control above does NOT apply here —
-              and a screen that let it be assumed would be lying. */}
-          <p className="rounded-lg bg-muted/40 px-2.5 py-1.5 text-[11px] leading-relaxed text-muted-foreground">
-            These are the JOB&rsquo;s options, not this binding&rsquo;s answer.
-            The holder above can differ for you, your organization and everyone;
-            how the job presents itself is one answer. {coverage}
-          </p>
-
+        </button>
+      )}
+      {(open || section) && (
+        <div
+          className={
+            section ? "space-y-4" : "space-y-5 border-t border-border px-3 py-3"
+          }
+        >
+          <PropertyRow
+            label="Applies to"
+            value={organizationName ?? "Mandate organization"}
+            source="Mandate shared"
+            state="No personal inheritance"
+            help="These values belong to the mandate's shared presentation record. The holder's system, organization, and personal selection does not change their scope."
+          />
           {load.status === "loading" || load.status === "idle" ? (
-            <p className="py-6 text-center text-[12px] text-muted-foreground">
-              Reading this job&rsquo;s options…
-            </p>
+            <div
+              role="status"
+              aria-label="Reading mandate configuration"
+              className="space-y-3 py-3"
+            >
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-2/3" />
+            </div>
           ) : load.status === "error" ? (
-            <div className="space-y-2 py-4 text-center">
-              <p className="flex items-start justify-center gap-1.5 text-[12px] leading-relaxed text-destructive">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                {load.message}
-              </p>
+            <div className="space-y-3">
+              <PropertyRow
+                label="Read status"
+                value={<StatusToken status="error" label="Read failed" />}
+              />
+              <PropertyRow label="Details" value={load.message} />
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
                   startedFor.current = null;
-                  setLoad({ status: "idle" });
+                  setReadAttempt((attempt) => attempt + 1);
                 }}
               >
                 Try again
@@ -405,54 +409,46 @@ export function BindingOptionsDrawer({
             </div>
           ) : (
             <>
-              <Group
-                title="Display"
-                hint="How this job's result is presented, and what the person sees while it runs."
-              >
-                <WidgetPicker
-                  value={draft.displayMode}
-                  onChange={(next) => set("displayMode", next)}
-                  disabled={disabled || busy}
+              <div hidden={Boolean(section && activeSection !== "display")}>
+                <PropertyRow
+                  label="Result display"
+                  {...fieldMeta("displayMode")}
+                  value={
+                    <WidgetPicker
+                      value={draft.displayMode}
+                      onChange={(next) => set("displayMode", next)}
+                      disabled={disabled || busy}
+                    />
+                  }
                 />
-                <SettingsSection
-                  value={settingsValue}
-                  onChange={(field, next) => {
-                    // `autoRun` is not offered here and cannot arrive.
-                    set(
-                      field as keyof BindingPresentation,
-                      next as never,
-                    );
-                  }}
-                  disabled={disabled || busy}
-                  omitAutoRun
-                  words={JOB_SETTINGS_WORDS}
+              </div>
+              <SettingsSection
+                value={settingsValue}
+                onChange={(field, next) => {
+                  set(field as keyof BindingPresentation, next as never);
+                }}
+                disabled={disabled || busy}
+                omitAutoRun
+                section={section}
+                fieldMeta={section ? settingsMeta : undefined}
+                words={JOB_SETTINGS_WORDS}
+              />
+              <div hidden={Boolean(section && activeSection !== "display")}>
+                <PropertyRow
+                  label="Menu category"
+                  {...fieldMeta("categoryId")}
+                  value={
+                    <CategoryPicker
+                      categories={categories}
+                      value={draft.categoryId ?? ""}
+                      onChange={(next) => set("categoryId", next || null)}
+                      disabled={disabled || busy}
+                    />
+                  }
                 />
-                {!autoRun ? (
-                  <p className="text-[11px] leading-snug text-muted-foreground">
-                    The pre-run gate appears here once &ldquo;Run
-                    instantly&rdquo; is on — it is a fact about the mapping, set
-                    in the auto-run bar above.
-                  </p>
-                ) : null}
-              </Group>
-
-              <Group
-                title="Visibility"
-                hint="Where this job appears for the people it covers."
-              >
-                <CategoryPicker
-                  categories={categories}
-                  value={draft.categoryId ?? ""}
-                  onChange={(next) => set("categoryId", next || null)}
-                  disabled={disabled || busy}
-                />
-              </Group>
-
-              {writeTargetCount > 0 && draft.surfaceName ? (
-                <Group
-                  title="Write access"
-                  hint="What the holder may change on the page this job runs from, and whether it must ask. The job's answer merges over the holder's own bindings at launch."
-                >
+              </div>
+              <div hidden={Boolean(section && activeSection !== "permissions")}>
+                {writeTargetCount > 0 && draft.surfaceName ? (
                   <WritePolicyEditor
                     surfaceName={draft.surfaceName}
                     value={draft.writePolicies}
@@ -460,10 +456,42 @@ export function BindingOptionsDrawer({
                       set("writePolicies", next)
                     }
                     disabled={disabled || busy}
+                    structured={Boolean(section)}
+                    source={sharedSource}
+                    draftState={fieldMeta("writePolicies").state}
                   />
-                </Group>
-              ) : null}
-
+                ) : section === "permissions" ? (
+                  <>
+                    <PropertyRow
+                      label="Write targets"
+                      value={
+                        draft.surfaceName && !getManifest(draft.surfaceName)
+                          ? "Unknown"
+                          : "None"
+                      }
+                    />
+                    <PropertyRow
+                      label="Write access"
+                      value={
+                        <StatusToken
+                          status={
+                            draft.surfaceName && !getManifest(draft.surfaceName)
+                              ? "unknown"
+                              : "neutral"
+                          }
+                          label={
+                            draft.surfaceName
+                              ? getManifest(draft.surfaceName)
+                                ? "No targets declared"
+                                : "Surface unavailable"
+                              : "No surface assigned"
+                          }
+                        />
+                      }
+                    />
+                  </>
+                ) : null}
+              </div>
               <AdvancedSection
                 value={advancedValue}
                 onChange={(field, next) => {
@@ -476,72 +504,67 @@ export function BindingOptionsDrawer({
                 }}
                 disabled={disabled || busy}
                 omit={["description"]}
-                words={JOB_ADVANCED_WORDS}
+                section={section}
+                fieldMeta={section ? advancedMeta : undefined}
+                words={{
+                  ...JOB_ADVANCED_WORDS,
+                  activeTitle: "Presentation enabled",
+                }}
                 overridesInstanceKey={`mandate-treatment-${owner.mandateId}`}
-                // NAMED APART from the "Settings" block above, which edits the
-                // BINDING's overrides. Two controls both headed "Model &
-                // settings" on one screen is a screen that cannot be read.
-                overridesTitle="Model & settings for this job's own options"
+                overridesTitle="Shared mandate overrides"
                 overridesWords={JOB_TREATMENT_OVERRIDE_WORDS}
-                // A no-code job screen never hands its user off to an icon
-                // LIBRARY's developer site. The in-app icon gallery lists
-                // every name that works here, so nothing is lost.
                 showLucideSources={false}
               />
-
-              {saveError ? (
-                <p className="flex items-start gap-1.5 rounded-lg border border-destructive/40 bg-destructive/5 px-2.5 py-2 text-[12px] leading-relaxed text-destructive">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  {saveError}
-                </p>
-              ) : null}
-
-              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/40 pt-3">
-                {!dirty ? (
-                  <p className="mr-auto text-[11.5px] text-muted-foreground">
-                    {treatmentId === null && presentationIsDefault(saved)
-                      ? "Every option is still the platform default — nothing is stored for this job."
-                      : "Saved."}
-                  </p>
-                ) : null}
-                <Button
-                  size="sm"
-                  className="min-w-[130px]"
-                  disabled={disabled || busy || !dirty}
-                  onClick={() => void save()}
-                >
-                  {busy ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : null}
-                  {busy ? "Saving…" : "Save options"}
-                </Button>
+              {saveError && (
+                <PropertyRow
+                  label="Save error"
+                  value={
+                    <span className="text-destructive break-words">
+                      {saveError}
+                    </span>
+                  }
+                />
+              )}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+                <PropertyRow
+                  label="Changes"
+                  value={
+                    <StatusToken
+                      status={dirty ? "caution" : "neutral"}
+                      label={
+                        dirty
+                          ? "Unsaved"
+                          : treatmentId === null && presentationIsDefault(saved)
+                            ? "Platform defaults"
+                            : "Saved"
+                      }
+                    />
+                  }
+                />
+                <div className="flex items-center gap-2">
+                  <FieldHelp label="Save shared configuration">
+                    Saves this shared record's Display Options, Overrides, and
+                    Permissions together. Holder selection and binding overrides
+                    have a separate save.
+                  </FieldHelp>
+                  <Button
+                    size="sm"
+                    disabled={disabled || busy || !dirty}
+                    onClick={() => void save()}
+                  >
+                    {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    {busy
+                      ? "Saving…"
+                      : section
+                        ? "Save shared configuration"
+                        : "Save options"}
+                  </Button>
+                </div>
               </div>
             </>
           )}
         </div>
-      ) : null}
-    </section>
-  );
-}
-
-function Group({
-  title,
-  hint,
-  children,
-}: {
-  title: string;
-  hint: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-2">
-      <div>
-        <h4 className="text-[12px] font-semibold text-foreground">{title}</h4>
-        <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-          {hint}
-        </p>
-      </div>
-      {children}
+      )}
     </section>
   );
 }

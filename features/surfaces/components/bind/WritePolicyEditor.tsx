@@ -30,6 +30,10 @@
  *    home only, and no live row carries it.
  */
 
+import {
+  FieldHelp,
+  PropertyRow,
+} from "@/components/official/ConfigurationFields";
 import { Lock, PenLine } from "lucide-react";
 import { SegmentedControl } from "@ai-matrx/design-system";
 import { getManifest } from "@/features/surfaces/manifests/registry";
@@ -63,6 +67,9 @@ export function WritePolicyEditor({
   onChange,
   disabled,
   compact = false,
+  structured = false,
+  source = "Surface",
+  draftState = "Saved",
 }: {
   surfaceName: string;
   /** The FULL override map for this layer (target name → policy). */
@@ -72,6 +79,10 @@ export function WritePolicyEditor({
   disabled?: boolean;
   /** Dense rows (batch editor): no descriptions, tighter spacing. */
   compact?: boolean;
+  /** Labeled properties with on-demand help for configuration tabs. */
+  structured?: boolean;
+  source?: string;
+  draftState?: string;
 }) {
   const targets = getManifest(surfaceName)?.writeTargets ?? [];
 
@@ -114,24 +125,66 @@ export function WritePolicyEditor({
                 : "rounded-md border border-border bg-card px-3 py-2.5 space-y-1.5"
             }
           >
-            <div className={compact ? "min-w-0 flex-1" : ""}>
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-xs font-medium text-foreground truncate">
-                  {target.label}
-                </span>
-                <span className="shrink-0 rounded-sm bg-muted px-1 py-0.5 text-[10px] leading-none text-muted-foreground">
-                  {MODE_LABELS[target.mode]}
-                </span>
-                <span className="shrink-0 text-[10px] text-muted-foreground">
-                  Surface default: {POLICY_LABELS[surfaceDefault]}
-                </span>
+            {structured ? (
+              <div>
+                <div className="flex items-center gap-2 text-sm font-semibold break-words">
+                  {target.label || "Display name missing"}
+                  <FieldHelp label={target.label || "Write target"}>
+                    {target.description}
+                  </FieldHelp>
+                </div>
+                <PropertyRow
+                  label="Write mode"
+                  value={MODE_LABELS[target.mode]}
+                />
+                <PropertyRow
+                  label="Surface policy"
+                  value={POLICY_LABELS[surfaceDefault]}
+                  source="Surface"
+                  state="Declared"
+                />
+                <PropertyRow
+                  label="Effective policy"
+                  value={
+                    POLICY_LABELS[
+                      floored ? "manual" : (override ?? surfaceDefault)
+                    ]
+                  }
+                  source={floored || !override ? "Surface" : source}
+                  state={
+                    override
+                      ? draftState === "Unsaved draft"
+                        ? "Unsaved draft"
+                        : "Overridden"
+                      : "Inherited"
+                  }
+                />
+                <PropertyRow
+                  label="Agent writes permitted"
+                  value={floored ? "No" : "Yes"}
+                  help="A surface requiring manual writes cannot be opened to agent writes by an override."
+                />
               </div>
-              {!compact && (
-                <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
-                  {target.description}
-                </p>
-              )}
-            </div>
+            ) : (
+              <div className={compact ? "min-w-0 flex-1" : ""}>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-xs font-medium text-foreground truncate">
+                    {target.label}
+                  </span>
+                  <span className="shrink-0 rounded-sm bg-muted px-1 py-0.5 text-[10px] leading-none text-muted-foreground">
+                    {MODE_LABELS[target.mode]}
+                  </span>
+                  <span className="shrink-0 text-[10px] text-muted-foreground">
+                    Surface default: {POLICY_LABELS[surfaceDefault]}
+                  </span>
+                </div>
+                {!compact && (
+                  <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
+                    {target.description}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div
               className={
@@ -146,6 +199,9 @@ export function WritePolicyEditor({
                   aria-label="Surface floor: manual — overrides cannot open this target to agents"
                 />
               )}
+              {structured && (
+                <span className="text-xs font-medium">Policy override</span>
+              )}
               <SegmentedControl
                 size="sm"
                 value={segment}
@@ -157,10 +213,14 @@ export function WritePolicyEditor({
                   { value: DEFAULT_SEGMENT, label: "Default", disabled },
                   { value: "manual", label: "Manual", disabled },
                   { value: "ask", label: "Ask", disabled: disabled || floored },
-                  { value: "auto", label: "Auto", disabled: disabled || floored },
+                  {
+                    value: "auto",
+                    label: "Auto",
+                    disabled: disabled || floored,
+                  },
                 ]}
               />
-              {!compact && floored && (
+              {!structured && !compact && floored && (
                 <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
                   <Lock className="h-3 w-3" />
                   The surface declared this target manual — overrides cannot
@@ -171,7 +231,7 @@ export function WritePolicyEditor({
           </div>
         );
       })}
-      {!compact && (
+      {!structured && !compact && (
         <p className="text-[10px] text-muted-foreground leading-snug">
           Default follows the surface&rsquo;s own policy. Manual refuses
           agent-originated writes; Ask confirms each write in place; Auto

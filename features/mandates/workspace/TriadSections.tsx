@@ -23,15 +23,14 @@
 // to happen.
 
 import { useMemo, useState } from "react";
+import { ArrowDown, Check, Pencil, X } from "lucide-react";
 import {
-  ArrowDown,
-  Check,
-  Lock,
-  Package,
-  Pencil,
-  X,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+  FieldHelp,
+  PropertyRow,
+  StatusToken,
+} from "@/components/official/ConfigurationFields";
+import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ServerNotes } from "@/components/official/ServerNotes";
@@ -69,7 +68,10 @@ import type { SurfaceScopePayload } from "@/features/surfaces/types";
 /** The goal editor's fragment of the workspace scope — every key typed against
  * the manifest helper, minus the provider-owned `mandate_key`. */
 function goalSectionScope(
-  values: Omit<Parameters<typeof createMandateWorkspaceScope>[0], "mandate_key">,
+  values: Omit<
+    Parameters<typeof createMandateWorkspaceScope>[0],
+    "mandate_key"
+  >,
 ): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }
@@ -81,16 +83,20 @@ import { toastFailure } from "@/lib/failure/toastFailure";
 
 /** Plain words for H/V/A — never the letter alone. */
 export function GroundingBadge({ grounding }: { grounding: string | null }) {
-  const spec =
+  const label =
     grounding === "H"
-      ? { label: "Human-ratified", className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" }
+      ? "Human-ratified"
       : grounding === "V"
-        ? { label: "Verified", className: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-400" }
-        : { label: "Agent-written", className: "text-muted-foreground" };
+        ? "Verified"
+        : grounding === "A"
+          ? "Agent-written"
+          : "Unknown";
   return (
-    <Badge variant="outline" className={`py-0 text-[10px] ${spec.className}`}>
-      {spec.label}
-    </Badge>
+    <PropertyRow
+      label="Goal authority"
+      value={label}
+      source="Mandate definition"
+    />
   );
 }
 
@@ -162,7 +168,11 @@ export function TriadInputSection({
         `Goal: ${goalOfMandate(data.mandate) ?? "(none written yet)"}`,
       ].join("\n"),
       inputs: draftInputs
-        .map((i) => [i.description, i.name ? `(${i.name})` : ""].filter(Boolean).join(" "))
+        .map((i) =>
+          [i.description, i.name ? `(${i.name})` : ""]
+            .filter(Boolean)
+            .join(" "),
+        )
         .join("\n"),
       draft_inputs: JSON.stringify(draftInputs),
     }),
@@ -200,8 +210,20 @@ export function TriadInputSection({
   };
 
   return (
-    <Section title="Input" hint={inputHint(data, draftInputs.length)}>
+    <Section title="Inputs">
       <div className="space-y-2 rounded-xl border border-border/60 bg-card p-4">
+        <PropertyRow
+          label="Declaration source"
+          value={
+            data.offer
+              ? "Provision"
+              : draftInputs.length > 0
+                ? "Mandate draft"
+                : data.contract.requiredVariables.length > 0
+                  ? "Mandate contract"
+                  : "Served input surface"
+          }
+        />
         {data.offer ? (
           <ProvisionOfferList
             values={data.offer.values}
@@ -211,7 +233,12 @@ export function TriadInputSection({
           <div className="space-y-2">
             <DraftInputsEditor items={draft} onChange={setDraft} />
             <div className="flex items-center gap-1.5">
-              <Button size="sm" className="h-7 gap-1 text-[12px]" disabled={saving} onClick={() => void save()}>
+              <Button
+                size="sm"
+                className="h-7 gap-1 text-[12px]"
+                disabled={saving}
+                onClick={() => void save()}
+              >
                 <Check className="h-3.5 w-3.5" />
                 {saving ? "Saving…" : "Save inputs"}
               </Button>
@@ -230,36 +257,53 @@ export function TriadInputSection({
             </div>
           </div>
         ) : draftInputs.length > 0 ? (
-          <ul className="space-y-1">
+          <ul className="divide-y divide-border/40">
             {draftInputs.map((item, index) => (
-              <li key={index} className="flex items-baseline gap-2 text-[13px]">
-                <Package className="h-3 w-3 shrink-0 translate-y-0.5 text-muted-foreground" />
-                <span className="text-foreground">{item.description}</span>
-                {item.name ? (
-                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">
-                    {item.name}
-                  </code>
-                ) : null}
-                {item.kind ? (
-                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-                    {item.kind}
-                  </code>
-                ) : null}
+              <li key={index} className="py-2">
+                <PropertyRow
+                  label="Input"
+                  value={
+                    item.name
+                      ? displayLabelForKey(item.name)
+                      : "Display name missing"
+                  }
+                  help={item.description || "No description provided."}
+                />
+                <PropertyRow
+                  label="Format"
+                  value={
+                    item.kind ? displayLabelForKey(item.kind) : "Not specified"
+                  }
+                />
+                <PropertyRow label="Always available" value="Unknown" />
+                <PropertyRow label="Retrieval" value="Unknown" />
+                <PropertyRow
+                  label="Automatic context delivery"
+                  value="Unknown"
+                />
+                <PropertyRow
+                  label="Example"
+                  value={item.example || "Not provided"}
+                />
               </li>
             ))}
           </ul>
         ) : data.contract.requiredVariables.length > 0 ? (
-          <div>
-            <p className="text-[11px] text-muted-foreground">
-              Legacy contract — required variables (no Provision yet):
-            </p>
-            <div className="mt-1 flex flex-wrap gap-1.5">
-              {data.contract.requiredVariables.map((name) => (
-                <code key={name} className="rounded bg-muted px-1.5 py-0.5 text-[11px]">
-                  {name}
-                </code>
-              ))}
-            </div>
+          <div className="divide-y divide-border/40">
+            {data.contract.requiredVariables.map((name) => (
+              <div key={name} className="py-2">
+                <PropertyRow label="Input" value={displayLabelForKey(name)} />
+                <PropertyRow label="Required" value="Yes" />
+                <PropertyRow label="Format" value="Not specified" />
+                <PropertyRow label="Always available" value="Unknown" />
+                <PropertyRow label="Retrieval" value="Unknown" />
+                <PropertyRow
+                  label="Automatic context delivery"
+                  value="Unknown"
+                />
+                <PropertyRow label="Example" value="Not provided" />
+              </div>
+            ))}
           </div>
         ) : (
           // 🚨 "User text only" is a MEASURED answer, never a fallback. The
@@ -277,7 +321,9 @@ export function TriadInputSection({
               size="sm"
               className="h-7 gap-1 text-[12px]"
               onClick={() => {
-                setDraft(draftInputs.length > 0 ? draftInputs : [{ description: "" }]);
+                setDraft(
+                  draftInputs.length > 0 ? draftInputs : [{ description: "" }],
+                );
                 setEditing(true);
               }}
             >
@@ -304,16 +350,6 @@ export function TriadInputSection({
           mandateKey={data.mandate.mandate_key}
           className="border-t border-border/40 pt-2 text-[11.5px] text-muted-foreground/80"
         />
-        {Object.keys(data.pins).length > 0 ? (
-          <p className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground/80">
-            <Lock className="h-3 w-3" />
-            Pinned behaviors:{" "}
-            {Object.entries(data.pins)
-              .map(([k, v]) => `${k}=${String(v)}`)
-              .join(" · ")}{" "}
-            (platform-locked)
-          </p>
-        ) : null}
       </div>
     </Section>
   );
@@ -333,61 +369,62 @@ function HolderDeclaredInputs({ mandateKey }: { mandateKey: string }) {
   const state = useMandateInputSurface(mandateKey);
   if (state.status === "loading") {
     return (
-      <p className="text-[13px] text-muted-foreground">Reading this job&apos;s inputs…</p>
+      <div aria-label="Reading input declarations">
+        <Skeleton className="h-12 w-full" />
+      </div>
     );
   }
   if (state.status === "error") {
     return (
-      <p className="text-[13px] text-destructive">
-        This job&apos;s inputs could not be read: {state.message}
-      </p>
+      <PropertyRow
+        label="Input declarations"
+        value={<StatusToken status="unknown" label="Unavailable" />}
+        help={state.message}
+      />
     );
   }
   const { surface } = state;
   if (isUserTextOnly(surface)) {
     return (
-      <p className="text-[13px] text-muted-foreground">
-        User text only — nothing declared in code, on this job, or by the agent
-        that fulfils it.
-      </p>
-    );
-  }
-  if (surface.inputs.length === 0) {
-    return (
-      <ServerNotes
-        heading="What the server could not read"
-        notes={surface.notes}
-        testId="holder-inputs-notes"
+      <PropertyRow
+        label="Declared inputs"
+        value="None"
+        source="Served input surface"
       />
     );
   }
   return (
     <div className="space-y-1.5">
-      <p className="text-[11px] text-muted-foreground">
-        Declared by{" "}
-        {surface.holderName ?? "the agent that fulfils this job"} — this job has
-        no Provision of its own, so what the Holder accepts IS its input
-        surface.
-      </p>
-      <div className="flex flex-wrap gap-1.5">
-        {surface.inputs.map((input) => (
-          <code
-            key={input.name}
-            className="rounded bg-muted px-1.5 py-0.5 text-[11px]"
-            title={input.help || undefined}
-          >
-            {input.name}
-          </code>
-        ))}
-      </div>
+      <PropertyRow
+        label="Declared by"
+        value={surface.holderName || "Holder name unavailable"}
+      />
+      <PropertyRow label="Declared inputs" value={surface.inputs.length} />
+      {surface.inputs.map((input) => (
+        <div key={input.name} className="border-t border-border/40 py-2">
+          <PropertyRow
+            label="Input"
+            value={displayLabelForKey(input.name, input.label)}
+            help={input.help || "No description provided."}
+          />
+          <PropertyRow label="Format" value={displayLabelForKey(input.kind)} />
+          <PropertyRow label="Required" value={input.required ? "Yes" : "No"} />
+          <PropertyRow label="Always available" value="Unknown" />
+          <PropertyRow label="Retrieval" value="Unknown" />
+          <PropertyRow label="Automatic context delivery" value="Unknown" />
+          <PropertyRow
+            label="Example"
+            value={input.example || "Not provided"}
+          />
+        </div>
+      ))}
+      <ServerNotes
+        heading="Input declaration issues"
+        notes={surface.notes}
+        testId="holder-inputs-notes"
+      />
     </div>
   );
-}
-
-function inputHint(data: MandateWorkspaceData, draftCount: number): string {
-  if (data.offer) return `Provision — ${data.offer.values.length} values offered`;
-  if (draftCount > 0) return `${draftCount} described — formalize later`;
-  return "";
 }
 
 /** Best-effort: a conversion result shaped as draft-input rows (an array, or
@@ -425,7 +462,9 @@ export function TriadGoalSection({
   const dispatch = useAppDispatch();
   const goal = goalOfMandate(data.mandate);
   const grounding =
-    ((data.mandate as { goal_grounding?: string }).goal_grounding as string) ?? "A";
+    typeof data.mandate.goal_grounding === "string"
+      ? data.mandate.goal_grounding
+      : "Unknown";
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(goal ?? "");
   const [saving, setSaving] = useState(false);
@@ -561,7 +600,9 @@ export function TriadGoalSection({
             ? servedInputs
                 .map((i) =>
                   [
-                    i.label && i.label !== i.name ? `${i.label} (${i.name})` : i.name,
+                    i.label && i.label !== i.name
+                      ? `${i.label} (${i.name})`
+                      : i.name,
                     i.kind ? `[${i.kind}]` : "",
                     i.sourcing === "require" ? "— required" : "",
                     i.help ? `— ${i.help}` : "",
@@ -585,7 +626,9 @@ export function TriadGoalSection({
       task_overview: [
         `Job: ${data.mandate.label ?? data.mandate.mandate_key}`,
         `Key: ${data.mandate.mandate_key}`,
-        data.mandate.description ? `Description: ${data.mandate.description}` : "",
+        data.mandate.description
+          ? `Description: ${data.mandate.description}`
+          : "",
         `Goal so far: ${goal?.trim() || "(none written yet)"}`,
       ]
         .filter(Boolean)
@@ -624,7 +667,7 @@ export function TriadGoalSection({
   };
 
   return (
-    <Section title="Goal" hint="lives only here">
+    <Section title="Goal">
       <div className="space-y-2.5 rounded-xl border border-primary/25 bg-card p-4">
         {editing ? (
           <div className="space-y-2">
@@ -637,7 +680,12 @@ export function TriadGoalSection({
               aria-label="Goal"
             />
             <div className="flex items-center gap-1.5">
-              <Button size="sm" className="h-7 gap-1 text-[12px]" disabled={saving} onClick={() => void save()}>
+              <Button
+                size="sm"
+                className="h-7 gap-1 text-[12px]"
+                disabled={saving}
+                onClick={() => void save()}
+              >
                 <Check className="h-3.5 w-3.5" />
                 {saving ? "Saving…" : "Save goal"}
               </Button>
@@ -653,9 +701,10 @@ export function TriadGoalSection({
                 <X className="h-3.5 w-3.5" />
                 Cancel
               </Button>
-              <span className="text-[11px] text-muted-foreground/70">
-                Saving marks it human-ratified. Code seeds never overwrite it.
-              </span>
+              <FieldHelp label="Save goal">
+                Saving marks the goal as human-ratified. Code seeds do not
+                overwrite it.
+              </FieldHelp>
             </div>
           </div>
         ) : authoring ? (
@@ -670,11 +719,11 @@ export function TriadGoalSection({
               aria-label="Edit goal"
             >
               <p className="whitespace-pre-wrap text-[15px] font-medium leading-relaxed text-foreground">
-                {goal || "No goal yet — state exactly what done-well means."}
+                {goal || "Not specified"}
                 <Pencil className="ml-1.5 inline h-3 w-3 align-baseline text-muted-foreground/0 transition-colors group-hover:text-muted-foreground" />
               </p>
             </button>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="space-y-2">
               <GroundingBadge grounding={grounding} />
               <AutomationButton
                 mandateKey={GOAL_WRITER_MANDATE_KEY}
@@ -691,18 +740,19 @@ export function TriadGoalSection({
              on the admin route. Stated plainly, never as a disabled control. */
           <>
             <p className="whitespace-pre-wrap text-[15px] font-medium leading-relaxed text-foreground">
-              {goal || "No goal set for this job yet."}
+              {goal || "Not specified"}
             </p>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="space-y-2">
               <GroundingBadge grounding={grounding} />
             </div>
           </>
         )}
-        {data.mandate.description && data.mandate.description !== goal ? (
-          <p className="border-t border-border/40 pt-2 text-[12.5px] leading-relaxed text-muted-foreground">
-            {data.mandate.description}
-          </p>
-        ) : null}
+        <PropertyRow
+          label="Description"
+          value={data.mandate.description ? "Provided" : "Not provided"}
+          help={data.mandate.description || undefined}
+          className="border-t border-border/40 pt-2"
+        />
       </div>
     </Section>
   );
@@ -715,41 +765,52 @@ export function TriadOutputSection({ data }: { data: MandateWorkspaceData }) {
   return (
     <Section title="Output">
       <div className="space-y-1.5 rounded-xl border border-border/60 bg-card p-4">
-        {data.mandate.output_kind ? (
-          <EntityRef
-            token="shape"
-            id={data.mandate.output_kind}
-            name={data.mandate.output_kind}
-            href={`/shapes/${encodeURIComponent(data.mandate.output_kind)}`}
-            showIcon={false}
-            className="font-mono text-[12.5px]"
-          />
-        ) : (
-          <p className="text-[12.5px] text-amber-700 dark:text-amber-400">
-            No output kind declared
-            {data.contract.requiredOutputKeys.length > 0
-              ? " — consumers require these keys:"
-              : " — unspecified."}
-          </p>
-        )}
-        {data.contract.requiredOutputKeys.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {data.contract.requiredOutputKeys.map((key) => (
-              <code key={key} className="rounded bg-muted px-1.5 py-0.5 text-[11px]">
-                {key}
-              </code>
-            ))}
-          </div>
-        ) : null}
-        {constraints ? (
-          <p className="text-[12.5px] text-muted-foreground">{constraints}</p>
-        ) : null}
+        <PropertyRow
+          label="Format"
+          value={
+            data.mandate.output_kind ? (
+              <EntityRef
+                token="shape"
+                id={data.mandate.output_kind}
+                name={displayLabelForKey(data.mandate.output_kind)}
+                href={`/shapes/${encodeURIComponent(data.mandate.output_kind)}`}
+                showIcon={false}
+                wrap
+              />
+            ) : (
+              "Not specified"
+            )
+          }
+          source="Mandate definition"
+        />
+        <PropertyRow
+          label="Required fields"
+          value={
+            data.contract.requiredOutputKeys.length > 0
+              ? data.contract.requiredOutputKeys
+                  .map((key) => displayLabelForKey(key))
+                  .join(", ")
+              : "None declared"
+          }
+          source="Mandate contract"
+        />
+        <PropertyRow
+          label="Constraints"
+          value={
+            <span className="whitespace-pre-wrap">
+              {constraints || "Not specified"}
+            </span>
+          }
+          source="Mandate definition"
+        />
       </div>
     </Section>
   );
 }
 
-function outputConstraintsOf(mandate: MandateWorkspaceData["mandate"]): string | null {
+function outputConstraintsOf(
+  mandate: MandateWorkspaceData["mandate"],
+): string | null {
   const metadata = (mandate as { metadata?: unknown }).metadata;
   if (typeof metadata !== "object" || metadata === null) return null;
   const value = (metadata as Record<string, unknown>).output_constraints;

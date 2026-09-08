@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
+import { PropertyRow } from "@/components/official/ConfigurationFields";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -104,7 +105,7 @@ export const SHORTCUT_ADVANCED_WORDS: AdvancedSectionWords = {
   activeHint: "Inactive shortcuts are hidden from menus but kept in the DB.",
   descriptionPlaceholder: "What this shortcut does",
   iconHint: "Pick from the curated gallery or enter a Lucide icon name.",
-  iconPlaceholder: "e.g. Sparkles, Flame, svg:icons/Home",
+  iconPlaceholder: "e.g. BrainCircuit, Flame, svg:icons/Home",
   contextOverridesHint:
     "Per-key values that override what the surface ships into context policies.",
   llmOverridesHint:
@@ -123,7 +124,14 @@ export function AdvancedSection({
   overridesInstanceKey,
   overridesWords,
   overridesTitle,
+  section,
+  fieldMeta,
 }: {
+  section?: "display" | "overrides" | "permissions";
+  fieldMeta?: (field: keyof AdvancedFields) => {
+    source: string;
+    state: string;
+  };
   value: AdvancedFields;
   onChange: <K extends keyof AdvancedFields>(
     field: K,
@@ -168,29 +176,57 @@ export function AdvancedSection({
   const w = { ...SHORTCUT_ADVANCED_WORDS, ...words };
   const [open, setOpen] = useState(false);
   const [rawOpen, setRawOpen] = useState(false);
-  const hidden = (field: keyof AdvancedFields) => omit?.includes(field) ?? false;
+  const hidden = (field: keyof AdvancedFields) => {
+    if (omit?.includes(field)) return true;
+    if (!section) return false;
+    const displayFields: readonly (keyof AdvancedFields)[] = [
+      "isActive",
+      "iconName",
+      "keyboardShortcut",
+      "sortOrder",
+      "responseDensity",
+    ];
+    return (
+      section === "permissions" ||
+      (section === "display"
+        ? !displayFields.includes(field)
+        : displayFields.includes(field))
+    );
+  };
 
   return (
     <section className="space-y-3">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 py-1.5 text-sm font-semibold text-foreground hover:text-foreground transition-colors"
-      >
-        <ChevronDown
-          className={cn("h-4 w-4 transition-transform", !open && "-rotate-90")}
-        />
-        {w.heading}
-        <span className="ml-1 text-[11px] font-normal text-muted-foreground">
-          {w.hint}
-        </span>
-      </button>
+      {!section && (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="w-full flex items-center gap-2 py-1.5 text-sm font-semibold text-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 transition-transform",
+              !open && "-rotate-90",
+            )}
+          />
+          {w.heading}
+          <span className="ml-1 text-[11px] font-normal text-muted-foreground">
+            {w.hint}
+          </span>
+        </button>
+      )}
 
-      {open && (
-        <div className="space-y-1 rounded-xl border border-border bg-muted/30 p-4">
+      {(open || section) && (
+        <div
+          className={
+            section
+              ? "space-y-1"
+              : "space-y-1 rounded-xl border border-border bg-muted/30 p-4"
+          }
+        >
           {!hidden("isActive") && (
             <ToggleRow
               title={w.activeTitle}
+              {...fieldMeta?.("isActive")}
               hint={w.activeHint}
               checked={value.isActive}
               onChange={(v) => onChange("isActive", v)}
@@ -205,7 +241,9 @@ export function AdvancedSection({
             >
               <ProTextarea
                 value={value.description ?? ""}
-                onChange={(e) => onChange("description", e.target.value || null)}
+                onChange={(e) =>
+                  onChange("description", e.target.value || null)
+                }
                 rows={2}
                 placeholder={w.descriptionPlaceholder}
                 disabled={disabled}
@@ -215,7 +253,12 @@ export function AdvancedSection({
             </FieldRow>
           )}
 
-          <FieldRow title="Icon" hint={w.iconHint}>
+          <FieldRow
+            title="Icon"
+            hidden={hidden("iconName")}
+            {...fieldMeta?.("iconName")}
+            hint={w.iconHint}
+          >
             <IconInputWithValidation
               value={value.iconName ?? ""}
               onChange={(next) => onChange("iconName", next || null)}
@@ -226,8 +269,14 @@ export function AdvancedSection({
             />
           </FieldRow>
 
-          <FieldRow title="Keyboard shortcut" hint="e.g. Cmd+Shift+K">
+          <FieldRow
+            title="Keyboard shortcut"
+            hidden={hidden("keyboardShortcut")}
+            {...fieldMeta?.("keyboardShortcut")}
+            hint="e.g. Cmd+Shift+K"
+          >
             <Input
+              aria-label="Keyboard shortcut"
               value={value.keyboardShortcut ?? ""}
               onChange={(e) =>
                 onChange("keyboardShortcut", e.target.value || null)
@@ -239,9 +288,15 @@ export function AdvancedSection({
             />
           </FieldRow>
 
-          <FieldRow title="Sort order" hint="Lower numbers appear first.">
+          <FieldRow
+            title="Sort order"
+            hidden={hidden("sortOrder")}
+            {...fieldMeta?.("sortOrder")}
+            hint="Lower numbers appear first."
+          >
             <Input
               type="number"
+              aria-label="Sort order"
               value={value.sortOrder}
               onChange={(e) =>
                 onChange("sortOrder", Number(e.target.value) || 0)
@@ -253,15 +308,18 @@ export function AdvancedSection({
 
           <FieldRow
             title="Default user input"
+            hidden={hidden("defaultUserInput")}
+            {...fieldMeta?.("defaultUserInput")}
             hint="Pre-fills the user message box on launch."
           >
             <ProTextarea
+              aria-label="Default user input"
               value={value.defaultUserInput ?? ""}
               onChange={(e) =>
                 onChange("defaultUserInput", e.target.value || null)
               }
               rows={2}
-              placeholder="Hello"
+              placeholder={section ? "Not set" : "Hello"}
               disabled={disabled}
               className="text-sm resize-none"
               style={{ fontSize: "16px" }}
@@ -270,6 +328,8 @@ export function AdvancedSection({
 
           <FieldRow
             title="Response density"
+            hidden={hidden("responseDensity")}
+            {...fieldMeta?.("responseDensity")}
             hint="Visual density of the result UI."
           >
             <Select
@@ -279,7 +339,10 @@ export function AdvancedSection({
               }
               disabled={disabled}
             >
-              <SelectTrigger className="h-9 text-sm w-40">
+              <SelectTrigger
+                aria-label="Response density"
+                className="h-9 text-sm w-40"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -289,14 +352,17 @@ export function AdvancedSection({
             </Select>
           </FieldRow>
 
-          {value.autoRun && value.showPreExecutionGate && (
+          {(section || (value.autoRun && value.showPreExecutionGate)) && (
             <FieldRow
               title="Bypass gate after"
+              hidden={hidden("bypassGateSeconds")}
+              {...fieldMeta?.("bypassGateSeconds")}
               hint="Auto-confirm the pre-execution gate after N seconds."
             >
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
+                  aria-label="Bypass gate after seconds"
                   value={value.bypassGateSeconds}
                   onChange={(e) =>
                     onChange("bypassGateSeconds", Number(e.target.value) || 0)
@@ -315,17 +381,28 @@ export function AdvancedSection({
               one binding UI it was the ONLY way to pick a model at all. It is
               now the canonical model picker plus the canonical settings panel,
               both mounted unchanged. */}
-          <StoredModelOverridesField
-            instanceKey={`${overridesInstanceKey}-llm`}
-            value={asJsonObject(value.llmOverrides)}
-            onChange={(next) =>
-              onChange("llmOverrides", next as AgentShortcut["llmOverrides"])
-            }
-            hint={w.llmOverridesHint}
-            title={overridesTitle}
-            words={overridesWords}
-            disabled={disabled}
-          />
+          <div hidden={hidden("llmOverrides")}>
+            {section && (
+              <PropertyRow
+                label="Model overrides"
+                value={value.llmOverrides == null ? "None" : "Configured"}
+                {...fieldMeta?.("llmOverrides")}
+                help={w.llmOverridesHint}
+              />
+            )}
+            <StoredModelOverridesField
+              structured={Boolean(section)}
+              instanceKey={`${overridesInstanceKey}-llm`}
+              value={asJsonObject(value.llmOverrides)}
+              onChange={(next) =>
+                onChange("llmOverrides", next as AgentShortcut["llmOverrides"])
+              }
+              hint={section ? "" : w.llmOverridesHint}
+              title={overridesTitle}
+              words={overridesWords}
+              disabled={disabled}
+            />
+          </div>
 
           {/* 🚨 RAW JSON IS A DEVELOPER'S BACK DOOR, NEVER THE PRIMARY EDITOR.
               Three fields still have no control of their own, and the honest
@@ -334,29 +411,36 @@ export function AdvancedSection({
               nothing stored is lost — behind a fold that names what they are
               and what is missing. The model settings, which DO have a control,
               are above and are not repeated here. */}
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={() => setRawOpen((v) => !v)}
-              className="flex w-full items-center gap-2 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <ChevronDown
-                className={cn(
-                  "h-3.5 w-3.5 transition-transform",
-                  !rawOpen && "-rotate-90",
-                )}
-              />
-              Raw JSON — for developers
-              <span className="ml-1 text-[11px] font-normal text-muted-foreground/80">
-                Three settings that do not have a control yet. Nothing here is
-                required.
-              </span>
-            </button>
+          <div
+            className="pt-1"
+            hidden={section === "display" || section === "permissions"}
+          >
+            {!section && (
+              <button
+                type="button"
+                onClick={() => setRawOpen((v) => !v)}
+                className="flex w-full items-center gap-2 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 transition-transform",
+                    !rawOpen && "-rotate-90",
+                  )}
+                />
+                Raw JSON — for developers
+                <span className="ml-1 text-[11px] font-normal text-muted-foreground/80">
+                  Three settings that do not have a control yet. Nothing here is
+                  required.
+                </span>
+              </button>
+            )}
 
-            {rawOpen && (
+            {(rawOpen || section) && (
               <div className="space-y-1 rounded-lg border border-dashed border-border bg-background/60 px-3">
                 <JsonFieldRow
                   title="Default variables"
+                  hidden={hidden("defaultVariables")}
+                  {...fieldMeta?.("defaultVariables")}
                   hint={`Pre-filled values for the agent variables — overrides each variable's built-in default. Example: { "language": "en" }`}
                   value={value.defaultVariables}
                   onChange={(v) =>
@@ -371,6 +455,8 @@ export function AdvancedSection({
 
                 <JsonFieldRow
                   title="Context overrides"
+                  hidden={hidden("contextOverrides")}
+                  {...fieldMeta?.("contextOverrides")}
                   hint={w.contextOverridesHint}
                   value={value.contextOverrides}
                   onChange={(v) =>
@@ -385,6 +471,8 @@ export function AdvancedSection({
 
                 <JsonFieldRow
                   title="JSON extraction"
+                  hidden={hidden("jsonExtraction")}
+                  {...fieldMeta?.("jsonExtraction")}
                   hint={w.jsonExtractionHint}
                   value={value.jsonExtraction}
                   onChange={(v) =>
@@ -415,13 +503,39 @@ function ToggleRow({
   checked,
   onChange,
   disabled,
+  source,
+  state,
 }: {
+  source?: string;
+  state?: string;
   title: string;
   hint: string;
   checked: boolean;
   onChange: (next: boolean) => void;
   disabled?: boolean;
 }) {
+  if (source)
+    return (
+      <PropertyRow
+        label={title}
+        source={source}
+        state={state}
+        help={hint}
+        value={
+          <div className="flex items-center gap-3">
+            <span>
+              {checked === true ? "Yes" : checked === false ? "No" : "Unknown"}
+            </span>
+            <Switch
+              aria-label={title}
+              checked={checked}
+              onCheckedChange={onChange}
+              disabled={disabled}
+            />
+          </div>
+        }
+      />
+    );
   return (
     <div className="flex items-start gap-3 py-2.5">
       <div className="flex-1 min-w-0">
@@ -444,13 +558,31 @@ function FieldRow({
   title,
   hint,
   children,
+  source,
+  state,
+  hidden,
 }: {
+  hidden?: boolean;
+  source?: string;
+  state?: string;
   title: string;
   hint?: string;
   children: React.ReactNode;
 }) {
+  if (source)
+    return (
+      <div hidden={hidden}>
+        <PropertyRow
+          label={title}
+          source={source}
+          state={state}
+          help={hint}
+          value={children}
+        />
+      </div>
+    );
   return (
-    <div className="py-2.5 space-y-1.5">
+    <div hidden={hidden} className="py-2.5 space-y-1.5">
       <div>
         <div className="text-sm font-medium text-foreground">{title}</div>
         {hint && (
@@ -476,7 +608,13 @@ function JsonFieldRow({
   onChange,
   disabled,
   placeholder,
+  source,
+  state,
+  hidden,
 }: {
+  hidden?: boolean;
+  source?: string;
+  state?: string;
   title: string;
   hint: string;
   value: unknown;
@@ -512,15 +650,22 @@ function JsonFieldRow({
   };
 
   return (
-    <FieldRow title={title} hint={hint}>
+    <FieldRow
+      title={title}
+      hint={hint}
+      source={source}
+      state={state}
+      hidden={hidden}
+    >
       <Textarea
+        aria-label={title}
         value={draft}
         onChange={(e) => onTextChange(e.target.value)}
         rows={4}
         placeholder={placeholder}
         disabled={disabled}
         className="text-xs font-mono resize-y"
-        style={{ fontSize: "13px" }}
+        style={{ fontSize: "16px" }}
       />
       {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
     </FieldRow>

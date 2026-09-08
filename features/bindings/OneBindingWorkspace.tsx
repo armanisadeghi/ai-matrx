@@ -29,6 +29,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CircleCheck, Settings2, Trash2 } from "lucide-react";
 
+import {
+  PropertyRow,
+  StatusToken,
+  FieldHelp,
+} from "@/components/official/ConfigurationFields";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { whenNoLayerIsOpen } from "@/components/dialogs/confirm/deferred-intent";
@@ -40,6 +46,8 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import {
   fetchAgentExecutionFull,
+  resolveAgentVersionId,
+  fetchAgentVersionSnapshot,
   fetchAgentExecutionMinimal,
 } from "@/features/agents/redux/agent-definition/thunks";
 import {
@@ -51,6 +59,7 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
   initInstanceOverrides,
+  updateBaseSettings,
   markRemoved,
   removeInstanceOverrides,
   setOverrides,
@@ -165,7 +174,11 @@ const MANDATE_MAP_WORDS: SuggestionWords = {
     `The mapping helper reads what this job offers and what ${agentName} needs, then proposes the whole match for you to review. Several offered values may feed one input — it can propose that too.`,
 };
 
+export type BindingWorkspaceSection =
+  "holder" | "overrides" | "display" | "permissions";
+
 export interface OneBindingWorkspaceProps {
+  activeSection?: BindingWorkspaceSection;
   data: MandateWorkspaceData;
   /** Which rung the host's route pre-selects. Always visible, always movable. */
   initialRung?: BindingRung;
@@ -192,7 +205,11 @@ export interface OneBindingWorkspaceProps {
    * remedy, and whether it is broken. Built by the host from
    * `mandate.resolve`'s `dropped_code`/`dropped_reason`; never re-derived here.
    */
-  healthNote?: { sentence: string; remedy: string | null; broken: boolean } | null;
+  healthNote?: {
+    sentence: string;
+    remedy: string | null;
+    broken: boolean;
+  } | null;
   onChanged: () => void;
 }
 
@@ -257,6 +274,7 @@ function OneMandateBindingWorkspace({
   fixedRung,
   perspective = "person",
   healthNote = null,
+  activeSection,
   onChanged,
 }: OneBindingWorkspaceProps) {
   const userId = useAppSelector(selectUserId);
@@ -346,6 +364,7 @@ function OneMandateBindingWorkspace({
       fixedRung={fixedRung}
       perspective={perspective}
       healthNote={healthNote}
+      activeSection={activeSection}
       mode={mode}
       onModeChange={(next) => {
         setMode(next);
@@ -397,6 +416,7 @@ function BindingDraft({
   fixedRung,
   perspective,
   healthNote,
+  activeSection,
   mode,
   onModeChange,
   onBatchWrote,
@@ -407,6 +427,7 @@ function BindingDraft({
   onRungChange,
   onChanged,
 }: {
+  activeSection?: BindingWorkspaceSection;
   data: MandateWorkspaceData;
   binding: MandateBindingRowDb | null;
   rung: WorkspaceRung;
@@ -415,7 +436,11 @@ function BindingDraft({
   /** The rung(s) this host manages, when it manages a fixed set of them. */
   fixedRung?: WorkspaceRung | readonly WorkspaceRung[];
   perspective: "person" | "organization" | "system";
-  healthNote: { sentence: string; remedy: string | null; broken: boolean } | null;
+  healthNote: {
+    sentence: string;
+    remedy: string | null;
+    broken: boolean;
+  } | null;
   mode: BindingMode;
   onModeChange: (next: BindingMode) => void;
   /** A batch wrote rows — the single-place view is stale until it is left. */
@@ -719,6 +744,10 @@ function BindingDraft({
     (overriddenKeys?.changed.length ?? 0) +
     (overriddenKeys?.removed.length ?? 0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [hasVisitedBatch, setHasVisitedBatch] = useState(mode === "batch");
+  useEffect(() => {
+    if (mode === "batch") setHasVisitedBatch(true);
+  }, [mode]);
   useEffect(
     () => () => {
       dispatch(removeInstanceOverrides(overridesId));
@@ -726,48 +755,95 @@ function BindingDraft({
     [dispatch, overridesId],
   );
 
-  async function openSettings() {
-    if (settingsOpen) {
-      setSettingsOpen(false);
+  const [settingsBusy, setSettingsBusy] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [settingsRetry, setSettingsRetry] = useState(0);
+  const settingsVisible = settingsOpen || activeSection === "overrides";
+  const selectedVersionId = holder.useLatest ? null : holder.agentVersionId;
+  function openSettings() {
+    setSettingsOpen((open) => !open);
+  }
+
+  useEffect(() => {
+    if (!settingsVisible || holder.kind !== "agent" || !agentId) {
+      setSettingsBusy(false);
       return;
     }
-    setSettingsOpen(true);
-    if (overridesReady) return;
-    let baseSettings: Record<string, unknown> = {};
-    if (agentId) {
-      try {
+    let cancelled = false;
+    setSettingsError(null);
+    setSettingsBusy(true);
+    void (async () => {
+      let referenceId = agentId;
+      if (selectedVersionId) {
+        const version = await dispatch(
+          resolveAgentVersionId(selectedVersionId),
+        ).unwrap();
+        if (!version) throw new Error("Selected version unavailable");
+        await dispatch(
+          fetchAgentVersionSnapshot({
+            agentId: version.agentId,
+            version: version.versionNumber,
+          }),
+        ).unwrap();
+        referenceId = selectedVersionId;
+      } else {
         await dispatch(fetchAgentExecutionFull(agentId)).unwrap();
-        const payload = selectAgentCustomExecutionPayload(
-          store.getState(),
-          agentId,
+      }
+      if (cancelled) return;
+      const payload = selectAgentCustomExecutionPayload(
+        store.getState(),
+        referenceId,
+      );
+      if (!payload.isReady) throw new Error("Holder defaults unavailable");
+      const baseSettings = buildInstanceBaseSettings(
+        payload.settings,
+        payload.modelId,
+      );
+      if (selectInstanceOverrideState(overridesId)(store.getState())) {
+        dispatch(
+          updateBaseSettings({ conversationId: overridesId, baseSettings }),
         );
-        if (payload.isReady) {
-          baseSettings = buildInstanceBaseSettings(
-            payload.settings,
-            payload.modelId,
-          );
+      } else {
+        dispatch(
+          initInstanceOverrides({ conversationId: overridesId, baseSettings }),
+        );
+        if (storedOverrides) {
+          const changes: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(storedOverrides)) {
+            if (value === null)
+              dispatch(markRemoved({ conversationId: overridesId, key }));
+            else changes[key] = value;
+          }
+          if (Object.keys(changes).length)
+            dispatch(setOverrides({ conversationId: overridesId, changes }));
         }
-      } catch {
-        toast.error(
-          "Couldn't load the agent's settings — starting from a blank base.",
-        );
       }
-    }
-    dispatch(
-      initInstanceOverrides({ conversationId: overridesId, baseSettings }),
-    );
-    if (storedOverrides) {
-      const changes: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(storedOverrides)) {
-        if (value === null)
-          dispatch(markRemoved({ conversationId: overridesId, key }));
-        else changes[key] = value;
-      }
-      if (Object.keys(changes).length > 0) {
-        dispatch(setOverrides({ conversationId: overridesId, changes }));
-      }
-    }
-  }
+    })()
+      .catch((error: unknown) => {
+        if (!cancelled)
+          setSettingsError(
+            error instanceof Error
+              ? error.message
+              : "Holder defaults unavailable",
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setSettingsBusy(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    settingsVisible,
+    holder.kind,
+    agentId,
+    selectedVersionId,
+    overridesId,
+    storedOverrides,
+    settingsRetry,
+    dispatch,
+    store,
+  ]);
 
   // ── Save / remove ─────────────────────────────────────────────────────────
   const [busy, setBusy] = useState(false);
@@ -922,40 +998,44 @@ function BindingDraft({
           ? DEFAULT_HOLDER_PERSONAL_HOLDER_REFUSAL
           : holder.kind === "agent" && !verdict.passed
             ? verdict.checking
-              ? "Checking whether this agent meets the mandate…"
-              : "This agent does not meet the mandate yet — see the problems above."
+              ? "Preliminary check: Checking"
+              : "Preliminary check: Failed"
             : null;
 
   /** Why Save cannot act — adjacent to the button, never a transient toast. */
-  const saveRefusal = writingDefinitionDefault
-    ? defaultHolderRefusal
-    : !holderChosen
-    ? "Choose an agent or a workflow first — a binding names who runs the job."
-    : !rungReady
-      ? "Pick the organization this answer is for."
-      : rung === "org" && !canBindThisOrg
-        ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there. Ask an owner to set it, or pick an organization you administer — your own answer above always works.`
-        : writesForEveryone && !canBindGlobal
-        ? "The system answer is a super-admin decision — the server refuses this write."
-        : /* 🚨 A HARD REFUSAL, not a warning (Arman, 2026-08-31, restated
+  const saveRefusal = settingsBusy
+    ? "Holder defaults: Reading"
+    : settingsError
+      ? "Holder defaults: Unavailable"
+      : writingDefinitionDefault
+        ? defaultHolderRefusal
+        : !holderChosen
+          ? "Choose an agent or a workflow first — a binding names who runs the job."
+          : !rungReady
+            ? "Pick the organization this answer is for."
+            : rung === "org" && !canBindThisOrg
+              ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there. Ask an owner to set it, or pick an organization you administer — your own answer above always works.`
+              : writesForEveryone && !canBindGlobal
+                ? "The system answer is a super-admin decision — the server refuses this write."
+                : /* 🚨 A HARD REFUSAL, not a warning (Arman, 2026-08-31, restated
              2026-09-08). The picker was restricted and the save was not: an
              agent drafted before the restriction existed, or handed in by the
              guard dialog, could still be written as the answer every user on
              the platform gets. Now Save is DISABLED with the reason and the
              remedy beside it. */
-          writesForEveryone && systemHolderIsPersonal
-          ? SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL
-        : holder.kind === "agent" && !verdict.passed
-          ? verdict.checking
-            ? "Checking whether this agent meets the mandate…"
-            : "This agent does not meet the mandate yet — see the problems above."
-          : awaitingPick
-            ? "One input is still waiting for you to pick which offered value feeds it."
-            : mapProblems.length > 0
-              ? "Fix the mapping problems named on the rows above."
-              : unfedRequired.length > 0
-                ? `${unfedRequired.map((n) => `"${n}"`).join(", ")} ${unfedRequired.length === 1 ? "is required and nothing feeds it" : "are required and nothing feeds them"}, and the holder has no default of its own — written like that, this job cannot run. Feed ${unfedRequired.length === 1 ? "it" : "them"} above.`
-                : null;
+                  writesForEveryone && systemHolderIsPersonal
+                  ? SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL
+                  : holder.kind === "agent" && !verdict.passed
+                    ? verdict.checking
+                      ? "Preliminary check: Checking"
+                      : "Preliminary check: Failed"
+                    : awaitingPick
+                      ? "One input is still waiting for you to pick which offered value feeds it."
+                      : mapProblems.length > 0
+                        ? "Fix the mapping problems named on the rows above."
+                        : unfedRequired.length > 0
+                          ? `Required mapping: ${unfedRequired.join(", ")}`
+                          : null;
 
   const storedAgentId = binding ? agentHolderOfBinding(binding).holderId : null;
   const holderChanged =
@@ -1172,7 +1252,11 @@ function BindingDraft({
           agentId: writingAgentId,
           agentName:
             data.agentsById[writingAgentId]?.name ?? "the selected agent",
-          versionId: bindAgentId ? null : holder.useLatest ? null : holder.agentVersionId,
+          versionId: bindAgentId
+            ? null
+            : holder.useLatest
+              ? null
+              : holder.agentVersionId,
           useLatest: bindAgentId ? true : holder.useLatest,
           successMessage: savedWords(savedRung, defaultHolderOffer.label),
         });
@@ -1371,7 +1455,10 @@ function BindingDraft({
     nextRung: WorkspaceRung,
     nextOrgId: string | null,
   ) {
-    if (nextRung === rung && (nextRung !== "org" || nextOrgId === organizationId)) {
+    if (
+      nextRung === rung &&
+      (nextRung !== "org" || nextOrgId === organizationId)
+    ) {
       onRungChange(nextRung, nextOrgId);
       return;
     }
@@ -1499,7 +1586,8 @@ function BindingDraft({
    * disagree about what this job may drive.
    */
   const jobWriteTargets = useMemo(
-    () => (jobSurfaceName ? (getManifest(jobSurfaceName)?.writeTargets ?? []) : []),
+    () =>
+      jobSurfaceName ? (getManifest(jobSurfaceName)?.writeTargets ?? []) : [],
     [jobSurfaceName],
   );
 
@@ -1551,145 +1639,130 @@ function BindingDraft({
 
   return (
     <div className="space-y-3">
-      <ScopeHolderBar
-        rung={rung}
-        organizationId={organizationId}
-        allowGlobal={allowGlobal}
-        fixedRung={fixedRung}
-        // THE FOURTH RUNG — offered to whoever may actually set it, and
-        // explained (with who may, and what this reader can do instead) to
-        // everybody else. A pinned host is shown it only when it is one of the
-        // rungs that host actually manages.
-        defaultHolderOffer={
-          pinnedHere && !pinnedHere.includes(DEFAULT_HOLDER_RUNG)
-            ? null
-            : defaultHolderOffer
+      <div
+        className={
+          activeSection && activeSection !== "holder" ? "hidden" : "space-y-3"
         }
-        // The bottom rung's CURRENT answer, stated wherever that rung is
-        // described — including from the rungs above it (FIX-R6/F3).
-        defaultHolderNow={defaultHolderNow}
-        onRungChange={(nextRung, nextOrgId) =>
-          void requestRungChange(nextRung, nextOrgId)
-        }
-        unsavedNote={
-          // While an intent is parked, the cell says the question is coming —
-          // otherwise the click looks ignored, which is how R3-1 read to the
-          // person even before the confirm went missing.
-          pendingRung
-            ? `Moving to ${rungWords(pendingRung.rung).noun} — asking about your unsaved changes as soon as the menu closes…`
-            : dirty
-              ? "You have unsaved changes here. Moving rung starts from that rung's own stored answer and discards them — you will be asked first."
-              : null
-        }
-        // Where the row that was just written actually answers, in the server's
-        // words — the row's own `organization_id` does not say it, and no client
-        // sentence may guess it.
-        appliesIn={writeReport?.appliesIn ?? null}
-        // The server names the org by id because it has no name to hand; this
-        // screen does. See ScopeHolderBar's note — a display resolution, not a
-        // rewrite of the server's sentence.
-        organizationNames={organizationNames}
-        holder={holder}
-        onHolderChange={setHolder}
-        holderName={
-          holderName ?? (agentId ? data.agentsById[agentId]?.name : null) ?? null
-        }
-        job={{
-          mandateKey: data.mandate.mandate_key,
-          label: data.mandate.label ?? data.mandate.mandate_key,
-          outputKind: data.mandate.output_kind,
-          offeredCount: offerPending ? null : offeredValues.length,
-          offerSourceLine,
-          coverageLine: jobCoverage,
-        }}
-        ladderLine={ladderLine(data.bindings, rung, userId, organizationId)}
-        disabled={disabled}
-        perspective={perspective}
-        // 🚨 ONE VERDICT ON SCREEN, ALWAYS ABOUT THE HOLDER IN THE CONTROLS
-        // (FIX-R9-UI round 2). The pre-flight below judges the DRAFTED agent
-        // and gates Save; `healthNote` is the DOOR's judgement of what is
-        // saved. When the pre-flight is speaking they are the same defect in
-        // two voices — which is the repetition Arman rejected — so the door's
-        // sentence stands only while the pre-flight has nothing to say.
-        healthNote={preflightSpeaking ? null : healthNote}
-      />
-
+      >
+        <ScopeHolderBar
+          rung={rung}
+          organizationId={organizationId}
+          allowGlobal={allowGlobal}
+          fixedRung={fixedRung}
+          // THE FOURTH RUNG — offered to whoever may actually set it, and
+          // explained (with who may, and what this reader can do instead) to
+          // everybody else. A pinned host is shown it only when it is one of the
+          // rungs that host actually manages.
+          defaultHolderOffer={
+            pinnedHere && !pinnedHere.includes(DEFAULT_HOLDER_RUNG)
+              ? null
+              : defaultHolderOffer
+          }
+          // The bottom rung's CURRENT answer, stated wherever that rung is
+          // described — including from the rungs above it (FIX-R6/F3).
+          defaultHolderNow={defaultHolderNow}
+          onRungChange={(nextRung, nextOrgId) =>
+            void requestRungChange(nextRung, nextOrgId)
+          }
+          unsavedNote={
+            // While an intent is parked, the cell says the question is coming —
+            // otherwise the click looks ignored, which is how R3-1 read to the
+            // person even before the confirm went missing.
+            pendingRung
+              ? `Moving to ${rungWords(pendingRung.rung).noun} — asking about your unsaved changes as soon as the menu closes…`
+              : dirty
+                ? "You have unsaved changes here. Moving rung starts from that rung's own stored answer and discards them — you will be asked first."
+                : null
+          }
+          // Where the row that was just written actually answers, in the server's
+          // words — the row's own `organization_id` does not say it, and no client
+          // sentence may guess it.
+          appliesIn={writeReport?.appliesIn ?? null}
+          // The server names the org by id because it has no name to hand; this
+          // screen does. See ScopeHolderBar's note — a display resolution, not a
+          // rewrite of the server's sentence.
+          organizationNames={organizationNames}
+          holder={holder}
+          onHolderChange={setHolder}
+          holderName={
+            holderName ??
+            (agentId ? data.agentsById[agentId]?.name : null) ??
+            null
+          }
+          job={{
+            mandateKey: data.mandate.mandate_key,
+            label: data.mandate.label ?? data.mandate.mandate_key,
+            outputKind: data.mandate.output_kind,
+            offeredCount: offerPending ? null : offeredValues.length,
+            offerSourceLine,
+            coverageLine: jobCoverage,
+          }}
+          ladderLine={ladderLine(data.bindings, rung, userId, organizationId)}
+          disabled={disabled}
+          perspective={perspective}
+          // 🚨 ONE VERDICT ON SCREEN, ALWAYS ABOUT THE HOLDER IN THE CONTROLS
+          // (FIX-R9-UI round 2). The pre-flight below judges the DRAFTED agent
+          // and gates Save; `healthNote` is the DOOR's judgement of what is
+          // saved. When the pre-flight is speaking they are the same defect in
+          // two voices — which is the repetition Arman rejected — so the door's
+          // sentence stands only while the pre-flight has nothing to say.
+          healthNote={activeSection || preflightSpeaking ? null : healthNote}
+        />
+      </div>
       {/* ONE SCREEN, TWO MODES (P17). The rung and the holder above hold still;
           only the shape of the match changes.
           🚨 ABSENT AT THE BOTTOM RUNG, never disabled-looking: batch mode
           writes BINDINGS across many jobs, and the mandate's own default is not
           a binding. A toggle that cannot mean anything here is exactly the dead
           control the fourth law forbids. */}
-      {onDefaultHolderRung || systemHost ? null : (
+      {onDefaultHolderRung ||
+      systemHost ||
+      (activeSection && activeSection !== "holder") ? null : (
         <ModeToggle mode={mode} onChange={onModeChange} disabled={disabled} />
       )}
 
-      {mode === "batch" && !onDefaultHolderRung && !systemHost ? (
-        <BatchMode
-          rung={rung}
-          organizationId={organizationId}
-          userId={userId}
-          holder={holder}
-          agentId={agentId}
-          agentName={
-            holderName ??
-            (agentId ? data.agentsById[agentId]?.name : null) ??
-            "This holder"
+      {(hasVisitedBatch || mode === "batch") &&
+      !onDefaultHolderRung &&
+      !systemHost ? (
+        <div
+          hidden={
+            mode !== "batch" ||
+            Boolean(activeSection && activeSection !== "holder")
           }
-          agentDeclarations={
-            holder.kind === "agent" && agentPayload.isReady
-              ? {
-                  variableNames: (agentPayload.variableDefinitions ?? []).map(
-                    (v) => v.name,
-                  ),
-                  contextPolicyKeys: (agentPayload.contextPolicies ?? []).map(
-                    (s) => s.key,
-                  ),
-                }
-              : null
-          }
-          holderInputs={holderInputs}
-          currentMandateKey={data.mandate.mandate_key}
-          canBindGlobal={canBindGlobal}
-          disabled={disabled}
-          onChanged={onBatchWrote}
-        />
-      ) : (
-        <>
-          {/* The agent pre-flight, above the match it gates. */}
-          {holder.kind === "agent" && agentId ? (
-            <div className="rounded-xl border border-border bg-card px-3 py-2">
-              {verdict.checking ? (
-                <p className="text-[12px] text-muted-foreground">
-                  Checking whether this agent meets the mandate…
-                </p>
-              ) : verdict.passed ? (
-                <p className="flex items-center gap-1.5 text-[12px] text-emerald-700 dark:text-emerald-400">
-                  <CircleCheck className="h-3.5 w-3.5" />
-                  This agent meets the mandate.
-                </p>
-              ) : (
-                <ul className="space-y-1.5">
-                  {verdict.problems.map((problem) => (
-                    <li
-                      key={problem}
-                      className="flex items-start gap-1.5 text-[12px] leading-relaxed text-destructive"
-                    >
-                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      <span>
-                        <TextWithDoors text={problem} defaultToken="agent" />
-                      </span>
-                    </li>
-                  ))}
-                  <li className="pl-5 text-[11.5px] text-muted-foreground">
-                    Fix the agent in the builder, then re-select it here.
-                  </li>
-                </ul>
-              )}
-            </div>
-          ) : null}
-
-          {/* 🚨 THE BOTTOM RUNG IS HOLDER-ONLY, AND THE SCREEN SAYS SO
+        >
+          <BatchMode
+            rung={rung}
+            organizationId={organizationId}
+            userId={userId}
+            holder={holder}
+            agentId={agentId}
+            agentName={
+              holderName ??
+              (agentId ? data.agentsById[agentId]?.name : null) ??
+              "This holder"
+            }
+            agentDeclarations={
+              holder.kind === "agent" && agentPayload.isReady
+                ? {
+                    variableNames: (agentPayload.variableDefinitions ?? []).map(
+                      (v) => v.name,
+                    ),
+                    contextPolicyKeys: (agentPayload.contextPolicies ?? []).map(
+                      (s) => s.key,
+                    ),
+                  }
+                : null
+            }
+            holderInputs={holderInputs}
+            currentMandateKey={data.mandate.mandate_key}
+            canBindGlobal={canBindGlobal}
+            disabled={disabled}
+            onChanged={onBatchWrote}
+          />
+        </div>
+      ) : null}
+      <>
+        {/* 🚨 THE BOTTOM RUNG IS HOLDER-ONLY, AND THE SCREEN SAYS SO
           (FIX-R3/W3). `mandate.definition` has no `consumption_map`, no
           `config_overrides` and no `auto_run` — those columns are on
           `agent.mandate_binding`. So the whole map/settings/auto-run half is
@@ -1704,21 +1777,28 @@ function BindingDraft({
           platform-wide binding, which has all three columns. So the editors
           are live, nothing is dropped at the door, and the admin never has to
           be asked where a row is stored. */}
-          {holderOnlyRung ? (
-            <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
-              {DEFAULT_HOLDER_IS_HOLDER_ONLY}
-            </p>
-          ) : (
+        {holderOnlyRung ? (
+          <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
+            {DEFAULT_HOLDER_IS_HOLDER_ONLY}
+          </p>
+        ) : (
           <>
-          {/* TWO SIDES AND A MIDDLE — both inventories permanently open (P1).
+            {/* TWO SIDES AND A MIDDLE — both inventories permanently open (P1).
           🚨 CONTAINER query, not a viewport one. This workspace is hosted in a
           3xl reading column, in the admin shell, and inside a draggable window
           panel; a `lg:` breakpoint measures the WINDOW and would lay three
           columns into a 768px container, which is how the first dark-theme walk
           found the middle squeezed to ~90px. `@container` measures the space
           this actually has, so every host gets the layout it can carry. */}
-          <div className="@container">
-            {/* 🚨 THE MIDDLE IS THE STAR (Arman, 2026-08-31, on the first ship:
+            <div
+              className={
+                (activeSection && activeSection !== "holder") ||
+                mode === "batch"
+                  ? "hidden"
+                  : "@container"
+              }
+            >
+              {/* 🚨 THE MIDDLE IS THE STAR (Arman, 2026-08-31, on the first ship:
             "the match is a ~180px sliver while both inventory columns sit wide
             and mostly empty"). The grid template is the root cause and the only
             place it is fixed:
@@ -1731,246 +1811,438 @@ function BindingDraft({
               · three columns only once the container can carry all of it
                 (@5xl); below that the middle stacks FIRST and the rails follow,
                 because the match is what you came here to do. */}
-            <div className="grid justify-center gap-3 @5xl:grid-cols-[minmax(0,18rem)_minmax(32rem,56rem)_minmax(0,18rem)]">
-              <div className="order-2 min-w-0 @5xl:order-none">
-                <OfferedInventoryColumn
-                  values={offeredValues}
-                  consumedBy={consumedBy}
-                  pinnedContext={data.pinnedContext}
-                  sourceLine={offerSourceLine}
-                  sourceSlug={offerPending ? null : (data.provisionKey ?? null)}
-                  status={offerPending ? "loading" : "ready"}
-                />
-              </div>
+              <div
+                className={
+                  activeSection
+                    ? "grid gap-3"
+                    : "grid justify-center gap-3 @5xl:grid-cols-[minmax(0,18rem)_minmax(32rem,56rem)_minmax(0,18rem)]"
+                }
+              >
+                {!activeSection ? (
+                  <div className="order-2 min-w-0 @5xl:order-none">
+                    <OfferedInventoryColumn
+                      values={offeredValues}
+                      consumedBy={consumedBy}
+                      pinnedContext={data.pinnedContext}
+                      sourceLine={offerSourceLine}
+                      sourceSlug={
+                        offerPending ? null : (data.provisionKey ?? null)
+                      }
+                      status={offerPending ? "loading" : "ready"}
+                    />
+                  </div>
+                ) : null}
 
-              <section className="order-1 flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card @5xl:order-none">
-                <header className="shrink-0 border-b border-border px-3 py-2">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <h3 className="text-[12.5px] font-semibold text-foreground">
-                      The match
-                    </h3>
-                    {holderInputs.status === "ready" ? (
-                      <span className="rounded bg-muted px-1.5 text-[10px] text-muted-foreground">
-                        {holderInputs.targets.length} inputs
-                      </span>
-                    ) : null}
-                    {/* P11 — the two tabs sit in the middle panel's own header, the
+                <section className="order-1 flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card @5xl:order-none">
+                  <header className="shrink-0 border-b border-border px-3 py-2">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <h3 className="text-[12.5px] font-semibold text-foreground">
+                        Matching
+                      </h3>
+                      {holderInputs.status === "ready" ? (
+                        <span className="rounded bg-muted px-1.5 text-[10px] text-muted-foreground">
+                          {holderInputs.targets.length} inputs
+                        </span>
+                      ) : null}
+                      {/* P11 — the two tabs sit in the middle panel's own header, the
                   way the surface bind panel puts them over its mapping section.
                   AI map PROPOSES into this same editor; it never applies. */}
-                    {canProposeMap ? (
-                      <div className="ml-auto flex items-center rounded-md border border-border p-0.5">
-                        {(
-                          [
-                            ["ai", "AI map"],
-                            ["manual", "Map manually"],
-                          ] as const
-                        ).map(([key, label]) => (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() => setMapTab(key)}
-                            className={cn(
-                              "rounded px-2 py-0.5 text-[10.5px] transition-colors",
-                              mapTab === key
-                                ? "bg-primary/10 font-medium text-primary"
-                                : "text-muted-foreground hover:text-foreground",
-                            )}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
+                      {canProposeMap ? (
+                        <div className="ml-auto flex items-center rounded-md border border-border p-0.5">
+                          {(
+                            [
+                              ["ai", "AI map"],
+                              ["manual", "Map manually"],
+                            ] as const
+                          ).map(([key, label]) => (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => setMapTab(key)}
+                              className={cn(
+                                "rounded px-2 py-0.5 text-[10.5px] transition-colors",
+                                mapTab === key
+                                  ? "bg-primary/10 font-medium text-primary"
+                                  : "text-muted-foreground hover:text-foreground",
+                              )}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                    <FieldHelp label="Matching">
+                      Map offered inputs to holder variables or context slots.
+                      Multiple sources are joined in order with a blank line
+                      between them.
+                    </FieldHelp>
+                  </header>
+                  <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                    <MiddleBody
+                      holderStatus={holderInputs.status}
+                      holderMessage={holderInputs.message}
+                      holderKind={holder.kind}
+                      offerPending={offerPending}
+                      hasOffer={offeredValues.length > 0}
+                      targetCount={holderInputs.targets.length}
+                    >
+                      {mapTab === "ai" && canProposeMap ? (
+                        <BindingSuggestionsTab
+                          surfaceName={data.mandate.mandate_key}
+                          agent={{
+                            name:
+                              holderName ??
+                              (agentId
+                                ? data.agentsById[agentId]?.name
+                                : null) ??
+                              "the bound agent",
+                            description: holderDescription,
+                            variableDefinitions: mapperVariableDefinitions,
+                            contextPolicies: mapperContextPolicies,
+                          }}
+                          availableSurfaceValues={offeredSurfaceValues}
+                          writeTargets={jobWriteTargets}
+                          targetNames={holderInputs.targets.map((t) => t.name)}
+                          disabled={disabled}
+                          manyToOne
+                          words={MANDATE_MAP_WORDS}
+                          onAccept={(_mappings, policies, suggestions) => {
+                            // P11 — accepting FILLS the manual editor and switches to
+                            // it. Nothing is saved, nothing is applied blind: every
+                            // line is still editable, and the same pre-flight that
+                            // gates Save re-runs over the result on the way in.
+                            setDraftMap((current) =>
+                              applySuggestions({
+                                map: current,
+                                suggestions,
+                                targetNames: holderInputs.targets.map(
+                                  (t) => t.name,
+                                ),
+                                offeredByName: new Map(
+                                  offeredValues.map((v) => [v.name, v]),
+                                ),
+                                deliverFor: (name) =>
+                                  holderInputs.contextKeys.has(name)
+                                    ? "context"
+                                    : "variable",
+                              }),
+                            );
+                            setMapTab("manual");
+                            // F4 — accepted WRITE policies go to the one editor
+                            // that owns them (OPTIONS › Write access, over
+                            // `mandate.treatment.config.write_policies`), and the
+                            // person is told where they landed and that they are
+                            // not saved yet. A proposal that vanished into a
+                            // store nobody names is the silent half of the same
+                            // defect.
+                            const policyCount = Object.keys(policies).length;
+                            if (policyCount > 0) setProposedPolicies(policies);
+                            toast.success(
+                              policyCount > 0
+                                ? `Filled in below — change any line before you save. ${policyCount} write-access ${policyCount === 1 ? "proposal is" : "proposals are"} in OPTIONS › Write access, and save there separately.`
+                                : "Filled in below — change any line before you save.",
+                            );
+                          }}
+                        />
+                      ) : (
+                        <BindingMiddle
+                          holderKind={holder.kind}
+                          targets={holderInputs.targets}
+                          contextKeys={holderInputs.contextKeys}
+                          offered={offeredValues}
+                          pinnedContext={data.pinnedContext}
+                          value={draftMap}
+                          onChange={setDraftMap}
+                          autoBound={autoBound}
+                          disabled={disabled}
+                        />
+                      )}
+                    </MiddleBody>
                   </div>
-                  <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-                    One row per holder input. Several offered values may feed
-                    one input — they are joined in order, separated by a blank
-                    line.
-                  </p>
-                </header>
-                <div className="min-h-0 flex-1 overflow-y-auto p-3">
-                  <MiddleBody
-                    holderStatus={holderInputs.status}
-                    holderMessage={holderInputs.message}
-                    holderKind={holder.kind}
-                    offerPending={offerPending}
-                    hasOffer={offeredValues.length > 0}
-                    targetCount={holderInputs.targets.length}
-                  >
-                    {mapTab === "ai" && canProposeMap ? (
-                      <BindingSuggestionsTab
-                        surfaceName={data.mandate.mandate_key}
-                        agent={{
-                          name:
-                            holderName ??
-                            (agentId ? data.agentsById[agentId]?.name : null) ??
-                            "the bound agent",
-                          description: holderDescription,
-                          variableDefinitions: mapperVariableDefinitions,
-                          contextPolicies: mapperContextPolicies,
-                        }}
-                        availableSurfaceValues={offeredSurfaceValues}
-                        writeTargets={jobWriteTargets}
-                        targetNames={holderInputs.targets.map((t) => t.name)}
-                        disabled={disabled}
-                        manyToOne
-                        words={MANDATE_MAP_WORDS}
-                        onAccept={(_mappings, policies, suggestions) => {
-                          // P11 — accepting FILLS the manual editor and switches to
-                          // it. Nothing is saved, nothing is applied blind: every
-                          // line is still editable, and the same pre-flight that
-                          // gates Save re-runs over the result on the way in.
-                          setDraftMap((current) =>
-                            applySuggestions({
-                              map: current,
-                              suggestions,
-                              targetNames: holderInputs.targets.map(
-                                (t) => t.name,
-                              ),
-                              offeredByName: new Map(
-                                offeredValues.map((v) => [v.name, v]),
-                              ),
-                              deliverFor: (name) =>
-                                holderInputs.contextKeys.has(name)
-                                  ? "context"
-                                  : "variable",
-                            }),
-                          );
-                          setMapTab("manual");
-                          // F4 — accepted WRITE policies go to the one editor
-                          // that owns them (OPTIONS › Write access, over
-                          // `mandate.treatment.config.write_policies`), and the
-                          // person is told where they landed and that they are
-                          // not saved yet. A proposal that vanished into a
-                          // store nobody names is the silent half of the same
-                          // defect.
-                          const policyCount = Object.keys(policies).length;
-                          if (policyCount > 0) setProposedPolicies(policies);
-                          toast.success(
-                            policyCount > 0
-                              ? `Filled in below — change any line before you save. ${policyCount} write-access ${policyCount === 1 ? "proposal is" : "proposals are"} in OPTIONS › Write access, and save there separately.`
-                              : "Filled in below — change any line before you save.",
-                          );
-                        }}
-                      />
-                    ) : (
-                      <BindingMiddle
-                        holderKind={holder.kind}
-                        targets={holderInputs.targets}
-                        contextKeys={holderInputs.contextKeys}
-                        offered={offeredValues}
-                        pinnedContext={data.pinnedContext}
-                        value={draftMap}
-                        onChange={setDraftMap}
-                        autoBound={autoBound}
-                        disabled={disabled}
-                      />
-                    )}
-                  </MiddleBody>
-                </div>
-              </section>
+                </section>
 
-              <div className="order-3 min-w-0 @5xl:order-none">
-                <HolderInputsColumn
-                  inputs={holderInputs}
-                  fedBy={fedBy}
-                  holderKind={holder.kind}
-                />
+                {!activeSection ? (
+                  <div className="order-3 min-w-0 @5xl:order-none">
+                    <HolderInputsColumn
+                      inputs={holderInputs}
+                      fedBy={fedBy}
+                      holderKind={holder.kind}
+                    />
+                  </div>
+                ) : null}
               </div>
             </div>
-          </div>
 
-          {/* P14 — AUTO-RUN, narrating itself as the map changes. It is only
+            <div
+              className={
+                (activeSection && activeSection !== "holder") ||
+                mode === "batch"
+                  ? "hidden"
+                  : "rounded-lg border border-border p-3"
+              }
+            >
+              <dl>
+                <PropertyRow
+                  label="Preliminary check"
+                  value={
+                    <StatusToken
+                      status={
+                        !holderChosen ||
+                        holder.kind === "workflow" ||
+                        verdict.checking
+                          ? "unknown"
+                          : verdict.passed
+                            ? "ok"
+                            : "error"
+                      }
+                      label={
+                        !holderChosen
+                          ? "Not yet evaluated"
+                          : holder.kind === "workflow"
+                            ? "Not yet evaluated"
+                            : verdict.checking
+                              ? "Checking"
+                              : verdict.passed
+                                ? "Preliminary check passed"
+                                : "Preliminary check failed"
+                      }
+                    />
+                  }
+                  help="Checks the agent's declared inputs and output contract. Mapping and runtime execution are separate checks."
+                />
+                <PropertyRow
+                  label="Check reference"
+                  value={
+                    holder.kind === "workflow"
+                      ? "Not evaluated"
+                      : "Latest agent declaration"
+                  }
+                />
+                <PropertyRow
+                  label="Matching"
+                  value={
+                    holderInputs.status !== "ready"
+                      ? "Unknown"
+                      : `${holderInputs.targets.filter((target) => isFed(sourcesFor(draftMap, target.name))).length} of ${holderInputs.targets.length} inputs mapped`
+                  }
+                />
+                <PropertyRow
+                  label="Unused offered inputs"
+                  value={
+                    offeredValues
+                      .filter((value) => !consumedBy.has(value.name))
+                      .map((value) => formatVariableDisplayName(value.name))
+                      .join(", ") || "None"
+                  }
+                />
+                <PropertyRow
+                  label="Required inputs missing"
+                  value={
+                    holderInputs.status !== "ready"
+                      ? "Unknown"
+                      : unfedRequired.length
+                  }
+                />
+                <PropertyRow
+                  label="Mapping issues"
+                  value={mapProblems.length + (awaitingPick ? 1 : 0)}
+                />
+                <PropertyRow
+                  label="Saved resolution"
+                  value={
+                    <StatusToken
+                      status={
+                        healthNote == null
+                          ? "unknown"
+                          : healthNote.broken
+                            ? "error"
+                            : "neutral"
+                      }
+                      label={
+                        healthNote == null
+                          ? "Not evaluated"
+                          : healthNote.broken
+                            ? "Unavailable"
+                            : "Resolved"
+                      }
+                    />
+                  }
+                  source="Saved configuration"
+                  help={
+                    healthNote
+                      ? `${healthNote.sentence}${healthNote.remedy ? ` ${healthNote.remedy}` : ""}`
+                      : undefined
+                  }
+                />
+                <PropertyRow
+                  label="Full validation"
+                  value={
+                    <StatusToken status="neutral" label="Not yet evaluated" />
+                  }
+                />
+              </dl>
+              {holder.kind === "agent" && !verdict.checking && !verdict.passed
+                ? verdict.problems.map((problem, index) => (
+                    <PropertyRow
+                      key={problem}
+                      label={`Check ${index + 1}`}
+                      value={<StatusToken status="error" />}
+                      help={
+                        <TextWithDoors text={problem} defaultToken="agent" />
+                      }
+                    />
+                  ))
+                : null}
+            </div>
+            <div
+              className={
+                activeSection && activeSection !== "overrides"
+                  ? "hidden"
+                  : "space-y-3"
+              }
+            >
+              {/* P14 — AUTO-RUN, narrating itself as the map changes. It is only
           meaningful once something is actually mapped: before that the bar
           would be a control about a promise nobody has made yet. */}
-          {holderChosen && holderInputs.targets.length > 0 ? (
-            <AutoRunBar
-              targets={holderInputs.targets}
-              map={draftMap}
-              value={autoRun}
-              onChange={setAutoRun}
-              disabled={disabled}
-              // The bar's own sentence is the PRE-SAVE preview of the draft;
-              // these are the server's sentences about what the write stored —
-              // notably the promise refused down to false. Verbatim, and gone
-              // the moment the draft moves.
-              serverNotes={writeReport?.notes ?? []}
-            />
-          ) : null}
-
-          {/* Settings — rare, de-emphasized, and the canonical overrides layer. */}
-          {holder.kind === "agent" && agentId ? (
-            <div className="rounded-xl border border-border bg-card px-3 py-2">
-              <Button
-                variant={overriddenCount > 0 ? "secondary" : "ghost"}
-                size="sm"
-                className="gap-1.5"
-                onClick={() => void openSettings()}
-              >
-                <Settings2 className="h-3.5 w-3.5" />
-                {overriddenCount > 0
-                  ? `Settings (${overriddenCount} overridden)`
-                  : "Settings"}
-                <span className="text-[10.5px] font-normal text-muted-foreground">
-                  rarely needed
-                </span>
-              </Button>
-              {settingsOpen ? (
-                overridesReady ? (
-                  <div className="mt-2 space-y-2">
-                    <RunConfigOverrides
-                      conversationId={overridesId}
-                      // B14 — the canonical panel, told where it is. Its
-                      // default sentence ("this conversation only") is a lie
-                      // on a screen that stores a binding.
-                      words={JOB_OVERRIDE_WORDS}
-                    />
-                    <EffectiveConfigLayers
-                      pins={data.pins}
-                      bindingOverrides={storedOverrides}
-                    />
-                  </div>
-                ) : (
-                  <p className="mt-2 text-[12px] text-muted-foreground">
-                    Loading settings…
-                  </p>
-                )
+              {holderChosen && holderInputs.targets.length > 0 ? (
+                <AutoRunBar
+                  targets={holderInputs.targets}
+                  map={draftMap}
+                  value={autoRun}
+                  onChange={setAutoRun}
+                  disabled={disabled}
+                  // The bar's own sentence is the PRE-SAVE preview of the draft;
+                  // these are the server's sentences about what the write stored —
+                  // notably the promise refused down to false. Verbatim, and gone
+                  // the moment the draft moves.
+                  serverNotes={writeReport?.notes ?? []}
+                />
               ) : null}
-            </div>
-          ) : null}
 
-          {/* OPTIONS (P16) — the folded stack over the shortcut editor's own
+              {/* Settings — rare, de-emphasized, and the canonical overrides layer. */}
+              {holder.kind === "agent" && agentId ? (
+                <div className="rounded-xl border border-border bg-card px-3 py-2">
+                  {!activeSection ? (
+                    <Button
+                      variant={overriddenCount > 0 ? "secondary" : "ghost"}
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => void openSettings()}
+                    >
+                      <Settings2 className="h-3.5 w-3.5" />
+                      {overriddenCount > 0
+                        ? `Settings (${overriddenCount} overridden)`
+                        : "Overrides"}
+                    </Button>
+                  ) : null}
+                  {settingsOpen || activeSection === "overrides" ? (
+                    settingsBusy ? (
+                      <PropertyRow label="Holder defaults" value="Reading" />
+                    ) : settingsError ? (
+                      <div>
+                        <PropertyRow
+                          label="Holder defaults"
+                          value={
+                            <StatusToken status="error" label={settingsError} />
+                          }
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSettingsRetry((retry) => retry + 1)}
+                        >
+                          Retry
+                        </Button>
+                      </div>
+                    ) : overridesReady ? (
+                      <div className="mt-2 space-y-2">
+                        <RunConfigOverrides
+                          conversationId={overridesId}
+                          // B14 — the canonical panel, told where it is. Its
+                          // default sentence ("this conversation only") is a lie
+                          // on a screen that stores a binding.
+                          words={JOB_OVERRIDE_WORDS}
+                          structured
+                        />
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-[12px] text-muted-foreground">
+                        Loading settings…
+                      </p>
+                    )
+                  ) : null}
+                </div>
+              ) : (
+                <PropertyRow
+                  label="Model parameter overrides"
+                  value={
+                    holder.kind === "workflow"
+                      ? "Not supported for workflows"
+                      : "No holder selected"
+                  }
+                />
+              )}
+              <EffectiveConfigLayers
+                pinsOnly={Boolean(activeSection)}
+                pins={data.pins}
+                bindingOverrides={storedOverrides}
+              />
+            </div>
+            {/* OPTIONS (P16) — the folded stack over the shortcut editor's own
           sections. Last on the page and folded shut, because the match is what
           you came here to do and depth beyond it is progressive. It is offered
           only once a holder is chosen: presentation is how a RUNNING job shows
           itself, and there is nothing to present until something runs it. */}
-          {holderChosen ? (
-            <BindingOptionsDrawer
-              owner={{
-                mandateId: data.mandate.id,
-                organizationId: data.mandate.organization_id,
-                label: data.mandate.label ?? data.mandate.mandate_key,
-                visibility: data.mandate.visibility,
-              }}
-              autoRun={autoRun === true}
-              // F4 — ONE read of the treatment row, and it lives here. The
-              // drawer reports the surface it read; the workspace hands the AI
-              // map its real write targets and hands accepted proposals back
-              // into this same editor.
-              onSurfaceRead={setJobSurfaceName}
-              proposedWritePolicies={proposedPolicies}
-              onProposalsTaken={() => setProposedPolicies(null)}
-              organizationName={
-                organizations.find(
-                  (o) => o.id === data.mandate.organization_id,
-                )?.name ?? null
-              }
-              disabled={disabled}
-            />
-          ) : null}
+            {holderChosen ? (
+              <div
+                className={activeSection === "holder" ? "hidden" : undefined}
+              >
+                <BindingOptionsDrawer
+                  section={
+                    activeSection === "holder" ? "display" : activeSection
+                  }
+                  owner={{
+                    mandateId: data.mandate.id,
+                    organizationId: data.mandate.organization_id,
+                    label: data.mandate.label ?? data.mandate.mandate_key,
+                    visibility: data.mandate.visibility,
+                  }}
+                  autoRun={autoRun === true}
+                  // F4 — ONE read of the treatment row, and it lives here. The
+                  // drawer reports the surface it read; the workspace hands the AI
+                  // map its real write targets and hands accepted proposals back
+                  // into this same editor.
+                  onSurfaceRead={setJobSurfaceName}
+                  proposedWritePolicies={proposedPolicies}
+                  onProposalsTaken={() => setProposedPolicies(null)}
+                  organizationName={
+                    data.mandate.organization_id === SYSTEM_ORGANIZATION_ID
+                      ? "System"
+                      : (organizations.find(
+                          (o) => o.id === data.mandate.organization_id,
+                        )?.name ?? null)
+                  }
+                  disabled={disabled}
+                />
+              </div>
+            ) : activeSection && activeSection !== "holder" ? (
+              <PropertyRow label="Holder" value="Not selected" />
+            ) : null}
           </>
-          )}
+        )}
 
+        <div
+          className={
+            (mode === "batch" &&
+              (!activeSection || activeSection === "holder")) ||
+            (activeSection &&
+              activeSection !== "holder" &&
+              activeSection !== "overrides")
+              ? "hidden"
+              : "space-y-3"
+          }
+        >
           {/* 🚨 G6 — WHAT THE LOAD THREW AWAY, ON THE SCREEN. The parse drops
           stored sources it cannot feed an input with (a legacy `surface_value`,
           a fixed value with nothing in it, a question with no words) and used
@@ -2069,7 +2341,9 @@ function BindingDraft({
                       exists:
                         answerRecord === "global-binding"
                           ? binding !== null
-                          : Boolean(seedHolder.agentId || seedHolder.workflowId),
+                          : Boolean(
+                              seedHolder.agentId || seedHolder.workflowId,
+                            ),
                       // R-O4: the home, from the ONE place that reads it.
                       home: defaultHolderOffer,
                     })
@@ -2084,8 +2358,8 @@ function BindingDraft({
                       : `Set ${rungWords(rung).noun}`}
             </Button>
           </div>
-        </>
-      )}
+        </div>
+      </>
 
       {rebindDialog}
 

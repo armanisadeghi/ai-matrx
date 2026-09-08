@@ -32,7 +32,10 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentLineageIndex } from "@/features/agents/redux/agent-definition/selectors";
-import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace";
+import {
+  MandateWorkspace,
+  type MandateWorkspaceTab,
+} from "@/features/mandates/workspace/MandateWorkspace";
 import { onMandateCacheInvalidated } from "@/features/mandates/service";
 import {
   noSuchMandateFailure,
@@ -50,6 +53,9 @@ import {
   type MandateCodeTruth,
   type MandateConsoleData,
 } from "./service";
+import { FieldHelp } from "@/components/official/ConfigurationFields";
+import type { MandateWorkspaceData } from "../workspace/useMandateWorkspaceData";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import {
   SurfaceRuntimeProvider,
@@ -91,19 +97,25 @@ export function AdminMandateWorkspacePage({
         ),
       })}
     >
-      <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto">
-        <div className="mx-auto w-full max-w-3xl px-4 pt-3 sm:px-6">
-          <AppLink
-            href="/administration/mandates"
-            className="inline-flex items-center gap-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            All mandates
-          </AppLink>
-        </div>
-        {/* THE ONE workspace — identical to /mandates/[key]. */}
-        <MandateWorkspace mandateKeyOrId={mandateKey} host="admin-route" />
-        <AdminControls mandateKey={mandateKey} />
+      <div className="h-full overflow-y-auto pb-safe">
+        <MandateWorkspace
+          mandateKeyOrId={mandateKey}
+          host="admin-route"
+          adminActions={(data, refresh) => (
+            <div className="flex flex-wrap items-center gap-2">
+              {data.mandate.organization_id !== SYSTEM_ORGANIZATION_ID ? (
+                <PromoteToSystemMandateButton
+                  mandate={data.mandate}
+                  onPromoted={refresh}
+                />
+              ) : null}
+              <RemoveMandate mandate={data.mandate} />
+            </div>
+          )}
+          adminContent={(activeTab) => (
+            <AdminControls mandateKey={mandateKey} activeTab={activeTab} />
+          )}
+        />
       </div>
     </SurfaceRuntimeProvider>
   );
@@ -120,7 +132,13 @@ export function AdminMandateWorkspacePage({
  * with the page: an admin who opened `/administration/mandates/<key>` has
  * already said what they came for.
  */
-function AdminControls({ mandateKey }: { mandateKey: string }) {
+function AdminControls({
+  mandateKey,
+  activeTab,
+}: {
+  mandateKey: string;
+  activeTab: MandateWorkspaceTab;
+}) {
   const dispatch = useAppDispatch();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const lineageIndex = useAppSelector(selectAgentLineageIndex);
@@ -240,83 +258,59 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
 
   if (!isSuperAdmin) return null;
 
+  const visible =
+    activeTab === "diagnostics" ||
+    activeTab === "test" ||
+    activeTab === "overrides";
+  const section =
+    activeTab === "test" || activeTab === "overrides"
+      ? activeTab
+      : "diagnostics";
   return (
-    <div ref={panelRef} className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">
-      <div className="rounded-xl border border-border/60 bg-card">
-        <div className="flex items-center gap-2 border-b border-border/40 px-4 py-2.5">
-          <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="flex-1 text-[13px] font-medium text-foreground">
-            Platform tools
-          </span>
-          <span className="text-[11.5px] text-muted-foreground">
-            Health, pin, test bench, promote, remove
-          </span>
+    <div
+      ref={panelRef}
+      role={activeTab === "overrides" ? undefined : "tabpanel"}
+      id={
+        visible && activeTab !== "overrides"
+          ? `mandate-panel-${activeTab}`
+          : undefined
+      }
+      aria-labelledby={`mandate-tab-${activeTab}`}
+      hidden={!visible}
+      className={visible ? "mt-4" : "hidden"}
+    >
+      {loadError ? (
+        <div role="alert" className="text-sm text-destructive">
+          {loadError}
+          <Button variant="outline" size="sm" onClick={load}>
+            Retry
+          </Button>
         </div>
-        <div className="p-4">
-            {loadError ? (
-              <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                {loadError}
-              </p>
-            ) : !data ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
-              </div>
-            ) : !row ? (
-              // Same class as the workspace's own wrong-address state (V2-6):
-              // say what the address IS, never imply a mandate that was.
-              <p className="text-xs text-muted-foreground">
-                {readMandateAddress(mandateKey) === "not-an-address"
-                  ? notAnAddressFailure(mandateKey).message
-                  : noSuchMandateFailure(mandateKey).message}
-              </p>
-            ) : (
-              <>
-                <MandateDetailView
-                  key={row.id}
-                  row={row}
-                  data={data}
-                  // The workspace above renders the triad (INPUT → GOAL →
-                  // OUTPUT), so a second goal block here is a duplicate — and
-                  // its org-admitted read printed a refusal about choosing an
-                  // organization on the platform's own page.
-                  showGoal={false}
-                  // 🚨 ONE HOLDER ANSWER PER SCREEN (FIX-R9-UI round 2). The
-                  // Holder section above IS this page's answer — three controls
-                  // and one verdict. This panel used to render a second one:
-                  // an Agent fact, a Version fact, the same defect sentence and
-                  // an "Assign a different holder" button. What it keeps is the
-                  // health no holder control can state — the code declaration
-                  // against the stored contract.
-                  showHolderAnswer={false}
-                  lineage={
-                    (row.agentId ? lineageIndex[row.agentId] : undefined) ?? {
-                      parent: null,
-                      children: [],
-                      systemTwin: null,
-                    }
-                  }
-                  onSaved={load}
-                />
-                {/* 🚨 REMOVE — A VISIBLE CONTROL, not only a right-click item
-                    (walk, 2026-08-31). The delete first shipped ONLY into the
-                    console's context menu, and an independent walk could not
-                    find it anywhere on the live surface: a right-click-only
-                    affordance is invisible, and "it is in the context menu" is
-                    not an answer to "a creator can never remove a job". This
-                    is the discoverable one, on the job's own page, where
-                    someone who wants it gone will actually look. */}
-                {/* PROMOTE THE JOB. `MandateDetailView` above already offers
-                    the AGENT promotion ("Create system twin + rebind"); this
-                    is its sibling for the MANDATE — the job's own home is its
-                    scope (D-R3), so an agent twin alone still leaves the job
-                    deciding for one organization. Super-admin gated inside,
-                    and the door's own refusal is what prints. */}
-                <PromoteToSystemMandateButton mandate={row.mandate} onPromoted={load} />
-                <RemoveMandate row={row} />
-              </>
-            )}
-        </div>
-      </div>
+      ) : !data ? (
+        <div
+          className="h-32 animate-pulse rounded-lg bg-muted"
+          aria-label="Reading administration details"
+        />
+      ) : !row ? (
+        <p className="text-sm text-destructive">Mandate unavailable</p>
+      ) : (
+        <MandateDetailView
+          key={row.id}
+          row={row}
+          data={data}
+          showGoal={false}
+          showHolderAnswer={false}
+          section={section}
+          lineage={
+            (row.agentId ? lineageIndex[row.agentId] : undefined) ?? {
+              parent: null,
+              children: [],
+              systemTwin: null,
+            }
+          }
+          onSaved={load}
+        />
+      )}
     </div>
   );
 }
@@ -327,15 +321,19 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
  * `softDeleteMandate` the console's row menu calls, so the two can never
  * disagree about what removing a job does.
  */
-function RemoveMandate({ row }: { row: MandateRow }) {
+function RemoveMandate({
+  mandate,
+}: {
+  mandate: MandateWorkspaceData["mandate"];
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
   const remove = async () => {
     const ok = await confirm({
-      title: `Remove "${row.mandateKey}"?`,
+      title: `Remove ${mandate.label?.trim() || "this mandate"}?`,
       description:
-        `Everywhere that runs this job stops finding it: the console, the pickers, and any call that names the key "${row.mandateKey}" will report it missing. ` +
+        `This mandate will disappear from pickers and stop resolving. ` +
         `Anything bound to it — every rung's holder and mapping — stops applying with it. ` +
         `This is a soft removal: the record and its history are kept, so an admin can restore it if this was a mistake.`,
       confirmLabel: "Remove it",
@@ -345,8 +343,8 @@ function RemoveMandate({ row }: { row: MandateRow }) {
     if (!ok) return;
     setBusy(true);
     try {
-      await softDeleteMandate(row.id);
-      toast.success(`Removed "${row.mandateKey}" — nothing runs it now.`);
+      await softDeleteMandate(mandate.id);
+      toast.success("Mandate removed.");
       // The page it was on describes a job that no longer exists; go back to
       // the list rather than leaving a screen about a removed thing.
       pushAppHref(router, "/administration/mandates");
@@ -362,7 +360,7 @@ function RemoveMandate({ row }: { row: MandateRow }) {
   };
 
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/40 pt-3">
+    <div className="flex items-center gap-1">
       <Button
         type="button"
         variant="destructive"
@@ -372,12 +370,12 @@ function RemoveMandate({ row }: { row: MandateRow }) {
         onClick={() => void remove()}
       >
         <Trash2 className="h-3.5 w-3.5" />
-        {busy ? "Removing…" : "Remove this job"}
+        {busy ? "Removing…" : "Remove"}
       </Button>
-      <span className="text-[11px] leading-snug text-muted-foreground">
-        Stops every rung from finding it. Soft — the record is kept and an admin
-        can restore it.
-      </span>
+      <FieldHelp label="Remove mandate">
+        Stops this mandate from resolving. Its record and history are retained
+        for restoration.
+      </FieldHelp>
     </div>
   );
 }

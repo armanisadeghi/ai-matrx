@@ -19,8 +19,11 @@
  */
 
 import { MessageSquareText } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useMandateInputSurface, userTextSentence } from "../input-surface";
+import {
+  PropertyRow,
+  StatusToken,
+} from "@/components/official/ConfigurationFields";
+import { useMandateInputSurface } from "../input-surface";
 
 export interface MandateUserTextLineProps {
   mandateKey: string;
@@ -37,23 +40,31 @@ export function MandateUserTextLine({
 }: MandateUserTextLineProps) {
   const state = useMandateInputSurface(mandateKey);
 
-  const body =
-    state.status === "loading"
-      ? "Reading whether this job takes free text…"
-      : state.status === "error"
-        ? state.message
-        : userTextSentence(state.surface);
-
   return (
-    <p
-      className={cn(
-        "flex items-center gap-1.5",
-        state.status === "error" ? "text-destructive" : undefined,
-        className,
-      )}
-    >
-      {showIcon ? <MessageSquareText className="h-3 w-3 shrink-0" /> : null}
-      <span>{body}</span>
-    </p>
+    <PropertyRow
+      label="Human input"
+      value={
+        <span className="inline-flex items-center gap-1.5">
+          {showIcon ? (
+            <MessageSquareText className="size-3.5" aria-hidden="true" />
+          ) : null}
+          {state.status === "ready" ? (
+            state.surface.acceptsUserInput ? (
+              "Yes"
+            ) : (
+              "No"
+            )
+          ) : (
+            <StatusToken
+              status="unknown"
+              label={state.status === "loading" ? "Reading" : "Unavailable"}
+            />
+          )}
+        </span>
+      }
+      source="Served input surface"
+      help={state.status === "error" ? state.message : undefined}
+      className={className}
+    />
   );
 }

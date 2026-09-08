@@ -20,9 +20,12 @@
 // at all. Same law as the list door's refusal: absent or honest, never a
 // screen that means two things.
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { GitBranch } from "lucide-react";
+import {
+  PropertyRow,
+  StatusToken,
+} from "@/components/official/ConfigurationFields";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   fetchMandateLineage,
   NO_LINEAGE,
@@ -40,55 +43,66 @@ export function MandateLineageLine({
   host: "route" | "admin-route" | "window";
 }) {
   const [lineage, setLineage] = useState<MandateLineage>(NO_LINEAGE);
+  const [readState, setReadState] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
 
   useEffect(() => {
     let cancelled = false;
+    setReadState("loading");
     fetchMandateLineage(mandateId, sourceMandateId)
       .then((next) => {
-        if (!cancelled) setLineage(next);
+        if (!cancelled) {
+          setLineage(next);
+          setReadState("ready");
+        }
       })
       .catch((error: unknown) => {
-        // LOUD, and nothing is rendered: an unreadable lineage must never look
+        // An unreadable lineage must never look
         // like "this job has no lineage".
         console.error("[mandate-lineage] could not be read", error);
-        if (!cancelled) setLineage(NO_LINEAGE);
+        if (!cancelled) setReadState("error");
       });
     return () => {
       cancelled = true;
     };
   }, [mandateId, sourceMandateId]);
 
-  const base = host === "admin-route" ? "/administration/mandates" : "/mandates";
-  const hasSomething =
-    lineage.source || lineage.sourceUnreadable || lineage.copies > 0;
-  if (!hasSomething) return null;
-
+  const base =
+    host === "admin-route" ? "/administration/mandates" : "/mandates";
+  const unavailable = (
+    <StatusToken
+      status="unknown"
+      label={readState === "loading" ? "Reading" : "Unavailable"}
+    />
+  );
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-muted-foreground">
-      {lineage.source ? (
-        <span className="inline-flex items-center gap-1">
-          <GitBranch className="h-3 w-3" />
-          Promoted from{" "}
-          <Link
-            href={`${base}/${encodeURIComponent(lineage.source.mandateKey)}`}
-            className="text-foreground underline-offset-2 hover:underline"
-          >
-            {lineage.source.label}
-          </Link>
-        </span>
-      ) : lineage.sourceUnreadable ? (
-        <span className="inline-flex items-center gap-1">
-          <GitBranch className="h-3 w-3" />
-          Promoted from a mandate you cannot see — it is homed in an
-          organization you do not belong to.
-        </span>
-      ) : null}
-      {lineage.copies > 0 ? (
-        <span className="inline-flex items-center gap-1">
-          <GitBranch className="h-3 w-3" />
-          Promoted copies: {lineage.copies}
-        </span>
-      ) : null}
+    <div className="min-w-0">
+      <PropertyRow
+        label="Promoted from"
+        value={
+          readState !== "ready" ? (
+            unavailable
+          ) : lineage.source ? (
+            <EntityRef
+              token="mandate"
+              id={lineage.source.id}
+              name={lineage.source.label || "Display name missing"}
+              href={`${base}/${encodeURIComponent(lineage.source.mandateKey)}`}
+              showIcon={false}
+              wrap
+            />
+          ) : lineage.sourceUnreadable ? (
+            <StatusToken status="unknown" label="Source unavailable" />
+          ) : (
+            "None"
+          )
+        }
+      />
+      <PropertyRow
+        label="Promoted copies"
+        value={readState === "ready" ? lineage.copies : unavailable}
+      />
     </div>
   );
 }

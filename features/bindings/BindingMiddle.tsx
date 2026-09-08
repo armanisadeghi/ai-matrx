@@ -33,6 +33,11 @@
 
 import { AlertTriangle, ArrowDown, ArrowUp, Plus, X, Zap } from "lucide-react";
 
+import {
+  PropertyRow,
+  StatusToken,
+  FieldHelp,
+} from "@/components/official/ConfigurationFields";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -194,25 +199,25 @@ export function BindingMiddleRow({
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-1.5 px-0.5">
-        <Badge
-          variant="outline"
-          className="py-0 text-[9px] text-muted-foreground"
-        >
-          {isContext ? "context slot" : "variable"}
-        </Badge>
-        {autoBound.has(target.name) && sources.length === 1 ? (
-          <span className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground">
-            <Zap className="h-2.5 w-2.5" />
-            Chosen for you — this job offers a value named exactly like this
-            input. Switch to Agent Default to ignore it on purpose.
-          </span>
-        ) : null}
+        <PropertyRow
+          label="Destination"
+          value={isContext ? "Context slot" : "Variable"}
+        />
+        <PropertyRow
+          label="Name matching"
+          value={
+            autoBound.has(target.name) && sources.length === 1
+              ? "Applied"
+              : "Not applied"
+          }
+        />
       </div>
 
       {/* THE SHARED ROW, VERBATIM. */}
       <SurfaceVariableBinding
         target={target}
-        mapping={mappingForRow(sources)}
+        structured
+        mapping={mappingForRow(sources) ?? { mapType: "unmapped" }}
         availableSurfaceValues={selectableSurfaceValues}
         disabled={disabled}
         sourceLabels={sourceLabels}
@@ -267,8 +272,7 @@ export function BindingMiddleRow({
       {awaitingPick ? (
         <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          Pick which offered value feeds this input, or switch back to the
-          holder&apos;s own default.
+          Source selection: Missing
         </p>
       ) : null}
 
@@ -286,14 +290,21 @@ export function BindingMiddleRow({
         </p>
       ))}
 
-      {unfedRequired ? (
-        <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          This input is required and nothing feeds it, and the holder has no
-          default of its own — pick an offered value, or give the holder a
-          default in the builder.
-        </p>
-      ) : null}
+      <PropertyRow
+        label="Required mapping"
+        value={
+          <StatusToken
+            status={unfedRequired ? "caution" : "neutral"}
+            label={
+              unfedRequired
+                ? "Missing"
+                : target.required
+                  ? "Assigned"
+                  : "Not required"
+            }
+          />
+        }
+      />
 
       {/* D18.2 — the extra sources joined into this same input. */}
       <ExtraSources
@@ -482,13 +493,20 @@ function AbsenceControl({
   disabled: boolean;
   onPatch: (patch: Partial<OfferedSource>) => void;
 }) {
-  if (!offered || offered.guaranteed) return null;
+  if (!offered || offered.guaranteed)
+    return (
+      <PropertyRow
+        label="When source is missing"
+        value={
+          offered?.guaranteed
+            ? "Not applicable — always available"
+            : "Unknown source"
+        }
+      />
+    );
   return (
     <div className="mt-1 flex flex-wrap items-center gap-2 px-0.5 text-[11.5px] text-muted-foreground">
-      <span>
-        {formatVariableDisplayName(entry.target)} is not always there. If
-        absent:
-      </span>
+      <span>When source is missing</span>
       <Select
         value={entry.when_absent ?? "skip"}
         disabled={disabled}
@@ -498,7 +516,7 @@ function AbsenceControl({
       >
         <SelectTrigger
           className="h-7 w-[150px] text-[11.5px]"
-          aria-label={`When ${entry.target} is absent`}
+          aria-label={`When ${formatVariableDisplayName(entry.target)} is absent`}
         >
           <SelectValue />
         </SelectTrigger>
@@ -516,7 +534,6 @@ function AbsenceControl({
           onChange={(e) => onPatch({ default: e.target.value })}
           placeholder="Default value"
           className="h-8 min-h-8 flex-1 resize-none py-1 text-[12px]"
-          style={{ fontSize: "14px" }}
         />
       ) : null}
     </div>
@@ -541,9 +558,7 @@ function AddAnotherSource({
   if (!hasSources) return null;
   if (remaining.length === 0) {
     return (
-      <p className="px-0.5 text-[10.5px] text-muted-foreground/70">
-        Every offered value is already mapped somewhere.
-      </p>
+      <PropertyRow label="Additional offered sources" value="None remaining" />
     );
   }
   return (
@@ -559,8 +574,8 @@ function AddAnotherSource({
             `[&>span]:line-clamp-1`; both are overridden here so the label
             wraps to a second line instead, and the box grows with it. */}
         <SelectTrigger
-          className="h-auto min-h-7 w-[280px] whitespace-normal py-1 text-left text-[11.5px] [&>span]:line-clamp-none"
-          aria-label={`Add another value to ${targetName}`}
+          className="h-auto min-h-7 w-full max-w-[280px] whitespace-normal py-1 text-left text-[11.5px] [&>span]:line-clamp-none"
+          aria-label={`Add another value to ${targetLabel}`}
         >
           <SelectValue
             placeholder={`Also feed ${targetLabel} another value…`}
@@ -583,9 +598,9 @@ function AddAnotherSource({
           ))}
         </SelectContent>
       </Select>
-      <span className="text-[10.5px] text-muted-foreground">
-        joined after the value above, with a blank line between them
-      </span>
+      <FieldHelp label="Join order">
+        Additional values follow the previous source, separated by a blank line.
+      </FieldHelp>
     </div>
   );
 }

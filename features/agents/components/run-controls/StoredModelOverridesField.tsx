@@ -67,6 +67,7 @@ export interface StoredModelOverridesFieldProps {
    * `shortcut-llm-<id>`), so two editors open at once never share a draft.
    */
   instanceKey: string;
+  structured?: boolean;
   /** The stored blob, or null when the record overrides nothing. */
   value: Record<string, unknown> | null;
   /** Called with the new blob, or null when nothing is overridden any more. */
@@ -100,6 +101,7 @@ const asObject = (value: unknown): Record<string, unknown> | null => {
 
 export function StoredModelOverridesField({
   instanceKey,
+  structured = false,
   value,
   onChange,
   hint,
@@ -200,7 +202,9 @@ export function StoredModelOverridesField({
           // the agent noun.
           emptyOptionLabel={emptyChoiceLabel}
           onClear={() =>
-            dispatch(resetOverride({ conversationId: instanceKey, key: "model" }))
+            dispatch(
+              resetOverride({ conversationId: instanceKey, key: "model" }),
+            )
           }
           placeholder={emptyChoiceLabel}
           inputModalities={[]}
@@ -210,7 +214,11 @@ export function StoredModelOverridesField({
       </div>
 
       {ready ? (
-        <RunConfigOverrides conversationId={instanceKey} words={words} />
+        <RunConfigOverrides
+          conversationId={instanceKey}
+          words={words}
+          structured={structured}
+        />
       ) : null}
     </div>
   );

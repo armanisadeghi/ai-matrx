@@ -8,6 +8,7 @@ interface TextareaInputProps {
   variableName: string;
   onRequestClose?: () => void;
   compact?: boolean;
+  autoFocus?: boolean;
   wizardMode?: boolean;
   containerWidth?: number;
   /**
@@ -27,6 +28,7 @@ export function TextareaInput({
   variableName,
   onRequestClose,
   compact = false,
+  autoFocus = true,
   wizardMode = false,
   onEnterAdvance,
 }: TextareaInputProps) {
@@ -50,7 +52,7 @@ export function TextareaInput({
       placeholder={`Enter ${variableName.toLowerCase()}... (hover for voice input)`}
       className={isCompact ? "min-h-[60px] text-xs" : "min-h-[160px] text-sm"}
       rows={isCompact ? 2 : undefined}
-      autoFocus
+      autoFocus={autoFocus}
       appendTranscript={true}
       onEnterKey={onEnterAdvance ? () => onEnterAdvance() : undefined}
       onRequestClose={onRequestClose}

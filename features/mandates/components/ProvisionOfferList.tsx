@@ -11,17 +11,13 @@
 // admin workbench drawer. The workspace grew this row first; the drawer must
 // not grow a second, drifting copy of it.
 
-import { useState } from "react";
-import { ChevronDown, Lock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import {
-  OFFERED_ALWAYS_WORDS,
-  OFFERED_LAZY_WORDS,
-  OFFERED_SOMETIMES_WORDS,
-  type OfferedValue,
-} from "../provision-shapes";
+  FieldHelp,
+  PropertyRow,
+} from "@/components/official/ConfigurationFields";
+import type { OfferedValue } from "../provision-shapes";
 
 export interface ProvisionOfferListProps {
   values: readonly OfferedValue[];
@@ -37,9 +33,7 @@ export function ProvisionOfferList({
 }: ProvisionOfferListProps) {
   if (values.length === 0) {
     return (
-      <p className="text-[12px] text-muted-foreground">
-        This Provision offers no values.
-      </p>
+      <PropertyRow label="Available inputs" value="None" source="Provision" />
     );
   }
   return (
@@ -67,74 +61,54 @@ function OfferedValueRow({
   value: OfferedValue;
   pinned: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   return (
-    <li>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-start gap-2 px-3 py-1.5 text-left hover:bg-muted/40"
-      >
-        {/* 🚨 THE HUMAN LABEL LEADS, THE KEY FOLLOWS (V2 round-2 residual 8,
-            2026-08-31). This printed the bare storage key — 27 lines of
-            `episode_title` / `host_persona_notes` on `podcast.solo_script`'s
-            INPUT section — while the one binding UI, the AI-map proposals and
-            the offered rail all lead with the display label and demote the key
-            to a mono sub-line. One anatomy for a declared value everywhere it
-            appears, or the same value reads as two different things on two
-            screens of the same job. */}
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[12.5px] text-foreground">
-            {formatVariableDisplayName(value.name)}
-          </span>
-          <code className="block truncate font-mono text-[10px] text-muted-foreground">
-            {value.name}
-          </code>
-        </span>
-        <code className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
-          {value.kind}
-        </code>
-        <Badge
-          variant="outline"
-          className={cn(
-            "shrink-0 py-0 text-[9.5px]",
-            value.guaranteed
-              ? "border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
-              : "border-border/70 text-muted-foreground",
-          )}
-        >
-          {/* FIX-R13/C2 — plain words, from the ONE place that holds them.
-              "Guaranteed" / "Lazy" were the declaration's field names on a
-              screen a subject-matter expert reads. */}
-          {value.guaranteed ? OFFERED_ALWAYS_WORDS : OFFERED_SOMETIMES_WORDS}
-        </Badge>
-        {value.lazy ? (
-          <Badge
-            variant="outline"
-            className="shrink-0 py-0 text-[9.5px] text-muted-foreground"
-          >
-            {OFFERED_LAZY_WORDS}
-          </Badge>
-        ) : null}
-        {pinned ? (
-          <Lock className="h-3 w-3 shrink-0 text-muted-foreground" />
-        ) : null}
-        <ChevronDown
-          className={cn(
-            "h-3 w-3 shrink-0 text-muted-foreground/60 transition-transform",
-            open && "rotate-180",
-          )}
+    <li className="min-w-0 space-y-2 px-3 py-3">
+      <div className="flex items-center gap-1">
+        <h4 className="min-w-0 break-words text-sm font-medium">
+          {formatVariableDisplayName(value.name) || "Display name missing"}
+        </h4>
+        <FieldHelp label={formatVariableDisplayName(value.name) || "Input"}>
+          {value.description || "No description provided."}
+        </FieldHelp>
+      </div>
+      <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-x-6">
+        <PropertyRow
+          label="Format"
+          value={formatVariableDisplayName(value.kind) || "Unknown"}
         />
-      </button>
-      {open ? (
-        <div className="px-3 pb-2 text-[11.5px] leading-relaxed text-muted-foreground">
-          {value.description || "No description."}
-          {pinned
-            ? " — delivered automatically as locked context; never mapped by hand."
-            : null}
-        </div>
-      ) : null}
+        <PropertyRow
+          label="Always available"
+          value={
+            typeof value.guaranteed === "boolean"
+              ? value.guaranteed
+                ? "Yes"
+                : "No"
+              : "Unknown"
+          }
+        />
+        <PropertyRow
+          label="Retrieval"
+          value={
+            typeof value.lazy === "boolean"
+              ? value.lazy
+                ? "On demand"
+                : "At launch"
+              : "Unknown"
+          }
+        />
+        <PropertyRow
+          label="Automatic context delivery"
+          value={pinned ? "Yes" : "No"}
+        />
+      </div>
+      <PropertyRow
+        label="Example"
+        value={
+          <span className="whitespace-pre-wrap">
+            {value.example || "Not provided"}
+          </span>
+        }
+      />
     </li>
   );
 }

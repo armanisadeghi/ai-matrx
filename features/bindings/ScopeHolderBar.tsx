@@ -30,7 +30,10 @@ import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/se
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
 import { ShortcutScopePicker } from "@/features/agent-shortcuts/components/ShortcutScopePicker";
-import { AGENT_SCOPES, type AgentScope } from "@/features/agent-shortcuts/constants";
+import {
+  AGENT_SCOPES,
+  type AgentScope,
+} from "@/features/agent-shortcuts/constants";
 import { HolderAssignment } from "./HolderAssignment";
 import {
   SYSTEM_RUNG_COVERS,
@@ -193,7 +196,11 @@ export interface ScopeHolderBarProps {
    * when something is wrong, its remedy. Derived from `mandate.resolve`'s
    * `dropped_code`/`dropped_reason` by the host, never re-derived here.
    */
-  healthNote?: { sentence: string; remedy: string | null; broken: boolean } | null;
+  healthNote?: {
+    sentence: string;
+    remedy: string | null;
+    broken: boolean;
+  } | null;
 }
 
 const RUNG_TO_SCOPE: Record<BindingRung, AgentScope> = {
@@ -405,7 +412,7 @@ export function ScopeHolderBar({
       // D19), and this sentence is the only place on that page that says
       // whether what the job offers actually feeds what the holder needs.
       // Passing it on both hosts would be the repetition Arman rejected.
-      coverageLine={perspective === "system" ? job.coverageLine : null}
+      coverageLine={null}
       refusal={
         // Verbatim, unchanged: it is the rule Arman ruled on, and the guard
         // that pins it (`system-rung-holder-refusal.test.tsx`) reads this
@@ -518,7 +525,8 @@ export function ScopeHolderBar({
                   >
                     {/* NOT lowercased — a rung's noun can carry an
                         organization's NAME (FIX-R6/F3). */}
-                    Set {pinnedRungWords(other, defaultHolderOffer).noun} instead
+                    Set {pinnedRungWords(other, defaultHolderOffer).noun}{" "}
+                    instead
                   </Button>
                 ))}
             </div>

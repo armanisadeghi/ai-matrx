@@ -26,6 +26,11 @@
 // This file only owns the translation from a job binding's ordered, many-source
 // consumption map to the one-mapping-per-target shape that fact reads.
 
+import {
+  PropertyRow,
+  StatusToken,
+  FieldHelp,
+} from "@/components/official/ConfigurationFields";
 import { Zap } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
@@ -157,9 +162,35 @@ export function AutoRunBar({
           onCheckedChange={(next) => onChange(next)}
         />
       </div>
-      <p className="mt-0.5 text-[11.5px] leading-snug text-muted-foreground">
-        {autoRunSentence(eligibility, on)}
-      </p>
+      <PropertyRow
+        label="Effective value"
+        value={on ? "Yes" : "No"}
+        source={value === null ? "Runtime default" : "Binding"}
+        state={value === null ? "Inherited" : "Overridden"}
+      />
+      <PropertyRow
+        label="Eligibility"
+        value={
+          <StatusToken
+            status={eligibility.eligible ? "ok" : "caution"}
+            label={
+              eligibility.eligible
+                ? "Eligible"
+                : eligibility.reason === "prompts_user"
+                  ? "Human input required"
+                  : "Required mapping missing"
+            }
+          />
+        }
+      />
+      <PropertyRow
+        label="Blocking inputs"
+        value={
+          eligibility.blockers.length
+            ? eligibility.blockers.map(formatVariableDisplayName).join(", ")
+            : "None"
+        }
+      />
       {/* WHAT THE SAVE ACTUALLY DID, in the server's words. Amber, because
           every sentence that lands here is the write telling you it did not do
           what you asked — never decoration. */}
@@ -174,13 +205,6 @@ export function AutoRunBar({
       />
       {/* P15 — an unavailable control carries its own reason, and the reason is
           never the control being greyed out. */}
-      {!eligibility.eligible ? (
-        <p className="mt-1 text-[11px] leading-snug text-muted-foreground/80">
-          {eligibility.reason === "prompts_user"
-            ? "A job that asks the person something is the flexible option, not the instant one — take the question off that input to offer this."
-            : "Feed every required input above and this becomes available."}
-        </p>
-      ) : null}
     </div>
   );
 }
