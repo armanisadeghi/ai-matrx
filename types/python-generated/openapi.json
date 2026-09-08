@@ -16601,6 +16601,27 @@
         }
       }
     },
+    "/appflowy/public/release": {
+      "get": {
+        "tags": [
+          "AppFlowy Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_appflowy_public_release_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppFlowyPublicRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -19935,6 +19956,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DeskproServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teachable/public/status": {
+      "get": {
+        "tags": [
+          "Teachable Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_teachable_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeachableServiceStatus"
                 }
               }
             }
@@ -29636,6 +29678,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IndexContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/django-docs/public/overview": {
+      "get": {
+        "tags": [
+          "Django Documentation Integrations"
+        ],
+        "summary": "Public Overview",
+        "operationId": "public_overview_django_docs_public_overview_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverviewContent"
                 }
               }
             }
@@ -91140,6 +91203,48 @@
           "updated_at"
         ],
         "title": "AppConfigResponse"
+      },
+      "AppFlowyPublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "appflowy_public_release",
+            "title": "Kind",
+            "default": "appflowy_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "AppFlowy",
+            "title": "Provider",
+            "default": "AppFlowy"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag",
+          "release_url",
+          "published_at"
+        ],
+        "title": "AppFlowyPublicRelease"
       },
       "AppLogEntry": {
         "properties": {
@@ -181772,6 +181877,47 @@
         ],
         "title": "OvertimeThreshold"
       },
+      "OverviewContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "django_docs_overview_content",
+            "title": "Kind",
+            "default": "django_docs_overview_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Django Documentation",
+            "title": "Provider",
+            "default": "Django Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "5.2",
+            "title": "Version",
+            "default": "5.2"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "OverviewContent",
+        "description": "Safe projection of the fixed public Django overview."
+      },
       "OwncastInstanceStatistics": {
         "properties": {
           "__kind": {
@@ -228112,6 +228258,47 @@
           "indicator"
         ],
         "title": "TawkToServiceStatus"
+      },
+      "TeachableServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "teachable_public_service_status",
+            "title": "Kind",
+            "default": "teachable_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Teachable",
+            "title": "Provider",
+            "default": "Teachable"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://www.teachablestatus.com",
+            "title": "Status Page",
+            "default": "https://www.teachablestatus.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "TeachableServiceStatus",
+        "description": "Safe aggregate status projection for Teachable's fixed status page."
       },
       "TeamleaderServiceStatus": {
         "properties": {

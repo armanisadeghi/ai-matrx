@@ -6574,6 +6574,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/appflowy/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_appflowy_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -8732,6 +8749,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_deskpro_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teachable/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_teachable_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15226,6 +15260,23 @@ export interface paths {
         };
         /** Public Index */
         get: operations["public_index_ceph_docs_public_index_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/django-docs/public/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Overview */
+        get: operations["public_overview_django_docs_public_overview_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -39841,6 +39892,33 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** AppFlowyPublicRelease */
+        AppFlowyPublicRelease: {
+            /**
+             * Kind
+             * @default appflowy_public_release
+             * @constant
+             */
+            __kind?: "appflowy_public_release";
+            /**
+             * Provider
+             * @default AppFlowy
+             * @constant
+             */
+            provider?: "AppFlowy";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
         };
         /**
          * AppLogEntry
@@ -80129,6 +80207,38 @@ export interface components {
             crosses_at?: string | null;
         };
         /**
+         * OverviewContent
+         * @description Safe projection of the fixed public Django overview.
+         */
+        OverviewContent: {
+            /**
+             * Kind
+             * @default django_docs_overview_content
+             * @constant
+             */
+            __kind?: "django_docs_overview_content";
+            /**
+             * Provider
+             * @default Django Documentation
+             * @constant
+             */
+            provider?: "Django Documentation";
+            /**
+             * Version
+             * @default 5.2
+             * @constant
+             */
+            version?: "5.2";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
+        };
+        /**
          * OwncastInstanceStatistics
          * @description Safe factual projection of Owncast's fixed official demo instance.
          */
@@ -101053,6 +101163,38 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.tawk.to";
+        };
+        /**
+         * TeachableServiceStatus
+         * @description Safe aggregate status projection for Teachable's fixed status page.
+         */
+        TeachableServiceStatus: {
+            /**
+             * Kind
+             * @default teachable_public_service_status
+             * @constant
+             */
+            __kind?: "teachable_public_service_status";
+            /**
+             * Provider
+             * @default Teachable
+             * @constant
+             */
+            provider?: "Teachable";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://www.teachablestatus.com
+             * @constant
+             */
+            status_page?: "https://www.teachablestatus.com";
         };
         /**
          * TeamleaderServiceStatus
@@ -123991,6 +124133,26 @@ export interface operations {
             };
         };
     };
+    public_release_appflowy_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppFlowyPublicRelease"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -126782,6 +126944,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeskproServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_teachable_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeachableServiceStatus"];
                 };
             };
         };
@@ -135239,6 +135421,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IndexContent"];
+                };
+            };
+        };
+    };
+    public_overview_django_docs_public_overview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverviewContent"];
                 };
             };
         };
