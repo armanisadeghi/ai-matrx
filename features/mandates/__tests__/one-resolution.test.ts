@@ -215,7 +215,7 @@ describe("resolveMandate refuses without an admitted organization", () => {
   it("says what to do about it, in words a person can act on", async () => {
     admission = "unresolved";
     selectedOrg = null;
-    const error = await resolveMandate(KEY).catch((e: unknown) => e as Error);
+    const error = (await resolveMandate(KEY).catch((e: unknown) => e)) as Error;
     expect(error.message).toContain("no organization is selected");
     expect(error.message).toContain("select a workspace");
   });
@@ -357,7 +357,7 @@ describe("a verdict this client cannot run REFUSES, loudly", () => {
       agent_id: null,
       provenance: "user",
     });
-    const error = await resolveMandate(KEY).catch((e: unknown) => e as Error);
+    const error = (await resolveMandate(KEY).catch((e: unknown) => e)) as Error;
     expect(error.message).toContain("workflow");
     // It names the RUNG, so the person knows which row to fix.
     expect(error.message).toContain("user rung");
@@ -371,7 +371,7 @@ describe("a verdict this client cannot run REFUSES, loudly", () => {
       agent_id: "8f9326a3-fc3f-438b-b742-b9ed28f363d7",
       provenance: "org",
     });
-    const error = await resolveMandate(KEY).catch((e: unknown) => e as Error);
+    const error = (await resolveMandate(KEY).catch((e: unknown) => e)) as Error;
     expect(error.message).toContain("org rung is version-pinned");
     expect(error.message).toContain("8f9326a3-fc3f-438b-b742-b9ed28f363d7");
   });

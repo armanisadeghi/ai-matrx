@@ -22,8 +22,23 @@ registerAssistAction({
     const { agentId, mandateKey, agentName, draftText, variableValues } = assist.action;
     let resolvedAgentId = agentId ?? null;
     if (!resolvedAgentId && mandateKey) {
-      const resolved = await resolveMandate(mandateKey);
-      resolvedAgentId = resolved.agentId;
+      // Resolution refuses in words — an unknown job, a version-pinned winner,
+      // a non-agent Holder, or no workspace selected yet (which agent runs a
+      // job depends on the active organization, so there is no honest answer
+      // before one is chosen). Every one of those is a real outcome this assist
+      // must SHOW, so it becomes a structured refusal like the branch below
+      // rather than an unhandled rejection with nothing on screen.
+      try {
+        const resolved = await resolveMandate(mandateKey);
+        resolvedAgentId = resolved.agentId;
+      } catch (error) {
+        return {
+          ok: false,
+          error: `launch_agent: "${mandateKey}" could not be resolved — ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        };
+      }
     }
     if (!resolvedAgentId) {
       return {
