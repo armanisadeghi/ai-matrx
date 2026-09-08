@@ -16790,6 +16790,48 @@
         }
       }
     },
+    "/simplenote/public/release": {
+      "get": {
+        "tags": [
+          "Simplenote Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_simplenote_public_release_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimplenotePublicRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/craft/public/status": {
+      "get": {
+        "tags": [
+          "Craft Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_craft_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CraftServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -20313,6 +20355,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ArenaChannelMetadata"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/misskeyio/public/instance": {
+      "get": {
+        "tags": [
+          "Misskey.io Integrations"
+        ],
+        "summary": "Public Instance",
+        "operationId": "public_instance_misskeyio_public_instance_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MisskeyIoInstanceMetadata"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/diaspora-social/public/nodeinfo": {
+      "get": {
+        "tags": [
+          "diaspora.social Integrations"
+        ],
+        "summary": "Public Nodeinfo",
+        "operationId": "public_nodeinfo_diaspora_social_public_nodeinfo_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiasporaSocialNodeInfo"
                 }
               }
             }
@@ -30203,6 +30287,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__scikit_learn_docs_integrations__service__GettingStartedContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sympy-docs/public/getting-started": {
+      "get": {
+        "tags": [
+          "SymPy Documentation Integrations"
+        ],
+        "summary": "Public Getting Started",
+        "operationId": "public_getting_started_sympy_docs_public_getting_started_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__sympy_docs_integrations__service__GettingStartedContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pillow-docs/public/getting-started": {
+      "get": {
+        "tags": [
+          "Pillow Documentation Integrations"
+        ],
+        "summary": "Public Getting Started",
+        "operationId": "public_getting_started_pillow_docs_public_getting_started_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__pillow_docs_integrations__service__GettingStartedContent"
                 }
               }
             }
@@ -122141,6 +122267,47 @@
         ],
         "title": "CoverageFeed"
       },
+      "CraftServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "craft_public_service_status",
+            "title": "Kind",
+            "default": "craft_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Craft",
+            "title": "Provider",
+            "default": "Craft"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://craft.statuspage.io",
+            "title": "Status Page",
+            "default": "https://craft.statuspage.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "CraftServiceStatus",
+        "description": "Safe aggregate status projection for Craft's fixed status page."
+      },
       "CratesIOPublicCrate": {
         "properties": {
           "__kind": {
@@ -129705,6 +129872,75 @@
         ],
         "title": "DialpadStatusResult",
         "description": "Safe projection of Dialpad's high-level service status."
+      },
+      "DiasporaSocialNodeInfo": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "diaspora_social_public_nodeinfo",
+            "title": "Kind",
+            "default": "diaspora_social_public_nodeinfo"
+          },
+          "provider": {
+            "type": "string",
+            "const": "diaspora.social",
+            "title": "Provider",
+            "default": "diaspora.social"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "nodeinfo_version": {
+            "type": "string",
+            "const": "2.1",
+            "title": "Nodeinfo Version",
+            "default": "2.1"
+          },
+          "software": {
+            "type": "string",
+            "const": "diaspora",
+            "title": "Software",
+            "default": "diaspora"
+          },
+          "software_version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Software Version"
+          },
+          "protocols": {
+            "items": {
+              "type": "string",
+              "const": "diaspora"
+            },
+            "type": "array",
+            "title": "Protocols",
+            "default": [
+              "diaspora"
+            ]
+          },
+          "registration_open": {
+            "type": "boolean",
+            "title": "Registration Open"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://diaspora.social",
+            "title": "Status Page",
+            "default": "https://diaspora.social"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "software_version",
+          "registration_open"
+        ],
+        "title": "DiasporaSocialNodeInfo",
+        "description": "Safe compatibility projection for the fixed diaspora.social pod."
       },
       "DiceBearInitialsPng": {
         "properties": {
@@ -173442,6 +173678,68 @@
         ],
         "title": "MissingInputField",
         "description": "One input a node needs before it can run — surfaced so the studio can\nrender a prompt form for EXACTLY these fields."
+      },
+      "MisskeyIoInstanceMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "misskeyio_public_instance_metadata",
+            "title": "Kind",
+            "default": "misskeyio_public_instance_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Misskey.io",
+            "title": "Provider",
+            "default": "Misskey.io"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "instance_uri": {
+            "type": "string",
+            "const": "https://misskey.io",
+            "title": "Instance Uri",
+            "default": "https://misskey.io"
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Version"
+          },
+          "languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "minItems": 1,
+            "title": "Languages"
+          },
+          "registration_open": {
+            "type": "boolean",
+            "title": "Registration Open"
+          },
+          "api_resource": {
+            "type": "string",
+            "const": "https://misskey.io/api/meta",
+            "title": "Api Resource",
+            "default": "https://misskey.io/api/meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "languages",
+          "registration_open"
+        ],
+        "title": "MisskeyIoInstanceMetadata",
+        "description": "Safe public compatibility projection for the fixed Misskey.io instance."
       },
       "MixcloudPublicCloudcast": {
         "properties": {
@@ -217613,6 +217911,48 @@
         "title": "SimplecastServiceStatus",
         "description": "Safe aggregate status projection for Simplecast's fixed status page."
       },
+      "SimplenotePublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "simplenote_public_release",
+            "title": "Kind",
+            "default": "simplenote_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Simplenote",
+            "title": "Provider",
+            "default": "Simplenote"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag",
+          "release_url",
+          "published_at"
+        ],
+        "title": "SimplenotePublicRelease"
+      },
       "SimpplrServiceStatus": {
         "properties": {
           "__kind": {
@@ -253565,6 +253905,46 @@
         ],
         "title": "PageMetadata"
       },
+      "aidream__services__pillow_docs_integrations__service__GettingStartedContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pillow_docs_getting_started_content",
+            "title": "Kind",
+            "default": "pillow_docs_getting_started_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Pillow Documentation",
+            "title": "Provider",
+            "default": "Pillow Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "stable",
+            "title": "Version",
+            "default": "stable"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "GettingStartedContent"
+      },
       "aidream__services__postgresql_wiki_integrations__service__PageMetadata": {
         "properties": {
           "__kind": {
@@ -254352,6 +254732,46 @@
         ],
         "title": "QuickstartContent",
         "description": "Safe projection of the fixed public Sphinx getting-started guide."
+      },
+      "aidream__services__sympy_docs_integrations__service__GettingStartedContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "sympy_docs_getting_started_content",
+            "title": "Kind",
+            "default": "sympy_docs_getting_started_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "SymPy Documentation",
+            "title": "Provider",
+            "default": "SymPy Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "latest",
+            "title": "Version",
+            "default": "latest"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "GettingStartedContent"
       },
       "aidream__services__tcgdex_integrations__service__CardMetadata": {
         "properties": {

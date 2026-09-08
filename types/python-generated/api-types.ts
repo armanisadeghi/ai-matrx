@@ -6727,6 +6727,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/simplenote/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_simplenote_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/craft/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_craft_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -9038,6 +9072,40 @@ export interface paths {
         };
         /** Public Channel */
         get: operations["public_channel_arena_public_channel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/misskeyio/public/instance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Instance */
+        get: operations["public_instance_misskeyio_public_instance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/diaspora-social/public/nodeinfo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Nodeinfo */
+        get: operations["public_nodeinfo_diaspora_social_public_nodeinfo_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15685,6 +15753,40 @@ export interface paths {
         };
         /** Public Getting Started */
         get: operations["public_getting_started_scikit_learn_docs_public_getting_started_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sympy-docs/public/getting-started": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Getting Started */
+        get: operations["public_getting_started_sympy_docs_public_getting_started_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pillow-docs/public/getting-started": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Getting Started */
+        get: operations["public_getting_started_pillow_docs_public_getting_started_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -53484,6 +53586,38 @@ export interface components {
             }[];
         };
         /**
+         * CraftServiceStatus
+         * @description Safe aggregate status projection for Craft's fixed status page.
+         */
+        CraftServiceStatus: {
+            /**
+             * Kind
+             * @default craft_public_service_status
+             * @constant
+             */
+            __kind?: "craft_public_service_status";
+            /**
+             * Provider
+             * @default Craft
+             * @constant
+             */
+            provider?: "Craft";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://craft.statuspage.io
+             * @constant
+             */
+            status_page?: "https://craft.statuspage.io";
+        };
+        /**
          * CratesIOPublicCrate
          * @description Safe terms-bound projection of one public crates.io crate.
          */
@@ -56638,6 +56772,59 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * DiasporaSocialNodeInfo
+         * @description Safe compatibility projection for the fixed diaspora.social pod.
+         */
+        DiasporaSocialNodeInfo: {
+            /**
+             * Kind
+             * @default diaspora_social_public_nodeinfo
+             * @constant
+             */
+            __kind?: "diaspora_social_public_nodeinfo";
+            /**
+             * Provider
+             * @default diaspora.social
+             * @constant
+             */
+            provider?: "diaspora.social";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Nodeinfo Version
+             * @default 2.1
+             * @constant
+             */
+            nodeinfo_version?: "2.1";
+            /**
+             * Software
+             * @default diaspora
+             * @constant
+             */
+            software?: "diaspora";
+            /** Software Version */
+            software_version: string;
+            /**
+             * Protocols
+             * @default [
+             *       "diaspora"
+             *     ]
+             */
+            protocols?: "diaspora"[];
+            /** Registration Open */
+            registration_open: boolean;
+            /**
+             * Status Page
+             * @default https://diaspora.social
+             * @constant
+             */
+            status_page?: "https://diaspora.social";
         };
         /** DiceBearInitialsPng */
         DiceBearInitialsPng: {
@@ -76538,6 +76725,48 @@ export interface components {
             };
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * MisskeyIoInstanceMetadata
+         * @description Safe public compatibility projection for the fixed Misskey.io instance.
+         */
+        MisskeyIoInstanceMetadata: {
+            /**
+             * Kind
+             * @default misskeyio_public_instance_metadata
+             * @constant
+             */
+            __kind?: "misskeyio_public_instance_metadata";
+            /**
+             * Provider
+             * @default Misskey.io
+             * @constant
+             */
+            provider?: "Misskey.io";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Instance Uri
+             * @default https://misskey.io
+             * @constant
+             */
+            instance_uri?: "https://misskey.io";
+            /** Version */
+            version: string;
+            /** Languages */
+            languages: string[];
+            /** Registration Open */
+            registration_open: boolean;
+            /**
+             * Api Resource
+             * @default https://misskey.io/api/meta
+             * @constant
+             */
+            api_resource?: "https://misskey.io/api/meta";
         };
         /**
          * MixcloudPublicCloudcast
@@ -96443,6 +96672,33 @@ export interface components {
              */
             status_page?: "https://status.simplecast.com";
         };
+        /** SimplenotePublicRelease */
+        SimplenotePublicRelease: {
+            /**
+             * Kind
+             * @default simplenote_public_release
+             * @constant
+             */
+            __kind?: "simplenote_public_release";
+            /**
+             * Provider
+             * @default Simplenote
+             * @constant
+             */
+            provider?: "Simplenote";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
+        };
         /** SimpplrServiceStatus */
         SimpplrServiceStatus: {
             /**
@@ -112921,6 +113177,35 @@ export interface components {
             /** Language */
             language: string;
         };
+        /** GettingStartedContent */
+        aidream__services__pillow_docs_integrations__service__GettingStartedContent: {
+            /**
+             * Kind
+             * @default pillow_docs_getting_started_content
+             * @constant
+             */
+            __kind?: "pillow_docs_getting_started_content";
+            /**
+             * Provider
+             * @default Pillow Documentation
+             * @constant
+             */
+            provider?: "Pillow Documentation";
+            /**
+             * Version
+             * @default stable
+             * @constant
+             */
+            version?: "stable";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
+        };
         /** PageMetadata */
         aidream__services__postgresql_wiki_integrations__service__PageMetadata: {
             /**
@@ -113374,6 +113659,35 @@ export interface components {
              * @constant
              */
             version?: "master";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
+        };
+        /** GettingStartedContent */
+        aidream__services__sympy_docs_integrations__service__GettingStartedContent: {
+            /**
+             * Kind
+             * @default sympy_docs_getting_started_content
+             * @constant
+             */
+            __kind?: "sympy_docs_getting_started_content";
+            /**
+             * Provider
+             * @default SymPy Documentation
+             * @constant
+             */
+            provider?: "SymPy Documentation";
+            /**
+             * Version
+             * @default latest
+             * @constant
+             */
+            version?: "latest";
             /**
              * Format
              * @default restructuredtext
@@ -125480,6 +125794,46 @@ export interface operations {
             };
         };
     };
+    public_release_simplenote_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimplenotePublicRelease"];
+                };
+            };
+        };
+    };
+    public_status_craft_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CraftServiceStatus"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -128451,6 +128805,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ArenaChannelMetadata"];
+                };
+            };
+        };
+    };
+    public_instance_misskeyio_public_instance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MisskeyIoInstanceMetadata"];
+                };
+            };
+        };
+    };
+    public_nodeinfo_diaspora_social_public_nodeinfo_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiasporaSocialNodeInfo"];
                 };
             };
         };
@@ -137088,6 +137482,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__scikit_learn_docs_integrations__service__GettingStartedContent"];
+                };
+            };
+        };
+    };
+    public_getting_started_sympy_docs_public_getting_started_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__sympy_docs_integrations__service__GettingStartedContent"];
+                };
+            };
+        };
+    };
+    public_getting_started_pillow_docs_public_getting_started_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__pillow_docs_integrations__service__GettingStartedContent"];
                 };
             };
         };
