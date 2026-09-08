@@ -53,6 +53,26 @@ import {
 import { DraftInputsEditor } from "../authoring/DraftInputsEditor";
 import { isUserTextOnly, useMandateInputSurface } from "../input-surface";
 import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { useMandate } from "../useMandate";
+import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
+import {
+  useSurfaceScopeContribution,
+  useSurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  MANDATE_WORKSPACE_SURFACE_NAME,
+  MANDATE_WORKSPACE_WRITE_TARGETS,
+  type createMandateWorkspaceScope,
+} from "@/features/surfaces/manifests/mandate-workspace.manifest";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
+
+/** The goal editor's fragment of the workspace scope — every key typed against
+ * the manifest helper, minus the provider-owned `mandate_key`. */
+function goalSectionScope(
+  values: Omit<Parameters<typeof createMandateWorkspaceScope>[0], "mandate_key">,
+): SurfaceScopePayload {
+  return values as SurfaceScopePayload;
+}
 import { MandateUserTextLine } from "../components/MandateUserTextLine";
 import { Section } from "./Section";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
@@ -152,17 +172,20 @@ export function TriadInputSection({
   const runConvert = async (variables: Record<string, string>) => {
     setConverting(true);
     try {
-      const text = await convert.run<string>({
+      // The product is a STRUCTURE (draft-input rows), so it is read as the
+      // extracted object — never as answer text re-parsed by hand (the
+      // flattening class `structured-output-flattening.ts` screams about).
+      const proposal = await convert.run<unknown>({
         mandateKey: KIND_CONVERTER_MANDATE_KEY,
         surfaceKey: `mandate:${KIND_CONVERTER_MANDATE_KEY}`,
         sourceFeature: "agent-builder",
-        expect: "text",
+        expect: "json",
         initiation: "user",
         // Served names only — see `convertValues`.
         variables,
       });
       toast.success("Structure proposal ready — review below.");
-      setDraft(applyConversion(draftInputs, text));
+      setDraft(applyConversion(draftInputs, proposal));
       setEditing(true);
     } catch (error: unknown) {
       toastFailure(error, {
@@ -367,11 +390,13 @@ function inputHint(data: MandateWorkspaceData, draftCount: number): string {
   return "";
 }
 
-/** Best-effort: a conversion result that parses as draft-input JSON replaces
- * the rows; anything else keeps the rows and lands as a note row for review. */
-function applyConversion(current: DraftInput[], output: string): DraftInput[] {
+/** Best-effort: a conversion result shaped as draft-input rows (an array, or
+ * an object carrying `draft_inputs`) replaces the rows; anything else keeps
+ * the rows untouched. */
+function applyConversion(current: DraftInput[], output: unknown): DraftInput[] {
   try {
-    const parsed: unknown = JSON.parse(output);
+    const parsed: unknown =
+      typeof output === "string" ? JSON.parse(output) : output;
     const candidate = Array.isArray(parsed)
       ? parsed
       : (parsed as { draft_inputs?: unknown })?.draft_inputs;
@@ -404,12 +429,65 @@ export function TriadGoalSection({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(goal ?? "");
   const [saving, setSaving] = useState(false);
-  // THE MANDATE DOOR — see the note on the Input section's converter run.
-  const refine = useHeadlessAgentJson();
-  const [refining, setRefining] = useState(false);
+  /**
+   * 🚨 THE GOAL WRITER IS A CONVERSATION, NOT A STRING (Arman, 2026-09-08).
+   *
+   * This used to run `mandate.goal_writer` headless with `expect: "text"` and
+   * paste whatever came back into the textarea. The job's product is an
+   * `agent_mandate_specification` — a registered shape with a role, an
+   * objective, weighted criteria, constraints, failure modes, a compressed
+   * CHARGE and clarifying QUESTIONS, and a component that renders all of it —
+   * and the job is designed for back-and-forth before anything is final. A
+   * headless text run threw every part away, rendered JSON by hand, and made
+   * the conversation impossible. The system said nothing (it screams now:
+   * `structured-output-flattening.ts`).
+   *
+   * So the button opens THE agent run window ON THE MANDATE (`mandateKey` —
+   * the server resolves the Holder; the resolved agent id below only paints
+   * the chrome) with the served variables seeded and the run started. The
+   * transcript renders through the ONE pipeline, the person keeps talking,
+   * and the shape's own "Use as goal" control — or the writer itself, through
+   * this surface's `mandate_goal_draft` write target — stages the charge into
+   * the editor below. Nothing here parses model output.
+   */
+  const writer = useMandate(GOAL_WRITER_MANDATE_KEY);
+  const openRun = useOpenAgentRunWindow();
   // The TARGET mandate's own served surface — what the goal writer needs told
   // about the job being refined. Never re-derived here (see `refineValues`).
   const targetSurface = useMandateInputSurface(data.mandate.mandate_key);
+
+  // ── THE SURFACE HALF: this section IS the goal editor, so it publishes the
+  // goal values and owns the ONE write target (`mandate_goal_draft`). Only on
+  // the admin route — everywhere else the goal is read-only and a target
+  // nothing can land in would be a declared lie.
+  const surfaceName = authoring ? MANDATE_WORKSPACE_SURFACE_NAME : null;
+  // `mandate_key` is the PROVIDER's (AdminMandateWorkspacePage owns identity);
+  // a descendant may never re-emit a provider-owned value.
+  useSurfaceScopeContribution(surfaceName, "TriadGoalSection", () =>
+    goalSectionScope({
+      ...(data.mandate.label ? { mandate_label: data.mandate.label } : {}),
+      ...(data.mandate.description
+        ? { mandate_description: data.mandate.description }
+        : {}),
+      mandate_goal: goal ?? "",
+      mandate_goal_grounding: grounding,
+      ...(data.mandate.output_kind
+        ? { mandate_output_kind: data.mandate.output_kind }
+        : {}),
+      mandate_goal_draft: { editing, text: editing ? draft : (goal ?? "") },
+    }),
+  );
+  useSurfaceWriteHandlers(surfaceName, {
+    [MANDATE_WORKSPACE_WRITE_TARGETS.goalDraft]: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim()) {
+        throw new Error(
+          "mandate_goal_draft takes a non-empty STRING — the goal text itself (a writer's `charge`), never an object or the whole specification.",
+        );
+      }
+      setDraft(value.trim());
+      setEditing(true);
+    },
+  });
 
   const save = async () => {
     if (!draft.trim()) {
@@ -517,32 +595,32 @@ export function TriadGoalSection({
     };
   }, [data.mandate, data.contract.requiredOutputKeys, goal, targetSurface]);
 
-  const runRefine = async (variables: Record<string, string>) => {
-    setRefining(true);
-    try {
-      const text = await refine.run<string>({
-        mandateKey: GOAL_WRITER_MANDATE_KEY,
-        surfaceKey: `mandate:${GOAL_WRITER_MANDATE_KEY}`,
-        sourceFeature: "agent-builder",
-        expect: "text",
-        initiation: "user",
-        // The served names, plus whatever the person answered inline. This
-        // screen adds nothing of its own — see `refineValues`.
-        variables,
-      });
-      setDraft(text.trim() || (goal ?? ""));
-      setEditing(true);
-      toast.success("Draft ready — review, then save.");
-    } catch (error: unknown) {
-      toastFailure(error, {
-        action: "asking for a goal draft",
-        retrySafe: true,
-        fallback: "The draft could not be produced.",
-        retry: () => void runRefine(variables),
-      });
-    } finally {
-      setRefining(false);
+  const runRefine = (variables: Record<string, string>) => {
+    // `AutomationButton` only enables once the door resolved the job, so a
+    // null holder here is a race, not a state — say so rather than open a
+    // window on nothing.
+    if (!writer.mandate) {
+      toast.error(
+        writer.error ??
+          `The job "${GOAL_WRITER_MANDATE_KEY}" has not resolved yet — try again in a moment.`,
+      );
+      return;
     }
+    openRun({
+      // ONE window per mandate being refined: a second press re-binds it
+      // instead of stacking a new one over the page.
+      instanceId: `goal-writer:${data.mandate.mandate_key}`,
+      initialAgentId: writer.mandate.agentId,
+      initialAgentName: "Goal Writer",
+      mandateKey: GOAL_WRITER_MANDATE_KEY,
+      // The run is ABOUT this page: it reads the goal as saved and is offered
+      // `mandate_goal_draft`, so "apply that as the goal" works in the chat.
+      surfaceName: MANDATE_WORKSPACE_SURFACE_NAME,
+      // The served names, plus whatever the person answered inline. This
+      // screen adds nothing of its own — see `refineValues`.
+      initialVariableValues: variables,
+      initialAutoRun: true,
+    });
   };
 
   return (
@@ -601,10 +679,10 @@ export function TriadGoalSection({
               <AutomationButton
                 mandateKey={GOAL_WRITER_MANDATE_KEY}
                 label="Refine with AI"
-                runningLabel="Refining…"
-                running={refining}
+                runningLabel="Opening…"
+                running={false}
                 knownValues={refineValues}
-                onRun={(variables) => void runRefine(variables)}
+                onRun={(variables) => runRefine(variables)}
               />
             </div>
           </>

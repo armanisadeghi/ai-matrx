@@ -56,6 +56,12 @@ import {
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { setUserInputMessageParts } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { launchAgentExecution } from "./launch-agent-execution.thunk";
+import { resolveMandate } from "@/features/mandates/service";
+import {
+  judgeDeclaredFlattening,
+  judgeHarvestedFlattening,
+  type FlatteningVerdict,
+} from "./structured-output-flattening";
 import { executeInstance } from "./execute-instance.thunk";
 
 export interface HeadlessAgentJsonOptions {
@@ -296,6 +302,63 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * still awaiting the promise. A handler that throws is captured loudly and
  * never alters the run's own outcome.
  */
+/**
+ * 🚨 THE FLATTENING SCREAM (Arman, 2026-09-08). A shaped answer resolved as
+ * a string is a defect at the CALL SITE, and the system used to say nothing.
+ * Loud and non-blocking: the run still resolves, the Error Inspector and the
+ * console name the surface and the remedy. Judgment lives in
+ * `structured-output-flattening.ts`; this only reports.
+ */
+function screamFlattening(
+  verdict: FlatteningVerdict,
+  ctx: {
+    surfaceKey: string;
+    agentRef: string;
+    requestId?: string;
+    conversationId?: string;
+  },
+): void {
+  console.error(verdict.message);
+  captureError({
+    source: "agent-json-result",
+    message: verdict.message,
+    ...(ctx.requestId ? { requestId: ctx.requestId } : {}),
+    ...(ctx.conversationId ? { conversationId: ctx.conversationId } : {}),
+    raw: {
+      defect: "structured-output-flattened-to-text",
+      signal: verdict.signal,
+      kind: verdict.kind,
+      surfaceKey: ctx.surfaceKey,
+      agent: ctx.agentRef,
+    },
+  });
+}
+
+/**
+ * Signal 1 — DECLARED: a mandate run asked for text while the job declares a
+ * shape. `resolveMandate` is the cached display read the launch thunk itself
+ * performs, so this costs nothing extra; a resolution failure is the launch's
+ * to report, not this scream's, so it is swallowed here on purpose.
+ */
+function screamIfDeclaredFlattening(
+  opts: Pick<HeadlessAgentJsonOptions, "expect" | "mandateKey" | "surfaceKey">,
+  agentRef: string,
+): void {
+  if ((opts.expect ?? "json") !== "text" || !opts.mandateKey) return;
+  const mandateKey = opts.mandateKey;
+  void resolveMandate(mandateKey)
+    .then((resolved) => {
+      const verdict = judgeDeclaredFlattening({
+        expect: "text",
+        mandateKey,
+        outputKind: resolved.outputKind,
+        surfaceKey: opts.surfaceKey,
+      });
+      if (verdict) screamFlattening(verdict, { surfaceKey: opts.surfaceKey, agentRef });
+    })
+    .catch(() => undefined);
+}
+
 async function deliverResult(
   seam: {
     onResult?: HeadlessAgentJsonOptions["onResult"];
@@ -483,6 +546,10 @@ async function launchAndWait(
       }
       executionIdentity = { agentId: opts.agentId };
     }
+    screamIfDeclaredFlattening(
+      opts,
+      opts.agentId ?? opts.mandateKey ?? "unknown",
+    );
     const launch = await dispatch(
       launchAgentExecution({
         ...executionIdentity,
@@ -774,6 +841,24 @@ async function waitForExtraction(
     if (args.expect === "text") {
       const b = base();
       if (b.fullResponse.trim()) {
+        // Signal 2 — HARVESTED: the caller asked for prose and the answer is
+        // a shape. Still resolves as text (the person is not punished for
+        // the call site), but the defect is named where it happened.
+        const harvested = resolveRunData(getState, requestId, conversationId);
+        const verdict = judgeHarvestedFlattening({
+          expect: "text",
+          harvested: harvested.data,
+          agentRef: args.agentRef,
+          surfaceKey: args.surfaceKey,
+        });
+        if (verdict) {
+          screamFlattening(verdict, {
+            surfaceKey: args.surfaceKey,
+            agentRef: args.agentRef,
+            requestId,
+            conversationId,
+          });
+        }
         return { success: true, data: b.fullResponse, ...b };
       }
       if (reason === "aborted") {

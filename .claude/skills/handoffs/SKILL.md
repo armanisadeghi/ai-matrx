@@ -50,6 +50,8 @@ The first lines after the title, before remaining work, before Done, before anyt
 
 ```markdown
 ---
+type: Handoff             # REQUIRED by okf_lint (§9.2) — a handoff without it FAILS the
+                          # shared gate for every session, not just yours
 status: active            # active | blocked (blocked = waiting ONLY on Arman's answers)
 updated: 2026-07-07
 repos: [matrx-frontend]   # every repo the remaining work touches

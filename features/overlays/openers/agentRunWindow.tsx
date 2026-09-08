@@ -53,6 +53,26 @@ export interface OpenAgentRunWindowOptions {
   initialVariableValues?: Record<string, string> | null;
   /** Start the seeded run immediately after the window opens. */
   initialAutoRun?: boolean;
+  /**
+   * THE MANDATE DOOR for a chat window. When set, every run in the fresh
+   * conversation goes to `/ai/mandates/{key}` and the SERVER resolves the
+   * Holder and applies the binding's `config_overrides`; `initialAgentId` then
+   * only paints the window (name, avatar, variable panel) and must be the
+   * mandate's resolved holder (`useMandate(key).mandate.agentId`). This is how
+   * a surface opens a back-and-forth conversation with a fixed job WITHOUT
+   * a raw agent UUID in code and without flattening the job's structured
+   * `__kind` output into a string — the transcript renders through the ONE
+   * canonical pipeline and the person can keep talking.
+   */
+  mandateKey?: string | null;
+  /**
+   * Adopt a MOUNTED surface by name for this window's runs — the run reads
+   * that surface's live scope and is offered its agent-writable targets
+   * (`apply_surface_write`). Omit for the default: a floating chat adopts
+   * nothing, because the page underneath is not the subject. Pass it when the
+   * conversation IS about the page (a job refining a field the page owns).
+   */
+  surfaceName?: string | null;
 }
 
 export interface AgentRunWindowHandle {
@@ -78,6 +98,8 @@ export function useOpenAgentRunWindow() {
             initialDraftText: opts.initialDraftText,
             initialVariableValues: opts.initialVariableValues,
             initialAutoRun: opts.initialAutoRun,
+            mandateKey: opts.mandateKey ?? undefined,
+            surfaceName: opts.surfaceName ?? undefined,
           },
         }),
       );
@@ -112,6 +134,8 @@ export function AgentRunWindowController(
     props.initialDraftText,
     props.initialVariableValues,
     props.initialAutoRun,
+    props.mandateKey,
+    props.surfaceName,
   ]);
   return null;
 }

@@ -37,6 +37,7 @@ import {
 // importing them here — the seam and the component contract never change.
 import "./handlers/trigger-agent";
 import "./handlers/apply-surface-write";
+import "./handlers/list-surface-write-targets";
 
 export type RunKindAction = (
   key: string,

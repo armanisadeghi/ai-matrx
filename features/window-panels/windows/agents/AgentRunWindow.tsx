@@ -230,6 +230,10 @@ interface AgentRunBodyProps {
    */
   initialVariableValues?: Record<string, string> | null;
   initialAutoRun?: boolean;
+  /** THE MANDATE DOOR — see `OpenAgentRunWindowOptions.mandateKey`. */
+  mandateKey?: string | null;
+  /** Adopt a mounted surface — see `OpenAgentRunWindowOptions.surfaceName`. */
+  surfaceName?: string | null;
 }
 
 function AgentRunBody({
@@ -239,6 +243,8 @@ function AgentRunBody({
   initialDraftText,
   initialVariableValues,
   initialAutoRun = false,
+  mandateKey = null,
+  surfaceName = null,
 }: AgentRunBodyProps) {
   const dispatch = useAppDispatch();
 
@@ -311,8 +317,15 @@ function AgentRunBody({
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
     // A floating runner can sit above any feature surface. Its agent is the
-    // primary interaction here, so the page underneath must not be adopted.
-    runtime: { surfaceName: null },
+    // primary interaction here, so by default the page underneath must not be
+    // adopted. A caller whose conversation IS about the page (a job refining
+    // a field that page owns) names the mounted surface, and the run then
+    // reads its live scope and is offered its agent-writable targets.
+    runtime: { surfaceName },
+    // A window opened ON A JOB runs through the server's mandate door: the
+    // Holder and the binding's `config_overrides` are the server's decision,
+    // `agentId` only paints the chrome. Same seam /chat uses.
+    ...(mandateKey ? { mandateKey } : {}),
     // Existing conversations resume through useConversationResume below. The
     // launcher owns only the fresh-conversation path, exactly as /chat does.
     ready: !isInitializing && !selectedConversationId,
@@ -536,6 +549,10 @@ interface AgentRunWindowProps {
   /** Structured-content channel paired with `initialDraftText` — see AgentRunBodyProps. */
   initialVariableValues?: Record<string, string> | null;
   initialAutoRun?: boolean;
+  /** THE MANDATE DOOR — see `OpenAgentRunWindowOptions.mandateKey`. */
+  mandateKey?: string | null;
+  /** Adopt a mounted surface — see `OpenAgentRunWindowOptions.surfaceName`. */
+  surfaceName?: string | null;
 }
 
 export default function AgentRunWindow({
@@ -548,6 +565,8 @@ export default function AgentRunWindow({
   initialDraftText,
   initialVariableValues,
   initialAutoRun = false,
+  mandateKey = null,
+  surfaceName = null,
 }: AgentRunWindowProps) {
   if (!isOpen) return null;
   return (
@@ -560,6 +579,8 @@ export default function AgentRunWindow({
       initialDraftText={initialDraftText ?? null}
       initialVariableValues={initialVariableValues ?? null}
       initialAutoRun={initialAutoRun}
+      mandateKey={mandateKey}
+      surfaceName={surfaceName}
     />
   );
 }
@@ -573,6 +594,8 @@ function AgentRunWindowInner({
   initialDraftText,
   initialVariableValues,
   initialAutoRun,
+  mandateKey,
+  surfaceName,
 }: {
   instanceId: string;
   onClose: () => void;
@@ -582,6 +605,8 @@ function AgentRunWindowInner({
   initialDraftText: string | null;
   initialVariableValues: Record<string, string> | null;
   initialAutoRun: boolean;
+  mandateKey: string | null;
+  surfaceName: string | null;
 }) {
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
   const [selectedConversationId, setSelectedConversationId] = useState<
@@ -703,6 +728,12 @@ function AgentRunWindowInner({
           initialDraftText={initialDraftText}
           initialVariableValues={initialVariableValues}
           initialAutoRun={initialAutoRun}
+          // The mandate door only applies to the job the window was opened
+          // on. Picking a different agent from the title bar is a plain agent
+          // chat again — a mandate key must never ride along to a holder it
+          // does not name.
+          mandateKey={agentId === initialAgentId ? mandateKey : null}
+          surfaceName={surfaceName}
         />
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center text-muted-foreground">

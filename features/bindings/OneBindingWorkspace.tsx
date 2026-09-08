@@ -103,6 +103,7 @@ import {
   type BindingWriteReport,
 } from "@/features/mandates/overrides";
 import { toastFailure } from "@/lib/failure/toastFailure";
+import { describeFailure } from "@/lib/failure/transport";
 import { buildBindingSavePayload } from "@/features/mandates/workspace/save-payload";
 import { EffectiveConfigLayers } from "@/features/mandates/components/EffectiveConfigLayers";
 import { useGuardedRebind } from "@/features/mandates/admin/useGuardedRebind";
@@ -770,7 +771,11 @@ function BindingDraft({
 
   // ── Save / remove ─────────────────────────────────────────────────────────
   const [busy, setBusy] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<{
+    text: string;
+    /** Present only when trying again is genuinely the remedy. */
+    retry: (() => void) | null;
+  } | null>(null);
 
   const holderChosen =
     holder.kind === "workflow" ? Boolean(holder.workflowId) : Boolean(agentId);
@@ -1137,7 +1142,10 @@ function BindingDraft({
    */
   async function save() {
     if (saveRefusal) {
-      toast.error(saveRefusal);
+      // 🚨 NO TOAST. `saveRefusal` is already printed, permanently, beside this
+      // button — and Save is disabled while it stands, so this is a belt on an
+      // unreachable path. A toast here would be a SECOND copy of a sentence the
+      // page already keeps (FIX-R17 / FIX-R16's rule; see the catch below).
       return;
     }
     // The guard fires wherever the write decides for EVERY user on the platform
@@ -1178,17 +1186,39 @@ function BindingDraft({
       // refusal now says what it is and offers the retry inline; a DOOR'S OWN
       // refusal still passes through word for word, which is the whole point of
       // keeping this sentence on the page as well as in a toast.
-      const failure = toastFailure(err, {
+      // 🚨 DESCRIBED, NOT TOASTED (FIX-R17, found by the independent walk of
+      // v0.4.1754 — and it is FIX-R16's rule applied one screen over).
+      //
+      // This used to `toastFailure`, which printed the door's refusal in the
+      // app-wide toast portal AND put the identical sentence in the inline slot
+      // below. Two copies of one fact, and the copy in the portal is the one no
+      // key can reach: the walker triggered the containment refusal on
+      // `zzz_fixr17.walk`, navigated client-side to `crm.journalist_beat_analyst`,
+      // and the toast — naming the job they had left — was still on screen,
+      // still not expiring (sonner pauses dismiss timers while the document is
+      // hidden, which a browser pane usually is). The inline sentence had
+      // correctly gone with the mandate.
+      //
+      // THE RULE: a failure sentence that is ALSO kept permanently on the page
+      // is never ALSO toasted. The page is the record, the toast is the
+      // courtesy, and a courtesy that repeats the record is only a way for it
+      // to outlive its subject.
+      const failure = describeFailure(err, {
         action: "saving this holder",
         // The write is an upsert of one rung's holder — the same click twice
         // leaves the same row, so a retry can be offered without hedging.
         retrySafe: true,
         fallback: "Save failed.",
-        retry: () => void doSave(bindAgentId),
       });
-      setSaveError(
-        failure.remedy ? `${failure.sentence} ${failure.remedy}` : failure.sentence,
-      );
+      setSaveError({
+        text: failure.remedy
+          ? `${failure.sentence} ${failure.remedy}`
+          : failure.sentence,
+        // The retry the toast used to carry, moved to where the sentence is —
+        // offered ONLY when trying again is genuinely the remedy, never as a
+        // control that cannot work (the fourth law).
+        retry: failure.transient ? () => void doSave(bindAgentId) : null,
+      });
     } finally {
       setBusy(false);
     }
@@ -1977,13 +2007,29 @@ function BindingDraft({
           {/* The server's refusal, kept ON THE PAGE — its words name the exact
           missing deliverable or the exact input, and a toast loses them. */}
           {saveError ? (
-            <p className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] leading-relaxed text-destructive">
+            <div className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] leading-relaxed text-destructive">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              {/* Through the ONE sentence renderer (R-O2): the door's refusal
-                  names ids and field names, and printed bare it showed the
-                  author's backticks and made the reader hand-copy a uuid. */}
-              <TextWithDoors text={saveError} defaultToken="agent" />
-            </p>
+              <div className="min-w-0 space-y-1.5">
+                {/* Through the ONE sentence renderer (R-O2): the door's refusal
+                    names ids and field names, and printed bare it showed the
+                    author's backticks and made the reader hand-copy a uuid. */}
+                <p>
+                  <TextWithDoors text={saveError.text} defaultToken="agent" />
+                </p>
+                {/* The retry the toast used to carry. Present ONLY when trying
+                    again is the remedy — never a control that cannot work. */}
+                {saveError.retry ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={saveError.retry}
+                    disabled={busy}
+                  >
+                    Try again
+                  </Button>
+                ) : null}
+              </div>
+            </div>
           ) : null}
 
           <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/40 pt-3">

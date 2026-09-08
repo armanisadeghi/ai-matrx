@@ -457,6 +457,22 @@ function resolveAgentsSurface(stripped: string): string | null {
   return AGENT_SUBROUTE_SURFACES[segments[2]] ?? null;
 }
 
+/**
+ * `/administration/mandates/<key>` is ONE job's workspace — a different
+ * surface from the console at `/administration/mandates` (a list over the
+ * fleet). A mandate key contains dots and never a slash, so the first segment
+ * after the prefix is the whole address; the two sibling routes that are NOT
+ * a mandate (`new`, `advanced`) stay on the console surface. Prefix matching
+ * cannot express "children but not the parent", hence a resolver.
+ */
+function resolveAdminMandateSurface(stripped: string): string | null {
+  const PREFIX = "/administration/mandates/";
+  if (!stripped.startsWith(PREFIX)) return null;
+  const segment = stripped.slice(PREFIX.length).split("/")[0] ?? "";
+  if (!segment || segment === "new" || segment === "advanced") return null;
+  return "matrx-admin/mandate-workspace";
+}
+
 function resolveCmsSurface(stripped: string): string | null {
   if (stripped !== "/cms" && !stripped.startsWith("/cms/")) return null;
   const segments = stripped.split("/").filter(Boolean); // ["cms", ...]
@@ -574,6 +590,9 @@ export function surfaceFromPathname(
 
   const agents = resolveAgentsSurface(stripped);
   if (agents) return agents;
+
+  const adminMandate = resolveAdminMandateSurface(stripped);
+  if (adminMandate) return adminMandate;
 
   for (const { prefix, surface } of SURFACE_ROUTE_MAPPINGS) {
     if (

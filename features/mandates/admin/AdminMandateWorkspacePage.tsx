@@ -51,6 +51,14 @@ import {
   type MandateConsoleData,
 } from "./service";
 import { pushAppHref } from "@/lib/deployment/navigate";
+import {
+  SurfaceRuntimeProvider,
+  getRegisteredSurfaceScopeContributions,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  MANDATE_WORKSPACE_SURFACE_NAME,
+  createMandateWorkspaceScope,
+} from "@/features/surfaces/manifests/mandate-workspace.manifest";
 
 export interface AdminMandateWorkspacePageProps {
   /** Mandate key ("podcast.multihost_script") or the row uuid — both open. */
@@ -61,20 +69,43 @@ export function AdminMandateWorkspacePage({
   mandateKey,
 }: AdminMandateWorkspacePageProps) {
   return (
-    <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto">
-      <div className="mx-auto w-full max-w-3xl px-4 pt-3 sm:px-6">
-        <AppLink
-          href="/administration/mandates"
-          className="inline-flex items-center gap-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          All mandates
-        </AppLink>
+    // THE SURFACE: `matrx-admin/mandate-workspace` (manifest beside the
+    // console's). The provider owns identity; the goal editor inside the
+    // workspace publishes the goal values and owns the ONE write target
+    // (`TriadGoalSection` → `useSurfaceScopeContribution` +
+    // `useSurfaceWriteHandlers`), which is how the goal writer's charge
+    // lands in the editor from the chat window without this page parsing
+    // any model output.
+    <SurfaceRuntimeProvider
+      surfaceName={MANDATE_WORKSPACE_SURFACE_NAME}
+      getScope={() => ({
+        ...createMandateWorkspaceScope({
+          mandate_key: mandateKey,
+          selection: window.getSelection()?.toString() || undefined,
+        }),
+        // The goal editor publishes its own values from below
+        // (`useSurfaceScopeContribution`); contributions are merged HERE,
+        // by the provider owner — the registry never merges them for you.
+        ...getRegisteredSurfaceScopeContributions(
+          MANDATE_WORKSPACE_SURFACE_NAME,
+        ),
+      })}
+    >
+      <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto">
+        <div className="mx-auto w-full max-w-3xl px-4 pt-3 sm:px-6">
+          <AppLink
+            href="/administration/mandates"
+            className="inline-flex items-center gap-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            All mandates
+          </AppLink>
+        </div>
+        {/* THE ONE workspace — identical to /mandates/[key]. */}
+        <MandateWorkspace mandateKeyOrId={mandateKey} host="admin-route" />
+        <AdminControls mandateKey={mandateKey} />
       </div>
-      {/* THE ONE workspace — identical to /mandates/[key]. */}
-      <MandateWorkspace mandateKeyOrId={mandateKey} host="admin-route" />
-      <AdminControls mandateKey={mandateKey} />
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

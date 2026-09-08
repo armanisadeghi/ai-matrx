@@ -25,7 +25,22 @@
  * stand-in remounts and the first job's words are gone; if it is not, they are
  * still on screen — which is what production showed.
  *
- * RED at `5ad8764e76` (the pre-fix tree): both "is gone" assertions fail.
+ * RED at `65b8115fad` (the pre-fix tree): both "is gone" assertions fail.
+ *
+ * ── AND THE HALF A KEY CANNOT REACH (added after the independent walk) ───────
+ *
+ * The fresh Sonnet walk of the SERVED v0.4.1754 confirmed the in-page refusal
+ * clears — and FAILED this observation anyway, because the same sentence was
+ * ALSO in a toast, and a toast lives in an app-wide portal that no key on this
+ * component can reach. It named `zzz_fixr17.walk` while the reader was looking
+ * at `crm.journalist_beat_analyst`, and it was still there 8+ seconds later
+ * (sonner pauses dismiss timers while the document is hidden — a browser pane
+ * usually is).
+ *
+ * The toast was a SECOND COPY of a sentence this page already keeps
+ * permanently. So the rule, which is FIX-R16's rule one screen over: a failure
+ * sentence with an inline home is never also toasted. The second describe below
+ * drives the real save path and asserts the toast module is never called.
  */
 import React, { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -47,8 +62,11 @@ jest.mock("@/features/bindings/ScopeHolderBar", () => ({
   // The module's pure words stay REAL — only the component is stood in for.
   ...jest.requireActual("@/features/bindings/ScopeHolderBar"),
   ScopeHolderBar: ({ job }: { job: { mandateKey: string } }) => {
+    // Deliberately NOT the door's own wording — the second guard below asserts
+    // the DOOR's sentence, and a stand-in that emits it would make that guard
+    // pass without the door ever being called.
     const [refusal] = useState(
-      () => `Mandate ${job.mandateKey} is homed in a single organization, so it cannot carry a GLOBAL binding.`,
+      () => `Held verdict about ${job.mandateKey}, captured at mount.`,
     );
     mountCount += 1;
     return <p data-testid="refusal">{refusal}</p>;
@@ -122,6 +140,28 @@ jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
   ...jest.requireActual("@/features/agents/redux/agent-definition/selectors"),
   selectBuiltinAgents: () => [],
 }));
+/** Every toast this tree could raise, counted. */
+const toasts: { level: string; text: unknown }[] = [];
+jest.mock("@/lib/toast", () => ({
+  toast: {
+    error: (text: unknown) => toasts.push({ level: "error", text }),
+    success: (text: unknown) => toasts.push({ level: "success", text }),
+    warning: (text: unknown) => toasts.push({ level: "warning", text }),
+    info: (text: unknown) => toasts.push({ level: "info", text }),
+    message: (text: unknown) => toasts.push({ level: "message", text }),
+    dismiss: () => undefined,
+  },
+}));
+
+/** The door refuses exactly as `mandate.guard_binding_containment` does. */
+const CONTAINMENT_REFUSAL =
+  "Mandate 'zzz_vpux2.scratch' is homed in a single organization, so it cannot carry a GLOBAL binding.";
+jest.mock("@/features/mandates/overrides", () => ({
+  ...jest.requireActual("@/features/mandates/overrides"),
+  putMandateDefaultHolder: () => Promise.reject(new Error(CONTAINMENT_REFUSAL)),
+  putMandateBinding: () => Promise.reject(new Error(CONTAINMENT_REFUSAL)),
+}));
+
 jest.mock("@/features/bindings/useHolderInputs", () => ({
   useHolderInputs: () => ({
     status: "ready",
@@ -134,7 +174,7 @@ jest.mock("@/features/mandates/input-surface", () => ({
 }));
 
 import { OneBindingWorkspace } from "@/features/bindings/OneBindingWorkspace";
-import { makeWorkspaceData } from "./workspace-fixtures";
+import { HELD_AGENT_ID, makeWorkspaceData } from "./workspace-fixtures";
 
 const MANDATE_A = "zzz_vpux2.scratch";
 const MANDATE_B = "zzz_vpux2.scratch_2";
@@ -192,5 +232,70 @@ describe("a refusal is keyed to the mandate it is about", () => {
     // Proof it was a REMOUNT that cleared it, not a lucky re-render: state
     // held in the second instance is a second instance.
     expect(mountCount).toBeGreaterThan(1);
+  });
+});
+
+/**
+ * ── THE SECOND COPY, IN THE PORTAL NO KEY CAN REACH ─────────────────────────
+ *
+ * Driven through the REAL `save()` on the REAL component, with the door
+ * refusing exactly as `mandate.guard_binding_containment` does.
+ *
+ * RED at `69daf265ef` (the SERVED v0.4.1754 the walk failed): `toasts` holds
+ * one `error` carrying the refusal, which is what outlived the mandate on the
+ * walker's screen.
+ */
+describe("a refusal with an inline home is never also toasted", () => {
+  let host: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    toasts.length = 0;
+    mountCount = 0;
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it("puts the door's words on the page and raises no toast", async () => {
+    act(() => {
+      root.render(
+        <OneBindingWorkspace
+          data={makeWorkspaceData({
+            id: "11111111-1111-4111-8111-111111111111",
+            mandateKey: MANDATE_A,
+            heldBy: HELD_AGENT_ID,
+          })}
+          perspective="system"
+          fixedRung={["system", "global"]}
+          onChanged={() => undefined}
+        />,
+      );
+    });
+
+    const save = Array.from(host.querySelectorAll("button")).find((b) =>
+      /^(Set|Save)\b/.test(b.textContent ?? ""),
+    );
+    expect(save).toBeDefined();
+    // A disabled button proves nothing — the guard must actually reach the door.
+    expect(save?.disabled).toBe(false);
+
+    await act(async () => {
+      save?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // The record: the door's own sentence, on the page, where the mandate's
+    // key can take it away again.
+    expect(host.textContent).toContain("cannot carry a GLOBAL binding");
+    // And NOT a second copy in the app-wide portal — the copy that outlived
+    // the job on production.
+    expect(toasts).toEqual([]);
   });
 });

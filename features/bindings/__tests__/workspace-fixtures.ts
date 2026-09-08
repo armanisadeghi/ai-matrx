@@ -13,14 +13,25 @@ import type { MandateWorkspaceData } from "@/features/mandates/workspace/useMand
 export const WRITE_TARGET_SANDBOX = "org-1";
 export const WRITE_TARGET_SANDBOX_NAME = "Write Target Sandbox";
 
+/** An agent the caller has already picked, so Save is a live control. */
+export const HELD_AGENT_ID = "8f0bbfc2-85d9-4913-8cea-b09a50c62be6";
+
 export function makeWorkspaceData({
   id,
   mandateKey,
   organizationId = WRITE_TARGET_SANDBOX,
+  heldBy = null,
 }: {
   id: string;
   mandateKey: string;
   organizationId?: string | null;
+  /**
+   * The job's own default holder. Set it when the guard needs Save to be
+   * ENABLED — a workspace with no holder chosen refuses the click before it
+   * ever reaches the door, and a guard driving a disabled button proves
+   * nothing.
+   */
+  heldBy?: string | null;
 }): MandateWorkspaceData {
   return {
     mandate: {
@@ -30,6 +41,9 @@ export function makeWorkspaceData({
       organization_id: organizationId,
       output_kind: null,
       visibility: "organization",
+      default_holder_type: "agent",
+      default_holder_id: heldBy,
+      default_holder_version_id: null,
     },
     contract: {
       requiredVariables: [],

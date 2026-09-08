@@ -2964,6 +2964,12 @@ export default function OverlayController() {
                 : null
             }
             initialAutoRun={data?.initialAutoRun === true}
+            mandateKey={
+              typeof data?.mandateKey === "string" ? data.mandateKey : null
+            }
+            surfaceName={
+              typeof data?.surfaceName === "string" ? data.surfaceName : null
+            }
           />
         );
       })}

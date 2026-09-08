@@ -205,6 +205,7 @@ import { adminBundlesManifest } from "./admin-bundles.manifest";
 import { adminMcpServersManifest } from "./admin-mcp-servers.manifest";
 import { adminLookupsManifest } from "./admin-lookups.manifest";
 import { mandatesManifest } from "./mandates.manifest";
+import { mandateWorkspaceManifest } from "./mandate-workspace.manifest";
 import { knowledgeManifest } from "./knowledge.manifest";
 import { shapesManifest } from "./shapes.manifest";
 import { crmManifest } from "./crm.manifest";
@@ -425,6 +426,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminMcpServersManifest,
   adminLookupsManifest,
   mandatesManifest,
+  mandateWorkspaceManifest,
   knowledgeManifest,
   shapesManifest,
   crmManifest,

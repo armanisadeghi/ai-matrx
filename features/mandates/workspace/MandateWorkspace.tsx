@@ -88,6 +88,7 @@ import {
 } from "./useMandateWorkspaceData";
 import { loadFailedFailure } from "../mandate-address";
 import { useMandate } from "../useMandate";
+import { MANDATE_WORKSPACE_SURFACE_NAME } from "@/features/surfaces/manifests/mandate-workspace.manifest";
 import type { ResolvedMandate } from "../service";
 import {
   ladderRowIsBroken,
@@ -620,7 +621,7 @@ function OneMandateWorkspace({
             host === "window"
               ? undefined
               : host === "admin-route"
-                ? "matrx-admin/mandates"
+                ? MANDATE_WORKSPACE_SURFACE_NAME
                 : "matrx-user/mandate-workspace"
           }
         />
