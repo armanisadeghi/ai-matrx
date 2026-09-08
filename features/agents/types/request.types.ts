@@ -415,7 +415,7 @@ export interface WorkflowNodeStreamEntry {
  * actually put on the wire, not intent.
  */
 export interface RequestRouting {
-  /** Full URL the request was POSTed to (e.g. https://sandbox.matrxserver.com/ai/agents/<id>). */
+  /** Full URL the request was POSTed to (e.g. https://server.app.matrxserver.com/ai/agents/<id>). */
   url: string;
   /**
    * Which backend channel resolved it. Canonical: `BackendChannel` in
