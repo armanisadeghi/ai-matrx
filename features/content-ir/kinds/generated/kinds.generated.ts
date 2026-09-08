@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 509 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 510 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "cf7a70cacaf4";
+export const KIND_REGISTRY_FINGERPRINT = "e5cc67997cc5";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -10663,6 +10663,42 @@ export interface MedSpaReviewResponseKit {
 }
 
 /**
+ * ONE durable media handle — the thing an image / video / audio / document
+ * producing mandate actually delivers.
+ *
+ * Every field except ``media_type`` and ``origin`` is optional-with-default,
+ * and both of those default too. That is deliberate and load-bearing: the
+ * minimum honest instance is a bare handle, so the degraded path
+ * (``media_asset_from_handle``) always produces something that VALIDATES.
+ *  *
+ *  * Kind `media_asset` (registry v2).
+ */
+export interface MediaAsset {
+  url?: string | null;
+  width?: number | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "media_asset";
+  height?: number | null;
+  origin?: "matrx" | "external";
+  cdn_url?: string | null;
+  file_id?: string | null;
+  metadata?: Record<string, unknown>;
+  file_name?: string | null;
+  mime_type?: string | null;
+  media_type?: "image" | "video" | "audio" | "document" | "youtube" | "unknown";
+  page_count?: number | null;
+  poster_url?: string | null;
+  size_bytes?: number | null;
+  transcript?: string | null;
+  duration_ms?: number | null;
+  download_url?: string | null;
+  external_url?: string | null;
+  source_label?: string | null;
+}
+
+/**
  * Kind `media_candidate_verdict` (registry v4).
  */
 export interface MediaCandidateVerdict {
@@ -21141,6 +21177,7 @@ export type GeneratedKindSlug =
   | "masterwork_result"
   | "math_problem"
   | "med_spa_review_response_kit"
+  | "media_asset"
   | "media_candidate_verdict"
   | "media_chapters"
   | "media_list_ranking_result"
@@ -21653,6 +21690,7 @@ export interface KindPayloadBySlug {
   "masterwork_result": MasterworkResult;
   "math_problem": MathProblem;
   "med_spa_review_response_kit": MedSpaReviewResponseKit;
+  "media_asset": MediaAsset;
   "media_candidate_verdict": MediaCandidateVerdict;
   "media_chapters": MediaChapters;
   "media_list_ranking_result": MediaListRankingResult;
@@ -22169,6 +22207,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "masterwork_result",
   "math_problem",
   "med_spa_review_response_kit",
+  "media_asset",
   "media_candidate_verdict",
   "media_chapters",
   "media_list_ranking_result",
