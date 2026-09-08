@@ -151,6 +151,7 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 
 ## Change log
 
+- **2026-09-08** — `GradedAnswerBlock` is THE verdict render (`answer_grade` kind → `answer_grade_verdict`): `take/QuestionView` `FeedbackBlock` and `grade-work/GradeWorkSurface` mount it and their two copies of the verdict pill + misconception + explanation + transcription are deleted; `StepBreakdown` stays beside it (steps are not part of the kind).
 - **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted
   (`data/agents.ts` → `data/mandates.ts`, `ASSESSMENT_MANDATES`; item-type constants moved with it).
 - **2026-08-11** — **Every assessment agent run streams (THE FLOATING LAW).** "Make this deeper" (`AssessmentEdit`) traded its `toast.loading` for the floating `LiveRunWindow` — the harder question is written in front of the user — and "Grade my handwritten work" (`useGradeWork` → `gradeAnswerImage` → `runVisionGrader`) floats the vision grader's step-by-step read instead of spinning the button. `deepenItem` / `runVisionGrader` / `gradeAnswerImage` take an optional `onConversationCreated`; with none passed they stay headless. `AssessmentCreate` (inline, earned exception) is unchanged.

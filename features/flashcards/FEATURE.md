@@ -163,6 +163,7 @@ own fresh conversation):
 
 ## Change log
 
+- 2026-09-08 — `StudyDeck` completion screen renders the settled session review through `BatchReviewBlock` (the `batch_review` kind's component) instead of a summary-only paragraph that dropped strengths, weaknesses and the score; the loading face now points at the floating run window.
 - 2026-09-02 — The authenticated `/education/flashcards/**` tool family now stops
   guests at the global route boundary before owned-deck, category, scope, or study-data
   clients mount. The anonymous deck funnel remains `/p/e/fc_set/[id]`.
