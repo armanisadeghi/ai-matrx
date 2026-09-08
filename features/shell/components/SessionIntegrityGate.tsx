@@ -17,6 +17,7 @@
 import { headers } from "next/headers";
 import { SPLIT_COOKIE_JAR_HEADER } from "@ai-matrx/data/next";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { AMBIGUOUS_AUTH_COOKIE_HEADER } from "@/utils/supabase/authCookie";
 import SessionIntegrityBanner from "./SessionIntegrityBanner";
 
 export default async function SessionIntegrityGate() {
@@ -30,6 +31,14 @@ export default async function SessionIntegrityGate() {
       // it for exactly this) — a literal here silently reads `false` forever
       // the day the package renames it.
       splitCookieJar={headersList.get(SPLIT_COOKIE_JAR_HEADER) === "1"}
+      // We SIGNED THIS PERSON OUT on this request, on purpose: their jar held
+      // one auth cookie both unchunked and chunked, and serving either copy
+      // risks serving somebody else's session. The banner must show for this
+      // even though the tab has no session left to detect — that is exactly
+      // what makes it invisible otherwise (2026-09-08, R-O3).
+      ambiguousAuthCookies={
+        headersList.get(AMBIGUOUS_AUTH_COOKIE_HEADER) === "1"
+      }
     />
   );
 }

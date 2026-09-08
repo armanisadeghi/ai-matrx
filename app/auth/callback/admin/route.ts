@@ -142,6 +142,19 @@ export async function GET(request: NextRequest) {
       setCookie: ({ name, value, options }) => {
         response.cookies.set(name, value, options);
       },
+      // @supabase/ssr removes a cookie at BOTH Domain scopes by writing the
+      // SAME name twice, and `response.cookies` keeps one entry per NAME — so
+      // the second write DELETES the first and the `.apex` removal is lost.
+      // That is how a stale unchunked auth cookie survives beside a fresh
+      // chunked pair and makes the next request resolve the PREVIOUS person
+      // (2026-09-08, R-O3). The duplicate goes out raw instead.
+      //
+      // Safe here because nothing touches `response.cookies` after this point
+      // on the success path — `ResponseCookies.set` would discard the append.
+      // The denied and SPA paths build their own responses.
+      appendSetCookie: (header) => {
+        response.headers.append("Set-Cookie", header);
+      },
       host: request.headers.get("host"),
       cookieHeader: request.headers.get("cookie"),
     });

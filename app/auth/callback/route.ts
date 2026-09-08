@@ -229,7 +229,20 @@ export async function GET(request: Request) {
       }
 
       console.log(`[${timestamp}] Auth callback - Creating Supabase client...`);
+      /**
+       * Session cookie writes that could NOT go through Next's `cookies()`
+       * store. `@supabase/ssr` removes a cookie at BOTH Domain scopes by
+       * writing the SAME name twice, and that store keys by NAME exactly like
+       * `ResponseCookies` — so the second write DELETES the first and the
+       * `.apex` removal never reaches the browser. That is how a stale
+       * UNCHUNKED auth cookie survives beside a freshly written CHUNKED pair,
+       * and `combineChunks` then serves the STALE one: the previous person's
+       * session, to the person who just signed in through THIS door
+       * (2026-09-08, R-O3). Appended raw onto the response below, last.
+       */
+      const deferredSetCookies: string[] = [];
       const supabase = supabaseNext.serverClient({
+        appendSetCookie: (header) => deferredSetCookies.push(header),
         cookieStore: {
           getAll: () =>
             requestCookieEntries
@@ -486,6 +499,19 @@ export async function GET(request: Request) {
           "Set-Cookie",
           `${verifierAliasFrom}=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=Lax`,
         );
+      }
+      // LAST, after every `response.cookies` write above — `ResponseCookies.set`
+      // re-serializes the whole Set-Cookie list from its own map and discards
+      // raw appends made since. Nothing may touch `response.cookies` below.
+      if (deferredSetCookies.length > 0) {
+        console.log(
+          `[${timestamp}] Auth callback - LOUD: ${deferredSetCookies.length} session cookie write(s) could not go through the cookie store (one entry per name) and are being appended raw: ${deferredSetCookies
+            .map((h) => h.split("=")[0])
+            .join(", ")}`,
+        );
+        for (const header of deferredSetCookies) {
+          response.headers.append("Set-Cookie", header);
+        }
       }
       return response;
     }

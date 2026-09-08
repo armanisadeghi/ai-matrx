@@ -46,13 +46,60 @@ interface SessionIntegrityBannerProps {
    * cause is named rather than inferred, and the response already healed it.
    */
   splitCookieJar: boolean;
+  /**
+   * The proxy found one auth cookie name arriving BOTH unchunked and chunked
+   * and refused both copies rather than risk resolving the wrong person
+   * (`MiddlewareSession.ambiguousAuthCookies`). Unlike every other case here
+   * the tab has NO session left — we ended it — so this banner must render
+   * without one, or the intervention is completely silent.
+   */
+  ambiguousAuthCookies?: boolean;
+}
+
+/**
+ * WHETHER TO SPEAK, AND WHAT TO SAY — pure, so the three cases can be driven
+ * without a DOM. They are genuinely different situations and each has to get
+ * the true sentence:
+ *
+ *  · ambiguous  — the proxy refused BOTH copies of an auth cookie that arrived
+ *                 unchunked AND chunked, because nothing in a `Cookie` header
+ *                 says which is current and guessing means guessing whose
+ *                 session to serve. It expired them, so this tab has no session
+ *                 LEFT — which is exactly why this case must not require one.
+ *                 Silent otherwise (2026-09-08, R-O3).
+ *  · split jar  — the same name arrived at two Domain scopes; the tab still
+ *                 holds a session the server could not read.
+ *  · neither    — the server saw nobody while this tab has somebody.
+ */
+export function sessionIntegrityNotice(input: {
+  splitCookieJar: boolean;
+  ambiguousAuthCookies: boolean;
+  clientHasSession: boolean;
+}): { title: string; description: string } | null {
+  if (input.ambiguousAuthCookies) {
+    return {
+      title:
+        "We signed you out of this browser — its sign-in cookies could have belonged to two different people",
+      description:
+        "This browser held two sign-in cookies for this site in shapes that cannot both be current, and nothing in them says which one is yours. Rather than risk showing you someone else's account, we cleared both and ended the session. Nothing you saved is affected. Signing in again is all that is needed.",
+    };
+  }
+  if (!input.clientHasSession) return null;
+  return {
+    title: "This browser's session cookies are inconsistent — sign in again",
+    description: input.splitCookieJar
+      ? "This browser sent two different copies of the sign-in cookie, so the server could not tell who you are. Anything on this page that needs your account will look empty or refuse to save, no matter how many times you retry. We have cleared the stale copy; signing in again restores the page."
+      : "This tab is signed in, but the server did not recognise the session on this request, so anything that needs your account will look empty or refuse to save. Signing in again restores the page.",
+  };
 }
 
 export default function SessionIntegrityBanner({
   splitCookieJar,
+  ambiguousAuthCookies = false,
 }: SessionIntegrityBannerProps) {
   // Only rendered when the SERVER resolved nobody (the gate returns null
-  // otherwise), so the only question left is whether this tab has a session.
+  // otherwise), so the only question left is whether this tab has a session —
+  // except in the ambiguous case, where we just ended it ourselves.
   const [clientHasSession, setClientHasSession] = useState(false);
   const loginHref = useLoginHref();
   const router = useRouter();
@@ -68,19 +115,20 @@ export default function SessionIntegrityBanner({
     };
   }, []);
 
-  if (!clientHasSession) return null;
+  const notice = sessionIntegrityNotice({
+    splitCookieJar,
+    ambiguousAuthCookies,
+    clientHasSession,
+  });
+  if (!notice) return null;
 
   return (
     <div className="px-3 pt-3">
       <CalloutBanner
         tone="destructive"
         icon={ShieldAlert}
-        title="This browser's session cookies are inconsistent — sign in again"
-        description={
-          splitCookieJar
-            ? "This browser sent two different copies of the sign-in cookie, so the server could not tell who you are. Anything on this page that needs your account will look empty or refuse to save, no matter how many times you retry. We have cleared the stale copy; signing in again restores the page."
-            : "This tab is signed in, but the server did not recognise the session on this request, so anything that needs your account will look empty or refuse to save. Signing in again restores the page."
-        }
+        title={notice.title}
+        description={notice.description}
         actions={
           <Button size="sm" onClick={() => router.push(loginHref)}>
             Sign in again
