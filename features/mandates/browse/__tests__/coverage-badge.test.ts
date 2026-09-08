@@ -89,11 +89,15 @@ describe("coverageBadgeVerdict", () => {
     expect(verdict.title).toContain("ambient.page_guidance");
   });
 
-  it("says Unassigned in red when nothing resolves", () => {
+  // FIX-R17: ONE word for `red`. This used to pin "Unassigned" while the tile
+  // it filters said "Nothing assigned" and the Status column beside it said
+  // "Holder missing" — three words, one fact. The surviving one is the
+  // platform's own noun, and it lives in `coverage.ts` as `RED_WORD`.
+  it("says Holder missing in red when nothing resolves", () => {
     const verdict = coverageBadgeVerdict(view(), "research.page_summary");
     if (verdict.kind !== "state") throw new Error("expected a state badge");
     expect(verdict.bucket).toBe("red");
-    expect(verdict.label).toBe("Unassigned");
+    expect(verdict.label).toBe("Holder missing");
   });
 
   it("says UNKNOWN — never nothing — when the report failed", () => {
