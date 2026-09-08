@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import AppLink from "@/components/navigation/AppLink";
 import { ArrowLeft } from 'lucide-react';
 import { PageSpecificHeader } from '@/components/layout/new-layout/PageSpecificHeader';
 
@@ -8,10 +8,10 @@ export default function NoScrollPage() {
   return (
     <>
       <PageSpecificHeader>
-        <Link href="/layout-tests" className="text-gray-700 dark:text-gray-300 flex items-center gap-1 text-xs hover:text-gray-900 dark:hover:text-gray-100">
+        <AppLink href="/layout-tests" className="text-gray-700 dark:text-gray-300 flex items-center gap-1 text-xs hover:text-gray-900 dark:hover:text-gray-100">
           <ArrowLeft className="w-4 h-4" />
           Back
-        </Link>
+        </AppLink>
       </PageSpecificHeader>
       
       <div className="h-full flex flex-col overflow-hidden">

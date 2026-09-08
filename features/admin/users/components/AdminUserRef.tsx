@@ -50,7 +50,7 @@
  * declared exactly once.
  */
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   Building2,
   ChevronDown,
@@ -152,7 +152,7 @@ export interface AdminUserDoorControlsProps {
 
 /**
  * The per-user admin destinations as a standalone control cluster. Every item
- * is a real `<Link>`, so middle-click / cmd-click opens a new tab without
+ * is a real `<AppLink>`, so middle-click / cmd-click opens a new tab without
  * costing the user the surface they are standing in.
  */
 export function AdminUserDoorControls({
@@ -191,9 +191,9 @@ export function AdminUserDoorControls({
         <DropdownMenuSeparator />
         {doors.map(({ href, label: doorLabel, Icon }) => (
           <DropdownMenuItem key={href} asChild>
-            <Link href={href}>
+            <AppLink href={href}>
               <Icon className="mr-2 h-4 w-4" /> {doorLabel}
-            </Link>
+            </AppLink>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -219,14 +219,14 @@ export function AdminUserRef({
           // the account in a new tab without costing the admin the table they
           // are standing in. stopPropagation so a row-detail click handler on
           // the enclosing table does not also fire.
-          <Link
+          <AppLink
             href={accountHrefFor(userId)}
             onClick={(event) => event.stopPropagation()}
             title={`Open account ${primary}`}
             className="block truncate text-sm font-medium hover:text-primary hover:underline"
           >
             {primary}
-          </Link>
+          </AppLink>
         ) : (
           <MatrxUuidCell value={userId} label="User ID" />
         )}

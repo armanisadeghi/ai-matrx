@@ -7,7 +7,7 @@
  * own their interactivity.
  */
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { ArrowRight, Boxes, LayoutGrid, MapPin } from "lucide-react";
 
 export const metadata = {
@@ -62,7 +62,7 @@ export default function UnifiedManagementPreviewLanding() {
           const Icon = preview.icon;
           return (
             <li key={preview.slug}>
-              <Link
+              <AppLink
                 href={`/administration/preview/unified-management/${preview.slug}`}
                 className="group flex items-start gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-accent/40"
               >
@@ -81,7 +81,7 @@ export default function UnifiedManagementPreviewLanding() {
                   </p>
                 </div>
                 <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-              </Link>
+              </AppLink>
             </li>
           );
         })}

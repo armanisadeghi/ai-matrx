@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
 import { cn } from "@/styles/themes/utils";
 import {
@@ -91,7 +91,7 @@ export function CxDashboardLayoutClient({
                 ? pathname === item.href
                 : pathname.startsWith(item.href);
               return (
-                <Link
+                <AppLink
                   key={item.href}
                   href={item.href}
                   className={cn(
@@ -103,7 +103,7 @@ export function CxDashboardLayoutClient({
                 >
                   <item.icon className="w-3.5 h-3.5" />
                   {item.label}
-                </Link>
+                </AppLink>
               );
             })}
           </nav>

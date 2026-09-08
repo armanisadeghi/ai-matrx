@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useTransition } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
@@ -99,12 +99,12 @@ export function SchedulingAdminLayoutClient({
     >
       <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
         <div className="border-b border-border px-4 bg-card flex items-center gap-2">
-          <Link
+          <AppLink
             href="/administration"
             className="text-muted-foreground hover:text-foreground transition-colors p-2 -ml-2"
           >
             <ArrowLeft className="w-4 h-4" />
-          </Link>
+          </AppLink>
           <div className="flex items-center gap-1.5 pr-2 border-r border-border h-12">
             <CalendarClock className="h-4 w-4 text-blue-500" />
             <span className="font-medium text-sm">Scheduling</span>

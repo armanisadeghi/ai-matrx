@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
 import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
@@ -74,7 +74,7 @@ export default function MobileSheetNavLink({
   }
 
   return (
-    <Link
+    <AppLink
       href={href}
       data-nav-href={href}
       data-active={isActive ? "true" : undefined}
@@ -97,6 +97,6 @@ export default function MobileSheetNavLink({
           </span>
         ) : null}
       </span>
-    </Link>
+    </AppLink>
   );
 }

@@ -56,6 +56,7 @@ import {
   CONTEXT_MENU_ENTITY_KEY,
   type ContextMenuExtraItem,
 } from "@/features/context-menu-v3/types";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 const COLORS = [
   "hsl(215, 70%, 55%)",
@@ -176,7 +177,7 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
             value={kpis.total_conversations.toString()}
             icon={MessageSquare}
             onClick={() =>
-              router.push("/administration/chat/cx-dashboard/conversations")
+              pushAppHref(router, "/administration/chat/cx-dashboard/conversations")
             }
           />
           <CxKpiCard
@@ -184,7 +185,7 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
             value={kpis.total_user_requests.toString()}
             icon={Send}
             onClick={() =>
-              router.push("/administration/chat/cx-dashboard/requests")
+              pushAppHref(router, "/administration/chat/cx-dashboard/requests")
             }
           />
           <CxKpiCard
@@ -199,7 +200,7 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
             subValue={`avg ${formatCost(kpis.avg_cost_per_request)}/req`}
             icon={DollarSign}
             onClick={() =>
-              router.push("/administration/chat/cx-dashboard/usage")
+              pushAppHref(router, "/administration/chat/cx-dashboard/usage")
             }
           />
           <CxKpiCard
@@ -214,7 +215,7 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
             trend={kpis.error_count > 0 ? "down" : "neutral"}
             icon={AlertTriangle}
             onClick={() =>
-              router.push("/administration/chat/cx-dashboard/errors")
+              pushAppHref(router, "/administration/chat/cx-dashboard/errors")
             }
           />
         </div>

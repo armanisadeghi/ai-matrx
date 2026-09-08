@@ -7,7 +7,7 @@ import React, {
   useState,
   useTransition,
 } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import {
   Archive,
@@ -65,6 +65,7 @@ import {
   AgentAppRef,
   agentAppExecutionsHref,
 } from "@/features/agent-apps/components/AgentAppRef";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 type SortField =
   | "name"
@@ -359,7 +360,7 @@ export default function AgentAppsAdminListPage() {
 
   const handleOpenEdit = (id: string) => {
     startTransition(() => {
-      router.push(`/administration/agents/agent-apps/edit/${id}`);
+      pushAppHref(router, `/administration/agents/agent-apps/edit/${id}`);
     });
   };
 
@@ -914,13 +915,13 @@ export default function AgentAppsAdminListPage() {
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     {app.mandate_key ? (
-                      <Link
+                      <AppLink
                         href={`/mandates/${encodeURIComponent(app.mandate_key)}`}
                         className="font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
                         title="Open this app's mandate"
                       >
                         {app.mandate_key}
-                      </Link>
+                      </AppLink>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
@@ -989,13 +990,13 @@ export default function AgentAppsAdminListPage() {
                     className="text-right"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <Link
+                    <AppLink
                       href={agentAppExecutionsHref(app.id)}
                       title={`Open the runs and errors for ${app.name}`}
                       className="underline-offset-2 hover:text-primary hover:underline"
                     >
                       {app.total_executions?.toLocaleString() || 0}
-                    </Link>
+                    </AppLink>
                   </TableCell>
                   <TableCell className="text-right">
                     {app.unique_users_count?.toLocaleString() || 0}

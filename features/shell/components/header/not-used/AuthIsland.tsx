@@ -1,7 +1,7 @@
 // AuthIsland.tsx — Server component for the auth button
 // Uses next/link for client-side transitions (shell stays mounted)
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import Image from "next/image";
 import ShellIcon from "../../ShellIcon";
 
@@ -17,7 +17,7 @@ interface AuthIslandProps {
 export default function AuthIsland({ user, loginHref }: AuthIslandProps) {
   if (user) {
     return (
-      <Link
+      <AppLink
         href="/settings"
         className="shell-auth-island matrx-glass-thin-border shell-tactile"
       >
@@ -35,12 +35,12 @@ export default function AuthIsland({ user, loginHref }: AuthIslandProps) {
             <ShellIcon name="User" size={16} strokeWidth={2} />
           )}
         </span>
-      </Link>
+      </AppLink>
     );
   }
 
   return (
-    <Link
+    <AppLink
       href={loginHref}
       className="shell-auth-island matrx-glass-thin-border shell-tactile"
     >
@@ -48,6 +48,6 @@ export default function AuthIsland({ user, loginHref }: AuthIslandProps) {
         <ShellIcon name="LogIn" size={16} strokeWidth={2} />
       </span>
       <span>Login</span>
-    </Link>
+    </AppLink>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { motion } from "motion/react";
 import React from "react";
 import { usePathname } from "next/navigation";
@@ -16,7 +16,7 @@ const LogoComponent: React.FC<LogoComponentProps> = ({ open }) => {
     const isActive = pathname === "/dashboard";
 
     return (
-        <Link
+        <AppLink
             href="/dashboard"
             className={cn(
                 "group/sidebar flex items-center rounded-sm transition-colors duration-200 ease-in-out text-blue-600 dark:text-blue-400 hover:bg-neutral-100 dark:hover:bg-neutral-700",
@@ -44,7 +44,7 @@ const LogoComponent: React.FC<LogoComponentProps> = ({ open }) => {
             >
                 AI Matrx
             </motion.span>
-        </Link>
+        </AppLink>
     );
 };
 

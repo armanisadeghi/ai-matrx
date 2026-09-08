@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
 import { ListTree, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -138,7 +138,7 @@ export default function AdminNavTreeMenu() {
                       "bg-accent/60",
                   )}
                 >
-                  <Link href={item.link}>
+                  <AppLink href={item.link}>
                     <span className={cn(iconSlot, "text-muted-foreground")}>
                       {item.icon}
                     </span>
@@ -148,7 +148,7 @@ export default function AdminNavTreeMenu() {
                     <span className="max-w-24 truncate text-[10px] text-muted-foreground">
                       {item.domainName} → {item.sectionName}
                     </span>
-                  </Link>
+                  </AppLink>
                 </DropdownMenuItem>
               ))
             )}
@@ -171,12 +171,12 @@ export default function AdminNavTreeMenu() {
               <DropdownMenuPortal>
                 <DropdownMenuSubContent className="max-h-[80dvh] w-80 overflow-y-auto">
                   <DropdownMenuItem asChild className="gap-2 font-medium">
-                    <Link href={adminDomainHref(domain)}>
+                    <AppLink href={adminDomainHref(domain)}>
                       <span className={cn(iconSlot, "text-muted-foreground")}>
                         {domain.icon}
                       </span>
                       <span className="truncate">{domain.name} overview</span>
-                    </Link>
+                    </AppLink>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {domain.sections.map((section, sectionIndex) => (
@@ -196,14 +196,14 @@ export default function AdminNavTreeMenu() {
                               "bg-accent/60",
                           )}
                         >
-                          <Link href={item.link}>
+                          <AppLink href={item.link}>
                             <span
                               className={cn(iconSlot, "text-muted-foreground")}
                             >
                               {item.icon}
                             </span>
                             <span className="truncate">{item.title}</span>
-                          </Link>
+                          </AppLink>
                         </DropdownMenuItem>
                       ))}
                     </div>

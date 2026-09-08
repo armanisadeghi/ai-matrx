@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { SkillCategoryTreeEditor } from "@/features/skills/components/SkillCategoryTreeEditor";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 /** Admin deep-link to the categories editor. The component itself handles
  * the admin gate + back navigation; this page wires the URL back to the
@@ -10,7 +11,7 @@ export default function SkillsCategoriesAdminPage() {
   const router = useRouter();
   return (
     <SkillCategoryTreeEditor
-      onBack={() => router.push("/administration/agents/skills")}
+      onBack={() => pushAppHref(router, "/administration/agents/skills")}
     />
   );
 }

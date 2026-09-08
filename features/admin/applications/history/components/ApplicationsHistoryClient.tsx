@@ -14,7 +14,7 @@
 // MatrxDataTable owns all filtering.
 
 import { useCallback, useMemo, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { format, formatDistanceToNow } from "date-fns";
 import { ExternalLink, History, LibraryBig, MonitorCog } from "lucide-react";
 
@@ -334,13 +334,13 @@ export function ApplicationsHistoryClient({
               // timeline stays put.
               headerActions: (row) => (
                 <Button size="sm" variant="outline" asChild>
-                  <Link
+                  <AppLink
                     href={recordHref(row)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Open record
-                  </Link>
+                  </AppLink>
                 </Button>
               ),
               title: (row) => row.target,

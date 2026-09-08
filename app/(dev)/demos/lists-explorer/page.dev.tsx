@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   Columns2,
   GitBranch,
@@ -53,7 +53,7 @@ export default function ListsExplorerPage() {
             {ROUTES.map((route) => {
               const Icon = route.icon;
               return (
-                <Link
+                <AppLink
                   key={route.href}
                   href={route.href}
                   className="group flex items-start gap-4 p-4 rounded-lg border border-border bg-card hover:bg-accent/30 hover:border-border/80 transition-colors"
@@ -84,7 +84,7 @@ export default function ListsExplorerPage() {
                   </div>
 
                   <ArrowRight className="h-4 w-4 text-muted-foreground/40 flex-shrink-0 mt-1 group-hover:text-muted-foreground transition-colors" />
-                </Link>
+                </AppLink>
               );
             })}
           </div>

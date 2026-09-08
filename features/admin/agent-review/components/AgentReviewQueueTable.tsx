@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ExternalLink, Link2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -169,7 +169,7 @@ export default function AgentReviewQueueTable() {
           const target = reviewTargetPageDisplay(row.url);
           return (
             <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
-              <Link
+              <AppLink
                 href={target.href}
                 target="_blank"
                 rel="noreferrer"
@@ -183,7 +183,7 @@ export default function AgentReviewQueueTable() {
                 }}
               >
                 Open <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
+              </AppLink>
             </Button>
           );
         },
@@ -286,7 +286,7 @@ export default function AgentReviewQueueTable() {
         cell: (row) => {
           const target = reviewTargetPageDisplay(row.url);
           return (
-            <Link
+            <AppLink
               href={target.href}
               title={target.fullHref}
               aria-label={`Open target page: ${target.fullHref}`}
@@ -296,7 +296,7 @@ export default function AgentReviewQueueTable() {
             >
               <span className="min-w-0 truncate">{target.label}</span>
               <ExternalLink className="h-3 w-3 shrink-0" />
-            </Link>
+            </AppLink>
           );
         },
         width: 260,

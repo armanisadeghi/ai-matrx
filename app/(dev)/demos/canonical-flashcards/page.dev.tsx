@@ -1,4 +1,4 @@
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   ArrowRight,
   BadgeCheck,
@@ -164,13 +164,13 @@ export default function CanonicalFlashcardsDemoHubPage() {
                   strongest existing behavior while making source, style, and
                   capabilities explicit inputs.
                 </p>
-                <Link
+                <AppLink
                   href="/demos/canonical-flashcards-refine"
                   className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   Open recommended proof
                   <ArrowRight className="h-4 w-4" />
-                </Link>
+                </AppLink>
               </div>
             </div>
           </div>
@@ -221,7 +221,7 @@ export default function CanonicalFlashcardsDemoHubPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {VARIANTS.map((variant) => (
-              <Link
+              <AppLink
                 key={variant.id}
                 href={variant.href}
                 className="group flex min-h-44 flex-col rounded-2xl border border-border bg-card p-5 shadow-[var(--elevation-1)] transition-colors hover:border-primary/50 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -245,7 +245,7 @@ export default function CanonicalFlashcardsDemoHubPage() {
                 <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
                   {variant.description}
                 </p>
-              </Link>
+              </AppLink>
             ))}
           </div>
         </section>

@@ -1,12 +1,13 @@
 'use client';
 import React, { useMemo } from 'react';
-import Link from 'next/link';
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FolderOpen, ChevronLeft, Menu, PanelLeft, Layout, BarChart, Eye, MessageSquare, FileUp, Image, Layers } from 'lucide-react';
 import { ComponentEntry, ComponentCategory, componentList, categoryNames, categoryIcons } from './component-list';
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 
 interface ComponentHeaderProps {
@@ -66,7 +67,7 @@ export default function ComponentHeader({ title }: ComponentHeaderProps) {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => router.push('/administration/ui/official-components')}
+              onClick={() => pushAppHref(router, '/administration/ui/official-components')}
               className="mr-2"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -87,29 +88,29 @@ export default function ComponentHeader({ title }: ComponentHeaderProps) {
           )}
         </div>
         
-        <Link href="/administration/ui/official-components/documentation">
+        <AppLink href="/administration/ui/official-components/documentation">
           <Button variant="outline" size="sm" className="gap-2">
             <FolderOpen className="h-4 w-4" />
             Documentation
           </Button>
-        </Link>
+        </AppLink>
       </div>
       
       {/* Category pills */}
       <div className="mt-4">
         <ScrollArea className="w-full" dir="ltr">
           <div className="flex space-x-2 pb-2">
-            <Link href="/administration/ui/official-components">
+            <AppLink href="/administration/ui/official-components">
               <Badge 
                 variant={isMainPage ? "default" : "outline"}
                 className="cursor-pointer whitespace-nowrap"
               >
                 All Components
               </Badge>
-            </Link>
+            </AppLink>
             
             {allCategories.map(category => (
-              <Link 
+              <AppLink 
                 key={category} 
                 href={`/administration/ui/official-components?category=${category}`}
               >
@@ -120,7 +121,7 @@ export default function ComponentHeader({ title }: ComponentHeaderProps) {
                   {categoryIcons[category]}
                   <span className="ml-1">{categoryNames[category]}</span>
                 </Badge>
-              </Link>
+              </AppLink>
             ))}
           </div>
         </ScrollArea>
@@ -133,7 +134,7 @@ export default function ComponentHeader({ title }: ComponentHeaderProps) {
           <ScrollArea className="w-full" dir="ltr">
             <div className="flex space-x-3 pb-2">
               {relatedComponents.map(component => (
-                <Link 
+                <AppLink 
                   key={component.id} 
                   href={`/administration/ui/official-components/${component.id}`}
                   className="min-w-48 flex-shrink-0"
@@ -147,7 +148,7 @@ export default function ComponentHeader({ title }: ComponentHeaderProps) {
                       {component.description}
                     </p>
                   </div>
-                </Link>
+                </AppLink>
               ))}
             </div>
           </ScrollArea>

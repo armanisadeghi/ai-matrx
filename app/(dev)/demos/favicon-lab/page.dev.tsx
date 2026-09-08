@@ -5,7 +5,7 @@
 // winner is picked, fold it into generateSVGFavicon and delete this route.
 
 import { useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { FAVICON_VARIANTS, type FaviconVariant } from "@/utils/favicon-variants";
 import { svgToDataURI } from "@/utils/favicon-utils";
 import type { FaviconConfig } from "@/constants/favicon-route-data";
@@ -95,7 +95,7 @@ export default function FaviconLabPage() {
             </p>
             <div className="flex flex-wrap gap-2">
               {FAVICON_VARIANTS.filter((v) => v.slug).map((v) => (
-                <Link
+                <AppLink
                   key={v.id}
                   href={`/demos/favicon-lab/${v.slug}`}
                   target="_blank"
@@ -108,7 +108,7 @@ export default function FaviconLabPage() {
                     alt=""
                   />
                   {v.label}
-                </Link>
+                </AppLink>
               ))}
             </div>
           </div>

@@ -29,7 +29,7 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
@@ -348,12 +348,12 @@ export function ProducerYieldConsole() {
                   <td className="px-3 py-2 text-right">
                     {/* THE DOOR LAW: the producer is a thing; let the user reach it. */}
                     {r.door_href && (
-                      <Link
+                      <AppLink
                         href={r.door_href}
                         className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                       >
                         Open <ArrowUpRight className="h-3 w-3" />
-                      </Link>
+                      </AppLink>
                     )}
                   </td>
                 </tr>

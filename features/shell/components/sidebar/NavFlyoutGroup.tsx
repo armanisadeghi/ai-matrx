@@ -13,7 +13,7 @@
 // CSS data-pathname matching the rest of the shell uses.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import ShellIcon from "../ShellIcon";
@@ -132,7 +132,7 @@ export default function NavFlyoutGroup({
       );
     }
     return (
-      <Link
+      <AppLink
         key={child.href}
         href={child.href}
         role="menuitem"
@@ -143,7 +143,7 @@ export default function NavFlyoutGroup({
           <ShellIcon name={child.iconName} size={16} strokeWidth={1.75} />
         </span>
         <span>{child.label}</span>
-      </Link>
+      </AppLink>
     );
   };
 
@@ -266,7 +266,7 @@ export default function NavFlyoutGroup({
       onMouseEnter={scheduleOpen}
       onMouseLeave={scheduleClose}
     >
-      <Link
+      <AppLink
         href={item.href}
         data-nav-href={suppressActive ? undefined : item.href}
         data-nav-active={isGroupActive ? "true" : undefined}
@@ -286,7 +286,7 @@ export default function NavFlyoutGroup({
           strokeWidth={2}
           className="shell-nav-flyout-caret"
         />
-      </Link>
+      </AppLink>
 
       {showPanel &&
         typeof document !== "undefined" &&

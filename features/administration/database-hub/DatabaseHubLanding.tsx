@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import {
@@ -57,7 +57,7 @@ function ToolCard({ page }: { page: DatabaseToolPage }) {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <Link
+    <AppLink
       href={page.path}
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey) return;
@@ -111,7 +111,7 @@ function ToolCard({ page }: { page: DatabaseToolPage }) {
           </span>
         </CardFooter>
       </Card>
-    </Link>
+    </AppLink>
   );
 }
 

@@ -31,7 +31,7 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -178,7 +178,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
     const Icon = item.icon;
     const isActive = item.href === current?.href;
     const link = (
-      <Link
+      <AppLink
         key={item.href}
         href={item.href}
         onClick={(e) => {
@@ -192,7 +192,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
       >
         {Icon && <Icon />}
         {showLabel && <span>{item.name}</span>}
-      </Link>
+      </AppLink>
     );
     // A visible label still earns a tooltip when the item carries a purpose —
     // the label is the NAME, the description is what you do there.
@@ -276,7 +276,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
                   const Icon = item.icon;
                   const isActive = item.href === current?.href;
                   return (
-                    <Link
+                    <AppLink
                       key={item.href}
                       href={item.href}
                       onClick={(event) => {
@@ -300,7 +300,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
                           </span>
                         ) : null}
                       </span>
-                    </Link>
+                    </AppLink>
                   );
                 })}
               </BottomSheetBody>
@@ -338,7 +338,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
                         "bg-accent font-semibold text-accent-foreground focus:bg-accent",
                     )}
                   >
-                    <Link
+                    <AppLink
                       href={item.href}
                       onClick={(event) => {
                         if (allowNativeNewTab(event)) return;
@@ -365,7 +365,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
                       ) : (
                         item.name
                       )}
-                    </Link>
+                    </AppLink>
                   </DropdownMenuItem>
                 );
               })}

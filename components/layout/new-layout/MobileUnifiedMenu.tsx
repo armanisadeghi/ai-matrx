@@ -24,7 +24,7 @@ import {
   Mic,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { setMode } from "@/styles/themes/themeSlice";
@@ -96,7 +96,7 @@ export function MobileUnifiedMenu() {
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-64" align="end">
           {/* User info section - Clickable to profile */}
-          <Link href="/settings/profile" className="block">
+          <AppLink href="/settings/profile" className="block">
             <div className="px-3 py-3 bg-gray-50 dark:bg-gray-800/50 rounded-t-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
               <div className="flex items-center gap-3">
                 {profilePhoto ? (
@@ -127,7 +127,7 @@ export function MobileUnifiedMenu() {
                 </div>
               </div>
             </div>
-          </Link>
+          </AppLink>
           <DropdownMenuSeparator />
 
           {/* Quick Actions */}
@@ -204,7 +204,7 @@ export function MobileUnifiedMenu() {
 
           {/* User Settings */}
           <DropdownMenuItem asChild>
-            <Link
+            <AppLink
               href="/settings/preferences"
               className="flex items-center gap-3 w-full cursor-pointer"
             >
@@ -228,19 +228,19 @@ export function MobileUnifiedMenu() {
                 />
               </svg>
               <span className="text-sm">Preferences</span>
-            </Link>
+            </AppLink>
           </DropdownMenuItem>
 
           {/* Sign out section */}
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link
+            <AppLink
               href="/sign-out"
               className="flex items-center gap-3 w-full cursor-pointer text-red-600 dark:text-red-400"
             >
               <LogOut className="h-4 w-4" />
               <span className="text-sm font-medium">Sign out</span>
-            </Link>
+            </AppLink>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

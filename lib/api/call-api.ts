@@ -862,6 +862,43 @@ function maybeLogRequest(
  * Returns undefined for non-object / unrecognized bodies so callers fall back
  * to the bare status line.
  */
+/**
+ * 🚨 A BARE STATUS CODE IS NEVER A SENTENCE (V-PARITY/UX F4, 2026-09-08).
+ *
+ * `error.message` is what surfaces print. It used to fall back to
+ * `` `HTTP ${status}` ``, and a walker read the result off the deployed admin
+ * panel: **"This job's inputs could not be read: HTTP 400"**, twice, and a bare
+ * **"HTTP 400"** where the input surface should have been. A transport code at
+ * a person names no cause and offers no remedy — the fourth law's exact
+ * prohibition, one inch from the screen.
+ *
+ * The class fix is HERE rather than at the caller, because every `callApi`
+ * consumer in the repo inherits this fallback: fixing the one surface the walk
+ * happened to stand on would leave the rest of them saying "HTTP 500".
+ *
+ * The status itself is NOT lost — it rides `error.status`, which is what code
+ * branches on. This is only the words.
+ *
+ * A server that answers an error with no readable message is ITSELF a defect,
+ * and the sentence says so rather than pretending the reader did something
+ * wrong.
+ */
+export function bareStatusSentence(status: number): string {
+  if (status === 401 || status === 403) {
+    return "The server would not let this request through — your session may have expired, or this account may not have access here. Sign in again, and if it repeats, ask an administrator.";
+  }
+  if (status === 404) {
+    return "The server has nothing at that address. Reload the page; if it repeats, report it — a client asking for something that no longer exists is a defect, not your mistake.";
+  }
+  if (status === 429) {
+    return "The server is rate-limiting this request. Wait a few seconds and try again.";
+  }
+  if (status >= 500) {
+    return "The server failed while answering this, and sent no explanation. Try again in a moment; if it repeats, report it with the request id above.";
+  }
+  return "The server refused this request and sent no reason with it — the missing reason is itself a defect worth reporting. Reload the page and try once more; if it repeats, report it with the request id above.";
+}
+
 function extractServerErrorMessage(serverDetail: unknown): string | undefined {
   if (typeof serverDetail !== "object" || serverDetail === null) {
     return undefined;
@@ -1051,7 +1088,7 @@ async function executeJsonRequest<T>(
             : "http_error",
         message:
           extractServerErrorMessage(serverDetail) ??
-          `HTTP ${response.status}`,
+          bareStatusSentence(response.status),
         status: response.status,
         serverDetail,
       },
@@ -1107,7 +1144,7 @@ async function executeStreamingRequest(
           ? "validation_error"
           : "http_error",
       message:
-        extractServerErrorMessage(serverDetail) ?? `HTTP ${response.status}`,
+        extractServerErrorMessage(serverDetail) ?? bareStatusSentence(response.status),
       status: response.status,
       serverDetail,
     };

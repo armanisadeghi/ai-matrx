@@ -18,6 +18,22 @@ export interface MandateState {
   mandate: ResolvedMandate | null;
   loading: boolean;
   error: string | null;
+  /**
+   * 🚨 THE DOOR SAID THIS JOB DOES NOT EXIST — and ONLY that (a 404 from
+   * `GET /mandates/{key}/resolution`). `mandate === null` does NOT mean this:
+   * it is also every refusal, every unadmitted organization and every network
+   * failure, because the optional lane sets `mandate` to null on all of them.
+   *
+   * V-PARITY/UX F4 (2026-09-08): `AutomationButton` read `mandate !== null` as
+   * "the job exists", so a LIVE, system-homed `mandate.goal_writer` wore
+   * *"Not available yet — … no live job has that name. Create it and this
+   * button works"* — a disabled control with a false, actionable reason,
+   * telling an admin to create a job that already exists. It is the second
+   * time this key's probe has lied, and both times because one boolean was
+   * carrying three different facts. So the three facts are three fields:
+   * `loading`, `absent`, and `error` (the door's own sentence).
+   */
+  absent: boolean;
 }
 
 interface UseMandateOptions {
@@ -38,6 +54,7 @@ export function useMandate(
     mandate: null,
     loading: hasMandateKey,
     error: null,
+    absent: false,
   });
 
   // Reset for a new mandate key during render (the documented adjust-state-on-
@@ -49,6 +66,7 @@ export function useMandate(
       mandate: null,
       loading: hasMandateKey,
       error: null,
+      absent: false,
     });
   }
 
@@ -82,6 +100,10 @@ export function useMandate(
             mandate,
             loading: false,
             error: null,
+            // The optional lane answers `null` for a 404 and ONLY a 404 —
+            // every other outcome throws. That is what makes "absent"
+            // provable rather than guessed.
+            absent: mandate === null,
           }));
         }
       })
@@ -97,6 +119,9 @@ export function useMandate(
             mandate: null,
             loading: false,
             error: message,
+            // A refusal is not an absence. Saying "no such job" here is the
+            // F4 lie.
+            absent: false,
           }));
         }
       });
@@ -105,5 +130,10 @@ export function useMandate(
     };
   }, [mandateKey, epoch, options.optional, hasMandateKey]);
 
-  return { mandate: state.mandate, loading: state.loading, error: state.error };
+  return {
+    mandate: state.mandate,
+    loading: state.loading,
+    error: state.error,
+    absent: state.absent,
+  };
 }

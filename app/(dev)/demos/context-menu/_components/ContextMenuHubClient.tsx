@@ -1,4 +1,4 @@
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { ArrowRight, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CONTEXT_MENU_BASE, type ContextMenuPage } from "../_registry";
@@ -172,13 +172,13 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
             }
 
             return (
-              <Link
+              <AppLink
                 key={page.slug}
                 href={href}
                 className="text-left"
               >
                 {card}
-              </Link>
+              </AppLink>
             );
           })}
         </div>
@@ -286,11 +286,11 @@ function PageLink({
   children: React.ReactNode;
 }) {
   return (
-    <Link
+    <AppLink
       href={href}
       className="inline-flex min-h-11 items-center font-mono text-[11px] text-primary  sm:min-h-8"
     >
       {children}
-    </Link>
+    </AppLink>
   );
 }

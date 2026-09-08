@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter, usePathname } from "next/navigation";
 import { Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ export default function AdminModuleHeaderDesktopContent({
   return (
     <div className={cn("flex items-center justify-between w-full", className)}>
       <div className="flex items-center gap-1">
-        <Link href={moduleHome}>
+        <AppLink href={moduleHome}>
           <Button
             variant="ghost"
             size="icon"
@@ -59,7 +59,7 @@ export default function AdminModuleHeaderDesktopContent({
           >
             <Home className="h-4 w-4" />
           </Button>
-        </Link>
+        </AppLink>
 
         <AdminNavTreeMenu />
 

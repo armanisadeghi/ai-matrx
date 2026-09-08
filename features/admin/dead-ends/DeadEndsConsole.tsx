@@ -24,7 +24,7 @@
  */
 
 import React, { useState, useSyncExternalStore } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -78,7 +78,7 @@ const REFRESH_COMMAND = "pnpm check:dead-ends:write";
 /**
  * A finding in `app/(core)/tasks/[id]/page.tsx` reports the route pattern
  * `/tasks/[id]`, which is NOT a URL — the App Router throws
- * "Dynamic href found in <Link>" on it. Patterns render as text; only concrete
+ * "Dynamic href found in <AppLink>" on it. Patterns render as text; only concrete
  * routes get a door.
  */
 function isConcreteRoute(route: string | null): route is string {
@@ -218,7 +218,7 @@ export function DeadEndsConsole({
               route
             </Badge>
           ) : isRegistryToken(f.entity) ? (
-            <Link
+            <AppLink
               href={sourceHref(ENTITY_REGISTRY_PATH, 1)}
               target="_blank"
               rel="noopener noreferrer"
@@ -227,7 +227,7 @@ export function DeadEndsConsole({
               className="text-[9px] text-amber-600 underline underline-offset-2 dark:text-amber-500"
             >
               no route
-            </Link>
+            </AppLink>
           ) : null}
         </span>
       ),
@@ -239,7 +239,7 @@ export function DeadEndsConsole({
       width: 420,
       cell: (f) => (
         <span className="flex min-w-0 max-w-full items-center gap-1">
-          <Link
+          <AppLink
             href={sourceHref(f.file, f.line)}
             target="_blank"
             rel="noopener noreferrer"
@@ -248,7 +248,7 @@ export function DeadEndsConsole({
             className="min-w-0 truncate font-mono text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
           >
             {f.file}:{f.line}
-          </Link>
+          </AppLink>
           <button
             type="button"
             onClick={(e) => {
@@ -285,15 +285,15 @@ export function DeadEndsConsole({
       cell: (f) =>
         isConcreteRoute(f.route) ? (
           <span className="flex min-w-0 items-center gap-1">
-            <Link
+            <AppLink
               href={f.route}
               onClick={(e) => e.stopPropagation()}
               title={`Open ${f.route}`}
               className="min-w-0 truncate text-xs underline-offset-2 hover:text-primary hover:underline"
             >
               {f.route}
-            </Link>
-            <Link
+            </AppLink>
+            <AppLink
               href={f.route}
               target="_blank"
               rel="noopener noreferrer"
@@ -303,7 +303,7 @@ export function DeadEndsConsole({
               className="shrink-0 text-muted-foreground hover:text-foreground"
             >
               <ExternalLink className="h-3 w-3" />
-            </Link>
+            </AppLink>
           </span>
         ) : f.route ? (
           <span
@@ -697,7 +697,7 @@ function Header({
         {report.commit ? (
           <>
             {" · "}
-            <Link
+            <AppLink
               href={commitHref(report.commit)}
               target="_blank"
               rel="noopener noreferrer"
@@ -705,7 +705,7 @@ function Header({
               title="Open the scanned commit"
             >
               {report.commit.slice(0, 7)}
-            </Link>
+            </AppLink>
           </>
         ) : null}
         {scanAgeDays === null
@@ -773,7 +773,7 @@ function Header({
           <Copy className="mr-1.5 h-3 w-3" />
           Campaign brief
         </Button>
-        <Link
+        <AppLink
           href={DOCTRINE_HREF}
           target="_blank"
           rel="noopener noreferrer"
@@ -781,7 +781,7 @@ function Header({
         >
           Doctrine
           <ArrowUpRight className="h-3 w-3" />
-        </Link>
+        </AppLink>
       </div>
     </div>
   );
@@ -995,7 +995,7 @@ function BucketCard({
                   {b.high}
                 </Badge>
               )}
-              <Link
+              <AppLink
                 href={
                   b.key.includes(".") ? sourceHref(b.key, 1) : pathHref(b.key)
                 }
@@ -1006,7 +1006,7 @@ function BucketCard({
                 className="shrink-0 text-muted-foreground hover:text-foreground"
               >
                 <ExternalLink className="h-3 w-3" />
-              </Link>
+              </AppLink>
               <button
                 type="button"
                 onClick={() => onCopy(b.key)}
@@ -1100,35 +1100,35 @@ function FindingDetail({
           <code className="font-mono">{finding.expression}</code>
         </Row>
         <Row label="Source">
-          <Link
+          <AppLink
             href={sourceHref(finding.file, finding.line)}
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono underline-offset-2 hover:text-primary hover:underline"
           >
             {finding.file}:{finding.line}:{finding.column}
-          </Link>
+          </AppLink>
         </Row>
         <Row label="Feature">
-          <Link
+          <AppLink
             href={pathHref(finding.feature)}
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono underline-offset-2 hover:text-primary hover:underline"
           >
             {finding.feature}
-          </Link>
+          </AppLink>
         </Row>
         <Row label="Surface">
           {isConcreteRoute(finding.route) ? (
-            <Link
+            <AppLink
               href={finding.route}
               target="_blank"
               rel="noopener noreferrer"
               className="underline-offset-2 hover:text-primary hover:underline"
             >
               {finding.route}
-            </Link>
+            </AppLink>
           ) : finding.route ? (
             <span className="text-muted-foreground">
               <code className="font-mono">{finding.route}</code> — a dynamic
@@ -1148,7 +1148,7 @@ function FindingDetail({
               <code className="font-mono">EntityRef</code> away.
             </span>
           ) : isRegistryToken(finding.entity) ? (
-            <Link
+            <AppLink
               href={sourceHref(ENTITY_REGISTRY_PATH, 1)}
               target="_blank"
               rel="noopener noreferrer"
@@ -1156,7 +1156,7 @@ function FindingDetail({
             >
               Add an hrefFor for{" "}
               <code className="font-mono">{finding.entity}</code>
-            </Link>
+            </AppLink>
           ) : (
             <span className="text-muted-foreground">
               The detector could not name this entity, so there is no token to
@@ -1213,14 +1213,14 @@ function AllowlistPanel({ report }: { report: DeadEndReport }) {
         {report.allowlist.map((entry) => (
           <li key={`${entry.file}:${entry.rule ?? "*"}`} className="text-xs">
             <span className="inline-flex flex-wrap items-baseline gap-1.5">
-              <Link
+              <AppLink
                 href={sourceHref(entry.file, 1)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-mono underline-offset-2 hover:text-primary hover:underline"
               >
                 {entry.file}
-              </Link>
+              </AppLink>
               <Badge variant="outline" className="h-4 px-1 text-[9px]">
                 {entry.rule ?? "all rules"}
               </Badge>

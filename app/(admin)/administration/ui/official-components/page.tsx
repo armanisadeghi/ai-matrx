@@ -14,7 +14,7 @@ import {
   getCategoriesByGroup,
   categoryGroups,
 } from "./parts/component-list";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   Card,
   CardContent,
@@ -249,7 +249,7 @@ function OfficialComponentsContent() {
               {filteredComponents.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredComponents.map((component) => (
-                    <Link
+                    <AppLink
                       href={`/administration/ui/official-components/${component.id}`}
                       key={component.id}
                     >
@@ -296,7 +296,7 @@ function OfficialComponentsContent() {
                           )}
                         </CardFooter>
                       </Card>
-                    </Link>
+                    </AppLink>
                   ))}
                 </div>
               ) : (

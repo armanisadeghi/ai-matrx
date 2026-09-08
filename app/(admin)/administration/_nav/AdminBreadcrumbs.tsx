@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
 import { ChevronRight, ChevronDown, Check } from "lucide-react";
 import {
@@ -28,12 +28,12 @@ function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
   if (!hasChildren) {
     if (crumb.isPage) {
       return (
-        <Link
+        <AppLink
           href={crumb.fullPath}
           className="rounded-sm px-1.5 py-0.5 text-sm transition-colors hover:bg-accent hover:text-foreground"
         >
           <span className={labelClass}>{crumb.label}</span>
-        </Link>
+        </AppLink>
       );
     }
     return (
@@ -64,9 +64,9 @@ function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
         {crumb.isPage && (
           <>
             <DropdownMenuItem asChild>
-              <Link href={crumb.fullPath}>
+              <AppLink href={crumb.fullPath}>
                 <span className="font-medium">{crumb.label} overview</span>
-              </Link>
+              </AppLink>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
@@ -84,14 +84,14 @@ function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
               asChild
               className={cn("gap-2", active && "bg-accent/60")}
             >
-              <Link href={child.fullPath}>
+              <AppLink href={child.fullPath}>
                 {active ? (
                   <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
                 ) : (
                   <span className="w-3.5 shrink-0" />
                 )}
                 <span className="truncate">{child.label}</span>
-              </Link>
+              </AppLink>
             </DropdownMenuItem>
           );
         })}

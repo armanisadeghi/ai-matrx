@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { ArrowLeft, Loader2, Play, AlertTriangle } from "lucide-react";
 
 import { Input } from "@ai-matrx/design-system";
@@ -103,12 +103,12 @@ export default function CompressDemo() {
   return (
     <div className="w-full space-y-6 p-6">
       <header className="space-y-2">
-        <Link
+        <AppLink
           href="/demos/pdf-processing"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Back to PDF demos
-        </Link>
+        </AppLink>
         <div className="flex items-baseline justify-between gap-4">
           <h1 className="text-2xl font-semibold">Compress PDF</h1>
           <code className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">

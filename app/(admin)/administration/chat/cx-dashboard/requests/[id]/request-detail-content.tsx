@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -298,7 +298,7 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
         </div>
 
         {/* Conversation link */}
-        <Link
+        <AppLink
           href={`/administration/chat/cx-dashboard/conversations/${ur.conversation_id}`}
           className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground p-2 rounded border border-border/50 bg-muted/20 transition-colors"
         >
@@ -310,7 +310,7 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
             {truncateId(ur.conversation_id, 12)}
           </span>
           <ExternalLink className="w-3 h-3 ml-auto" />
-        </Link>
+        </AppLink>
 
         {/* KPI summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">

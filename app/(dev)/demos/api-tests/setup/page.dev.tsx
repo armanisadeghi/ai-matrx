@@ -8,8 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Key, Check, AlertCircle, Info, ExternalLink } from 'lucide-react';
 import { getStoredAdminToken, setStoredAdminToken, clearStoredAdminToken, hasStoredAdminToken } from '@/utils/api-test-auth';
 import { toast } from "@/lib/toast";
-import Link from 'next/link';
-
+import AppLink from "@/components/navigation/AppLink";
 export default function ApiTestSetupPage() {
   const [token, setToken] = useState(() => getStoredAdminToken() || '');
   const [hasToken, setHasToken] = useState(() => hasStoredAdminToken());
@@ -161,14 +160,14 @@ export default function ApiTestSetupPage() {
 
           <div className="grid gap-2">
             {testPages.map((page) => (
-              <Link
+              <AppLink
                 key={page.path}
                 href={page.path}
                 className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent transition-colors group"
               >
                 <span className="text-sm font-medium">{page.name}</span>
                 <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-              </Link>
+              </AppLink>
             ))}
           </div>
         </Card>

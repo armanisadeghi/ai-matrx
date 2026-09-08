@@ -1,4 +1,4 @@
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { IconResolver } from "@ai-matrx/icons";
 import {
   adminDomainHref,
@@ -25,7 +25,7 @@ export function AdminDomainSection({
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
           <IconResolver iconName={domain.iconName} className="h-4 w-4" />
         </span>
-        <Link
+        <AppLink
           href={adminDomainHref(domain)}
           className="min-w-0 text-foreground hover:text-primary"
         >
@@ -37,7 +37,7 @@ export function AdminDomainSection({
             )}{" "}
             destinations
           </span>
-        </Link>
+        </AppLink>
       </div>
 
       <div
@@ -55,7 +55,7 @@ export function AdminDomainSection({
             </div>
             <div className="divide-y divide-border/50">
               {section.destinations.map((destination) => (
-                <Link
+                <AppLink
                   key={destination.link}
                   href={destination.link}
                   className="group flex min-h-11 items-center gap-3 px-4 py-2 transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
@@ -78,7 +78,7 @@ export function AdminDomainSection({
                     iconName="ChevronRight"
                     className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60"
                   />
-                </Link>
+                </AppLink>
               ))}
             </div>
           </div>

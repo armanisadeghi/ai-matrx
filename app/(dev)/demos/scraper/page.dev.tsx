@@ -1,4 +1,4 @@
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { Card } from "@/components/ui/card";
 import { ChevronRight, Globe, Search, Zap } from "lucide-react";
 
@@ -49,7 +49,7 @@ export default function ScraperDemosPage() {
 
                 <div className="grid gap-4">
                     {scraperDemos.map((demo) => (
-                        <Link key={demo.id} href={`/demos/scraper/${demo.id}`}>
+                        <AppLink key={demo.id} href={`/demos/scraper/${demo.id}`}>
                             <Card className="p-4 hover:bg-accent transition-colors cursor-pointer group">
                                 <div className="flex items-center gap-4">
                                     <div className={`p-3 rounded-lg ${demo.bgColor}`}>
@@ -66,7 +66,7 @@ export default function ScraperDemosPage() {
                                     <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                                 </div>
                             </Card>
-                        </Link>
+                        </AppLink>
                     ))}
                 </div>
 

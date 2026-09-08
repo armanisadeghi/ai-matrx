@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { AlertTriangle, ExternalLink, PlugZap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -79,7 +79,7 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
       header: "Source",
       width: 440,
       cell: (finding) => (
-        <Link
+        <AppLink
           href={repositorySourceHref(finding.repository, finding.file, finding.line)}
           target="_blank"
           rel="noopener noreferrer"
@@ -89,7 +89,7 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
         >
           <span className="truncate">{finding.file}:{finding.line}</span>
           <ExternalLink className="size-3 shrink-0" />
-        </Link>
+        </AppLink>
       ),
     },
     {

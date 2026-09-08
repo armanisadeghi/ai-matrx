@@ -1,4 +1,4 @@
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createRouteMetadata } from "@/utils/route-metadata";
@@ -44,18 +44,18 @@ export default async function IndustryDemoPage({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <Link
+        <AppLink
           href="/demos/upgrade"
           className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-3 w-3" />
           Back to all demos
-        </Link>
+        </AppLink>
         <div className="flex items-center gap-1 overflow-x-auto">
           {INDUSTRY_ORDER.map((other) => {
             const active = other === id;
             return (
-              <Link
+              <AppLink
                 key={other}
                 href={`/demos/upgrade/industry/${other}`}
                 className={
@@ -65,7 +65,7 @@ export default async function IndustryDemoPage({
                 }
               >
                 {INDUSTRIES[other].label}
-              </Link>
+              </AppLink>
             );
           })}
         </div>

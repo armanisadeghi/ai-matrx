@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { UserPlus, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
@@ -34,7 +34,7 @@ export function GuestHeroCard() {
         </p>
 
         <div className="flex flex-col gap-1.5 mt-2.5">
-          <Link
+          <AppLink
             href={signUpHref}
             className={cn(
               "inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md text-xs font-semibold",
@@ -45,8 +45,8 @@ export function GuestHeroCard() {
           >
             <UserPlus className="w-3.5 h-3.5" />
             Sign Up Free
-          </Link>
-          <Link
+          </AppLink>
+          <AppLink
             href={signInHref}
             className={cn(
               "inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium",
@@ -56,7 +56,7 @@ export function GuestHeroCard() {
           >
             <LogIn className="w-3.5 h-3.5" />
             Sign In
-          </Link>
+          </AppLink>
         </div>
 
         <p className="text-[10px] text-muted-foreground/80 text-center mt-2">

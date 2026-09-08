@@ -7,7 +7,7 @@
 "use client";
 
 import React, { useTransition } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, ClipboardCheck, Landmark, Loader2, Scale } from "lucide-react";
 
@@ -65,13 +65,13 @@ export function HrAdminLayoutClient({
     <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
       <div className="flex shrink-0 flex-col border-b border-border bg-card sm:flex-row sm:items-center sm:gap-2 sm:px-4">
         <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-2 sm:h-12 sm:border-b-0 sm:border-r sm:px-0 sm:pr-3">
-          <Link
+          <AppLink
             href="/administration"
             aria-label="Back to administration"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:-ml-2"
           >
             <ArrowLeft className="h-4 w-4" />
-          </Link>
+          </AppLink>
           <Scale className="h-4 w-4 shrink-0 text-primary" />
           <span className="whitespace-nowrap text-sm font-medium">
             HR &amp; Employment Law

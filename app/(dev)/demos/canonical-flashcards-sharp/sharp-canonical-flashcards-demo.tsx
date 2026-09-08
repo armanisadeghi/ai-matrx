@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   ArrowLeft,
   BrainCircuit,
@@ -265,12 +265,12 @@ export function SharpCanonicalFlashcardsDemo() {
           className="h-10 w-10 shrink-0"
           asChild
         >
-          <Link
+          <AppLink
             href="/demos/canonical-flashcards"
             aria-label="Back to canonical flashcard demos"
           >
             <ArrowLeft className="h-5 w-5" />
-          </Link>
+          </AppLink>
         </Button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">

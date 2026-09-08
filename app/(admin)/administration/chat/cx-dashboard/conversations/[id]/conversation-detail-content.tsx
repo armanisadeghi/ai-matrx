@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -155,7 +155,7 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
 
       {/* Parent link */}
       {conv.parent_conversation_id && (
-        <Link
+        <AppLink
           href={`/administration/chat/cx-dashboard/conversations/${conv.parent_conversation_id}`}
           target="_blank"
           rel="noopener noreferrer"
@@ -167,7 +167,7 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
             {truncateId(conv.parent_conversation_id, 12)}
           </span>
           <ExternalLink className="w-3 h-3 ml-auto" />
-        </Link>
+        </AppLink>
       )}
 
       {/* Child conversations */}
@@ -179,7 +179,7 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
           </h3>
           <div className="space-y-1">
             {child_conversations.map((child) => (
-              <Link
+              <AppLink
                 key={child.id}
                 href={`/administration/chat/cx-dashboard/conversations/${child.id}`}
                 className="flex items-center gap-3 text-xs p-2 rounded hover:bg-muted/50 transition-colors group"
@@ -199,7 +199,7 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
                   {child.message_count} msgs
                 </span>
                 <ChevronRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
-              </Link>
+              </AppLink>
             ))}
           </div>
         </div>
@@ -220,7 +220,7 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
                 ur.total_duration_ms,
               );
               return (
-                <Link
+                <AppLink
                   key={ur.id}
                   href={`/administration/chat/cx-dashboard/requests/${ur.id}`}
                   className="flex items-center gap-3 text-xs p-2 rounded hover:bg-muted/50 transition-colors group"
@@ -254,7 +254,7 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
                     {formatDuration(dur)}
                   </span>
                   <ChevronRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
-                </Link>
+                </AppLink>
               );
             })}
           </div>

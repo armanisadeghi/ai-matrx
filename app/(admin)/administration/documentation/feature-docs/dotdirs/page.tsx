@@ -1,4 +1,4 @@
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import {
   FEATURE_DOC_DOT_DIRS,
@@ -25,7 +25,7 @@ export default function FeatureDocsDotDirsHubPage() {
       <div className="flex-1 overflow-y-auto p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {FEATURE_DOC_DOT_DIRS.map((dir) => (
-            <Link
+            <AppLink
               key={dir}
               href={`/administration/documentation/feature-docs/dotdirs/${dotDirRouteSlug(dir)}`}
               className="rounded-lg border border-border bg-card px-4 py-3 hover:border-primary/40 hover:bg-accent/30 transition-colors"
@@ -34,7 +34,7 @@ export default function FeatureDocsDotDirsHubPage() {
               <p className="text-xs text-muted-foreground mt-1">
                 Browse {dir}/**/*.md
               </p>
-            </Link>
+            </AppLink>
           ))}
         </div>
       </div>

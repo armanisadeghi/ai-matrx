@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import AppLink from "@/components/navigation/AppLink";
 import { AlertCircle, CheckCircle2, Loader2, Phone, Send } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -69,13 +69,13 @@ export default function PhoneVerification() {
                 />
                 <Label htmlFor="sms-consent" className="text-sm font-normal leading-relaxed">
                   {SMS_CONSENT_DISCLOSURE}{' '}
-                  <Link className="underline" href={SMS_TERMS_PATH} target="_blank">
+                  <AppLink className="underline" href={SMS_TERMS_PATH} target="_blank">
                     Terms
-                  </Link>{' '}
+                  </AppLink>{' '}
                   ·{' '}
-                  <Link className="underline" href={SMS_PRIVACY_PATH} target="_blank">
+                  <AppLink className="underline" href={SMS_PRIVACY_PATH} target="_blank">
                     Privacy
-                  </Link>
+                  </AppLink>
                 </Label>
               </div>
 

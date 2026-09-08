@@ -7,7 +7,7 @@ import React, {
   useState,
   useTransition,
 } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ExternalLink, Loader2, Pencil } from "lucide-react";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -51,6 +51,7 @@ import {
 } from "@/features/agent-apps/lib/admin-app-write-targets";
 // `app.definition.tags` has ONE contract; the user-facing surface owns it.
 import { validateAppTags } from "@/features/agent-apps/route/agent-app-entity-writes";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 // `AgentAppAdminView` is a hand-narrowed subset of the real DB row used by the
 // list/analytics surfaces (no component_code/variable_schema/shell_* fields).
@@ -146,7 +147,7 @@ export default function AdminEditAgentAppPage({
 
   const goToList = () => {
     startTransition(() => {
-      router.push("/administration/agents/agent-apps/apps");
+      pushAppHref(router, "/administration/agents/agent-apps/apps");
     });
   };
 
@@ -491,12 +492,12 @@ export default function AdminEditAgentAppPage({
                       </div>
                       <div className="mt-0.5 font-mono text-xs text-foreground break-words">
                         {app.mandate_key ? (
-                          <Link
+                          <AppLink
                             href={`/mandates/${encodeURIComponent(app.mandate_key)}`}
                             className="hover:underline"
                           >
                             {app.mandate_key}
-                          </Link>
+                          </AppLink>
                         ) : (
                           "—"
                         )}

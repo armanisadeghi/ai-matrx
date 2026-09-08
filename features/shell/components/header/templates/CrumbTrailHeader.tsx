@@ -21,7 +21,7 @@
 // migrate it onto this template when touched.
 
 import { Fragment } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
@@ -89,7 +89,7 @@ function CrumbOptions({ crumb }: { crumb: Crumb }) {
               asChild
               className={cn(opt.active && "bg-accent/60")}
             >
-              <Link href={opt.href} className="flex items-center gap-2">
+              <AppLink href={opt.href} className="flex items-center gap-2">
                 <Check
                   className={cn(
                     "h-3.5 w-3.5 shrink-0",
@@ -97,7 +97,7 @@ function CrumbOptions({ crumb }: { crumb: Crumb }) {
                   )}
                 />
                 <span className="truncate">{opt.label}</span>
-              </Link>
+              </AppLink>
             </DropdownMenuItem>
           ))}
         </div>
@@ -112,12 +112,12 @@ function CrumbNode({ crumb, isLast }: { crumb: Crumb; isLast: boolean }) {
       {crumb.label}
     </span>
   ) : crumb.href ? (
-    <Link
+    <AppLink
       href={crumb.href}
       className="truncate max-w-[12rem] text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
     >
       {crumb.label}
-    </Link>
+    </AppLink>
   ) : (
     <span className="truncate max-w-[12rem] text-sm text-muted-foreground">
       {crumb.label}

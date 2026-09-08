@@ -19,7 +19,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   Database,
   ChevronLeft,
@@ -636,7 +636,7 @@ function EntitiesTab({
                       {new Date(row.created_at).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link
+                      <AppLink
                         href="/knowledge/graph"
                         onClick={(e) => e.stopPropagation()}
                         className="inline-flex items-center text-muted-foreground hover:text-primary"
@@ -644,7 +644,7 @@ function EntitiesTab({
                         aria-label="View graph"
                       >
                         <Network className="h-3.5 w-3.5" />
-                      </Link>
+                      </AppLink>
                     </TableCell>
                   </TableRow>
                 ))

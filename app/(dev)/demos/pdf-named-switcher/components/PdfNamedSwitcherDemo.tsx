@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
@@ -130,9 +130,9 @@ export function PdfNamedSwitcherDemo() {
         ) : rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No PDFs found —{" "}
-            <Link href="/files" className="text-primary underline">
+            <AppLink href="/files" className="text-primary underline">
               upload one in /files
-            </Link>{" "}
+            </AppLink>{" "}
             and reload.
           </p>
         ) : (

@@ -20,7 +20,7 @@
  */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { ChevronDown, ChevronRight, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
@@ -119,9 +119,9 @@ export default function PdfComponentsBenchPage() {
         <p className="text-xs text-muted-foreground">
           The exact components production mounts — one implementation per
           purpose.{" "}
-          <Link href="/demos/pdf-processing" className="underline">
+          <AppLink href="/demos/pdf-processing" className="underline">
             Endpoint tests →
-          </Link>
+          </AppLink>
         </p>
       </header>
 

@@ -3,7 +3,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   Activity,
   AlertTriangle,
@@ -214,7 +214,7 @@ function Tile({
   badge?: string;
 }) {
   return (
-    <Link
+    <AppLink
       href={href}
       className="rounded-lg border border-border bg-card hover:bg-accent/30 transition-colors p-4 flex gap-3"
     >
@@ -234,6 +234,6 @@ function Tile({
           {description}
         </p>
       </div>
-    </Link>
+    </AppLink>
   );
 }

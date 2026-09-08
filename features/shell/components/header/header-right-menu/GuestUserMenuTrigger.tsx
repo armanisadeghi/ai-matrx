@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { UserPlus, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
@@ -28,7 +28,7 @@ export default function GuestUserMenuTrigger({
   const loginHref = useLoginHref();
   return (
     <div className="flex items-center gap-1.5 h-11 pr-1">
-      <Link
+      <AppLink
         href={loginHref}
         className={cn(
           "inline-flex items-center h-7 px-2 rounded-md text-xs font-medium",
@@ -37,7 +37,7 @@ export default function GuestUserMenuTrigger({
       >
         <LogIn className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
         Sign In
-      </Link>
+      </AppLink>
 
       <label
         htmlFor={menuCheckboxId}

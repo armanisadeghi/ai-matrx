@@ -1,4 +1,4 @@
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { notFound } from "next/navigation";
 import { ArrowLeft, FileText, GitCommit } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
@@ -50,13 +50,13 @@ export default async function FeatureDocViewPage({
     <FeatureDocViewerRuntime path={relPath} doc={doc}>
     <div className="min-h-[calc(100dvh-var(--header-height))] bg-background flex flex-col">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur px-4 py-2 flex items-center gap-3 flex-wrap shrink-0">
-        <Link
+        <AppLink
           href="/administration/documentation/feature-docs"
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Feature docs
-        </Link>
+        </AppLink>
         <span className="text-xs text-muted-foreground">/</span>
         <span className="inline-flex items-center gap-1.5 text-xs font-mono min-w-0 truncate">
           <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />

@@ -1,6 +1,6 @@
 import React from "react";
 import { createClient } from "@/utils/supabase/server";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { Plus, ListFilter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { UserList, UserListSummaryRaw } from "@/features/user-lists/types";
@@ -45,12 +45,12 @@ export default async function ListsPage() {
             and more.
           </p>
         </div>
-        <Link href="/lists/new">
+        <AppLink href="/lists/new">
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
             Create your first list
           </Button>
-        </Link>
+        </AppLink>
       </div>
     );
   }
@@ -60,12 +60,12 @@ export default async function ListsPage() {
       {/* Mobile header — sidebar is hidden on mobile */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <h1 className="text-base font-semibold text-foreground">My Lists</h1>
-        <Link href="/lists/new">
+        <AppLink href="/lists/new">
           <Button size="sm" className="h-8 gap-1.5">
             <Plus className="h-3.5 w-3.5" />
             New
           </Button>
-        </Link>
+        </AppLink>
       </div>
 
       {/* Desktop: prompt to select a list from the sidebar */}

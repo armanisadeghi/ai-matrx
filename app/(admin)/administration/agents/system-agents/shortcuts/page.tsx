@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { DownloadCloud, List } from "lucide-react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { Button } from "@/components/ui/button";
 import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/DuplicateShortcutModal";
 import { ImportShortcutsBrowserModal } from "@/features/agent-shortcuts/components/ImportShortcutsBrowserModal";
@@ -20,6 +20,7 @@ import {
   shortcutRowToFrontend,
   type AdminNonGlobalShortcutRow,
 } from "@/features/agents/redux/agent-shortcuts/thunks";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 interface PromoteTargetState {
   shortcut: AgentShortcut;
@@ -44,7 +45,7 @@ export default function AdminShortcutsPage() {
 
   const handleEdit = (shortcut: AgentShortcutRecord) => {
     startTransition(() => {
-      router.push(`/administration/agents/system-agents/edit/${shortcut.id}`);
+      pushAppHref(router, `/administration/agents/system-agents/edit/${shortcut.id}`);
     });
   };
 
@@ -56,7 +57,7 @@ export default function AdminShortcutsPage() {
     setCreateOpen(false);
     if (id) {
       startTransition(() => {
-        router.push(`/administration/agents/system-agents/edit/${id}`);
+        pushAppHref(router, `/administration/agents/system-agents/edit/${id}`);
       });
     }
   };
@@ -64,7 +65,7 @@ export default function AdminShortcutsPage() {
   const handleDuplicateSuccess = (newId: string) => {
     setDuplicateTarget(null);
     startTransition(() => {
-      router.push(`/administration/agents/system-agents/edit/${newId}`);
+      pushAppHref(router, `/administration/agents/system-agents/edit/${newId}`);
     });
   };
 
@@ -81,7 +82,7 @@ export default function AdminShortcutsPage() {
   const handlePromoteSuccess = (newId: string) => {
     setPromoteTarget(null);
     startTransition(() => {
-      router.push(`/administration/agents/system-agents/edit/${newId}`);
+      pushAppHref(router, `/administration/agents/system-agents/edit/${newId}`);
     });
   };
 
@@ -98,10 +99,10 @@ export default function AdminShortcutsPage() {
         toolbarSlot={
           <>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/administration/agents/system-agents/shortcuts/all">
+              <AppLink href="/administration/agents/system-agents/shortcuts/all">
                 <List className="h-4 w-4 mr-2" />
                 Browse all shortcuts
-              </Link>
+              </AppLink>
             </Button>
             <Button
               variant="outline"

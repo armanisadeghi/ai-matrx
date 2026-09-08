@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -226,7 +226,7 @@ export default function LocalToolsDemo() {
             {SUB_PAGES.map((page) => {
               const Icon = page.icon;
               return (
-                <Link key={page.href} href={page.href}>
+                <AppLink key={page.href} href={page.href}>
                   <div className="border rounded-lg p-2.5 bg-card hover:bg-accent transition-colors cursor-pointer group">
                     <div className="flex items-center justify-between gap-1">
                       <div className="flex items-center gap-1.5 min-w-0">
@@ -251,7 +251,7 @@ export default function LocalToolsDemo() {
                       {page.description}
                     </p>
                   </div>
-                </Link>
+                </AppLink>
               );
             })}
           </div>

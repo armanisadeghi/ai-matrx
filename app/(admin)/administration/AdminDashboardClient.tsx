@@ -7,7 +7,7 @@ import {
   IconRocket,
   IconSearch,
 } from "@tabler/icons-react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { Input } from "@ai-matrx/design-system";
 import { AdminDomainSection } from "@/features/admin/components/AdminDomainDirectory";
 import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
@@ -115,7 +115,7 @@ export default function AdminDashboardClient({
           </div>
 
           <div className="flex shrink-0 items-center gap-3">
-            <Link
+            <AppLink
               href={ADMIN_LAUNCHPAD_PATH}
               target="_blank"
               rel="noopener noreferrer"
@@ -124,14 +124,14 @@ export default function AdminDashboardClient({
               <IconRocket className="h-4 w-4" />
               <span>Launchpad</span>
               <IconExternalLink className="h-3.5 w-3.5 opacity-75" />
-            </Link>
-            <Link
+            </AppLink>
+            <AppLink
               href="/administration/utilities/all-routes"
               className="flex items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-primary"
             >
               <IconList className="h-4 w-4" />
               <span>All Routes</span>
-            </Link>
+            </AppLink>
           </div>
         </div>
 
@@ -144,7 +144,7 @@ export default function AdminDashboardClient({
                 </p>
                 <div className="divide-y divide-border/60 rounded-md border border-border bg-card">
                   {searchResults.map((item) => (
-                    <Link
+                    <AppLink
                       key={item.link}
                       href={item.link}
                       target={
@@ -168,7 +168,7 @@ export default function AdminDashboardClient({
                       <span className="shrink-0 text-xs text-muted-foreground/70">
                         {item.domainName} → {item.sectionName}
                       </span>
-                    </Link>
+                    </AppLink>
                   ))}
                 </div>
               </section>
@@ -181,7 +181,7 @@ export default function AdminDashboardClient({
                 </p>
                 <div className="divide-y divide-border/60 rounded-md border border-dashed border-amber-500/40 bg-card">
                   {filesystemSearchResults.map((row) => (
-                    <Link
+                    <AppLink
                       key={row.href}
                       href={row.href}
                       className="flex items-baseline gap-3 px-3 py-1.5 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
@@ -195,7 +195,7 @@ export default function AdminDashboardClient({
                       <span className="shrink-0 text-xs text-muted-foreground/70">
                         {row.category}
                       </span>
-                    </Link>
+                    </AppLink>
                   ))}
                 </div>
               </section>

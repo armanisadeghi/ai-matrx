@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -243,9 +243,9 @@ export default function AgentReviewWorkspace({
           </div>
 
           <Button asChild size="sm" variant="outline" className="shrink-0">
-            <Link href={row.url} target="_blank" rel="noreferrer">
+            <AppLink href={row.url} target="_blank" rel="noreferrer">
               <ExternalLink className="mr-1.5 h-4 w-4" /> Open page
-            </Link>
+            </AppLink>
           </Button>
         </div>
 

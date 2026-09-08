@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname, useRouter } from "next/navigation";
 import { createElement, useTransition, type MouseEvent } from "react";
 import { Home } from "lucide-react";
@@ -168,7 +168,7 @@ function NavButton({
   };
 
   return (
-    <Link
+    <AppLink
       href={href}
       title={title}
       aria-current={active ? "page" : undefined}
@@ -189,6 +189,6 @@ function NavButton({
           {badge}
         </span>
       )}
-    </Link>
+    </AppLink>
   );
 }

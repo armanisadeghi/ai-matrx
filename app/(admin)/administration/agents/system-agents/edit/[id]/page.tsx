@@ -11,6 +11,7 @@ import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/Du
 import { ShortcutForm } from "@/features/agent-shortcuts/components/ShortcutForm";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import type { AgentShortcut } from "@/features/agent-shortcuts/types";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 const SCOPE = "global" as const;
 
@@ -41,14 +42,14 @@ export default function AdminEditShortcutPage({
 
   const goToList = () => {
     startTransition(() => {
-      router.push("/administration/agents/system-agents/shortcuts");
+      pushAppHref(router, "/administration/agents/system-agents/shortcuts");
     });
   };
 
   const handleSuccess = (nextId: string | null) => {
     if (nextId && nextId !== id) {
       startTransition(() => {
-        router.push(`/administration/agents/system-agents/edit/${nextId}`);
+        pushAppHref(router, `/administration/agents/system-agents/edit/${nextId}`);
       });
       return;
     }
@@ -64,7 +65,7 @@ export default function AdminEditShortcutPage({
   const handleDuplicateSuccess = (newId: string) => {
     setDuplicateTarget(null);
     startTransition(() => {
-      router.push(`/administration/agents/system-agents/edit/${newId}`);
+      pushAppHref(router, `/administration/agents/system-agents/edit/${newId}`);
     });
   };
 

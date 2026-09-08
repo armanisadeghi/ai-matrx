@@ -28,7 +28,7 @@
  */
 
 import React, { useState, useSyncExternalStore } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   AlertTriangle,
   Check,
@@ -78,7 +78,7 @@ const HANDOFF_PATH = "docs/handoffs/eslint-debt-campaign.md";
 /**
  * A finding in `app/(core)/tasks/[id]/page.tsx` reports the route PATTERN
  * `/tasks/[id]`, which is not a URL — the App Router throws "Dynamic href
- * found in <Link>" on it. Patterns render as text; only concrete routes get a
+ * found in <AppLink>" on it. Patterns render as text; only concrete routes get a
  * door. (Same gate as the dead-ends console; the trap is identical.)
  */
 function isConcreteRoute(route: string | null): route is string {
@@ -231,7 +231,7 @@ export function LintDebtConsole({
       width: 420,
       cell: (f) => (
         <span className="flex min-w-0 max-w-full items-center gap-1">
-          <Link
+          <AppLink
             href={sourceHref(f.file, f.line)}
             target="_blank"
             rel="noopener noreferrer"
@@ -240,7 +240,7 @@ export function LintDebtConsole({
             className="min-w-0 truncate font-mono text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
           >
             {f.file}:{f.line}
-          </Link>
+          </AppLink>
           <button
             type="button"
             onClick={(e) => {
@@ -277,15 +277,15 @@ export function LintDebtConsole({
       cell: (f) =>
         isConcreteRoute(f.route) ? (
           <span className="flex min-w-0 items-center gap-1">
-            <Link
+            <AppLink
               href={f.route}
               onClick={(e) => e.stopPropagation()}
               title={`Open ${f.route}`}
               className="min-w-0 truncate text-xs underline-offset-2 hover:text-primary hover:underline"
             >
               {f.route}
-            </Link>
-            <Link
+            </AppLink>
+            <AppLink
               href={f.route}
               target="_blank"
               rel="noopener noreferrer"
@@ -295,7 +295,7 @@ export function LintDebtConsole({
               className="shrink-0 text-muted-foreground hover:text-foreground"
             >
               <ExternalLink className="h-3 w-3" />
-            </Link>
+            </AppLink>
           </span>
         ) : f.route ? (
           <span
@@ -674,7 +674,7 @@ function Header({
               : ` · ${scanAgeDays} day${scanAgeDays === 1 ? "" : "s"} ago`}
         </span>
         {report.commit && (
-          <Link
+          <AppLink
             href={commitHref(report.commit)}
             target="_blank"
             rel="noopener noreferrer"
@@ -682,24 +682,24 @@ function Header({
             title="The commit this scan ran against"
           >
             {report.commit.slice(0, 7)}
-          </Link>
+          </AppLink>
         )}
-        <Link
+        <AppLink
           href={pathHref(HANDOFF_PATH)}
           target="_blank"
           rel="noopener noreferrer"
           className="underline-offset-2 hover:text-foreground hover:underline"
         >
           Campaign handoff
-        </Link>
-        <Link
+        </AppLink>
+        <AppLink
           href={pathHref("scripts/lint-debt/FEATURE.md")}
           target="_blank"
           rel="noopener noreferrer"
           className="underline-offset-2 hover:text-foreground hover:underline"
         >
           How this is classified
-        </Link>
+        </AppLink>
         {delta !== null && delta !== 0 && (
           <span
             className={`inline-flex items-center gap-1 ${delta < 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
@@ -908,7 +908,7 @@ function BucketCard({
                 )}
               </span>
             </button>
-            <Link
+            <AppLink
               href={pathHref(b.key)}
               target="_blank"
               rel="noopener noreferrer"
@@ -917,7 +917,7 @@ function BucketCard({
               className="shrink-0 px-1 text-muted-foreground hover:text-foreground"
             >
               <ExternalLink className="h-3 w-3" />
-            </Link>
+            </AppLink>
             <Button
               size="sm"
               variant="ghost"
@@ -1019,14 +1019,14 @@ function FindingDetail({
         <dd className="font-mono">{finding.rule}</dd>
         <dt className="text-muted-foreground">File</dt>
         <dd className="min-w-0">
-          <Link
+          <AppLink
             href={sourceHref(finding.file, finding.line)}
             target="_blank"
             rel="noopener noreferrer"
             className="break-all font-mono underline-offset-2 hover:text-primary hover:underline"
           >
             {finding.file}:{finding.line}:{finding.column}
-          </Link>
+          </AppLink>
         </dd>
         <dt className="text-muted-foreground">Feature</dt>
         <dd className="font-mono">{finding.feature}</dd>
@@ -1035,14 +1035,14 @@ function FindingDetail({
             <dt className="text-muted-foreground">Surface</dt>
             <dd>
               {isConcreteRoute(finding.route) ? (
-                <Link
+                <AppLink
                   href={finding.route}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline-offset-2 hover:text-primary hover:underline"
                 >
                   {finding.route}
-                </Link>
+                </AppLink>
               ) : (
                 <span className="text-muted-foreground">{finding.route}</span>
               )}

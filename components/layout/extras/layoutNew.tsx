@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
 import React, { useState, createContext, useContext, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -235,7 +235,7 @@ function NavLink({ href, label, icon }: NavLink) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Link
+        <AppLink
           href={href}
           className={cn(
             "group/sidebar flex items-center gap-2 rounded-sm px-2 py-2",
@@ -245,7 +245,7 @@ function NavLink({ href, label, icon }: NavLink) {
           )}
         >
           {linkContent}
-        </Link>
+        </AppLink>
       </TooltipTrigger>
       {!open && (
         <TooltipContent side="right">

@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import Link, { LinkProps } from "next/link";
+import { type LinkProps } from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState, createContext, useContext, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -329,10 +330,10 @@ function UserProfileDropdown({
       </Tooltip>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuItem asChild>
-          <Link href="/settings/profile" className="flex items-center">
+          <AppLink href="/settings/profile" className="flex items-center">
             <IconUser className="mr-2 h-4 w-4" />
             <span>Profile Settings</span>
-          </Link>
+          </AppLink>
         </DropdownMenuItem>
         <LogoutAction />
       </DropdownMenuContent>
@@ -499,7 +500,7 @@ export const SidebarLink: React.FC<{
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Link
+        <AppLink
           href={link.href}
           className={cn(
             "group/sidebar flex items-center rounded-sm transition-colors duration-200 ease-in-out hover:bg-neutral-100 dark:hover:bg-neutral-700",
@@ -517,7 +518,7 @@ export const SidebarLink: React.FC<{
               {link.label}
             </div>
           )}
-        </Link>
+        </AppLink>
       </TooltipTrigger>
       {!open && <TooltipContent side="right">{link.label}</TooltipContent>}
     </Tooltip>

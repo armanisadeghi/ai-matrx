@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useTransition } from "react";
 import { Scissors, ArrowRight } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -26,7 +26,7 @@ function UtilityCard({ title, description, href, icon: Icon }: (typeof utilities
     };
 
     return (
-        <Link href={href} onClick={handleClick} className="group block">
+        <AppLink href={href} onClick={handleClick} className="group block">
             <Card className="h-full border bg-card hover:bg-accent/30 transition-colors duration-150 cursor-pointer">
                 <CardHeader className="flex flex-row items-start gap-4 p-5">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
@@ -47,7 +47,7 @@ function UtilityCard({ title, description, href, icon: Icon }: (typeof utilities
                     </div>
                 </CardHeader>
             </Card>
-        </Link>
+        </AppLink>
     );
 }
 

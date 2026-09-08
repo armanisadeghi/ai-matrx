@@ -18,7 +18,7 @@
 
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CircleAlert, TriangleAlert } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -93,12 +93,12 @@ async function FindingBody({
           )}
           <div className="min-w-0">
             {f.kind && (
-              <Link
+              <AppLink
                 href={`/administration/utilities/kind-registry/${encodeURIComponent(f.kind)}`}
                 className="mr-2 font-mono text-xs font-semibold text-foreground underline-offset-2 hover:text-primary hover:underline"
               >
                 {f.kind}
-              </Link>
+              </AppLink>
             )}
             <span className="text-muted-foreground">{f.message}</span>
           </div>
@@ -121,13 +121,13 @@ export default async function ShapeFindingCodePage({
   return (
     <div className="bg-textured">
       <header className="border-b border-border bg-card px-4 py-3">
-        <Link
+        <AppLink
           href="/administration/utilities/kind-registry?tab=board"
           className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Shape System status board
-        </Link>
+        </AppLink>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="text-lg font-semibold text-foreground">
             {spec.label}

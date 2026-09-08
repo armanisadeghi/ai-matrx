@@ -5,6 +5,11 @@ One repo, three Vercel builds (`next.config.js` § `MATRX_PROFILE`, `proxy.ts`
 only `(admin)`, `demos` serves only `(dev)`. `proxy.ts` covers the gap by
 redirecting a foreign path to the origin that owns it.
 
+**The split runs BOTH ways.** `www` lacks `(admin)`; `manage` lacks the main app,
+and `proxy.ts`'s satellite gate bounces everything outside `/administration/*`
+(plus the shared auth paths) home. A satellite build is therefore not "a build
+missing two prefixes" — it serves ONE prefix and sends everything else to www.
+
 **That redirect is correct for a document navigation and fatal for a Next
 `<Link>`.** A `<Link href="/administration/…">` prefetches on hover with an RSC
 `fetch()` carrying `RSC` / `Next-Router-Prefetch` headers — a preflighted
@@ -14,6 +19,13 @@ never be redirected. Production, 2026-09-08, reproduced by hovering the sidebar:
 > Access to fetch at `https://manage.aimatrx.com/administration/launchpad`
 > (redirected from `https://www.aimatrx.com/administration/launchpad?_rsc=…`)
 > … blocked by CORS policy: Redirect is not allowed for a preflight request.
+
+The mirror image, found by WALKING `manage` after the first fix shipped and the
+reason this section exists at all:
+
+> Access to fetch at `https://www.aimatrx.com/settings` (redirected from
+> `https://manage.aimatrx.com/settings?_rsc=…`) from origin
+> `https://manage.aimatrx.com` … Redirect is not allowed for a preflight request.
 
 ## The door
 
@@ -42,14 +54,26 @@ own their own anchor and route it through `AppLink` are listed in the script's
 `DOOR_ELEMENTS`; adding a name there that does NOT go through the door re-opens
 the class.
 
+In the SATELLITE TREES (`app/(admin)/`, `app/(dev)/`, `features/shell/`,
+`components/layout/`, `features/admin/`, `features/administration/`) the rule is
+the blunt one — `next/link` may not be imported at all, because any internal
+href there can be foreign and no prefix list can tell which. The one honest
+exemption: a tree that renders ONLY on the deployment owning a surface may name
+that surface freely (`app/(admin)` → `/administration`), because those links are
+same-origin by construction. `features/shell/` and `components/layout/` get no
+such exemption — they render on both hosts.
+
 It also knows the split-surface CONSTANTS (`export const X = "/administration…"`),
 because the first census missed `AdminSidebarSection`'s
 `href={ADMIN_LAUNCHPAD_PATH}` — the Admin Launchpad button whose hover produced
 the console error. A literal-only guard would have called the class closed while
 the reproduction still fired.
 
-**RED 78 offences (exit 2) at `71986f3eab`; GREEN 0 (exit 0) at `cc2e23adce`,
-plus the 79th the constant-aware pass found.**
+**RED 78 offences (exit 2) at `71986f3eab`** → GREEN, **plus the 79th the
+constant-aware pass found**, and then **RED 87 (exit 2) at the deployed
+`d299920279`** once the guard learned the satellite direction → **GREEN 0 (exit
+0)**. `lib/deployment`: 20 tests, of which the 5 satellite-direction legs were
+**RED 4 failed / 13 passed** at that same deployed SHA.
 `/demos` was breaking identically on www and is fixed by the same table.
 
 **Verified:** 2026-09-08.

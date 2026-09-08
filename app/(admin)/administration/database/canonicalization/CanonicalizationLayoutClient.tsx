@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useTransition } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -90,7 +90,7 @@ export function CanonicalizationLayoutClient({
             const pending = isPending && pendingHref === item.href;
             const Icon = item.icon;
             return (
-              <Link
+              <AppLink
                 key={item.href}
                 href={item.href}
                 onClick={(e) => {
@@ -110,7 +110,7 @@ export function CanonicalizationLayoutClient({
                   <Icon className="h-4 w-4 shrink-0" />
                 )}
                 {item.label}
-              </Link>
+              </AppLink>
             );
           })}
         </nav>
@@ -122,7 +122,7 @@ export function CanonicalizationLayoutClient({
               const pending = isPending && pendingHref === item.href;
               const Icon = item.icon;
               return (
-                <Link
+                <AppLink
                   key={item.href}
                   href={item.href}
                   onClick={(e) => {
@@ -142,7 +142,7 @@ export function CanonicalizationLayoutClient({
                     <Icon className="h-3.5 w-3.5" />
                   )}
                   {item.label}
-                </Link>
+                </AppLink>
               );
             })}
           </div>

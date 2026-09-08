@@ -16,7 +16,7 @@
 // ScheduleDetail.tsx). The hand-rolled original: /agents/[id]/build.
 
 import { useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   Check,
   ChevronDown,
@@ -186,7 +186,7 @@ export function EntityModeHeader({
                         asChild
                         className={cn(opt.active && "bg-accent/60")}
                       >
-                        <Link
+                        <AppLink
                           href={opt.href}
                           className="flex items-center gap-2"
                         >
@@ -199,7 +199,7 @@ export function EntityModeHeader({
                             )}
                           />
                           <span className="truncate">{opt.label}</span>
-                        </Link>
+                        </AppLink>
                       </DropdownMenuItem>
                     ))}
                   </div>

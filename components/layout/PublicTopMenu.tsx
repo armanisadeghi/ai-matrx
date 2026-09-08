@@ -1,7 +1,7 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import Link from 'next/link';
+import AppLink from "@/components/navigation/AppLink";
 import { StandaloneThemeSwitcher } from "@/styles/themes/StandaloneThemeSwitcher";
 import { LogoHorizontal } from '@/components/branding/MatrixLogo';
 import NavigationButton from "@/components/ui/navigation-button";
@@ -17,7 +17,7 @@ const DesktopMenu = () => {
                 <a href="#" className="text-foreground/60 hover:text-foreground">Developers</a>
                 <a href="#" className="text-foreground/60 hover:text-foreground">Pricing</a>
                 <a href="#" className="text-foreground/60 hover:text-foreground">Docs</a>
-                <Link href="/education" className="text-foreground/60 hover:text-foreground">Education</Link>
+                <AppLink href="/education" className="text-foreground/60 hover:text-foreground">Education</AppLink>
             </nav>
             <div className="ml-auto flex items-center space-x-3">
                 <StandaloneThemeSwitcher initialTheme={'dark'}/>
@@ -67,10 +67,10 @@ const MobileMenu = () => {
                             <a href="#" className="block px-4 py-2 text-foreground/60 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">Developers</a>
                             <a href="#" className="block px-4 py-2 text-foreground/60 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">Pricing</a>
                             <a href="#" className="block px-4 py-2 text-foreground/60 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">Docs</a>
-                            <Link href="/education" className="block px-4 py-2 text-foreground/60 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">Education</Link>
-                            <Link href="/dashboard" className="block px-4 py-2 text-foreground/60 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">
+                            <AppLink href="/education" className="block px-4 py-2 text-foreground/60 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">Education</AppLink>
+                            <AppLink href="/dashboard" className="block px-4 py-2 text-foreground/60 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800">
                                 Dashboard
-                            </Link>
+                            </AppLink>
                         </nav>
                     </div>
                 </details>

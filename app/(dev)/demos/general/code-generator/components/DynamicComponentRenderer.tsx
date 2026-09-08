@@ -5,7 +5,7 @@ import * as UIComponents from "@/components/ui/react-live-scope";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 
 import axios from "axios";
 import _ from "lodash";
@@ -68,9 +68,12 @@ const DynamicComponentRenderer = ({
     // Supabase
     supabase,
 
-    // Next.js navigation
+    // Next.js navigation. `Link` is the deployment-aware door (AppLink): a
+    // generated component may name a path this build does not serve, and a
+    // next/link prefetch of one dies on a CORS preflight — see
+    // lib/deployment/surfaces.ts.
     useRouter,
-    Link,
+    Link: AppLink,
 
     // Icons (curated static set — avoids bundling the full lucide namespace)
     ...staticLucideIconMap,

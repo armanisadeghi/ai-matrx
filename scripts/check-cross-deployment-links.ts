@@ -40,13 +40,55 @@ const SPLIT_PREFIXES = ["/administration", "/demos"] as const;
  * produced this list — see FEATURE notes).
  */
 const EXEMPT_PREFIXES = [
-  "app/(admin)/",
-  "app/(dev)/",
   "scripts/",
   "lib/deployment/",
   "components/navigation/",
   "proxy.ts",
 ];
+
+/**
+ * 🚨 THE DIRECTION THE FIRST PASS MISSED, found by walking manage after it
+ * shipped. A SATELLITE deployment serves only its own surface: `proxy.ts`
+ * bounces everything else to www, so `<Link href="/settings">` in the admin
+ * shell produced the mirror image of the original error —
+ *
+ *   Access to fetch at 'https://www.aimatrx.com/settings' (redirected from
+ *   'https://manage.aimatrx.com/settings?_rsc=…') … Redirect is not allowed
+ *   for a preflight request.
+ *
+ * These trees render on a satellite host, so ANY internal href in them can be
+ * foreign — no prefix list can tell which. The rule here is therefore the
+ * blunt one: in these trees, links go through the door, full stop. `AppLink`
+ * is `next/link` on the deployment that owns the path, so this costs nothing
+ * where it is already correct.
+ */
+const SATELLITE_TREES = [
+  "app/(admin)/",
+  "app/(dev)/",
+  "features/shell/",
+  "components/layout/",
+  "features/admin/",
+  "features/administration/",
+];
+
+/**
+ * Trees that render ONLY on the deployment owning a surface — so a link from
+ * here TO that surface is same-origin by construction and has no failure mode.
+ * (`features/shell/` and `components/layout/` are deliberately absent: they
+ * render on both hosts, where a `/administration` href IS foreign.)
+ */
+const TREE_OWNS_SURFACE: readonly (readonly [string, string])[] = [
+  ["app/(admin)/", "/administration"],
+  ["features/admin/", "/administration"],
+  ["features/administration/", "/administration"],
+  ["app/(dev)/", "/demos"],
+];
+
+function sameOriginByConstruction(file: string, href: string): boolean {
+  return TREE_OWNS_SURFACE.some(
+    ([tree, prefix]) => file.startsWith(tree) && href.startsWith(prefix),
+  );
+}
 
 /**
  * A `<Link>` opening tag, tag body and all. JSX puts `href` on its own line as
@@ -74,6 +116,8 @@ const DOOR_ELEMENTS = new Set([
   "LineageRow", // features/agents/components/agent-listings/AgentLineageTree.tsx
   "SettingsLink", // components/official/settings/primitives/SettingsLink.tsx
   "ResultRow", // features/tool-registry/mcp-admin/components/AddMcpServerDialog.tsx — plain <a>
+  "PageLink", // app/(dev)/demos/context-menu/_components/ContextMenuHubClient.tsx
+  "Tile", // app/(admin)/administration/automation/scheduling/page.tsx
 ]);
 const SPLIT_HREF =
   /href\s*=\s*[{]?\s*[`"']((?:\/administration|\/demos)[^`"'{]*)/;
@@ -89,7 +133,7 @@ const SPLIT_HREF =
  * while the reproduction still fired.
  */
 const SPLIT_CONSTANT_DECL =
-  /export\s+const\s+([A-Z][A-Z_0-9]*)\s*(?::[^=]+)?=\s*["'](?:\/administration|\/demos)/g;
+  /export\s+const\s+([A-Z][A-Z_0-9]*)\s*(?::[^=]+)?=\s*["']((?:\/administration|\/demos)[^"']*)/g;
 const OFFENDING_PUSH =
   /router\s*\.\s*(?:push|replace)\s*\(\s*[`"']((?:\/administration|\/demos)[^`"']*)/;
 
@@ -106,8 +150,8 @@ interface Offence {
 }
 
 /** Every exported constant in the repo whose value is a split-surface path. */
-function splitConstants(files: readonly string[]): Set<string> {
-  const names = new Set<string>();
+function splitConstants(files: readonly string[]): Map<string, string> {
+  const names = new Map<string, string>();
   for (const file of files) {
     let source: string;
     try {
@@ -115,7 +159,8 @@ function splitConstants(files: readonly string[]): Set<string> {
     } catch {
       continue;
     }
-    for (const decl of source.matchAll(SPLIT_CONSTANT_DECL)) names.add(decl[1]);
+    for (const decl of source.matchAll(SPLIT_CONSTANT_DECL))
+      names.set(decl[1], decl[2]);
   }
   return names;
 }
@@ -137,18 +182,39 @@ function exempt(file: string): boolean {
 export function scanSource(
   file: string,
   source: string,
-  constants: ReadonlySet<string> = new Set(),
+  constants: ReadonlyMap<string, string> = new Map(),
 ): Offence[] {
   const found: Offence[] = [];
   const constantHref = constants.size
-    ? new RegExp(`href\\s*=\\s*[{]\\s*(${[...constants].join("|")})\\s*[}]`)
+    ? new RegExp(`href\\s*=\\s*[{]\\s*(${[...constants.keys()].join("|")})\\s*[}]`)
     : null;
+  if (
+    SATELLITE_TREES.some((tree) => file.startsWith(tree)) &&
+    /^import\s+Link\b[^\n]*from\s+["']next\/link["']/m.test(source)
+  ) {
+    found.push({
+      file,
+      line: lineOf(source, source.indexOf('from "next/link"')),
+      text: 'import Link from "next/link"',
+      why:
+        "this tree renders on a SATELLITE deployment, which serves only its " +
+        "own surface and bounces every other path to www — so any internal " +
+        "href here can be foreign, and a next/link prefetch of one dies on a " +
+        "CORS preflight. Import AppLink from " +
+        '"@/components/navigation/AppLink" instead (it IS next/link on the ' +
+        "deployment that owns the path).",
+    });
+  }
+
   for (const tag of source.matchAll(LINK_TAG)) {
     const element = tag[1];
     if (DOOR_ELEMENTS.has(element)) continue;
     const href =
       SPLIT_HREF.exec(tag[2]) ?? (constantHref ? constantHref.exec(tag[2]) : null);
     if (!href) continue;
+    // A constant match yields its NAME; judge the exemption on its VALUE.
+    if (sameOriginByConstruction(file, constants.get(href[1]) ?? href[1]))
+      continue;
     found.push({
       file,
       line: lineOf(source, tag.index ?? 0),
@@ -164,7 +230,7 @@ export function scanSource(
   }
   source.split("\n").forEach((text, index) => {
     const push = OFFENDING_PUSH.exec(text);
-    if (push) {
+    if (push && !sameOriginByConstruction(file, push[1])) {
       found.push({
         file,
         line: index + 1,
@@ -197,10 +263,30 @@ function selfTest(): number {
     'pushAppHref(router, "/administration/mandates");',
     "<AppLink href={ADMIN_LAUNCHPAD_PATH} target=\"_blank\">Admin Launchpad</AppLink>",
   ].join("\n");
-  const known = new Set(["ADMIN_LAUNCHPAD_PATH"]);
+  const known = new Map([["ADMIN_LAUNCHPAD_PATH", "/administration/launchpad"]]);
   const onDefect = scanSource("selftest.tsx", defect, known);
   const onFixed = scanSource("selftest.tsx", fixed, known);
   const problems: string[] = [];
+  // The satellite direction: the admin shell's settings link, which the walk
+  // of manage.aimatrx.com found still broken after the first fix shipped.
+  const satelliteDefect = scanSource(
+    "features/shell/components/Footer.tsx",
+    'import Link from "next/link";\n<Link href="/settings">Settings</Link>',
+    known,
+  );
+  const satelliteFixed = scanSource(
+    "features/shell/components/Footer.tsx",
+    'import AppLink from "@/components/navigation/AppLink";\n<AppLink href="/settings">Settings</AppLink>',
+    known,
+  );
+  if (satelliteDefect.length !== 1)
+    problems.push(
+      `expected 1 offence for the satellite-side defect, detector found ${satelliteDefect.length}`,
+    );
+  if (satelliteFixed.length !== 0)
+    problems.push(
+      `expected 0 offences for its fix, detector found ${satelliteFixed.length}`,
+    );
   if (onDefect.length !== 3)
     problems.push(
       `expected 3 offences in the production defect, detector found ${onDefect.length}`,
@@ -215,7 +301,7 @@ function selfTest(): number {
     return 2;
   }
   console.log(
-    "✓ Self-test: the detector still catches the 2026-09-08 defect — literal href, router push, and the constant href of the very button that reproduced it (3 offences) — and passes its fix (0).",
+    "✓ Self-test: the detector still catches the 2026-09-08 defect in BOTH directions — www's literal href, router push and constant href (3 offences), and manage's satellite-side settings link (1) — and passes both fixes (0).",
   );
   return 0;
 }

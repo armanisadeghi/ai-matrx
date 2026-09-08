@@ -3,7 +3,7 @@
 // Preview body for a single real-favicon test route. The real judging surface
 // is the browser tab itself (look up top); this page just shows a big preview,
 // a size ladder, and links so you can tab between every variant.
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { FAVICON_VARIANTS, type FaviconVariantId } from "@/utils/favicon-variants";
 import { svgToDataURI } from "@/utils/favicon-utils";
 import { LAB_LETTER, LAB_COLOR } from "./faviconMeta";
@@ -18,12 +18,12 @@ export default function VariantPreview({ id }: { id: FaviconVariantId }) {
   return (
     <div className="min-h-dvh bg-textured text-foreground overflow-auto">
       <div className="mx-auto max-w-3xl px-6 py-10">
-        <Link
+        <AppLink
           href="/demos/favicon-lab"
           className="text-xs text-muted-foreground hover:text-foreground"
         >
           ← Favicon Lab
-        </Link>
+        </AppLink>
 
         <div className="mt-4 flex items-center gap-4">
           <img src={uri} width={72} height={72} alt={variant.label} />
@@ -64,7 +64,7 @@ export default function VariantPreview({ id }: { id: FaviconVariantId }) {
         </h2>
         <div className="flex flex-wrap gap-2">
           {FAVICON_VARIANTS.filter((v) => v.slug).map((v) => (
-            <Link
+            <AppLink
               key={v.id}
               href={`/demos/favicon-lab/${v.slug}`}
               className={`rounded-md px-2.5 py-1.5 text-xs font-medium border transition-colors ${
@@ -74,7 +74,7 @@ export default function VariantPreview({ id }: { id: FaviconVariantId }) {
               }`}
             >
               {v.label}
-            </Link>
+            </AppLink>
           ))}
         </div>
       </div>

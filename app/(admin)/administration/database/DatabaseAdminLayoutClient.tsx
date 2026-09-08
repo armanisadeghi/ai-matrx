@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LayoutGrid, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,7 +46,7 @@ export function DatabaseAdminLayoutClient({
             aria-label="Database tools"
             className="flex flex-nowrap items-center gap-1 overflow-x-auto no-scrollbar px-2 py-1 border-b border-border/60"
           >
-            <Link
+            <AppLink
               href={DATABASE_MODULE_HOME}
               onClick={(e) => {
                 e.preventDefault();
@@ -65,7 +65,7 @@ export function DatabaseAdminLayoutClient({
                 <LayoutGrid className="h-3.5 w-3.5" />
               )}
               Hub
-            </Link>
+            </AppLink>
 
             <span className="text-border px-1">|</span>
 
@@ -79,7 +79,7 @@ export function DatabaseAdminLayoutClient({
                 );
                 const pending = isPending && pendingHref === page.path;
                 return (
-                  <Link
+                  <AppLink
                     key={page.path}
                     href={page.path}
                     onClick={(e) => {
@@ -98,7 +98,7 @@ export function DatabaseAdminLayoutClient({
                   >
                     {pending && <Loader2 className="h-3 w-3 animate-spin" />}
                     {databaseToolLabel(page)}
-                  </Link>
+                  </AppLink>
                 );
               })}
           </nav>
@@ -117,7 +117,7 @@ export function DatabaseAdminLayoutClient({
                 );
                 const pending = isPending && pendingHref === page.path;
                 return (
-                  <Link
+                  <AppLink
                     key={page.path}
                     href={page.path}
                     onClick={(e) => {
@@ -136,7 +136,7 @@ export function DatabaseAdminLayoutClient({
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     )}
                     {databaseToolLabel(page)}
-                  </Link>
+                  </AppLink>
                 );
               })}
             </nav>

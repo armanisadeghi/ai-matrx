@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
@@ -557,7 +557,7 @@ export default function AdminSandboxManagementPage() {
                         </TableCell>
                         <TableCell className="font-mono text-xs">
                           {instance.user_id === viewerUserId ? (
-                            <Link
+                            <AppLink
                               href={`/sandbox/${instance.id}`}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -566,7 +566,7 @@ export default function AdminSandboxManagementPage() {
                               className="underline-offset-2 hover:text-primary hover:underline"
                             >
                               {instance.sandbox_id}
-                            </Link>
+                            </AppLink>
                           ) : (
                             instance.sandbox_id
                           )}

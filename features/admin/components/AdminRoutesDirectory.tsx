@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { Braces, ChevronRight, FolderTree, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system";
@@ -99,13 +99,13 @@ function RouteRow({ row }: { row: RouteRows[number] }) {
   }
 
   return (
-    <Link
+    <AppLink
       href={row.href}
       className="flex min-h-12 items-center gap-3 px-3 py-2 transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
     >
       <FolderTree className="h-4 w-4 shrink-0 text-primary" />
       {content}
-    </Link>
+    </AppLink>
   );
 }
 
@@ -184,13 +184,13 @@ export function AdminRoutesDirectory({ routes }: AdminRoutesDirectoryProps) {
 
       {domains.map(({ domain, groups: domainGroups }) => (
         <section key={domain.name} className="space-y-3">
-          <Link
+          <AppLink
             href={adminDomainHref(domain)}
             className="inline-flex items-center gap-2 text-base font-semibold text-foreground hover:text-primary"
           >
             {domain.name}
             <ChevronRight className="h-4 w-4" />
-          </Link>
+          </AppLink>
           <div className="grid gap-4 xl:grid-cols-2">
             {domainGroups.map(({ section, routes: sectionRoutes }) => (
               <div

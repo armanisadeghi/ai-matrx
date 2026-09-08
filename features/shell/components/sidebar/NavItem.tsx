@@ -7,7 +7,7 @@
 // Each link gets data-nav-href so CSS can style it:
 //   .shell-root[data-pathname^="/demos/chat"] [data-nav-href="/demos/chat"] { ... }
 
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import ShellIcon from "../ShellIcon";
 import type { ShellNavItem } from "../../constants/nav-data";
 
@@ -37,7 +37,7 @@ export default function NavItem({ item }: NavItemProps) {
   }
 
   return (
-    <Link
+    <AppLink
       href={item.href}
       title={item.label}
       data-nav-href={item.href}
@@ -47,6 +47,6 @@ export default function NavItem({ item }: NavItemProps) {
         <ShellIcon name={item.iconName} size={18} strokeWidth={1.75} />
       </span>
       <span className="shell-nav-label">{item.label}</span>
-    </Link>
+    </AppLink>
   );
 }

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,12 +21,12 @@ export default function NewSystemAgentChoicePage() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-card flex items-center gap-3">
-        <Link href="/administration/agents/system-agents/agents">
+        <AppLink href="/administration/agents/system-agents/agents">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1.5" />
             Back to system agents
           </Button>
-        </Link>
+        </AppLink>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -34,7 +34,7 @@ export default function NewSystemAgentChoicePage() {
           {CREATION_OPTIONS.map((option) => {
             const Icon = option.icon;
             return (
-              <Link
+              <AppLink
                 key={option.href}
                 href={option.href}
                 className={`group relative overflow-hidden block w-full rounded-xl p-4 text-left transition-all duration-200
@@ -56,7 +56,7 @@ export default function NewSystemAgentChoicePage() {
                     </p>
                   </div>
                 </div>
-              </Link>
+              </AppLink>
             );
           })}
 

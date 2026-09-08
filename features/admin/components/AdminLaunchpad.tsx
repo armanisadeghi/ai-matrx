@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { IconExternalLink, IconRefresh, IconSearch } from "@tabler/icons-react";
 import { IconResolver } from "@ai-matrx/icons";
 import { Button } from "@/components/ui/button";
@@ -201,7 +201,7 @@ export default function AdminLaunchpad() {
                     key={domain.slug}
                     className="mb-3 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
                   >
-                    <Link
+                    <AppLink
                       href={adminDomainHref(domain)}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -225,7 +225,7 @@ export default function AdminLaunchpad() {
                         )}
                       </span>
                       <IconExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-colors group-hover:text-sky-600 dark:group-hover:text-sky-400" />
-                    </Link>
+                    </AppLink>
 
                     <div className="divide-y divide-slate-200 dark:divide-slate-800">
                       {domain.sections.map((section) => (
@@ -241,7 +241,7 @@ export default function AdminLaunchpad() {
                           </div>
                           <div>
                             {section.destinations.map((destination) => (
-                              <Link
+                              <AppLink
                                 key={destination.link}
                                 href={destination.link}
                                 target="_blank"
@@ -262,7 +262,7 @@ export default function AdminLaunchpad() {
                                   </span>
                                 )}
                                 <IconExternalLink className="h-3 w-3 shrink-0 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 dark:text-slate-600" />
-                              </Link>
+                              </AppLink>
                             ))}
                           </div>
                         </div>

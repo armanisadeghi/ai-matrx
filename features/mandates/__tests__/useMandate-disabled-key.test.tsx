@@ -26,6 +26,10 @@ describe("useMandate — disabled key", () => {
         mandate: null,
         loading: false,
         error: null,
+        // 🚨 NOT `absent` (V-parity/UX F4): the door was never asked, so
+        // "this job does not exist" is a claim nothing backs. A disabled
+        // sentinel is silence, not a verdict.
+        absent: false,
       });
 
       await hook.unmount();

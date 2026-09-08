@@ -13,7 +13,7 @@
  */
 
 import React from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   FileText,
   MessageSquare,
@@ -93,12 +93,12 @@ export default function TasksWidgetsDemo() {
         <h1 className="text-2xl font-bold">Tasks Widgets</h1>
         <p className="text-sm text-muted-foreground">
           Every drop-in task component, wired to real Redux state. Open{" "}
-          <Link
+          <AppLink
             className="underline underline-offset-2 text-primary hover:text-primary/80"
             href="/tasks"
           >
             /tasks
-          </Link>{" "}
+          </AppLink>{" "}
           in another tab to watch tasks appear as you create them.
         </p>
         <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   Activity,
   ArrowRight,
@@ -96,7 +96,7 @@ export function DemoIndexClient() {
                 {label}
               </a>
             ))}
-            <Link
+            <AppLink
               href="/demos/upgrade/landing"
               target="_blank"
               rel="noopener noreferrer"
@@ -104,7 +104,7 @@ export function DemoIndexClient() {
             >
               <ExternalLink className="h-3 w-3" />
               Full landing page
-            </Link>
+            </AppLink>
           </nav>
         </div>
       </header>
@@ -407,7 +407,7 @@ export function DemoIndexClient() {
             const cfg = INDUSTRIES[id];
             const Icon = cfg.icon;
             return (
-              <Link
+              <AppLink
                 key={id}
                 href={`/demos/upgrade/industry/${id}`}
                 className="group relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-border/70 bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-foreground/40 hover:shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
@@ -429,7 +429,7 @@ export function DemoIndexClient() {
                 <span className="mt-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   Recommended: {cfg.recommendedPlanId}
                 </span>
-              </Link>
+              </AppLink>
             );
           })}
         </div>

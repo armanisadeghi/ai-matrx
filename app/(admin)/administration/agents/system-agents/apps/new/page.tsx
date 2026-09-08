@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import {
   AppWindow,
   ArrowLeft,
@@ -22,6 +22,7 @@ import {
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { CreateAgentAppForm } from "@/features/agent-apps/components/CreateAgentAppForm";
 import type { CreateAgentAppInput } from "@/features/agent-apps/types";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 interface CreatedApp {
   id: string;
@@ -116,25 +117,25 @@ export default function AdminNewSystemAppPage() {
             </div>
             <div className="flex items-center gap-2 pt-2 flex-wrap justify-center">
               <Button asChild variant="default" size="sm">
-                <Link href={`/administration/agents/agent-apps/edit/${created.id}`}>
+                <AppLink href={`/administration/agents/agent-apps/edit/${created.id}`}>
                   Open editor
-                </Link>
+                </AppLink>
               </Button>
               <Button asChild variant="outline" size="sm">
-                <Link
+                <AppLink
                   href={`/p/${created.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                   Preview
-                </Link>
+                </AppLink>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() =>
-                  router.push("/administration/agents/system-agents/apps")
+                  pushAppHref(router, "/administration/agents/system-agents/apps")
                 }
               >
                 Back to list
@@ -163,15 +164,15 @@ export default function AdminNewSystemAppPage() {
               </p>
             </div>
             <div className="flex items-center gap-2 pt-2">
-              <Link href="/administration/agents/system-agents/agents/new">
+              <AppLink href="/administration/agents/system-agents/agents/new">
                 <Button size="sm">Create system agent</Button>
-              </Link>
-              <Link href="/administration/agents/system-agents/apps">
+              </AppLink>
+              <AppLink href="/administration/agents/system-agents/apps">
                 <Button size="sm" variant="outline">
                   <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
                   Back
                 </Button>
-              </Link>
+              </AppLink>
             </div>
           </CardContent>
         </Card>
@@ -182,12 +183,12 @@ export default function AdminNewSystemAppPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-card flex items-center gap-3">
-        <Link href="/administration/agents/system-agents/apps">
+        <AppLink href="/administration/agents/system-agents/apps">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1.5" />
             Back to apps
           </Button>
-        </Link>
+        </AppLink>
         <p
           className="truncate text-xs text-muted-foreground"
           title="Publishes a global-scope agent app (no owner)."
@@ -201,7 +202,7 @@ export default function AdminNewSystemAppPage() {
             agentInitialTab="system"
             agentIncludeSystemInAll
             onSubmit={handleSubmit}
-            onCancel={() => router.push("/administration/agents/system-agents/apps")}
+            onCancel={() => pushAppHref(router, "/administration/agents/system-agents/apps")}
             busy={submitting}
             defaultAgentId={null}
           />

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { isPubliclyVisible, visibilityLabelShort } from "@/lib/visibility/labels";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import {
   AppWindow,
@@ -58,6 +58,7 @@ import {
   AgentAppRef,
   agentAppExecutionsHref,
 } from "@/features/agent-apps/components/AgentAppRef";
+import { pushAppHref } from "@/lib/deployment/navigate";
 
 const STATUS_VARIANT: Record<
   AgentAppAdminView["status"],
@@ -140,7 +141,7 @@ export default function AdminSystemAppsListPage() {
 
   const handleOpenEditor = (id: string) => {
     startTransition(() => {
-      router.push(`/administration/agents/agent-apps/edit/${id}`);
+      pushAppHref(router, `/administration/agents/agent-apps/edit/${id}`);
     });
   };
 
@@ -218,12 +219,12 @@ export default function AdminSystemAppsListPage() {
               />
               Refresh
             </Button>
-            <Link href="/administration/agents/system-agents/apps/new">
+            <AppLink href="/administration/agents/system-agents/apps/new">
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1.5" />
                 New system app
               </Button>
-            </Link>
+            </AppLink>
           </div>
         </div>
       </div>
@@ -314,12 +315,12 @@ export default function AdminSystemAppsListPage() {
                   </p>
                 </div>
                 {!search && (
-                  <Link href="/administration/agents/system-agents/apps/new">
+                  <AppLink href="/administration/agents/system-agents/apps/new">
                     <Button>
                       <Plus className="h-4 w-4 mr-2" />
                       Create System App
                     </Button>
-                  </Link>
+                  </AppLink>
                 )}
               </CardContent>
             </Card>
@@ -430,13 +431,13 @@ export default function AdminSystemAppsListPage() {
                           </TableCell>
                           {/* A count is a door: the runs total reaches those runs. */}
                           <TableCell className="text-right text-xs">
-                            <Link
+                            <AppLink
                               href={agentAppExecutionsHref(a.id)}
                               title={`Open the runs and errors for ${a.name}`}
                               className="underline-offset-2 hover:text-primary hover:underline"
                             >
                               {a.total_executions ?? 0}
-                            </Link>
+                            </AppLink>
                           </TableCell>
                           <TableCell className="text-right text-xs text-muted-foreground">
                             {a.updated_at
@@ -468,13 +469,13 @@ export default function AdminSystemAppsListPage() {
                                   className="h-7 w-7 p-0"
                                   title="Open public URL"
                                 >
-                                  <Link
+                                  <AppLink
                                     href={`/p/${a.slug}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                   >
                                     <ExternalLink className="h-3.5 w-3.5" />
-                                  </Link>
+                                  </AppLink>
                                 </Button>
                               )}
                               <Button

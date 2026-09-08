@@ -1,7 +1,7 @@
 "use client";
 
 import React, { ReactNode } from "react";
-import Link from "next/link";
+import AppLink from "@/components/navigation/AppLink";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
@@ -18,12 +18,12 @@ export function DemoPageLayout({ title, description, children, inputSection }: D
             {/* Header */}
             <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-white dark:bg-zinc-900">
                 <div className="flex items-center gap-3 max-w-[1800px] mx-auto">
-                    <Link href="/demos/scraper">
+                    <AppLink href="/demos/scraper">
                         <Button variant="ghost" size="sm" className="h-8 px-2">
                             <ArrowLeft className="w-4 h-4 mr-1" />
                             Back
                         </Button>
-                    </Link>
+                    </AppLink>
                     <div className="flex-1">
                         <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
                         {description && (
