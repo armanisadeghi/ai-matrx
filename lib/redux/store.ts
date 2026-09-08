@@ -30,6 +30,7 @@ import { cloudFilesMutationToastMiddleware } from "@/features/files/redux/mutati
 import { transcriptStudioRealtimeMiddleware } from "@/features/transcript-studio/redux/realtimeMiddleware";
 import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/persistence";
 import { agentCacheBustMiddleware } from "@/features/agents/redux/agent-definition/cache-bust-middleware";
+import { mandateOrgSwitchCacheMiddleware } from "@/features/mandates/redux/org-switch-cache-middleware";
 import { scopeTreeInvalidationMiddleware } from "@/features/scopes/redux/scopeTreeInvalidationMiddleware";
 import { overlayRenderWatchdogMiddleware } from "@/features/window-panels/diagnostics/overlayRenderWatchdog";
 import { windowPersistenceCloseMiddleware } from "@/features/window-panels/persistence/windowPersistenceCloseMiddleware";
@@ -217,6 +218,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         transcriptStudioRealtimeMiddleware,
         pdfStudioPersistenceMiddleware,
         agentCacheBustMiddleware,
+        mandateOrgSwitchCacheMiddleware,
         scopeTreeInvalidationMiddleware,
         windowPersistenceCloseMiddleware,
         overlayRenderWatchdogMiddleware,

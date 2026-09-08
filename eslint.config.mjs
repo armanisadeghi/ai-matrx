@@ -518,6 +518,76 @@ const matrxLintPlugin = {
         };
       },
     },
+    "no-mandate-binding-ladder-query": {
+      meta: {
+        type: "problem",
+        docs: {
+          description:
+            'Disallow reading mandate.binding by principal_type outside the one storage seam and the admin door. THE CLIENT NEVER RESOLVES (D-R1/D-R2, Arman 2026-09-01): the resolution ladder — user -> the ACTIVE org -> system — is walked in exactly ONE place, and a hand-written rung query in the browser is how a UI comes to tell a lie. The deleted copies filtered only on principal_type and named no organization at all, so every user inherited every RLS-visible org binding (measured live 2026-09-07: a non-admin who belongs to no such org reads all 27 system-org rows). Design: common-docs/projects/workflow-mandate-program/DESIGN-one-resolution.md.',
+        },
+        schema: [],
+        messages: {
+          banned:
+            'Hand-written mandate ladder. A `mandate.binding` read filtered by `principal_type` is a resolution rung, and rungs are walked in ONE place: ask `GET /mandates/{key}/resolution` through `resolveMandate` (features/mandates/service.ts), which goes over the org-bound transport and returns the same verdict the server runs on. To LIST bindings, use the scoped list door (`mnd_list_scoped`) via features/mandates/browse or the admin door in features/mandates/admin/service.ts. To WRITE one, use features/mandates/overrides.ts. See common-docs/projects/workflow-mandate-program/DESIGN-one-resolution.md.',
+        },
+      },
+      create(context) {
+        // The seams that are ALLOWED to name a rung, and why each one is:
+        const ALLOWED = [
+          // The binding WRITE path (and the read-back its own writes need).
+          "/features/mandates/overrides.ts",
+          // The admin/console door — the `system` home of the one list door.
+          "/features/mandates/admin/",
+          // The one-binding workspace + batch editor: binding EDITORS, which
+          // are handed their rows by the list door and never query a rung.
+          "/features/bindings/",
+        ];
+        const filename = context.filename || context.getFilename?.() || "";
+        if (ALLOWED.some((p) => filename.includes(p))) return {};
+        // Writes are not resolution.
+        const EXEMPT_RE = /\.(?:insert|update|upsert|delete)\(/;
+        return {
+          CallExpression(node) {
+            const callee = node.callee;
+            // The rung filter itself: `.eq("principal_type", …)`.
+            if (
+              callee.type !== "MemberExpression" ||
+              callee.property.type !== "Identifier" ||
+              callee.property.name !== "eq"
+            ) {
+              return;
+            }
+            const arg = node.arguments[0];
+            if (
+              !arg ||
+              arg.type !== "Literal" ||
+              arg.value !== "principal_type"
+            ) {
+              return;
+            }
+            // Walk to the top of the fluent chain so the text includes the
+            // table accessor below and any write call above.
+            let top = node;
+            while (
+              top.parent &&
+              (top.parent.type === "MemberExpression" ||
+                top.parent.type === "CallExpression" ||
+                top.parent.type === "AwaitExpression")
+            ) {
+              top = top.parent;
+            }
+            const text = context.sourceCode.getText(top);
+            // Only the binding table — `mandateBindings(...)` (the storage
+            // seam) or a raw `.schema("mandate").from("binding")`.
+            const BINDING_TABLE_RE =
+              /\bmandateBindings\s*\(|\.from\(\s*["']binding["']\s*\)|\.from\(\s*["']mandate_binding["']\s*\)/;
+            if (!BINDING_TABLE_RE.test(text)) return;
+            if (EXEMPT_RE.test(text)) return;
+            context.report({ node, messageId: "banned" });
+          },
+        };
+      },
+    },
     "no-banned-lucide-icons": {
       meta: {
         type: "suggestion",
@@ -1441,6 +1511,13 @@ export default [
       // selection come from the agent-definition slice or agx_list_scoped
       // — never a raw agent.definition list query. Error, not warn.
       "matrx/no-raw-agent-list-query": "error",
+      // THE ONE-RESOLUTION LAW (Arman, 2026-09-01): the ladder
+      // user -> ACTIVE org -> system is walked in ONE place; a client that
+      // walks its own rungs is how a screen comes to lie. Error, not warn:
+      // this rule was proven RED on the three hand-written ladders it
+      // killed (features/mandates/service.ts, service.server.ts) before
+      // they were deleted, and the tree is at zero violations.
+      "matrx/no-mandate-binding-ladder-query": "error",
       // THE DOOR LAW (Arman, 2026-08-08): never render an id you can't
       // open. 'warn' because the tree still carries a long tail — the
       // scoreboard at /administration/reporting/dead-ends tracks it down

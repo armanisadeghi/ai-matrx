@@ -1,49 +1,60 @@
 import "server-only";
 
 /**
- * Server-side agent-mandate resolution — the SSR twin of `service.ts`'s
- * `resolveMandate`, for Server Components that must know a mandate's agent
- * before first paint (`/chat/new`, the cx-chat demo pages).
+ * Server-side agent-mandate resolution — the SSR half of the Mandates system,
+ * for Server Components that must paint a mandate's agent before first paint
+ * (`/chat/new`, `/chat/talk`, `/chat/voice`, `/work/new`, the cx-chat demos).
  *
- * Same doctrine as the client resolver (see service.ts): system default
- * (agent.mandate, public-visible) → the caller's OWN user binding
- * (RLS-scoped). Org bindings apply here too (2026-08-26). Floating-only —
- * a version-pinned mandate throws, because the client run path the page hands
- * off to has no version channel.
+ * 🚨 THIS RESOLVES THE SYSTEM RUNG, AND ONLY THE SYSTEM RUNG — deliberately.
+ *
+ * Under the one-resolution ruling (D-R1, Arman 2026-09-01) the middle rung of
+ * the ladder is the caller's ACTIVE organization. A Server Component has no
+ * active organization: there is no Redux app-context, no workspace picker, and
+ * no admitted `X-Organization-Id` — the selection is a browser-side fact that
+ * does not exist yet at render time. So there is no honest org rung to walk
+ * here, and this module does not pretend otherwise.
+ *
+ * WHAT WAS DELETED HERE, 2026-09-07: a hand-written copy of the client's
+ * two-rung ladder, including an `org` binding query that named NO organization
+ * (`principal_type='org'`, newest of five) and therefore applied whichever org
+ * binding RLS happened to expose — measured live, that is every system-org row,
+ * to users who belong to no such org. It was the same defect as the client
+ * resolver's, in a second place, which is why it dies in the same commit rather
+ * than being left as the surviving fork. Live impact of the deletion: none —
+ * `chat.default_new_chat` and `voice.intro` carry ZERO bindings of any rung
+ * (measured 2026-09-07), so every SSR call already answered at the system rung.
+ *
+ * THE CONTRACT WITH THE PAGE. What this returns is the PLATFORM DEFAULT for
+ * first paint, and it says so in the value it hands back: `provenance` is always
+ * `"system"` and `organizationId` is `null`, which is what distinguishes an SSR
+ * placeholder from a real verdict. Every consumer hands off to the browser
+ * (`useMandate` / `resolveMandate`), which asks the server's one resolution door
+ * with the admitted organization and gets the rung that actually runs. A surface
+ * that must NOT paint before the real rung is known should not use this module —
+ * it should render from `useMandate`'s loading state.
+ *
+ * Floating-only, same as the browser: the run path the page hands off to has no
+ * version channel, so a version-pinned default throws rather than running the
+ * wrong row.
  *
  * No module cache: each request resolves fresh through the request-scoped
  * Supabase server client (two indexed single-row reads).
  *
- * A binding whose HOLDER is not an agent (`holder_type='workflow'`) throws
- * here too — such a row carries no `agent_id`, so falling through would paint
- * the system default as though nothing were bound.
- *
- * Failure posture: throws, same as the client resolver. A page that can
- * degrade (render with client-side resolution, or a documented seed) catches
- * and SCREAMS via console.error — never a silent fallback.
+ * Failure posture: throws. A page that can degrade catches and SCREAMS via
+ * console.error — never a silent fallback to a hardcoded id.
  */
 
 import { createClient } from "@/utils/supabase/server";
-import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { toLlmParams } from "./llm-params";
 import { parseMandateContract } from "./contract";
-import {
-  EXECUTABLE_HOLDER_TYPES,
-  holderNotExecutableMessage,
-  parseBindingWave1,
-  parseMandateWave1,
-  type MandateBindingLayer,
-} from "./provision-shapes";
+import { parseMandateWave1 } from "./provision-shapes";
 import type { ResolvedMandate } from "./service";
 import {
-  BINDING_HOLDER_COLUMNS,
+  MANDATE_STORAGE_LABEL,
   contractOfMandate,
-  holderOfBinding,
   holderOfMandate,
   inputKindOfMandate,
   isFloatingMandate,
-  mandateBindings,
   mandateDefinitions,
   mandateTreatments,
 } from "@/lib/supabase/mandateStorage";
@@ -52,27 +63,6 @@ import {
   parseTreatmentConfig,
   type BindingPresentation,
 } from "@/features/bindings/treatment-shape";
-
-/** The HOLDER gate — twin of `service.ts`'s `assertExecutableHolder`; a
- * `workflow` Holder carries no `agent_id`, so without this the binding falls
- * through and SSR paints the system default as if nothing were bound. */
-function assertExecutableHolder(
-  mandateKey: string,
-  layer: MandateBindingLayer,
-  row: object,
-): string {
-  const { holderType } = parseBindingWave1(row);
-  if (!EXECUTABLE_HOLDER_TYPES.has(holderType)) {
-    const bindingId =
-      typeof (row as { id?: unknown }).id === "string"
-        ? (row as { id: string }).id
-        : null;
-    throw new Error(
-      holderNotExecutableMessage(mandateKey, layer, bindingId, holderType),
-    );
-  }
-  return holderType;
-}
 
 export async function resolveMandateServer(
   mandateKey: string,
@@ -92,7 +82,7 @@ export async function resolveMandateServer(
       entity: "mandate",
       reason: "unknown",
       recordId: mandateKey,
-      relation: "agent.mandate",
+      relation: "mandate.definition",
     });
   }
   if (!mandate.is_enabled) {
@@ -101,84 +91,14 @@ export async function resolveMandateServer(
   const systemHolder = holderOfMandate(mandate);
   if (!isFloatingMandate(mandate) || !systemHolder.holderId) {
     throw new Error(
-      `mandate "${mandateKey}" is version-pinned — client-run mandates must be floating (no pinned Holder version); route this consumer through the server, or rebind`,
+      `mandate "${mandateKey}" is version-pinned — a server-rendered mandate must be floating (no pinned Holder version), because the client run path this page hands off to has no version channel; unpin the job's default Holder, or render this surface from useMandate instead of before first paint (${MANDATE_STORAGE_LABEL})`,
     );
   }
 
-  let agentId = systemHolder.holderId;
-  let provenance: ResolvedMandate["provenance"] = "system";
-  let holderType: ResolvedMandate["holderType"] = "agent";
-  let configOverrides: ResolvedMandate["configOverrides"] = null;
-
-  const { data: auth } = await supabase.auth.getUser();
-  const userId = auth.user?.id;
-
-  // THE ORG LAYER — same walk as the client twin (system → org → user; user
-  // wins). This twin skipped org too; both halves changed 2026-08-26.
-  if (userId) {
-    const { data: orgBindings, error: orgError } = await mandateBindings(supabase)
-      .select(
-        `id, ${BINDING_HOLDER_COLUMNS}, config_overrides, is_enabled, updated_at` as const,
-      )
-      .eq("mandate_id", mandate.id)
-      .eq("principal_type", "org")
-      .is("deleted_at", null)
-      .order("updated_at", { ascending: false })
-      .limit(5);
-    if (orgError) throw orgError;
-    const orgBinding = (orgBindings ?? []).find((b) => b.is_enabled) ?? null;
-    if (orgBinding) {
-      holderType = assertExecutableHolder(mandateKey, "organization", orgBinding);
-      const orgHolder = holderOfBinding(orgBinding);
-      if (orgHolder.versionId) {
-        throw new Error(
-          `mandate "${mandateKey}": an organization binding is version-pinned — client-run mandates must be floating; update the binding`,
-        );
-      }
-      if (isJsonObject(orgBinding.config_overrides)) {
-        configOverrides = toLlmParams(orgBinding.config_overrides);
-      }
-      if (orgHolder.holderId) {
-        agentId = orgHolder.holderId;
-        provenance = "org";
-      }
-    }
-  }
-
-  if (userId) {
-    const { data: binding, error: bindingError } = await mandateBindings(supabase)
-      .select(`id, ${BINDING_HOLDER_COLUMNS}, config_overrides, is_enabled` as const)
-      .eq("mandate_id", mandate.id)
-      .eq("principal_type", "user")
-      .eq("subject_user_id", userId)
-      .is("deleted_at", null)
-      .maybeSingle();
-    if (bindingError) throw bindingError;
-    if (binding?.is_enabled) {
-      holderType = assertExecutableHolder(mandateKey, "user", binding);
-      const userHolder = holderOfBinding(binding);
-      if (userHolder.versionId) {
-        throw new Error(
-          `mandate "${mandateKey}": your override is version-pinned — client-run mandates must be floating; update the binding`,
-        );
-      }
-      if (isJsonObject(binding.config_overrides)) {
-        // User wins per key over the org layer (server rule).
-        configOverrides = {
-          ...configOverrides,
-          ...toLlmParams(binding.config_overrides),
-        };
-      }
-      if (userHolder.holderId) {
-        agentId = userHolder.holderId;
-        provenance = "user";
-      }
-    }
-  }
-
-  // THE PRESENTATION LAYER — the SSR twin of the client resolver's read. Both
-  // resolvers must answer the same question the same way, or a job would paint
-  // itself one way before first paint and another after hydration.
+  // THE PRESENTATION LAYER — the SSR twin of the browser resolver's read. Both
+  // must answer the same question the same way, or a job would paint itself one
+  // way before first paint and another after hydration. This is DISPLAY
+  // identity, not a resolution rung: one row, keyed on the job.
   let presentation: BindingPresentation | null = null;
   {
     const { data: treatment, error: treatmentError } = await mandateTreatments(
@@ -204,11 +124,19 @@ export async function resolveMandateServer(
   return {
     mandateKey,
     mandateId: mandate.id,
-    agentId,
-    holderType,
-    configOverrides,
-    provenance,
-    // The same contract the client resolver carries — required variables are a
+    agentId: systemHolder.holderId,
+    holderType: systemHolder.holderType,
+    configOverrides: null,
+    provenance: "system",
+    // NULL is the signal, not an omission: this answer was resolved with no
+    // active organization, so it is the platform default and not a verdict for
+    // any particular workspace. See the module header's contract with the page.
+    organizationId: null,
+    freshness:
+      "Rendered before first paint from the job's own default Holder, with no organization in play. Your workspace's and your own overrides are applied by the browser as soon as this page hydrates.",
+    consumptionMap: null,
+    autoRun: null,
+    // The same contract the browser resolver carries — required variables are a
     // RUN-time precondition on the caller, not only a bind-time check on the
     // agent (disease D4).
     contract: parseMandateContract(contractOfMandate(mandate)),

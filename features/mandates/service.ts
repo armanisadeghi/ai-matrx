@@ -7,22 +7,48 @@
  *
  * Cross-repo system-of-record:
  * /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md
+ * Ruling: /common-docs/projects/workflow-mandate-program/DESIGN-one-resolution.md
  *
- * Resolution here mirrors the aidream funnel's shape, browser-scoped:
- * system default (agent.mandate, public-visible) → the caller's OWN
- * user binding (agent.mandate_binding, RLS returns only rows they can see).
- * Org-layer bindings are deliberately NOT applied client-side yet — the org
- * that owns a run's context is a server-side question; when a client surface
- * needs org bindings it goes through the server resolver, not a guess at the
- * "active org" (access never depends on the active organization).
+ * 🚨 THE CLIENT NEVER RESOLVES (D-R2, Arman 2026-09-01). There is ONE ladder —
+ * user → the ACTIVE org → system — and it is walked in exactly one place. This
+ * module does not walk it: it ASKS, at `GET /mandates/{key}/resolution`, through
+ * the org-bound transport that binds the admitted `X-Organization-Id`
+ * fail-closed. The verdict that comes back (holder, config overrides, rung) is
+ * the same verdict the server itself runs on, so no screen here can differ from
+ * what actually executes.
  *
- * v1 constraint: client mandates must be FLOATING (use_latest) — the client run
- * path (useRunAgent → POST /agents/{id}) has no is_version channel. A
- * version-pinned client mandate throws loudly rather than running the wrong row.
+ * What this module still reads directly, and why it is NOT resolution:
+ *   - the definition row, by key, for the job's IDENTITY (`mandateId`) and its
+ *     code-owned `pins` / `pinnedContext` — one row, no rung, no principal;
+ *   - the treatment row for `presentation` — DISPLAY identity, which the
+ *     doctrine block in `launch-agent-execution.thunk.ts` deliberately leaves
+ *     to the browser (the server owns the run decision, the browser owns how
+ *     the result is painted).
+ * It reads NO binding rows. `mandate.binding` filtered by `principal_type` is
+ * forbidden outside the storage seam and the admin door, and
+ * `matrx/no-mandate-binding-ladder-query` enforces it.
  *
- * Failures are LOUD: unknown mandate, disabled mandate, version-pinned mandate,
- * and a binding whose HOLDER is not an agent all throw. No silent fallback to a
- * hardcoded id — that would hide exactly the breakage this system exists to
+ * WHAT WAS DELETED HERE, 2026-09-07, and must never come back: a hand-written
+ * two-rung ladder (an `org` binding query that named NO organization, so every
+ * user inherited every RLS-visible org binding — measured live: a non-admin who
+ * belongs to neither reads all 27 system-org rows), plus a module doctrine
+ * saying access "never depends on the active organization". D-R1 rules the
+ * opposite: the org rung IS the active org.
+ *
+ * ORG ADMISSION IS PART OF THE ANSWER. Resolution waits for the active-org
+ * bootstrap and then refuses in words when it finishes with no selection —
+ * `MandateOrganizationUnresolvedError`. It never silently answers at the system
+ * rung, because "no org selected yet" and "your org has no override" are
+ * different facts that used to look identical.
+ *
+ * v1 constraint: the client run path (useRunAgent → POST /agents/{id}) has no
+ * `is_version` channel, so a verdict whose winner is VERSION-PINNED cannot run
+ * here. It refuses — and now the refusal names the rung the server chose and
+ * the version it chose, instead of guessing from a row this module read itself.
+ *
+ * Failures are LOUD: unknown mandate, disabled mandate, unresolved organization,
+ * a version-pinned winner, and a non-agent Holder all throw. No silent fallback
+ * to a hardcoded id — that would hide exactly the breakage this system exists to
  * surface.
  */
 
@@ -30,6 +56,13 @@ import { createClient } from "@/utils/supabase/client";
 import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import { getJson } from "@/lib/python-client";
+import { BackendApiError } from "@/lib/api/errors";
+import {
+  peekSelectedOrganizationId,
+  waitForOrganizationAdmission,
+} from "@/lib/api/organization-admission";
+import type { components } from "@/types/python-generated/api-types";
 import { toLlmParams } from "./llm-params";
 import {
   missingRequiredVariables,
@@ -38,24 +71,16 @@ import {
   type MandateContract,
 } from "./contract";
 import {
-  EXECUTABLE_HOLDER_TYPES,
-  holderNotExecutableMessage,
-  parseBindingWave1,
   parseMandateWave1,
-  type MandateBindingLayer,
   type MandateWave1Fields,
 } from "./provision-shapes";
+import type { Json } from "@/types/database.types";
 import type { JsonObject } from "@/types/json";
 import {
-  BINDING_HOLDER_COLUMNS,
   MANDATE_HOLDER_COLUMNS,
   MANDATE_STORAGE_LABEL,
-  contractOfMandate,
-  holderOfBinding,
   holderOfMandate,
-  inputKindOfMandate,
   isFloatingMandate,
-  mandateBindings,
   mandateDefinitions,
   mandateTreatments,
 } from "@/lib/supabase/mandateStorage";
@@ -84,7 +109,35 @@ export interface ResolvedMandate {
    */
   holderType: string;
   configOverrides: Partial<FeLlmParams> | null;
-  provenance: "system" | "org" | "user";
+  /**
+   * WHICH RUNG ANSWERED, straight from the server verdict — the same five
+   * values `resolve_mandate` stamps. `global` is the GLOBAL BINDING rung (a row
+   * somebody edits at runtime) and `system` is the mandate's own default pin;
+   * they are deliberately distinct (V3-CORRECTNESS N1) and this field never
+   * relabels one as the other.
+   */
+  provenance: "system" | "global" | "org" | "user" | "run";
+  /**
+   * The organization the verdict was resolved IN — the caller's ACTIVE org,
+   * admitted by the server. Surfaces that claim "this is what runs for you" name
+   * it, so the sentence is checkable instead of ambient.
+   *
+   * `null` means the answer was resolved with NO organization in play, which
+   * today happens in exactly one place: `resolveMandateServer`, the SSR
+   * first-paint path, where no workspace has been selected yet. A `null` here is
+   * a PLATFORM DEFAULT, not a verdict — a surface claiming "this is what runs
+   * for you" must not print it as one.
+   */
+  organizationId: string | null;
+  /**
+   * The server's own honest staleness bound for this answer, published with it.
+   * Show it rather than implying the verdict is instantaneous.
+   */
+  freshness: string;
+  /** The Provision consumption map the winning rung carries, if any. */
+  consumptionMap: JsonObject | null;
+  /** The behavioural promise the winning binding carries. `null` = no opinion. */
+  autoRun: boolean | null;
   /**
    * The Mandate's declared IO contract. `requiredVariables` is an INPUT
    * PRECONDITION on the caller, not only a bind-time check on the agent: a run
@@ -127,8 +180,33 @@ export interface ResolvedMandate {
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, { at: number; value: ResolvedMandate }>();
 
-function mandateCacheKey(userId: string, mandateKey: string): string {
-  return `${userId}:${mandateKey}`;
+/**
+ * THE CACHE KEY CARRIES THE ORG (review §12). A verdict is only true for one
+ * person in one organization: the org rung is the ACTIVE org, so an entry keyed
+ * on user+key alone serves the previous workspace's answer for up to five
+ * minutes after a switch, and serves a cold tab's pre-bootstrap answer for five
+ * minutes after the real org arrives. `dropMandateCacheForOrgSwitch` then
+ * evicts on the switch itself, so toggling back and forth cannot accumulate two
+ * live answers for one job.
+ */
+function mandateCacheKey(
+  userId: string,
+  organizationId: string,
+  mandateKey: string,
+): string {
+  return `${userId}:${organizationId}:${mandateKey}`;
+}
+
+/**
+ * Drop every cached resolution — wired to the app-context organization change
+ * so a switch cannot serve the old workspace's verdict. Separate from
+ * `invalidateMandateCache` on purpose: this is not a write, so it must NOT
+ * clear `pinCache` (system default pins are org-independent, review §12) and it
+ * still notifies subscribers so mounted consumers re-resolve in the new org.
+ */
+export function dropMandateCacheForOrgSwitch(): void {
+  cache.clear();
+  for (const listener of invalidationListeners) listener(undefined);
 }
 
 /** Subscribers re-resolve when a mandate's cached resolution is invalidated
@@ -158,37 +236,59 @@ export function invalidateMandateCache(mandateKey?: string): void {
   for (const listener of invalidationListeners) listener(mandateKey);
 }
 
+type MandateResolutionResponse =
+  components["schemas"]["MandateResolutionResponse"];
+
 /**
- * REFUSE a binding whose Holder cannot execute — the client half of the
- * server's `EXECUTABLE_HOLDER_TYPES` gate (aidream
- * `services/mandates/service.py`).
+ * NO ORGANIZATION IS ADMITTED YET — a distinct outcome, never a quiet system
+ * answer.
  *
- * A `holder_type='workflow'` binding carries NO `agent_id` by construction, so
- * before this existed it fell straight through the `if (binding.agent_id)`
- * branch below and the resolver returned the SYSTEM DEFAULT agent with
- * `provenance: "system"` — a deliberate binding silently evaporating, and the
- * caller told the platform default was in charge. Refusing loudly is the same
- * posture the server takes, and the only one that surfaces the wiring.
- *
- * Returns the (executable) holder type so the caller can carry it onto
- * `ResolvedMandate`.
+ * The org rung is the ACTIVE org (D-R1). A caller with no selected workspace has
+ * not got a wrong answer, it has got NO answer, and the two used to be
+ * indistinguishable: resolution simply skipped the rung and returned the system
+ * default. Consumers catch this by name to say "pick a workspace" rather than
+ * printing a holder that may not be the one that would run.
  */
-function assertExecutableHolder(
+export class MandateOrganizationUnresolvedError extends Error {
+  readonly code = "mandate_organization_unresolved";
+  constructor(readonly mandateKey: string) {
+    super(
+      `mandate "${mandateKey}" cannot resolve yet: no organization is selected. ` +
+        `Which agent runs this job depends on your active workspace, so there is ` +
+        `no honest answer until one is chosen — select a workspace and try again.`,
+    );
+    this.name = "MandateOrganizationUnresolvedError";
+  }
+}
+
+/**
+ * REFUSE a verdict this client cannot run — the client half of the server's
+ * `EXECUTABLE_HOLDER_TYPES` gate. A `holder_type='workflow'` winner carries NO
+ * `agent_id` by construction; running the system default instead would be a
+ * deliberate binding silently evaporating, with the caller told the platform
+ * default was in charge.
+ */
+function assertRunnableVerdict(
   mandateKey: string,
-  layer: MandateBindingLayer,
-  row: object,
+  verdict: MandateResolutionResponse,
 ): string {
-  const { holderType } = parseBindingWave1(row);
-  if (!EXECUTABLE_HOLDER_TYPES.has(holderType)) {
-    const bindingId =
-      typeof (row as { id?: unknown }).id === "string"
-        ? (row as { id: string }).id
-        : null;
+  const rung = verdict.provenance;
+  if (verdict.holder_type !== "agent" || !verdict.agent_id) {
     throw new Error(
-      holderNotExecutableMessage(mandateKey, layer, bindingId, holderType),
+      `mandate "${mandateKey}": the ${rung} rung names a ${verdict.holder_type} ` +
+        `Holder, and this surface can only run an agent. Rebind the ${rung} rung ` +
+        `to an agent, or route this consumer through the server.`,
     );
   }
-  return holderType;
+  if (verdict.is_version) {
+    throw new Error(
+      `mandate "${mandateKey}": the ${rung} rung is version-pinned ` +
+        `(version ${verdict.agent_id}), and this surface has no channel to run a ` +
+        `pinned version — client-run mandates must be floating. Unpin the ` +
+        `${rung} rung, or route this consumer through the server.`,
+    );
+  }
+  return verdict.agent_id;
 }
 
 export interface ResolveMandateOptions {
@@ -218,10 +318,61 @@ export async function resolveMandate(
     throw new Error("mandate resolution requires an authenticated session");
   }
 
-  const cacheKey = mandateCacheKey(userId, mandateKey);
+  // THE ORGANIZATION IS PART OF THE QUESTION (D-R1). Wait for the active-org
+  // bootstrap — `useMandate`/`useMandateSet` resolve on mount, inside the very
+  // window that used to burn refused requests — and then read the SELECTED org.
+  // Deliberately never `getActiveOrgId()`: its personal-org fallback would
+  // resolve on the personal workspace while a company org is actually selected,
+  // which under this ruling is a DIFFERENT AGENT running.
+  const admission = await waitForOrganizationAdmission();
+  const organizationId = peekSelectedOrganizationId();
+  if (admission !== "ready" || !organizationId) {
+    throw new MandateOrganizationUnresolvedError(mandateKey);
+  }
+
+  const cacheKey = mandateCacheKey(userId, organizationId, mandateKey);
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
 
+  // THE ONE LADDER, ASKED — never walked here. The transport binds the admitted
+  // `X-Organization-Id` fail-closed, so the rung the server picks is the rung of
+  // the org the user actually selected, and it is the same verdict the server
+  // runs on. 404 is the ONLY "this mandate does not exist" answer (the router
+  // maps every other refusal to its own status).
+  let verdict: MandateResolutionResponse;
+  try {
+    const { data } = await getJson<MandateResolutionResponse>(
+      `/mandates/${encodeURIComponent(mandateKey)}/resolution`,
+      { expectedErrorStatuses: options.optional ? [404] : [] },
+    );
+    verdict = data;
+  } catch (error) {
+    if (error instanceof BackendApiError && error.status === 404) {
+      if (options.optional) return null;
+      throw recordUnavailable({
+        entity: "mandate",
+        reason: "unknown",
+        recordId: mandateKey,
+        relation: "mandate.definition",
+      });
+    }
+    throw error;
+  }
+
+  const agentId = assertRunnableVerdict(mandateKey, verdict);
+  const provenance = verdict.provenance;
+  const holderType = verdict.holder_type;
+  const configOverrides: Partial<FeLlmParams> | null = isJsonObject(
+    verdict.config_overrides,
+  )
+    ? toLlmParams(verdict.config_overrides)
+    : null;
+
+  // IDENTITY + CODE-OWNED LEVERS, read straight off the definition row. This is
+  // NOT a rung: one row, addressed by key, no principal and no binding. The job
+  // id is what notes and observations hang off, and `pins`/`pinnedContext` are
+  // code-owned levers the mandate itself declares.
+  //
   // `select("*")` on purpose: the wave-1 columns (provision_key, pins,
   // pinned_context) are live but ahead of the generated Row type — they ride
   // the full row and are narrowed at ingress by `parseMandateWave1`.
@@ -237,93 +388,8 @@ export async function resolveMandate(
       entity: "mandate",
       reason: "unknown",
       recordId: mandateKey,
-      relation: "agent.mandate",
+      relation: "mandate.definition",
     });
-  }
-  if (!mandate.is_enabled) {
-    throw new Error(`mandate "${mandateKey}" is disabled`);
-  }
-  const systemHolder = holderOfMandate(mandate);
-  if (!isFloatingMandate(mandate) || !systemHolder.holderId) {
-    throw new Error(
-      `mandate "${mandateKey}" is version-pinned — client-run mandates must be floating (no pinned Holder version); route this consumer through the server, or rebind`,
-    );
-  }
-
-  let agentId = systemHolder.holderId;
-  let provenance: ResolvedMandate["provenance"] = "system";
-  let holderType: ResolvedMandate["holderType"] = "agent";
-  let configOverrides: Partial<FeLlmParams> | null = null;
-
-  // THE ORG LAYER (2026-08-26 — closed a doctrine fork). The server resolves
-  // system → org → user; this resolver silently skipped org, so an org
-  // binding never applied to client-resolved mandates and every "what applies
-  // to you" display over this path lied. RLS already scopes the read to org
-  // bindings of orgs the caller belongs to. Deterministic winner: newest.
-  if (userId) {
-    const { data: orgBindings, error: orgError } = await mandateBindings(supabase)
-      .select(
-        `id, ${BINDING_HOLDER_COLUMNS}, config_overrides, is_enabled, updated_at` as const,
-      )
-      .eq("mandate_id", mandate.id)
-      .eq("principal_type", "org")
-      .is("deleted_at", null)
-      .order("updated_at", { ascending: false })
-      .limit(5);
-    if (orgError) throw orgError;
-    const orgBinding = (orgBindings ?? []).find((b) => b.is_enabled) ?? null;
-    if (orgBinding) {
-      // THE HOLDER GATE, first — before a single field of a non-executable
-      // binding is applied. The server refuses before merging too.
-      holderType = assertExecutableHolder(mandateKey, "organization", orgBinding);
-      if (isJsonObject(orgBinding.config_overrides)) {
-        configOverrides = toLlmParams(orgBinding.config_overrides);
-      }
-      const orgHolder = holderOfBinding(orgBinding);
-      if (orgHolder.versionId) {
-        throw new Error(
-          `mandate "${mandateKey}": an organization binding is version-pinned — client-run mandates must be floating; update the binding`,
-        );
-      }
-      if (orgHolder.holderId) {
-        agentId = orgHolder.holderId;
-        provenance = "org";
-      }
-    }
-  }
-
-  // The caller's own user binding (RLS-scoped; other principals' rows are
-  // invisible so no explicit user filter is needed beyond principal_type).
-  // User wins over org — the same precedence the server walks.
-  if (userId) {
-    const { data: binding, error: bindingError } = await mandateBindings(supabase)
-      .select(`id, ${BINDING_HOLDER_COLUMNS}, config_overrides, is_enabled` as const)
-      .eq("mandate_id", mandate.id)
-      .eq("principal_type", "user")
-      .eq("subject_user_id", userId)
-      .is("deleted_at", null)
-      .maybeSingle();
-    if (bindingError) throw bindingError;
-    if (binding?.is_enabled) {
-      holderType = assertExecutableHolder(mandateKey, "user", binding);
-      if (isJsonObject(binding.config_overrides)) {
-        // Merge upward — user wins per key over the org layer (server rule).
-        configOverrides = {
-          ...configOverrides,
-          ...toLlmParams(binding.config_overrides),
-        };
-      }
-      const userHolder = holderOfBinding(binding);
-      if (userHolder.versionId) {
-        throw new Error(
-          `mandate "${mandateKey}": your override is version-pinned — client-run mandates must be floating; update the binding`,
-        );
-      }
-      if (userHolder.holderId) {
-        agentId = userHolder.holderId;
-        provenance = "user";
-      }
-    }
   }
 
   // THE PRESENTATION LAYER. One row per job (`tier='widget'`, `is_default`),
@@ -359,10 +425,20 @@ export async function resolveMandate(
     holderType,
     configOverrides,
     provenance,
-    contract: parseMandateContract(contractOfMandate(mandate)),
-    inputKind: inputKindOfMandate(mandate),
-    outputKind: mandate.output_kind,
-    provisionKey: wave1.provisionKey,
+    organizationId,
+    freshness: verdict.freshness,
+    consumptionMap: isJsonObject(verdict.consumption_map)
+      ? verdict.consumption_map
+      : null,
+    autoRun: verdict.auto_run ?? null,
+    // The contract, input kind and output kind come from the SERVER VERDICT —
+    // it applies the fallback chain, so for the 33 definitions carrying a
+    // `fallback_mandate_key` these describe the mandate that actually answered,
+    // which the local definition row cannot know (review §4).
+    contract: parseMandateContract(verdict.contract as Json),
+    inputKind: verdict.input_kind,
+    outputKind: verdict.output_kind,
+    provisionKey: verdict.provision_key,
     pins: wave1.pins,
     pinnedContext: wave1.pinnedContext,
     presentation,
