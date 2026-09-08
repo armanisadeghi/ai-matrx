@@ -52,7 +52,7 @@ importers:
         version: 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/messaging':
         specifier: latest
-        version: 0.10.1(@supabase/supabase-js@2.108.2)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.10.2(@supabase/supabase-js@2.108.2)(react@19.2.7)
       '@ai-matrx/print':
         specifier: latest
         version: 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -935,8 +935,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/messaging@0.10.1':
-    resolution: {integrity: sha512-Y02zX1RbBo0AexPtwx4QFS7NS70QaaMs5hqEiKQfxNtIALKMoVHJ9QLzYyNMzp1bAOkpmaZBVR7WfGAZ0DesaA==}
+  '@ai-matrx/messaging@0.10.2':
+    resolution: {integrity: sha512-/khxQxP0bSot95iQraUltsBXTqLjLB9buG8ayvMNUT2YVzRZTolTUd6aTzVWJpb05w3bO+5Lnafmr+4mJoL2mg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -13687,18 +13687,15 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@ai-matrx/messaging@0.10.1(@supabase/supabase-js@2.108.2)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@ai-matrx/messaging@0.10.2(@supabase/supabase-js@2.108.2)(react@19.2.7)':
     dependencies:
       '@ai-matrx/agents': 0.6.2(@supabase/supabase-js@2.108.2)(react@19.2.7)
-      '@ai-matrx/kit': 0.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@ai-matrx/kit': 0.9.0(react@19.2.7)
       '@ai-matrx/realtime': 0.7.1(react@19.2.7)
     optionalDependencies:
       react: 19.2.7
     transitivePeerDependencies:
       - '@supabase/supabase-js'
-      - '@types/react'
-      - '@types/react-dom'
-      - react-dom
       - react-native
 
   '@ai-matrx/print@0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':

@@ -57,8 +57,16 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 - The detail header keeps Back and Open page fixed around a single-line fading
   title. Its only metadata line is the compact repository → domain → feature
   hierarchy; status is not repeated above the stage rail.
+- The stage rail is a compact, horizontally scrollable stepper. Completed,
+  current, and future stages read as one sequence instead of six equal cards
+  competing with the review itself.
 - The embedded review conversation allows either side's message bubble to use
   up to 80% of the transcript width so long review instructions remain readable.
+- The workspace owns the review title and discussion label, so its embedded
+  conversation hides the package's duplicate participant header and unrelated
+  conversation-AI bar. Both the discussion reply and decision note use the
+  canonical `ProTextarea`; messaging still owns draft, reply, typing, Enter,
+  and send behavior through the package's composer-render seam.
 - Data is labeled by columns. Status, classification, and repository never appear as unexplained chips whose absence hides missing data.
 - Opening an item changes the route. The detail page owns the stage rail, target-page door, full conversation, and human actions.
 - The same conversation appears in `/messages/[conversationId]`; Agent Review embeds the canonical messaging thread rather than cloning chat state.
@@ -126,6 +134,13 @@ no-unapproved-schedules law.
 
 ## Change log
 
+- 2026-09-08 — Rebuilt the item workspace after a live browser failure: loaded
+  the messaging package's required structural CSS, mapped it to app theme
+  tokens, replaced the oversized six-card rail with a compact stepper, removed
+  duplicate conversation chrome, and put the canonical `ProTextarea` in the
+  discussion composer. Adopted `@ai-matrx/messaging` 0.10.2 so flat canonical
+  agent actor metadata can no longer borrow the human audit principal's avatar,
+  alignment, grouping, or delivery tick.
 - 2026-09-08 — Removed the generic Agent Review subtitle; the list header now
   presents only the page title and its actions.
 - 2026-09-08 — Marked the compact Open door as table control chrome so the

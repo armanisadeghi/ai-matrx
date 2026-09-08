@@ -164,19 +164,16 @@ export default function AgentReviewWorkspace({
   // The draft target stages prose into the SAME buffer the human types into.
   // Nothing is saved and no status moves — Request changes / Approve / Run
   // agent review again stay human button presses.
-  useSurfaceWriteHandlers(
-    row ? ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME : null,
-    {
-      review_feedback_draft: (value: unknown) => {
-        if (typeof value !== "string") {
-          throw new Error(
-            "review_feedback_draft expects the full replacement text as a plain string.",
-          );
-        }
-        setFeedback(value);
-      },
+  useSurfaceWriteHandlers(row ? ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME : null, {
+    review_feedback_draft: (value: unknown) => {
+      if (typeof value !== "string") {
+        throw new Error(
+          "review_feedback_draft expects the full replacement text as a plain string.",
+        );
+      }
+      setFeedback(value);
     },
-  );
+  });
 
   const currentStage = STAGES.findIndex(
     (stage) => row && stage.statuses.includes(row.status as ReviewStatus),
@@ -186,7 +183,9 @@ export default function AgentReviewWorkspace({
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="max-w-md rounded-lg border border-destructive/30 bg-card p-5">
-          <h1 className="font-semibold text-destructive">Review failed to load</h1>
+          <h1 className="font-semibold text-destructive">
+            Review failed to load
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">{error}</p>
           <Button className="mt-4" size="sm" onClick={() => void refresh()}>
             Try again
@@ -246,12 +245,12 @@ export default function AgentReviewWorkspace({
           </Button>
 
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-base font-semibold sm:text-lg" title={row.title}>
+            <h1
+              className="truncate text-base font-semibold sm:text-lg"
+              title={row.title}
+            >
               {row.title}
             </h1>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
-              {REVIEW_STATUS_LABELS[status]}
-            </p>
           </div>
 
           <Button asChild size="sm" variant="outline" className="shrink-0">
@@ -335,7 +334,9 @@ export default function AgentReviewWorkspace({
               surfaceName={ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME}
               showHeader={false}
               showAi={false}
-              {...(getReviewScope ? { getApplicationScope: getReviewScope } : {})}
+              {...(getReviewScope
+                ? { getApplicationScope: getReviewScope }
+                : {})}
             />
           ) : (
             <div className="m-4 rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
