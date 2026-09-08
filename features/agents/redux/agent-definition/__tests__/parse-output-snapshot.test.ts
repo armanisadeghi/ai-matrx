@@ -160,6 +160,45 @@ describe("parseAgentVersionSnapshot", () => {
     });
   });
 
+  it("quarantines malformed sibling fields independently instead of throwing", () => {
+    const raw = validSnapshotRow();
+    raw.messages = { broken: true };
+    raw.variable_definitions = "broken";
+    raw.model_tiers = { default: 42 };
+    raw.output_schema = { name: "answer", schema: [] };
+    raw.tools = ["ok", 42];
+    raw.tags = "broken";
+    raw.mcp_servers = [false];
+    raw.tool_config = [];
+    raw.matrx_actions = { auto_apply: "yes" };
+    raw.ui_gates = { file_urls: "yes" };
+
+    const parsed = parseAgentVersionSnapshot(raw);
+
+    expect(parsed.messages).toEqual([]);
+    expect(parsed.variable_definitions).toBeNull();
+    expect(parsed.model_tiers).toBeNull();
+    expect(parsed.output_schema).toBeNull();
+    expect(parsed.tools).toEqual([]);
+    expect(parsed.tags).toEqual([]);
+    expect(parsed.mcp_servers).toEqual([]);
+    expect(parsed.tool_config).toEqual({});
+    expect(parsed.matrx_actions).toEqual({});
+    expect(parsed.ui_gates).toEqual({});
+    expect(parsed.data_issues?.map((issue) => issue.field)).toEqual([
+      "output_schema",
+      "messages",
+      "variable_definitions",
+      "model_tiers",
+      "tools",
+      "tags",
+      "mcp_servers",
+      "tool_config",
+      "matrx_actions",
+      "ui_gates",
+    ]);
+  });
+
   // `skill_config` is NOT NULL default `'{}'::jsonb`, so a config with none of
   // the four keys is the DB's own default. Demanding all four threw
   // "skill_config.included must be an array of strings" on every agent that had
