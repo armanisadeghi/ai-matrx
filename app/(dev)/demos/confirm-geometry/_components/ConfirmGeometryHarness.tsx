@@ -74,6 +74,7 @@ type Measurement = {
   /** Positive = the footer paints over the description by this many px. */
   overlapPx: number;
   cardScrolls: boolean;
+  measuredAtScrollBottom: boolean;
   scrollHeight: number;
   clientHeight: number;
   viewportHeight: number;
@@ -84,6 +85,10 @@ type Measurement = {
 export function ConfirmGeometryHarness() {
   const [openId, setOpenId] = React.useState<string | null>(null);
   const [results, setResults] = React.useState<Measurement[] | null>(null);
+  // The api object is handed out once and cached by whoever grabbed it, so the
+  // open case has to be read through a ref rather than an effect closure.
+  const openIdRef = React.useRef<string | null>(null);
+  openIdRef.current = openId;
 
   React.useEffect(() => {
     const measure = (): Measurement | null => {
@@ -99,17 +104,27 @@ export function ConfirmGeometryHarness() {
         '[data-slot="alert-dialog-footer"]',
       );
       if (!description || !footer) return null;
+      const cardScrolls = dialog.scrollHeight > dialog.clientHeight;
+      // THE INVARIANT, stated for both cases. A card that does not scroll must
+      // never let the footer cover the description at rest. A card that DOES
+      // scroll may put the description under the footer — that is what a sticky
+      // footer is for — but only if scrolling all the way down reveals it, so
+      // the measurement is taken at the bottom of the scroll.
+      if (cardScrolls) dialog.scrollTop = dialog.scrollHeight;
       const descriptionBottom = description.getBoundingClientRect().bottom;
       const footerTop = footer.getBoundingClientRect().top;
       const overlapPx = Number((descriptionBottom - footerTop).toFixed(2));
-      const active = CASES.find((c) => c.id === openId);
+      const current = openIdRef.current;
+      const active = CASES.find((c) => c.id === current);
       return {
-        id: openId ?? "unknown",
+        id: current ?? "unknown",
         lines: active?.lines ?? 0,
         descriptionBottom: Number(descriptionBottom.toFixed(2)),
         footerTop: Number(footerTop.toFixed(2)),
         overlapPx,
-        cardScrolls: dialog.scrollHeight > dialog.clientHeight,
+        cardScrolls,
+        /** Measured at the bottom of the scroll when the card scrolls. */
+        measuredAtScrollBottom: cardScrolls,
         scrollHeight: dialog.scrollHeight,
         clientHeight: dialog.clientHeight,
         viewportHeight: window.innerHeight,
@@ -157,7 +172,7 @@ export function ConfirmGeometryHarness() {
       delete (window as unknown as { __confirmGeometry?: unknown })
         .__confirmGeometry;
     };
-  }, [openId]);
+  }, []);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 p-6">
@@ -170,7 +185,9 @@ export function ConfirmGeometryHarness() {
             await window.__confirmGeometry.runAll()
           </code>{" "}
           in the console. Pass = overlapPx &le; 0 for every line count, in light
-          and dark, at any viewport height.
+          and dark, at any viewport height — measured at rest when the card does
+          not scroll, and at the bottom of the scroll when the viewport (never
+          the footer) forces it to.
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
