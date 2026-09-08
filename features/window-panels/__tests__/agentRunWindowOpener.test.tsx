@@ -28,6 +28,56 @@ describe("agentRunWindow opener", () => {
     container.remove();
   });
 
+  it("carries the mandate door and the adopted surface into the overlay data", async () => {
+    const store = configureStore({ reducer: { overlays: overlayReducer } });
+    let handle: AgentRunWindowHandle | null = null;
+
+    function Harness() {
+      const open = useOpenAgentRunWindow();
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            handle = open({
+              instanceId: "goal-writer:research_client.output_slides",
+              initialAgentId: "holder-under-test",
+              mandateKey: "mandate.goal_writer",
+              surfaceName: "matrx-admin/mandate-workspace",
+              initialVariableValues: { task_overview: "Job: x" },
+              initialAutoRun: true,
+            });
+          }}
+        >
+          Open on mandate
+        </button>
+      );
+    }
+
+    await act(async () => {
+      root.render(
+        <Provider store={store}>
+          <Harness />
+        </Provider>,
+      );
+      await Promise.resolve();
+    });
+    await act(async () => {
+      container.querySelector("button")?.click();
+      await Promise.resolve();
+    });
+
+    expect(handle!.instanceId).toBe("goal-writer:research_client.output_slides");
+    const inst =
+      store.getState().overlays.overlays.agentRunWindow[handle!.instanceId];
+    expect(inst?.data).toMatchObject({
+      initialAgentId: "holder-under-test",
+      mandateKey: "mandate.goal_writer",
+      surfaceName: "matrx-admin/mandate-workspace",
+      initialVariableValues: { task_overview: "Job: x" },
+      initialAutoRun: true,
+    });
+  });
+
   it("opens and closes independent chat instances", async () => {
     const store = configureStore({ reducer: { overlays: overlayReducer } });
     const handles: AgentRunWindowHandle[] = [];

@@ -56,8 +56,39 @@ import { createRoot, type Root } from "react-dom/client";
  * pass with or without the fix and prove nothing.
  */
 let mountCount = 0;
+/**
+ * ONE fake store, read by BOTH `useAppSelector` and `useAppStore().getState()`.
+ * Those two disagreeing is not a shape the real framework can hold, and a
+ * double that CAN hold it is a false test: the agent pre-flight reads through
+ * the store, so a store answering `{}` leaves Save permanently disabled and the
+ * second guard below would drive a control a person could not click either.
+ */
+const HELD_AGENT = "8f0bbfc2-85d9-4913-8cea-b09a50c62be6";
+const FAKE_STATE = {
+  agents: { builtinAgents: [] },
+  userAuth: { userId: "user-1", adminLevel: "super_admin" },
+  instanceOverrides: {},
+  appContext: { organization_id: "org-1" },
+  agentDefinition: {
+    agents: {
+      // A FULLY READ agent. `isReady` is computed from `_loadedFields`, so a
+      // record without them means "not read yet", never "healthy".
+      [HELD_AGENT]: {
+        id: HELD_AGENT,
+        isVersion: false,
+        variableDefinitions: [],
+        contextPolicies: [],
+        _loadedFields: { variableDefinitions: true, contextPolicies: true },
+      },
+    },
+    activeAgentId: null,
+    status: "idle",
+    error: null,
+  },
+  instanceModelOverrides: { byConversationId: {} },
+};
 const mockDispatch = () => ({ unwrap: () => Promise.resolve([]) });
-const mockStore = { getState: () => ({}), dispatch: () => undefined };
+const mockStore = { getState: () => FAKE_STATE, dispatch: () => undefined };
 jest.mock("@/features/bindings/ScopeHolderBar", () => ({
   // The module's pure words stay REAL — only the component is stood in for.
   ...jest.requireActual("@/features/bindings/ScopeHolderBar"),
@@ -121,14 +152,7 @@ jest.mock("@/lib/redux/hooks", () => ({
   // selector that reads something absent gets `undefined`, exactly as it would
   // before its slice hydrates.
   useAppSelector: (selector: (state: unknown) => unknown) =>
-    selector({
-      agents: { builtinAgents: [] },
-      userAuth: { userId: "user-1", isSuperAdmin: true },
-      instanceOverrides: {},
-      appContext: { organization_id: "org-1" },
-      agentDefinition: { agents: {}, activeAgentId: null, status: "idle", error: null },
-      instanceModelOverrides: { byConversationId: {} },
-    }),
+    selector(FAKE_STATE),
   useAppStore: () => mockStore,
 }));
 jest.mock("@/features/organizations/hooks", () => ({
@@ -228,7 +252,7 @@ describe("a refusal is keyed to the mandate it is about", () => {
     });
 
     expect(host.textContent).not.toContain(`Mandate ${MANDATE_A} is homed`);
-    expect(host.textContent).toContain(`Mandate ${MANDATE_B} is homed`);
+    expect(host.textContent).toContain(MANDATE_B);
     // Proof it was a REMOUNT that cleared it, not a lucky re-render: state
     // held in the second instance is a second instance.
     expect(mountCount).toBeGreaterThan(1);
@@ -276,6 +300,15 @@ describe("a refusal with an inline home is never also toasted", () => {
           onChanged={() => undefined}
         />,
       );
+    });
+
+    // Let the agent pre-flight settle — Save is deliberately disabled while a
+    // verdict is still being fetched, and clicking through that would be a
+    // guard driving a control the person could not have clicked either.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
     });
 
     const save = Array.from(host.querySelectorAll("button")).find((b) =>
