@@ -361,8 +361,7 @@ export function WorkflowListDropdown({
             <div className="min-h-0 flex-1">{listPanel}</div>
           </div>
           <div
-            className="flex w-[340px] shrink-0 flex-col overflow-hidden"
-            style={{ height: PANEL_HEIGHT }}
+            className="flex h-full w-[340px] shrink-0 flex-col overflow-hidden"
             onMouseEnter={
               rightPanel === "detail"
                 ? core.handleDetailPanelMouseEnter

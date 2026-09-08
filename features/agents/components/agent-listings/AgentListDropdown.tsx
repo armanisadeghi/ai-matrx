@@ -371,8 +371,7 @@ export function AgentListDropdown({
             {listPanel}
           </div>
           <div
-            className="w-[340px] shrink-0 overflow-hidden flex flex-col"
-            style={{ height: PANEL_HEIGHT }}
+            className="h-full w-[340px] shrink-0 overflow-hidden flex flex-col"
             onMouseEnter={
               rightPanel === "detail" ? handleDetailPanelMouseEnter : undefined
             }
