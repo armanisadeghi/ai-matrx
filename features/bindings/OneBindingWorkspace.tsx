@@ -862,6 +862,12 @@ function BindingDraft({
    */
   const writesForEveryone =
     rung === "global" || (systemHost && answerRecord === "global-binding");
+  /** The rung the SAVE actually wrote — what the receipt must name. */
+  const savedRung: WorkspaceRung = writingDefinitionDefault
+    ? DEFAULT_HOLDER_RUNG
+    : writesForEveryone
+      ? "global"
+      : rung;
 
   /**
    * Why Save cannot act WHEN THE ANSWER IS THE DEFINITION'S OWN DEFAULT —
@@ -1043,10 +1049,10 @@ function BindingDraft({
   function announceSaved(report: BindingWriteReport | null) {
     const notes = report?.notes ?? [];
     if (notes.length === 0) {
-      toast.success(savedWords(rung, defaultHolderOffer.label));
+      toast.success(savedWords(savedRung, defaultHolderOffer.label));
       return;
     }
-    toast.warning(savedWords(rung, defaultHolderOffer.label), {
+    toast.warning(savedWords(savedRung, defaultHolderOffer.label), {
       description: notes.join(" "),
       duration: 12_000,
     });
@@ -1128,7 +1134,7 @@ function BindingDraft({
             data.agentsById[writingAgentId]?.name ?? "the selected agent",
           versionId: bindAgentId ? null : holder.useLatest ? null : holder.agentVersionId,
           useLatest: bindAgentId ? true : holder.useLatest,
-          successMessage: savedWords(rung, defaultHolderOffer.label),
+          successMessage: savedWords(savedRung, defaultHolderOffer.label),
         });
         return;
       }
@@ -2201,6 +2207,11 @@ function effectiveAgentId(
 }
 
 function savedWords(rung: WorkspaceRung, defaultHolderLabel?: string): string {
+  // 🚨 THE RECEIPT NAMES THE ROW THAT NOW EXISTS (FIX-R13/A). The caller passes
+  // `"global"` whenever `systemAnswerRecord()` sent the write to the
+  // platform-wide binding, even while the page stands on the bottom rung —
+  // otherwise the toast would say "the job's own default now names who runs
+  // this job" about a row that was never touched.
   switch (rung) {
     case DEFAULT_HOLDER_RUNG:
       // Named by its HOME, because "the default" alone does not say whose.
