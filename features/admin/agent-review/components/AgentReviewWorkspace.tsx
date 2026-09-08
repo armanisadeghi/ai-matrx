@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { ChatThread } from "@/features/messaging/components/ChatThread";
+import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
@@ -287,12 +287,9 @@ export default function AgentReviewWorkspace({
       <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <section className="min-h-0 border-r">
           {row.conversation_id ? (
-            <ChatThread
+            <ConversationPane
               conversationId={row.conversation_id}
-              userId={user?.id ?? undefined}
-              displayName="Arman"
               className="h-full"
-              messageBubbleClassName="max-w-[80%] md:max-w-[80%]"
             />
           ) : (
             <div className="p-6 text-sm text-destructive">

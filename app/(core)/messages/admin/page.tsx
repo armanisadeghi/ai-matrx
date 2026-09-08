@@ -58,67 +58,67 @@ const MESSAGES_ADMIN_MAP: FeatureAdminMap = {
   ],
   components: [
     {
-      name: "ConversationList",
-      filePath: "features/messaging/components/ConversationList.tsx",
+      name: "ConversationListPane",
+      filePath: "features/messaging/components/ConversationListPane.tsx",
       description:
-        "Canonical paginated conversation inventory shared by the route and Messages window.",
+        "@ai-matrx/messaging's conversation list inside this app's v3 right-click menu and surface scope. Shared by the route, the side sheet and the Messages window.",
       status: "Live",
       tier: "internal",
     },
     {
-      name: "ChatThread",
-      filePath: "features/messaging/components/ChatThread.tsx",
+      name: "ConversationPane",
+      filePath: "features/messaging/components/ConversationPane.tsx",
       description:
-        "Canonical realtime transcript, typing state, pagination, context menu, and composer host.",
+        "@ai-matrx/messaging's conversation thread (transcript, typing, presence, composer, outbox) inside this app's right-click menu.",
       status: "Live",
       tier: "internal",
     },
     {
-      name: "MessageBubble",
-      filePath: "features/messaging/components/MessageBubble.tsx",
+      name: "MessagingChrome",
+      filePath: "features/messaging/components/MessagingChrome.tsx",
       description:
-        "Actor-aware message renderer with delivery status and registered action chips.",
+        "The wrappers the package renders around its own bubbles and rows: the data attributes the menu resolves its target from, and this app's ```matrx fence renderer.",
       status: "Live",
       tier: "internal",
     },
     {
-      name: "MessageInput",
-      filePath: "features/messaging/components/MessageInput.tsx",
-      description:
-        "Human-gated message composer with reference attachments and quote insertion.",
+      name: "MessagingSideSheet",
+      filePath: "features/messaging/components/MessagingSideSheet.tsx",
+      description: "The docked messages sheet — app frame around the same two panes.",
       status: "Live",
       tier: "internal",
     },
     {
       name: "NewConversationDialog",
       filePath: "features/messaging/components/NewConversationDialog.tsx",
-      description: "User picker and direct-conversation creation flow.",
+      description:
+        "User picker; resolves the 1:1 conversation atomically through the package.",
       status: "Live",
       tier: "internal",
     },
     {
-      name: "MessagingInitializer",
-      filePath: "features/messaging/components/MessagingInitializer.tsx",
+      name: "MessagingHost",
+      filePath: "providers/MessagingHost.tsx",
       description:
-        "Single authenticated bootstrap and global realtime synchronization boundary.",
+        "THE ONE @ai-matrx/messaging mount, inside RealtimeHost so it rides the app's single realtime manager. Injects identity and app chrome only.",
       status: "Live",
       tier: "internal",
     },
     {
-      name: "Messaging action registry",
-      filePath: "features/messaging/actions/messageActionRegistry.tsx",
+      name: "Messaging action surfaces",
+      filePath: "features/messaging/actions/messageActionSurfaces.tsx",
       description:
-        "Typed, authorized action renderers carried by durable message payloads.",
+        "This app's card/chip surfaces for its actionable-message kinds, handed to the package as actionRenderers. An unknown kind or version renders nothing.",
       status: "Live",
       tier: "internal",
     },
   ],
   reduxSlices: [
     {
-      name: "messaging",
-      filePath: "features/messaging/redux/messagingSlice.ts",
+      name: "messagingUi",
+      filePath: "features/messaging/redux/messagingUiSlice.ts",
       description:
-        "Conversation inventory, selection, unread counts, loading and availability state.",
+        "The side sheet's open state and dragged width — app chrome only. Conversations, unread counts and the active conversation live in @ai-matrx/messaging's store, never mirrored here.",
     },
   ],
   relatedFeatures: [

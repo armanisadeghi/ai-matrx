@@ -1,19 +1,22 @@
 "use client";
 
+/**
+ * The floating Messages window — the SAME panes the /messages route renders
+ * (A PANEL WRAPS THE CANONICAL COMPONENT). Nothing about a conversation is
+ * drawn twice in this repo.
+ */
+
 import React, { useCallback, useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import {
-  selectCurrentConversationId,
-  selectCurrentConversation,
-  setCurrentConversation,
-} from "@/features/messaging/redux/messagingSlice";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { ConversationList } from "@/features/messaging/components/ConversationList";
-import { ChatThread } from "@/features/messaging/components/ChatThread";
 import { MessageSquare, Plus } from "lucide-react";
+import { asConversationId } from "@ai-matrx/messaging";
+import { useConversations, useMessagingHost, useMessagingSnapshot } from "@ai-matrx/messaging/react";
+import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { ConversationListPane } from "@/features/messaging/components/ConversationListPane";
+import { ConversationPane } from "@/features/messaging/components/ConversationPane";
+import { NewConversationDialog } from "@/features/messaging/components/NewConversationDialog";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { MESSAGES_SURFACE_NAME } from "@/features/messaging/lib/messaging-menu-actions";
+import { useMessagesSurfaceScope } from "@/features/messaging/lib/useMessagesSurfaceScope";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 
 interface MessagesWindowProps {
@@ -27,48 +30,42 @@ export default function MessagesWindow({
   onClose,
   conversationId,
 }: MessagesWindowProps) {
-  const dispatch = useAppDispatch();
-  const user = useAppSelector(selectUser);
-  const userId = user?.id;
-  const displayName =
-    user?.userMetadata?.fullName ||
-    user?.userMetadata?.name ||
-    user?.email?.split("@")[0] ||
-    "User";
+  const host = useMessagingHost();
+  const snapshot = useMessagingSnapshot();
+  const { conversations } = useConversations();
 
-  const activeConversationId = useAppSelector(selectCurrentConversationId);
-  const activeConversation = useAppSelector(selectCurrentConversation);
+  const activeConversationId = snapshot?.activeConversationId ?? null;
+  const activeConversation =
+    conversations.find((item) => item.conversation.id === activeConversationId) ?? null;
+  const getScope = useMessagesSurfaceScope(activeConversationId ?? undefined);
 
-  // Hoisted at the window root (composition-root pattern): both the sidebar's
-  // own "+" button AND the body empty-state's context-menu item drive the
-  // SAME dialog instance, rather than each owning a separate one.
+  // Hoisted at the window root (composition-root pattern): the sidebar's "+"
+  // button AND the empty state's menu item drive the SAME dialog instance.
   const [newConversationOpen, setNewConversationOpen] = useState(false);
 
-  // Honor seeded conversationId once on open.
+  // Honor a seeded conversationId once on open.
   useEffect(() => {
+    if (host === null) return;
     if (conversationId && conversationId !== activeConversationId) {
-      dispatch(setCurrentConversation(conversationId));
+      void host.engine.openConversation(asConversationId(conversationId));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]);
+  }, [conversationId, host]);
 
   const handleSelect = useCallback(
     (id: string) => {
-      dispatch(setCurrentConversation(id));
+      void host?.engine.openConversation(asConversationId(id));
     },
-    [dispatch],
+    [host],
   );
 
   const collectData = useCallback(
-    () => ({
-      conversationId: activeConversationId ?? null,
-    }),
+    () => ({ conversationId: activeConversationId ?? null }),
     [activeConversationId],
   );
 
   // Window-level extra section, DENSITY LAW: labels only. The one action the
-  // empty state makes obvious — everything else (copy/export/AI) already
-  // comes from the core menu acting on the resolved placeholder content.
+  // empty state makes obvious — copy/export/AI already come from the core menu.
   const emptyStateSection: ContextMenuExtraSection = {
     id: "messages-empty",
     label: "Messages",
@@ -89,8 +86,8 @@ export default function MessagesWindow({
   return (
     <WindowPanel
       title={
-        activeConversation?.display_name
-          ? `Messages — ${activeConversation.display_name}`
+        activeConversation
+          ? `Messages — ${activeConversation.displayName}`
           : "Messages"
       }
       width={900}
@@ -98,13 +95,11 @@ export default function MessagesWindow({
       minWidth={520}
       minHeight={360}
       sidebar={
-        <ConversationList
-          userId={userId ?? undefined}
-          activeConversationId={activeConversationId}
-          onSelectConversation={handleSelect}
+        <ConversationListPane
           className="h-full"
-          newConversationOpen={newConversationOpen}
-          onNewConversationOpenChange={setNewConversationOpen}
+          onSelect={handleSelect}
+          onNewConversation={() => setNewConversationOpen(true)}
+          getApplicationScope={getScope}
         />
       }
       sidebarDefaultSize={280}
@@ -116,20 +111,24 @@ export default function MessagesWindow({
       overlayId="messagesWindow"
       onCollectData={collectData}
     >
+      <NewConversationDialog
+        open={newConversationOpen}
+        onOpenChange={setNewConversationOpen}
+        onCreated={handleSelect}
+      />
       {activeConversationId ? (
-        <ChatThread
+        <ConversationPane
           conversationId={activeConversationId}
-          userId={userId ?? undefined}
-          displayName={displayName}
           className="h-full"
+          getApplicationScope={getScope}
         />
       ) : (
         /*
-          🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). The two
-          populated panes carry theirs (`ConversationList` / `ChatThread`), but
-          this empty state is body chrome that belongs to the WINDOW — without
-          a menu here a right-click was answered by whatever page happened to
-          be underneath, handing the user THAT page's surface and agents.
+          🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). The populated
+          panes carry theirs; this empty state is body chrome that belongs to
+          the WINDOW — without a menu here a right-click is answered by whatever
+          page happens to be underneath, handing the user THAT page's surface
+          and agents.
         */
         <NonEditableContextMenu
           sourceFeature="messages"
@@ -143,14 +142,14 @@ export default function MessagesWindow({
           // Attach To / Share to target — correctly absent, not missing.
           extraSections={[emptyStateSection]}
         >
-          <div className="h-full flex flex-col items-center justify-center text-center p-8">
-            <div className="w-14 h-14 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-3">
-              <MessageSquare className="w-7 h-7 text-zinc-400" />
+          <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+              <MessageSquare className="h-7 w-7 text-zinc-400" />
             </div>
-            <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100 mb-1">
+            <h2 className="mb-1 text-base font-medium text-zinc-900 dark:text-zinc-100">
               Select a conversation
             </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs">
+            <p className="max-w-xs text-sm text-zinc-500 dark:text-zinc-400">
               Pick a conversation from the list, or start a new one to begin
               messaging.
             </p>

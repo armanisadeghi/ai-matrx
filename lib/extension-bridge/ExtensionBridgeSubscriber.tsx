@@ -32,7 +32,7 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useExtensionBridgeChannel } from "@/hooks/useExtensionBridgeChannel";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { getMessagingService } from "@/lib/supabase/messaging";
+import { sendBridgeMessage } from "./bridgeChannel";
 import {
   handleExtensionOpenPanel,
   type OpenPanelResult,
@@ -47,8 +47,6 @@ export function ExtensionBridgeSubscriber(): null {
     // Hook short-circuits when no user is signed in; nothing to wire up.
     if (!isAuthenticated || !userId) return undefined;
 
-    const messagingService = getMessagingService();
-
     const unsubscribe = onMessage((envelope) => {
       // Hook already filters to `direction: "extension->frontend"`, so
       // every envelope here is genuinely inbound.
@@ -61,17 +59,15 @@ export function ExtensionBridgeSubscriber(): null {
         envelope.payload,
       );
 
-      // Publish the reply on the same Broadcast channel. We use the
-      // service directly (not the hook's `send`) because the hook
-      // generates a fresh requestId — for a reply we MUST echo the
-      // inbound requestId so the extension's pending-promise table
-      // resolves the right caller.
-      void messagingService
-        .sendBridgeMessage(userId, {
-          action: envelope.action,
-          payload: result,
-          requestId: envelope.requestId,
-        })
+      // Publish the reply on the same Broadcast channel. We call the channel
+      // module directly (not the hook's `send`) because the hook mints a fresh
+      // requestId — a REPLY must echo the inbound one or the extension's
+      // pending-promise table resolves the wrong caller.
+      void sendBridgeMessage(userId, {
+        action: envelope.action,
+        payload: result,
+        requestId: envelope.requestId,
+      })
         .catch((err) => {
           // Channel teardown / not-yet-subscribed errors. Swallow with
           // a console message so we don't tear down the whole

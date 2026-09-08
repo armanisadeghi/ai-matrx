@@ -11,12 +11,42 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { parseConversationParticipants } from "@/features/messaging/data/conversation-list";
 import { z } from "zod";
 
 // ============================================
 // Validation Schemas
 // ============================================
+
+/**
+ * The participants JSON aggregate the conversation-list RPC returns.
+ *
+ * Local to this ROUTE on purpose. The client path does not come through here
+ * at all — every browser read goes React → Supabase through
+ * `@ai-matrx/messaging`, which owns the client-side projection. This surface is
+ * a server-side JSON API with its own response shape, so it validates its own
+ * rows rather than borrowing a client projection that answers a different
+ * question.
+ */
+const participantSchema = z.object({
+  id: z.string().uuid(),
+  conversation_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  role: z.enum(["owner", "admin", "member"]),
+  joined_at: z.string().nullable(),
+  last_read_at: z.string().nullable(),
+  is_muted: z.boolean(),
+  is_archived: z.boolean(),
+  user: z.object({
+    user_id: z.string().uuid(),
+    email: z.string().nullable(),
+    display_name: z.string().nullable(),
+    avatar_url: z.string().nullable(),
+  }),
+});
+
+function parseConversationParticipants(value: unknown) {
+  return z.array(participantSchema).parse(value);
+}
 
 const createConversationSchema = z.object({
   type: z.enum(["direct", "group"]).default("direct"),

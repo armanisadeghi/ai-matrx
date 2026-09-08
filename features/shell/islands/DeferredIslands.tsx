@@ -11,7 +11,7 @@ import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 // `windowRegistry.ts` + `windowRegistryMetadata.ts` and let
 // `UnifiedOverlayController` handle it. (Bug found 2026-04-29.)
 //
-// Messaging islands (LazyMessagingInitializer + MessagingSideSheet) used to
+// The messaging side-sheet island used to
 // mount here, which left the (authenticated) route group without messaging
 // (icon click did nothing, conversations never loaded). They now mount in
 // `app/DeferredSingletons.tsx` via `LazyMessagingIsland` so they work on

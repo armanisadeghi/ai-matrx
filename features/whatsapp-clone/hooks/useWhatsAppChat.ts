@@ -1,20 +1,33 @@
 "use client";
 
+/**
+ * The WhatsApp demo skin's thread. Live mode is `@ai-matrx/messaging`'s engine
+ * — the same optimistic send, outbox, dedup and typing lease the real surface
+ * gets; this file only reshapes rows for the skin's components.
+ */
+
 import { useMemo } from "react";
+import {
+  useComposer,
+  useConversation,
+  useMessagingHost,
+  useTypists,
+} from "@ai-matrx/messaging/react";
+import {
+  asConversationId,
+  type Attachment,
+  type Message,
+} from "@ai-matrx/messaging";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import { useChat } from "@/hooks/useSupabaseMessaging";
-import type { MessageWithSender } from "@/features/messaging/types";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { getMockMessages } from "../mock-data/messages";
 import type { WAMessage } from "../types";
 import { useWhatsAppDataMode } from "./WhatsAppDataModeProvider";
 
-export interface SendMessageOptions {
-  message_type?: "text" | "image" | "video" | "audio" | "file";
-  media_url?: string;
-  media_thumbnail_url?: string;
-  media_metadata?: Record<string, unknown>;
-  reply_to_id?: string;
+/** A file the skin already uploaded through the app's file handler. */
+export interface WhatsAppAttachment {
+  kind: "image" | "video" | "audio" | "file";
+  attachment: Attachment;
 }
 
 export interface UseWhatsAppChatReturn {
@@ -23,42 +36,33 @@ export interface UseWhatsAppChatReturn {
   isSending: boolean;
   error: string | null;
   typingText: string | null;
-  sendMessage: (content: string, options?: SendMessageOptions) => Promise<void>;
+  sendMessage: (content: string, media?: WhatsAppAttachment) => Promise<void>;
   loadMore: () => Promise<void>;
-  markRead: () => Promise<void>;
 }
 
-function adaptMessage(m: MessageWithSender, selfUserId: string | null): WAMessage {
+function adaptMessage(message: Message, selfUserId: string | null): WAMessage {
   return {
-    id: m.id,
-    conversationId: m.conversation_id,
-    type: (m.message_type ?? "text") as WAMessage["type"],
-    content: m.content,
-    authorId: m.sender_id,
-    isOwn: !!selfUserId && m.sender_id === selfUserId,
-    createdAt: m.created_at,
-    editedAt: m.edited_at,
-    status: (m.status ?? "sent") as WAMessage["status"],
+    id: message.id,
+    conversationId: message.conversationId,
+    type: message.kind as WAMessage["type"],
+    content: message.content,
+    authorId: message.senderId,
+    isOwn: selfUserId !== null && message.senderId === selfUserId,
+    createdAt: message.createdAt,
+    editedAt: message.editedAt,
+    status: message.deliveryState as WAMessage["status"],
+    // A DURABLE file id is the identity — the package drops a signed-URL-only
+    // attachment rather than rendering a link that will 403 later.
     media:
-      m.message_type === "image" ||
-      m.message_type === "video" ||
-      m.message_type === "audio" ||
-      m.message_type === "file"
+      message.attachments.length > 0
         ? {
-            url: m.media_url ?? undefined,
-            thumbnailUrl: m.media_thumbnail_url ?? undefined,
-            fileName:
-              (m.media_metadata as { file_name?: string } | null)?.file_name,
-            fileSize:
-              (m.media_metadata as { file_size?: number } | null)?.file_size,
-            durationSec:
-              (m.media_metadata as { duration_sec?: number } | null)
-                ?.duration_sec,
-            mimeType: (m.media_metadata as { mime_type?: string } | null)
-              ?.mime_type,
+            fileId: message.attachments[0]?.fileId,
+            fileName: message.attachments[0]?.fileName ?? undefined,
+            fileSize: message.attachments[0]?.sizeBytes ?? undefined,
+            mimeType: message.attachments[0]?.mimeType ?? undefined,
           }
         : null,
-    systemKind: m.message_type === "system" ? "encryption" : undefined,
+    systemKind: message.kind === "system" ? "encryption" : undefined,
   };
 }
 
@@ -66,24 +70,20 @@ export function useWhatsAppChat(
   conversationId: string | null,
 ): UseWhatsAppChatReturn {
   const { mode } = useWhatsAppDataMode();
-  const user = useAppSelector(selectUser);
-  const userId = user?.id ?? null;
-  const displayName =
-    user?.userMetadata?.fullName ??
-    user?.userMetadata?.name ??
-    user?.email?.split("@")[0] ??
-    "User";
+  const selfUserId = useAppSelector(selectUserId);
+  const liveId =
+    mode === "live" && conversationId !== null
+      ? asConversationId(conversationId)
+      : null;
 
-  const live = useChat(
-    mode === "live" ? conversationId : null,
-    mode === "live" ? userId : null,
-    displayName,
-    { autoMarkAsRead: true },
-  );
+  const host = useMessagingHost();
+  const conversation = useConversation(liveId);
+  const composer = useComposer(liveId);
+  const typists = useTypists(liveId, conversation.participants);
 
   const liveMessages = useMemo(
-    () => live.messages.map((m) => adaptMessage(m, userId)),
-    [live.messages, userId],
+    () => conversation.messages.map((message) => adaptMessage(message, selfUserId)),
+    [conversation.messages, selfUserId],
   );
 
   if (mode === "mock") {
@@ -96,24 +96,35 @@ export function useWhatsAppChat(
       typingText: null,
       sendMessage: async () => {},
       loadMore: async () => {},
-      markRead: async () => {},
     };
   }
 
   return {
     messages: liveMessages,
-    isLoading: live.isLoading,
-    isSending: live.isSending,
-    error: live.error,
-    typingText: live.typingText ?? null,
-    sendMessage: async (content, options) => {
-      await live.sendMessage(content, options);
+    isLoading: conversation.isLoading,
+    // A queued message is ON SCREEN as an optimistic bubble the instant it is
+    // typed, so "sending" is a property of a message, never of the surface.
+    isSending: false,
+    error: null,
+    typingText: typists.label,
+    sendMessage: async (content, media) => {
+      if (media !== undefined) {
+        // Media rides the engine directly: the composer is for typed text, and
+        // the attachment is already a durable ref the app's file handler minted.
+        if (liveId === null) return;
+        host?.engine.send({
+          conversationId: liveId,
+          content,
+          kind: media.kind,
+          attachments: [media.attachment],
+        });
+        return;
+      }
+      composer.setValue(content);
+      composer.send();
     },
     loadMore: async () => {
-      await live.loadMoreMessages();
-    },
-    markRead: async () => {
-      await live.markAsRead();
+      conversation.loadOlder();
     },
   };
 }

@@ -1,17 +1,22 @@
 "use client";
 
+/**
+ * The WhatsApp demo skin's conversation list.
+ *
+ * "live" mode reads the ONE messaging store through `@ai-matrx/messaging`'s
+ * hooks — the same engine the real /messages route uses, so this demo is a
+ * different SKIN over the same data, never a second data layer.
+ */
+
 import { useState } from "react";
+import { useConversations } from "@ai-matrx/messaging/react";
+import type { ConversationSummary } from "@ai-matrx/messaging";
+import { summarizeText } from "@ai-matrx/messaging";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectConversations,
-  selectMessagingIsLoading,
-  selectMessagingError,
-} from "@/features/messaging/redux/messagingSlice";
-import type { ConversationWithDetails } from "@/features/messaging/types";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { getMockConversations } from "../mock-data/conversations";
 import type { WAConversation } from "../types";
 import { useWhatsAppDataMode } from "./WhatsAppDataModeProvider";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 export interface UseWhatsAppConversationsReturn {
   conversations: WAConversation[];
@@ -22,30 +27,25 @@ export interface UseWhatsAppConversationsReturn {
 }
 
 function adaptConversation(
-  c: ConversationWithDetails,
+  summary: ConversationSummary,
   selfUserId: string | null,
 ): WAConversation {
-  const lastMsg = c.last_message;
-  const lastIsOwn =
-    !!lastMsg && !!selfUserId && lastMsg.sender_id === selfUserId;
-  const otherParticipant = c.participants?.find(
-    (p) => p.user_id !== selfUserId,
-  );
   return {
-    id: c.id,
-    name: c.display_name ?? c.group_name ?? "Conversation",
-    avatarUrl: c.display_image ?? c.group_image_url ?? null,
-    isGroup: c.type === "group",
-    participants: (c.participants ?? []).map((p) => ({
-      id: p.user_id,
-      name: p.user?.display_name ?? p.user?.email ?? "Unknown",
-      avatarUrl: p.user?.avatar_url ?? null,
+    id: summary.conversation.id,
+    name: summary.displayName,
+    avatarUrl: summary.displayImageUrl,
+    isGroup: summary.conversation.type === "group",
+    participants: summary.participants.map((participant) => ({
+      id: participant.userId,
+      name: participant.displayName || participant.email || "Unknown",
+      avatarUrl: participant.avatarUrl,
     })),
-    lastMessagePreview: lastMsg?.content ?? "",
-    lastMessageAt: lastMsg?.created_at ?? c.updated_at,
-    lastMessageStatus: lastMsg?.status,
-    lastMessageIsOwn: lastIsOwn,
-    unreadCount: c.unread_count ?? 0,
+    // A ```matrx fence collapses to its human label in a preview, never JSON.
+    lastMessagePreview: summarizeText(summary.lastMessageContent ?? "", 90),
+    lastMessageAt: summary.lastMessageAt ?? summary.conversation.updatedAt,
+    lastMessageIsOwn:
+      selfUserId !== null && summary.lastMessageSenderId === selfUserId,
+    unreadCount: summary.unreadCount,
     online: false,
   };
 }
@@ -53,10 +53,7 @@ function adaptConversation(
 export function useWhatsAppConversations(): UseWhatsAppConversationsReturn {
   const { mode } = useWhatsAppDataMode();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  const liveConversations = useAppSelector(selectConversations);
-  const liveIsLoading = useAppSelector(selectMessagingIsLoading);
-  const liveError = useAppSelector(selectMessagingError);
+  const { conversations, isInitialLoading } = useConversations();
   const selfUserId = useAppSelector(selectUserId);
 
   if (mode === "mock") {
@@ -69,15 +66,15 @@ export function useWhatsAppConversations(): UseWhatsAppConversationsReturn {
     };
   }
 
-  const adapted = liveConversations.map((c) =>
-    adaptConversation(c, selfUserId),
-  );
-
   return {
-    conversations: adapted,
+    conversations: conversations.map((item) =>
+      adaptConversation(item, selfUserId),
+    ),
     selectedId,
     select: setSelectedId,
-    isLoading: liveIsLoading,
-    error: liveError,
+    isLoading: isInitialLoading,
+    // Failures are reported through the provider's diagnostic sink (a toast
+    // with a remedy), not mirrored into every surface's own error string.
+    error: null,
   };
 }

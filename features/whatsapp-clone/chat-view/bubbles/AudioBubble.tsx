@@ -6,6 +6,7 @@ import { WAAvatar } from "../../shared/WAAvatar";
 import { formatBubbleTime } from "../../shared/relative-time";
 import { MessageStatusTicks } from "../MessageStatusTicks";
 import type { WAMessage } from "../../types";
+import { useWhatsAppMediaSrc } from "../../hooks/useWhatsAppMediaSrc";
 
 interface AudioBubbleProps {
   message: WAMessage;
@@ -14,7 +15,7 @@ interface AudioBubbleProps {
 
 export function AudioBubble({ message, senderName = "" }: AudioBubbleProps) {
   const isOwn = message.isOwn;
-  const audioUrl = message.media?.url ?? message.media?.thumbnailUrl ?? "";
+  const audioUrl = useWhatsAppMediaSrc(message.media) ?? "";
 
   return (
     <div

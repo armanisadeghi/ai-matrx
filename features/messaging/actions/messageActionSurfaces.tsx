@@ -1,13 +1,20 @@
 /**
- * Message-action registry — maps an `action_data.kind` to the deep-link chips
- * rendered inside a message bubble. Metadata-in-one-place (the spirit of the
- * feature admin map): add a kind here, every bubble that carries it gets chips.
- * Unknown kinds render nothing (forward-compatible).
+ * The host's message-action SURFACES — the app-shaped half of an actionable
+ * message, handed to `@ai-matrx/messaging` as `actionRenderers`.
  *
- * First kind: `agent_drift` → "Review usages" (opens the Find Usages window)
- * + "Open drift report" (links to /reports/agent-drift).
+ * The package draws chips for actions that ask a QUESTION. These kinds do not:
+ * a shared-resource card, a link out to a report, a task reminder with app
+ * services behind it, an access request whose answer is a permission grant.
+ * Only this app can draw those, so this app draws them — INSIDE the package's
+ * bubble, through the package's seam. There is no second message renderer here.
  *
- * Renderers are hooks-friendly React components, so they can call opener hooks.
+ * The version gate stays the package's: a kind at a version not listed below
+ * renders NOTHING, which is what lets a newer sender ship before every reader
+ * has caught up. Our senders write no `version` field, and the package reads a
+ * missing version as 1 — so every renderer here lists `[1]`.
+ *
+ * Adding a kind: write the payload type in `../types`, add the component, add
+ * the row at the bottom. Every bubble carrying that kind gets the surface.
  */
 
 "use client";
@@ -33,10 +40,10 @@ import type {
   RequestedLevel,
 } from "@/features/access-gate/types";
 import { useOpenAgentFindUsagesWindow } from "@/features/overlays/openers/agentFindUsagesWindow";
+import type { MessageActionRenderer } from "@ai-matrx/messaging/react";
 import type {
   AccessRequestActionPayload,
   AgentDriftActionPayload,
-  MessageActionData,
   OpenLinkActionPayload,
   ResourceSharedActionPayload,
   TaskReminderActionPayload,
@@ -48,14 +55,10 @@ import { SettingRequestActionButtons } from "@/features/access-gate/components/S
 import { ResourceActionRequestButtons } from "@/features/access-gate/components/ResourceActionRequestButtons";
 import { isJsonObject } from "@/types/json";
 
-interface ChipRenderContext {
+interface SurfaceProps<TPayload> {
+  payload: TPayload;
   isOwn: boolean;
 }
-
-type ChipRenderer = (
-  data: MessageActionData,
-  ctx: ChipRenderContext,
-) => React.ReactNode;
 
 function chipClass(isOwn: boolean): string {
   return [
@@ -67,15 +70,8 @@ function chipClass(isOwn: boolean): string {
   ].join(" ");
 }
 
-function AgentDriftChips({
-  data,
-  isOwn,
-}: {
-  data: MessageActionData;
-  isOwn: boolean;
-}) {
+function AgentDriftChips({ payload, isOwn }: SurfaceProps<AgentDriftActionPayload>) {
   const openFindUsages = useOpenAgentFindUsagesWindow();
-  const payload = data.payload as AgentDriftActionPayload;
   if (!payload?.agent_id) return null;
   return (
     <>
@@ -100,8 +96,8 @@ function AgentDriftChips({
  * recipient. Uses the shared EntityCard primitive + registry icon/URL so it
  * works for every shareable type, and opens the resource in the app.
  */
-function ResourceSharedCard({ data }: { data: MessageActionData }) {
-  const p = data.payload as ResourceSharedActionPayload;
+function ResourceSharedCard({ payload }: SurfaceProps<ResourceSharedActionPayload>) {
+  const p = payload;
   if (!p?.resource_type || !p?.resource_id) return null;
   const href = getResourceSharePath(p.resource_type, p.resource_id);
   const Icon = getResourceIcon(p.resource_type);
@@ -127,14 +123,8 @@ function ResourceSharedCard({ data }: { data: MessageActionData }) {
  * `open_link` — the generic single deep-link chip for system DMs that point
  * the user at an in-app page (external URLs are refused).
  */
-function OpenLinkChip({
-  data,
-  isOwn,
-}: {
-  data: MessageActionData;
-  isOwn: boolean;
-}) {
-  const p = data.payload as OpenLinkActionPayload;
+function OpenLinkChip({ payload, isOwn }: SurfaceProps<OpenLinkActionPayload>) {
+  const p = payload;
   if (!p?.href || !p?.label || !p.href.startsWith("/")) return null;
   return (
     <Link href={p.href} className={chipClass(isOwn)}>
@@ -149,14 +139,8 @@ function OpenLinkChip({
  * Open navigates; Complete and Snooze act inline through the canonical task
  * services (recurrence-aware completion; per-user snooze state).
  */
-function TaskReminderChips({
-  data,
-  isOwn,
-}: {
-  data: MessageActionData;
-  isOwn: boolean;
-}) {
-  const p = data.payload as TaskReminderActionPayload;
+function TaskReminderChips({ payload, isOwn }: SurfaceProps<TaskReminderActionPayload>) {
+  const p = payload;
   const [done, setDone] = useState<"completed" | "snoozed" | null>(null);
   if (!p?.task_id) return null;
 
@@ -229,14 +213,8 @@ function TaskReminderChips({
  * request that gets answered and one that rots. The requester's own copy of the
  * message shows the same card with no buttons, so they can see what they sent.
  */
-function AccessRequestChips({
-  data,
-  isOwn,
-}: {
-  data: MessageActionData;
-  isOwn: boolean;
-}) {
-  const p = data.payload as AccessRequestActionPayload;
+function AccessRequestChips({ payload, isOwn }: SurfaceProps<AccessRequestActionPayload>) {
+  const p = payload;
   const currentUserId = useAppSelector(selectUserId);
   const [done, setDone] = useState<AccessRequestStatus | null>(null);
   const [busy, setBusy] = useState(false);
@@ -378,15 +356,9 @@ function AccessRequestChips({
   );
 }
 
-function SettingAccessRequestChips({
-  data,
-  isOwn,
-}: {
-  data: MessageActionData;
-  isOwn: boolean;
-}) {
-  if (!isJsonObject(data.payload)) return null;
-  const p = data.payload;
+function SettingAccessRequestChips({ payload, isOwn }: SurfaceProps<unknown>) {
+  if (!isJsonObject(payload)) return null;
+  const p = payload;
   if (
     typeof p.request_id !== "string" ||
     typeof p.href !== "string" ||
@@ -405,34 +377,16 @@ function SettingAccessRequestChips({
   );
 }
 
-const RENDERERS: Record<string, ChipRenderer> = {
-  access_request: (data, ctx) => (
-    <AccessRequestChips data={data} isOwn={ctx.isOwn} />
-  ),
-  agent_drift: (data, ctx) => <AgentDriftChips data={data} isOwn={ctx.isOwn} />,
-  open_link: (data, ctx) => <OpenLinkChip data={data} isOwn={ctx.isOwn} />,
-  resource_shared: (data) => <ResourceSharedCard data={data} />,
-  setting_access_request: (data, ctx) => (
-    <SettingAccessRequestChips data={data} isOwn={ctx.isOwn} />
-  ),
-  task_reminder: (data, ctx) => (
-    <TaskReminderChips data={data} isOwn={ctx.isOwn} />
-  ),
-};
-
-/** Render the chips for a message's action_data, or null if none/unknown. */
-export function renderMessageActionChips(
-  actionData: MessageActionData | null | undefined,
-  ctx: ChipRenderContext,
-): React.ReactNode {
-  if (!actionData?.kind) return null;
-  const renderer = RENDERERS[actionData.kind];
-  return renderer ? renderer(actionData, ctx) : null;
-}
-
-/** Whether a given action_data has a registered renderer (for layout decisions). */
-export function hasMessageAction(
-  actionData: MessageActionData | null | undefined,
-): boolean {
-  return !!actionData?.kind && actionData.kind in RENDERERS;
-}
+/**
+ * The kinds this build can draw. A kind absent from this list, or present at a
+ * version not listed, renders nothing at all — never a chip that fails when
+ * pressed.
+ */
+export const MESSAGE_ACTION_SURFACES: readonly MessageActionRenderer<never>[] = [
+  { kind: "access_request", versions: [1], render: AccessRequestChips },
+  { kind: "agent_drift", versions: [1], render: AgentDriftChips },
+  { kind: "open_link", versions: [1], render: OpenLinkChip },
+  { kind: "resource_shared", versions: [1], render: ResourceSharedCard },
+  { kind: "setting_access_request", versions: [1], render: SettingAccessRequestChips },
+  { kind: "task_reminder", versions: [1], render: TaskReminderChips },
+] as readonly MessageActionRenderer<never>[];

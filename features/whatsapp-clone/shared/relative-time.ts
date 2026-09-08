@@ -6,6 +6,9 @@ import {
   differenceInCalendarDays,
 } from "date-fns";
 import { parseTimestamp } from "@/utils/datetime";
+// THE package duration formatter (`@ai-matrx/kit/format`, census H1
+// 2026-09-07). THE UNIT LAW: the unit is in the name.
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 /** Parse a backend timestamp, treating naive (zone-less) strings as UTC. */
 function toDate(iso: string | null | undefined): Date {
@@ -72,18 +75,12 @@ export function formatRangeHeader(startIso: string, endIso: string): string {
   }
 }
 
-export function formatFileSize(bytes: number): string {
-  if (!bytes && bytes !== 0) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024)
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
-}
+// `formatFileSize` moved to `@ai-matrx/kit/format` (census H1, 2026-09-07).
+// This module keeps the historical specifier working for its callers; NEW
+// code should import from kit directly.
+export { formatFileSize } from "@ai-matrx/kit/format";
 
+/** A voice-note length. Empty string, not an em-dash, when there isn't one. */
 export function formatDuration(seconds: number | undefined): string {
-  if (!seconds && seconds !== 0) return "";
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return formatDurationSeconds(seconds, { fallback: "" });
 }

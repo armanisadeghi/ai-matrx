@@ -13,9 +13,11 @@
  * Auth: short-circuits when no Supabase user is signed in. Channel is
  * scoped to the current user's auth.users.id.
  *
- * Lifecycle: hooks-into the singleton `MessagingService` ref-counted
- * channel pool, so multiple consumers in the same tab share one
- * underlying Supabase channel.
+ * Lifecycle: rides the ref-counted channel in
+ * `lib/extension-bridge/bridgeChannel.ts`, so multiple consumers in the same
+ * tab share one underlying Supabase channel. (That module carries the reason
+ * this one channel is still hand-rolled rather than on `@ai-matrx/realtime`:
+ * the deployed extension reads the raw envelope off the wire.)
  *
  * Wire format: see `BridgeEnvelope` and `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md`.
  *
@@ -29,16 +31,17 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import {
-  getMessagingService,
+  isBridgeSubscribed,
+  sendBridgeMessage,
+  subscribeToBridge,
   type BridgeHandler,
-} from "@/lib/supabase/messaging";
-import {
-  bridgeChannelName,
-  type BridgeEnvelope,
-  type FrontendRpcResponse,
+} from "@/lib/extension-bridge/bridgeChannel";
+import type {
+  BridgeEnvelope,
+  FrontendRpcResponse,
 } from "@/lib/types/bridge-envelope";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
@@ -103,15 +106,10 @@ function normalizeReply(envelope: BridgeEnvelope): BridgeReply {
 
 export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
   const userId = useSelector(selectUserId);
-  const messagingService = useMemo(() => getMessagingService(), []);
 
-  // Tracks whether the channel is fully subscribed. We can't read this
-  // synchronously from MessagingService (it doesn't expose a ready
-  // promise per channel), so we observe the first inbound message OR
-  // poll the service after a tick. Simplest robust approach: flip ready
-  // to true once subscribeToBridge's setup completes — Supabase will
-  // queue sends until SUBSCRIBED so we just need a way to gate `send`
-  // from throwing.
+  // Subscription is asynchronous and supabase-js reports it through a
+  // callback the channel module owns, so readiness is polled for up to 5s.
+  // It gates `send` from throwing "channel not subscribed".
   const [isReady, setIsReady] = useState(false);
 
   // External listener registry — `onMessage` callers. Stored in a ref
@@ -167,32 +165,18 @@ export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
     }
 
     let cancelled = false;
-    const unsubscribe = messagingService.subscribeToBridge(
-      userId,
-      handleEnvelope,
-    );
+    const unsubscribe = subscribeToBridge(userId, handleEnvelope);
 
-    // Best-effort readiness flag. MessagingService.subscribeToBridge
-    // queues callbacks once SUBSCRIBED, but we don't get a callback
-    // here for the subscribed status. Instead, poll `isSubscribed`
-    // every 100ms for up to 5s; flip ready once true. Sends issued
-    // before ready will throw with a clear error from
-    // MessagingService.sendBridgeMessage.
+    // Poll readiness every 100ms for up to 5s.
     const start = Date.now();
     const pollHandle = setInterval(() => {
       if (cancelled) return;
-      // We can't introspect the bridge channel directly, but
-      // sending a noop is too disruptive. Use a side door: the
-      // service marks `subscribedChannels` internally; expose it
-      // via the public `getActiveChannels` helper.
-      const active = messagingService.getActiveChannels();
-      if (active.includes(bridgeChannelName(userId))) {
+      if (isBridgeSubscribed(userId)) {
         setIsReady(true);
         clearInterval(pollHandle);
       } else if (Date.now() - start > 5_000) {
-        // Give up polling; sends will throw if the channel never
-        // came up. This matches MessagingService's existing
-        // behavior for the conversation channel.
+        // Give up polling; a send throws with a clear error if the channel
+        // never came up, rather than failing silently.
         clearInterval(pollHandle);
       }
     }, 100);
@@ -209,7 +193,7 @@ export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
       unsubscribe();
       setIsReady(false);
     };
-  }, [userId, messagingService, handleEnvelope]);
+  }, [userId, handleEnvelope]);
 
   const send = useCallback<UseExtensionBridgeChannelReturn["send"]>(
     async (action, payload, options) => {
@@ -235,11 +219,7 @@ export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
       });
 
       try {
-        await messagingService.sendBridgeMessage(userId, {
-          action,
-          payload,
-          requestId,
-        });
+        await sendBridgeMessage(userId, { action, payload, requestId });
       } catch (err) {
         // Fail synchronously — clean up the pending entry so the
         // caller's `await` rejects immediately rather than waiting
@@ -254,7 +234,7 @@ export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
 
       return { requestId, promise };
     },
-    [userId, messagingService],
+    [userId],
   );
 
   const onMessage = useCallback<UseExtensionBridgeChannelReturn["onMessage"]>(

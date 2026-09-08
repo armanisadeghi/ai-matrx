@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
+import { useConversations } from "@ai-matrx/messaging/react";
+import { asUserId } from "@ai-matrx/messaging";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useDebounce } from "@/features/tasks/hooks/useDebounce";
@@ -29,7 +31,6 @@ import {
   type ConnectionUser,
 } from "../hooks/useUserConnections";
 import type { UserBasicInfo } from "../types";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
 import type { UserSearchCandidate } from "@/features/user-search/types";
@@ -37,7 +38,8 @@ import type { UserSearchCandidate } from "@/features/user-search/types";
 interface NewConversationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConversationCreated: (conversationId: string) => void;
+  /** The conversation the pick resolved to — existing or newly created. */
+  onCreated: (conversationId: string) => void;
 }
 
 interface SearchResult extends UserBasicInfo {
@@ -60,7 +62,7 @@ true satisfies typeof _lookupUserByEmailRow;
 export function NewConversationDialog({
   open,
   onOpenChange,
-  onConversationCreated,
+  onCreated,
 }: NewConversationDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -115,33 +117,20 @@ export function NewConversationDialog({
   const supabase = supabaseRef.current;
 
   /**
-   * Create or find existing conversation
-   * Realtime subscription in MessagingInitializer handles Redux updates
+   * Resolve the 1:1 conversation with this person — ATOMICALLY, in the
+   * database, through `@ai-matrx/messaging`. The advisory lock on the unordered
+   * pair is what makes a double-click, a second tab, and a "Message" button
+   * elsewhere converge on ONE conversation instead of minting duplicates.
+   *
+   * The inbox updates itself: the engine's channel sees the membership row.
    */
+  const { startDirect } = useConversations();
   const createConversation = useCallback(
     async (participantId: string): Promise<string> => {
       if (!currentUserId) throw new Error("User not authenticated");
-
-      // ONE canonical, ATOMIC get-or-create RPC — an advisory lock on the pair
-      // serializes concurrent callers so double-click / two tabs / a concurrent
-      // "Message" button elsewhere can't mint duplicate conversations (the old
-      // find(RPC)-then-insert here raced, AND took no lock, so it could even
-      // interleave with a locked RPC call from another surface). Realtime in
-      // MessagingInitializer handles the Redux update.
-      const organizationId = await ensureOrgId(undefined);
-      const { data, error: rpcError } = await supabase.rpc(
-        "dm_get_or_create_direct_conversation",
-        {
-          p_user1_id: currentUserId,
-          p_user2_id: participantId,
-          p_organization_id: organizationId,
-        },
-      );
-      if (rpcError) throw rpcError;
-      if (!data) throw new Error("Failed to resolve direct conversation");
-      return data as string;
+      return startDirect(asUserId(participantId));
     },
-    [currentUserId, supabase],
+    [currentUserId, startDirect],
   );
 
   // Debounce search query (300ms)
@@ -239,7 +228,7 @@ export function NewConversationDialog({
 
       try {
         const conversationId = await createConversation(selectedUser.user_id);
-        onConversationCreated(conversationId);
+        onCreated(conversationId);
         onOpenChange(false);
 
         // Reset state
@@ -257,7 +246,7 @@ export function NewConversationDialog({
     [
       currentUserId,
       createConversation,
-      onConversationCreated,
+      onCreated,
       onOpenChange,
       isCreating,
     ],

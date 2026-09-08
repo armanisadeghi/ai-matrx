@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import { useConversations } from "@/hooks/useSupabaseMessaging";
+import { useConversations } from "@ai-matrx/messaging/react";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { invitationsService } from "@/features/organizations/service/invitationsService";
 import { canManageInvitations } from "@/features/organizations/types";
@@ -83,9 +83,8 @@ export function useUserConnections(
   const currentUserId = user?.id;
 
   // Get conversations for past message contacts
-  const { conversations, isLoading: convoLoading } = useConversations(
-    currentUserId || null,
-  );
+  // The inbox the ONE messaging engine already holds — no second read.
+  const { conversations, isInitialLoading: convoLoading } = useConversations();
 
   // Get user's organizations
   const { organizations, loading: orgsLoading } = useUserOrganizations();
@@ -100,19 +99,17 @@ export function useUserConnections(
     const usersMap = new Map<string, ConnectionUser>();
 
     conversations.forEach((conv) => {
-      conv.participants?.forEach((participant) => {
-        if (participant.user_id !== currentUserId && participant.user) {
-          // Don't overwrite if already exists (dedup)
-          if (!usersMap.has(participant.user_id)) {
-            usersMap.set(participant.user_id, {
-              user_id: participant.user_id,
-              email: participant.user.email,
-              display_name: participant.user.display_name,
-              avatar_url: participant.user.avatar_url,
-              source: "conversation",
-            });
-          }
-        }
+      conv.participants.forEach((participant) => {
+        if (participant.userId === currentUserId) return;
+        // Don't overwrite if already present (dedup).
+        if (usersMap.has(participant.userId)) return;
+        usersMap.set(participant.userId, {
+          user_id: participant.userId,
+          email: participant.email ?? "",
+          display_name: participant.displayName,
+          avatar_url: participant.avatarUrl ?? undefined,
+          source: "conversation",
+        });
       });
     });
 

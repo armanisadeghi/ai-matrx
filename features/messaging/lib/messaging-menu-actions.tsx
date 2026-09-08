@@ -31,10 +31,12 @@ import type {
   ContextMenuExtraItem,
   ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
+import { resolveActor } from "@ai-matrx/messaging";
 import type {
-  ConversationWithDetails,
-  MessageWithSender,
-} from "@/features/messaging/types";
+  ConversationSummary,
+  Message,
+  UserSummary,
+} from "@ai-matrx/messaging";
 
 /** The registered surface every messaging menu launches under. */
 export const MESSAGES_SURFACE_NAME = "matrx-user/messages";
@@ -44,8 +46,8 @@ export function conversationHref(conversationId: string): string {
   return `/messages/${conversationId}`;
 }
 
-export function conversationTitle(conv: ConversationWithDetails): string {
-  return conv.display_name || conv.group_name || "Conversation";
+export function conversationTitle(conv: ConversationSummary): string {
+  return conv.displayName || conv.conversation.groupName || "Conversation";
 }
 
 /**
@@ -58,29 +60,33 @@ export function conversationTitle(conv: ConversationWithDetails): string {
  * membership IS its access), so Share correctly stays hidden.
  */
 export function conversationEntityRef(
-  conv: ConversationWithDetails | null,
+  conv: ConversationSummary | null,
 ): ContextMenuEntityRef | null {
   if (!conv) return null;
   return {
     type: "dm_conversation",
-    id: conv.id,
+    id: conv.conversation.id,
     title: conversationTitle(conv),
   };
 }
 
-export function messageSenderName(message: MessageWithSender): string {
-  const actorLabel = message.metadata?.actor_label;
-  if (typeof actorLabel === "string" && actorLabel.trim()) return actorLabel;
-  return (
-    message.sender?.display_name ||
-    message.sender?.email?.split("@")[0] ||
-    "Unknown"
-  );
+/**
+ * Who to NAME as the author. `resolveActor` is the package's rule and the only
+ * one allowed here: when an agent acted through a person's session the rendered
+ * author is the AGENT — putting an automated message under a real colleague's
+ * byline is the defect that rule exists to prevent.
+ */
+export function messageSenderName(
+  message: Message,
+  sender?: UserSummary | null,
+): string {
+  const actor = resolveActor(message, sender ?? null);
+  return actor.displayName;
 }
 
 /** The message's own entity — `communication.dm_messages`. */
 export function messageEntityRef(
-  message: MessageWithSender | null,
+  message: Message | null,
 ): ContextMenuEntityRef | null {
   if (!message) return null;
   return {
@@ -95,33 +101,37 @@ export function messageEntityRef(
  * as Markdown / the AI actions receive. A menu with empty content is the
  * "inert menu" defect v3 screams about.
  */
-export function messageCopyText(message: MessageWithSender): string {
-  if (message.deleted_for_everyone) return "(message deleted)";
+export function messageCopyText(message: Message): string {
+  if (message.deletedAt !== null) return "(message deleted)";
   return summarizeMatrxText(message.content) || message.content || "";
 }
 
-export function messageCopyLines(message: MessageWithSender): string {
+export function messageCopyLines(message: Message): string {
   return [
-    `${messageSenderName(message)} — ${message.created_at}`,
+    `${messageSenderName(message)} — ${message.createdAt}`,
     "",
     messageCopyText(message),
   ].join("\n");
 }
 
 /** The readable summary a conversation row menu acts on. */
-export function conversationCopyLines(conv: ConversationWithDetails): string {
-  const last = conv.last_message
-    ? `${messageSenderName(conv.last_message)}: ${messageCopyText(conv.last_message)}`
-    : "No messages yet";
+export function conversationCopyLines(conv: ConversationSummary): string {
+  const lastSender = conv.participants.find(
+    (participant) => participant.userId === conv.lastMessageSenderId,
+  );
+  const last =
+    conv.lastMessageContent !== null
+      ? `${lastSender?.displayName ?? "Someone"}: ${summarizeMatrxText(conv.lastMessageContent)}`
+      : "No messages yet";
   return [
     `Conversation: ${conversationTitle(conv)}`,
-    `Type: ${conv.type}`,
+    `Type: ${conv.conversation.type}`,
     `Participants: ${conv.participants
-      .map((p) => p.user?.display_name || p.user?.email || p.user_id)
+      .map((p) => p.displayName || p.email || p.userId)
       .join(", ")}`,
-    `Unread: ${conv.unread_count}`,
+    `Unread: ${conv.unreadCount}`,
     `Last message — ${last}`,
-    `Conversation id: ${conv.id}`,
+    `Conversation id: ${conv.conversation.id}`,
   ].join("\n");
 }
 
@@ -139,11 +149,11 @@ async function copyOrShow(text: string, label: string, title: string) {
  * navigate (the floating window) select the conversation in place instead.
  */
 export function conversationMenuSection(args: {
-  conversation: ConversationWithDetails | null;
+  conversation: ConversationSummary | null;
   onOpen?: (conversationId: string) => void;
 }): ContextMenuExtraSection {
   const { conversation, onOpen } = args;
-  const href = conversation ? conversationHref(conversation.id) : null;
+  const href = conversation ? conversationHref(conversation.conversation.id) : null;
 
   const items: ContextMenuExtraItem[] = [
     ...(conversation && onOpen
@@ -153,7 +163,7 @@ export function conversationMenuSection(args: {
             id: "dm-conversation-open",
             label: "Open conversation",
             icon: ExternalLink,
-            onSelect: () => onOpen(conversation.id),
+            onSelect: () => onOpen(conversation.conversation.id),
           },
         ]
       : href
@@ -208,7 +218,7 @@ export function conversationMenuSection(args: {
  * getting one that silently does nothing.
  */
 export function messageMenuSection(args: {
-  message: MessageWithSender | null;
+  message: Message | null;
   onReply?: (quoted: string) => void;
 }): ContextMenuExtraSection {
   const { message, onReply } = args;

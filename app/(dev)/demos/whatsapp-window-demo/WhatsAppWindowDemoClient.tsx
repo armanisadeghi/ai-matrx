@@ -10,7 +10,6 @@ import {
 } from "@/features/whatsapp-clone/hooks/WhatsAppDataModeProvider";
 import { WhatsAppShellInner } from "@/features/whatsapp-clone/shell/WhatsAppShellInner";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { MessagingInitializer } from "@/features/messaging/components/MessagingInitializer";
 
 const DEMO_WINDOW_ID = "whatsapp-shell-demo";
 
@@ -41,7 +40,6 @@ export function WhatsAppWindowDemoClient({
   return (
     <WhatsAppDataModeProvider initialMode={mode} key={mode}>
       <div className="relative h-full w-full overflow-hidden bg-textured">
-        {mode === "live" ? <MessagingInitializer /> : null}
 
         {!shellOpen ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none">

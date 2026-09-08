@@ -18,19 +18,19 @@
  * `current_conversation_message_count` WAS the surface's one read gap and is
  * now emitted (2026-08-12) — but it had to be REDEFINED to be emittable at
  * all, which is the durable note here. It was declared as "number of messages
- * in the open conversation"; no such number exists on the client. `useMessages`
- * pages 50 at a time behind `hasMore`/`loadMoreMessages`, and neither
- * `MessagingService` nor the `conversations` row exposes a total, so the only
- * honest number is the size of the LOADED window. The value now says that in
+ * in the open conversation"; no such number exists on the client. The thread
+ * pages 50 at a time behind `hasMoreOlder`/`loadOlder`, and neither
+ * `@ai-matrx/messaging`'s store nor the `conversations` row exposes a total, so
+ * the only honest number is the size of the LOADED window. The value now says that in
  * the words the agent reads. Emitting `messages.length` under the original
  * description would have replaced a missing value with a WRONG one — a read
  * gap is visible, a plausible-but-false count is not.
  *
- * The messages live in `ChatThread`'s `useChat` subscription, one level below
- * the provider, so the count rides up through an `onLoadedMessageCountChange`
- * callback into a ref the route's `getScope` reads. A ref, not state: the
- * scope is sampled when the user presses Run, and a second `useChat` in the
- * route would have opened a duplicate realtime subscription.
+ * Since the 2026-09-07 package adoption the count is simply READ from the ONE
+ * messaging store at sample time (`useMessagesSurfaceScope`), which is also why
+ * the old `onLoadedMessageCountChange` ref-plumbing is gone: there is one store
+ * and one subscription, so nothing has to be published upward to avoid opening
+ * a second one.
  *
  * ---------------------------------------------------------------------------
  * WRITE TARGETS: evaluated 2026-08-11 and DELIBERATELY NOT DECLARED.
@@ -49,9 +49,9 @@
  * re-checked the two load-bearing claims below and both hold: `matrx-user/chat`
  * really does ship `input_draft` as ONE `mode:"draft"` / `applyPolicy:"ask"`
  * target taking `{text, mode?}` (`ChatInputDraftWrite`), and there is still no
- * conversation write path anywhere — `MessagingService` exposes exactly
- * `sendMessage`, `sendBridgeMessage`, `markConversationAsRead`, and no file in
- * the repo writes the `conversations` table.
+ * conversation write path anywhere — `@ai-matrx/messaging`'s repository writes
+ * messages and read state, and nothing in this repo writes a conversation's
+ * name.
  *
  * This surface has exactly ONE field that clears the judgment bar, which is
  * under the ~2-target floor the skill sets for earning the work:
@@ -67,12 +67,9 @@
  *   NO — `current_conversation_title`. It reads
  *   `display_name ?? group_name`. For a DIRECT conversation that IS the other
  *   participant's name (identity — never writable). For a group, `group_name`
- *   is written ONCE at creation and never again: there is no rename UI, no
- *   service method, and no `conversations` table update ANYWHERE in the repo
- *   (`lib/supabase/messaging.ts` exposes only `sendMessage`,
- *   `sendBridgeMessage`, `markConversationAsRead`). The slice's
- *   `updateConversation` is a local reducer the realtime initializer uses to
- *   MIRROR database rows, not a write path. Declaring a target here would be
+ *   is written ONCE at creation and never again: there is no rename UI and no
+ *   `conversations` table update ANYWHERE in the repo. The package's store
+ *   mirrors database rows; mirroring is not a write path. Declaring a target here would be
  *   the "declared target with no canonical write path" trap.
  *
  *   NO — `last_message_text` / `all_conversations`. The transcript is a
@@ -211,7 +208,7 @@ export const messagesManifest: SurfaceManifest = {
   ),
 };
 
-export function createMessagesScope(values: {
+export interface MessagesScopeValues {
   selection?: string;
   content?: string;
   context?: Record<string, unknown>;
@@ -224,6 +221,10 @@ export function createMessagesScope(values: {
   last_message_timestamp?: string;
   total_unread_count?: number;
   all_conversations?: unknown[];
-}): SurfaceScopePayload {
+}
+
+export function createMessagesScope(
+  values: MessagesScopeValues,
+): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

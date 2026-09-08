@@ -1,11 +1,15 @@
 "use client";
 
-import React, { useCallback, useMemo } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import { selectConversations } from "@/features/messaging/redux/messagingSlice";
+/**
+ * One conversation in its own floating window — the same `<ConversationPane>`
+ * the route and the docked sheet render.
+ */
+
+import React, { useCallback } from "react";
+import { useConversations } from "@ai-matrx/messaging/react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { ChatThread } from "@/features/messaging/components/ChatThread";
+import { ConversationPane } from "@/features/messaging/components/ConversationPane";
+import { useMessagesSurfaceScope } from "@/features/messaging/lib/useMessagesSurfaceScope";
 
 interface SingleMessageWindowProps {
   isOpen: boolean;
@@ -20,22 +24,13 @@ export default function SingleMessageWindow({
   instanceId,
   conversationId,
 }: SingleMessageWindowProps) {
-  const user = useAppSelector(selectUser);
-  const userId = user?.id;
-  const displayName =
-    user?.userMetadata?.fullName ||
-    user?.userMetadata?.name ||
-    user?.email?.split("@")[0] ||
-    "User";
+  const { conversations } = useConversations();
+  const getScope = useMessagesSurfaceScope(conversationId ?? undefined);
 
-  // Resolve title from the cached conversation list (may be undefined until
-  // MessagingInitializer has loaded the participant list).
-  const conversations = useAppSelector(selectConversations);
-  const conversation = useMemo(
-    () => conversations.find((c) => c.id === conversationId) ?? null,
-    [conversations, conversationId],
-  );
-  const title = conversation?.display_name ?? "Conversation";
+  // The title comes from the inbox the engine already holds; before the first
+  // read it is honestly generic rather than blank.
+  const conversation =
+    conversations.find((item) => item.conversation.id === conversationId) ?? null;
 
   const collectData = useCallback(
     () => ({ conversationId: conversationId ?? null }),
@@ -47,7 +42,7 @@ export default function SingleMessageWindow({
   return (
     <WindowPanel
       id={instanceId}
-      title={title}
+      title={conversation?.displayName ?? "Conversation"}
       width={520}
       height={620}
       minWidth={360}
@@ -57,11 +52,10 @@ export default function SingleMessageWindow({
       overlayInstanceId={instanceId}
       onCollectData={collectData}
     >
-      <ChatThread
+      <ConversationPane
         conversationId={conversationId}
-        userId={userId ?? undefined}
-        displayName={displayName}
         className="h-full"
+        getApplicationScope={getScope}
       />
     </WindowPanel>
   );

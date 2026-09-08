@@ -30,6 +30,11 @@ export interface WAReplyQuote {
 }
 
 export interface WAMediaPayload {
+  /**
+   * The DURABLE identity of the file. A signed URL is a handoff, never an
+   * identity — live messages carry this and the bubble resolves a URL from it.
+   */
+  fileId?: string;
   url?: string;
   thumbnailUrl?: string;
   mimeType?: string;

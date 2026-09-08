@@ -1,46 +1,34 @@
 "use client";
 
+/**
+ * Authenticated-only client island for `/messages`. The parent layout decides
+ * whether to render this or the marketing `<MessagesLanding />` from the SSR
+ * auth state — a guest never loads any of this.
+ *
+ * On a phone this IS the list. On desktop the list lives in the layout's
+ * sidebar and this is the "pick a conversation" pane.
+ */
+
 import { useEffect } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import {
-  closeMessaging,
-  selectConversations,
-  selectTotalUnreadCount,
-} from "@/features/messaging/redux/messagingSlice";
-import { ConversationList } from "@/features/messaging/components/ConversationList";
-import { MessagesListHeader } from "@/features/messaging/components/shell/MessagesListHeader";
+import { useRouter } from "next/navigation";
 import { MessageSquare } from "lucide-react";
-import { createMessagesScope } from "@/features/surfaces/manifests/messages.manifest";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { closeMessaging } from "@/features/messaging/redux/messagingUiSlice";
+import { ConversationListPane } from "@/features/messaging/components/ConversationListPane";
+import { MessagesListHeader } from "@/features/messaging/components/shell/MessagesListHeader";
+import { useMessagesSurfaceScope } from "@/features/messaging/lib/useMessagesSurfaceScope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
-/**
- * Authenticated-only client island for `/messages`. The parent page
- * (server component) decides whether to render this or the marketing
- * `<MessagesLanding />` based on the SSR auth state — guests never load
- * any of the Redux / messaging code below.
- */
 export default function MessagesPageClient() {
   const dispatch = useAppDispatch();
-  const user = useAppSelector(selectUser);
-  const userId = user?.id ?? undefined;
-  const conversations = useAppSelector(selectConversations);
-  const totalUnreadCount = useAppSelector(selectTotalUnreadCount);
+  const router = useRouter();
+  const getScope = useMessagesSurfaceScope();
 
+  // The side sheet and the full page are the same conversations; leaving the
+  // sheet open behind the page would be two views of one thread.
   useEffect(() => {
     dispatch(closeMessaging());
   }, [dispatch]);
-
-  const getScope = () =>
-    createMessagesScope({
-      total_unread_count: totalUnreadCount,
-      all_conversations: conversations.map((c) => ({
-        id: c.id,
-        title: c.display_name ?? c.group_name ?? null,
-        unread_count: c.unread_count ?? 0,
-        last_message_at: c.updated_at,
-      })),
-    });
 
   return (
     <SurfaceRuntimeProvider
@@ -50,17 +38,17 @@ export default function MessagesPageClient() {
     >
       <MessagesListHeader />
 
-      {/* Mobile: Full-screen conversation list (desktop sidebar is hidden) */}
-      <div className="md:hidden flex flex-col h-full pt-[var(--shell-header-h)]">
-        <ConversationList
-          userId={userId}
+      {/* Mobile: full-screen conversation list (the desktop sidebar is hidden) */}
+      <div className="flex h-full flex-col pt-[var(--shell-header-h)] md:hidden">
+        <ConversationListPane
           className="flex-1"
+          onSelect={(conversationId) => router.push(`/messages/${conversationId}`)}
           getApplicationScope={getScope}
         />
       </div>
 
-      {/* Desktop: Empty state (sidebar shows list, this is the default content) */}
-      <div className="hidden md:flex flex-1 h-full flex-col items-center justify-center text-center p-8">
+      {/* Desktop: the sidebar has the list, so this is the default content */}
+      <div className="hidden h-full flex-1 flex-col items-center justify-center p-8 text-center md:flex">
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
           <MessageSquare className="h-8 w-8 text-muted-foreground" />
         </div>

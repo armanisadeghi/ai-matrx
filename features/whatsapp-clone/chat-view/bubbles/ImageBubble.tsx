@@ -5,6 +5,7 @@ import { formatBubbleTime } from "../../shared/relative-time";
 import { MessageStatusTicks } from "../MessageStatusTicks";
 import type { WAMessage } from "../../types";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { useWhatsAppMediaSrc } from "../../hooks/useWhatsAppMediaSrc";
 
 interface ImageBubbleProps {
   message: WAMessage;
@@ -12,7 +13,7 @@ interface ImageBubbleProps {
 
 export function ImageBubble({ message }: ImageBubbleProps) {
   const isOwn = message.isOwn;
-  const src = message.media?.thumbnailUrl ?? message.media?.url;
+  const src = useWhatsAppMediaSrc(message.media);
 
   return (
     <div

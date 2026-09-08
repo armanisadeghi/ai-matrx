@@ -48,6 +48,9 @@ import { RequestRecoveryProvider } from "@/features/request-recovery/providers/R
 // build a second manager with its own channels and its own write ledger.
 // See providers/RealtimeHost.tsx.
 import { RealtimeHost } from "@/providers/RealtimeHost";
+// THE ONE `@ai-matrx/messaging` mount. Inside RealtimeHost on purpose — it
+// rides that provider's single manager. See providers/MessagingHost.tsx.
+import { MessagingHost } from "@/providers/MessagingHost";
 import { RecoveryWindow } from "@/features/request-recovery/components/RecoveryWindow";
 import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNudge";
 
@@ -149,6 +152,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                       <SelectedImagesProvider>
                             <RequestRecoveryProvider>
                               <RealtimeHost>
+                              <MessagingHost>
                               <MediaHostProvider>
                               {/* ONE audio mount — the whole audio system
                                 (devices, recording engine, TTS output,
@@ -228,6 +232,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                     openFilePreview(fileId); */}
                               </React.Fragment>
                               </MediaHostProvider>
+                              </MessagingHost>
                               </RealtimeHost>
                             </RequestRecoveryProvider>
                       </SelectedImagesProvider>

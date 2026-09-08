@@ -591,12 +591,12 @@ export function getStateViewerTabs(
       ),
     },
     {
-      id: "messaging",
-      label: "Messaging",
+      id: "messagingUi",
+      label: "Messaging (chrome)",
       content: (
         <GenericSliceViewer
-          sliceKey="messaging"
-          state={completeState.messaging}
+          sliceKey="messagingUi"
+          state={completeState.messagingUi}
         />
       ),
     },

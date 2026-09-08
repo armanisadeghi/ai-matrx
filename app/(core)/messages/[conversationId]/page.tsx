@@ -1,124 +1,60 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectUser } from "@/lib/redux/selectors/userSelectors";
+/**
+ * One conversation, full page.
+ *
+ * Opening it, subscribing to it, backfilling it after a reconnect, marking it
+ * read and clearing its badge are all `@ai-matrx/messaging`'s — `useConversation`
+ * opens the conversation channel on mount and closes it when this route stops
+ * caring. This file is the app frame: the shell header, the surface scope, and
+ * the right-click menu that `<ConversationPane>` carries.
+ */
+
+import { useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { asConversationId } from "@ai-matrx/messaging";
 import {
-  closeMessaging,
-  setCurrentConversation,
-  markConversationAsRead,
-  selectConversations,
-  selectTotalUnreadCount,
-} from "@/features/messaging/redux/messagingSlice";
-import { ChatThread } from "@/features/messaging/components/ChatThread";
+  useConversation,
+  useConversations,
+  useOnlineUserIds,
+} from "@ai-matrx/messaging/react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { closeMessaging } from "@/features/messaging/redux/messagingUiSlice";
+import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import { MessagesThreadHeader } from "@/features/messaging/components/shell/MessagesThreadHeader";
-import { useOnlinePresence } from "@/hooks/useSupabaseMessaging";
-import { getMessagingService } from "@/lib/supabase/messaging";
-import { createMessagesScope } from "@/features/surfaces/manifests/messages.manifest";
+import { useMessagesSurfaceScope } from "@/features/messaging/lib/useMessagesSurfaceScope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { toast } from "@/lib/toast";
 
 export default function ConversationPage() {
   const params = useParams();
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const conversationId = params.conversationId as string;
-  const markAsReadCalledRef = useRef(false);
+  const id = asConversationId(conversationId);
 
-  // Loaded-message count, published up from ChatThread (which owns the useChat
-  // subscription). A ref, not state: `getScope` is sampled when the user presses
-  // Run, so this must be the live value and must not re-render the thread.
-  const loadedMessageCountRef = useRef(0);
-  const handleLoadedMessageCountChange = (count: number) => {
-    loadedMessageCountRef.current = count;
-  };
+  const userId = useAppSelector(selectUserId);
+  const getScope = useMessagesSurfaceScope(conversationId);
 
-  // Get user from Redux - use auth.users.id (UUID)
-  const user = useAppSelector(selectUser);
-  const userId = user?.id ?? undefined;
-  const displayName =
-    user?.userMetadata?.fullName ||
-    user?.userMetadata?.name ||
-    user?.email?.split("@")[0] ||
-    "User";
+  // Opens the thread and its channel, and keeps them open while this route is
+  // mounted. The read receipt rides it — no separate "mark as read" call, and
+  // no chance of marking a conversation read that never opened.
+  useConversation(id);
+  const { conversations } = useConversations();
+  const online = useOnlineUserIds(id);
 
-  // Get conversations from Redux (centralized state)
-  const conversations = useAppSelector(selectConversations);
-  const totalUnreadCount = useAppSelector(selectTotalUnreadCount);
-  const currentConversation = conversations.find(
-    (c) => c.id === conversationId,
-  );
-
-  // Get online presence for header
-  const { onlineUsers } = useOnlinePresence(
-    conversationId,
-    userId || null,
-    displayName,
-  );
-
-  // For direct chats, check if the other user is online
+  const conversation =
+    conversations.find((item) => item.conversation.id === conversationId) ?? null;
   const otherParticipant =
-    currentConversation?.type === "direct"
-      ? currentConversation.participants?.find((p) => p.user_id !== userId)
+    conversation?.conversation.kind === "direct"
+      ? (conversation.participants.find(
+          (participant) => participant.userId !== userId,
+        ) ?? null)
       : null;
 
-  const isOtherUserOnline = otherParticipant
-    ? onlineUsers.some((u) => u.user_id === otherParticipant.user_id)
-    : undefined;
-
-  // Close side sheet and set current conversation on mount
-  // Also eagerly mark conversation as read in both Redux AND the database
   useEffect(() => {
     dispatch(closeMessaging());
-    dispatch(setCurrentConversation(conversationId));
-
-    // Immediately clear unread in Redux (redundant with setCurrentConversation but explicit)
-    dispatch(markConversationAsRead(conversationId));
-
-    // Eagerly mark as read in the database -- don't wait for messages to load
-    // This ensures the DB state is consistent even if the user navigates away quickly
-    if (userId && !markAsReadCalledRef.current) {
-      markAsReadCalledRef.current = true;
-      getMessagingService()
-        .markConversationAsRead(conversationId, userId)
-        .catch((error: unknown) => {
-          console.error(
-            "[Messaging] Failed to mark conversation as read:",
-            error,
-          );
-          toast.error("Could not mark this conversation as read");
-        });
-    }
-
-    // Clear current conversation when leaving
-    return () => {
-      dispatch(setCurrentConversation(null));
-      markAsReadCalledRef.current = false;
-    };
-  }, [dispatch, conversationId, userId]);
-
-  const getScope = () => {
-    const last = currentConversation?.last_message;
-    return createMessagesScope({
-      current_conversation_id: conversationId,
-      current_conversation_message_count: loadedMessageCountRef.current,
-      current_conversation_title:
-        currentConversation?.display_name ??
-        currentConversation?.group_name ??
-        undefined,
-      current_sender_id: last?.sender_id ?? undefined,
-      current_sender_name: last?.sender?.display_name ?? undefined,
-      last_message_text: last?.content ?? undefined,
-      last_message_timestamp: last?.created_at ?? undefined,
-      total_unread_count: totalUnreadCount,
-      all_conversations: conversations.map((c) => ({
-        id: c.id,
-        title: c.display_name ?? c.group_name ?? null,
-        unread_count: c.unread_count ?? 0,
-        last_message_at: c.updated_at,
-      })),
-    });
-  };
+  }, [dispatch]);
 
   return (
     <SurfaceRuntimeProvider
@@ -128,21 +64,20 @@ export default function ConversationPage() {
     >
       {/* Header injected into the shell's header center zone */}
       <MessagesThreadHeader
-        title={currentConversation?.display_name || "Chat"}
-        avatarUrl={currentConversation?.display_image}
+        title={conversation?.displayName ?? "Chat"}
+        avatarUrl={conversation?.displayImageUrl ?? undefined}
         isOnline={
-          currentConversation?.type === "direct" ? isOtherUserOnline : undefined
+          otherParticipant !== null
+            ? online.has(otherParticipant.userId)
+            : undefined
         }
       />
 
-      {/* Chat Thread - Full height */}
-      <div className="h-full flex flex-col overflow-hidden bg-background">
-        <ChatThread
+      <div className="flex h-full flex-col overflow-hidden bg-background">
+        <ConversationPane
           conversationId={conversationId}
-          userId={userId}
-          displayName={displayName}
           className="flex-1"
-          onLoadedMessageCountChange={handleLoadedMessageCountChange}
+          onBack={() => router.push("/messages")}
           getApplicationScope={getScope}
         />
       </div>

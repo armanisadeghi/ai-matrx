@@ -21,9 +21,9 @@ import {
 } from "@ai-matrx/browser-audio/core";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { toast } from "@/lib/toast";
+import type { WhatsAppAttachment } from "../hooks/useWhatsAppChat";
 import { cn } from "@/styles/themes/utils";
 import { MessageInputAttachMenu } from "./MessageInputAttachMenu";
-import type { SendMessageOptions } from "../hooks/useWhatsAppChat";
 import { formatDuration } from "../shared/relative-time";
 
 // emoji-picker-react ships as default-export; load client-side only
@@ -31,7 +31,7 @@ const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
 interface MessageInputBarProps {
   conversationId: string;
-  onSend: (content: string, options?: SendMessageOptions) => Promise<void>;
+  onSend: (content: string, media?: WhatsAppAttachment) => Promise<void>;
   disabled?: boolean;
 }
 
@@ -74,15 +74,15 @@ export function MessageInputBar({
             },
           },
         );
-        const url = normalized.url;
         await onSend("", {
-          message_type: "audio",
-          media_url: url ?? undefined,
-          media_metadata: {
-            duration_sec: recorder.duration,
-            mime_type: file.type,
-            file_size: normalized.meta.sizeBytes ?? blob.size,
-            file_id: normalized.fileId,
+          kind: "audio",
+          attachment: {
+            fileId: normalized.fileId,
+            fileName: file.name,
+            mimeType: file.type,
+            sizeBytes: normalized.meta.sizeBytes ?? blob.size,
+            width: null,
+            height: null,
           },
         });
       } catch (err) {
@@ -160,15 +160,15 @@ export function MessageInputBar({
           metadata: { kind: `chat_${kind}` },
         },
       );
-      const url = normalized.url;
       await onSend("", {
-        message_type: kind,
-        media_url: url ?? undefined,
-        media_metadata: {
-          file_name: file.name,
-          file_size: normalized.meta.sizeBytes ?? file.size,
-          mime_type: file.type,
-          file_id: normalized.fileId,
+        kind,
+        attachment: {
+          fileId: normalized.fileId,
+          fileName: file.name,
+          mimeType: file.type,
+          sizeBytes: normalized.meta.sizeBytes ?? file.size,
+          width: null,
+          height: null,
         },
       });
     } catch (err) {

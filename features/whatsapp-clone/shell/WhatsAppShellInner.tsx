@@ -88,7 +88,7 @@ export function WhatsAppShellInner({
       <NewConversationDialog
         open={newChatOpen}
         onOpenChange={setNewChatOpen}
-        onConversationCreated={(id) => {
+        onCreated={(id) => {
           setNewChatOpen(false);
           select(id);
         }}

@@ -1,87 +1,37 @@
 /**
- * Messaging Feature - Barrel Exports
- * 
- * Real-time direct messaging using Supabase Realtime
- * Uses dm_ prefixed tables and auth.users.id (UUID)
+ * Messaging feature — the app's frame around `@ai-matrx/messaging`.
+ *
+ * Conversations, messages, realtime, presence, typing, the outbox, references
+ * and actionable messages are the PACKAGE's. Import them from
+ * `@ai-matrx/messaging` / `@ai-matrx/messaging/react` directly; nothing is
+ * re-exported through here, because a barrel that forwards a package's API is
+ * a second name for it that drifts.
+ *
+ * What lives in this feature is app chrome: the panes that wrap the package's
+ * surfaces in this app's right-click menu and surface scope, the side sheet,
+ * the action-card surfaces for this app's message kinds, the notification sink,
+ * and the "message this person" service other features call.
  */
 
-// Types
-export type {
-  ConversationType,
-  ParticipantRole,
-  MessageType,
-  MessageStatus,
-  Conversation,
-  ConversationParticipant,
-  Message,
-  UserBasicInfo,
-  ConversationWithDetails,
-  ParticipantWithUser,
-  MessageWithSender,
-  CreateConversationRequest,
-  CreateConversationResponse,
-  SendMessageRequest,
-  UpdateMessageRequest,
-  ConversationListResponse,
-  MessagesListResponse,
-  NewMessageEvent,
-  MessageUpdateEvent,
-  TypingEvent,
-  PresenceState,
-  MessagingState,
-  ChatState,
-  UseMessagesReturn,
-  UseTypingIndicatorReturn,
-  UseChatReturn,
-  UseConversationsReturn,
-} from './types';
-
-// Redux Actions
+export { ConversationListPane } from "./components/ConversationListPane";
+export { ConversationPane } from "./components/ConversationPane";
+export { MessagingSideSheet } from "./components/MessagingSideSheet";
+export { MessageIcon } from "./components/MessageIcon";
+export { NewConversationDialog } from "./components/NewConversationDialog";
 export {
-  openMessaging,
+  MessagingConversationRowChrome,
+  MessagingMessageChrome,
+  MessagingFence,
+} from "./components/MessagingChrome";
+export { MESSAGE_ACTION_SURFACES } from "./actions/messageActionSurfaces";
+export {
+  sendDirectActionMessage,
+  findOrCreateDirectConversation,
+} from "./service/sendDirectActionMessage";
+export {
   closeMessaging,
+  openMessaging,
   toggleMessaging,
-  setSheetWidth,
-  setCurrentConversation,
-  clearCurrentConversation,
-  setConversations,
-  updateConversation,
-  removeConversation,
-  updateUnreadCount,
-  incrementUnreadCount,
-  markConversationAsRead,
-  resetUnreadCounts,
-  setTotalUnreadCount,
-  setLoading,
-  setError,
-  setMessagingAvailable,
-  resetMessaging,
-} from './redux/messagingSlice';
-
-// Redux Selectors
-export {
   selectMessagingIsOpen,
   selectMessagingSheetWidth,
-  selectCurrentConversationId,
-  selectConversations,
-  selectUnreadCounts,
-  selectTotalUnreadCount,
-  selectMessagingIsLoading,
-  selectMessagingError,
-  selectMessagingIsAvailable,
-  selectCurrentConversation,
-  selectConversationUnreadCount,
-} from './redux/messagingSlice';
-
-// Components
-export { MessagingSideSheet } from './components/MessagingSideSheet';
-export { MessagingInitializer } from './components/MessagingInitializer';
-export { ConversationList } from './components/ConversationList';
-export { ChatThread } from './components/ChatThread';
-export { MessageBubble } from './components/MessageBubble';
-export { MessageInput } from './components/MessageInput';
-export { TypingIndicator } from './components/TypingIndicator';
-export { OnlineIndicator } from './components/OnlineIndicator';
-export { NewConversationDialog } from './components/NewConversationDialog';
-export { MessageIcon } from './components/MessageIcon';
-
+} from "./redux/messagingUiSlice";

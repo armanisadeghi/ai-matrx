@@ -2,14 +2,14 @@
 
 import { useCallback } from "react";
 import { MessageSquare } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useConversations } from "@ai-matrx/messaging/react";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { selectTotalUnreadCount } from "@/features/messaging/redux/messagingSlice";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
 
 export function MessagesMenuItem() {
   const dispatch = useAppDispatch();
-  const unreadCount = useAppSelector(selectTotalUnreadCount);
+  const { totalUnreadConversations: unreadCount } = useConversations();
 
   const handleClick = useCallback(() => {
     dispatch(openOverlay({ overlayId: "messagesWindow" }));

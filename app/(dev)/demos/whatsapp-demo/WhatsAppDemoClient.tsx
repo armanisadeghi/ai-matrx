@@ -9,7 +9,6 @@ import {
   type WADataMode,
 } from "@/features/whatsapp-clone/hooks/WhatsAppDataModeProvider";
 import { WhatsAppShell } from "@/features/whatsapp-clone/shell/WhatsAppShell";
-import { MessagingInitializer } from "@/features/messaging/components/MessagingInitializer";
 
 interface WhatsAppDemoClientProps {
   initialMode: WADataMode;
@@ -45,7 +44,6 @@ export function WhatsAppDemoClient({
           )}
         >
           <WhatsAppDataModeProvider initialMode={mode} key={mode}>
-            {mode === "live" ? <MessagingInitializer /> : null}
             <WhatsAppShell
               userName={userName}
               userAvatarUrl={userAvatarUrl}
