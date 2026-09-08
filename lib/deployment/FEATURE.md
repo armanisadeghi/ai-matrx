@@ -1,0 +1,48 @@
+# lib/deployment — which origin can serve this path
+
+One repo, three Vercel builds (`next.config.js` § `MATRX_PROFILE`, `proxy.ts`
+§ "Deployment split"): `www` serves the app without `(admin)`, `manage` serves
+only `(admin)`, `demos` serves only `(dev)`. `proxy.ts` covers the gap by
+redirecting a foreign path to the origin that owns it.
+
+**That redirect is correct for a document navigation and fatal for a Next
+`<Link>`.** A `<Link href="/administration/…">` prefetches on hover with an RSC
+`fetch()` carrying `RSC` / `Next-Router-Prefetch` headers — a preflighted
+cross-origin request the moment the proxy redirects it, and a preflight may
+never be redirected. Production, 2026-09-08, reproduced by hovering the sidebar:
+
+> Access to fetch at `https://manage.aimatrx.com/administration/launchpad`
+> (redirected from `https://www.aimatrx.com/administration/launchpad?_rsc=…`)
+> … blocked by CORS policy: Redirect is not allowed for a preflight request.
+
+## The door
+
+- **`surfaces.ts`** — the ONE table of the split (`DEPLOYMENT_SURFACES`), read
+  by `proxy.ts` and by the client, so the redirect and the link can never
+  disagree about which origin owns a path. `crossDeploymentHref(href)` returns
+  the sibling's absolute URL, or null when this build serves the path itself.
+- **`components/navigation/AppLink.tsx`** — use instead of `next/link` for any
+  href that can point at a split surface. A foreign path becomes a plain `<a>`
+  with an absolute URL: a document navigation, no prefetch, no preflight. On the
+  build that owns the path it is `next/link`, unchanged.
+- **`navigate.ts`** — `pushAppHref` / `replaceAppHref`, the same rule for
+  `router.push` / `router.replace`.
+
+A plain lowercase `<a href="/administration">` was never broken and needs no
+change: the browser navigates the document and the proxy redirect is honoured.
+It is the Next ROUTER that must never be handed a foreign path.
+
+## The guard
+
+`pnpm check:cross-deployment-links` (`:strict` in the release gates,
+`:self-test` proves the detector still catches the original defect). It flags a
+`<Link>`, any capitalised wrapper, or a `router.push`/`replace` carrying a
+literal split-surface path outside the route group that owns it. Wrappers that
+own their own anchor and route it through `AppLink` are listed in the script's
+`DOOR_ELEMENTS`; adding a name there that does NOT go through the door re-opens
+the class.
+
+**RED 78 offences (exit 2) at `71986f3eab`; GREEN 0 (exit 0) at `cc2e23adce`.**
+`/demos` was breaking identically on www and is fixed by the same table.
+
+**Verified:** 2026-09-08.
