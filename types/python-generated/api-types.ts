@@ -6710,6 +6710,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/zettlr/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_zettlr_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -9004,6 +9021,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_firstup_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/arena/public/channel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Channel */
+        get: operations["public_channel_arena_public_channel_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15634,6 +15668,23 @@ export interface paths {
         };
         /** Public Tutorial Introduction */
         get: operations["public_tutorial_introduction_python_docs_public_tutorial_introduction_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scikit-learn-docs/public/getting-started": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Getting Started */
+        get: operations["public_getting_started_scikit_learn_docs_public_getting_started_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -40724,6 +40775,72 @@ export interface components {
             deleted?: boolean;
         };
         /**
+         * ArenaChannelMetadata
+         * @description Safe projection of one fixed public Are.na community channel.
+         */
+        ArenaChannelMetadata: {
+            /**
+             * Kind
+             * @default arena_public_channel_metadata
+             * @constant
+             */
+            __kind?: "arena_public_channel_metadata";
+            /**
+             * Provider
+             * @default Are.na
+             * @constant
+             */
+            provider?: "Are.na";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Channel Id
+             * @default 275
+             * @constant
+             */
+            channel_id?: 275;
+            /**
+             * Slug
+             * @default arena-influences
+             * @constant
+             */
+            slug?: "arena-influences";
+            /**
+             * Title
+             * @default Arena Influences
+             * @constant
+             */
+            title?: "Arena Influences";
+            /**
+             * Channel Kind
+             * @default default
+             * @constant
+             */
+            channel_kind?: "default";
+            /**
+             * Channel Status
+             * @default closed
+             * @constant
+             */
+            channel_status?: "closed";
+            /** Length */
+            length: number;
+            /** Collaboration */
+            collaboration: boolean;
+            /** Collaborator Count */
+            collaborator_count: number;
+            /**
+             * Api Resource
+             * @default https://api.are.na/v2/channels/arena-influences?per=1
+             * @constant
+             */
+            api_resource?: "https://api.are.na/v2/channels/arena-influences?per=1";
+        };
+        /**
          * ArmSpec
          * @description One competitor: a workflow definition at a pinned version.
          *
@@ -64617,38 +64734,6 @@ export interface components {
             } | string;
         } & {
             [key: string]: unknown;
-        };
-        /**
-         * GettingStartedContent
-         * @description Safe projection of the fixed public pytest getting-started guide.
-         */
-        GettingStartedContent: {
-            /**
-             * Kind
-             * @default pytest_docs_getting_started_content
-             * @constant
-             */
-            __kind?: "pytest_docs_getting_started_content";
-            /**
-             * Provider
-             * @default pytest Documentation
-             * @constant
-             */
-            provider?: "pytest Documentation";
-            /**
-             * Version
-             * @default stable
-             * @constant
-             */
-            version?: "stable";
-            /**
-             * Format
-             * @default restructuredtext
-             * @constant
-             */
-            format?: "restructuredtext";
-            /** Content */
-            content: string;
         };
         /**
          * GettyAatBroaderConcept
@@ -111029,6 +111114,33 @@ export interface components {
             /** Record Page */
             record_page: string;
         };
+        /** ZettlrPublicRelease */
+        ZettlrPublicRelease: {
+            /**
+             * Kind
+             * @default zettlr_public_release
+             * @constant
+             */
+            __kind?: "zettlr_public_release";
+            /**
+             * Provider
+             * @default Zettlr
+             * @constant
+             */
+            provider?: "Zettlr";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
+        };
         /** ZightServiceStatus */
         ZightServiceStatus: {
             /**
@@ -112834,6 +112946,38 @@ export interface components {
             /** Language */
             language: string;
         };
+        /**
+         * GettingStartedContent
+         * @description Safe projection of the fixed public pytest getting-started guide.
+         */
+        aidream__services__pytest_docs_integrations__service__GettingStartedContent: {
+            /**
+             * Kind
+             * @default pytest_docs_getting_started_content
+             * @constant
+             */
+            __kind?: "pytest_docs_getting_started_content";
+            /**
+             * Provider
+             * @default pytest Documentation
+             * @constant
+             */
+            provider?: "pytest Documentation";
+            /**
+             * Version
+             * @default stable
+             * @constant
+             */
+            version?: "stable";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
+        };
         /** PageMetadata */
         aidream__services__qemu_wiki_integrations__service__PageMetadata: {
             /**
@@ -113017,6 +113161,35 @@ export interface components {
             content_model: string;
             /** Language */
             language: string;
+        };
+        /** GettingStartedContent */
+        aidream__services__scikit_learn_docs_integrations__service__GettingStartedContent: {
+            /**
+             * Kind
+             * @default scikit_learn_docs_getting_started_content
+             * @constant
+             */
+            __kind?: "scikit_learn_docs_getting_started_content";
+            /**
+             * Provider
+             * @default scikit-learn Documentation
+             * @constant
+             */
+            provider?: "scikit-learn Documentation";
+            /**
+             * Version
+             * @default stable
+             * @constant
+             */
+            version?: "stable";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
         };
         /** CardMetadata */
         aidream__services__scryfall_integrations__service__CardMetadata: {
@@ -125287,6 +125460,26 @@ export interface operations {
             };
         };
     };
+    public_release_zettlr_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZettlrPublicRelease"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -128238,6 +128431,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FirstupServiceStatus"];
+                };
+            };
+        };
+    };
+    public_channel_arena_public_channel_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArenaChannelMetadata"];
                 };
             };
         };
@@ -136834,7 +137047,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GettingStartedContent"];
+                    "application/json": components["schemas"]["aidream__services__pytest_docs_integrations__service__GettingStartedContent"];
                 };
             };
         };
@@ -136855,6 +137068,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TutorialIntroductionContent"];
+                };
+            };
+        };
+    };
+    public_getting_started_scikit_learn_docs_public_getting_started_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__scikit_learn_docs_integrations__service__GettingStartedContent"];
                 };
             };
         };

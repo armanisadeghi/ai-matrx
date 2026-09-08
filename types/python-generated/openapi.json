@@ -16769,6 +16769,27 @@
         }
       }
     },
+    "/zettlr/public/release": {
+      "get": {
+        "tags": [
+          "Zettlr Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_zettlr_public_release_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZettlrPublicRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -20271,6 +20292,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FirstupServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/arena/public/channel": {
+      "get": {
+        "tags": [
+          "Are.na Integrations"
+        ],
+        "summary": "Public Channel",
+        "operationId": "public_channel_arena_public_channel_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArenaChannelMetadata"
                 }
               }
             }
@@ -30118,7 +30160,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GettingStartedContent"
+                  "$ref": "#/components/schemas/aidream__services__pytest_docs_integrations__service__GettingStartedContent"
                 }
               }
             }
@@ -30140,6 +30182,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TutorialIntroductionContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scikit-learn-docs/public/getting-started": {
+      "get": {
+        "tags": [
+          "scikit-learn Documentation Integrations"
+        ],
+        "summary": "Public Getting Started",
+        "operationId": "public_getting_started_scikit_learn_docs_public_getting_started_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__scikit_learn_docs_integrations__service__GettingStartedContent"
                 }
               }
             }
@@ -92701,6 +92764,87 @@
         ],
         "title": "ArchiveWorkflowResponse"
       },
+      "ArenaChannelMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "arena_public_channel_metadata",
+            "title": "Kind",
+            "default": "arena_public_channel_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Are.na",
+            "title": "Provider",
+            "default": "Are.na"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "channel_id": {
+            "type": "integer",
+            "const": 275,
+            "title": "Channel Id",
+            "default": 275
+          },
+          "slug": {
+            "type": "string",
+            "const": "arena-influences",
+            "title": "Slug",
+            "default": "arena-influences"
+          },
+          "title": {
+            "type": "string",
+            "const": "Arena Influences",
+            "title": "Title",
+            "default": "Arena Influences"
+          },
+          "channel_kind": {
+            "type": "string",
+            "const": "default",
+            "title": "Channel Kind",
+            "default": "default"
+          },
+          "channel_status": {
+            "type": "string",
+            "const": "closed",
+            "title": "Channel Status",
+            "default": "closed"
+          },
+          "length": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Length"
+          },
+          "collaboration": {
+            "type": "boolean",
+            "title": "Collaboration"
+          },
+          "collaborator_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Collaborator Count"
+          },
+          "api_resource": {
+            "type": "string",
+            "const": "https://api.are.na/v2/channels/arena-influences?per=1",
+            "title": "Api Resource",
+            "default": "https://api.are.na/v2/channels/arena-influences?per=1"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "length",
+          "collaboration",
+          "collaborator_count"
+        ],
+        "title": "ArenaChannelMetadata",
+        "description": "Safe projection of one fixed public Are.na community channel."
+      },
       "ArmSpec": {
         "properties": {
           "label": {
@@ -147791,47 +147935,6 @@
           "related"
         ],
         "title": "GetToolResponse"
-      },
-      "GettingStartedContent": {
-        "properties": {
-          "__kind": {
-            "type": "string",
-            "const": "pytest_docs_getting_started_content",
-            "title": "Kind",
-            "default": "pytest_docs_getting_started_content"
-          },
-          "provider": {
-            "type": "string",
-            "const": "pytest Documentation",
-            "title": "Provider",
-            "default": "pytest Documentation"
-          },
-          "version": {
-            "type": "string",
-            "const": "stable",
-            "title": "Version",
-            "default": "stable"
-          },
-          "format": {
-            "type": "string",
-            "const": "restructuredtext",
-            "title": "Format",
-            "default": "restructuredtext"
-          },
-          "content": {
-            "type": "string",
-            "maxLength": 64000,
-            "minLength": 1,
-            "title": "Content"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "content"
-        ],
-        "title": "GettingStartedContent",
-        "description": "Safe projection of the fixed public pytest getting-started guide."
       },
       "GettyAatBroaderConcept": {
         "properties": {
@@ -249684,6 +249787,48 @@
         "title": "ZenodoPublicRecord",
         "description": "Safe bounded projection of one public Zenodo record."
       },
+      "ZettlrPublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "zettlr_public_release",
+            "title": "Kind",
+            "default": "zettlr_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Zettlr",
+            "title": "Provider",
+            "default": "Zettlr"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag",
+          "release_url",
+          "published_at"
+        ],
+        "title": "ZettlrPublicRelease"
+      },
       "ZightServiceStatus": {
         "properties": {
           "__kind": {
@@ -253466,6 +253611,47 @@
         ],
         "title": "PageMetadata"
       },
+      "aidream__services__pytest_docs_integrations__service__GettingStartedContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pytest_docs_getting_started_content",
+            "title": "Kind",
+            "default": "pytest_docs_getting_started_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "pytest Documentation",
+            "title": "Provider",
+            "default": "pytest Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "stable",
+            "title": "Version",
+            "default": "stable"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "GettingStartedContent",
+        "description": "Safe projection of the fixed public pytest getting-started guide."
+      },
       "aidream__services__qemu_wiki_integrations__service__PageMetadata": {
         "properties": {
           "__kind": {
@@ -253802,6 +253988,46 @@
           "language"
         ],
         "title": "PageMetadata"
+      },
+      "aidream__services__scikit_learn_docs_integrations__service__GettingStartedContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "scikit_learn_docs_getting_started_content",
+            "title": "Kind",
+            "default": "scikit_learn_docs_getting_started_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "scikit-learn Documentation",
+            "title": "Provider",
+            "default": "scikit-learn Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "stable",
+            "title": "Version",
+            "default": "stable"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "GettingStartedContent"
       },
       "aidream__services__scryfall_integrations__service__CardMetadata": {
         "properties": {
