@@ -26,6 +26,10 @@
  * feeding this store, so there is no parallel system.
  */
 
+import {
+  collectBrowserProvenance,
+  type BrowserProvenance,
+} from "@/lib/deployment/browser-provenance";
 import { extractErrorMessage } from "@/utils/errors";
 import { classifyTier } from "@/lib/diagnostics/errorTierRules";
 import type { ErrorTier } from "@/lib/diagnostics/errorTiers";
@@ -242,6 +246,8 @@ export interface CapturedError {
   route: string;
   /** `window.location.href` at capture time. */
   url: string;
+  /** Loaded document identity at the latest occurrence, never at flush time. */
+  browserProvenance?: BrowserProvenance;
 
   /** select / insert / rpc / … when known. */
   operation: CapturedOperation;
@@ -525,6 +531,7 @@ export function captureError(input: CaptureInput): string {
       count: existing.count + 1,
       // Refresh route/status/raw to the latest occurrence — most useful.
       ...currentRoute(),
+      browserProvenance: collectBrowserProvenance(),
       status: input.status ?? existing.status,
       raw: input.raw ?? existing.raw,
     };
@@ -546,6 +553,7 @@ export function captureError(input: CaptureInput): string {
     count: 1,
     route,
     url,
+    browserProvenance: collectBrowserProvenance(),
     operation: input.operation ?? "unknown",
     schema: input.schema,
     relation: input.relation,

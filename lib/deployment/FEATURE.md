@@ -44,6 +44,10 @@ A plain lowercase `<a href="/administration">` was never broken and needs no
 change: the browser navigates the document and the proxy redirect is honoured.
 It is the Next ROUTER that must never be handed a foreign path.
 
+## Loaded-document evidence
+
+`browser-provenance.ts` owns the existing loaded-script deployment-ID and Next build-ID readers, shared by overlay diagnostics and the canonical error capture store. Every captured occurrence snapshots deployment IDs, a random page-session ID, page start/age, origin, online state, and visibility. `persistCapturedErrors` sends that snapshot in `context.browserProvenance` for authenticated and guest captures. It never fetches the latest deployment to label an older document, and stores no authentication tokens or storage contents. Missing evidence is null; no stale-build conclusion follows from a failure signature alone.
+
 ## The guard
 
 `pnpm check:cross-deployment-links` (`:strict` in the release gates,
@@ -77,3 +81,7 @@ constant-aware pass found**, and then **RED 87 (exit 2) at the deployed
 `/demos` was breaking identically on www and is fixed by the same table.
 
 **Verified:** 2026-09-08.
+
+## Change Log
+
+- 2026-09-08 — Shared loaded-document provenance now accompanies canonical error persistence, retaining occurrence-time identity across the debounce.

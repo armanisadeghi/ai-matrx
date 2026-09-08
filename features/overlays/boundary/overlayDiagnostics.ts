@@ -21,6 +21,12 @@
  * sections so an admin (or an LLM) reads the cause in seconds.
  */
 
+import {
+  collectLoadedScripts,
+  collectDeploymentIds,
+  getNextBuildId,
+} from "@/lib/deployment/browser-provenance";
+
 export interface OverlayDiagnostics {
   deploy: {
     nodeEnv: string | undefined;
@@ -177,7 +183,8 @@ function collectAgentExecution(
       title: conv.title ?? ui.displayTitle ?? null,
       status: conv.status ?? null,
       displayMode: ui.displayMode ?? null,
-      inputText: truncated && rawText ? rawText.slice(0, MAX_INPUT_TEXT_CHARS) : rawText,
+      inputText:
+        truncated && rawText ? rawText.slice(0, MAX_INPUT_TEXT_CHARS) : rawText,
       inputTextLength: rawText?.length ?? 0,
       inputTextTruncated: truncated,
       messagePartCount: parts.length,
@@ -197,53 +204,6 @@ function collectAgentExecution(
     conversationCount: rows.length,
     conversations: rows.slice(0, MAX_DIAG_CONVERSATIONS),
   };
-}
-
-function getNextBuildId(): string | null {
-  if (typeof window === "undefined") return null;
-  const nextData = asRecord(window).__NEXT_DATA__;
-  const data = asRecord(nextData);
-  return typeof data.buildId === "string" ? data.buildId : null;
-}
-
-function collectLoadedScripts(): string[] {
-  if (typeof document === "undefined") return [];
-  return Array.from(document.querySelectorAll("script[src]"))
-    .map((s) => (s as HTMLScriptElement).src)
-    .filter(Boolean);
-}
-
-function collectDeploymentIds(
-  scripts: string[],
-  configuredId: string | null,
-): {
-  ids: string[];
-  someMissingDpl: boolean;
-  mismatch: boolean;
-  inconsistency: boolean;
-} {
-  const ids = new Set<string>();
-  let sawNone = false;
-  for (const src of scripts) {
-    // Only chunk/static assets carry dpl meaningfully.
-    if (!src.includes("/_next/")) continue;
-    try {
-      const u = new URL(src);
-      const dpl = u.searchParams.get("dpl");
-      if (dpl) ids.add(dpl);
-      else sawNone = true;
-    } catch {
-      /* ignore unparseable */
-    }
-  }
-  const list = Array.from(ids);
-  // A loaded script's dpl that doesn't match this build's configured id is an
-  // observed deployment-id inconsistency. It does not establish why it arose.
-  const mismatch =
-    configuredId !== null && list.some((id) => id !== configuredId);
-  const inconsistency =
-    list.length > 1 || (list.length >= 1 && sawNone) || mismatch;
-  return { ids: list, someMissingDpl: sawNone, mismatch, inconsistency };
 }
 
 function collectChunkTimings(): {
@@ -338,7 +298,10 @@ export function collectOverlayDiagnostics(
   const s = asRecord(reduxState);
   const overlays = s.overlays ?? null;
   const wm = asRecord(s.windowManager);
-  const wmWindows = asRecord(wm.windows) as Record<string, Record<string, unknown>>;
+  const wmWindows = asRecord(wm.windows) as Record<
+    string,
+    Record<string, unknown>
+  >;
   const user = asRecord(s.userAuth);
 
   // Trim window entries to the fields that matter (state/title/overlayId),

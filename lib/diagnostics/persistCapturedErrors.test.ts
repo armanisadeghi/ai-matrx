@@ -62,6 +62,46 @@ describe("captured error persistence settlement", () => {
     );
   });
 
+  it("persists the captured document identity even if scripts change before flush", async () => {
+    const script = document.createElement("script");
+    script.src =
+      "https://manage.aimatrx.com/_next/static/chunks/runtime.js?dpl=dpl_loaded_old";
+    document.head.append(script);
+    try {
+      captureError({
+        source: "runtime-exception",
+        message: "provenance first failure",
+      });
+      script.src =
+        "https://manage.aimatrx.com/_next/static/chunks/runtime.js?dpl=dpl_loaded_new";
+      await jest.advanceTimersByTimeAsync(1_500);
+      expect(rpc).toHaveBeenCalledWith(
+        "log_client_error",
+        expect.objectContaining({
+          p_context: expect.objectContaining({
+            browserProvenance: expect.objectContaining({
+              pageSessionId: expect.any(String),
+              pageStartedAt: expect.any(Number),
+              deploymentIdsOnPage: ["dpl_loaded_old"],
+            }),
+          }),
+        }),
+      );
+      const first = rpc.mock.calls[0][1].p_context.browserProvenance;
+      rpc.mockClear();
+      captureError({
+        source: "console-error",
+        message: "provenance second failure",
+      });
+      await jest.advanceTimersByTimeAsync(1_500);
+      const second = rpc.mock.calls[0][1].p_context.browserProvenance;
+      expect(second.pageSessionId).toBe(first.pageSessionId);
+      expect(second.deploymentIdsOnPage).toEqual(["dpl_loaded_new"]);
+    } finally {
+      script.remove();
+    }
+  });
+
   it("keeps explicitly local recovery diagnostics out of system_error", async () => {
     captureError({
       source: "unsaved-work",
@@ -167,9 +207,7 @@ describe("early-user persistence policy", () => {
   });
 
   it("returns established accounts to red-only persistence", () => {
-    const established = new Date(
-      now - EARLY_USER_OBSERVATION_MS,
-    ).toISOString();
+    const established = new Date(now - EARLY_USER_OBSERVATION_MS).toISOString();
     expect(
       shouldPersistCapturedTier({
         tier: "yellow",

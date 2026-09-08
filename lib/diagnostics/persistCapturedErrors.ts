@@ -181,19 +181,20 @@ async function flush(): Promise<void> {
     persistedIds.add(e.id); // mark before the await so a re-fire never double-sends
     try {
       const context = toJson({
-          tier: e.tier,
-          relation: e.relation,
-          operation: e.operation,
-          schema: e.schema,
-          userMessage: e.userMessage,
-          details: e.details,
-          hint: e.hint,
-          status: e.status,
-          callSite: e.callSite,
-          occurrences: e.count,
-          url: e.url,
-          name: e.name,
-        });
+        tier: e.tier,
+        relation: e.relation,
+        operation: e.operation,
+        schema: e.schema,
+        userMessage: e.userMessage,
+        details: e.details,
+        hint: e.hint,
+        status: e.status,
+        callSite: e.callSite,
+        occurrences: e.count,
+        url: e.url,
+        browserProvenance: e.browserProvenance,
+        name: e.name,
+      });
       if (isAuthenticated) {
         await supabase.rpc("log_client_error", {
           p_source: e.source,
