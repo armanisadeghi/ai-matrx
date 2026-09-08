@@ -40,7 +40,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { MessagingProvider } from "@ai-matrx/messaging/react";
 import type {
@@ -67,6 +67,7 @@ import {
 import { useIncomingMessageNotifier } from "@/features/messaging/lib/useIncomingMessageNotifier";
 import { unlockAudio } from "@/features/messaging/utils/notificationSound";
 import { toast } from "@/lib/toast";
+import { verifiedMessagingUserId } from "./messagingIdentity";
 
 export interface MessagingHostProps {
   children: ReactNode;
@@ -76,8 +77,30 @@ export function MessagingHost({ children }: MessagingHostProps) {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectActiveOrganizationId);
+  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const notifyIncoming = useIncomingMessageNotifier();
   const store = useAppStore();
+
+  // Redux and the Supabase session hydrate independently and can briefly name
+  // different accounts during sign-in, sign-out, or an account switch. The DM
+  // RPCs intentionally require p_user_id = auth.uid(); do not call them until
+  // both identity sources agree. RLS remains the authority and the provider
+  // simply stays inert during the transition.
+  useEffect(() => {
+    let mounted = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (mounted) setSessionUserId(data.session?.user.id ?? null);
+    });
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) setSessionUserId(session?.user.id ?? null);
+    });
+    return () => {
+      mounted = false;
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  const authenticatedUserId = verifiedMessagingUserId(userId, sessionUserId);
 
   // The app's ONE production transport for `@ai-matrx/agents` calls — the same
   // pipeline `useRunAgent` and the execution system ride, so a token refresh,
@@ -175,7 +198,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
     <MessagingAiDemandProvider acquire={aiDemand.acquire}>
       <MessagingProvider
         client={supabase}
-        userId={userId}
+        userId={authenticatedUserId}
         organizationId={organizationId}
         // The AI seam: the transport, WHO fulfils each job (from Mandates, both
         // halves), how much history an organization is willing to send, and the
@@ -204,6 +227,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
         // is exactly the window that produced 909 captured errors in 0.6s.
         resolveSession={async () => {
           const { data } = await supabase.auth.getSession();
+          setSessionUserId(data.session?.user.id ?? null);
           return data.session !== null;
         }}
       >
