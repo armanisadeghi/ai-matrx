@@ -22,7 +22,18 @@ import {
 } from "@ai-matrx/messaging/react";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { createClient } from "@/utils/supabase/client";
+import { isJsonObject } from "@/types/json";
 import type { MessageActionData } from "@/features/messaging/types";
+
+function asActionPayload(action: MessageActionData): Readonly<Record<string, unknown>> {
+  if (!isJsonObject(action.payload)) {
+    throw new Error(
+      `[messaging] The "${action.kind}" action payload must be an object; got ` +
+        `${typeof action.payload}. Every action surface destructures it.`,
+    );
+  }
+  return action.payload;
+}
 
 async function repositoryFor(currentUserId: string) {
   const client = createClient();
@@ -84,7 +95,19 @@ export async function sendDirectActionMessage({
       conversationId: asConversationId(conversationId),
       content,
       ...(actionData !== undefined
-        ? { action: { kind: actionData.kind, version: 1, payload: actionData.payload } }
+        ? {
+            action: {
+              kind: actionData.kind,
+              // Our senders write no version; the package reads a missing one
+              // as 1, and every surface in `actions/` declares `[1]`.
+              version: 1,
+              // An action payload is an OBJECT — that is what the column holds
+              // and what every renderer destructures. A non-object here is a
+              // caller bug, and it says so rather than reaching the database as
+              // something no surface can draw.
+              payload: asActionPayload(actionData),
+            },
+          }
         : {}),
     },
     // A system notification is sent once, from one place; the idempotency key
