@@ -30,7 +30,9 @@ same rule as `features/mandates/admin/FEATURE.md`).
    `public.agx_exemplar_approve`, which enforces the knob
    `agent_exemplars.max_approved_per_agent` and re-stamps head contract —
    approval IS the human confirmation the sample fits the current contract) →
-   `archived`. Only APPROVED samples surface as one-click "Use" defaults.
+   `archived`. Approved samples are the CURATED set (the aidream batch endpoint
+   runs them by default); the manager deliberately offers **Use** on any listed
+   sample — trialing a candidate before approving it is the point of the list.
 
 ## Surfaces
 
@@ -42,7 +44,10 @@ agent builder. Do not re-add chips, bars, or strips to any run surface.
 - **Builder launcher** — `components/samples/AgentSamplesLauncher.tsx`: a
   single floating FlaskConical icon directly above the Smart Agent input in
   `AgentBuilderRightPanel.tsx`, opening the non-blocking Test cases
-  `WindowPanel`. "Use"
+  `WindowPanel` (`features/window-panels/windows/agents/AgentTestCasesWindow.tsx`
+  via `features/overlays/openers/agentTestCasesWindow.tsx`; catalogue singleton
+  `agentTestCasesWindow`, registry slug `agent-test-cases-window`, ephemeral,
+  fullscreen on mobile). "Use"
   prefills the live instance through the SAME slices typing uses
   (`setUserVariableValues` + `setUserInputText`; the sample's `user_input` is
   human-typed text, so this is not a USER-INPUT-LAW violation). Context values
@@ -70,6 +75,20 @@ agent builder. Do not re-add chips, bars, or strips to any run surface.
   (`aidream/services/agent_testing/capture.py`; the mandate path's own
   auto-capture reads the same knob). Conversational runs are NOT auto-captured
   — conversations are already the borrow corpus.
+
+## Operational notes (verified 2026-09-08)
+
+- Both halves are DEPLOYED and running: auto-capture writes prod rows daily;
+  the borrow flow has real usage. Live scale 2026-09-08: 789 samples across
+  134 agents (7 approved / 782 candidates / 6 borrowed).
+- `scripts/backfill-agent-exemplar-input-content.ts` (dry-run by default)
+  backfills `metadata.input_content` onto pre-2026-08-29 borrowed rows —
+  **no record exists that `--apply` was ever run**; verify before assuming
+  old borrowed rows replay attachments.
+- `service.ts` exports `renameAgentSample` with ZERO call sites — no rename
+  affordance exists in any surface. Wire it or delete it; don't leave it dead.
+- The cross-repo work order (alias-view drop, batch-run UI, capture gaps)
+  lives at `../../../../common-docs/systems/agents/agent-samples/HANDOFF.md`.
 
 ## Change Log
 

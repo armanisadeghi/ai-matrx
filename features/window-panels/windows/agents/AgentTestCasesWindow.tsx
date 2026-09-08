@@ -86,7 +86,7 @@ export default function AgentTestCasesWindow({
     >
       {/* Row identity is `agent.exemplar` (`AgentSampleRow`), but the manager
           that renders those rows (`AgentSamplesManager`) is a shared component
-          used by 3 surfaces (this window, /agents/admin, and the system-agents
+          rendered by 2 surfaces (this window and the system-agents admin
           samples page) and owns its selection internally — out of scope here
           to reach into. The entity below is this window's actual subject: the
           agent whose test cases are being browsed. */}

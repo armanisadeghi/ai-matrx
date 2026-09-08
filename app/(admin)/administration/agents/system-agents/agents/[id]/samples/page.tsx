@@ -30,9 +30,9 @@ export default async function AdminSystemAgentSamplesPage({
           <div>
             <h1 className="text-lg font-semibold">Test cases</h1>
             <p className="text-sm text-muted-foreground">
-              Sample inputs for {agent.name} — approved samples appear as
-              one-click chips in the builder and runner; candidates come from
-              real runs and manual saves.
+              Sample inputs for {agent.name} — usable in one click from the
+              test-cases window in the agent builder; candidates come from real
+              runs and manual saves, and approval curates the default set.
             </p>
           </div>
           <AgentSamplesManager agentId={id} />
