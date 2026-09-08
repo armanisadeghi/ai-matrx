@@ -10,6 +10,8 @@ overrides:
   '@types/react': latest
   '@types/react-dom': latest
 
+packageExtensionsChecksum: sha256-T3SlODvR2l3ZQB9X/2sfjh7P7FBgK5QAoPJv/yjPEU4=
+
 importers:
 
   .:
@@ -16195,6 +16197,7 @@ snapshots:
 
   '@scaleflex/icons@2.6.3(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
+      '@babel/runtime': 7.29.7
       '@types/react': 19.2.18
       '@types/react-dom': 19.2.7(@types/react@19.2.18)
       react: 19.2.8
@@ -16202,6 +16205,7 @@ snapshots:
 
   '@scaleflex/ui@2.7.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(styled-components@6.5.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))':
     dependencies:
+      '@babel/runtime': 7.29.7
       '@popperjs/core': 2.11.8
       '@scaleflex/icons': 2.6.3(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tippyjs/react': 4.2.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -23891,7 +23895,7 @@ snapshots:
 
   md5.js@1.3.5:
     dependencies:
-      hash-base: 3.0.5
+      hash-base: 3.1.2
       inherits: 2.0.4
       safe-buffer: 5.2.1
 
