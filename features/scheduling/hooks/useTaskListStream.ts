@@ -7,11 +7,10 @@
 "use client";
 
 import { useEffect } from "react";
-import { supabase } from "@/utils/supabase/client";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { subscribeSchedulerBroadcast } from "@/lib/scheduler-client/realtime";
-import { fetchScheduledTask } from "../redux/tasks/thunks";
+import { fetchScheduledTask, fetchScheduledTasks } from "../redux/tasks/thunks";
 import { patchTask, removeTask } from "../redux/tasks/slice";
 import type { AgendaTask, SchTaskRow } from "../types";
 
@@ -38,9 +37,14 @@ export function useTaskListStream() {
     if (!userId) return undefined;
 
     const unsubscribe = subscribeSchedulerBroadcast(
-      supabase,
       userId,
       (event, payload) => {
+        // Realtime has no replay: re-read the whole list rather than leave it
+        // showing whatever was true before the socket went away.
+        if (event === "resync" || payload === null) {
+          void dispatch(fetchScheduledTasks());
+          return;
+        }
         if (payload.schema !== "scheduler" || payload.table !== "sch_task")
           return;
         if (event === "INSERT") {
@@ -75,8 +79,6 @@ export function useTaskListStream() {
       },
     );
 
-    return () => {
-      void unsubscribe();
-    };
+    return unsubscribe;
   }, [dispatch, userId]);
 }

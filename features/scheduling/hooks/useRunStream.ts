@@ -7,11 +7,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { supabase } from "@/utils/supabase/client";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { subscribeSchedulerBroadcast } from "@/lib/scheduler-client/realtime";
 import { removeRun, upsertRun } from "../redux/runs/slice";
+import { fetchRunsForTaskThunk } from "../redux/runs/thunks";
 import { patchTask } from "../redux/tasks/slice";
 import type { AgendaTask, SchRunRow, SchTaskRow } from "../types";
 
@@ -38,9 +38,14 @@ export function useRunStream(taskId: string | null | undefined) {
     if (!taskId || !userId) return undefined;
 
     const unsubscribe = subscribeSchedulerBroadcast(
-      supabase,
       userId,
       (event, payload) => {
+        // Realtime has no replay: the package is telling us the socket was
+        // away, so re-read rather than reconstruct events we never saw.
+        if (event === "resync" || payload === null) {
+          void dispatch(fetchRunsForTaskThunk(taskId));
+          return;
+        }
         if (payload.schema !== "scheduler") return;
         if (payload.table === "sch_run") {
           const candidate = event === "DELETE" ? payload.old : payload.new;
@@ -62,8 +67,6 @@ export function useRunStream(taskId: string | null | undefined) {
       },
     );
 
-    return () => {
-      void unsubscribe();
-    };
+    return unsubscribe;
   }, [dispatch, taskId, userId]);
 }

@@ -16,6 +16,31 @@
  *  - Initial state sync is best-effort: 1500ms "alone timer" decides solo mode.
  *  - Awareness outbound is throttled at ~50ms to coalesce cursor spam.
  *
+ * REALTIME: `@ai-matrx/realtime` owns the channel. THE TOPIC IS THE ROOM here
+ * (pure broadcast), so the package puts the declared topic on the wire verbatim
+ * and ref-counts one underlying channel per room — which is precisely the
+ * problem the `client` option existed to work around ("supabase-js returns the
+ * existing channel object for a duplicate topic and a second subscribe on it
+ * fails"), so that option is gone and the verification harness passes two
+ * MANAGERS instead of two clients.
+ *
+ * What else the adoption bought this provider: the decoupled ordered handler
+ * queue (a burst of chunked frames no longer runs back-to-back on the socket
+ * callback path — the frozen-tab class, and this provider ships 200KB base64
+ * frames), jittered reconnect with the stability reset, tab-sleep and network
+ * awareness, dedup, and diagnostics.
+ *
+ * AND THE CATCH-UP. Realtime has no replay, and a CRDT is not exempt: every
+ * peer update that landed while the socket was down is gone, and Yjs cannot
+ * know it is missing them — the doc simply stays quietly divergent. The correct
+ * re-read for a CRDT is to ask the peers for state again, which is exactly what
+ * a new joiner already does, so `onBackfill` re-sends `y-request-state`.
+ *
+ * Echo suppression is the package default now (it was `broadcast: {self:false}`,
+ * the same intent). The vestigial `presence: {key}` in the old channel config is
+ * gone: this provider binds no presence handlers and never called `track()`, so
+ * it published nothing — awareness rides the `y-awareness` broadcast instead.
+ *
  * See: features/data-tables/collab/FEATURE.md for the higher-level plan.
  */
 "use client";
@@ -26,9 +51,12 @@ import {
   applyAwarenessUpdate,
   encodeAwarenessUpdate,
 } from "y-protocols/awareness";
-import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
-
-import { supabase } from "@/utils/supabase/client";
+import {
+  currentRealtimeManager,
+  defineChannelNamespace,
+  type ChannelHandle,
+  type RealtimeManager,
+} from "@ai-matrx/realtime";
 
 export type SupabaseYjsProviderOptions = {
   /**
@@ -52,14 +80,21 @@ export type SupabaseYjsProviderOptions = {
   /** Cap base64-encoded payload size. Default 200_000 (under Broadcast's 256KB limit, accounting for envelope overhead). */
   chunkSize?: number;
   /**
-   * Override the Supabase client. Defaults to the app singleton — correct
-   * for every browser tab. Only the verification harness passes its own
-   * clients (two providers in ONE process need two sockets, because
-   * supabase-js returns the existing channel object for a duplicate topic
-   * and a second subscribe on it fails).
+   * Override the realtime manager. Defaults to the app's ONE manager (the
+   * provider publishes it). Only the verification harness passes its own —
+   * two providers in ONE process must not share a manager, or the package's
+   * room registry would correctly hand them the same channel and they would
+   * never see each other's frames.
    */
-  client?: SupabaseClient;
+  manager?: RealtimeManager;
 };
+
+/** One place names this channel. A second, different declaration throws. */
+const yjsChannel = defineChannelNamespace({
+  namespace: "yjs",
+  parts: ["prefix", "resourceId"],
+  description: "Yjs CRDT doc + awareness frames for one collaborative resource",
+});
 
 const REMOTE_DOC_ORIGIN = "remote";
 const REMOTE_AWARENESS_ORIGIN = "remote-awareness";
@@ -118,9 +153,9 @@ export class SupabaseYjsProvider {
   private readonly awareness: Awareness;
   private readonly chunkSize: number;
   private readonly channelName: string;
-  private readonly client: SupabaseClient;
+  private readonly manager: RealtimeManager | null;
 
-  private channel: RealtimeChannel | null = null;
+  private channel: ChannelHandle | null = null;
   private _disposed = false;
   private connected = false;
 
@@ -160,8 +195,11 @@ export class SupabaseYjsProvider {
     this.doc = options.doc;
     this.awareness = options.awareness;
     this.chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
-    this.client = options.client ?? (supabase as SupabaseClient);
-    this.channelName = `yjs:${options.channelPrefix ?? "workbook"}:${this.workbookId}`;
+    this.manager = options.manager ?? currentRealtimeManager();
+    this.channelName = yjsChannel.topic({
+      prefix: options.channelPrefix ?? "workbook",
+      resourceId: this.workbookId,
+    });
     this.readyPromise = new Promise<void>((resolve) => {
       this.resolveReady = resolve;
     });
@@ -171,58 +209,83 @@ export class SupabaseYjsProvider {
     if (this._disposed || this.connected) return;
     this.connected = true;
 
-    const channel = this.client.channel(this.channelName, {
-      config: {
-        broadcast: { self: false, ack: false },
-        presence: { key: this.clientId },
-      },
-    });
-
-    channel.on("broadcast", { event: "y-update" }, ({ payload }) => {
-      this.handleDocFrame(payload as ChunkFrame);
-    });
-
-    channel.on("broadcast", { event: "y-awareness" }, ({ payload }) => {
-      this.handleAwarenessFrame(payload as AwarenessFrame);
-    });
-
-    channel.on("broadcast", { event: "y-request-state" }, ({ payload }) => {
-      this.handleStateRequest(payload as RequestStateFrame);
-    });
-
-    channel.on("broadcast", { event: "y-state" }, ({ payload }) => {
-      this.handleStateResponse(payload as StateFrame);
-    });
-
-    this.channel = channel;
-    this.doc.on("updateV2", this.onDocUpdate);
-    this.awareness.on("update", this.onAwarenessUpdate);
+    if (!this.manager) {
+      // Not silent: without a manager there are no peers, and a collaborative
+      // surface that silently went solo is the worst possible outcome here.
+      console.warn(
+        `[collab] no realtime manager for ${this.channelName} — continuing solo ` +
+          "(no live peers). Mount <RealtimeProvider> (providers/RealtimeHost) " +
+          "above this surface, or pass `manager` explicitly.",
+      );
+      this.hasInitialState = true;
+      this.resolveReady?.();
+      return;
+    }
 
     // Resolve on success OR terminal failure OR hard timeout — a blocked
     // WebSocket must never hang the caller. On failure we degrade to solo
     // mode: the editor keeps working, just without live peers, and ready()
     // resolves so nothing upstream awaits forever.
-    const subscribed = await new Promise<boolean>((resolve) => {
-      const timer = setTimeout(() => resolve(false), SUBSCRIBE_TIMEOUT_MS);
-      channel.subscribe((status, err) => {
-        if (typeof process !== "undefined" && process.env?.COLLAB_DEBUG) {
-          console.debug(
-            `[collab:debug] ${this.channelName} status=${status}${err ? ` err=${String(err)}` : ""}`,
-          );
-        }
-        if (status === "SUBSCRIBED") {
-          clearTimeout(timer);
-          resolve(true);
-        } else if (
-          status === "CHANNEL_ERROR" ||
-          status === "TIMED_OUT" ||
-          status === "CLOSED"
-        ) {
-          clearTimeout(timer);
-          resolve(false);
-        }
-      });
+    let settle: ((ok: boolean) => void) | null = null;
+    const subscribedPromise = new Promise<boolean>((resolve) => {
+      settle = resolve;
     });
+    const timer = setTimeout(() => settle?.(false), SUBSCRIBE_TIMEOUT_MS);
+
+    this.channel = this.manager.open({
+      topic: this.channelName,
+      broadcast: [
+        {
+          event: "y-update",
+          onMessage: ({ data }) => this.handleDocFrame(data as ChunkFrame),
+        },
+        {
+          event: "y-awareness",
+          onMessage: ({ data }) => this.handleAwarenessFrame(data as AwarenessFrame),
+        },
+        {
+          event: "y-request-state",
+          onMessage: ({ data }) => this.handleStateRequest(data as RequestStateFrame),
+        },
+        {
+          event: "y-state",
+          onMessage: ({ data }) => this.handleStateResponse(data as StateFrame),
+        },
+      ],
+      // Chunked frames must be reassembled IN ORDER; the package's queue
+      // preserves per-channel order, so `seq` reassembly stays correct.
+      eventKey: (_source, payload) => {
+        const frame = payload as Partial<ChunkFrame> | undefined;
+        return frame?.batchId === undefined
+          ? undefined
+          : `${frame.batchId}:${String(frame.seq)}`;
+      },
+      onStatusChange: (status) => {
+        if (typeof process !== "undefined" && process.env?.COLLAB_DEBUG) {
+          console.debug(`[collab:debug] ${this.channelName} status=${status}`);
+        }
+        if (status === "connected") {
+          clearTimeout(timer);
+          settle?.(true);
+        }
+      },
+      // THE CATCH-UP. A CRDT is not exempt from "realtime has no replay": every
+      // peer update that landed while the socket was down is gone, and Yjs
+      // cannot know it is missing them — the doc just stays quietly divergent.
+      // Asking the peers for state again is the correct re-read, and it is the
+      // same thing a new joiner does.
+      onBackfill: () => {
+        if (this._disposed || !this.channel) return;
+        const resync: RequestStateFrame = { clientId: this.clientId };
+        this.channel.send("y-request-state", resync);
+      },
+    });
+
+    this.doc.on("updateV2", this.onDocUpdate);
+    this.awareness.on("update", this.onAwarenessUpdate);
+
+    const subscribed = await subscribedPromise;
+    clearTimeout(timer);
 
     if (this._disposed) return;
 
@@ -237,7 +300,7 @@ export class SupabaseYjsProvider {
 
     // Ask existing peers for the current doc; resolve solo if nobody answers.
     const req: RequestStateFrame = { clientId: this.clientId };
-    void channel.send({ type: "broadcast", event: "y-request-state", payload: req });
+    this.channel.send("y-request-state", req);
 
     this.aloneTimer = setTimeout(() => {
       this.aloneTimer = null;
@@ -272,7 +335,7 @@ export class SupabaseYjsProvider {
     this.pendingStateBatches.clear();
 
     if (this.channel) {
-      void this.client.removeChannel(this.channel);
+      this.channel.close();
       this.channel = null;
     }
 
@@ -296,11 +359,7 @@ export class SupabaseYjsProvider {
 
     if (b64.length <= this.chunkSize) {
       const payload: ChunkFrame = { batchId, seq: 0, total: 1, u: b64 };
-      void this.channel.send({
-        type: "broadcast",
-        event,
-        payload: extra ? { ...payload, ...extra } : payload,
-      });
+      this.channel.send(event, extra ? { ...payload, ...extra } : payload);
       return;
     }
 
@@ -308,11 +367,7 @@ export class SupabaseYjsProvider {
     for (let seq = 0; seq < total; seq++) {
       const slice = b64.slice(seq * this.chunkSize, (seq + 1) * this.chunkSize);
       const payload: ChunkFrame = { batchId, seq, total, u: slice };
-      void this.channel.send({
-        type: "broadcast",
-        event,
-        payload: extra ? { ...payload, ...extra } : payload,
-      });
+      this.channel.send(event, extra ? { ...payload, ...extra } : payload);
     }
   }
 
@@ -394,7 +449,7 @@ export class SupabaseYjsProvider {
     this.awarenessFlushQueue.clear();
     const update = encodeAwarenessUpdate(this.awareness, clients);
     const payload: AwarenessFrame = { u: toBase64(update) };
-    void this.channel.send({ type: "broadcast", event: "y-awareness", payload });
+    this.channel.send("y-awareness", payload);
   }
 
   private makeBatchId(): string {

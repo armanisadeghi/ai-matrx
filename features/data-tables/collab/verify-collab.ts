@@ -242,13 +242,20 @@ async function stageB() {
   try {
     const { SupabaseYjsProvider } = await import("./SupabaseYjsProvider");
     const { createClient } = await import("@supabase/supabase-js");
+    const { createRealtimeManager } = await import("@ai-matrx/realtime");
 
-    // Two SEPARATE clients = two sockets, like two real browser tabs.
-    // (One shared client cannot subscribe the same topic twice.)
+    // Two SEPARATE clients, and therefore two MANAGERS = two sockets, like two
+    // real browser tabs. One manager cannot stand in for both: the package's
+    // room registry would (correctly) hand both providers the same underlying
+    // channel, and echo suppression would then hide A's frames from B — which
+    // is the right behaviour inside one tab and the wrong harness for a
+    // two-peer test.
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/"/g, "").trim();
     const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!.trim();
     const clientA = createClient(url, key);
     const clientB = createClient(url, key);
+    const managerA = createRealtimeManager({ client: clientA });
+    const managerB = createRealtimeManager({ client: clientB });
 
     const room = `verify-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -259,7 +266,7 @@ async function stageB() {
       clientId: "verify-a",
       doc: docA,
       awareness: awarenessA,
-      client: clientA,
+      manager: managerA,
     });
     await providerA.connect();
     await providerA.ready();
@@ -274,7 +281,7 @@ async function stageB() {
       clientId: "verify-b",
       doc: docB,
       awareness: awarenessB,
-      client: clientB,
+      manager: managerB,
     });
     await providerB.connect();
     await providerB.ready();
@@ -304,6 +311,10 @@ async function stageB() {
 
     providerA.disconnect();
     providerB.disconnect();
+    // The harness owns these managers, so it disposes them — in the app the
+    // provider does it.
+    managerA.dispose();
+    managerB.dispose();
   } catch (err) {
     console.log(
       `  SKIPPED — transport unavailable in this environment (${err instanceof Error ? err.message : String(err)})`,
