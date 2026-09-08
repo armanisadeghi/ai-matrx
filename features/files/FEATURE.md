@@ -294,3 +294,7 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
   `data-surface-value` anchors. Row-menu move/duplicate/paste failures no longer
   disappear, and the feature admin map reflects the real catch-all/detail
   paths, current coming-soon routes, canonical shells, and window panels.
+
+## Realtime
+
+Realtime moved onto `@ai-matrx/realtime` (2026-09-07). The static `cloud-files:<userId>` topic became a namespace with a unique instance topic, and the reconcile moved from the SUBSCRIBED callback to `onBackfill` — so a slept tab reconciles at all now, where before the file tree drifted silently. `request-ledger.ts` deliberately STAYS: it correlates on the backend-stamped `metadata.request_id`, which the package has no equivalent for (allow-listed in `scripts/package-twins.json` with that reason). The client-side LISTING gate in `handleFilePayload` is untouched and still load-bearing.

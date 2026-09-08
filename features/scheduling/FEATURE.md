@@ -504,3 +504,7 @@ each row a door to `/schedules/<id>`. The scanner status and these alarms settle
 independently — a green scanner says nothing about whether a schedule ran — and
 if the alarm read itself fails the page says so ("treat this as unknown, not
 healthy") rather than implying all-clear.
+
+## Realtime
+
+Realtime moved onto `@ai-matrx/realtime` (2026-09-07), including the PRIVATE Database Broadcast topic — the hand-rolled `config.private` + `realtime.setAuth()` dance is now `private: true` on the spec (the package gap that produced realtime 0.7.0). The feed gained a `resync` signal from the backfill door, wired to `fetchScheduledTasks` / `fetchRunsForTaskThunk` / `onResync`; before it, a schedule that fired or errored while the tab slept simply never arrived. `subscribeToTasks` no longer takes a SupabaseClient.

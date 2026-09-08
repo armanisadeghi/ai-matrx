@@ -1184,3 +1184,7 @@ older shapes.
 
 > **Keep-docs-live rule (CLAUDE.md):** after any substantive change to this feature, update this
 > file's status, add flows you introduced/removed, and append to the Change log.
+
+## Realtime
+
+Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `SupabaseYjsProvider` is a broadcast ROOM on the package (its `client` option became `manager`, since the package's ref-counted room registry is exactly what that option worked around), and it gained the decoupled ordered handler queue — which matters most here, because it ships 200KB base64 frames whose bursts used to run back-to-back on the socket callback path. A CRDT is not exempt from "realtime has no replay": `onBackfill` re-sends `y-request-state`, the same thing a new joiner does. The snapshot hooks re-read the newest snapshot on recovery so a client cannot checkpoint on a base that moved while it slept.

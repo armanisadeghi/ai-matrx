@@ -233,3 +233,7 @@ instead of fanning out through both services.
 - `2026-04-22` — claude: initial FEATURE.md extracted from README.md.
 
 > **Keep-docs-live:** changes to the DB schema, realtime pattern, or the save-from-anywhere programmatic API must update this doc. Keep `README.md` focused on user-facing guidance; architecture notes go here.
+
+## Realtime
+
+Realtime moved onto `@ai-matrx/realtime` (2026-09-07). The middleware's ~60-line `isOwnEcho`, its backoff ladder, `BACKOFF_RESET_AFTER_MS` and `RECONNECT_ALARM_ATTEMPT` are DELETED — the package's write ledger and jittered backoff own them. Own writes are registered on the ledger at the ONE convergence point every write path shares (`markNoteSaving` / `markNoteSaved`), which is what makes echo suppression work at all. The catch-up is now `onBackfill`, so it fires on tab wake and network restore too, not only after a channel error. The freeze-class guard is pinned failing-then-passing in `redux/realtimeMiddleware.test.ts`.

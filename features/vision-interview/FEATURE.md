@@ -211,3 +211,7 @@ gets live per-node tokens the same way. Never fork them.**
   `browse/service.ts`, `browse/types.ts`, `useInterviewRun.ts`.
 - `ivw_list_scoped.sql` is live and ledgered; migration checks must stay at zero pending before
   release.
+
+## Realtime
+
+Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~40 lines of hand-rolled backoff ladder, attempt counter, healthy-timer and catch-up refetch; `onChannelDown` is replaced by `onBackfill`, which fires on tab wake and network restore as well as on a channel error — so a laptop that closed mid-interview no longer reopens to a room frozen at the last question it heard.
