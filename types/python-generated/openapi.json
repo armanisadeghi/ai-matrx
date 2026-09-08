@@ -19627,6 +19627,48 @@
         }
       }
     },
+    "/timely/public/status": {
+      "get": {
+        "tags": [
+          "Timely Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_timely_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimelyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/marvel-app/public/status": {
+      "get": {
+        "tags": [
+          "Marvel App Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_marvel_app_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarvelAppServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/airtable/public/status": {
       "get": {
         "tags": [
@@ -28875,6 +28917,50 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__yocto_project_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fandom/public/page": {
+      "get": {
+        "tags": [
+          "Fandom Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_fandom_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__fandom_integrations__service__PageMetadata"
                 }
               }
             }
@@ -131483,6 +131569,7 @@
           "rung": {
             "type": "string",
             "enum": [
+              "system",
               "global",
               "org",
               "user"
@@ -168034,6 +168121,55 @@
           "message"
         ],
         "title": "MappingIssue"
+      },
+      "MarvelAppServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "marvelapp_official_collaborative_prototyping_status",
+            "title": "Kind",
+            "default": "marvelapp_official_collaborative_prototyping_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Marvel App",
+            "title": "Provider",
+            "default": "Marvel App"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.marvelapp.com",
+            "title": "Status Page",
+            "default": "https://status.marvelapp.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "MarvelAppServiceStatus"
       },
       "MaskRequestBody": {
         "properties": {
@@ -228195,6 +228331,47 @@
         "title": "TimeApiCurrentTime",
         "description": "Safe bounded projection of one timezone's current time."
       },
+      "TimelyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "timely_public_service_status",
+            "title": "Kind",
+            "default": "timely_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Timely",
+            "title": "Provider",
+            "default": "Timely"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.timelyapp.com",
+            "title": "Status Page",
+            "default": "https://status.timelyapp.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "TimelyServiceStatus",
+        "description": "Safe aggregate status projection for Timely's fixed status page."
+      },
       "TimesheetExportBody": {
         "properties": {
           "organization_id": {
@@ -248715,6 +248892,59 @@
         ],
         "title": "PageMetadata",
         "description": "Safe projection for one exact public eLinux Wiki page."
+      },
+      "aidream__services__fandom_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "fandom_public_page_metadata",
+            "title": "Kind",
+            "default": "fandom_public_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Fandom",
+            "title": "Provider",
+            "default": "Fandom"
+          },
+          "page_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
       },
       "aidream__services__freecad_wiki_integrations__service__PageMetadata": {
         "properties": {

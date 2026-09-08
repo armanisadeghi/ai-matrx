@@ -8485,6 +8485,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/timely/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_timely_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/marvel-app/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_marvel_app_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/airtable/public/status": {
         parameters: {
             query?: never;
@@ -14767,6 +14801,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_yocto_project_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fandom/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_fandom_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -56915,7 +56966,7 @@ export interface components {
              * Rung
              * @enum {string}
              */
-            rung: "global" | "org" | "user";
+            rung: "system" | "global" | "org" | "user";
             /** Binding Id */
             binding_id?: string | null;
             /** Organization Id */
@@ -73398,6 +73449,40 @@ export interface components {
             severity: "error" | "warning";
             /** Message */
             message: string;
+        };
+        /** MarvelAppServiceStatus */
+        MarvelAppServiceStatus: {
+            /**
+             * Kind
+             * @default marvelapp_official_collaborative_prototyping_status
+             * @constant
+             */
+            __kind?: "marvelapp_official_collaborative_prototyping_status";
+            /**
+             * Provider
+             * @default Marvel App
+             * @constant
+             */
+            provider?: "Marvel App";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.marvelapp.com
+             * @constant
+             */
+            status_page?: "https://status.marvelapp.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** MaskRequestBody */
         MaskRequestBody: {
@@ -100907,6 +100992,38 @@ export interface components {
             utc_offset_seconds: number;
         };
         /**
+         * TimelyServiceStatus
+         * @description Safe aggregate status projection for Timely's fixed status page.
+         */
+        TimelyServiceStatus: {
+            /**
+             * Kind
+             * @default timely_public_service_status
+             * @constant
+             */
+            __kind?: "timely_public_service_status";
+            /**
+             * Provider
+             * @default Timely
+             * @constant
+             */
+            provider?: "Timely";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.timelyapp.com
+             * @constant
+             */
+            status_page?: "https://status.timelyapp.com";
+        };
+        /**
          * TimesheetExportBody
          * @description E-21. Writes ``hr.access_audit action='export'`` and creates **no** ``hr.payroll_export``
          *     row — conflating the two would let a report supersede a payroll file.
@@ -109776,6 +109893,31 @@ export interface components {
              * @constant
              */
             provider?: "eLinux Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
+        aidream__services__fandom_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default fandom_public_page_metadata
+             * @constant
+             */
+            __kind?: "fandom_public_page_metadata";
+            /**
+             * Provider
+             * @default Fandom
+             * @constant
+             */
+            provider?: "Fandom";
             /** Page Id */
             page_id: number;
             /** Title */
@@ -125152,6 +125294,46 @@ export interface operations {
             };
         };
     };
+    public_status_timely_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimelyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_marvel_app_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarvelAppServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_airtable_public_status_get: {
         parameters: {
             query?: never;
@@ -133268,6 +133450,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__yocto_project_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_fandom_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__fandom_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
