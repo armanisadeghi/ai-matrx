@@ -35535,32 +35535,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/lulu/payment-mode": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Payment Mode
-         * @description What this server's print lane actually is — test or live, and whether the
-         *     two money integrations agree.
-         *
-         *     A surface that offers ordering MUST badge this rather than infer a mode from
-         *     its own hostname: a local page talks to whichever backend the server toggle
-         *     names, so "I am on localhost" says nothing about whose money is at stake.
-         *     Carries no secret — only the derived mode.
-         */
-        get: operations["payment_mode_lulu_payment_mode_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -109943,45 +109917,6 @@ export interface components {
             /** Text Preview */
             text_preview?: string | null;
         };
-        /**
-         * PrintPaymentMode
-         * @description What the backend's print lane actually is — the honest answer a surface
-         *     badges instead of asserting a mode from its own hostname.
-         */
-        PrintPaymentMode: {
-            /**
-             * Lulu Environment
-             * @description Derived from LULU_API_BASE: 'live' is api.lulu.com, 'test' is a sandbox host.
-             * @enum {string}
-             */
-            lulu_environment: "test" | "live" | "unknown" | "unconfigured";
-            /**
-             * Lulu Api Base
-             * @description The Lulu base URL in use. Not a secret.
-             */
-            lulu_api_base: string;
-            /**
-             * Payment Mode
-             * @description Derived from the STRIPE_SECRET_KEY prefix. Never the key itself.
-             * @enum {string}
-             */
-            payment_mode: "test" | "live" | "unknown" | "unconfigured";
-            /**
-             * Pairing Ok
-             * @description True only when both providers are configured and in the SAME mode.
-             */
-            pairing_ok: boolean;
-            /**
-             * Charges Real Money
-             * @description True when a completed checkout would move real money and print a real book.
-             */
-            charges_real_money: boolean;
-            /**
-             * Message
-             * @description One human sentence naming the mode and, when refused, the remedy.
-             */
-            message: string;
-        };
     };
     responses: never;
     parameters: never;
@@ -167085,26 +167020,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    payment_mode_lulu_payment_mode_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PrintPaymentMode"];
                 };
             };
         };
