@@ -64,6 +64,11 @@ const SCAN_DIRS = ["features", "components", "lib", "app"];
 const SKIP_DIR =
   /(^|\/)(node_modules|\.next[^/]*|dist|build|coverage|__tests__|\.git)(\/|$)/;
 const SKIP_FILE = /\.(test|spec)\.tsx?$/;
+/**
+ * The primitive's own home: `runHeadlessAgentJson` and the scream module name
+ * `expect: "text"` in their judges and messages, and that is not a run.
+ */
+const SKIP_PRIMITIVE = /(^|\/)features\/agents\/redux\/execution-system\/thunks\//;
 const SOURCE_FILE = /\.tsx?$/;
 
 // ── scanning ────────────────────────────────────────────────────────────────
@@ -87,7 +92,8 @@ function walk(dir: string, out: string[]): void {
     if (SKIP_DIR.test(full)) continue;
     const st = statSync(full);
     if (st.isDirectory()) walk(full, out);
-    else if (SOURCE_FILE.test(entry) && !SKIP_FILE.test(entry)) out.push(full);
+    else if (SOURCE_FILE.test(entry) && !SKIP_FILE.test(entry) && !SKIP_PRIMITIVE.test(full))
+      out.push(full);
   }
 }
 
@@ -215,6 +221,16 @@ function findConstLiteral(source: string, name: string): string | null {
   return m ? m[1] : null;
 }
 
+/** `const NAME = OTHER` / `const NAME = OBJ.prop` (optionally exported) in `source`. */
+function findConstAlias(source: string, name: string): string | null {
+  const re = new RegExp(
+    `(?:export\\s+)?const\\s+${name}\\s*(?::[^=]+)?=\\s*([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)?)\\s*(?:;|$|\\n)`,
+    "m",
+  );
+  const m = source.match(re);
+  return m ? m[1] : null;
+}
+
 /** `const OBJ = { prop: "literal", … }` (optionally exported) in `source`. */
 function findObjectProp(source: string, obj: string, prop: string): string | null {
   const objRe = new RegExp(`(?:export\\s+)?const\\s+${obj}\\s*(?::[^=]+)?=\\s*\\{`, "m");
@@ -258,6 +274,9 @@ function resolveIdentifier(file: string, source: string, expr: string, depth = 0
   }
   const local = findConstLiteral(source, expr);
   if (local) return { ok: true, key: local, via: `${expr} (local const)` };
+  // `const MANDATE_KEY = SOME_OBJECT.prop` / `= OTHER_CONST` — follow the chain.
+  const alias = findConstAlias(source, expr);
+  if (alias) return resolveIdentifier(file, source, alias, depth + 1);
   const spec = importSpecFor(source, expr);
   const target = spec ? resolveImportPath(file, spec) : null;
   if (target) {
@@ -282,7 +301,7 @@ function resolveSiteMandateKey(site: TextRunSite): Resolved | null {
   if (MANDATE_KEY_SHORTHAND.test(text)) {
     return resolveIdentifier(site.resolveAs, site.source, "mandateKey");
   }
-  if (/(?:^|[\s{,])agentId\s*:/.test(text)) return null; // agentId run — not measurable here
+  if (/(?:^|[\s{,])agentId\s*[:,}]/.test(text)) return null; // agentId run — not measurable here
   return { ok: false, reason: "no mandateKey (or agentId) in the run options" };
 }
 
