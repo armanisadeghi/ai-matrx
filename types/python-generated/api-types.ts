@@ -6506,6 +6506,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/openaire/public/work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Work */
+        get: operations["public_work_openaire_public_work_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -8579,6 +8596,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_spatialchat_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mattermost/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_mattermost_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stormboard/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_stormboard_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -14988,6 +15039,40 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_freebsd_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ffmpeg-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_ffmpeg_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openbsd-faq/public/chapter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Chapter */
+        get: operations["public_chapter_openbsd_faq_public_chapter_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -46966,6 +47051,32 @@ export interface components {
             /** Default */
             default?: unknown;
         };
+        /**
+         * ChapterMetadata
+         * @description Safe identity projection for one exact OpenBSD FAQ chapter.
+         */
+        ChapterMetadata: {
+            /**
+             * Kind
+             * @default openbsd_faq_chapter_metadata
+             * @constant
+             */
+            __kind?: "openbsd_faq_chapter_metadata";
+            /**
+             * Provider
+             * @default OpenBSD FAQ
+             * @constant
+             */
+            provider?: "OpenBSD FAQ";
+            /** Chapter */
+            chapter: number;
+            /** Title */
+            title: string;
+            /** Byte Size */
+            byte_size: number;
+            /** Sha256 */
+            sha256: string;
+        };
         /** CharacterMetadata */
         CharacterMetadata: {
             /**
@@ -74011,6 +74122,43 @@ export interface components {
              */
             compatible?: true;
         };
+        /**
+         * MattermostStatusResult
+         * @description Safe projection of Mattermost's official high-level service status.
+         */
+        MattermostStatusResult: {
+            /**
+             * Kind
+             * @default mattermost_official_service_status
+             * @constant
+             */
+            __kind?: "mattermost_official_service_status";
+            /**
+             * Provider
+             * @default mattermost
+             * @constant
+             */
+            provider?: "mattermost";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.mattermost.com
+             * @constant
+             */
+            status_url?: "https://status.mattermost.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** MazeServiceStatus */
         MazeServiceStatus: {
             /**
@@ -78006,6 +78154,48 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.onesignal.com/";
+        };
+        /** OpenAireWork */
+        OpenAireWork: {
+            /**
+             * Kind
+             * @default openaire_public_research_work
+             * @constant
+             */
+            __kind?: "openaire_public_research_work";
+            /**
+             * Provider
+             * @default OpenAIRE
+             * @constant
+             */
+            provider?: "OpenAIRE";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Doi
+             * @default 10.1038/nature12373
+             * @constant
+             */
+            doi?: "10.1038/nature12373";
+            /** Title */
+            title: string;
+            /** Publisher */
+            publisher: string;
+            /**
+             * Acceptance Date
+             * Format: date
+             */
+            acceptance_date: string;
+            /**
+             * Access Class
+             * @default OPEN
+             * @constant
+             */
+            access_class?: "OPEN";
         };
         /**
          * OpenAlexPublicWork
@@ -98365,6 +98555,38 @@ export interface components {
              */
             status_page?: "https://status.storj.io";
         };
+        /**
+         * StormboardServiceStatus
+         * @description Safe aggregate status projection for Stormboard's fixed status page.
+         */
+        StormboardServiceStatus: {
+            /**
+             * Kind
+             * @default stormboard_public_service_status
+             * @constant
+             */
+            __kind?: "stormboard_public_service_status";
+            /**
+             * Provider
+             * @default Stormboard
+             * @constant
+             */
+            provider?: "Stormboard";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.stormboard.com
+             * @constant
+             */
+            status_page?: "https://status.stormboard.com";
+        };
         /** StoryAngleGenerateBody */
         StoryAngleGenerateBody: {
             /**
@@ -110373,6 +110595,28 @@ export interface components {
             content_model: string;
             /** Language */
             language: string;
+        };
+        /**
+         * PageContent
+         * @description Safe projection for one exact public FFmpeg Wiki page.
+         */
+        aidream__services__ffmpeg_wiki_integrations__service__PageContent: {
+            /**
+             * Kind
+             * @default ffmpeg_wiki_page_content
+             * @constant
+             */
+            __kind?: "ffmpeg_wiki_page_content";
+            /**
+             * Provider
+             * @default FFmpeg Wiki
+             * @constant
+             */
+            provider?: "FFmpeg Wiki";
+            /** Page */
+            page: string;
+            /** Content */
+            content: string;
         };
         /**
          * PageContent
@@ -123236,6 +123480,26 @@ export interface operations {
             };
         };
     };
+    public_work_openaire_public_work_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenAireWork"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -125927,6 +126191,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SpatialChatServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_mattermost_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MattermostStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_stormboard_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StormboardServiceStatus"];
                 };
             };
         };
@@ -134231,6 +134535,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__freebsd_wiki_integrations__service__PageContent"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_ffmpeg_wiki_public_page_get: {
+        parameters: {
+            query: {
+                page: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__ffmpeg_wiki_integrations__service__PageContent"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_chapter_openbsd_faq_public_chapter_get: {
+        parameters: {
+            query: {
+                chapter: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChapterMetadata"];
                 };
             };
             /** @description Validation Error */

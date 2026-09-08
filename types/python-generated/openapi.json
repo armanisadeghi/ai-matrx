@@ -16517,6 +16517,27 @@
         }
       }
     },
+    "/openaire/public/work": {
+      "get": {
+        "tags": [
+          "OpenAIRE Integrations"
+        ],
+        "summary": "Public Work",
+        "operationId": "public_work_openaire_public_work_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenAireWork"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -19746,6 +19767,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SpatialChatServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mattermost/public/status": {
+      "get": {
+        "tags": [
+          "Mattermost Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_mattermost_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MattermostStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stormboard/public/status": {
+      "get": {
+        "tags": [
+          "Stormboard Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_stormboard_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StormboardServiceStatus"
                 }
               }
             }
@@ -29240,6 +29303,94 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__freebsd_wiki_integrations__service__PageContent"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ffmpeg-wiki/public/page": {
+      "get": {
+        "tags": [
+          "FFmpeg Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_ffmpeg_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Page"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__ffmpeg_wiki_integrations__service__PageContent"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openbsd-faq/public/chapter": {
+      "get": {
+        "tags": [
+          "OpenBSD FAQ Integrations"
+        ],
+        "summary": "Public Chapter",
+        "operationId": "public_chapter_openbsd_faq_public_chapter_get",
+        "parameters": [
+          {
+            "name": "chapter",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 15,
+              "minimum": 1,
+              "title": "Chapter"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChapterMetadata"
                 }
               }
             }
@@ -106730,6 +106881,55 @@
         "title": "ChannelSpec",
         "description": "Declarative spec for a channel in a workflow definition.\n\nChannels hold JSON-serializable values only. Pydantic models are dumped at\nwrite time via .model_dump(mode='json'). This rule is enforced in the\nchannel manager and makes checkpoints round-trip losslessly."
       },
+      "ChapterMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "openbsd_faq_chapter_metadata",
+            "title": "Kind",
+            "default": "openbsd_faq_chapter_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "OpenBSD FAQ",
+            "title": "Provider",
+            "default": "OpenBSD FAQ"
+          },
+          "chapter": {
+            "type": "integer",
+            "maximum": 15,
+            "minimum": 1,
+            "title": "Chapter"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "byte_size": {
+            "type": "integer",
+            "maximum": 64000,
+            "exclusiveMinimum": 0,
+            "title": "Byte Size"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "chapter",
+          "title",
+          "byte_size",
+          "sha256"
+        ],
+        "title": "ChapterMetadata",
+        "description": "Safe identity projection for one exact OpenBSD FAQ chapter."
+      },
       "CharacterMetadata": {
         "properties": {
           "__kind": {
@@ -169035,6 +169235,56 @@
         "title": "MattermostCompatibilityResult",
         "description": "Safe projection of Mattermost's fixed official-community system ping."
       },
+      "MattermostStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mattermost_official_service_status",
+            "title": "Kind",
+            "default": "mattermost_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "mattermost",
+            "title": "Provider",
+            "default": "mattermost"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.mattermost.com",
+            "title": "Status Url",
+            "default": "https://status.mattermost.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "MattermostStatusResult",
+        "description": "Safe projection of Mattermost's official high-level service status."
+      },
       "MazeServiceStatus": {
         "properties": {
           "__kind": {
@@ -177027,6 +177277,61 @@
         ],
         "title": "OneSignalServiceStatus",
         "description": "Safe aggregate status projection for OneSignal's fixed status page."
+      },
+      "OpenAireWork": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "openaire_public_research_work",
+            "title": "Kind",
+            "default": "openaire_public_research_work"
+          },
+          "provider": {
+            "type": "string",
+            "const": "OpenAIRE",
+            "title": "Provider",
+            "default": "OpenAIRE"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "doi": {
+            "type": "string",
+            "const": "10.1038/nature12373",
+            "title": "Doi",
+            "default": "10.1038/nature12373"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "publisher": {
+            "type": "string",
+            "title": "Publisher"
+          },
+          "acceptance_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Acceptance Date"
+          },
+          "access_class": {
+            "type": "string",
+            "const": "OPEN",
+            "title": "Access Class",
+            "default": "OPEN"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "publisher",
+          "acceptance_date"
+        ],
+        "title": "OpenAireWork"
       },
       "OpenAlexPublicWork": {
         "properties": {
@@ -222558,6 +222863,47 @@
         ],
         "title": "StorjServiceStatus"
       },
+      "StormboardServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "stormboard_public_service_status",
+            "title": "Kind",
+            "default": "stormboard_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Stormboard",
+            "title": "Provider",
+            "default": "Stormboard"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.stormboard.com",
+            "title": "Status Page",
+            "default": "https://status.stormboard.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "StormboardServiceStatus",
+        "description": "Safe aggregate status projection for Stormboard's fixed status page."
+      },
       "StoryAngleGenerateBody": {
         "properties": {
           "max_angles": {
@@ -249628,6 +249974,42 @@
           "language"
         ],
         "title": "PageMetadata"
+      },
+      "aidream__services__ffmpeg_wiki_integrations__service__PageContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "ffmpeg_wiki_page_content",
+            "title": "Kind",
+            "default": "ffmpeg_wiki_page_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "FFmpeg Wiki",
+            "title": "Provider",
+            "default": "FFmpeg Wiki"
+          },
+          "page": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Page"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page",
+          "content"
+        ],
+        "title": "PageContent",
+        "description": "Safe projection for one exact public FFmpeg Wiki page."
       },
       "aidream__services__freebsd_wiki_integrations__service__PageContent": {
         "properties": {
