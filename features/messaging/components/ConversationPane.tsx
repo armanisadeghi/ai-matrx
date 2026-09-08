@@ -50,6 +50,9 @@ export interface ConversationPaneProps {
   onBack?: () => void;
   getApplicationScope?: () => SurfaceScopePayload;
   className?: string;
+  surfaceName?: string;
+  showHeader?: boolean;
+  showAi?: boolean;
 }
 
 export function ConversationPane({
@@ -57,10 +60,13 @@ export function ConversationPane({
   onBack,
   getApplicationScope,
   className,
+  surfaceName = MESSAGES_SURFACE_NAME,
+  showHeader = true,
+  showAi = true,
 }: ConversationPaneProps) {
   // Declare that this surface renders the conversation AI bar, so the four
   // `messaging.*` mandates resolve. Ref-counted: it releases on unmount.
-  useMessagingAiDemand();
+  useMessagingAiDemand(showAi);
   const id = asConversationId(conversationId);
   const { messages } = useConversation(id);
   const { conversations } = useConversations();
@@ -73,7 +79,7 @@ export function ConversationPane({
   return (
     <NonEditableContextMenu
       sourceFeature="messages"
-      surfaceName={MESSAGES_SURFACE_NAME}
+      surfaceName={surfaceName}
       {...(getApplicationScope ? { getApplicationScope } : {})}
       contentSource={{ type: "raw" }}
       contextData={{
@@ -103,7 +109,14 @@ export function ConversationPane({
       }}
       extraSections={[messageMenuSection({ message: menuMessage })]}
     >
-      <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col",
+          !showHeader && "[&_.mx-msg__header]:hidden",
+          !showAi && "[&_.mx-msg__ai-bar]:hidden",
+          className,
+        )}
+      >
         <ConversationView
           conversationId={id}
           className="min-h-0 flex-1"

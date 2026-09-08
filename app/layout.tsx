@@ -1,4 +1,7 @@
 // app/layout.tsx
+// Package defaults load first; globals.css maps them onto this app's semantic
+// theme tokens, and the structural sheet then consumes that host-owned map.
+import "@ai-matrx/messaging/tokens.css";
 import "./globals.css";
 // Tap-button geometry (the .matrx-tap-* system) ships in the package.
 import "@ai-matrx/tap-target/styles.css";
@@ -9,6 +12,9 @@ import "@ai-matrx/tap-target/styles.css";
 // app's own token values and Tailwind utilities win. See the header there.
 import "@ai-matrx/design-system/tokens.css";
 import "@ai-matrx/design-system/styles.css";
+// Without this structural sheet the thread collapses into unstyled document
+// flow (full-size avatars, loose metadata, and a browser-default composer).
+import "@ai-matrx/messaging/styles.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";

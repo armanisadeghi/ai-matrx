@@ -91,10 +91,11 @@ export function MessagingAiDemandProvider({
  * acquire from in that case, so it screams once, naming the remedy, rather than
  * quietly rendering a pane with its intelligence removed.
  */
-export function useMessagingAiDemand(): void {
+export function useMessagingAiDemand(enabled = true): void {
   const acquire = useContext(MessagingAiDemandContext);
   const screamed = useRef(false);
   useEffect(() => {
+    if (!enabled) return;
     if (acquire === null) {
       if (screamed.current) return;
       screamed.current = true;
@@ -108,5 +109,5 @@ export function useMessagingAiDemand(): void {
       return;
     }
     return acquire();
-  }, [acquire]);
+  }, [acquire, enabled]);
 }

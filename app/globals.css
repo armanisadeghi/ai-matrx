@@ -960,6 +960,7 @@
     --typography-p-lineHeight: 1.6;
     --typography-p-margin: 1rem;
     --typography-letter-spacing: 0.01em;
+
   }
 
   .dark {
@@ -2138,6 +2139,34 @@
    the toaster would make the whole fixed corner intercept the modal below. */
 [data-sonner-toast][data-visible="true"] {
   pointer-events: auto;
+}
+
+/* @ai-matrx/messaging owns structure; the host owns its palette. Unlayered so
+   these semantic mappings beat the package's unthemed defaults while still
+   following this app's light/dark primitive values automatically. */
+:root {
+  --mx-msg-bg: hsl(var(--background));
+  --mx-msg-bg-subtle: hsl(var(--muted));
+  --mx-msg-bg-raised: hsl(var(--card));
+  --mx-msg-bg-hover: hsl(var(--accent));
+  --mx-msg-bg-active: hsl(var(--accent-hover));
+  --mx-msg-border: hsl(var(--border));
+  --mx-msg-border-strong: hsl(var(--ring));
+  --mx-msg-text: hsl(var(--foreground));
+  --mx-msg-text-muted: hsl(var(--muted-foreground));
+  --mx-msg-text-faint: hsl(var(--muted-foreground) / 0.78);
+  --mx-msg-text-on-accent: hsl(var(--primary-foreground));
+  --mx-msg-accent: hsl(var(--primary));
+  --mx-msg-accent-hover: hsl(var(--primary-hover));
+  --mx-msg-accent-subtle: hsl(var(--primary) / 0.12);
+  --mx-msg-danger: hsl(var(--destructive));
+  --mx-msg-success: hsl(var(--success));
+  --mx-msg-warning: hsl(var(--warning));
+  --mx-msg-focus-ring: hsl(var(--ring));
+  --mx-msg-bubble-mine-bg: hsl(var(--primary));
+  --mx-msg-bubble-mine-text: hsl(var(--primary-foreground));
+  --mx-msg-bubble-theirs-bg: hsl(var(--muted));
+  --mx-msg-bubble-theirs-text: hsl(var(--foreground));
 }
 
 /* .matrx-mobile-sheet (the ONE mobile density for a desktop panel hosted in a
