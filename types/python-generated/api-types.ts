@@ -8451,6 +8451,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/spline/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_spline_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/asana/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_asana_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/affinity/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_affinity_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/smartsheet/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_smartsheet_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -14444,6 +14512,40 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_inkscape_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scummvm-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_scummvm_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mame-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_mame_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -28007,6 +28109,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mandates/{mandate_key}/default-holder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Mandate Default Holder
+         * @description Set the mandate's own default Holder — the rung below every binding.
+         *
+         *     THE GATE: a platform super administrator (who may set any mandate's
+         *     default), or an administrator of the mandate's HOME organization when that
+         *     home is not the Matrx System organization. Everyone else is refused with a
+         *     sentence that says who may decide and what they can do instead.
+         */
+        put: operations["put_mandate_default_holder_mandates__mandate_key__default_holder_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mandates/{mandate_key}/input-surface": {
         parameters: {
             query?: never;
@@ -36512,6 +36639,38 @@ export interface components {
             /** Advice */
             advice: string;
         };
+        /**
+         * AffinityServiceStatus
+         * @description Safe aggregate status projection for Affinity's fixed status page.
+         */
+        AffinityServiceStatus: {
+            /**
+             * Kind
+             * @default affinity_public_service_status
+             * @constant
+             */
+            __kind?: "affinity_public_service_status";
+            /**
+             * Provider
+             * @default Affinity
+             * @constant
+             */
+            provider?: "Affinity";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.affinity.co
+             * @constant
+             */
+            status_page?: "https://status.affinity.co";
+        };
         /** AgentAppInputPart */
         AgentAppInputPart: {
             /** Metadata */
@@ -39579,6 +39738,40 @@ export interface components {
              * @constant
              */
             attribution?: "Thank you to arXiv for use of its open access interoperability.";
+        };
+        /** AsanaServiceStatus */
+        AsanaServiceStatus: {
+            /**
+             * Kind
+             * @default asana_official_project_collaboration_status
+             * @constant
+             */
+            __kind?: "asana_official_project_collaboration_status";
+            /**
+             * Provider
+             * @default Asana
+             * @constant
+             */
+            provider?: "Asana";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.asana.com
+             * @constant
+             */
+            status_page?: "https://status.asana.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * AshbyServiceStatus
@@ -71983,6 +72176,60 @@ export interface components {
             /** Origin */
             origin: string;
         };
+        /** MandateDefaultHolderRequest */
+        MandateDefaultHolderRequest: {
+            /**
+             * Holder Type
+             * @default agent
+             * @enum {string}
+             */
+            holder_type?: "agent" | "workflow";
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Agent Version Id */
+            agent_version_id?: string | null;
+            /** Use Latest */
+            use_latest?: boolean | null;
+            /** Holder Id */
+            holder_id?: string | null;
+            /** Holder Version Id */
+            holder_version_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /**
+         * MandateDefaultHolderResult
+         * @description What the mandate's BOTTOM RUNG now says — its own default Holder.
+         *
+         *     The system rung is not a binding: it is the three ``mandate.definition``
+         *     columns ``default_holder_type`` / ``default_holder_id`` /
+         *     ``default_holder_version_id``, and per FIX-R1 its principal is the
+         *     mandate's HOME organization (everybody, for a system-homed mandate; that
+         *     one organization, for an org-homed one).
+         */
+        MandateDefaultHolderResult: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Home Organization Id */
+            home_organization_id: string;
+            /**
+             * Holder Type
+             * @default agent
+             * @enum {string}
+             */
+            holder_type?: "agent" | "workflow";
+            /** Holder Id */
+            holder_id?: string | null;
+            /** Holder Version Id */
+            holder_version_id?: string | null;
+            /** Use Latest */
+            use_latest: boolean;
+            /**
+             * Applies In
+             * @default
+             */
+            applies_in?: string;
+        };
         /** MandateDraftInputsPatchRequest */
         MandateDraftInputsPatchRequest: {
             /** Draft Inputs */
@@ -94999,6 +95246,40 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** SmartsheetServiceStatus */
+        SmartsheetServiceStatus: {
+            /**
+             * Kind
+             * @default smartsheet_official_collaborative_work_status
+             * @constant
+             */
+            __kind?: "smartsheet_official_collaborative_work_status";
+            /**
+             * Provider
+             * @default Smartsheet
+             * @constant
+             */
+            provider?: "Smartsheet";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.smartsheet.com
+             * @constant
+             */
+            status_page?: "https://status.smartsheet.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /**
          * SmkPublicArtwork
          * @description Safe bounded projection of one provider-marked public-domain artwork.
@@ -95926,6 +96207,38 @@ export interface components {
             mime_type: string;
             /** Model */
             model: string;
+        };
+        /**
+         * SplineServiceStatus
+         * @description Safe aggregate status projection for Spline's fixed status page.
+         */
+        SplineServiceStatus: {
+            /**
+             * Kind
+             * @default spline_public_service_status
+             * @constant
+             */
+            __kind?: "spline_public_service_status";
+            /**
+             * Provider
+             * @default Spline
+             * @constant
+             */
+            provider?: "Spline";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.spline.design
+             * @constant
+             */
+            status_page?: "https://status.spline.design";
         };
         /** SplitPartRequest */
         SplitPartRequest: {
@@ -109208,6 +109521,31 @@ export interface components {
             language: string;
         };
         /** PageMetadata */
+        aidream__services__mame_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default mame_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "mame_wiki_page_metadata";
+            /**
+             * Provider
+             * @default MAME Developer Wiki
+             * @constant
+             */
+            provider?: "MAME Developer Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
         aidream__services__mediawiki_integrations__service__PageMetadata: {
             /**
              * Kind
@@ -109616,6 +109954,31 @@ export interface components {
             collector_number: string;
             /** Rarity */
             rarity: string;
+        };
+        /** PageMetadata */
+        aidream__services__scummvm_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default scummvm_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "scummvm_wiki_page_metadata";
+            /**
+             * Provider
+             * @default ScummVM Wiki
+             * @constant
+             */
+            provider?: "ScummVM Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
         };
         /**
          * ReadinessResponse
@@ -124066,6 +124429,86 @@ export interface operations {
             };
         };
     };
+    public_status_spline_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SplineServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_asana_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AsanaServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_affinity_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AffinityServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_smartsheet_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmartsheetServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -131776,6 +132219,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__inkscape_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_scummvm_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__scummvm_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_mame_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__mame_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
@@ -154565,6 +155070,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MandateBindingDeleteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_mandate_default_holder_mandates__mandate_key__default_holder_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MandateDefaultHolderRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateDefaultHolderResult"];
                 };
             };
             /** @description Validation Error */

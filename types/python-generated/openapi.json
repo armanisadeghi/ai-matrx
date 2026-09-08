@@ -19585,6 +19585,90 @@
         }
       }
     },
+    "/spline/public/status": {
+      "get": {
+        "tags": [
+          "Spline Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_spline_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SplineServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/asana/public/status": {
+      "get": {
+        "tags": [
+          "Asana Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_asana_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsanaServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/affinity/public/status": {
+      "get": {
+        "tags": [
+          "Affinity Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_affinity_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AffinityServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/smartsheet/public/status": {
+      "get": {
+        "tags": [
+          "Smartsheet Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_smartsheet_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmartsheetServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -28341,6 +28425,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__inkscape_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scummvm-wiki/public/page": {
+      "get": {
+        "tags": [
+          "ScummVM Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_scummvm_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__scummvm_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mame-wiki/public/page": {
+      "get": {
+        "tags": [
+          "MAME Developer Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_mame_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__mame_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -61821,6 +61991,59 @@
         }
       }
     },
+    "/mandates/{mandate_key}/default-holder": {
+      "put": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Put Mandate Default Holder",
+        "description": "Set the mandate's own default Holder — the rung below every binding.\n\nTHE GATE: a platform super administrator (who may set any mandate's\ndefault), or an administrator of the mandate's HOME organization when that\nhome is not the Matrx System organization. Everyone else is refused with a\nsentence that says who may decide and what they can do instead.",
+        "operationId": "put_mandate_default_holder_mandates__mandate_key__default_holder_put",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandate Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MandateDefaultHolderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateDefaultHolderResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mandates/{mandate_key}/input-surface": {
       "get": {
         "tags": [
@@ -84047,6 +84270,47 @@
         ],
         "title": "AdviceSlipRecord"
       },
+      "AffinityServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "affinity_public_service_status",
+            "title": "Kind",
+            "default": "affinity_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Affinity",
+            "title": "Provider",
+            "default": "Affinity"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.affinity.co",
+            "title": "Status Page",
+            "default": "https://status.affinity.co"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "AffinityServiceStatus",
+        "description": "Safe aggregate status projection for Affinity's fixed status page."
+      },
       "AgentAppInputPart": {
         "properties": {
           "metadata": {
@@ -91064,6 +91328,55 @@
         ],
         "title": "ArxivPublicPublication",
         "description": "Safe bounded projection of one arXiv publication."
+      },
+      "AsanaServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "asana_official_project_collaboration_status",
+            "title": "Kind",
+            "default": "asana_official_project_collaboration_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Asana",
+            "title": "Provider",
+            "default": "Asana"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.asana.com",
+            "title": "Status Page",
+            "default": "https://status.asana.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "AsanaServiceStatus"
       },
       "AshbyServiceStatus": {
         "properties": {
@@ -165193,6 +165506,147 @@
         ],
         "title": "MandateCreatedResponse"
       },
+      "MandateDefaultHolderRequest": {
+        "properties": {
+          "holder_type": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "workflow"
+            ],
+            "title": "Holder Type",
+            "default": "agent"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "agent_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Version Id"
+          },
+          "use_latest": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Latest"
+          },
+          "holder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Id"
+          },
+          "holder_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Version Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "title": "MandateDefaultHolderRequest"
+      },
+      "MandateDefaultHolderResult": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "home_organization_id": {
+            "type": "string",
+            "title": "Home Organization Id"
+          },
+          "holder_type": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "workflow"
+            ],
+            "title": "Holder Type",
+            "default": "agent"
+          },
+          "holder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Id"
+          },
+          "holder_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Version Id"
+          },
+          "use_latest": {
+            "type": "boolean",
+            "title": "Use Latest"
+          },
+          "applies_in": {
+            "type": "string",
+            "title": "Applies In",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "home_organization_id",
+          "use_latest"
+        ],
+        "title": "MandateDefaultHolderResult",
+        "description": "What the mandate's BOTTOM RUNG now says — its own default Holder.\n\nThe system rung is not a binding: it is the three ``mandate.definition``\ncolumns ``default_holder_type`` / ``default_holder_id`` /\n``default_holder_version_id``, and per FIX-R1 its principal is the\nmandate's HOME organization (everybody, for a system-homed mandate; that\none organization, for an org-homed one)."
+      },
       "MandateDraftInputsPatchRequest": {
         "properties": {
           "draft_inputs": {
@@ -216162,6 +216616,55 @@
         "title": "SmartRecruitersServiceStatus",
         "description": "Safe aggregate status projection for SmartRecruiters' fixed status page."
       },
+      "SmartsheetServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "smartsheet_official_collaborative_work_status",
+            "title": "Kind",
+            "default": "smartsheet_official_collaborative_work_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Smartsheet",
+            "title": "Provider",
+            "default": "Smartsheet"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.smartsheet.com",
+            "title": "Status Page",
+            "default": "https://status.smartsheet.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SmartsheetServiceStatus"
+      },
       "SmkPublicArtwork": {
         "properties": {
           "__kind": {
@@ -218097,6 +218600,47 @@
           "model"
         ],
         "title": "SpeechResponse"
+      },
+      "SplineServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "spline_public_service_status",
+            "title": "Kind",
+            "default": "spline_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Spline",
+            "title": "Provider",
+            "default": "Spline"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.spline.design",
+            "title": "Status Page",
+            "default": "https://status.spline.design"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "SplineServiceStatus",
+        "description": "Safe aggregate status projection for Spline's fixed status page."
       },
       "SplitPartRequest": {
         "properties": {
@@ -247925,6 +248469,52 @@
         ],
         "title": "PageMetadata"
       },
+      "aidream__services__mame_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mame_wiki_page_metadata",
+            "title": "Kind",
+            "default": "mame_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "MAME Developer Wiki",
+            "title": "Provider",
+            "default": "MAME Developer Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
       "aidream__services__mediawiki_integrations__service__PageMetadata": {
         "properties": {
           "__kind": {
@@ -248700,6 +249290,52 @@
           "rarity"
         ],
         "title": "CardMetadata"
+      },
+      "aidream__services__scummvm_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "scummvm_wiki_page_metadata",
+            "title": "Kind",
+            "default": "scummvm_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "ScummVM Wiki",
+            "title": "Provider",
+            "default": "ScummVM Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
       },
       "aidream__services__sending_identity__models__ReadinessResponse": {
         "properties": {
