@@ -31,7 +31,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { supabase } from "@/utils/supabase/client";
 import { saveNoteField } from "@/features/notes/redux/thunks";
 import { useAutoLabel } from "@/features/notes/hooks/useAutoLabel";
 import {
@@ -97,53 +96,117 @@ import {
 } from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
 import {
   commitWorkingDocumentContent,
+  getCxWorkingDocumentById,
   updateCxWorkingDocumentTitle,
   type CxWorkingDocumentRow,
 } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
 import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import {
+  defineChannelNamespace,
+  subscribeToRealtimeManager,
+} from "@ai-matrx/realtime";
 
 const AUTOSAVE_MS = 700;
 
 // ─── Shared realtime subscription manager ───────────────────────────────────
-// useWorkingDocumentContextSync mounts in several places at once (the always-on
-// SmartInput bridge + every open editor). Without dedup, each mount opens its
-// own Supabase channel for the SAME document — N connections + N dispatches per
-// server edit. This ref-counts ONE channel per documentId and fans out to one
-// listener per (conversation, kind), so the round-trip is exactly once.
+//
+// `useWorkingDocumentContextSync` mounts in several places at once (the
+// always-on SmartInput bridge + every open editor). Without dedup, each mount
+// would open its own channel for the SAME document — N connections and N
+// dispatches per server edit. So there is ONE channel per documentId, fanned
+// out to one listener per mount.
+//
+// REALTIME: `@ai-matrx/realtime` owns the channel — unique instance topic, echo
+// suppression, dedup, the decoupled ordered handler queue, jittered reconnect,
+// tab sleep, diagnostics. What was here was a raw `.channel(...).subscribe()`
+// on a STATIC topic (`cx-working-doc:<id>`, which React 19's double-invoked
+// effects can collide on), manual `removeChannel` teardown, and NO catch-up
+// read: an agent that rewrote the working document while this tab slept left
+// the editor showing the pre-sleep text, looking perfectly healthy, and the
+// next local edit would then commit on top of a version that had already moved.
+// `onBackfill` re-reads the row through the service and fans it out exactly as
+// an event would.
+//
+// The refcount itself is host-shaped (see `lib/realtime/sharedChannel.ts` for
+// the same pattern) — but this one also fans out to per-mount listeners, so it
+// keeps its own map and takes the manager through the package's ambient door.
+/**
+ * What a listener actually consumes. Deliberately NOT `CxWorkingDocumentRow`:
+ * a realtime UPDATE under REPLICA IDENTITY DEFAULT carries only the changed
+ * columns (a rename omits `content` entirely — never treat that as a blank
+ * document), and the catch-up read returns the mapped domain object rather than
+ * the raw row. This is the honest intersection, and every listener already
+ * guards each field with a `typeof` check.
+ */
+type WorkingDocSnapshot = {
+  id?: string;
+  title?: string;
+  content?: string;
+  version?: number;
+};
+
 type WdChannelEntry = {
-  channel: ReturnType<typeof supabase.channel>;
-  listeners: Map<string, (row: CxWorkingDocumentRow) => void>;
+  stop: () => void;
+  listeners: Map<string, (row: WorkingDocSnapshot) => void>;
 };
 const wdChannels = new Map<string, WdChannelEntry>();
+
+/** One place names this channel. A second, different declaration throws. */
+const workingDocChannel = defineChannelNamespace({
+  namespace: "cx-working-doc",
+  parts: ["documentId"],
+  description: "workbench.working_documents row for one working document",
+});
 
 function subscribeWorkingDocRow(
   documentId: string,
   listenerKey: string,
-  onRow: (row: CxWorkingDocumentRow) => void,
+  onRow: (row: WorkingDocSnapshot) => void,
 ): () => void {
   let entry = wdChannels.get(documentId);
   if (!entry) {
-    const listeners = new Map<string, (row: CxWorkingDocumentRow) => void>();
-    const channel = supabase
-      .channel(`cx-working-doc:${documentId}`)
-      .on(
-        "postgres_changes",
+    const listeners = new Map<string, (row: WorkingDocSnapshot) => void>();
+    const fanOut = (row: WorkingDocSnapshot): void => {
+      listeners.forEach((fn) => fn(row));
+    };
+    const stop = subscribeToRealtimeManager(() => ({
+      topic: workingDocChannel.topic({ documentId }),
+      postgresChanges: [
         {
           event: "*",
           schema: "workbench",
           table: "working_documents",
           filter: `id=eq.${documentId}`,
+          rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+          fingerprint: (row) =>
+            JSON.stringify([row.content ?? null, row.title ?? null, row.version ?? null]),
+          onChange: ({ payload, row }) => {
+            if (payload.eventType === "DELETE") return;
+            if (!row) return;
+            fanOut(row as WorkingDocSnapshot);
+          },
         },
-        (payload) => {
-          if (payload.eventType === "DELETE") return;
-          const row = payload.new as CxWorkingDocumentRow | undefined;
-          if (!row) return;
-          listeners.forEach((fn) => fn(row));
-        },
-      )
-      .subscribe();
-    entry = { channel, listeners };
+      ],
+      // Realtime has no replay. An agent edit that landed while the socket was
+      // down would otherwise leave this editor on stale text — and the next
+      // local commit would then race a version that had already moved.
+      onBackfill: async () => {
+        try {
+          const row = await getCxWorkingDocumentById(documentId);
+          if (row) fanOut(row);
+        } catch (error) {
+          // Not silent: without this read the editor may be showing text the
+          // server has already replaced.
+          console.warn(
+            `[working-doc RT] catch-up read failed for ${documentId} — this ` +
+              "editor may be showing stale content; reopen it before editing.",
+            error,
+          );
+        }
+      },
+    }));
+    entry = { stop, listeners };
     wdChannels.set(documentId, entry);
   }
   entry.listeners.set(listenerKey, onRow);
@@ -152,7 +215,7 @@ function subscribeWorkingDocRow(
     if (!e) return;
     e.listeners.delete(listenerKey);
     if (e.listeners.size === 0) {
-      void supabase.removeChannel(e.channel);
+      e.stop();
       wdChannels.delete(documentId);
     }
   };
