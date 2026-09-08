@@ -1,4 +1,5 @@
 import { dbRowToAgentDefinition } from "../converters";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 type AgentRow = Parameters<typeof dbRowToAgentDefinition>[0];
 
@@ -33,11 +34,11 @@ function liveResearchSlidesRow(): AgentRow {
       type: "object",
       additionalProperties: false,
       properties: {
-        __kind: { type: "string", const: "presentation_deck" },
+        [KIND_KEY]: { type: "string", const: "presentation_deck" },
         title: { type: "string" },
         slides: { type: "array", items: { type: "object" } },
       },
-      required: ["__kind", "title", "slides"],
+      required: [KIND_KEY, "title", "slides"],
     },
     custom_tools: [],
     tool_config: {},

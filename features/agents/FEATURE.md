@@ -4,7 +4,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-08-30`
+**Last updated:** `2026-09-08`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -331,6 +331,17 @@ deleted, emitting a warning whenever it repairs a write. It runs before the
 version snapshot trigger. Invalid tool input therefore creates/saves the agent
 without that tool; it must never fail the surrounding route or preserve the bad
 assignment in a new version.
+
+Stored definitions and version snapshots are also fail-soft at the shared read
+boundary. `dbRowToAgentDefinition` and `parseAgentVersionSnapshot` recover each
+JSON/config field independently, retain valid sibling fields, and attach
+`dataIssues` diagnostics for every fallback. A bare JSON Schema in
+`output_schema` is a supported legacy/runtime shape and is lifted losslessly to
+the frontend `{name, schema}` envelope; a bad envelope name receives the safe
+`structured_output` name. Detail surfaces must show the recovery notice, and
+route-level error boundaries remain the final protection for truly unexpected
+render failures. Malformed stored data may reduce one field to its safe default;
+it must never take down the agent route.
 
 ### Layer 2 — App Context (external)
 
@@ -820,6 +831,8 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 ---
 
 ## Change log
+
+- `2026-09-08` — **Malformed stored agent data degrades field-by-field instead of crashing the System Agents route.** The reported `Research → Slides Generator` row stored a valid bare JSON Schema in `output_schema`, while the frontend reader required the narrower `{name, schema}` envelope and threw during Server Component rendering. The shared live-definition and version-snapshot ingress paths now accept both shapes, recover every other complex field independently, capture durable `data-shape` diagnostics, and carry exact recovery details into an amber notice on the detail page. The System Agents detail family also has a local error boundary, so an unforeseen renderer failure gets retry/back controls instead of the global crash screen. Live census at repair time: 209 non-null schemas used the bare/missing-name shape, 47 used the envelope, and 772 were null; focused tests cover the exact affected UUID plus malformed sibling fields.
 
 - `2026-08-31` — **A stream failure has one diagnostics owner.** `runAiStream` captures the canonical `agent-stream-client-error`; the Redux diagnostics middleware suppresses only the immediate `execute` / `executeManual` / `smartExecute` wrapper rejections with the same message. Unrelated dead-turn rejections remain red.
 
