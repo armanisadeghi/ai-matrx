@@ -58,6 +58,9 @@ import {
   putMandateDefaultHolder,
 } from "@/features/mandates/overrides";
 import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import { useUserOrganizations } from "@/features/organizations/hooks";
+import { homeScopePhrase } from "@/features/mandates/workspace/system-rung-health";
 import {
   contractOfMandate,
   agentHolderOfBinding,
@@ -908,8 +911,38 @@ function CodeAgentDriftPanel({
 
 // ── Status banner — one verdict, matched to the state, never a mismatch ──────
 
+/**
+ * 🚨 WHICH HEALTH IS WHOSE (FIX-R9-UI round 2). Seven of the health verdicts
+ * judge the HOLDER — the same holder a host's own three controls name, with the
+ * same defect and the same remedy. Three judge the CODE DECLARATION against the
+ * stored contract, which no holder control can say. A host that owns the holder
+ * answer keeps only the second kind; nothing is disabled or greyed, it is
+ * simply not this panel's sentence to say twice.
+ *
+ * Exported so the guard can enumerate EVERY health value rather than the one
+ * the last walk happened to read.
+ */
+export const HOLDER_HEALTH_VERDICTS: readonly MandateHealth[] = [
+  "output contract unmet",
+  "ok",
+  "version drift",
+  "not a system agent",
+  "agent archived",
+  "no holder yet",
+  "unresolved pin",
+];
+
+export function bannerSpeaksHere(
+  health: MandateHealth,
+  showHolderAnswer: boolean,
+): boolean {
+  if (showHolderAnswer) return true;
+  return !HOLDER_HEALTH_VERDICTS.includes(health);
+}
+
 function StatusBanner({
   row,
+  showHolderAnswer,
   variableVerdicts,
   lineage,
   onSaved,
@@ -917,12 +950,15 @@ function StatusBanner({
   onOpenRebind,
 }: {
   row: MandateRow;
+  /** False on a host that already states the holder's verdict — see the prop. */
+  showHolderAnswer: boolean;
   variableVerdicts: MandateVariableVerdict[];
   lineage: AgentLineage;
   onSaved: () => void;
   onTest: () => void;
   onOpenRebind: () => void;
 }) {
+  if (!bannerSpeaksHere(row.health, showHolderAnswer)) return null;
   switch (row.health) {
     case "code ↔ agent drift":
       return (
@@ -1118,12 +1154,15 @@ function Fact({
  */
 function FactsPanel({
   row,
+  showHolderAnswer,
   variableVerdicts,
   verdictsLoading,
   verdictsError,
   onSaved,
 }: {
   row: MandateRow;
+  /** False on a host whose own controls name the holder — see the prop. */
+  showHolderAnswer: boolean;
   variableVerdicts: MandateVariableVerdict[];
   verdictsLoading: boolean;
   verdictsError: string | null;
@@ -1163,6 +1202,8 @@ function FactsPanel({
   }, [factProvisionKey]);
   return (
     <div className="grid grid-cols-[max-content_1fr] items-center gap-x-4 gap-y-1.5 rounded-md border border-border bg-card px-3 py-2.5">
+      {showHolderAnswer ? (
+        <>
       <Fact label="Agent">
         <div className="flex min-w-0 items-center gap-2">
           {row.agentId ? (
@@ -1232,6 +1273,8 @@ function FactsPanel({
           </span>
         )}
       </Fact>
+        </>
+      ) : null}
       {wave1.provisionKey && (
         <Fact label="Provision">
           <span className="inline-flex flex-wrap items-center gap-1.5">
@@ -1543,6 +1586,7 @@ export function MandateDetailView({
   lineage,
   onSaved,
   showGoal = true,
+  showHolderAnswer = true,
 }: {
   row: MandateRow;
   data: MandateConsoleData;
@@ -1559,8 +1603,39 @@ export function MandateDetailView({
    * no triad, keeps it.
    */
   showGoal?: boolean;
+  /**
+   * 🚨 ONE HOLDER ANSWER PER SCREEN (FIX-R9-UI round 2, fresh Sonnet walk of
+   * v0.4.1732). Arman's ruling was *"One place is all we need and it's 3
+   * things, not more."* — and the walk found this panel still rendering a
+   * SECOND one below the fold: an `Agent` fact with the holder's name, a
+   * `System agent` fact, a `Version` fact reading *"latest (v7)"*, the health
+   * banner repeating *"Research → Slides Generator does not produce what this
+   * job promises."* with the same remedy, and a button reading **"Assign a
+   * different holder"** — the very control the ruling condemned, renamed.
+   *
+   * A host that already shows the holder answer passes `false`: the facts, the
+   * holder-health banner and its buttons are all ABSENT, and what survives here
+   * is the health this page does NOT own — the code declaration and the stored
+   * contract. The window's Admin pane, which shows no holder controls, keeps
+   * everything (default `true`), exactly as `showGoal` works one prop over.
+   */
+  showHolderAnswer?: boolean;
 }) {
   const dispatch = useAppDispatch();
+  const { organizations } = useUserOrganizations();
+  /**
+   * WHO THE JOB'S OWN ANSWER COVERS — a PHRASE, computed here so no sentence
+   * below ever interpolates an id-shaped expression (FIX-R8's class guard is
+   * right to refuse one, even when the function behind it returns a name).
+   */
+  const homeScope = homeScopePhrase({
+    systemHomed:
+      (row.mandate.organization_id ?? "").toLowerCase() ===
+      SYSTEM_ORGANIZATION_ID.toLowerCase(),
+    organizationName:
+      organizations.find((o) => o.id === row.mandate.organization_id)?.name ??
+      null,
+  });
   const bindings = data.bindingsByMandateId[row.id] ?? [];
   const [verdictState, setVerdictState] = useState<{
     mandateKey: string;
@@ -1655,6 +1730,7 @@ export function MandateDetailView({
       {/* Facts first — what IS. The verdict on what's wrong comes second. */}
       <FactsPanel
         row={row}
+        showHolderAnswer={showHolderAnswer}
         variableVerdicts={variableVerdicts}
         verdictsLoading={verdictsLoading}
         verdictsError={liveVerdictState?.error ?? null}
@@ -1667,6 +1743,7 @@ export function MandateDetailView({
 
       <StatusBanner
         row={row}
+        showHolderAnswer={showHolderAnswer}
         variableVerdicts={variableVerdicts}
         lineage={lineage}
         onSaved={onSaved}
@@ -1734,10 +1811,15 @@ export function MandateDetailView({
           platform's. What survives is the ONE fact an admin managing the system
           rung can act on: how many rungs sit above it, said in a sentence, with
           no controls. */}
+      {/* 🚨 THE SCOPE COMES FROM THE HOME — V-PARITY/UX F3, found here a THIRD
+          time by the walk of v0.4.1732: an org-homed scratch job printed
+          "every user on the platform runs the system answer" three lines under
+          its own correct "Proof Run Judge answers this job for every member of
+          Castellano & Reyes, LLP." One phrase, one source. */}
       <p className="px-3 pb-1 text-[11.5px] leading-relaxed text-muted-foreground">
         {bindings.length === 0
-          ? "Nothing overrides this job — every user on the platform runs the system answer."
-          : `${bindings.length} ${bindings.length === 1 ? "override sits" : "overrides sit"} above the system answer, set by organizations and people in their own workspaces. They are theirs to change, not this console's.`}
+          ? `Nothing overrides this job — ${homeScope} runs the answer above.`
+          : `${bindings.length} ${bindings.length === 1 ? "override sits" : "overrides sit"} above that answer, set by organizations and people in their own workspaces. They are theirs to change, not this console's.`}
       </p>
     </div>
   );

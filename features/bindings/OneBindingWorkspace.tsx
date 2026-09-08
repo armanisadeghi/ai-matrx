@@ -1400,6 +1400,13 @@ function BindingDraft({
     holderInputs.targets.length > 0 &&
     offeredValues.length > 0;
 
+  /** The pre-flight has a problem to state about the drafted agent, right now. */
+  const preflightSpeaking =
+    holder.kind === "agent" &&
+    agentId !== null &&
+    !verdict.checking &&
+    !verdict.passed;
+
   return (
     <div className="space-y-3">
       <ScopeHolderBar
@@ -1456,7 +1463,13 @@ function BindingDraft({
         ladderLine={ladderLine(data.bindings, rung, userId, organizationId)}
         disabled={disabled}
         perspective={perspective}
-        healthNote={healthNote}
+        // 🚨 ONE VERDICT ON SCREEN, ALWAYS ABOUT THE HOLDER IN THE CONTROLS
+        // (FIX-R9-UI round 2). The pre-flight below judges the DRAFTED agent
+        // and gates Save; `healthNote` is the DOOR's judgement of what is
+        // saved. When the pre-flight is speaking they are the same defect in
+        // two voices — which is the repetition Arman rejected — so the door's
+        // sentence stands only while the pre-flight has nothing to say.
+        healthNote={preflightSpeaking ? null : healthNote}
       />
 
       {/* ONE SCREEN, TWO MODES (P17). The rung and the holder above hold still;

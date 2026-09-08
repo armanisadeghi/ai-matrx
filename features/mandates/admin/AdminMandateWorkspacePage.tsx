@@ -249,6 +249,14 @@ function AdminControls({ mandateKey }: { mandateKey: string }) {
                   // its org-admitted read printed a refusal about choosing an
                   // organization on the platform's own page.
                   showGoal={false}
+                  // 🚨 ONE HOLDER ANSWER PER SCREEN (FIX-R9-UI round 2). The
+                  // Holder section above IS this page's answer — three controls
+                  // and one verdict. This panel used to render a second one:
+                  // an Agent fact, a Version fact, the same defect sentence and
+                  // an "Assign a different holder" button. What it keeps is the
+                  // health no holder control can state — the code declaration
+                  // against the stored contract.
+                  showHolderAnswer={false}
                   lineage={
                     (row.agentId ? lineageIndex[row.agentId] : undefined) ?? {
                       parent: null,
