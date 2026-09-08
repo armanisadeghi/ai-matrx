@@ -1,15 +1,33 @@
 ---
 name: tts-audio-system
 description: >-
-  Complete guide to the TTS (Text-to-Speech), STT (Speech-to-Text), and audio
-  playback system. Covers Cartesia WebSocket streaming, Groq PlayAI REST TTS,
-  Groq Whisper transcription, voice assistant hooks, and all speaker UI
-  components. Use when working on audio features, TTS components, voice
-  playback, transcription, SpeakerButton, audio API routes, Cartesia hooks,
-  or any file in features/tts/, features/audio/, hooks/tts/, or app/api/audio/.
+  The TTS / STT / audio-playback system: the ONE `speak()` entry point, the
+  app-wide playback queue + session registry, the iOS/WebKit output-unlock
+  primitive, the tiered listening config (voice/speed/language, system → org
+  → user), the Listen panel (summarize-for-listening), Cartesia streaming,
+  catalog speech, Whisper transcription, and the speaker UI components. Use
+  when working on ANY audio feature — TTS, read-aloud, voice playback, the
+  Listen actions, transcription, mic capture, SpeakerButton, audio API routes
+  — or any file in features/audio/, features/tts/, hooks/tts/, app/api/audio/.
 ---
 
 # TTS / Audio System
+
+## 🚨 Start here — the four things that are easy to get wrong
+
+1. **`speak()` is the ONE entry point** (`features/audio/service/speak.ts`). Never
+   hand-roll a TTS call, never construct a player, never read a voice preference
+   yourself. React surfaces use `useSpeech()` on top of it.
+2. **Voice / speed / language come from the tiered `listening` config**
+   (`features/audio/service/listeningConfig.ts`) — system → org → user, user wins.
+   **Never read `userPreferences.voice.*` for playback**; those fields survive
+   only as the pre-fetch boot fallback. See the tiered-config section below.
+3. **Audio output must be unlocked inside a user gesture** or iOS plays silence.
+   Call `primeAudioOutput()` (`features/audio/unlock.ts`) synchronously in any
+   handler that will later start audio. See the iOS section below.
+4. **One voice at a time, app-wide.** `playbackLock` arbitrates; the
+   `playbackQueue` + `audioSessionRegistry` own what is playing and its history.
+   Producing audio without a session trips the runtime bypass guard.
 
 ## Architecture Overview
 
@@ -65,11 +83,33 @@ hooks/tts/                  ← Legacy/specialized hooks
   useVoiceChatCdn.ts        ← CDN variant of voice chat
   useVoiceChatWithAutoSleep.ts ← Auto-sleep extension
 
-features/audio/             ← Recording, transcription, voice selection
-  hooks/                    ← Recording and transcription hooks
-  components/               ← Microphone buttons, recording overlays
-  services/                 ← Error logging, fallback upload
-  voice/                    ← Voice selection UI, voice playground
+features/audio/             ← THE modern audio system (start here, not features/tts/)
+  service/
+    speak.ts                ← 🚨 THE app-wide "turn text into audio" entry point
+    useSpeech.ts            ← React face of speak() (per-surface status)
+    listeningConfig.ts      ← 🚨 tiered voice/speed/language (system→org→user)
+    useListeningSettings.ts ← settings-pane face; update() writes MY tier
+    engines.ts              ← AV engine registry (voice lists live here ONCE)
+  unlock.ts                 ← 🚨 iOS/WebKit gesture unlock (see iOS section)
+  activation.ts             ← one-way latch that mounts the lazy audio system
+  playback/
+    playbackQueue.ts        ← the single app-wide queue (one at a time)
+    playbackLock.ts         ← app-wide single-output arbiter (start-always-wins)
+    AudioPlaybackHost.tsx   ← queue → Redux mirror; installs unlock listeners
+    adapters/cartesiaAdapter.ts  ← streaming PCM lane (SinkAwarePlayer)
+    adapters/catalogAdapter.ts   ← server-catalog lane (HTMLAudioElement)
+  session/
+    audioSessionRegistry.ts ← ALL audio activity (in + out, live + history)
+    usePlaybackSessionController.ts / useMediaElementPlaybackSession.ts
+    bypassGuard.ts          ← screams when audio is produced with no session
+  sinkAwarePlayer.ts        ← our WebPlayer fork; output-device routing
+  hooks/ components/ services/ voice/   ← recording, mic UI, voice selection UI
+
+features/window-panels/windows/listen/
+  ListenSummaryWindow.tsx   ← the Listen panel (summarize-for-listening player)
+
+providers/AudioSystemHost.tsx        ← the ONE ssr:false boundary (lazy mount)
+providers/AudioOutputHostImpl.tsx    ← app-root streaming speaker owner
 
 lib/cartesia/               ← Low-level Cartesia client & types
   client.ts                 ← LEGACY: direct NEXT_PUBLIC_CARTESIA_API_KEY
@@ -208,17 +248,81 @@ interface TextToSpeechPreferences {
 
 ---
 
+## 🚨 iOS / WebKit — the output-unlock law (2026-08-30)
+
+**Every browser on iPhone is WebKit — Chrome and Firefox included — so these
+rules are not "a Safari edge case", they are the whole mobile platform.**
+
+Two WebKit behaviors made all mobile audio silent, with no error:
+
+1. An `AudioContext` created (or resumed) **outside a user gesture** starts
+   `suspended` and stays silent. Our TTS starts audio from websocket callbacks
+   seconds after the tap, so per-utterance contexts were always suspended.
+2. Web Audio is muted by the **ringer/silent switch** unless the page declares
+   `navigator.audioSession.type = "playback"` (iOS 16.4+).
+
+`features/audio/unlock.ts` is the fix and the only place this logic lives:
+
+- `installAudioUnlockListeners()` — capture-phase `pointerdown`/`keydown`/
+  `touchend` listeners; mounted ONCE by `AudioPlaybackHost`. Unlocks on the
+  user's first interaction anywhere, so the page is usually already unlocked
+  before any audio is requested.
+- `primeAudioOutput()` — **call this synchronously in every handler that will
+  later start audio.** Idempotent and cheap. Already called by
+  `enqueuePlayback` / `resumePlayback` / `playPlaybackItem`, both Listen
+  actions, and the Listen panel transport.
+- `getUnlockedAudioContext()` / `getPrimedMediaElement()` — the shared,
+  gesture-unlocked handles. `SinkAwarePlayer` schedules into the shared
+  context when it exists (per-utterance `GainNode`; **never closes it**);
+  `catalogAdapter` plays through the shared element.
+
+**Rules when you touch audio:**
+- Adding a new "start audio" button? Call `primeAudioOutput()` in the handler.
+- Never mint a bare `new AudioContext()` for playback — go through the queue.
+- Never close the shared context (`stop()` in shared mode tears down the
+  utterance only).
+- A context that will not reach `running` **throws a user-facing error**
+  ("The browser blocked audio output — tap the play button to start sound").
+  Keep it that way: silence with no error is the bug this replaced.
+
+---
+
+## The Listen panel — summarize-for-listening
+
+`features/window-panels/windows/listen/ListenSummaryWindow.tsx` (overlay
+`listenSummaryWindow`). Two entry points, both in one "Listen" context-menu
+submenu and in the assistant action bar's ⋯ menu:
+
+- **Summarize for listening** — summary streams in as text; user presses Play.
+- **Summarize & listen** — stream-to-stream: the summary is spoken as it is
+  written, via the app-root speaker (`voicePlaybackBus` request with
+  `includeActive: true`).
+
+The summarizing agent is resolved from the `spoken_summary` surface role,
+falling back to the platform home surface (`LISTENING_HOME_SURFACE`) whose
+`ambient.spoken_summary` mandate holds the default agent — so it works on
+every surface for every user with no personal binding. **Never put an agent
+UUID in code here.** Menu wiring: `features/context-menu-v3/` (`listen`
+submenu role) + `messageActionRegistry.listeningItems`.
+
+---
+
 ## Known Deferred Issues
 
 These are documented design decisions, not bugs:
 
 1. **Five Cartesia hook variants** — Consolidation into one hook requires updating ~15 consumer files. Deferred as separate effort. Use `useCartesiaSpeaker` for all new code.
 2. **`lib/cartesia/client.ts` leaks API key** — Uses `NEXT_PUBLIC_CARTESIA_API_KEY`. Legacy hook `useCartesia` depends on it. Will be removed when legacy hook is consolidated.
-3. **No global TTS instance management** — Multiple components can open multiple WebSocket connections. No singleton/context pattern yet.
-4. **No connection health monitoring** — No heartbeat/ping. Silent WebSocket drops discovered only on next `speak()`.
-5. **No playback progress for Cartesia** — Groq hook tracks duration/currentTime; Cartesia does not.
-6. **No abort for in-flight TTS** — Once `speak()` is called, no cancellation mechanism.
-7. **Token expiry** — Cartesia token fetched once, no refresh. If it expires mid-session, next `speak()` reconnects automatically.
+3. **No connection health monitoring** — No heartbeat/ping. Silent WebSocket drops discovered only on next `speak()`.
+4. **No playback progress for Cartesia** — the catalog (element) lane tracks duration/currentTime; the streaming PCM lane does not.
+5. **Token expiry** — Cartesia token fetched once, no refresh. If it expires mid-session, `connectCartesiaTts` refreshes and retries once automatically.
+
+**Two entries were REMOVED on 2026-09-08 because they became false** — do not
+reinstate them from an old copy of this file: *"no global TTS instance
+management"* (the `playbackQueue` + `playbackLock` + `audioSessionRegistry`
+trio has been the single owner since the unified-audio work) and *"no abort
+for in-flight TTS"* (`skipPlayback` / `clearPlayback` / a session's `stop`
+control all abort; `playbackLock` preempts across paths).
 
 ---
 
