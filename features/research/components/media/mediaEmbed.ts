@@ -2,6 +2,7 @@ import type { ResearchMedia } from "../../types";
 // YouTube/Vimeo id extraction lives in the shared primitives — never re-implement.
 import { youtubeId } from "@/lib/media/youtube";
 import { vimeoId } from "@/lib/media/vimeo";
+import { fileNameFromUrl } from "@ai-matrx/data/files";
 
 export { youtubeId } from "@/lib/media/youtube";
 export { vimeoId } from "@/lib/media/vimeo";
@@ -42,12 +43,22 @@ export function videoPoster(item: ResearchMedia): string | null {
   return yt ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` : null;
 }
 
-/** A readable file name from a URL path (decoded, query stripped). */
-export function fileNameFromUrl(url: string): string {
+/**
+ * A DISPLAY LABEL for a media URL. The recognizer itself is
+ * `fileNameFromUrl` in `@ai-matrx/data/files` (which correctly answers null
+ * for a path segment that is not a name — a UUID is an id, not a file name);
+ * this adds only the gallery's display fallback, so a row always renders
+ * something a human can read.
+ */
+export function mediaLabelFromUrl(url: string): string {
+  const recognized = fileNameFromUrl(url);
+  if (recognized) return recognized;
   try {
-    const p = new URL(url).pathname;
-    const last = decodeURIComponent(p.split("/").filter(Boolean).pop() ?? "");
-    return last || new URL(url).hostname;
+    const u = new URL(url);
+    const last = decodeURIComponent(
+      u.pathname.split("/").filter(Boolean).pop() ?? "",
+    );
+    return last || u.hostname;
   } catch {
     return url.split("/").pop() || url;
   }
@@ -55,7 +66,7 @@ export function fileNameFromUrl(url: string): string {
 
 /** Lowercase file extension from a URL path, or "". */
 export function fileExt(url: string): string {
-  const name = fileNameFromUrl(url);
+  const name = mediaLabelFromUrl(url);
   const m = name.match(/\.([a-z0-9]{1,5})$/i);
   return m ? m[1].toLowerCase() : "";
 }

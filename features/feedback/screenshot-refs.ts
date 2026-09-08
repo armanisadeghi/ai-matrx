@@ -1,3 +1,5 @@
+import { isUuid } from "@ai-matrx/associations/core";
+
 export interface FeedbackScreenshotFields {
   image_file_ids?: string[] | null;
   image_urls?: string[] | null;
@@ -19,8 +21,3 @@ export function feedbackScreenshotHref(ref: string): string {
   return isUuid(ref) ? `/files/f/${encodeURIComponent(ref)}` : ref;
 }
 
-function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    value,
-  );
-}

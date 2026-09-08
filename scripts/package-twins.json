@@ -1,0 +1,115 @@
+{
+  "$comment": [
+    "THE TWIN REGISTER — every capability whose logic has been COLLAPSED into an",
+    "@ai-matrx/* package. A local definition of one of these names in this repo is a",
+    "re-grown twin: the exact failure the client-package campaign exists to kill",
+    "(Arman: 'the logic of the packages is NEVER duplicated outside of the package').",
+    "",
+    "Add a row the same session you delete a twin. Never add an allowlist entry to",
+    "silence a NEW twin — an allowlist entry is only for a definition that is",
+    "PROVABLY not the same capability, and it must say why in `reason`.",
+    "",
+    "Register: /projects/npm-package-extraction/DUPLICATION-CENSUS.md (common-docs)."
+  ],
+  "twins": [
+    {
+      "name": "isUuid",
+      "package": "@ai-matrx/associations/core",
+      "why": "Lax UUID-shape predicate. Four host copies deleted 2026-09-07 (agent-apps track route, feedback screenshot-refs, skills thunks, scopes slugify).",
+      "allow": [
+        {
+          "file": "lib/communications/voice/provider-configuration-readiness.ts",
+          "reason": "NOT the same predicate: RFC-4122 versioned/variant regex ([1-5] version, [89ab] variant). A validation door, deliberately stricter than the package's shape check."
+        },
+        {
+          "file": "lib/communications/voice/storage-canary-readiness.ts",
+          "reason": "Same RFC-4122 strict predicate as provider-configuration-readiness.ts."
+        }
+      ]
+    },
+    {
+      "name": "uniqueChannelTopic",
+      "package": "@ai-matrx/realtime",
+      "why": "Realtime channel topic minter. The host copy's module-level counter could hand out the same 'unique' topic twice across dual ESM/CJS graphs (data 0.6.3).",
+      "allow": []
+    },
+    {
+      "name": "toMs",
+      "package": "@ai-matrx/realtime",
+      "why": "Realtime timestamp normalizer, deleted in the 2026-08-31 realtime adoption.",
+      "allow": []
+    },
+    {
+      "name": "isStaleEcho",
+      "package": "@ai-matrx/realtime",
+      "why": "Echo suppression. The package owns the shared write ledger; per-hook seenRef copies were deleted in the 2026-08-31 realtime adoption.",
+      "allow": []
+    },
+    {
+      "name": "guardedUpdate",
+      "package": "@ai-matrx/data/db",
+      "why": "utils/supabase/guardedUpdate.ts deleted in the 2026-08-29 data C9 adoption.",
+      "allow": []
+    },
+    {
+      "name": "readAllRows",
+      "package": "@ai-matrx/data/db",
+      "why": "lib/supabase/readAllRows.ts deleted in the 2026-08-29 data C9 adoption.",
+      "allow": []
+    },
+    {
+      "name": "mergeJsonColumn",
+      "package": "@ai-matrx/data/db",
+      "why": "lib/supabase/mergeJsonColumn.ts deleted in the 2026-08-29 data C9 adoption.",
+      "allow": []
+    },
+    {
+      "name": "fileNameFromUrl",
+      "package": "@ai-matrx/data/files",
+      "why": "Canonical file-name recognizer. The UniversalInlineFile copy was deleted 2026-08-31; the research mediaEmbed copy 2026-09-07.",
+      "allow": []
+    },
+    {
+      "name": "createMatrxNdjsonFramer",
+      "package": "@ai-matrx/agents",
+      "why": "The last hand-rolled NDJSON parser was routed through the package framer; a raw per-line JSON.parse silently lost chunk text on the compact envelope form.",
+      "allow": []
+    },
+    {
+      "name": "normalizeMatrxError",
+      "package": "@ai-matrx/agents/matrx",
+      "why": "Agent transport error classification moved into the package in agents 0.6.0 (the worst C22 violation in the fleet).",
+      "allow": []
+    },
+    {
+      "name": "followRuntimeOperationToEnd",
+      "package": "@ai-matrx/agents/matrx",
+      "why": "Reconnect stall/retry/cursor policy moved into the package in agents 0.6.0.",
+      "allow": []
+    },
+    {
+      "name": "treeContainsComponent",
+      "package": "@ai-matrx/kit/react-tree",
+      "why": "kit 0.5.0 absorbed the one public copy and fixed it (portal children were never scanned).",
+      "allow": []
+    },
+    {
+      "name": "computeTextDiff",
+      "package": "@ai-matrx/diff/text",
+      "why": "16 host diff files deleted in the diff 0.2.0 C9 swap (net -3,109 lines).",
+      "allow": []
+    },
+    {
+      "name": "markdownToPdfBlob",
+      "package": "@ai-matrx/print/markdown",
+      "why": "print 0.3.1 absorbed the three private markdown->print converters (~1,208 host lines deleted).",
+      "allow": []
+    },
+    {
+      "name": "registerSvgIcons",
+      "package": "@ai-matrx/icons",
+      "why": "Icon registry injection point; the host registry was collapsed into the package.",
+      "allow": []
+    }
+  ]
+}

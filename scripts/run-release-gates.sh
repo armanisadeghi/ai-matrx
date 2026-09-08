@@ -133,6 +133,7 @@ if $STRICT; then
         "Scraper single transport boundary|pnpm check:scraper-routing"
         "Authentication destinations and gates|pnpm check:auth-destinations"
         "Auth doors blind to a split cookie jar|pnpm check:split-jar-doors:strict"
+        "Package logic re-grown outside its package|pnpm check:package-twins:strict"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from
@@ -351,6 +352,7 @@ else
         "Scraper single transport boundary|pnpm check:scraper-routing"
         "Authentication destinations and gates|pnpm check:auth-destinations"
         "Auth doors blind to a split cookie jar|pnpm check:split-jar-doors:strict"
+        "Package logic re-grown outside its package|pnpm check:package-twins:strict"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from

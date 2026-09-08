@@ -51,7 +51,7 @@ import {
 import {
   embedInfo,
   videoPoster,
-  fileNameFromUrl,
+  mediaLabelFromUrl,
   fileExt,
   hostLabel,
 } from "./mediaEmbed";
@@ -1128,7 +1128,7 @@ const SAVED_DOCS_FOLDER = "Research/Saved Documents";
 /** A best-effort upload filename: real file name from the URL, ensuring it
  * carries an extension (falls back to the alt-text/caption or `document.pdf`). */
 function uploadFileName(item: ResearchMedia): string {
-  const fromUrl = fileNameFromUrl(item.url);
+  const fromUrl = mediaLabelFromUrl(item.url);
   if (/\.[a-z0-9]{1,5}$/i.test(fromUrl)) return fromUrl;
   const base =
     (item.alt_text || item.caption || fromUrl || "document")
@@ -1158,7 +1158,7 @@ function DocumentCard({
   // there.
   const name =
     (item.alt_text || "").trim() ||
-    (owned ? item.caption || "Uploaded document" : fileNameFromUrl(item.url));
+    (owned ? item.caption || "Uploaded document" : mediaLabelFromUrl(item.url));
   const host = owned ? "Your library" : hostLabel(item.url);
   const ext = owned
     ? (mediaMimeType(item) || "").split("/").pop() || ""

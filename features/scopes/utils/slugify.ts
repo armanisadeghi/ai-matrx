@@ -50,10 +50,10 @@ export function isReservedSlug(s: string): boolean {
   return RESERVED_SCOPE_SLUGS.has(s.toLowerCase());
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** True when a route segment is a UUID (resolve by id) vs a slug (resolve by name). */
-export function isUuid(value: string): boolean {
-  return UUID_RE.test(value);
-}
+/**
+ * True when a route segment is a UUID (resolve by id) vs a slug (resolve by
+ * name). The predicate itself lives in `@ai-matrx/associations/core`; this
+ * re-export keeps the historical `@/features/scopes/utils/slugify` specifier
+ * working for the scopes surfaces.
+ */
+export { isUuid } from "@ai-matrx/associations/core";

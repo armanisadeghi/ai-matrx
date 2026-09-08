@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isUuid } from "@ai-matrx/associations/core";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import type { TablesUpdate } from "@/types/database.types";
@@ -51,15 +52,6 @@ function getClientIp(request: NextRequest): string | null {
     if (first) return first;
   }
   return request.headers.get("x-real-ip");
-}
-
-function isUuid(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      value,
-    )
-  );
 }
 
 export async function POST(

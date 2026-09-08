@@ -20,6 +20,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { isUuid } from "@ai-matrx/associations/core";
 
 import { callApi } from "@/lib/api/call-api";
 import { operationFailed } from "@/utils/errors";
@@ -63,12 +64,6 @@ import {
 // platform.associations (see loadSkillProjectIds). No embedded join.
 const SKILL_SELECT = "*";
 
-/** True when the value looks like a UUID (vs. a `skill_id` business key). */
-function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    value,
-  );
-}
 import type {
   CategoryRow,
   CategoryRowWire,
