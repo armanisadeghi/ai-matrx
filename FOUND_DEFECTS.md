@@ -2949,3 +2949,25 @@ replay buffer — a client that reconnects mid-run re-reads chunks/tool events b
 server-built blocks (envelopes, partial kinds) it missed. The disappearing-run/reconnect class
 (LIVE-RUN-RETENTION doctrine), transport-side. Repair belongs in aidream's emitter wiring;
 verify with a reconnect-mid-stream test before calling it closed.
+
+## 2026-09-08 — two HR RPC conformance failures are red on `main`, so every PR's CI is red
+
+`pnpm check:hr-rpc-conformance` (CI job "HR nav, URL, envelope and mock-walk guards") fails on
+`origin/main` at `a04e1f92`, and therefore on every branch cut from it. Found while opening an
+unrelated docs PR whose diff does not touch `features/hr/`.
+
+1. **`features/hr/service.ts:1252` — silent no-op write.** The call sends
+   `p_payload.subject_employee_id` to `hr_incident_create`, which never reads that key; the door
+   reads `subject_employment_id`. The write returns ok and the value is dropped, so an incident's
+   subject is silently lost. Looks like an `employee` / `employment` mix-up — but which side is
+   right (rename the sender, or teach the door) is the HR lane's call, since `subject_employment_id`
+   is a different identity, not a spelling variant.
+2. **`features/hr/service.ts:1406` — missing door.** `hr_incident_void` is not a function in
+   `public`. Every call can only return PGRST202. The doc comment at line 1392 cites migration
+   `hr_l1_79` as its origin, so either that migration was never applied or the function was later
+   dropped — needs a live check against `brsgrqvjdzwihsvnfqkf` before anyone writes a migration.
+
+Both are genuine defects, not guard noise: each is a call that cannot do what its author believes
+it does. Neither is fixable from a docs PR — (2) needs DDL. The same run also reports 87 call sites
+UNMEASURED and a STALE SNAPSHOT (38 doors absent from `types/database.types.ts`, refresh with
+`pnpm hr:door-snapshot` + `pnpm db-types`), which are warnings today but hide the same class.
