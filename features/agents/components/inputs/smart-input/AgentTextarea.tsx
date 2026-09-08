@@ -36,6 +36,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
+import { readVerticalChrome, snapToLineGrid } from "./textarea-line-grid";
 import { usePasteImageResource } from "@/features/agents/components/inputs/resources/usePasteImageResource";
 import { useInstanceInputUndoRedo } from "@/features/agents/hooks/useInstanceInputUndoRedo";
 import {
@@ -237,9 +238,17 @@ export function AgentTextarea({
 
   // ── Auto-resize ─────────────────────────────────────────────────────────────
   // Sync, pre-paint layout — the textarea grows directly from its own
-  // scrollHeight; no wrapper animation, no timeouts. The element's fast
-  // `transition-[height]` smooths the resulting height writes, but it must be
-  // suspended for the measurement itself (see below).
+  // scrollHeight; no wrapper animation, no timeouts. Two rules keep a typing
+  // session perfectly still (2026-09-08 flutter: every keystroke past the
+  // first wrap re-sized and jittered the whole composer):
+  //   1. The height is snapped to the line grid (`snapToLineGrid`), and it is
+  //      written ONLY when the snapped value differs from the rendered height.
+  //      A keystroke that keeps the line count touches nothing.
+  //   2. Typing never animates. The height transition exists only for the
+  //      expand / collapse toggles (see the className below) — an animated
+  //      per-keystroke write restarted its own 150ms transition on every key
+  //      (this effect restores the mid-animation height, then re-targets), so
+  //      the box crept and the caret-reveal scroll fought the clipped height.
   useLayoutEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -265,22 +274,39 @@ export function AgentTextarea({
     // min-height below still supplies the compact empty-state floor.
     //
     // The zero-measure MUST run with the height transition suspended. Unlike
-    // `auto`, `Npx → 0px` is animatable, so with `transition-[height]` live the
-    // forced reflow inside this effect catches the transition at t=0 — the
-    // computed height is still the OLD height, and scrollHeight never reports
-    // less than that mid-transition client height. The measurement became a
-    // ratchet: the box could grow but never shrink, so any draft that shrank in
-    // place (send after a long paste/dictation, undo, deleted lines) left an
-    // empty composer stuck at the largest height it had ever reached. Restoring
-    // the pre-measure height before re-enabling keeps the class-driven
-    // grow/collapse animation running from the exact rendered height.
+    // `auto`, `Npx → 0px` is animatable, so with a live `transition-[height]`
+    // (the collapse glide) the forced reflow inside this effect catches the
+    // transition at t=0 — the computed height is still the OLD height, and
+    // scrollHeight never reports less than that mid-transition client height.
+    // The measurement became a ratchet: the box could grow but never shrink,
+    // so any draft that shrank in place (send after a long paste/dictation,
+    // undo, deleted lines) left an empty composer stuck at the largest height
+    // it had ever reached. Restoring the pre-measure height before re-enabling
+    // keeps the class-driven collapse animation running from the exact
+    // rendered height. The scroll offset is restored too: a zero-height
+    // textarea clamps and re-reveals its caret, which must not leak into the
+    // painted frame.
     const startHeight = el.offsetHeight;
+    const scrollTop = el.scrollTop;
     el.style.transitionProperty = "none";
     el.style.height = "0px";
-    const natural = Math.max(minH, Math.min(el.scrollHeight, 200));
+    const contentHeight = el.scrollHeight;
     el.style.height = `${startHeight}px`;
     void el.offsetHeight; // commit the untransitioned restore before re-enabling
     el.style.transitionProperty = "";
+    el.scrollTop = scrollTop;
+
+    const style = window.getComputedStyle(el);
+    const snapped = snapToLineGrid(
+      contentHeight,
+      parseFloat(style.lineHeight),
+      readVerticalChrome(style),
+    );
+    const natural = Math.max(minH, Math.min(snapped, 200));
+    // Same line count → same height → no write. This is the whole guarantee:
+    // the rendered height changes the instant a line is added or removed and
+    // at no other moment.
+    if (natural === startHeight) return;
     el.style.height = `${natural}px`;
   }, [visibleText, isExpanded, singleRow, compact]);
 
@@ -325,10 +351,16 @@ export function AgentTextarea({
           onChange={(e) => handleTextChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholderText}
-          className={`w-full bg-transparent border-none outline-none text-base text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide leading-7 transition-[height] motion-reduce:transition-none ${
+          className={`w-full bg-transparent border-none outline-none text-base text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide leading-7 ${
+            // The height transition belongs to the expand/collapse toggles
+            // ONLY. While typing there is no transition class at all: a
+            // line-count change snaps instantly, and an unchanged line count
+            // writes nothing (see the auto-resize effect).
             isCollapsing
-              ? "duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              : "duration-150 ease-out"
+              ? "transition-[height] motion-reduce:transition-none duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              : isExpanded
+                ? "transition-[height] motion-reduce:transition-none duration-150 ease-out"
+                : ""
           }`}
           style={{
             minHeight: compact ? 28 : 40,
