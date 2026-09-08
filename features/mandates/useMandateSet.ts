@@ -45,7 +45,12 @@ export function shouldReportMandateSetFailure(
 }
 
 const SEPARATOR = "\u0000";
-const PENDING: MandateState = { mandate: null, loading: true, error: null };
+const PENDING: MandateState = {
+  mandate: null,
+  loading: true,
+  error: null,
+  absent: false,
+};
 
 function pendingSet(keys: readonly string[]): Record<string, MandateState> {
   const out: Record<string, MandateState> = {};
@@ -102,13 +107,23 @@ export function useMandateSet(
           const key = listed[i];
           if (result.status === "fulfilled") {
             const mandate: ResolvedMandate = result.value;
-            next[key] = { mandate, loading: false, error: null };
+            next[key] = {
+              mandate,
+              loading: false,
+              error: null,
+              absent: false,
+            };
           } else {
             const message = extractErrorMessage(result.reason);
             if (shouldReportMandateSetFailure(key, optionalKeys)) {
               console.error(`[mandates] ${key} failed to resolve:`, message);
             }
-            next[key] = { mandate: null, loading: false, error: message };
+            next[key] = {
+              mandate: null,
+              loading: false,
+              error: message,
+              absent: false,
+            };
           }
         });
         setState((prev) =>
