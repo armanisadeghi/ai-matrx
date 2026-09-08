@@ -16559,6 +16559,48 @@
         }
       }
     },
+    "/wrike/public/status": {
+      "get": {
+        "tags": [
+          "Wrike Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_wrike_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WrikeServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/37signals/public/status": {
+      "get": {
+        "tags": [
+          "37signals Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_37signals_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThirtySevenSignalsServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -19851,6 +19893,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GeekbotServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teamleader/public/status": {
+      "get": {
+        "tags": [
+          "Teamleader Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_teamleader_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamleaderServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/deskpro/public/status": {
+      "get": {
+        "tags": [
+          "Deskpro Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_deskpro_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskproServiceStatus"
                 }
               }
             }
@@ -29487,6 +29571,71 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openstack-wiki/public/page": {
+      "get": {
+        "tags": [
+          "OpenStack Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_openstack_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__openstack_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ceph-docs/public/index": {
+      "get": {
+        "tags": [
+          "Ceph Documentation Integrations"
+        ],
+        "summary": "Public Index",
+        "operationId": "public_index_ceph_docs_public_index_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexContent"
                 }
               }
             }
@@ -127873,6 +128022,47 @@
         "title": "DescriptServiceStatus",
         "description": "Safe aggregate status projection for Descript's fixed status page."
       },
+      "DeskproServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "deskpro_public_service_status",
+            "title": "Kind",
+            "default": "deskpro_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Deskpro",
+            "title": "Provider",
+            "default": "Deskpro"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://deskprostatus.com",
+            "title": "Status Page",
+            "default": "https://deskprostatus.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "DeskproServiceStatus",
+        "description": "Safe aggregate status projection for Deskpro's fixed status page."
+      },
       "DesktopInstanceSummary": {
         "properties": {
           "id": {
@@ -153207,6 +153397,47 @@
           "count"
         ],
         "title": "IndependentRandomPlan"
+      },
+      "IndexContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "ceph_docs_index_content",
+            "title": "Kind",
+            "default": "ceph_docs_index_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Ceph Documentation",
+            "title": "Provider",
+            "default": "Ceph Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "latest",
+            "title": "Version",
+            "default": "latest"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "IndexContent",
+        "description": "Safe projection of the fixed public Ceph documentation index."
       },
       "IndexRepositoryResponse": {
         "properties": {
@@ -227882,6 +228113,47 @@
         ],
         "title": "TawkToServiceStatus"
       },
+      "TeamleaderServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "teamleader_public_service_status",
+            "title": "Kind",
+            "default": "teamleader_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Teamleader",
+            "title": "Provider",
+            "default": "Teamleader"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.teamleader.eu",
+            "title": "Status Page",
+            "default": "https://status.teamleader.eu"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "TeamleaderServiceStatus",
+        "description": "Safe aggregate status projection for Teamleader's fixed status page."
+      },
       "TeamsChatMessageResponse": {
         "properties": {
           "chat_id": {
@@ -229069,6 +229341,47 @@
           "type"
         ],
         "title": "ThinkingPart"
+      },
+      "ThirtySevenSignalsServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "thirtyseven_signals_public_service_status",
+            "title": "Kind",
+            "default": "thirtyseven_signals_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "37signals",
+            "title": "Provider",
+            "default": "37signals"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://www.37status.com/",
+            "title": "Status Page",
+            "default": "https://www.37status.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "ThirtySevenSignalsServiceStatus",
+        "description": "Safe aggregate status projection for ThirtySevenSignals's fixed status page."
       },
       "ThoughtIndustriesServiceStatus": {
         "properties": {
@@ -246295,6 +246608,54 @@
         "title": "WorldBankPublicDocument",
         "description": "Safe bounded projection of one public World Bank document."
       },
+      "WrikeServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "wrike_public_service_status",
+            "title": "Kind",
+            "default": "wrike_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Wrike",
+            "title": "Provider",
+            "default": "Wrike"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "service": {
+            "type": "string",
+            "const": "Wrike",
+            "title": "Service",
+            "default": "Wrike"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "stable",
+              "incident",
+              "maintenance"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "WrikeServiceStatus"
+      },
       "WriteArgs": {
         "properties": {
           "content": {
@@ -251416,6 +251777,60 @@
           "language"
         ],
         "title": "PageMetadata"
+      },
+      "aidream__services__openstack_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "openstack_wiki_page_metadata",
+            "title": "Kind",
+            "default": "openstack_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "OpenStack Wiki",
+            "title": "Provider",
+            "default": "OpenStack Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata",
+        "description": "Safe projection for one exact public OpenStack Wiki page."
       },
       "aidream__services__openstreetmap_wiki_integrations__service__PageMetadata": {
         "properties": {

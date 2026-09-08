@@ -6540,6 +6540,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/wrike/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_wrike_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/37signals/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_37signals_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -8664,6 +8698,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_geekbot_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/teamleader/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_teamleader_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/deskpro/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_deskpro_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15124,6 +15192,40 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_openwrt_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openstack-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_openstack_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ceph-docs/public/index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Index */
+        get: operations["public_index_ceph_docs_public_index_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -55531,6 +55633,38 @@ export interface components {
              */
             status_page?: "https://status.descript.com/";
         };
+        /**
+         * DeskproServiceStatus
+         * @description Safe aggregate status projection for Deskpro's fixed status page.
+         */
+        DeskproServiceStatus: {
+            /**
+             * Kind
+             * @default deskpro_public_service_status
+             * @constant
+             */
+            __kind?: "deskpro_public_service_status";
+            /**
+             * Provider
+             * @default Deskpro
+             * @constant
+             */
+            provider?: "Deskpro";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://deskprostatus.com
+             * @constant
+             */
+            status_page?: "https://deskprostatus.com";
+        };
         /** DesktopInstanceSummary */
         DesktopInstanceSummary: {
             /** Id */
@@ -67190,6 +67324,38 @@ export interface components {
              * @default allow_repeats
              */
             uniqueness?: components["schemas"]["AssignmentUniqueness"];
+        };
+        /**
+         * IndexContent
+         * @description Safe projection of the fixed public Ceph documentation index.
+         */
+        IndexContent: {
+            /**
+             * Kind
+             * @default ceph_docs_index_content
+             * @constant
+             */
+            __kind?: "ceph_docs_index_content";
+            /**
+             * Provider
+             * @default Ceph Documentation
+             * @constant
+             */
+            provider?: "Ceph Documentation";
+            /**
+             * Version
+             * @default latest
+             * @constant
+             */
+            version?: "latest";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
         };
         /** IndexRepositoryResponse */
         IndexRepositoryResponse: {
@@ -100888,6 +101054,38 @@ export interface components {
              */
             status_page?: "https://status.tawk.to";
         };
+        /**
+         * TeamleaderServiceStatus
+         * @description Safe aggregate status projection for Teamleader's fixed status page.
+         */
+        TeamleaderServiceStatus: {
+            /**
+             * Kind
+             * @default teamleader_public_service_status
+             * @constant
+             */
+            __kind?: "teamleader_public_service_status";
+            /**
+             * Provider
+             * @default Teamleader
+             * @constant
+             */
+            provider?: "Teamleader";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.teamleader.eu
+             * @constant
+             */
+            status_page?: "https://status.teamleader.eu";
+        };
         /** TeamsChatMessageResponse */
         TeamsChatMessageResponse: {
             /** Chat Id */
@@ -101515,6 +101713,38 @@ export interface components {
             signature_encoding?: "base64" | null;
             /** Summary */
             summary?: unknown[];
+        };
+        /**
+         * ThirtySevenSignalsServiceStatus
+         * @description Safe aggregate status projection for ThirtySevenSignals's fixed status page.
+         */
+        ThirtySevenSignalsServiceStatus: {
+            /**
+             * Kind
+             * @default thirtyseven_signals_public_service_status
+             * @constant
+             */
+            __kind?: "thirtyseven_signals_public_service_status";
+            /**
+             * Provider
+             * @default 37signals
+             * @constant
+             */
+            provider?: "37signals";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://www.37status.com/
+             * @constant
+             */
+            status_page?: "https://www.37status.com/";
         };
         /** ThoughtIndustriesServiceStatus */
         ThoughtIndustriesServiceStatus: {
@@ -109120,6 +109350,40 @@ export interface components {
             /** Record Page */
             record_page: string;
         };
+        /** WrikeServiceStatus */
+        WrikeServiceStatus: {
+            /**
+             * Kind
+             * @default wrike_public_service_status
+             * @constant
+             */
+            __kind?: "wrike_public_service_status";
+            /**
+             * Provider
+             * @default Wrike
+             * @constant
+             */
+            provider?: "Wrike";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Service
+             * @default Wrike
+             * @constant
+             */
+            service?: "Wrike";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "stable" | "incident" | "maintenance";
+            /** Operational */
+            operational: boolean;
+        };
         /** WriteArgs */
         WriteArgs: {
             /** Content */
@@ -111337,6 +111601,34 @@ export interface components {
              * @constant
              */
             provider?: "OpenSSL Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /**
+         * PageMetadata
+         * @description Safe projection for one exact public OpenStack Wiki page.
+         */
+        aidream__services__openstack_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default openstack_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "openstack_wiki_page_metadata";
+            /**
+             * Provider
+             * @default OpenStack Wiki
+             * @constant
+             */
+            provider?: "OpenStack Wiki";
             /** Page Id */
             page_id: number;
             /** Title */
@@ -123659,6 +123951,46 @@ export interface operations {
             };
         };
     };
+    public_status_wrike_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrikeServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_37signals_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThirtySevenSignalsServiceStatus"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -126410,6 +126742,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GeekbotServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_teamleader_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamleaderServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_deskpro_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskproServiceStatus"];
                 };
             };
         };
@@ -134816,6 +135188,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_openstack_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__openstack_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_index_ceph_docs_public_index_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexContent"];
                 };
             };
         };
