@@ -17,6 +17,7 @@
  * Canonical reference: `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md`.
  */
 
+import { defineChannelNamespace } from "@ai-matrx/realtime";
 import { z } from "zod";
 
 // ---------------------------------------------------------------------------
@@ -44,12 +45,37 @@ export const BRIDGE_CHANNEL_PREFIX = "matrx-extension-bridge" as const;
 export const BRIDGE_BROADCAST_EVENT = "FRONTEND_RPC" as const;
 
 /**
+ * The bridge's `@ai-matrx/realtime` channel namespace — the ONE producer of the
+ * topic string, and the reason nothing else in this app can claim the name.
+ *
+ * 🚨 `foreignTopic` is load-bearing. The topic is the DEPLOYED extension's
+ * contract, not ours: every other channel in this app is named `mx:<feature>:…`,
+ * and renaming this one to match would put this app in a room of one while the
+ * extension kept listening on `matrx-extension-bridge:<userId>` — no error, no
+ * traffic, nothing to see. The namespace is still declared and still
+ * collision-checked; only the root is the peer's.
+ *
+ * It lives in this module (rather than beside the channel spec) because this is
+ * the wire-format source of truth per CHANNELS.md §4, and the topic is wire
+ * format. `lib/extension-bridge/bridgeChannel.ts` builds the channel spec on it.
+ */
+export const EXTENSION_BRIDGE_CHANNEL = defineChannelNamespace({
+  namespace: "extension-bridge",
+  parts: ["userId"],
+  description:
+    "matrx-extend ↔ matrx-frontend RPC bridge (foreign wire: the extension owns the payload shape).",
+  foreignTopic: BRIDGE_CHANNEL_PREFIX,
+});
+
+/**
  * Build the per-user Supabase Broadcast channel name. Single source of
  * truth — every consumer (hook, server, demo page, extension) should
- * derive the channel name from this helper.
+ * derive the channel name from this helper, which is now a thin read of
+ * {@link EXTENSION_BRIDGE_CHANNEL} so there is exactly one place a topic
+ * string is assembled.
  */
 export function bridgeChannelName(userId: string): string {
-  return `${BRIDGE_CHANNEL_PREFIX}:${userId}`;
+  return EXTENSION_BRIDGE_CHANNEL.topic({ userId });
 }
 
 // ---------------------------------------------------------------------------

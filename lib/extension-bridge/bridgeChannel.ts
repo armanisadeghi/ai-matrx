@@ -1,35 +1,46 @@
 /**
- * The matrx-extend bridge channel.
+ * The matrx-extend bridge channel — IDENTITY-ONLY WIRING over `@ai-matrx/realtime`.
  *
  * A per-user Supabase Broadcast channel (`matrx-extension-bridge:<userId>`)
  * carrying `BridgeEnvelope`s in both directions between this app and the Chrome
- * extension. Contract: common-docs /systems/clients/extension/CHANNELS.md.
+ * extension. Contract: common-docs /systems/clients/extension/CHANNELS.md §4.
  *
- * WHY THIS IS HAND-ROLLED, AND WHAT IT IS NOT
- * -------------------------------------------
- * This code lived inside `lib/supabase/messaging.ts` — it was never messaging.
- * When `@ai-matrx/messaging` replaced that file wholesale (2026-09-07), the
- * bridge came out here rather than being deleted or dragged into the package:
- * it is an extension transport that happened to share a channel-bookkeeping
- * helper.
+ * WHAT USED TO BE HERE, AND WHY IT IS GONE
+ * ----------------------------------------
+ * This module used to hand-roll the channel: `supabase().channel(...)`, a
+ * module-level ref-counted map, a `.on()`-before-`subscribe()` ordering comment,
+ * a status callback, manual teardown. It was the LAST hand-rolled `.channel(` in
+ * this app, and it stayed hand-rolled for exactly one reason: `@ai-matrx/realtime`
+ * wrapped every broadcast in the Matrx envelope (`{v, cid, eid, ts, data}`) while
+ * the DEPLOYED extension reads the bare `BridgeEnvelope` off the wire.
  *
- * It is deliberately NOT on `@ai-matrx/realtime` yet, and that is the one thing
- * to know before touching it. The realtime package wraps every broadcast in the
- * Matrx envelope (`{v, cid, eid, ts, data}`) — which is what makes echo
- * suppression and dedup possible — and the DEPLOYED extension reads the
- * `BridgeEnvelope` as the payload itself. Moving the bridge onto the package
- * would silently change the wire shape and the extension would stop hearing
- * this app, with nothing failing loudly on either side. The port needs a
- * raw-wire mode in `@ai-matrx/realtime` and a coordinated extension release;
- * it is recorded as a tail in the messaging handoff.
+ * That reason no longer exists. `@ai-matrx/realtime` 0.5.0 has a raw-wire mode:
+ * `wire: {mode:"raw"}` sends the payload verbatim and never reads an envelope on
+ * the way in, and `foreignTopic` keeps the peer's topic string on the wire
+ * instead of an `mx:` name. So the channel body moved INTO the package —
+ * ref-counted shared rooms, jittered reconnect, the ordered handler queue,
+ * tab-sleep/network awareness and diagnostics all come with it — and what is
+ * left here is the bridge's IDENTITY: its spec and its envelope factory (the
+ * namespace itself lives with the rest of the wire format, in
+ * `lib/types/bridge-envelope.ts`). There is no `.channel(` in this file and
+ * there must never be one again.
  *
- * Behavior here is the extracted original, unchanged: one channel per user,
- * ref-counted so several `useExtensionBridgeChannel()` callers share it, torn
- * down when the last subscriber leaves.
+ * THE TWO NAMED DOWNGRADES (see the package README § 9 — both announced, neither
+ * silent):
+ *  - Echo suppression cannot key on `cid`, because a `BridgeEnvelope` has no
+ *    sender identity to key on. `acceptEchoFromSelf` states that in code; the
+ *    server's `broadcast.self:false` remains the protection, exactly as it was
+ *    when this file hand-rolled the channel.
+ *  - Dedup cannot key on `eid`, so `eventKey` supplies one from the bridge's own
+ *    shape. This is STRICTLY BETTER than the hand-rolled version, which deduped
+ *    nothing at all.
+ *
+ * Subscription itself is `useChannel` in `hooks/useExtensionBridgeChannel.ts` —
+ * the package's room registry does the sharing and ref-counting that the map in
+ * this file used to do by hand.
  */
 
-import { createClient } from "@/utils/supabase/client";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import type { ChannelSpec } from "@ai-matrx/realtime";
 import {
   BRIDGE_BROADCAST_EVENT,
   bridgeChannelName,
@@ -38,135 +49,87 @@ import {
 
 export type BridgeHandler = (envelope: BridgeEnvelope) => void;
 
-interface BridgeChannelState {
-  channel: RealtimeChannel;
-  listeners: Set<BridgeHandler>;
-  refCount: number;
-  isSubscribed: boolean;
-}
-
-const channels = new Map<string, BridgeChannelState>();
-
-function supabase() {
-  return createClient();
+/** Is this payload a `BridgeEnvelope`? Raw wire means we validate what arrives. */
+function asBridgeEnvelope(payload: unknown): BridgeEnvelope | null {
+  if (payload === null || typeof payload !== "object") return null;
+  const record = payload as Record<string, unknown>;
+  if (
+    record["direction"] !== "frontend->extension" &&
+    record["direction"] !== "extension->frontend"
+  ) {
+    return null;
+  }
+  if (typeof record["action"] !== "string") return null;
+  if (typeof record["requestId"] !== "string") return null;
+  return record as unknown as BridgeEnvelope;
 }
 
 /**
- * Subscribe to inbound bridge envelopes for `userId`.
+ * Build the channel spec for one user's bridge.
  *
- * The handler receives EVERY envelope on the channel, both directions: the
- * request/response correlation in the hook needs to see its own outbound and
- * the matching inbound to resolve. Callers that only want inbound traffic
- * filter on `envelope.direction` themselves.
- *
- * @returns an unsubscribe function. The channel is torn down only when the last
- *          subscriber leaves.
+ * `onEnvelope` receives EVERY well-formed envelope on the channel, both
+ * directions: the request/response correlation in the hook needs to see the
+ * matching inbound to resolve. Callers that only want inbound traffic filter on
+ * `envelope.direction` themselves (the hook does).
  */
-export function subscribeToBridge(
+export function bridgeChannelSpec(
   userId: string,
-  onMessage: BridgeHandler,
-): () => void {
-  const name = bridgeChannelName(userId);
-  let state = channels.get(name);
-
-  if (!state) {
-    const channel = supabase().channel(name);
-    const created: BridgeChannelState = {
-      channel,
-      listeners: new Set(),
-      refCount: 0,
-      isSubscribed: false,
-    };
-    channels.set(name, created);
-    state = created;
-
-    // Handlers BEFORE subscribe, once per channel: `.on()` on an already
-    // subscribed channel throws in supabase-js.
-    channel.on("broadcast", { event: BRIDGE_BROADCAST_EVENT }, (payload) => {
-      const envelope = payload?.payload as BridgeEnvelope | undefined;
-      if (!envelope || typeof envelope !== "object") return;
-      created.listeners.forEach((handler) => {
-        try {
-          handler(envelope);
-        } catch (err) {
-          console.error("[Bridge] Handler threw:", err);
-        }
-      });
-    });
-
-    channel.subscribe((status) => {
-      if (status === "SUBSCRIBED") {
-        created.isSubscribed = true;
-      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        // A transient realtime hiccup (token refresh, reconnect). Supabase
-        // retries on its own; one quiet line, not a red error that trips the
-        // dev overlay and the admin debug collector.
-        created.isSubscribed = false;
-        console.warn(`[Bridge] realtime ${status.toLowerCase()} — will retry`);
-      }
-    });
-  }
-
-  state.listeners.add(onMessage);
-  state.refCount += 1;
-
-  return () => {
-    const current = channels.get(name);
-    if (!current) return;
-    current.listeners.delete(onMessage);
-    current.refCount -= 1;
-    if (current.refCount > 0) return;
-    void supabase().removeChannel(current.channel);
-    channels.delete(name);
+  onEnvelope: BridgeHandler,
+): ChannelSpec {
+  return {
+    // The peer's topic, verbatim — see `EXTENSION_BRIDGE_CHANNEL` in
+    // `lib/types/bridge-envelope.ts` for why it is not an `mx:` name.
+    topic: bridgeChannelName(userId),
+    // THE EXTENSION OWNS THIS WIRE. See the file header.
+    wire: { mode: "raw", acceptEchoFromSelf: true },
+    broadcast: [
+      {
+        event: BRIDGE_BROADCAST_EVENT,
+        onMessage: ({ data }) => {
+          const envelope = asBridgeEnvelope(data);
+          if (envelope === null) {
+            // Not silent: a malformed payload on this channel means the peer's
+            // shape drifted, and the remedy is a contract change, not a retry.
+            console.warn(
+              "[Bridge] Dropped a payload that is not a BridgeEnvelope. " +
+                "If the extension changed its wire shape, CHANNELS.md §4 and " +
+                "lib/types/bridge-envelope.ts must change with it.",
+              data,
+            );
+            return;
+          }
+          onEnvelope(envelope);
+        },
+      },
+    ],
+    // Raw wire has no `eid`, so this is what dedup keys on. A redelivered
+    // request/reply is one message, not two.
+    eventKey: (_source, payload) => {
+      const envelope = asBridgeEnvelope(payload);
+      return envelope === null
+        ? undefined
+        : `${envelope.direction}:${envelope.requestId}`;
+    },
+    // Broadcast is ephemeral and this bridge is request/reply with its own
+    // 30s timeouts: there is nothing to re-read after a gap, and the caller
+    // already learns about a lost reply. Declaring an empty door would silence
+    // the package's warning about a channel that has none, so it is declared
+    // honestly, with the reason.
+    onBackfill: () => {
+      // Intentionally nothing — see above.
+    },
   };
 }
 
-/** Is the bridge channel for this user live? */
-export function isBridgeSubscribed(userId: string): boolean {
-  return channels.get(bridgeChannelName(userId))?.isSubscribed ?? false;
-}
-
-/**
- * Publish a `frontend->extension` envelope. The channel must already be
- * subscribed (`subscribeToBridge` first, or use the React hook). Resolves once
- * Supabase acknowledges the broadcast; it does NOT wait for the extension's
- * reply — the caller correlates on `requestId`.
- */
-export async function sendBridgeMessage(
-  userId: string,
-  envelope: Pick<BridgeEnvelope, "action" | "payload" | "requestId">,
-): Promise<{ requestId: string }> {
-  const name = bridgeChannelName(userId);
-  const state = channels.get(name);
-
-  if (!state || !state.isSubscribed) {
-    throw new Error(
-      `[Bridge] Channel for user ${userId} is not subscribed. Call subscribeToBridge first.`,
-    );
-  }
-
-  const requestId = envelope.requestId ?? crypto.randomUUID();
-  const outbound: BridgeEnvelope = {
+/** Build an outbound envelope. The only place this app mints one. */
+export function bridgeEnvelope(
+  input: Pick<BridgeEnvelope, "action" | "payload"> & { requestId?: string },
+): BridgeEnvelope {
+  return {
     direction: "frontend->extension",
-    action: envelope.action,
-    requestId,
-    payload: envelope.payload,
+    action: input.action,
+    requestId: input.requestId ?? crypto.randomUUID(),
+    payload: input.payload,
     timestamp: Date.now(),
   };
-
-  await state.channel.send({
-    type: "broadcast",
-    event: BRIDGE_BROADCAST_EVENT,
-    payload: outbound,
-  });
-
-  return { requestId };
-}
-
-/** Tear every bridge channel down. Called on sign-out. */
-export function resetBridgeChannels(): void {
-  channels.forEach((state) => {
-    void supabase().removeChannel(state.channel);
-  });
-  channels.clear();
 }

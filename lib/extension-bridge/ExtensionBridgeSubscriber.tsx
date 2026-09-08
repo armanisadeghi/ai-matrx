@@ -32,7 +32,6 @@ import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useExtensionBridgeChannel } from "@/hooks/useExtensionBridgeChannel";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { sendBridgeMessage } from "./bridgeChannel";
 import {
   handleExtensionOpenPanel,
   type OpenPanelResult,
@@ -41,7 +40,7 @@ import {
 export function ExtensionBridgeSubscriber(): null {
   const dispatch = useAppDispatch();
   const userId = useSelector(selectUserId);
-  const { onMessage, isAuthenticated } = useExtensionBridgeChannel();
+  const { onMessage, reply, isAuthenticated } = useExtensionBridgeChannel();
 
   useEffect(() => {
     // Hook short-circuits when no user is signed in; nothing to wire up.
@@ -59,30 +58,18 @@ export function ExtensionBridgeSubscriber(): null {
         envelope.payload,
       );
 
-      // Publish the reply on the same Broadcast channel. We call the channel
-      // module directly (not the hook's `send`) because the hook mints a fresh
-      // requestId — a REPLY must echo the inbound one or the extension's
-      // pending-promise table resolves the wrong caller.
-      void sendBridgeMessage(userId, {
-        action: envelope.action,
-        payload: result,
-        requestId: envelope.requestId,
-      })
-        .catch((err) => {
-          // Channel teardown / not-yet-subscribed errors. Swallow with
-          // a console message so we don't tear down the whole
-          // subscriber for a transient publish failure — the extension
-          // will retry or fall back to its `chrome.runtime.sendMessage`
-          // path.
-          console.error(
-            "[ExtensionBridgeSubscriber] Failed to publish openPanel reply:",
-            err,
-          );
-        });
+      // Publish the reply on the same Broadcast channel, echoing the inbound
+      // requestId — the hook's `reply` exists for exactly that, because a
+      // freshly minted id would resolve the wrong caller in the extension's
+      // pending-promise table. A publish while the channel is down is reported
+      // by `@ai-matrx/realtime`'s diagnostics (`channel.send.not-connected`),
+      // not swallowed here; the extension retries or falls back to its
+      // same-machine `chrome.runtime.sendMessage` path.
+      reply(envelope, result);
     });
 
     return unsubscribe;
-  }, [dispatch, isAuthenticated, onMessage, userId]);
+  }, [dispatch, isAuthenticated, onMessage, reply, userId]);
 
   return null;
 }

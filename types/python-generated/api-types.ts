@@ -3586,6 +3586,113 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/meet/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Room Token */
+        post: operations["room_token_v1_meet_token_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/recording/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recording Start */
+        post: operations["recording_start_v1_meet_recording_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/recording/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recording Stop */
+        post: operations["recording_stop_v1_meet_recording_stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/agent/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agent Start */
+        post: operations["agent_start_v1_meet_agent_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/agent/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agent Stop */
+        post: operations["agent_stop_v1_meet_agent_stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/meet/webhooks/livekit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Livekit Webhook
+         * @description LiveKit's own callback. Auth is the signed body digest, NOT a user session
+         *     — which is why this route takes no context dependency and verifies for
+         *     itself. An unverified body is refused, never trusted.
+         */
+        post: operations["livekit_webhook_v1_meet_webhooks_livekit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/user-secrets/": {
         parameters: {
             query?: never;
@@ -8174,6 +8281,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_stan_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/instapage/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_instapage_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pixelcut/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_pixelcut_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -12772,6 +12913,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/qodo/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_qodo_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/codecov/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_codecov_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/kantata-ox/public/status": {
         parameters: {
             query?: never;
@@ -14056,6 +14231,40 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_postgresql_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dolphin-emu-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_dolphin_emu_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openoffice-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_openoffice_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -36418,6 +36627,19 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             };
         };
+        /** AgentDispatchResponse */
+        AgentDispatchResponse: {
+            /** Dispatched */
+            dispatched: boolean;
+            /** Dispatch Id */
+            dispatch_id?: string | null;
+            /**
+             * Detail
+             * @description Why the note-taker is or is not in the room. Never empty on a refusal.
+             * @default
+             */
+            detail?: string;
+        };
         /** AgentInputPart */
         AgentInputPart: {
             /** Metadata */
@@ -48778,6 +49000,40 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** CodecovServiceStatus */
+        CodecovServiceStatus: {
+            /**
+             * Kind
+             * @default codecov_official_developer_productivity_status
+             * @constant
+             */
+            __kind?: "codecov_official_developer_productivity_status";
+            /**
+             * Provider
+             * @default Codecov
+             * @constant
+             */
+            provider?: "Codecov";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.codecov.com
+             * @constant
+             */
+            status_page?: "https://status.codecov.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** CodefreshServiceStatus */
         CodefreshServiceStatus: {
@@ -66200,6 +66456,38 @@ export interface components {
             /** Image Base64 */
             image_base64: string;
         };
+        /**
+         * InstapageServiceStatus
+         * @description Safe aggregate status projection for Instapage's fixed status page.
+         */
+        InstapageServiceStatus: {
+            /**
+             * Kind
+             * @default instapage_public_service_status
+             * @constant
+             */
+            __kind?: "instapage_public_service_status";
+            /**
+             * Provider
+             * @default Instapage
+             * @constant
+             */
+            provider?: "Instapage";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.instapage.com/
+             * @constant
+             */
+            status_page?: "https://status.instapage.com/";
+        };
         /** IntakeAnswer */
         IntakeAnswer: {
             /** Question Id */
@@ -75455,6 +75743,22 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** NoteTakerStartRequest */
+        NoteTakerStartRequest: {
+            /** Meeting Id */
+            meeting_id: string;
+            /** Room Name */
+            room_name: string;
+            /** Agent Id */
+            agent_id: string;
+            /** Organization Id */
+            organization_id: string;
+        };
+        /** NoteTakerStopRequest */
+        NoteTakerStopRequest: {
+            /** Meeting Id */
+            meeting_id: string;
+        };
         /** NotesInputPart */
         NotesInputPart: {
             /** Metadata */
@@ -80273,6 +80577,38 @@ export interface components {
             total_documents?: number;
         };
         /**
+         * PixelcutServiceStatus
+         * @description Safe aggregate status projection for Pixelcut's fixed status page.
+         */
+        PixelcutServiceStatus: {
+            /**
+             * Kind
+             * @default pixelcut_public_service_status
+             * @constant
+             */
+            __kind?: "pixelcut_public_service_status";
+            /**
+             * Provider
+             * @default Pixelcut
+             * @constant
+             */
+            provider?: "Pixelcut";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.pixelcut.ai/
+             * @constant
+             */
+            status_page?: "https://status.pixelcut.ai/";
+        };
+        /**
          * PixelfedInstanceStatistics
          * @description Safe factual projection of the fixed Pixelfed public instance.
          */
@@ -84721,6 +85057,40 @@ export interface components {
              */
             warnings?: string[];
         };
+        /** QodoServiceStatus */
+        QodoServiceStatus: {
+            /**
+             * Kind
+             * @default qodo_official_developer_productivity_status
+             * @constant
+             */
+            __kind?: "qodo_official_developer_productivity_status";
+            /**
+             * Provider
+             * @default Qodo
+             * @constant
+             */
+            provider?: "Qodo";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.qodo.ai
+             * @constant
+             */
+            status_page?: "https://status.qodo.ai";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** QualitySummary */
         QualitySummary: {
             /** Overall Confidence */
@@ -85952,6 +86322,27 @@ export interface components {
             origin?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+        };
+        /** RecordingStartRequest */
+        RecordingStartRequest: {
+            /** Meeting Id */
+            meeting_id: string;
+            /** Room Name */
+            room_name: string;
+        };
+        /** RecordingStateResponse */
+        RecordingStateResponse: {
+            /** Recording Id */
+            recording_id: string;
+            /** State */
+            state: string;
+            /** Egress Id */
+            egress_id?: string | null;
+        };
+        /** RecordingStopRequest */
+        RecordingStopRequest: {
+            /** Meeting Id */
+            meeting_id: string;
         };
         /**
          * RecoveryApplyAck
@@ -88978,6 +89369,57 @@ export interface components {
             rows?: number | null;
             /** Total Bytes */
             total_bytes?: number | null;
+        };
+        /**
+         * RoomTokenRequest
+         * @description `POST /api/v1/meet/token` — see `createTokenClient` in the package.
+         */
+        RoomTokenRequest: {
+            /** Room Name */
+            room_name: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Device Id */
+            device_id: string;
+            /**
+             * Guest
+             * @default false
+             */
+            guest?: boolean;
+            /** Meeting Id */
+            meeting_id?: string | null;
+            /** Slug */
+            slug?: string | null;
+        };
+        /**
+         * RoomTokenResponse
+         * @description What `parseRoomToken` reads. `expires_at` is not optional: without it the
+         *     package cannot refresh at 80% of the token's life and a long meeting
+         *     silently loses its ability to reconnect.
+         */
+        RoomTokenResponse: {
+            /** Token */
+            token: string;
+            /** Server Url */
+            server_url: string;
+            /** Identity */
+            identity: string;
+            /** Display Name */
+            display_name: string;
+            /** Expires At */
+            expires_at: string;
+            /** Can Publish */
+            can_publish: boolean;
+            /** Can Subscribe */
+            can_subscribe: boolean;
+            /** Can Record */
+            can_record: boolean;
+            /** Is Host */
+            is_host: boolean;
+            /** Lobby */
+            lobby: boolean;
         };
         /**
          * RorPublicOrganization
@@ -107952,6 +108394,31 @@ export interface components {
             /** Image Url */
             image_url: string;
         };
+        /** PageMetadata */
+        aidream__services__dolphin_emu_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default dolphin_emu_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "dolphin_emu_wiki_page_metadata";
+            /**
+             * Provider
+             * @default Dolphin Emulator Wiki
+             * @constant
+             */
+            provider?: "Dolphin Emulator Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /** PackageMetadata */
         aidream__services__gentoo_packages_integrations__service__PackageMetadata: {
             /**
@@ -108304,6 +108771,31 @@ export interface components {
              * @constant
              */
             provider?: "Mozilla Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
+        /** PageMetadata */
+        aidream__services__openoffice_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default openoffice_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "openoffice_wiki_page_metadata";
+            /**
+             * Provider
+             * @default Apache OpenOffice Wiki
+             * @constant
+             */
+            provider?: "Apache OpenOffice Wiki";
             /** Page Id */
             page_id: number;
             /** Title */
@@ -115342,6 +115834,204 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnthropicCountTokensResponse"];
+                };
+            };
+        };
+    };
+    room_token_v1_meet_token_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoomTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomTokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recording_start_v1_meet_recording_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordingStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingStateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recording_stop_v1_meet_recording_stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordingStopRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingStateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_start_v1_meet_agent_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteTakerStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentDispatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_stop_v1_meet_agent_stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteTakerStopRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentDispatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    livekit_webhook_v1_meet_webhooks_livekit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -122671,6 +123361,46 @@ export interface operations {
             };
         };
     };
+    public_status_instapage_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstapageServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_pixelcut_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PixelcutServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -128071,6 +128801,46 @@ export interface operations {
             };
         };
     };
+    public_status_qodo_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QodoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_codecov_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodecovServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_kantata_ox_public_status_get: {
         parameters: {
             query?: never;
@@ -130186,6 +130956,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__postgresql_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_dolphin_emu_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__dolphin_emu_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_openoffice_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__openoffice_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */

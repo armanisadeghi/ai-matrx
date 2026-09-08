@@ -1,47 +1,51 @@
 /**
  * useExtensionBridgeChannel — React hook for the matrx-extend bridge.
  *
- * Subscribes to the per-user Supabase Broadcast channel
- * `matrx-extension-bridge:<userId>` and exposes:
+ * Rides `@ai-matrx/realtime`'s `useChannel` on the bridge's spec
+ * (`lib/extension-bridge/bridgeChannel.ts`). The package owns the channel:
+ * ONE shared, ref-counted room per declared topic, so several callers of this
+ * hook in one tab share one underlying Supabase channel; enforced teardown;
+ * jittered reconnect; the decoupled ordered handler queue; tab-sleep and
+ * network awareness; diagnostics. Since realtime 0.5.0 it also owns the bridge's
+ * RAW WIRE — the payload goes out verbatim as the deployed extension expects and
+ * is never envelope-unwrapped on the way in.
+ *
+ * Exposes:
  *   - `send(action, payload)` — publish a frontend->extension envelope and
  *     await the matching extension->frontend reply (30s timeout).
- *   - `onMessage(handler)` — receive incoming extension->frontend
- *     envelopes for app-driven reactions (no reply correlation).
- *   - `isReady` — true once the channel is fully subscribed and
- *     `send` will not throw with "channel not subscribed".
+ *   - `reply(inbound, payload)` — answer an extension-initiated envelope,
+ *     preserving its `requestId` so the extension's pending-promise table
+ *     resolves the right caller.
+ *   - `onMessage(handler)` — receive incoming extension->frontend envelopes
+ *     that are NOT replies to a `send()` (no reply correlation).
+ *   - `isReady` — true once the channel is connected and `send` will publish.
  *
- * Auth: short-circuits when no Supabase user is signed in. Channel is
- * scoped to the current user's auth.users.id.
+ * Auth: short-circuits when no Supabase user is signed in. Channel is scoped to
+ * the current user's `auth.users.id`.
  *
- * Lifecycle: rides the ref-counted channel in
- * `lib/extension-bridge/bridgeChannel.ts`, so multiple consumers in the same
- * tab share one underlying Supabase channel. (That module carries the reason
- * this one channel is still hand-rolled rather than on `@ai-matrx/realtime`:
- * the deployed extension reads the raw envelope off the wire.)
- *
- * Wire format: see `BridgeEnvelope` and `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md`.
+ * Wire format: see `BridgeEnvelope` and
+ * /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md §4.
  *
  * Usage notes:
  *   - `ExtensionBridgeSubscriber` mounts this once from `app/Providers.tsx`;
- *     feature surfaces may also call it and share the ref-counted channel.
- *   - The hook does NOT auto-listen for `frontend->extension` echoes —
- *     `onMessage` callbacks fire only for `direction: 'extension->frontend'`
- *     so handlers don't see their own outbound traffic.
+ *     feature surfaces may also call it and share the room.
+ *   - `onMessage` callbacks fire only for `direction: 'extension->frontend'`,
+ *     so handlers never see their own outbound traffic.
  */
 
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useSelector } from "react-redux";
+import { useChannel } from "@ai-matrx/realtime/react";
 import {
-  isBridgeSubscribed,
-  sendBridgeMessage,
-  subscribeToBridge,
-  type BridgeHandler,
+  bridgeChannelSpec,
+  bridgeEnvelope,
 } from "@/lib/extension-bridge/bridgeChannel";
-import type {
-  BridgeEnvelope,
-  FrontendRpcResponse,
+import {
+  BRIDGE_BROADCAST_EVENT,
+  type BridgeEnvelope,
+  type FrontendRpcResponse,
 } from "@/lib/types/bridge-envelope";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
@@ -75,11 +79,18 @@ export interface UseExtensionBridgeChannelReturn {
     options?: { timeoutMs?: number },
   ) => Promise<BridgeSendResult>;
   /**
+   * Answer an extension-initiated envelope. A REPLY must echo the inbound
+   * `requestId` — minting a fresh one resolves the wrong caller in the
+   * extension's pending table, which is why this is a first-class door rather
+   * than each consumer reaching for the channel module.
+   */
+  reply: (inbound: BridgeEnvelope, payload: unknown) => void;
+  /**
    * Register a handler for inbound extension->frontend envelopes that
    * are NOT replies to a `send()` call. Returns an unsubscribe fn.
    */
   onMessage: (handler: (envelope: BridgeEnvelope) => void) => () => void;
-  /** True once the underlying Supabase channel is fully subscribed. */
+  /** True once the underlying Supabase channel is connected. */
   isReady: boolean;
   /** True iff there is a signed-in user the channel could subscribe to. */
   isAuthenticated: boolean;
@@ -107,14 +118,8 @@ function normalizeReply(envelope: BridgeEnvelope): BridgeReply {
 export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
   const userId = useSelector(selectUserId);
 
-  // Subscription is asynchronous and supabase-js reports it through a
-  // callback the channel module owns, so readiness is polled for up to 5s.
-  // It gates `send` from throwing "channel not subscribed".
-  const [isReady, setIsReady] = useState(false);
-
   // External listener registry — `onMessage` callers. Stored in a ref
-  // so adding/removing a listener doesn't re-run the channel-setup
-  // effect.
+  // so adding/removing a listener doesn't re-run the channel-setup effect.
   const listenersRef = useRef(new Set<(envelope: BridgeEnvelope) => void>());
 
   // Pending request map keyed by requestId. Each entry has a resolver
@@ -131,13 +136,12 @@ export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
   );
 
   // Stable handler that fans out to listeners + pending-request map.
-  const handleEnvelope: BridgeHandler = useCallback((envelope) => {
+  const handleEnvelope = useCallback((envelope: BridgeEnvelope) => {
     if (envelope.direction !== "extension->frontend") return;
 
-    // 1. Pending request resolution — if this envelope's requestId
-    //    matches a pending send(), resolve and return; do NOT also
-    //    fire it through onMessage listeners (replies are
-    //    request-private).
+    // 1. Pending request resolution — if this envelope's requestId matches a
+    //    pending send(), resolve and return; do NOT also fire it through
+    //    onMessage listeners (replies are request-private).
     const pending = pendingRef.current.get(envelope.requestId);
     if (pending) {
       clearTimeout(pending.timeout);
@@ -146,8 +150,7 @@ export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
       return;
     }
 
-    // 2. Otherwise it's an extension-initiated event — broadcast to
-    //    every onMessage listener.
+    // 2. Otherwise it's an extension-initiated event — fan out to listeners.
     listenersRef.current.forEach((listener) => {
       try {
         listener(envelope);
@@ -157,43 +160,29 @@ export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
     });
   }, []);
 
-  // Subscribe / unsubscribe lifecycle. Re-runs only when userId changes.
+  // The spec is rebuilt per render; `useChannel` keys the subscription on the
+  // channel's SHAPE (topic + bindings + wire), never on object identity, so
+  // this does not churn the room.
+  const spec = useMemo(
+    () => (userId ? bridgeChannelSpec(userId, handleEnvelope) : null),
+    [userId, handleEnvelope],
+  );
+
+  const { status, send: publish } = useChannel(spec);
+  const isReady = status === "connected";
+
+  // Reject in-flight requests when the channel goes away, rather than letting
+  // each one sit out its full 30s timeout.
   useEffect(() => {
-    if (!userId) {
-      setIsReady(false);
-      return undefined;
-    }
-
-    let cancelled = false;
-    const unsubscribe = subscribeToBridge(userId, handleEnvelope);
-
-    // Poll readiness every 100ms for up to 5s.
-    const start = Date.now();
-    const pollHandle = setInterval(() => {
-      if (cancelled) return;
-      if (isBridgeSubscribed(userId)) {
-        setIsReady(true);
-        clearInterval(pollHandle);
-      } else if (Date.now() - start > 5_000) {
-        // Give up polling; a send throws with a clear error if the channel
-        // never came up, rather than failing silently.
-        clearInterval(pollHandle);
-      }
-    }, 100);
-
+    const pending = pendingRef.current;
     return () => {
-      cancelled = true;
-      clearInterval(pollHandle);
-      // Reject any in-flight requests synchronously.
-      pendingRef.current.forEach(({ reject, timeout }) => {
+      pending.forEach(({ reject, timeout }) => {
         clearTimeout(timeout);
         reject(new Error("Bridge channel torn down"));
       });
-      pendingRef.current.clear();
-      unsubscribe();
-      setIsReady(false);
+      pending.clear();
     };
-  }, [userId, handleEnvelope]);
+  }, []);
 
   const send = useCallback<UseExtensionBridgeChannelReturn["send"]>(
     async (action, payload, options) => {
@@ -202,7 +191,8 @@ export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
           "[Bridge] No signed-in user; cannot send extension bridge message.",
         );
       }
-      const requestId = crypto.randomUUID();
+      const envelope = bridgeEnvelope({ action, payload });
+      const requestId = envelope.requestId;
       const timeoutMs = options?.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
 
       const promise = new Promise<BridgeReply>((resolve, reject) => {
@@ -218,23 +208,39 @@ export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
         pendingRef.current.set(requestId, { resolve, reject, timeout });
       });
 
-      try {
-        await sendBridgeMessage(userId, { action, payload, requestId });
-      } catch (err) {
-        // Fail synchronously — clean up the pending entry so the
-        // caller's `await` rejects immediately rather than waiting
-        // for the timeout.
+      // The package refuses to pretend a send succeeded while disconnected —
+      // it says so through diagnostics. This says so to the CALLER, which is
+      // the half the package cannot do, so an unsendable request fails now
+      // instead of after 30 silent seconds.
+      if (!isReady) {
         const entry = pendingRef.current.get(requestId);
         if (entry) {
           clearTimeout(entry.timeout);
           pendingRef.current.delete(requestId);
         }
-        throw err;
+        throw new Error(
+          `[Bridge] Channel for user ${userId} is ${status}; the message was not sent. ` +
+            `Wait for isReady, or fall back to the same-machine chrome.runtime transport.`,
+        );
       }
 
+      publish(BRIDGE_BROADCAST_EVENT, envelope);
       return { requestId, promise };
     },
-    [userId],
+    [userId, isReady, status, publish],
+  );
+
+  const reply = useCallback<UseExtensionBridgeChannelReturn["reply"]>(
+    (inbound, payload) => {
+      publish(BRIDGE_BROADCAST_EVENT, {
+        ...bridgeEnvelope({
+          action: inbound.action,
+          payload,
+          requestId: inbound.requestId,
+        }),
+      });
+    },
+    [publish],
   );
 
   const onMessage = useCallback<UseExtensionBridgeChannelReturn["onMessage"]>(
@@ -249,6 +255,7 @@ export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
 
   return {
     send,
+    reply,
     onMessage,
     isReady,
     isAuthenticated: Boolean(userId),

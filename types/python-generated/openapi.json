@@ -8668,6 +8668,263 @@
         }
       }
     },
+    "/v1/meet/token": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Room Token",
+        "operationId": "room_token_v1_meet_token_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomTokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meet/recording/start": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Recording Start",
+        "operationId": "recording_start_v1_meet_recording_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordingStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordingStateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meet/recording/stop": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Recording Stop",
+        "operationId": "recording_stop_v1_meet_recording_stop_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordingStopRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordingStateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meet/agent/start": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Agent Start",
+        "operationId": "agent_start_v1_meet_agent_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteTakerStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDispatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meet/agent/stop": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Agent Stop",
+        "operationId": "agent_stop_v1_meet_agent_stop_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteTakerStopRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDispatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meet/webhooks/livekit": {
+      "post": {
+        "tags": [
+          "Meet"
+        ],
+        "summary": "Livekit Webhook",
+        "description": "LiveKit's own callback. Auth is the signed body digest, NOT a user session\n— which is why this route takes no context dependency and verifies for\nitself. An unverified body is refused, never trusted.",
+        "operationId": "livekit_webhook_v1_meet_webhooks_livekit_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Livekit Webhook V1 Meet Webhooks Livekit Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/user-secrets/": {
       "get": {
         "tags": [
@@ -19138,6 +19395,48 @@
         }
       }
     },
+    "/instapage/public/status": {
+      "get": {
+        "tags": [
+          "Instapage Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_instapage_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstapageServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pixelcut/public/status": {
+      "get": {
+        "tags": [
+          "Pixelcut Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_pixelcut_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PixelcutServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/aha/public/status": {
       "get": {
         "tags": [
@@ -24808,6 +25107,48 @@
         }
       }
     },
+    "/qodo/public/status": {
+      "get": {
+        "tags": [
+          "Qodo Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_qodo_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QodoServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/codecov/public/status": {
+      "get": {
+        "tags": [
+          "Codecov Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_codecov_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodecovServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/kantata-ox/public/status": {
       "get": {
         "tags": [
@@ -27637,6 +27978,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__postgresql_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dolphin-emu-wiki/public/page": {
+      "get": {
+        "tags": [
+          "Dolphin Emulator Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_dolphin_emu_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__dolphin_emu_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openoffice-wiki/public/page": {
+      "get": {
+        "tags": [
+          "Apache OpenOffice Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_openoffice_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__openoffice_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -84088,6 +84515,36 @@
         "title": "AgentDetail",
         "description": "Everything a caller needs to invoke an agent correctly."
       },
+      "AgentDispatchResponse": {
+        "properties": {
+          "dispatched": {
+            "type": "boolean",
+            "title": "Dispatched"
+          },
+          "dispatch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dispatch Id"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "Why the note-taker is or is not in the room. Never empty on a refusal.",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "dispatched"
+        ],
+        "title": "AgentDispatchResponse"
+      },
       "AgentInputPart": {
         "properties": {
           "metadata": {
@@ -112393,6 +112850,55 @@
         ],
         "title": "CodebergPublicRepository",
         "description": "Safe projection of one public Codeberg repository."
+      },
+      "CodecovServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "codecov_official_developer_productivity_status",
+            "title": "Kind",
+            "default": "codecov_official_developer_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Codecov",
+            "title": "Provider",
+            "default": "Codecov"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.codecov.com",
+            "title": "Status Page",
+            "default": "https://status.codecov.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "CodecovServiceStatus"
       },
       "CodefreshServiceStatus": {
         "properties": {
@@ -151900,6 +152406,47 @@
         ],
         "title": "InspectedScreenshot"
       },
+      "InstapageServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "instapage_public_service_status",
+            "title": "Kind",
+            "default": "instapage_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Instapage",
+            "title": "Provider",
+            "default": "Instapage"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.instapage.com/",
+            "title": "Status Page",
+            "default": "https://status.instapage.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "InstapageServiceStatus",
+        "description": "Safe aggregate status projection for Instapage's fixed status page."
+      },
       "IntakeAnswer": {
         "properties": {
           "question_id": {
@@ -172644,6 +173191,47 @@
         ],
         "title": "NorthpassServiceStatus"
       },
+      "NoteTakerStartRequest": {
+        "properties": {
+          "meeting_id": {
+            "type": "string",
+            "title": "Meeting Id"
+          },
+          "room_name": {
+            "type": "string",
+            "title": "Room Name"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meeting_id",
+          "room_name",
+          "agent_id",
+          "organization_id"
+        ],
+        "title": "NoteTakerStartRequest"
+      },
+      "NoteTakerStopRequest": {
+        "properties": {
+          "meeting_id": {
+            "type": "string",
+            "title": "Meeting Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meeting_id"
+        ],
+        "title": "NoteTakerStopRequest"
+      },
       "NotesInputPart": {
         "properties": {
           "metadata": {
@@ -183399,6 +183987,47 @@
         "type": "object",
         "title": "PipelineProgress"
       },
+      "PixelcutServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pixelcut_public_service_status",
+            "title": "Kind",
+            "default": "pixelcut_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Pixelcut",
+            "title": "Provider",
+            "default": "Pixelcut"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.pixelcut.ai/",
+            "title": "Status Page",
+            "default": "https://status.pixelcut.ai/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PixelcutServiceStatus",
+        "description": "Safe aggregate status projection for Pixelcut's fixed status page."
+      },
       "PixelfedInstanceStatistics": {
         "properties": {
           "__kind": {
@@ -193210,6 +193839,55 @@
         ],
         "title": "PutDeclaredSampleResponse"
       },
+      "QodoServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "qodo_official_developer_productivity_status",
+            "title": "Kind",
+            "default": "qodo_official_developer_productivity_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Qodo",
+            "title": "Provider",
+            "default": "Qodo"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.qodo.ai",
+            "title": "Status Page",
+            "default": "https://status.qodo.ai"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "QodoServiceStatus"
+      },
       "QualitySummary": {
         "properties": {
           "overall_confidence": {
@@ -195752,6 +196430,66 @@
           "duration_ms"
         ],
         "title": "RecordingCompletionRequest"
+      },
+      "RecordingStartRequest": {
+        "properties": {
+          "meeting_id": {
+            "type": "string",
+            "title": "Meeting Id"
+          },
+          "room_name": {
+            "type": "string",
+            "title": "Room Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meeting_id",
+          "room_name"
+        ],
+        "title": "RecordingStartRequest"
+      },
+      "RecordingStateResponse": {
+        "properties": {
+          "recording_id": {
+            "type": "string",
+            "title": "Recording Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "egress_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Egress Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recording_id",
+          "state"
+        ],
+        "title": "RecordingStateResponse"
+      },
+      "RecordingStopRequest": {
+        "properties": {
+          "meeting_id": {
+            "type": "string",
+            "title": "Meeting Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meeting_id"
+        ],
+        "title": "RecordingStopRequest"
       },
       "RecoveryApplyAck": {
         "properties": {
@@ -203084,6 +203822,121 @@
         ],
         "title": "RollupPoint",
         "description": "One nightly capture from meta.table_stats_history."
+      },
+      "RoomTokenRequest": {
+        "properties": {
+          "room_name": {
+            "type": "string",
+            "title": "Room Name"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "device_id": {
+            "type": "string",
+            "title": "Device Id"
+          },
+          "guest": {
+            "type": "boolean",
+            "title": "Guest",
+            "default": false
+          },
+          "meeting_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meeting Id"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          }
+        },
+        "type": "object",
+        "required": [
+          "room_name",
+          "organization_id",
+          "display_name",
+          "device_id"
+        ],
+        "title": "RoomTokenRequest",
+        "description": "`POST /api/v1/meet/token` — see `createTokenClient` in the package."
+      },
+      "RoomTokenResponse": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "server_url": {
+            "type": "string",
+            "title": "Server Url"
+          },
+          "identity": {
+            "type": "string",
+            "title": "Identity"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "expires_at": {
+            "type": "string",
+            "title": "Expires At"
+          },
+          "can_publish": {
+            "type": "boolean",
+            "title": "Can Publish"
+          },
+          "can_subscribe": {
+            "type": "boolean",
+            "title": "Can Subscribe"
+          },
+          "can_record": {
+            "type": "boolean",
+            "title": "Can Record"
+          },
+          "is_host": {
+            "type": "boolean",
+            "title": "Is Host"
+          },
+          "lobby": {
+            "type": "boolean",
+            "title": "Lobby"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "server_url",
+          "identity",
+          "display_name",
+          "expires_at",
+          "can_publish",
+          "can_subscribe",
+          "can_record",
+          "is_host",
+          "lobby"
+        ],
+        "title": "RoomTokenResponse",
+        "description": "What `parseRoomToken` reads. `expires_at` is not optional: without it the\npackage cannot refresh at 80% of the token's life and a long meeting\nsilently loses its ability to reconnect."
       },
       "RorPublicOrganization": {
         "properties": {
@@ -245646,6 +246499,52 @@
         ],
         "title": "DogImage"
       },
+      "aidream__services__dolphin_emu_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dolphin_emu_wiki_page_metadata",
+            "title": "Kind",
+            "default": "dolphin_emu_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Dolphin Emulator Wiki",
+            "title": "Provider",
+            "default": "Dolphin Emulator Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
       "aidream__services__gentoo_packages_integrations__service__PackageMetadata": {
         "properties": {
           "__kind": {
@@ -246372,6 +247271,52 @@
             "const": "Mozilla Wiki",
             "title": "Provider",
             "default": "Mozilla Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
+      "aidream__services__openoffice_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "openoffice_wiki_page_metadata",
+            "title": "Kind",
+            "default": "openoffice_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Apache OpenOffice Wiki",
+            "title": "Provider",
+            "default": "Apache OpenOffice Wiki"
           },
           "page_id": {
             "type": "integer",
