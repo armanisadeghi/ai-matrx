@@ -12,13 +12,22 @@
  * dispatch the same `pageRunCompleted` / `pageRunFailed` actions the
  * stream uses, so the UI converges to the same state regardless of
  * which channel won the race.
+ *
+ * REALTIME: `@ai-matrx/realtime` owns the channel (`useChannel`). What was here
+ * was a raw `.channel(...).subscribe()` with manual teardown and NO catch-up
+ * read — which defeated the very purpose of this hook: it exists to be the
+ * durable counterpart that survives an SSE drop, and a socket that dropped
+ * with it left the run frozen mid-progress forever. `onBackfill` re-reads every
+ * page_run of the active run through `listPageRunsForRun` and replays them
+ * through the same reducer path, so a recovery converges to the same state.
  */
 
 "use client";
 
-import { useEffect } from "react";
-import { createClient } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@ai-matrx/data/db";
+import { useCallback } from "react";
+import { defineChannelNamespace } from "@ai-matrx/realtime";
+import { useChannel } from "@ai-matrx/realtime/react";
+import { listPageRunsForRun } from "@/features/page-extraction/api/runs";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   isAllJobsView,
@@ -44,6 +53,13 @@ interface PageRunRow {
   duration_ms: number | null;
 }
 
+/** One place names this channel. A second, different declaration throws. */
+const pageRunsChannel = defineChannelNamespace({
+  namespace: "page-runs",
+  parts: ["runId"],
+  description: "docproc.page_extraction_page_runs rows for one active run",
+});
+
 export function usePageRunsRealtime(opts: {
   fileId: string | null;
   jobId: string | null;
@@ -61,70 +77,99 @@ export function usePageRunsRealtime(opts: {
   );
   const activeRunId = activeRun?.runId ?? null;
 
-  useEffect(() => {
-    if (!fileId || !effectiveJobId || !activeRunId) return undefined;
-    const supabase = createClient();
-    const channel = supabase
-      .channel(uniqueChannelTopic(`page-runs-rt:${activeRunId}`))
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "docproc",
-          table: "page_extraction_page_runs",
-          filter: `run_id=eq.${activeRunId}`,
-        },
-        (payload) => {
-          const row = (payload.new ?? payload.old) as PageRunRow | undefined;
-          if (!row) return;
-          // Don't reprocess INSERTs for chunks we already saw via SSE
-          // (the slice's pageRunStarted is idempotent — passing the same
-          // page_run_id replaces the entry with the same shape).
-          if (payload.eventType === "INSERT" || row.status === "running") {
-            dispatch(
-              pageRunStarted({
-                jobId: effectiveJobId,
-                pageRunId: row.id,
-                chunkIndex: row.chunk_index,
-                pageNumbers: row.page_numbers,
-              }),
-            );
-            return;
-          }
-          if (row.status === "completed") {
-            dispatch(
-              pageRunCompleted({
-                jobId: effectiveJobId,
-                pageRunId: row.id,
-                chunkIndex: row.chunk_index,
-                pageNumbers: row.page_numbers,
-                resultCount: 0, // result count comes from results-table subscription
-                cost: Number(row.cost ?? 0),
-                tokens: Number(row.tokens ?? 0),
-                durationMs: Number(row.duration_ms ?? 0),
-                rawResponse: row.raw_response ?? "",
-                parsedPayload: row.parsed_payload,
-              }),
-            );
-            return;
-          }
-          if (row.status === "failed") {
-            dispatch(
-              pageRunFailed({
-                jobId: effectiveJobId,
-                pageRunId: row.id,
-                chunkIndex: row.chunk_index,
-                pageNumbers: row.page_numbers,
-                error: row.error ?? row.parse_error ?? "Failed",
-                rawResponse: row.raw_response ?? undefined,
-              }),
-            );
-          }
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [fileId, effectiveJobId, activeRunId, dispatch]);
+  /**
+   * Fold one page_run row into the slice. Shared by the live path and the
+   * catch-up read, so a recovered run converges to exactly the same state the
+   * events would have produced.
+   */
+  const applyRow = useCallback(
+    (row: PageRunRow | null | undefined, isInsert: boolean) => {
+      if (!row || !effectiveJobId) return;
+      // Don't reprocess INSERTs for chunks we already saw via SSE
+      // (the slice's pageRunStarted is idempotent — passing the same
+      // page_run_id replaces the entry with the same shape).
+      if (isInsert || row.status === "running") {
+        dispatch(
+          pageRunStarted({
+            jobId: effectiveJobId,
+            pageRunId: row.id,
+            chunkIndex: row.chunk_index,
+            pageNumbers: row.page_numbers,
+          }),
+        );
+        return;
+      }
+      if (row.status === "completed") {
+        dispatch(
+          pageRunCompleted({
+            jobId: effectiveJobId,
+            pageRunId: row.id,
+            chunkIndex: row.chunk_index,
+            pageNumbers: row.page_numbers,
+            resultCount: 0, // result count comes from results-table subscription
+            cost: Number(row.cost ?? 0),
+            tokens: Number(row.tokens ?? 0),
+            durationMs: Number(row.duration_ms ?? 0),
+            rawResponse: row.raw_response ?? "",
+            parsedPayload: row.parsed_payload,
+          }),
+        );
+        return;
+      }
+      if (row.status === "failed") {
+        dispatch(
+          pageRunFailed({
+            jobId: effectiveJobId,
+            pageRunId: row.id,
+            chunkIndex: row.chunk_index,
+            pageNumbers: row.page_numbers,
+            error: row.error ?? row.parse_error ?? "Failed",
+            rawResponse: row.raw_response ?? undefined,
+          }),
+        );
+      }
+    },
+    [dispatch, effectiveJobId],
+  );
+
+  useChannel(
+    fileId && effectiveJobId && activeRunId
+      ? {
+          topic: pageRunsChannel.topic({ runId: activeRunId }),
+          postgresChanges: [
+            {
+              event: "*",
+              schema: "docproc",
+              table: "page_extraction_page_runs",
+              filter: `run_id=eq.${activeRunId}`,
+              rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+              fingerprint: (row) => String(row.status ?? ""),
+              onChange: ({ payload, row }) => {
+                applyRow(
+                  (row ?? payload.old) as PageRunRow | undefined,
+                  payload.eventType === "INSERT",
+                );
+              },
+            },
+          ],
+          // Realtime has no replay, and this hook IS the durability story for a
+          // dropped SSE stream — a gap here freezes the run's progress on
+          // screen with nothing to say so. Re-read every page_run of the run.
+          onBackfill: async () => {
+            try {
+              const rows = await listPageRunsForRun(activeRunId);
+              for (const row of rows) {
+                applyRow(row as unknown as PageRunRow, false);
+              }
+            } catch (error) {
+              console.warn(
+                "[page-runs RT] catch-up read failed — this run's progress may " +
+                  "be stale on screen until the next event or a reload.",
+                error,
+              );
+            }
+          },
+        }
+      : null,
+  );
 }

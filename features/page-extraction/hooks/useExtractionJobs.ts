@@ -3,13 +3,20 @@
  *
  * Shared-cache hook for "all jobs on this file". Re-fetches on Realtime
  * INSERT/UPDATE/DELETE on `page_extraction_jobs` for the given file.
+ *
+ * REALTIME: `@ai-matrx/realtime` owns the channel. What was here was a raw
+ * `.channel(...).subscribe()`, a hand-copied refcount map, manual teardown, and
+ * NO catch-up read — a job started on another device (or by the server) while
+ * this tab slept never appeared in the picker. The refcount now lives once, in
+ * `lib/realtime/sharedChannel`; `onBackfill` is the catch-up.
  */
 
 "use client";
 
 import { useEffect } from "react";
-import { createClient } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@ai-matrx/data/db";
+import { defineChannelNamespace } from "@ai-matrx/realtime";
+import { useRealtimeManager } from "@ai-matrx/realtime/react";
+import { openShared } from "@/lib/realtime/sharedChannel";
 import { listJobsForFile } from "@/features/page-extraction/api/jobs";
 import type { PageExtractionJob } from "@/features/page-extraction/types";
 import {
@@ -53,48 +60,12 @@ export function removeJobFromCache(fileId: string, jobId: string): void {
   setKey(store, fileId, (prev) => (prev ?? []).filter((j) => j.id !== jobId));
 }
 
-const realtimeRefcount = new Map<
-  string,
-  { count: number; cleanup: () => void }
->();
-
-function attachRealtime(fileId: string): void {
-  const existing = realtimeRefcount.get(fileId);
-  if (existing) {
-    existing.count += 1;
-    return;
-  }
-  const supabase = createClient();
-  const channel = supabase
-    .channel(uniqueChannelTopic(`page-extraction-jobs:${fileId}`))
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "docproc",
-        table: "page_extraction_jobs",
-        filter: `file_id=eq.${fileId}`,
-      },
-      () => invalidateKey(store, fileId),
-    )
-    .subscribe();
-  realtimeRefcount.set(fileId, {
-    count: 1,
-    cleanup: () => {
-      void supabase.removeChannel(channel);
-    },
-  });
-}
-
-function detachRealtime(fileId: string): void {
-  const existing = realtimeRefcount.get(fileId);
-  if (!existing) return;
-  existing.count -= 1;
-  if (existing.count <= 0) {
-    existing.cleanup();
-    realtimeRefcount.delete(fileId);
-  }
-}
+/** One place names this channel. A second, different declaration throws. */
+const extractionJobsChannel = defineChannelNamespace({
+  namespace: "page-extraction-jobs",
+  parts: ["fileId"],
+  description: "docproc.page_extraction_jobs rows for one file",
+});
 
 export interface UseExtractionJobsResult {
   jobs: PageExtractionJob[];
@@ -107,12 +78,30 @@ export function useExtractionJobs(
   fileId: string | null,
 ): UseExtractionJobsResult {
   const { data, loading, error, refetch } = useSharedStore(store, fileId);
+  const manager = useRealtimeManager();
 
   useEffect(() => {
-    if (!fileId) return undefined;
-    attachRealtime(fileId);
-    return () => detachRealtime(fileId);
-  }, [fileId]);
+    if (!fileId || !manager) return undefined;
+    const topic = extractionJobsChannel.topic({ fileId });
+    return openShared(manager, topic, () => ({
+      topic,
+      postgresChanges: [
+        {
+          event: "*",
+          schema: "docproc",
+          table: "page_extraction_jobs",
+          filter: `file_id=eq.${fileId}`,
+          rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+          fingerprint: (row) =>
+            JSON.stringify([row.name ?? null, row.status ?? null, row.updated_at ?? null]),
+          onChange: () => invalidateKey(store, fileId),
+        },
+      ],
+      // Realtime has no replay: a job created while the socket was down would
+      // never show up in the picker.
+      onBackfill: () => invalidateKey(store, fileId),
+    }));
+  }, [fileId, manager]);
 
   return {
     jobs: data ?? [],
