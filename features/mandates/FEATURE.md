@@ -342,6 +342,8 @@ commit time.
 
 ## Change Log
 
+- 2026-09-08 — Configuration table headers center vertically with consistent help-icon height. Holder checks use only the table chrome; the binding action is labeled Save in every scope, with existing permissions and confirmations unchanged.
+
 - 2026-09-08 — Definition sections share compact 12px pencil icons in their header rows. Unavailable edits use the same icon, visually disabled, with the reason on hover/focus/tap; removed Editing status text and moved the draft-input edit action to its header. Existing editor permissions remain unchanged.
 
 - 2026-09-08 — Goal text is the primary content, with a compact square edit action and inline authority/refinement controls; duplicate description and unrelated optional-input help are removed. Distinct goal context remains available on demand. Shared field help now coordinates one open popup, keeps a 200ms pointer-transfer grace period, closes on focus/pointer departure, and preserves keyboard/touch dismissal. Property provenance sits beside its value.

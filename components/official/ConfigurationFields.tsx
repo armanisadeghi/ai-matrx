@@ -305,9 +305,9 @@ export function ConfigurationTable({
               <TableHead
                 key={column.key}
                 scope="col"
-                className="whitespace-normal align-top font-semibold text-foreground"
+                className="whitespace-normal align-middle font-semibold text-foreground"
               >
-                <span className="inline-flex items-center gap-1">
+                <span className={styles.heading}>
                   {column.label}
                   {column.help ? (
                     <FieldHelp label={column.label}>{column.help}</FieldHelp>

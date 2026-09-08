@@ -83,7 +83,6 @@ import { compareStoredContract } from "@/features/mandates/contract-compare";
 import {
   hasLiveGlobalBinding,
   systemAnswerRecord,
-  systemAnswerSaveWords,
   type SystemAnswerRecord,
 } from "./system-answer-record";
 import {
@@ -1987,10 +1986,9 @@ function BindingDraft({
                 (activeSection && activeSection !== "holder") ||
                 mode === "batch"
                   ? "hidden"
-                  : "rounded-lg border border-border p-3"
+                  : "min-w-0"
               }
             >
-              <h3 className="mb-3 text-sm font-semibold">Checks</h3>
               <ConfigurationTable label="Holder checks" columns={CHECK_COLUMNS}>
                 <ConfigurationTableRow
                   columns={CHECK_COLUMNS}
@@ -2380,37 +2378,10 @@ function BindingDraft({
             ) : null}
             <Button
               size="sm"
-              className={cn("min-w-[130px]")}
               disabled={disabled || Boolean(saveRefusal)}
               onClick={() => void save()}
             >
-              {busy
-                ? "Saving…"
-                : systemHost
-                  ? /* 🚨 THE RECORD IS NOT A QUESTION, BUT IT IS NOT A SECRET
-                       (FIX-R13/A). The reader is never asked where the answer
-                       is stored — but a save that creates the row every user
-                       on the platform runs says so, on the button that does
-                       it. One label; no paragraph. */
-                    systemAnswerSaveWords(answerRecord, {
-                      exists:
-                        answerRecord === "global-binding"
-                          ? binding !== null
-                          : Boolean(
-                              seedHolder.agentId || seedHolder.workflowId,
-                            ),
-                      // R-O4: the home, from the ONE place that reads it.
-                      home: defaultHolderOffer,
-                    })
-                  : onDefaultHolderRung
-                    ? seedHolder.agentId || seedHolder.workflowId
-                      ? "Save"
-                      : // NOT lowercased — the label carries the home
-                        // organization's NAME (FIX-R6/F3).
-                        `Set ${defaultHolderOffer.label}`
-                    : binding
-                      ? "Save"
-                      : `Set ${rungWords(rung).noun}`}
+              {busy ? "Saving…" : "Save"}
             </Button>
           </div>
         </div>
