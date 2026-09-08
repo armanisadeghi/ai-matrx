@@ -42,26 +42,33 @@ export function ChatNewClient({ agentId }: { agentId: string | null }) {
 function ChatNewClientResolved() {
   const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
   if (loading) return <ChatNewLandingSkeleton />;
-  if (error || !mandate) {
-    return (
-      <div className="h-full overflow-hidden bg-textured">
-        <div className="flex min-h-full flex-col items-center justify-center px-4 py-10">
-          <div className="mx-auto max-w-xl rounded-md border border-warning/30 bg-warning/5 px-4 py-6 text-center">
-            <CircleAlert className="mx-auto h-6 w-6 text-warning" />
-            <p className="mt-2 text-sm font-medium text-foreground">
-              Chat is unavailable right now.
-            </p>
-            <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
-              The default chat agent could not be resolved
-              {error ? ` — ${error}` : ""}. Check your chat settings, or try
-              again shortly.
-            </p>
-          </div>
+  if (error || !mandate) return <ChatMandateUnavailable error={error} />;
+  return <ChatNewBody agentId={mandate.agentId} />;
+}
+
+/**
+ * The ONE loud face for "the default chat mandate could not be resolved".
+ * Shared by `/chat/new` and by `/chat/[id]` rooms that carry no agent of
+ * their own (`ChatConversationRoom`) — never a silent fallback agent.
+ */
+export function ChatMandateUnavailable({ error }: { error?: string | null }) {
+  return (
+    <div className="h-full overflow-hidden bg-textured">
+      <div className="flex min-h-full flex-col items-center justify-center px-4 py-10">
+        <div className="mx-auto max-w-xl rounded-md border border-warning/30 bg-warning/5 px-4 py-6 text-center">
+          <CircleAlert className="mx-auto h-6 w-6 text-warning" />
+          <p className="mt-2 text-sm font-medium text-foreground">
+            Chat is unavailable right now.
+          </p>
+          <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+            The default chat agent could not be resolved
+            {error ? ` — ${error}` : ""}. Check your chat settings, or try
+            again shortly.
+          </p>
         </div>
       </div>
-    );
-  }
-  return <ChatNewBody agentId={mandate.agentId} />;
+    </div>
+  );
 }
 
 function ChatNewBody({ agentId }: { agentId: string }) {

@@ -9,15 +9,17 @@ import { supabase } from "@/utils/supabase/client";
  * the `chat.conversation` row is often not readable until the turn finishes.
  *
  * Anything that promotes a URL to `/chat/[conversationId]` MUST gate on this
- * first. The route's SSR seed lookup (`resolveConversationSeed`) hard-redirects
- * back to `/chat/new` when it can't read the row — navigating before the row is
+ * first. The route's SSR seed lookup (`resolveConversationSeed`) renders the
+ * access gate when it can't read the row — navigating before the row is
  * committed is the "can't leave /chat/new" bounce. Gating here ties promotion to
  * real persistence: instant when the backend commits early, deferred to turn-end
  * when it commits atomically. Either way the SSR guard always succeeds.
  *
  * The query intentionally mirrors `resolveConversationSeed` exactly (schema,
- * `deleted_at IS NULL`, and a non-null `initial_agent_id`) so a `true` here
- * guarantees the SSR guard will resolve a seed — no client/server drift.
+ * `deleted_at IS NULL`, the row exists) so a `true` here guarantees the SSR
+ * read will find the row — no client/server drift. Since 2026-09-08 the route
+ * no longer requires `initial_agent_id`: a conversation without an agent
+ * opens under the default chat mandate, so this gate must not wait for one.
  */
 export interface WaitForConversationPersistedOptions {
   /** Abort the wait (e.g. the surface unmounted or focus moved). */
@@ -68,11 +70,11 @@ export async function waitForConversationPersisted(
     const { data } = await supabase
       .schema("chat")
       .from("conversation")
-      .select("initial_agent_id")
+      .select("id")
       .eq("id", conversationId)
       .is("deleted_at", null)
       .maybeSingle();
-    if (data && (data.initial_agent_id as string | null)) return true;
+    if (data) return true;
     if (Date.now() >= deadline) return false;
     await new Promise((resolve) => setTimeout(resolve, delay));
     delay = Math.min(Math.round(delay * 1.4), maxIntervalMs);
