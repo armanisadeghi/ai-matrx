@@ -260,6 +260,32 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).toContain(longSnakeCaseName);
   });
 
+  it("preserves explicitly marked interactive controls inside wrapping cells", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={[
+          {
+            accessorKey: "name",
+            header: "Name",
+            width: 92,
+            cell: () => <a data-matrx-cell-control>Open</a>,
+          },
+        ]}
+        getRowId={(row) => row.id}
+        detail={{ enabled: false }}
+      />,
+    );
+
+    expect(markup).toContain("data-matrx-cell-control");
+    expect(markup).toContain(
+      "sm:[&amp;_[data-matrx-cell-control]]:whitespace-nowrap",
+    );
+    expect(markup).toContain(
+      "sm:[&amp;_[data-matrx-cell-control]]:[overflow-wrap:normal]",
+    );
+  });
+
   it("keeps pagination in one compact row without overflow narration", () => {
     const markup = renderToStaticMarkup(
       <MatrxDataTable

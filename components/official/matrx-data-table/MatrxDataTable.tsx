@@ -1818,11 +1818,13 @@ function MatrxDataTableCore<T>({
                                   {/* Desktop cells are a hard wrapping boundary. `overflow-wrap:
                                       anywhere` lowers the text min-content width for identifiers,
                                       URLs, and snake_case values; the descendant selector also
-                                      defeats a consumer's accidental `whitespace-nowrap`. Mobile
-                                      intentionally keeps content-sized horizontal scrolling. */}
+                                      defeats a consumer's accidental `whitespace-nowrap`. Mark
+                                      compact interactive chrome with `data-matrx-cell-control` so
+                                      its label stays intact. Mobile intentionally keeps
+                                      content-sized horizontal scrolling. */}
                                   <div
                                     data-matrx-cell-content
-                                    className="min-w-0 max-w-full flex-1 whitespace-normal break-words [overflow-wrap:anywhere] sm:[&_*]:min-w-0 sm:[&_*]:max-w-full sm:[&_*]:whitespace-normal sm:[&_*]:[overflow-wrap:anywhere]"
+                                    className="min-w-0 max-w-full flex-1 whitespace-normal break-words [overflow-wrap:anywhere] sm:[&_*]:min-w-0 sm:[&_*]:max-w-full sm:[&_*]:whitespace-normal sm:[&_*]:[overflow-wrap:anywhere] sm:[&_[data-matrx-cell-control]]:w-max sm:[&_[data-matrx-cell-control]]:min-w-max sm:[&_[data-matrx-cell-control]]:max-w-none sm:[&_[data-matrx-cell-control]]:whitespace-nowrap sm:[&_[data-matrx-cell-control]]:[overflow-wrap:normal] sm:[&_[data-matrx-cell-control]_*]:whitespace-nowrap sm:[&_[data-matrx-cell-control]_*]:[overflow-wrap:normal]"
                                   >
                                     {editable && col.editable ? (
                                       <EditableTableCell

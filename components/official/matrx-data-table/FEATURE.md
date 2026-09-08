@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** shared official primitive (`components/official/`)
-**Last updated:** `2026-08-30`
+**Last updated:** `2026-09-08`
 
 ---
 
@@ -117,7 +117,10 @@ tables (AI Models, relationships, …) can cut over to one contract.
 - **Desktop cell content always wraps inside its own column.** The canonical
   content boundary uses `overflow-wrap: anywhere` and overrides descendant
   `white-space: nowrap`, so long identifiers, URLs, and snake_case values can
-  never paint across adjacent cells. A declared column `width` is also its
+  never paint across adjacent cells. Compact interactive chrome opts out with
+  `data-matrx-cell-control`; the primitive preserves its intrinsic width and
+  single-line label instead of breaking a button word or separating its icon.
+  A declared column `width` is also its
   desktop minimum: when the table cannot fit, the canonical horizontal-scroll
   surface takes over instead of crushing text into a near-vertical stack.
   Mobile keeps its deliberate content-sized scroll presentation.
@@ -285,6 +288,10 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-09-08 — Added the explicit `data-matrx-cell-control` escape hatch for
+  compact interactive chrome. Cell data still wraps aggressively, while marked
+  button/link labels keep intrinsic width and can no longer split mid-word.
 
 - 2026-08-30 — Mobile tables now scroll every column together: removed the
   frozen-first-column API and CSS, kept desktop overflow chevrons while removing

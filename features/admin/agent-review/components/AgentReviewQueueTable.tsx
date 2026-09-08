@@ -164,12 +164,13 @@ export default function AgentReviewQueueTable() {
         accessorFn: (row) => row.id,
         sortable: false,
         filter: false,
-        width: 92,
+        width: 96,
         cell: (row) => {
           const target = reviewTargetPageDisplay(row.url);
           return (
             <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
               <AppLink
+                data-matrx-cell-control
                 href={target.href}
                 target="_blank"
                 rel="noreferrer"

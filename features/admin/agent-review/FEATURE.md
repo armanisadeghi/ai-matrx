@@ -45,7 +45,9 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 
 - The list's first column is **Open**. One click enters the routed review
   workspace in the current tab and opens the target page in a separate tab;
-  the target-page column remains its own explicit door.
+  the target-page column remains its own explicit door. Its compact button is
+  marked as table control chrome, so the shared cell wrapper never splits the
+  label or separates it from the arrow.
 - Target pages stay on one line: `manage.aimatrx.com` destinations render as
   app-relative routes, external destinations retain their hostname, long labels
   truncate inside the column, and hover exposes the fully qualified URL.
@@ -121,6 +123,8 @@ no-unapproved-schedules law.
 
 ## Change log
 
+- 2026-09-08 — Marked the compact Open door as table control chrome so the
+  shared cell wrapping boundary preserves its one-line label and arrow.
 - 2026-09-08 — Tightened the list page's bottom edge to a 4px page gutter after
   the table-owned pagination footer (the table itself contributes no outer
   padding), and made the header actions and workflow rail horizontally usable
