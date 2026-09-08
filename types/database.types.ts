@@ -51530,6 +51530,10 @@ export type Database = {
           version: number
         }[]
       }
+      runnable_agent_for_org: {
+        Args: { p_agent_id: string; p_organization_id: string }
+        Returns: boolean
+      }
       runnable_version_fields: {
         Args: { p_version_id: string }
         Returns: {
@@ -51549,6 +51553,10 @@ export type Database = {
           variable_definitions: Json
           version_number: number
         }[]
+      }
+      runnable_version_for_org: {
+        Args: { p_organization_id: string; p_version_id: string }
+        Returns: boolean
       }
       scraper_visible: {
         Args: { p_id: string; p_schema: string; p_table: string }
@@ -53385,6 +53393,7 @@ export type Database = {
           consumption_map: Json
           definition_enabled: boolean
           definition_id: string
+          dropped_reason: string
           fallback_mandate_key: string
           holder_id: string
           holder_live: boolean
@@ -53430,6 +53439,7 @@ export type Database = {
           consumption_map: Json
           definition_enabled: boolean
           definition_id: string
+          dropped_reason: string
           fallback_mandate_key: string
           holder_id: string
           holder_live: boolean
@@ -53456,6 +53466,7 @@ export type Database = {
           consumption_map: Json
           definition_enabled: boolean
           definition_id: string
+          dropped_reason: string
           fallback_mandate_key: string
           holder_id: string
           holder_live: boolean

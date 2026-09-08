@@ -8323,6 +8323,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mergify/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_mergify_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/miro/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_miro_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/aha/public/status": {
         parameters: {
             query?: never;
@@ -14265,6 +14299,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_openoffice_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/qt-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_qt_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -73456,6 +73507,38 @@ export interface components {
             absorbed_plan_id: string;
         };
         /**
+         * MergifyServiceStatus
+         * @description Safe aggregate status projection for Mergify's fixed status page.
+         */
+        MergifyServiceStatus: {
+            /**
+             * Kind
+             * @default mergify_public_service_status
+             * @constant
+             */
+            __kind?: "mergify_public_service_status";
+            /**
+             * Provider
+             * @default Mergify
+             * @constant
+             */
+            provider?: "Mergify";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.mergify.com/
+             * @constant
+             */
+            status_page?: "https://status.mergify.com/";
+        };
+        /**
          * MessageSelector
          * @description Reusable selection grammar for batch message operations.
          *
@@ -73827,6 +73910,40 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.mintlify.com/";
+        };
+        /** MiroServiceStatus */
+        MiroServiceStatus: {
+            /**
+             * Kind
+             * @default miro_official_collaborative_whiteboard_status
+             * @constant
+             */
+            __kind?: "miro_official_collaborative_whiteboard_status";
+            /**
+             * Provider
+             * @default Miro
+             * @constant
+             */
+            provider?: "Miro";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.miro.com/
+             * @constant
+             */
+            status_page?: "https://status.miro.com/";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** MissingBinding */
         MissingBinding: {
@@ -108957,6 +109074,31 @@ export interface components {
             /** Language */
             language: string;
         };
+        /** PageMetadata */
+        aidream__services__qt_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default qt_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "qt_wiki_page_metadata";
+            /**
+             * Provider
+             * @default Qt Wiki
+             * @constant
+             */
+            provider?: "Qt Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /** HealthResponse */
         aidream__services__rag__library_status__HealthResponse: {
             /** Schema Ok */
@@ -123401,6 +123543,46 @@ export interface operations {
             };
         };
     };
+    public_status_mergify_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MergifyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_miro_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiroServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_aha_public_status_get: {
         parameters: {
             query?: never;
@@ -131018,6 +131200,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__openoffice_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_qt_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__qt_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
