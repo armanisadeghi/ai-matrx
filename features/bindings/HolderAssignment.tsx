@@ -51,6 +51,7 @@ import {
   fetchAgentVersionHistory,
   type AgentVersionHistoryItem,
 } from "@/features/agents/redux/agent-definition/thunks";
+import { useAgentHref } from "@/features/agents/addressing/useAgentHref";
 import { WorkflowHolderPicker } from "./WorkflowHolderPicker";
 import type { HolderDraft } from "./ScopeHolderBar";
 
@@ -78,7 +79,60 @@ export interface HolderAssignmentProps {
    * remedy, or `null`.
    */
   refusal?: string | null;
+  /**
+   * 🚨 RESTORED BY FIX-R13/B — ONE LINE, not a paragraph, and not a fourth
+   * control.
+   *
+   * `coverageLine()` — *"Every input this holder needs is fed — all 3."* —
+   * lived in the JOB cell, which FIX-R9-UI deleted on the system host to obey
+   * D19. Nothing else on that page states whether what the job offers actually
+   * covers what the holder needs, so a reader could set a holder, read a
+   * healthy verdict about it, and never learn a required input was unmapped.
+   *
+   * D19 permits it: it is a FACT the three controls cannot state, it is one
+   * line, and it carries no control of its own — the `data-holder-control`
+   * count stays three. `null` on every host that still has a JOB cell, so it
+   * is never said twice.
+   */
+  coverageLine?: string | null;
   disabled?: boolean;
+}
+
+/**
+ * 🚨 THE DOOR TO THE ASSIGNED AGENT — the one deleted affordance FIX-R9-UI
+ * called *"the one worth arguing about"* (*"Open Research → Slides
+ * Generator"*), restored as a LINK beside the name it opens.
+ *
+ * It goes through FIX-R10-ADDR's `useAgentHref` and nothing else. A hand-built
+ * `/agents/${id}` is a bet that the id is a user agent — and the holder of a
+ * system-homed job is a BUILTIN agent, which lives only under the
+ * administration shell, so that bet is a dead link exactly where this campaign
+ * puts it. `scripts/check-agent-links.ts` forbids the hand-built form outright.
+ *
+ * A link is never dead while it thinks: `resolving` renders the always-valid
+ * `/agents/go/<id>`, and only a resolved MISS becomes a refusal in words.
+ */
+function AssignedAgentDoor({ agentId }: { agentId: string }) {
+  const door = useAgentHref({ id: agentId, context: "the holder assignment" });
+  if (door.state === "unknown") {
+    return (
+      <span
+        data-testid="holder-agent-link-refusal"
+        className="text-[11px] text-muted-foreground"
+      >
+        {door.reason}
+      </span>
+    );
+  }
+  return (
+    <a
+      data-testid="holder-agent-link"
+      href={door.href}
+      className="text-[11.5px] font-medium text-primary underline-offset-2 hover:underline"
+    >
+      Open it
+    </a>
+  );
 }
 
 function Row({
@@ -113,6 +167,7 @@ export function HolderAssignment({
   agentTabs,
   outputKind = null,
   refusal = null,
+  coverageLine = null,
   disabled = false,
 }: HolderAssignmentProps) {
   const isWorkflow = holder.kind === "workflow";
@@ -219,6 +274,7 @@ export function HolderAssignment({
                 >
                   {holder.agentId}
                 </code>
+                <AssignedAgentDoor agentId={holder.agentId} />
               </>
             ) : null}
           </>
@@ -245,6 +301,19 @@ export function HolderAssignment({
             }
           />
         </Row>
+      ) : null}
+
+      {/* THE COVERAGE FACT — one line, attached to the assignment it is about.
+          It is honest in both directions: "Every input this holder needs is
+          fed — all 3." and "1 required input is still unmapped, and a run
+          would refuse." are the same sentence builder. */}
+      {coverageLine ? (
+        <p
+          data-testid="holder-coverage-line"
+          className="text-[11.5px] leading-relaxed text-muted-foreground"
+        >
+          {coverageLine}
+        </p>
       ) : null}
 
       {refusal ? (

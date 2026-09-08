@@ -3,7 +3,8 @@
 // features/mandates/components/ProvisionOfferList.tsx
 //
 // THE PROVISION, on screen — every value a Mandate's Provision offers its
-// Holder: name, kind, guaranteed-or-optional, lazy, and the description the
+// Holder: name, kind, whether it is always there, whether it is fetched when
+// used, and the description the
 // declaration wrote, one click away.
 //
 // ONE renderer, two surfaces: the personal workspace (§1 "The job") and the
@@ -15,7 +16,12 @@ import { ChevronDown, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
-import type { OfferedValue } from "../provision-shapes";
+import {
+  OFFERED_ALWAYS_WORDS,
+  OFFERED_LAZY_WORDS,
+  OFFERED_SOMETIMES_WORDS,
+  type OfferedValue,
+} from "../provision-shapes";
 
 export interface ProvisionOfferListProps {
   values: readonly OfferedValue[];
@@ -98,14 +104,17 @@ function OfferedValueRow({
               : "border-border/70 text-muted-foreground",
           )}
         >
-          {value.guaranteed ? "Guaranteed" : "Optional"}
+          {/* FIX-R13/C2 — plain words, from the ONE place that holds them.
+              "Guaranteed" / "Lazy" were the declaration's field names on a
+              screen a subject-matter expert reads. */}
+          {value.guaranteed ? OFFERED_ALWAYS_WORDS : OFFERED_SOMETIMES_WORDS}
         </Badge>
         {value.lazy ? (
           <Badge
             variant="outline"
             className="shrink-0 py-0 text-[9.5px] text-muted-foreground"
           >
-            Lazy
+            {OFFERED_LAZY_WORDS}
           </Badge>
         ) : null}
         {pinned ? (

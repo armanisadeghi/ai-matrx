@@ -576,3 +576,140 @@ describe("no mandate screen prints an organization id at a person", () => {
     expect(LITERAL_UUID.test(fixed)).toBe(false);
   });
 });
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE DECLARATION'S FIELD NAMES ARE NOT BADGES (FIX-R13/C2)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   🚨 FOUND BY THE FIX-R9-UI WALK, on the provision surface of
+   `/administration/mandates/research_client.output_slides`: badges reading
+   **Guaranteed** and **Lazy**. Arman, about that same page:
+
+     "invents its own vocabulary that is not part of our accepted vocabulary"
+
+   `guaranteed` and `lazy` ARE in the lexicon — as the shape of a Provision
+   entry, which is a DECLARATION written by a developer. They are field names,
+   and they belong in code. A subject-matter expert reading their own job's
+   inputs cannot act on "Lazy".
+
+   The binding UI had already solved this ("· sometimes", "· fetched when
+   used"); the provision list had not, which is the drift this closes at the
+   class: `provision-shapes.ts` holds ONE wording and both renderers import it.
+
+   The sweep above cannot see these — it requires 12 characters and a space, so
+   a one-word badge slips through every one of its legs. This is the short-label
+   leg.
+
+   RED at `5c9e56eedc`: 2 offences (ProvisionOfferList.tsx, "Guaranteed" and
+   "Lazy"). */
+
+/**
+ * Words that name a FIELD of the declaration rather than the thing a person is
+ * looking at. Matched only where the whole rendered label IS the word — a
+ * sentence that happens to use "guaranteed" as English is not this defect.
+ */
+const DECLARATION_FIELD_LABELS = new Set([
+  "Guaranteed",
+  "Lazy",
+  "Eager",
+  "guaranteed",
+  "lazy",
+  "eager",
+]);
+
+/**
+ * Product surface names that no mandate screen owns. "Outputs Studio" conforms
+ * to the ratified `<Thing> Studio` pattern but has no lexicon row, and it is a
+ * surface a mandate reader may never have opened. It is NOT in this code today
+ * (it reaches the page as DATA, in two `description` columns — see the
+ * FIX-R13 record); this keeps it from arriving in the code half.
+ */
+const UNOWNED_SURFACE_NAMES = ["Outputs Studio"];
+
+function shortRenderedLabels(source: string): { line: number; text: string }[] {
+  const stripped = stripComments(source);
+  const lineOf = (index: number) => stripped.slice(0, index).split("\n").length;
+  const found: { line: number; text: string }[] = [];
+  // A JSX text node of ANY length — the leg above starts at 12 characters.
+  for (const match of stripped.matchAll(/>\s*([A-Za-z][A-Za-z ]{0,40}?)\s*</g)) {
+    found.push({ line: lineOf(match.index ?? 0), text: match[1].trim() });
+  }
+  // A ternary's two arms, the shape the offending badge actually used:
+  //   {value.guaranteed ? "Guaranteed" : "Optional"}
+  for (const match of stripped.matchAll(/"([A-Za-z][A-Za-z ]{0,40})"/g)) {
+    found.push({ line: lineOf(match.index ?? 0), text: match[1] });
+  }
+  return found;
+}
+
+describe("no mandate screen renders the declaration's own field names", () => {
+  const offences = () => {
+    const out: Finding[] = [];
+    for (const file of SWEPT_TREES.flatMap(sourceFilesUnder)) {
+      const source = readFileSync(file, "utf8");
+      for (const { line, text } of shortRenderedLabels(source)) {
+        if (DECLARATION_FIELD_LABELS.has(text)) {
+          out.push({ file: relative(REPO_ROOT, file), line, text });
+        }
+      }
+      for (const name of UNOWNED_SURFACE_NAMES) {
+        const stripped = stripComments(source);
+        const at = stripped.indexOf(name);
+        if (at >= 0) {
+          out.push({
+            file: relative(REPO_ROOT, file),
+            line: stripped.slice(0, at).split("\n").length,
+            text: name,
+          });
+        }
+      }
+    }
+    return out;
+  };
+
+  it("says what the flag MEANS, never what the column is called", () => {
+    expect(offences()).toEqual([]);
+  });
+
+  it("holds one wording for both renderers of the same two flags", () => {
+    const {
+      OFFERED_ALWAYS_WORDS,
+      OFFERED_LAZY_WORDS,
+      OFFERED_SOMETIMES_WORDS,
+    } = require("@/features/mandates/provision-shapes");
+    for (const words of [
+      OFFERED_ALWAYS_WORDS,
+      OFFERED_LAZY_WORDS,
+      OFFERED_SOMETIMES_WORDS,
+    ]) {
+      expect(typeof words).toBe("string");
+      expect(DECLARATION_FIELD_LABELS.has(words)).toBe(false);
+    }
+    // Both renderers import them rather than typing their own.
+    for (const file of [
+      "features/mandates/components/ProvisionOfferList.tsx",
+      "features/bindings/OfferedInventoryColumn.tsx",
+    ]) {
+      const src = readFileSync(join(REPO_ROOT, file), "utf8");
+      expect(src).toContain("provision-shapes");
+      expect(src).toContain("OFFERED_");
+    }
+  });
+
+  it("would still catch the exact badge the walker read", () => {
+    const shipped = `<Badge>{value.guaranteed ? "Guaranteed" : "Optional"}</Badge>`;
+    const hits = shortRenderedLabels(shipped).filter((f) =>
+      DECLARATION_FIELD_LABELS.has(f.text),
+    );
+    expect(hits.map((h) => h.text)).toContain("Guaranteed");
+  });
+
+  it("does not fire on English that happens to use the word", () => {
+    const fine = `<p>Nothing here is guaranteed to arrive on every launch.</p>`;
+    expect(
+      shortRenderedLabels(fine).filter((f) =>
+        DECLARATION_FIELD_LABELS.has(f.text),
+      ),
+    ).toEqual([]);
+  });
+});

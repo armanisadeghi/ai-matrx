@@ -70,6 +70,12 @@ import {
 } from "@/lib/supabase/mandateStorage";
 import { compareStoredContract } from "@/features/mandates/contract-compare";
 import {
+  hasLiveGlobalBinding,
+  systemAnswerRecord,
+  systemAnswerSaveWords,
+  type SystemAnswerRecord,
+} from "./system-answer-record";
+import {
   fetchAgentOutputSchemas,
   missingOutputKeys,
 } from "@/features/mandates/output-contract";
@@ -226,10 +232,25 @@ export function OneBindingWorkspace({
   const { organizations } = useUserOrganizations();
 
   const pinned = pinnedRungs(fixedRung);
-  const [rung, setRung] = useState<WorkspaceRung>(
+  const [chosenRung, setRung] = useState<WorkspaceRung>(
     pinned?.[0] ??
       (initialRung === "global" && !allowGlobal ? "user" : initialRung),
   );
+  /**
+   * 🚨 ON THE SYSTEM HOST THE RUNG IS NOT A CHOICE AND NOT A REMEMBERED ONE
+   * (FIX-R13/A). The admin page writes THE SYSTEM ANSWER; which of the two
+   * records holds it is decided by `systemAnswerRecord()`, and the rung must
+   * therefore FOLLOW THE DATA rather than a `useState` seeded on first mount.
+   * Held as state, the page stayed on the definition-default rung after a save
+   * created the platform-wide binding that now outranks it — showing an empty
+   * map beside an answer that has one, which is the fourth law's lie.
+   */
+  const rung: WorkspaceRung =
+    perspective === "system"
+      ? hasLiveGlobalBinding(data.bindings)
+        ? "global"
+        : DEFAULT_HOLDER_RUNG
+      : chosenRung;
   const [organizationId, setOrganizationId] = useState<string | null>(
     initialOrganizationId,
   );
@@ -801,12 +822,54 @@ function BindingDraft({
     );
 
   /**
-   * Why Save cannot act AT THE BOTTOM RUNG — checked before the binding
-   * ladder's own refusals, because none of those apply to a rung that is not a
-   * binding. The server is still the authority (403 / 409) and its sentence is
-   * printed when it disagrees.
+   * ── THE SYSTEM ANSWER, AND WHICH RECORD IT IS WRITTEN TO (FIX-R13/A) ──────
+   *
+   * 🚨 STORAGE IS NOT A QUESTION PUT TO A PERSON. On the admin host the three
+   * controls write THE SYSTEM ANSWER; `systemAnswerRecord()` — the ONE place
+   * the rule lives — decides whether that answer is the mandate's own default
+   * (holder alone, three definition columns) or the platform-wide binding
+   * (which is what holds a mapping, settings or an auto-run promise, because
+   * the definition has no columns for them).
+   *
+   * `holderOnlyRung` is what the OLD `onDefaultHolderRung` meant everywhere it
+   * gated a control: "this screen cannot express a map". The admin host CAN —
+   * that is the whole point of it — so it drops out of that gate while every
+   * other host keeps it exactly as it was.
    */
-  const defaultHolderRefusal = !onDefaultHolderRung
+  const systemHost = perspective === "system";
+  const carriesMapping = Object.keys(withoutUnpicked(draftMap)).length > 0;
+  const carriesAutoRun = autoRun !== null;
+  const carriesSettings = overriddenCount > 0;
+  const answerRecord: SystemAnswerRecord = systemAnswerRecord({
+    hasGlobalBinding: hasLiveGlobalBinding(data.bindings),
+    carriesMapping,
+    carriesSettings,
+    carriesAutoRun,
+  });
+  /** Writing the DEFINITION's three columns — holder and nothing else. */
+  const writingDefinitionDefault = systemHost
+    ? answerRecord === "definition-default"
+    : onDefaultHolderRung;
+  /** A rung whose screen cannot express a map, settings or auto-run. */
+  const holderOnlyRung = onDefaultHolderRung && !systemHost;
+  /**
+   * 🚨 THIS WRITE DECIDES FOR EVERY USER ON THE PLATFORM — so every refusal
+   * that guards the platform-wide row is keyed to the RECORD, not to which
+   * rung the page happens to be standing on. Without this, an admin drafting
+   * a map on a job with no global binding yet would create one at
+   * `principal_type = 'global'` with the super-admin check and the
+   * personal-holder refusal both silently skipped.
+   */
+  const writesForEveryone =
+    rung === "global" || (systemHost && answerRecord === "global-binding");
+
+  /**
+   * Why Save cannot act WHEN THE ANSWER IS THE DEFINITION'S OWN DEFAULT —
+   * checked before the binding ladder's own refusals, because none of those
+   * apply to a record that is not a binding. The server is still the authority
+   * (403 / 409) and its sentence is printed when it disagrees.
+   */
+  const defaultHolderRefusal = !writingDefinitionDefault
     ? null
     : !holderChosen
       ? "Choose an agent or a workflow first — this default names who runs the job."
@@ -821,7 +884,7 @@ function BindingDraft({
             : null;
 
   /** Why Save cannot act — adjacent to the button, never a transient toast. */
-  const saveRefusal = onDefaultHolderRung
+  const saveRefusal = writingDefinitionDefault
     ? defaultHolderRefusal
     : !holderChosen
     ? "Choose an agent or a workflow first — a binding names who runs the job."
@@ -829,7 +892,7 @@ function BindingDraft({
       ? "Pick the organization this answer is for."
       : rung === "org" && !canBindThisOrg
         ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there. Ask an owner to set it, or pick an organization you administer — your own answer above always works.`
-        : rung === "global" && !canBindGlobal
+        : writesForEveryone && !canBindGlobal
         ? "The system answer is a super-admin decision — the server refuses this write."
         : /* 🚨 A HARD REFUSAL, not a warning (Arman, 2026-08-31, restated
              2026-09-08). The picker was restricted and the save was not: an
@@ -837,7 +900,7 @@ function BindingDraft({
              guard dialog, could still be written as the answer every user on
              the platform gets. Now Save is DISABLED with the reason and the
              remedy beside it. */
-          rung === "global" && systemHolderIsPersonal
+          writesForEveryone && systemHolderIsPersonal
           ? SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL
         : holder.kind === "agent" && !verdict.passed
           ? verdict.checking
@@ -876,7 +939,14 @@ function BindingDraft({
     // definition could never store — and the screen above it does not offer
     // one. The server's `applies_in` is read back and printed verbatim, exactly
     // as `BindingResult.applies_in` is.
-    if (onDefaultHolderRung) {
+    //
+    // 🚨 AND THIS IS THE ONE PLACE THAT DECIDES WHICH RECORD THE SYSTEM ANSWER
+    // GOES TO (FIX-R13/A). `writingDefinitionDefault` is `systemAnswerRecord()`
+    // on the admin host and the rung itself everywhere else; there is no other
+    // branch in the repo that picks between these two doors, and
+    // `features/bindings/__tests__/system-answer-record.test.tsx` counts the
+    // call sites so a second one cannot grow.
+    if (writingDefinitionDefault) {
       const writingAgentId = overriding ? bindAgentId : agentId;
       const result = await putMandateDefaultHolder(
         dispatch,
@@ -952,7 +1022,11 @@ function BindingDraft({
       data.mandate.mandate_key,
       rung === "org"
         ? { principalType: "org", organizationId: organizationId as string }
-        : rung === "global"
+        : // The system host's answer is the platform's — never the admin's own
+          // personal row, which is what a `default:` branch would have written
+          // the moment the record flipped to a binding on a job that had no
+          // global binding to stand on.
+          writesForEveryone
           ? { principalType: "global" }
           : { principalType: "user" },
       payload,
@@ -1033,8 +1107,8 @@ function BindingDraft({
     // Same blast radius, same audit; an org-homed default is a different scope
     // and the server's containment predicate is what judges it.
     const platformWideWrite =
-      rung === "global" ||
-      (onDefaultHolderRung && defaultHolderOffer.systemHomed);
+      writesForEveryone ||
+      (writingDefinitionDefault && defaultHolderOffer.systemHomed);
     if (platformWideWrite && holder.kind === "agent" && agentId) {
       setGlobalGuardOpen(true);
       return;
@@ -1478,11 +1552,11 @@ function BindingDraft({
           writes BINDINGS across many jobs, and the mandate's own default is not
           a binding. A toggle that cannot mean anything here is exactly the dead
           control the fourth law forbids. */}
-      {onDefaultHolderRung ? null : (
+      {onDefaultHolderRung || systemHost ? null : (
         <ModeToggle mode={mode} onChange={onModeChange} disabled={disabled} />
       )}
 
-      {mode === "batch" && !onDefaultHolderRung ? (
+      {mode === "batch" && !onDefaultHolderRung && !systemHost ? (
         <BatchMode
           rung={rung}
           organizationId={organizationId}
@@ -1554,8 +1628,15 @@ function BindingDraft({
           ABSENT here and one honest sentence stands in its place. Rendering the
           editors disabled, or rendering them live and dropping their contents
           at the door, are both the same defect: a control that appears to save
-          something the door never receives. */}
-          {onDefaultHolderRung ? (
+          something the door never receives.
+
+          🚨 EXCEPT ON THE ADMIN HOST (FIX-R13/A). There the three controls
+          write THE SYSTEM ANSWER and `systemAnswerRecord()` picks the record:
+          an answer that carries a map, settings or auto-run IS the
+          platform-wide binding, which has all three columns. So the editors
+          are live, nothing is dropped at the door, and the admin never has to
+          be asked where a row is stored. */}
+          {holderOnlyRung ? (
             <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
               {DEFAULT_HOLDER_IS_HOLDER_ONLY}
             </p>
@@ -1891,15 +1972,27 @@ function BindingDraft({
             >
               {busy
                 ? "Saving…"
-                : onDefaultHolderRung
-                  ? seedHolder.agentId || seedHolder.workflowId
-                    ? "Save"
-                    : // NOT lowercased — the label carries the home
-                      // organization's NAME (FIX-R6/F3).
-                      `Set ${defaultHolderOffer.label}`
-                  : binding
-                    ? "Save"
-                    : `Set ${rungWords(rung).noun}`}
+                : systemHost
+                  ? /* 🚨 THE RECORD IS NOT A QUESTION, BUT IT IS NOT A SECRET
+                       (FIX-R13/A). The reader is never asked where the answer
+                       is stored — but a save that creates the row every user
+                       on the platform runs says so, on the button that does
+                       it. One label; no paragraph. */
+                    systemAnswerSaveWords(answerRecord, {
+                      exists:
+                        answerRecord === "global-binding"
+                          ? binding !== null
+                          : Boolean(seedHolder.agentId || seedHolder.workflowId),
+                    })
+                  : onDefaultHolderRung
+                    ? seedHolder.agentId || seedHolder.workflowId
+                      ? "Save"
+                      : // NOT lowercased — the label carries the home
+                        // organization's NAME (FIX-R6/F3).
+                        `Set ${defaultHolderOffer.label}`
+                    : binding
+                      ? "Save"
+                      : `Set ${rungWords(rung).noun}`}
             </Button>
           </div>
         </>

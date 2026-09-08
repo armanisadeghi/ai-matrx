@@ -16,7 +16,11 @@ import { Lock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
-import type { OfferedValue } from "@/features/mandates/provision-shapes";
+import {
+  OFFERED_LAZY_WORDS,
+  OFFERED_SOMETIMES_WORDS,
+  type OfferedValue,
+} from "@/features/mandates/provision-shapes";
 import { RAIL_MAX_HEIGHT, scrollHint } from "./rail-height";
 
 export interface OfferedInventoryColumnProps {
@@ -123,12 +127,12 @@ export function OfferedInventoryColumn({
                   </span>
                   {!value.guaranteed ? (
                     <span className="text-[10px] text-amber-600 dark:text-amber-400">
-                      · sometimes
+                      · {OFFERED_SOMETIMES_WORDS.toLowerCase()}
                     </span>
                   ) : null}
                   {value.lazy ? (
                     <span className="text-[10px] text-muted-foreground">
-                      · fetched when used
+                      · {OFFERED_LAZY_WORDS.toLowerCase()}
                     </span>
                   ) : null}
                 </div>

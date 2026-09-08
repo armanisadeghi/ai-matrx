@@ -113,6 +113,25 @@ export function kindPhrase(kind: string): string {
 
 // ── Offered values ───────────────────────────────────────────────────────────
 
+/**
+ * 🚨 THE WORDS FOR THE TWO PROVISION FLAGS, IN ONE PLACE (FIX-R13/C2).
+ *
+ * `guaranteed` and `lazy` are the DECLARATION's field names — they are in the
+ * lexicon as the shape of a Provision entry, and they belong in code. The
+ * FIX-R9-UI walk read them as BADGES on the provision surface, where a
+ * non-technical subject-matter expert has to guess what "Lazy" means about
+ * their own data. Arman, on the same page: *"invents its own vocabulary that
+ * is not part of our accepted vocabulary."*
+ *
+ * `OfferedInventoryColumn` had already solved this in the binding UI with
+ * plain words; the provision list was still printing the field names. These
+ * constants are the fix at the CLASS: one wording, imported by both, so the
+ * two renderers of the same two flags cannot drift again.
+ */
+export const OFFERED_ALWAYS_WORDS = "Always there";
+export const OFFERED_SOMETIMES_WORDS = "Sometimes missing";
+export const OFFERED_LAZY_WORDS = "Fetched when used";
+
 export interface OfferedValue {
   name: string;
   /** Kind slug: a registered content_ir kind, or a generic scalar slug. */

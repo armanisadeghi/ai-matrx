@@ -399,6 +399,13 @@ export function ScopeHolderBar({
       mandateKey={job.mandateKey}
       agentTabs={restriction}
       outputKind={job.outputKind}
+      // 🚨 FIX-R13/B — THE COVERAGE FACT GOES WHERE THE JOB CELL USED TO BE,
+      // and NOWHERE ELSE. Every other host still renders it in the JOB cell
+      // below; the system host has no JOB cell (FIX-R9-UI deleted it under
+      // D19), and this sentence is the only place on that page that says
+      // whether what the job offers actually feeds what the holder needs.
+      // Passing it on both hosts would be the repetition Arman rejected.
+      coverageLine={perspective === "system" ? job.coverageLine : null}
       refusal={
         // Verbatim, unchanged: it is the rule Arman ruled on, and the guard
         // that pins it (`system-rung-holder-refusal.test.tsx`) reads this

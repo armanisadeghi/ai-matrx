@@ -73,6 +73,7 @@ import {
   isFloatingMandate,
 } from "@/lib/supabase/mandateStorage";
 import { OneBindingWorkspace } from "@/features/bindings/OneBindingWorkspace";
+import { hasLiveGlobalBinding } from "@/features/bindings/system-answer-record";
 import { RunThisJobSection } from "./RunThisJobSection";
 import { Section } from "./Section";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
@@ -673,9 +674,10 @@ const SYSTEM_PERSPECTIVE_RUNGS_GLOBAL_FIRST = ["global", "system"] as const;
 
 /** Does a live platform-wide binding sit above this job's own default? */
 export function hasGlobalBinding(data: MandateWorkspaceData): boolean {
-  return data.bindings.some(
-    (b) => b.principal_type === "global" && b.is_enabled !== false,
-  );
+  // ONE predicate, shared with the thing that picks which record the system
+  // answer is written to (FIX-R13/A) — two readings of the same row cannot
+  // disagree if there is only one reading.
+  return hasLiveGlobalBinding(data.bindings);
 }
 
 function BindingSection({
