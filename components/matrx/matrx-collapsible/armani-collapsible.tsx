@@ -134,7 +134,7 @@ export function ArmaniCollapsible(
             </CollapsibleTrigger>
             <CollapsibleContent
                 className={cn(
-                    "overflow-hidden data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up select-text",
+                    "select-text",
                     contentClassName
                 )}
             >

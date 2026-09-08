@@ -226,7 +226,7 @@ const AdvancedCollapsible: React.FC<AdvancedCollapsibleProps> = ({
             className={`h-4 w-4 shrink-0 text-zinc-500 dark:text-zinc-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
           />
         </CollapsibleTrigger>
-        <CollapsibleContent className="overflow-hidden data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up">
+        <CollapsibleContent>
           <div className="relative">
             <div className="absolute top-0 left-8 right-8 h-px bg-zinc-200 dark:bg-zinc-700"></div>
             <div ref={contentRef} className={`p-4 ${contentClassName}`}>

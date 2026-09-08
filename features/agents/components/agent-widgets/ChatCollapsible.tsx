@@ -167,7 +167,7 @@ export function ChatCollapsible({
             </div>
           )}
         </div>
-        <CollapsibleContent className="data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up">
+        <CollapsibleContent>
           <div className="h-[500px]">
             <AgentRunner
               conversationId={conversationId}

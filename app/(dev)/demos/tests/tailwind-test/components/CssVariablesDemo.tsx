@@ -177,7 +177,9 @@ const TailwindDemo = () => {
                       * package-owned CSS now (`.matrx-accordion-content` in
                       * @ai-matrx/design-system/styles.css), so a demo of a host utility
                       * that no longer exists would render a static box captioned as an
-                      * animation.
+                      * animation. The `slide-down` / `slide-up` pair went the same way
+                      * one release later: `Collapsible` animates itself
+                      * (`.matrx-collapsible-content`, design-system 0.9.0).
                       */}
                     <div className="flex items-center">
                         <span className="mr-2">Caret Blink:</span>

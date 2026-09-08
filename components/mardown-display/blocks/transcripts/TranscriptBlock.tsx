@@ -66,7 +66,7 @@ const TranscriptBlock: React.FC<TranscriptBlockProps> = ({ content }) => {
           Import
         </Button>
       </div>
-      <CollapsibleContent className="overflow-hidden data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up bg-transparent">
+      <CollapsibleContent className="bg-transparent">
         <div className="p-2 bg-transparent">
           <AdvancedTranscriptViewer
             content={content}

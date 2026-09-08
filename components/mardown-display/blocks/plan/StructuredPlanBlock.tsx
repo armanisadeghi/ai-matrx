@@ -41,7 +41,7 @@ const StructuredPlanBlock: React.FC<StructuredPlanBlockProps> = ({ content }) =>
           }`}
         />
       </CollapsibleTrigger>
-      <CollapsibleContent className="overflow-hidden data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up">
+      <CollapsibleContent>
         <div className="p-2">
           <StructuredPlanViewer
             content={content}

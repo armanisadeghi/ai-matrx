@@ -53,7 +53,7 @@ const ChatCollapsibleWrapper: React.FC<ChatCollapsibleWrapperProps> = ({
                     </div>
                 )}
             </div>
-            <CollapsibleContent className="bg-transparent dark:bg-transparent overflow-hidden data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up border-none">
+            <CollapsibleContent className="bg-transparent dark:bg-transparent border-none">
                 <div className="relative p-0 border-none">
                     <div className="absolute top-0 left-8 right-8 h-px bg-zinc-200 dark:bg-zinc-700"></div>
                     {children}

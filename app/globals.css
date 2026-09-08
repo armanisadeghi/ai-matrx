@@ -196,23 +196,17 @@
     }
   }
 
-  @keyframes slide-down {
-    from {
-      height: 0;
-    }
-    to {
-      height: var(--radix-collapsible-content-height);
-    }
-  }
-
-  @keyframes slide-up {
-    from {
-      height: var(--radix-collapsible-content-height);
-    }
-    to {
-      height: 0;
-    }
-  }
+  /*
+   * `slide-down` / `slide-up` lived here — the collapsible twins of the
+   * accordion keyframes deleted above, and the same silent host contract:
+   * six components reached for `animate-slide-down`/`-up` and got a working
+   * transition in THIS app only, because these keyframes existed nowhere
+   * else in the fleet. `Collapsible` now animates itself
+   * (`.matrx-collapsible-content` in @ai-matrx/design-system/styles.css,
+   * which also honours prefers-reduced-motion); these two rules, their
+   * `--animate-slide-*` theme entries, and all six class pairs were deleted
+   * together (design-system 0.9.0, census row 19f).
+   */
 
   @keyframes slide-in-from-right {
     from {
@@ -575,8 +569,6 @@
   --animate-attention-ring: attention-ring 1.8s cubic-bezier(0.4, 0, 0.2, 1) 1;
   --animate-glow: glow 2s ease-in-out infinite alternate;
   --animate-glow-sweep: glow-sweep 3s ease-in-out infinite;
-  --animate-slide-down: slide-down 0.5s ease-out;
-  --animate-slide-up: slide-up 0.3s ease-out;
   --animate-scale-in: scale-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --animate-scale-out: scale-out 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --animate-fadeIn: fadeIn 0.2s ease-out forwards;
