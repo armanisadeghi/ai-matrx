@@ -19,7 +19,7 @@ importers:
         version: 0.6.2(@supabase/supabase-js@2.108.2)(react@19.2.7)
       '@ai-matrx/associations':
         specifier: latest
-        version: 0.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.8.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/browser-audio':
         specifier: latest
         version: 0.3.2(react@19.2.7)
@@ -52,7 +52,7 @@ importers:
         version: 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/messaging':
         specifier: latest
-        version: 0.7.0(@supabase/supabase-js@2.108.2)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.8.0(@supabase/supabase-js@2.108.2)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/print':
         specifier: latest
         version: 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -828,8 +828,8 @@ packages:
       react:
         optional: true
 
-  '@ai-matrx/associations@0.8.0':
-    resolution: {integrity: sha512-at267fb5J4LtlE1L0UQ6FOiRczM04cyPK6jRayY9Cz2yBetB+obqclmCi5ZLj69/AVOlk7t0mG3ufEs/zUy6Yg==}
+  '@ai-matrx/associations@0.8.1':
+    resolution: {integrity: sha512-JTXM4aU8fFhsP1b8gkIskGuG3RWClUQENz76VBjPRsb1TxtOsxaVj2upkWLe6iSa3biQSzCMlDE3nokCArYqHw==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -922,8 +922,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/messaging@0.7.0':
-    resolution: {integrity: sha512-yC0qsIo0Qdf7fovaIKxHDxShGQqbhzrsgfQ8Ni2+79Xd3BGnuPQpqFnC3iEO1rtHL6P147+n99qRuFJDh10GnA==}
+  '@ai-matrx/messaging@0.8.0':
+    resolution: {integrity: sha512-DsSmJGHCxIS80stt88Gg391IG7vtl+s0+Bxubb2crT4j19E5DA8VWMRSUm3JTzz9n2QMPGe5dPt5erEPNkuhOw==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -13505,7 +13505,7 @@ snapshots:
       - '@supabase/supabase-js'
       - react-native
 
-  '@ai-matrx/associations@0.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@ai-matrx/associations@0.8.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@ai-matrx/design-system': 0.5.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/kit': 0.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -13608,7 +13608,7 @@ snapshots:
 
   '@ai-matrx/media@0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
-      '@ai-matrx/associations': 0.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@ai-matrx/associations': 0.8.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/kit': 0.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react: 19.2.7
       tailwind-merge: 3.6.0
@@ -13619,7 +13619,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@ai-matrx/messaging@0.7.0(@supabase/supabase-js@2.108.2)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@ai-matrx/messaging@0.8.0(@supabase/supabase-js@2.108.2)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@ai-matrx/agents': 0.6.2(@supabase/supabase-js@2.108.2)(react@19.2.7)
       '@ai-matrx/kit': 0.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

@@ -105,9 +105,9 @@ export function useUserConnections(
         if (usersMap.has(participant.userId)) return;
         usersMap.set(participant.userId, {
           user_id: participant.userId,
-          email: participant.email ?? "",
+          email: participant.email,
           display_name: participant.displayName,
-          avatar_url: participant.avatarUrl ?? undefined,
+          avatar_url: participant.avatarUrl,
           source: "conversation",
         });
       });
