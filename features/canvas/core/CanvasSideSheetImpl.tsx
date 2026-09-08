@@ -177,9 +177,13 @@ export function CanvasSideSheetImpl() {
           //   2. inner glass card: bg + border + shadow — read as one
           //      continuous floating surface against the page.
           // No backdrop blur on the page — the canvas overlays without dimming.
+          // No `animate-in` / `animate-out` here: those are HOST-plugin
+          // utilities (`tailwindcss-animate`), and `SheetContent` already
+          // applies the package's own `matrx-motion-sheet-right` unless you
+          // pass `animated={false}`. Restating them added nothing but a
+          // dependency on a CSS entry the package cannot declare.
           className={cn(
             "p-0 gap-0 overflow-visible border-l-0 bg-transparent shadow-none",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
           )}
           style={{
             width: isMobile ? "100%" : `${width}px`,

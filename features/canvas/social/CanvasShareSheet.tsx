@@ -1,21 +1,55 @@
 "use client";
 
+/**
+ * CanvasShareSheet — the share surface, on the CANONICAL package overlays.
+ *
+ * It used to hand-build both halves out of `DialogContentPrimitive` /
+ * `DrawerContentPrimitive` plus its own portal, overlay, geometry, motion and
+ * z-index. Two defects rode along, both closed here (same class as the
+ * `features/notes` confirm collapse, dc8532eb28):
+ *
+ * 1. THE MOTION CAME FROM A HOST PLUGIN. The desktop card wore
+ *    `animate-in` / `zoom-in-95` / `slide-in-from-top-[48%]` — utilities from
+ *    `tailwindcss-animate` / `tw-animate-css`, which is a HOST CSS entry this
+ *    app happens to load and three of the four AI Matrx consumers never did.
+ *    design-system 0.10.0 swept exactly this reliance out of the package
+ *    (`FORBIDDEN_HOST_MOTION_UTILITIES` in its `motion.ts`); the canonical
+ *    surfaces animate with the package's own `matrx-motion-*` rules instead,
+ *    so this copy was the last place in `features/canvas/` still spelling the
+ *    animation by hand.
+ *
+ * 2. THE BESPOKE `z-[20000]` / `z-[20001]` STACK IS GONE. It was load-bearing
+ *    for nothing — a census found the 20000 layer existed ONLY in this file,
+ *    and `features/canvas/` sets no z-index at all; `CanvasSideSheetImpl`
+ *    tops out at the canonical 10000. Sitting ABOVE the dialog layer is
+ *    itself the recorded bug class (`features/window-panels/FEATURE.md`,
+ *    2026-07-05: a `z-[10001]` popover BURIED the dialogs opened from inside
+ *    it, and the global fix was to make the layer EQUAL and let DOM portal
+ *    order decide). The canonical surfaces are `z-[10000]`, so a share sheet
+ *    opened from a canvas portals later and stacks above it on order alone.
+ *    The `selectContentClass` prop that propped the stack up is deleted too:
+ *    `DialogContent` PROVIDES its own portal container, so a Select inside it
+ *    portals INTO the dialog, and the package's `SelectContent` already
+ *    carries `z-[10001]` for the drawer path.
+ *
+ * Everything the two branches spelled out — portal, overlay, mobile geometry,
+ * `dvh` caps, safe-area padding, the 44px grab-handle target, the close
+ * control — is package behaviour now. All user-facing copy is unchanged.
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
-  DialogClose,
-  DialogContentPrimitive,
-  DialogOverlay,
-  DialogPortal,
+  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Drawer,
-  DrawerContentPrimitive,
-  DrawerPortal,
-  DrawerOverlay,
+  DrawerBody,
+  DrawerContent,
+  DrawerHeader,
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
@@ -32,7 +66,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, Share2, Link2, Globe, Lock, X } from "lucide-react";
+import { Copy, Check, Share2, Link2, Globe, Lock } from "lucide-react";
 import { Twitter, Facebook, Linkedin } from "@/components/icons/brand-icons";
 import { useCanvasShare } from "@/hooks/canvas/useCanvasShare";
 import { InlineMediaRef } from "@ai-matrx/media/react";
@@ -84,7 +118,6 @@ function ShareFormContent({
   onCopy,
   onSocialShare,
   onClose,
-  selectContentClass,
 }: {
   canvasType: CanvasType;
   hasScoring: boolean;
@@ -109,7 +142,6 @@ function ShareFormContent({
   onCopy: () => void;
   onSocialShare: (platform: "twitter" | "facebook" | "linkedin") => void;
   onClose: () => void;
-  selectContentClass?: string;
 }) {
   if (shareUrl) {
     return (
@@ -317,7 +349,7 @@ function ShareFormContent({
                   )}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent className={selectContentClass}>
+              <SelectContent>
                 <SelectItem
                   value="public"
                   textValue="Public"
@@ -558,45 +590,37 @@ function MobileCanvasShareSheet(props: CanvasShareSheetProps) {
 
   return (
     <Drawer open={props.open} onOpenChange={props.onOpenChange}>
-      <DrawerPortal>
-        <DrawerOverlay className="z-[20000]" />
-        <DrawerContentPrimitive className="fixed inset-x-0 bottom-0 z-[20000] mt-24 flex h-auto max-h-[92dvh] flex-col rounded-t-[10px] border border-border bg-background shadow-lg">
-          {/* Drag handle */}
-          <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted shrink-0" />
-
-          <div className="px-4 pt-3 pb-2 shrink-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Share2 className="w-5 h-5 text-muted-foreground" />
-              <DrawerTitle className="text-base font-semibold">
-                Share Canvas
-              </DrawerTitle>
-            </div>
-            <DrawerDescription className="text-sm text-muted-foreground">
-              {logic.shareUrl
-                ? "Your canvas is now shareable!"
-                : "Create a shareable link for your canvas"}
-            </DrawerDescription>
+      {/* `size="full"` per the package rule: this body VARIES (tabs, and a
+          different pane once a share link exists), and an adaptive drawer
+          would resize under the user's thumb as it changes. */}
+      <DrawerContent size="full">
+        <DrawerHeader className="gap-1 px-4 pt-3 pb-2 text-left">
+          <div className="flex items-center gap-2">
+            <Share2 className="w-5 h-5 text-muted-foreground" />
+            <DrawerTitle className="text-base font-semibold">
+              Share Canvas
+            </DrawerTitle>
           </div>
+          <DrawerDescription className="text-sm text-muted-foreground">
+            {logic.shareUrl
+              ? "Your canvas is now shareable!"
+              : "Create a shareable link for your canvas"}
+          </DrawerDescription>
+        </DrawerHeader>
 
-          <div
-            className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4"
-            style={{
-              paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
-            }}
-          >
-            <ShareFormContent
-              {...logic}
-              canvasType={props.canvasType}
-              hasScoring={props.hasScoring ?? false}
-              onShare={logic.handleShare}
-              onCopy={logic.handleCopy}
-              onSocialShare={logic.handleSocialShare}
-              onClose={() => props.onOpenChange(false)}
-              selectContentClass="z-[20001]"
-            />
-          </div>
-        </DrawerContentPrimitive>
-      </DrawerPortal>
+        {/* DrawerContent's bottom posture already carries `pb-safe`. */}
+        <DrawerBody className="pb-4">
+          <ShareFormContent
+            {...logic}
+            canvasType={props.canvasType}
+            hasScoring={props.hasScoring ?? false}
+            onShare={logic.handleShare}
+            onCopy={logic.handleCopy}
+            onSocialShare={logic.handleSocialShare}
+            onClose={() => props.onOpenChange(false)}
+          />
+        </DrawerBody>
+      </DrawerContent>
     </Drawer>
   );
 }
@@ -610,38 +634,33 @@ function DesktopCanvasShareSheet(props: CanvasShareSheetProps) {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogPortal>
-        <DialogOverlay className="z-[20000]" />
-        <DialogContentPrimitive className="fixed left-[50%] top-[50%] z-[20000] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-0 border border-border bg-background shadow-lg p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
-          <DialogHeader className="mb-4">
-            <DialogTitle className="flex items-center gap-2">
-              <Share2 className="w-5 h-5" />
-              Share Canvas
-            </DialogTitle>
-            <DialogDescription>
-              {logic.shareUrl
-                ? "Your canvas is now shareable!"
-                : "Create a shareable link for your canvas"}
-            </DialogDescription>
-          </DialogHeader>
+      {/* `mobileSheet={false}` because the mobile presentation is the Drawer
+          branch above (host doctrine: Drawer, not Dialog, on mobile), not the
+          package's built-in bottom sheet. The close control, portal, overlay
+          and motion are the package's. */}
+      <DialogContent mobileSheet={false} className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Share2 className="w-5 h-5" />
+            Share Canvas
+          </DialogTitle>
+          <DialogDescription>
+            {logic.shareUrl
+              ? "Your canvas is now shareable!"
+              : "Create a shareable link for your canvas"}
+          </DialogDescription>
+        </DialogHeader>
 
-          <ShareFormContent
-            {...logic}
-            canvasType={props.canvasType}
-            hasScoring={props.hasScoring ?? false}
-            onShare={logic.handleShare}
-            onCopy={logic.handleCopy}
-            onSocialShare={logic.handleSocialShare}
-            onClose={() => props.onOpenChange(false)}
-            selectContentClass="z-[20001]"
-          />
-
-          <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <span className="sr-only">Close</span>
-            <X className="size-4" aria-hidden="true" />
-          </DialogClose>
-        </DialogContentPrimitive>
-      </DialogPortal>
+        <ShareFormContent
+          {...logic}
+          canvasType={props.canvasType}
+          hasScoring={props.hasScoring ?? false}
+          onShare={logic.handleShare}
+          onCopy={logic.handleCopy}
+          onSocialShare={logic.handleSocialShare}
+          onClose={() => props.onOpenChange(false)}
+        />
+      </DialogContent>
     </Dialog>
   );
 }
