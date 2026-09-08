@@ -4,13 +4,31 @@
  * Shared-cache hook for `GET /files/{id}/pages`. Every consumer (the
  * studio's thumbnail strip, the analysis tab's overview, the studio
  * shell's page-id resolution) reads from one cache + subscribes to a
- * single Realtime channel for file_pages changes.
+ * single Realtime channel for `files.pages` changes.
+ *
+ * REALTIME: `@ai-matrx/realtime` owns the channel — unique instance topic,
+ * echo suppression, dedup, the decoupled handler queue, jittered reconnect,
+ * the backfill door, tab sleep. This module hand-rolled a static topic
+ * (`file-pages:<fileId>`), a raw `.channel(...).subscribe()`, a manual
+ * `removeChannel` teardown, and NO catch-up read at all: a laptop that slept
+ * through a whole analysis run came back to a thumbnail strip that looked
+ * healthy and was permanently wrong. That is the bug this adoption fixes.
+ * None of it may grow back — the package README is the doctrine.
+ *
+ * The one host-shaped thing left is fan-in: several surfaces mount this hook
+ * for the same file, and they share ONE channel through `lib/realtime/
+ * sharedChannel` (the app's single copy of that refcount, not a per-hook one).
+ *
+ * No write ledger here: this hook is read-only. Page mutations go through the
+ * server API and land back as ordinary remote events.
  */
 
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { createClient } from "@/utils/supabase/client";
+import { defineChannelNamespace } from "@ai-matrx/realtime";
+import { useRealtimeManager } from "@ai-matrx/realtime/react";
+import { openShared } from "@/lib/realtime/sharedChannel";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type { FilePageOut } from "@/features/file-analysis/api/file-analysis";
 import {
@@ -25,49 +43,24 @@ const store = createSharedStore<FilePageOut[]>(async (fileId) => {
   return data ?? [];
 });
 
-const realtimeRefcount = new Map<string, { count: number; cleanup: () => void }>();
+/** One place names this channel. A second, different declaration throws. */
+const pagesChannel = defineChannelNamespace({
+  namespace: "file-pages",
+  parts: ["fileId"],
+  description: "files.pages rows for one file",
+});
 
-function attachRealtime(fileId: string): void {
-  const existing = realtimeRefcount.get(fileId);
-  if (existing) {
-    existing.count += 1;
-    return;
-  }
-  const supabase = createClient();
-  const channel = supabase
-    .channel(`file-pages:${fileId}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "files",
-        table: "pages",
-        filter: `file_id=eq.${fileId}`,
-      },
-      // Coalesce write bursts. Backend analysis flows update many rows per
-      // second — without this, each Postgres NOTIFY fired a fresh `GET
-      // /files/{id}/pages` and the page hammered the server until the run
-      // completed. `scheduleInvalidate` fires once at the start, once at
-      // the end, and drops the middle.
-      () => scheduleInvalidate(store, fileId),
-    )
-    .subscribe();
-  realtimeRefcount.set(fileId, {
-    count: 1,
-    cleanup: () => {
-      void supabase.removeChannel(channel);
-    },
-  });
-}
-
-function detachRealtime(fileId: string): void {
-  const existing = realtimeRefcount.get(fileId);
-  if (!existing) return;
-  existing.count -= 1;
-  if (existing.count <= 0) {
-    existing.cleanup();
-    realtimeRefcount.delete(fileId);
-  }
+/** The content this app renders off a page row — powers the echo test. */
+function pageFingerprint(row: Record<string, unknown>): string {
+  return JSON.stringify([
+    row.status ?? null,
+    row.page_number ?? null,
+    row.width ?? null,
+    row.height ?? null,
+    row.image_file_id ?? null,
+    row.thumbnail_file_id ?? null,
+    row.text ?? null,
+  ]);
 }
 
 export interface UsePagesResult {
@@ -81,12 +74,38 @@ export interface UsePagesResult {
 
 export function usePages(fileId: string | null): UsePagesResult {
   const { data, loading, error, refetch } = useSharedStore(store, fileId);
+  const manager = useRealtimeManager();
 
   useEffect(() => {
-    if (!fileId) return undefined;
-    attachRealtime(fileId);
-    return () => detachRealtime(fileId);
-  }, [fileId]);
+    if (!fileId || !manager) return undefined;
+    const topic = pagesChannel.topic({ fileId });
+    return openShared(manager, topic, () => ({
+      topic,
+      postgresChanges: [
+        {
+          event: "*",
+          schema: "files",
+          table: "pages",
+          filter: `file_id=eq.${fileId}`,
+          rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+          fingerprint: pageFingerprint,
+          // Coalesce write bursts. Backend analysis flows update many rows per
+          // second — without this, each event fired a fresh `GET
+          // /files/{id}/pages` and the page hammered the server until the run
+          // completed. `scheduleInvalidate` fires once leading, once trailing,
+          // and drops the middle. Own echoes never reach here: the package's
+          // write ledger drops them first.
+          onChange: () => scheduleInvalidate(store, fileId),
+        },
+      ],
+      // Realtime has no replay. Reconnect, tab wake, network restore and queue
+      // overflow all land here, and the canonical page list is one read away.
+      // The hand-rolled channel had no such door — this is the fix.
+      onBackfill: () => {
+        invalidateKey(store, fileId);
+      },
+    }));
+  }, [fileId, manager]);
 
   const pages = data ?? [];
   const active = useMemo(

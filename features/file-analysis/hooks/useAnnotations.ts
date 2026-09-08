@@ -21,9 +21,11 @@
  *
  * 1. **One channel per file, not one per consumer.** Four surfaces mount this
  *    hook for the same `fileId` at once. `useChannel` would open four channels;
- *    the refcount below keeps exactly one, opened through `manager.open` — the
+ *    `openShared` keeps exactly one, opened through `manager.open` — the
  *    package's sanctioned non-hook door (README § Migrating off hand-rolled
- *    channels).
+ *    channels). That refcount used to be a copy in this file; it now lives once,
+ *    in `lib/realtime/sharedChannel`, shared with `usePages` and
+ *    `useFileAnalysis`.
  * 2. **Registering our own writes on the manager's write ledger** so their
  *    echoes are classified as `own-echo` and never cost a refetch. Before the
  *    ledger existed, every local edit's echo (50–500ms later, after the REST
@@ -36,7 +38,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { defineChannelNamespace } from "@ai-matrx/realtime";
 import { useRealtimeManager } from "@ai-matrx/realtime/react";
-import type { RealtimeManager } from "@ai-matrx/realtime";
+import { openShared } from "@/lib/realtime/sharedChannel";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type {
   AnnotationCreateBody,
@@ -82,62 +84,6 @@ function annotationFingerprint(row: Record<string, unknown>): string {
   ]);
 }
 
-interface Attachment {
-  manager: RealtimeManager;
-  count: number;
-  close: () => void;
-}
-
-const realtimeRefcount = new Map<string, Attachment>();
-
-function attachRealtime(manager: RealtimeManager, fileId: string): void {
-  const existing = realtimeRefcount.get(fileId);
-  if (existing) {
-    // Same manager — share the one channel.
-    if (existing.manager === manager) {
-      existing.count += 1;
-      return;
-    }
-    // The provider rebuilt its manager (client or signed-in user changed);
-    // the old manager already disposed its channels. Re-open on the new one.
-    existing.close();
-    realtimeRefcount.delete(fileId);
-  }
-  const handle = manager.open({
-    topic: annotationsChannel.topic({ fileId }),
-    postgresChanges: [
-      {
-        event: "*",
-        schema: "files",
-        table: "page_annotations",
-        filter: `file_id=eq.${fileId}`,
-        rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
-        fingerprint: annotationFingerprint,
-        // Coalesce bursts (bulk annotation imports, AI detector batch
-        // INSERTs) into 1 leading + 1 trailing refetch instead of N. Own
-        // echoes never reach here — the ledger drops them first.
-        onChange: () => scheduleInvalidate(store, fileId),
-      },
-    ],
-    // Realtime has no replay. Reconnect, tab wake, network restore, and queue
-    // overflow all land here, and the canonical server list is one refetch away.
-    onBackfill: () => {
-      invalidateKey(store, fileId);
-    },
-  });
-  realtimeRefcount.set(fileId, { manager, count: 1, close: () => handle.close() });
-}
-
-function detachRealtime(fileId: string): void {
-  const existing = realtimeRefcount.get(fileId);
-  if (!existing) return;
-  existing.count -= 1;
-  if (existing.count <= 0) {
-    existing.close();
-    realtimeRefcount.delete(fileId);
-  }
-}
-
 export interface UseAnnotationsResult {
   annotations: AnnotationOut[];
   loading: boolean;
@@ -159,8 +105,29 @@ export function useAnnotations(fileId: string | null): UseAnnotationsResult {
 
   useEffect(() => {
     if (!fileId || !manager) return undefined;
-    attachRealtime(manager, fileId);
-    return () => detachRealtime(fileId);
+    const topic = annotationsChannel.topic({ fileId });
+    return openShared(manager, topic, () => ({
+      topic,
+      postgresChanges: [
+        {
+          event: "*",
+          schema: "files",
+          table: "page_annotations",
+          filter: `file_id=eq.${fileId}`,
+          rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+          fingerprint: annotationFingerprint,
+          // Coalesce bursts (bulk annotation imports, AI detector batch
+          // INSERTs) into 1 leading + 1 trailing refetch instead of N. Own
+          // echoes never reach here — the ledger drops them first.
+          onChange: () => scheduleInvalidate(store, fileId),
+        },
+      ],
+      // Realtime has no replay. Reconnect, tab wake, network restore, and queue
+      // overflow all land here, and the canonical list is one refetch away.
+      onBackfill: () => {
+        invalidateKey(store, fileId);
+      },
+    }));
   }, [fileId, manager]);
 
   const annotations = data ?? [];
