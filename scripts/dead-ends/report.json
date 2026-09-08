@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-08-31T09:01:08.607Z",
-  "commit": "badec453152004f35391ef8a343e6f36270a37ec",
+  "generatedAt": "2026-09-08T07:41:54.106Z",
+  "commit": "3723fc0b5780580979dbac6c47865f0163098bb3",
   "totals": {
     "findings": 36,
     "high": 10,
     "medium": 26,
     "low": 0,
     "filesWithFindings": 29,
-    "filesScanned": 8105,
-    "allowlisted": 3
+    "filesScanned": 8121,
+    "allowlisted": 4
   },
   "byRule": {
     "bare-id-text": 21,
@@ -726,6 +726,13 @@
       "reason": "The truncated id is shown INSTEAD of a name on purpose — the name in scope belongs to the shortcut, not to the agent the id points at, and labelling the right link with the wrong name is worse than no name; peek supplies the identity. Sibling EntityDoorControls (not a linked name) because a same-tab navigation would discard the note the user is typing in this dialog.",
       "addedBy": "no-dead-ends detector",
       "addedOn": "2026-08-15"
+    },
+    {
+      "file": "features/bindings/HolderAssignment.tsx",
+      "rule": "bare-id-text",
+      "reason": "The holder control deliberately prints the selected agent's own id beside its resolved name because the assignment must distinguish the agent id from the separately selected version id. The adjacent EntityRef is the canonical door for that exact agent; the detector cannot associate a sibling door with the explanatory id text.",
+      "addedBy": "frontend release repair",
+      "addedOn": "2026-09-08"
     },
     {
       "file": "features/content-ir/admin/DuplicateSkillResolver.tsx",

@@ -59,6 +59,18 @@ export const DEAD_END_ALLOWLIST: DeadEndAllowlistEntry[] = [
     addedOn: "2026-08-15",
   },
   {
+    file: "features/bindings/HolderAssignment.tsx",
+    rule: "bare-id-text",
+    reason:
+      "The holder control deliberately prints the selected agent's own id " +
+      "beside its resolved name because the assignment must distinguish the " +
+      "agent id from the separately selected version id. The adjacent EntityRef " +
+      "is the canonical door for that exact agent; the detector cannot associate " +
+      "a sibling door with the explanatory id text.",
+    addedBy: "frontend release repair",
+    addedOn: "2026-09-08",
+  },
+  {
     file: "features/content-ir/admin/DuplicateSkillResolver.tsx",
     rule: "bare-id-text",
     reason:
