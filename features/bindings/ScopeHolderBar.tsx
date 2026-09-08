@@ -419,6 +419,16 @@ export function ScopeHolderBar({
     return (
       <section className="rounded-xl border border-border bg-card p-3">
         {holderControls}
+        {/* WHERE THE ROW THAT WAS JUST WRITTEN ACTUALLY ANSWERS, in the SERVER'S
+            own words. It is null until a write has spoken, so it is never
+            standing explanation — it is the receipt for the save that just
+            happened, and dropping it from this host would have quietly deleted
+            the one sentence V1 R2-2 was fought over. */}
+        {appliesInResolved ? (
+          <p className="mt-3 rounded-md border border-border bg-muted/40 px-2 py-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+            Saved — {appliesInResolved}
+          </p>
+        ) : null}
         {healthNote ? (
           <div
             className={
