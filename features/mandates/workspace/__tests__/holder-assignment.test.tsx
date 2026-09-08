@@ -147,6 +147,17 @@ describe("the admin holder section is three controls and nothing else", () => {
     act(() => root.unmount());
   });
 
+  it("names the agent AND its own id — never a version id", () => {
+    const { container, text, root } = renderSystemBar({
+      agentId: "8f0bbfc2-85d9-4913-8cea-b09a50c62be6",
+    });
+    expect(text).toContain("Research → Slides Generator");
+    expect(
+      container.querySelector('[data-testid="holder-agent-id"]')?.textContent,
+    ).toBe("8f0bbfc2-85d9-4913-8cea-b09a50c62be6");
+    act(() => root.unmount());
+  });
+
   it("says Assigned Workflow when the holder type is Workflow", () => {
     const { text, root } = renderSystemBar({ kind: "workflow" });
     expect(text).toContain("Assigned Workflow");
@@ -181,11 +192,15 @@ describe("the admin holder section is three controls and nothing else", () => {
 
 /**
  * THE CLASS HALF — fix the class, do not fork per host. A holder is chosen by
- * ONE module in the two trees a mandate screen is made of. Before FIX-R9 the
- * same three values were set in `ScopeHolderBar`, described again in
- * `SystemAnswerSection` (with its own "assign a different system agent" door)
- * and pointed at a third time from `MandateDetailPanel` — three components,
- * three vocabularies, one decision.
+ * ONE module in the two trees a mandate screen is made of.
+ *
+ * RED at v0.4.1731: `["features/bindings/ScopeHolderBar.tsx"]` — the picker and
+ * the shared shortcut version picker were mounted inline in the bar, so any
+ * host that wanted the three values had to mount that bar or grow its own copy.
+ * Two more components on the same page described or nudged the same decision in
+ * their own words (`SystemAnswerSection`, deleted; `MandateDetailPanel`'s "Who
+ * fulfils this job" fold, deleted) — those are caught by the rendered-copy
+ * guards in `admin/__tests__/admin-route-system-perspective.test.tsx`.
  */
 describe("exactly one module in the mandate screens mounts a holder picker", () => {
   const TREES = ["features/mandates", "features/bindings"] as const;

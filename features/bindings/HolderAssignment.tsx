@@ -35,8 +35,6 @@
 // test rather than a walk.
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Workflow as WorkflowIcon } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
@@ -132,10 +130,10 @@ export function HolderAssignment({
         >
           {(
             [
-              ["agent", "Agent", Bot],
-              ["workflow", "Workflow", WorkflowIcon],
+              ["agent", "Agent"],
+              ["workflow", "Workflow"],
             ] as const
-          ).map(([kind, label, Icon]) => (
+          ).map(([kind, label]) => (
             <button
               key={kind}
               type="button"
@@ -154,14 +152,13 @@ export function HolderAssignment({
                     })
               }
               className={cn(
-                "inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-[12px] transition-colors",
+                "rounded px-2.5 py-1 text-[12px] transition-colors",
                 holder.kind === kind
                   ? "bg-primary/10 font-medium text-primary"
                   : "text-muted-foreground hover:text-foreground",
                 disabled && "opacity-60",
               )}
             >
-              <Icon className="h-3.5 w-3.5" />
               {label}
             </button>
           ))}
@@ -203,13 +200,26 @@ export function HolderAssignment({
               }
             />
             {holder.agentId ? (
-              <EntityRef
-                token="agent"
-                id={holder.agentId}
-                name={holderName ?? undefined}
-                wrap
-                className="min-w-0 text-[12.5px] font-medium"
-              />
+              <>
+                <EntityRef
+                  token="agent"
+                  id={holder.agentId}
+                  name={holderName ?? undefined}
+                  wrap
+                  className="min-w-0 text-[12.5px] font-medium"
+                />
+                {/* THE AGENT'S OWN ID, said out loud — Arman: *"Some Agent Name
+                    with Agent ID (Not a version id)"*. The version id is a
+                    different record and belongs to the control below; printing
+                    it here is how the screen used to answer "which agent" with
+                    a number nobody could look up. */}
+                <code
+                  data-testid="holder-agent-id"
+                  className="font-mono text-[10.5px] text-muted-foreground/80"
+                >
+                  {holder.agentId}
+                </code>
+              </>
             ) : null}
           </>
         )}
