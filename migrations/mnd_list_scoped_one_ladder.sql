@@ -43,15 +43,19 @@
 --     draw the per-organization tabs without a second query.
 --
 -- 🚨 AMENDMENTS TO THE FROZEN SPEC — say them loudly:
---   (a) DROP + CREATE, not CREATE OR REPLACE, inside ONE transaction. Postgres
---       cannot change a function's RETURNS TABLE or add parameters with
---       CREATE OR REPLACE; adding defaulted parameters as a NEW overload would
---       make every existing 8-argument call ambiguous (42725). The design
+--   (a) DROP the old eight-argument signature, then CREATE OR REPLACE the new
+--       ten-argument signature inside ONE transaction. Postgres cannot change
+--       a function's RETURNS TABLE or add parameters with CREATE OR REPLACE;
+--       adding defaulted parameters as a NEW overload would make every existing
+--       8-argument call ambiguous (42725). CREATE OR REPLACE is deliberately
+--       used for the new signature because hosted reconciliation may already
+--       have installed it before this checkout's ledger catches up. The design
 --       REQUIRES both changes (new holder_live/version_live columns, new
---       p_home/p_resolution_for parameters), so the drop is the design's own
---       consequence, not a lane's shortcut. It is contained: the previous body
---       is preserved verbatim in migrations/mnd_list_scoped.sql, the recreate
---       is in the same transaction (no window for a caller to see nothing),
+--       p_home/p_resolution_for parameters), so dropping only the superseded
+--       signature is the design's own consequence, not a lane's shortcut. It
+--       is contained: the previous body is preserved verbatim in
+--       migrations/mnd_list_scoped.sql, the replacement is in the same
+--       transaction (no window for a caller to see nothing),
 --       and the campaign's actual no-DROP constraint — the live shortcut
 --       serving path `agx_get_user_shortcuts_m` /
 --       `agx_list_non_global_shortcuts_for_admin_m` — is untouched.
@@ -85,7 +89,7 @@ ON CONFLICT DO NOTHING;
 
 DROP FUNCTION IF EXISTS public.mnd_list_scoped(text, uuid, text, text, text, jsonb, integer, integer);
 
-CREATE FUNCTION public.mnd_list_scoped(
+CREATE OR REPLACE FUNCTION public.mnd_list_scoped(
   p_scope           text    DEFAULT 'mine',
   p_org_id          uuid    DEFAULT NULL,
   p_search          text    DEFAULT NULL,
