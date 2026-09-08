@@ -172,11 +172,11 @@ variant?: 'glass' | 'transparent' | 'solid' | 'group';
 
 ### Icon System
 
-Speaker buttons use raw SVG icons from `components/icons/tap-buttons.tsx`, NOT Lucide. Available: `PlayTapButton`, `PauseTapButton`, `StopTapButton`, `Volume2TapButton`. See [tap-buttons reference](../../../components/icons/README.md).
+Speaker buttons use raw SVG icons from `@ai-matrx/tap-target/buttons`, NOT Lucide. Available: `PlayTapButton`, `PauseTapButton`, `StopTapButton`, `Volume2TapButton`. (Formerly `components/icons/tap-buttons.tsx`, deleted in the 2026-08-30 C9 package adoption.)
 
 ### Styling
 
-Uses `TapTargetButton` / `TapTargetButtonGroup` from `removed (ssr) route group — _components/core/TapTargetButton.tsx`. Glass styling via `matrx-glass` CSS classes (globally available in `app/globals.css`).
+Uses `TapTargetButton` / `TapTargetButtonGroup` from the `@ai-matrx/tap-target` package (C9 adoption, 2026-08-30 — the old in-repo copy is gone). Glass styling via `matrx-glass` CSS classes (globally available in `app/globals.css`).
 
 ---
 
@@ -331,7 +331,7 @@ control all abort; `playbackLock` preempts across paths).
 1. Create `SpeakerNewVariant.tsx` (thin shell) in `features/tts/components/`
 2. Create `SpeakerNewVariantCore.tsx` (default export, uses `useCartesiaSpeaker`)
 3. Use `React.lazy()` in shell to import core
-4. Use `TapTargetButton*` components from `components/icons/tap-buttons.tsx`
+4. Use `TapTargetButton*` from `@ai-matrx/tap-target` (icons: `@ai-matrx/tap-target/buttons`)
 5. Export from `features/tts/components/index.ts`
 6. Never hide buttons — disable unavailable actions
 7. Never change component shape during state transitions
