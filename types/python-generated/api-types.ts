@@ -8451,6 +8451,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/qualtrics/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_qualtrics_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/awork/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_awork_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/airtable/public/status": {
         parameters: {
             query?: never;
@@ -14716,6 +14750,23 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_linuxtv_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/yocto-project-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_yocto_project_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -41127,6 +41178,43 @@ export interface components {
              * @description Cap the sources tagged this run; defaults to the topic setting.
              */
             max_calls?: number | null;
+        };
+        /**
+         * AworkStatusResult
+         * @description Safe projection of awork.com's official high-level service status.
+         */
+        AworkStatusResult: {
+            /**
+             * Kind
+             * @default awork_official_service_status
+             * @constant
+             */
+            __kind?: "awork_official_service_status";
+            /**
+             * Provider
+             * @default awork
+             * @constant
+             */
+            provider?: "awork";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.awork.com
+             * @constant
+             */
+            status_url?: "https://status.awork.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * AwsPriceListCatalog
@@ -86102,6 +86190,40 @@ export interface components {
              */
             rejected_publication_opportunities?: number;
         };
+        /** QualtricsServiceStatus */
+        QualtricsServiceStatus: {
+            /**
+             * Kind
+             * @default qualtrics_official_survey_collaboration_status
+             * @constant
+             */
+            __kind?: "qualtrics_official_survey_collaboration_status";
+            /**
+             * Provider
+             * @default Qualtrics
+             * @constant
+             */
+            provider?: "Qualtrics";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.qualtrics.com
+             * @constant
+             */
+            status_page?: "https://status.qualtrics.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** QuarantinedRowSummary */
         QuarantinedRowSummary: {
             /** Kind */
@@ -111095,6 +111217,31 @@ export interface components {
             /** Language */
             language: string;
         };
+        /** PageMetadata */
+        aidream__services__yocto_project_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default yocto_project_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "yocto_project_wiki_page_metadata";
+            /**
+             * Provider
+             * @default Yocto Project Wiki
+             * @constant
+             */
+            provider?: "Yocto Project Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /**
          * PresetsResponse
          * @description Response from GET /assets/presets — drives the FE preset picker.
@@ -124965,6 +125112,46 @@ export interface operations {
             };
         };
     };
+    public_status_qualtrics_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualtricsServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_awork_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AworkStatusResult"];
+                };
+            };
+        };
+    };
     public_status_airtable_public_status_get: {
         parameters: {
             query?: never;
@@ -133050,6 +133237,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__linuxtv_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_yocto_project_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__yocto_project_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */
