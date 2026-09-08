@@ -32,6 +32,7 @@ import {
   useConversations,
 } from "@ai-matrx/messaging/react";
 import { asConversationId, type Message } from "@ai-matrx/messaging";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
@@ -109,17 +110,32 @@ export function ConversationPane({
       }}
       extraSections={[messageMenuSection({ message: menuMessage })]}
     >
-      <div
-        className={cn(
-          "flex min-h-0 flex-1 flex-col",
-          !showHeader && "[&_.mx-msg__header]:hidden",
-          !showAi && "[&_.mx-msg__ai-bar]:hidden",
-          className,
-        )}
-      >
+      <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
         <ConversationView
           conversationId={id}
           className="min-h-0 flex-1"
+          showHeader={showHeader}
+          showAi={showAi}
+          renderComposerInput={(input) => (
+            <ProTextarea
+              value={input.value}
+              onChange={(event) => input.onChange(event.target.value)}
+              onKeyDown={input.onKeyDown}
+              onSubmit={input.onSubmit}
+              disabled={input.disabled}
+              submitDisabled={!input.canSend}
+              submitLabel="Send reply"
+              placeholder={input.placeholder}
+              aria-label="Reply to conversation"
+              autoGrow
+              minHeight={80}
+              maxHeight={220}
+              enableTextStats={false}
+              surfaceName={surfaceName}
+              {...(getApplicationScope ? { getApplicationScope } : {})}
+              wrapperClassName="w-full"
+            />
+          )}
           {...(onBack ? { onBack } : {})}
         />
       </div>
