@@ -9,7 +9,7 @@
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
-import { CheckCircle2, XCircle, MinusCircle, PenLine } from "lucide-react";
+import { PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { ConfidenceBadge } from "@/features/education/trust/components/Confidenc
 import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
 import { HandwrittenWorkInput } from "../HandwrittenWorkInput";
 import { StepBreakdown } from "../StepBreakdown";
+import { GradedAnswerBlock } from "../GradedAnswerBlock";
 import { canPhotographAnswer } from "./useTakeAssessment";
 import type { GradedAnswer } from "../../data/grading";
 import type { AssessmentItemRow, AttemptResult, QuestionType } from "../../data/types";
@@ -38,29 +39,6 @@ const DEPTH_LABEL: Record<string, string> = {
   exam: "Exam",
 };
 
-const RESULT_STYLE: Record<
-  AttemptResult,
-  { icon: typeof CheckCircle2; label: string; className: string }
-> = {
-  correct: {
-    icon: CheckCircle2,
-    label: "Correct",
-    className:
-      "border-green-300 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300",
-  },
-  partial: {
-    icon: MinusCircle,
-    label: "Partial credit",
-    className:
-      "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300",
-  },
-  incorrect: {
-    icon: XCircle,
-    label: "Incorrect",
-    className:
-      "border-red-300 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300",
-  },
-};
 
 export function QuestionView({
   item,
@@ -218,8 +196,6 @@ function FeedbackBlock({
   trust: ReturnType<typeof coerceTrustEnvelope>;
   onOverride?: (result: AttemptResult) => void;
 }) {
-  const style = RESULT_STYLE[graded.result];
-  const StyleIcon = style.icon;
   const type = item.question_type as QuestionType;
   const showCorrect =
     (type === "multiple_choice" ||
@@ -230,15 +206,8 @@ function FeedbackBlock({
 
   return (
     <div className="mt-4 flex flex-col gap-3">
-      <div
-        className={cn(
-          "inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
-          style.className,
-        )}
-      >
-        <StyleIcon className="h-3.5 w-3.5" />
-        {style.label}
-      </div>
+      {/* The verdict is the `answer_grade` kind, drawn by its component. */}
+      <GradedAnswerBlock graded={graded} />
 
       {showCorrect && (
         <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm dark:border-green-900 dark:bg-green-950/30">
@@ -251,29 +220,8 @@ function FeedbackBlock({
         </div>
       )}
 
-      {graded.misconception && (
-        <p className="text-sm text-amber-700 dark:text-amber-300">
-          <span className="font-medium">Watch out:</span> {graded.misconception}
-        </p>
-      )}
-
-      {graded.explanation && (
-        <p className="text-sm text-muted-foreground">{graded.explanation}</p>
-      )}
-
       {graded.steps && graded.steps.length > 0 && (
         <StepBreakdown steps={graded.steps} />
-      )}
-
-      {graded.transcription && (
-        <details className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
-          <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            What we read from your photo
-          </summary>
-          <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-foreground">
-            {graded.transcription}
-          </pre>
-        </details>
       )}
 
       <SourceCitations trust={trust} />

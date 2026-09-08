@@ -2,9 +2,10 @@
 
 // features/education/study/components/CoachReviewPanel.tsx
 //
-// Shared Coach's review card — summary, optional strengths/weaknesses, and the
-// canonical read-aloud control (SpeakerButton). Used on the FastFire scoreboard
-// and the persisted session detail view.
+// Shared Coach's review — the `batch_review` kind drawn by ITS component
+// (`BatchReviewBlock`), plus the canonical read-aloud control (SpeakerButton).
+// Used on the FastFire scoreboard and the persisted session detail view. This
+// host owns only state chrome; the kind owns the frame, score and sections.
 //
 // The waiting face is never a bare spinner: either the run is streaming in the
 // floating window (`watching`) and this says so, or nothing is running and the
@@ -14,6 +15,7 @@ import { GraduationCap, Loader2, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SpeakerButton } from "@/features/tts/components/SpeakerButton";
 import type { ParsedSessionReview } from "../utils/parseSessionReview";
+import { BatchReviewBlock } from "./BatchReviewBlock";
 
 export function CoachReviewPanel({
   review,
@@ -63,49 +65,11 @@ export function CoachReviewPanel({
   if (!review) return null;
 
   return (
-    <section className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/40">
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-4 text-xl font-medium text-blue-900 dark:text-blue-200">
-          <GraduationCap className="h-8 w-8" />
-          Coach&apos;s review
-          {review.secondaryScore != null && (
-            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-lg font-semibold tabular-nums text-blue-800 dark:bg-blue-900/60 dark:text-blue-100 border border-blue-200 dark:border-blue-900">
-              {review.secondaryScore}%
-            </span>
-          )}
-        </div>
+    <section className="mb-4">
+      <div className="mb-1.5 flex items-center justify-end">
         <SpeakerButton text={review.speakText} />
       </div>
-
-      <p className="text-sm leading-relaxed text-blue-900/90 dark:text-blue-200/90">
-        {review.summary}
-      </p>
-
-      {review.strengths.length > 0 && (
-        <div className="mt-3">
-          <p className="text-lg font-medium text-blue-900 dark:text-blue-200">
-            Strengths
-          </p>
-          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm text-blue-900/85 dark:text-blue-200/85">
-            {review.strengths.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {review.weaknesses.length > 0 && (
-        <div className="mt-3">
-          <p className="text-lg font-medium text-blue-900 dark:text-blue-200">
-            Areas to improve
-          </p>
-          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm text-blue-900/85 dark:text-blue-200/85">
-            {review.weaknesses.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <BatchReviewBlock review={review} />
     </section>
   );
 }

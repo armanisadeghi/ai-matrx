@@ -103,6 +103,7 @@ import {
 } from "@/features/education/tutor/lanes/reviewSession";
 import { microCoach } from "@/features/education/tutor/lanes/microCoach";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
+import { BatchReviewBlock } from "@/features/education/study/components/BatchReviewBlock";
 import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
 import {
   buildRecentSessionContext,
@@ -796,22 +797,16 @@ export function StudyDeck(props: StudyDeckProps) {
             </div>
           )}
 
-          {(reviewLoading || review) && (
-            <div className="w-full rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-left text-sm">
-              <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <GraduationCap className="h-3.5 w-3.5" />
-                AI review
-              </div>
-              {reviewLoading ? (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Reviewing your session…
-                </div>
-              ) : (
-                <p className="text-foreground">{review?.summary}</p>
-              )}
+          {/* The settled review renders through the kind's component — the
+              same `batch_review` the floating window streamed. A summary-only
+              paragraph here used to drop strengths, weaknesses and the score. */}
+          {reviewLoading && !review && (
+            <div className="flex w-full items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Reviewing your session — watch it in the run window.
             </div>
           )}
+          {review && <BatchReviewBlock review={review} />}
 
           <div className="flex w-full flex-col gap-2 sm:flex-row">
             {onRestart && (

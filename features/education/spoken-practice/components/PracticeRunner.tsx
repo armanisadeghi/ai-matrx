@@ -15,22 +15,19 @@
 // nothing until the stream connects, so it is safe to mount unconditionally.
 
 import {
-  AlertCircle,
-  CheckCircle2,
   ChevronRight,
   Languages,
   Loader2,
   Mic,
   Square,
   Volume2,
-  XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
-import { verdictResult, type GradeResult } from "@/features/education/trust/types";
 import type { PronunciationAssessment } from "@/features/flashcards/fast-fire/agents/grading-core";
+import { AnswerGradeBlock } from "@/features/flashcards/fast-fire/components/AnswerGradeBlock";
 import { Button } from "@/components/ui/button";
 import { MODE_CONFIG } from "../constants";
 import type { SpokenPracticeMode } from "../types";
@@ -44,29 +41,6 @@ const PRONUNCIATION_DIMS: { key: keyof PronunciationAssessment; label: string }[
     { key: "prosody", label: "Prosody" },
   ];
 
-const RESULT_STYLE: Record<
-  GradeResult,
-  { label: string; icon: typeof CheckCircle2; text: string; bg: string }
-> = {
-  correct: {
-    label: "Strong",
-    icon: CheckCircle2,
-    text: "text-green-600 dark:text-green-400",
-    bg: "bg-green-500/10",
-  },
-  partial: {
-    label: "Getting there",
-    icon: AlertCircle,
-    text: "text-amber-600 dark:text-amber-400",
-    bg: "bg-amber-500/10",
-  },
-  incorrect: {
-    label: "Needs work",
-    icon: XCircle,
-    text: "text-red-600 dark:text-red-400",
-    bg: "bg-red-500/10",
-  },
-};
 
 export function PracticeRunner({
   mode,
@@ -80,7 +54,6 @@ export function PracticeRunner({
     practice;
   const current = plan?.prompts[index] ?? null;
   const total = plan?.prompts.length ?? 0;
-  const style = grade ? RESULT_STYLE[verdictResult(grade.verdict)] : null;
 
   if (phase === "generating") {
     return (
@@ -187,34 +160,12 @@ export function PracticeRunner({
 
         {phase === "result" && current && (
           <div className="flex w-full flex-col items-center gap-3">
-            {grade && style ? (
+            {grade ? (
               <>
-                <div
-                  className={cn(
-                    "flex h-14 w-14 items-center justify-center rounded-full",
-                    style.bg,
-                  )}
-                >
-                  <style.icon className={cn("h-7 w-7", style.text)} />
-                </div>
-                <div className={cn("text-lg font-semibold", style.text)}>
-                  {style.label}
-                </div>
-                {grade.verdict.explanation && (
-                  <p className="max-w-lg text-sm text-foreground">
-                    {grade.verdict.explanation}
-                  </p>
-                )}
-                {grade.verdict.misconception && (
-                  <p className="max-w-lg rounded-md bg-amber-500/10 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-300">
-                    Watch out: {grade.verdict.misconception}
-                  </p>
-                )}
-                {grade.transcript && (
-                  <p className="max-w-lg text-xs italic text-muted-foreground">
-                    “{grade.transcript}”
-                  </p>
-                )}
+                {/* The verdict is the `answer_grade` kind, drawn by its
+                    component — the same block the voice test and the audio
+                    review mount. Pronunciation is the runner's own extra. */}
+                <AnswerGradeBlock grade={grade} />
                 {grade.pronunciation && (
                   <PronunciationCard pronunciation={grade.pronunciation} />
                 )}

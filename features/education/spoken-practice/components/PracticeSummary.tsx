@@ -7,14 +7,9 @@
 // over vanity metrics.
 
 import { useRouter } from "next/navigation";
-import {
-  CheckCircle2,
-  Languages,
-  Sparkles,
-  TrendingUp,
-  TriangleAlert,
-} from "lucide-react";
+import { CheckCircle2, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BatchReviewBlock } from "@/features/education/study/components/BatchReviewBlock";
 import { MODE_CONFIG } from "../constants";
 import type { SpokenPracticeMode } from "../types";
 import type { UseSpokenPractice } from "../hooks/useSpokenPractice";
@@ -111,45 +106,9 @@ export function PracticeSummary({
         </section>
       )}
 
-      {review?.summary && (
-        <section className="rounded-xl border border-border bg-card p-4">
-          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Sparkles className="h-4 w-4 text-primary" />
-            {cfg.persona}&apos;s review
-          </div>
-          <p className="text-sm leading-relaxed text-foreground">
-            {review.summary}
-          </p>
-
-          {review.strengths.length > 0 && (
-            <div className="mt-3">
-              <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-green-600 dark:text-green-400">
-                <TrendingUp className="h-3.5 w-3.5" />
-                Strengths
-              </div>
-              <ul className="list-inside list-disc space-y-0.5 text-sm text-foreground">
-                {review.strengths.map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {review.weaknesses.length > 0 && (
-            <div className="mt-3">
-              <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-                <TriangleAlert className="h-3.5 w-3.5" />
-                Work on
-              </div>
-              <ul className="list-inside list-disc space-y-0.5 text-sm text-foreground">
-                {review.weaknesses.map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
-      )}
+      {/* The examiner's batch review — the `batch_review` kind, drawn by its
+          component (one shape, one component; never a per-surface card). */}
+      {review?.summary && <BatchReviewBlock review={review} />}
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button className="flex-1" onClick={reset}>

@@ -23,46 +23,19 @@ import {
   ArrowLeft,
   ScanText,
   Loader2,
-  CheckCircle2,
-  XCircle,
-  MinusCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
-import type { GradeResult } from "@/features/education/trust/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationGradeWorkScope } from "@/features/surfaces/manifests/education-grade-work.manifest";
 import { HandwrittenWorkInput } from "../components/HandwrittenWorkInput";
 import { StepBreakdown } from "../components/StepBreakdown";
+import { GradedAnswerBlock } from "../components/GradedAnswerBlock";
 import { useGradeWork } from "./useGradeWork";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
-const RESULT_STYLE: Record<
-  GradeResult,
-  { icon: typeof CheckCircle2; label: string; className: string }
-> = {
-  correct: {
-    icon: CheckCircle2,
-    label: "Correct",
-    className:
-      "border-green-300 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300",
-  },
-  partial: {
-    icon: MinusCircle,
-    label: "Partial credit",
-    className:
-      "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300",
-  },
-  incorrect: {
-    icon: XCircle,
-    label: "Needs work",
-    className:
-      "border-red-300 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300",
-  },
-};
 
 export function GradeWorkSurface() {
   const [problem, setProblem] = useState("");
@@ -102,8 +75,6 @@ export function GradeWorkSurface() {
   };
 
   const graded = grader.result;
-  const style = graded ? RESULT_STYLE[graded.result] : null;
-  const StyleIcon = style?.icon ?? ScanText;
 
   // Live surface scope for the Agents chrome (matrx-user/education-grade-work).
   // Plain function reading the live render values at Run time — React Compiler
@@ -271,45 +242,11 @@ export function GradeWorkSurface() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {/* Verdict */}
-          {style && (
-            <div
-              className={cn(
-                "inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
-                style.className,
-              )}
-            >
-              <StyleIcon className="h-3.5 w-3.5" />
-              {style.label}
-            </div>
-          )}
-
-          {graded.misconception && (
-            <p className="text-sm text-amber-700 dark:text-amber-300">
-              <span className="font-medium">Watch out:</span>{" "}
-              {graded.misconception}
-            </p>
-          )}
-
-          {graded.explanation && (
-            <p className="text-sm text-muted-foreground">
-              {graded.explanation}
-            </p>
-          )}
+          {/* The verdict is the `answer_grade` kind, drawn by its component. */}
+          <GradedAnswerBlock graded={graded} />
 
           {graded.steps && graded.steps.length > 0 && (
             <StepBreakdown steps={graded.steps} />
-          )}
-
-          {graded.transcription && (
-            <details className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
-              <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                What we read from your photo
-              </summary>
-              <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-foreground">
-                {graded.transcription}
-              </pre>
-            </details>
           )}
 
           <Button variant="outline" onClick={onReset} className="h-11 w-fit">
