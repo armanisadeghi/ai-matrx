@@ -16832,6 +16832,27 @@
         }
       }
     },
+    "/outline/public/release": {
+      "get": {
+        "tags": [
+          "Outline Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_outline_public_release_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutlinePublicRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -20397,6 +20418,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DiasporaSocialNodeInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/minds/public/status": {
+      "get": {
+        "tags": [
+          "Minds Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_minds_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MindsServiceStatus"
                 }
               }
             }
@@ -30329,6 +30371,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__pillow_docs_integrations__service__GettingStartedContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/werkzeug-docs/public/getting-started": {
+      "get": {
+        "tags": [
+          "Werkzeug Documentation Integrations"
+        ],
+        "summary": "Public Getting Started",
+        "operationId": "public_getting_started_werkzeug_docs_public_getting_started_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__werkzeug_docs_integrations__service__GettingStartedContent"
                 }
               }
             }
@@ -170006,7 +170069,7 @@
           "structural"
         ],
         "title": "MandateTestResult",
-        "description": "A persisted result entry stored in mandate_exemplar.metadata."
+        "description": "A persisted result entry stored in agent.exemplar metadata (test_bench_results)."
       },
       "MandateVariableVerdictRequest": {
         "properties": {
@@ -173362,6 +173425,51 @@
           "operational"
         ],
         "title": "MindTickleServiceStatus"
+      },
+      "MindsServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "minds_public_service_status",
+            "title": "Kind",
+            "default": "minds_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Minds",
+            "title": "Provider",
+            "default": "Minds"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.minds.com",
+            "title": "Status Page",
+            "default": "https://status.minds.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "MindsServiceStatus",
+        "description": "Safe aggregate status projection for Minds' fixed status page."
       },
       "MintControlRequest": {
         "properties": {
@@ -182246,6 +182354,48 @@
           "sources_analyzed"
         ],
         "title": "OutletContactExtraction"
+      },
+      "OutlinePublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "outline_public_release",
+            "title": "Kind",
+            "default": "outline_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Outline",
+            "title": "Provider",
+            "default": "Outline"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag",
+          "release_url",
+          "published_at"
+        ],
+        "title": "OutlinePublicRelease"
       },
       "OutlookBasicCalendarEventResponse": {
         "properties": {
@@ -254939,6 +255089,46 @@
           "language"
         ],
         "title": "PageMetadata"
+      },
+      "aidream__services__werkzeug_docs_integrations__service__GettingStartedContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "werkzeug_docs_getting_started_content",
+            "title": "Kind",
+            "default": "werkzeug_docs_getting_started_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Werkzeug Documentation",
+            "title": "Provider",
+            "default": "Werkzeug Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "stable",
+            "title": "Version",
+            "default": "stable"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "GettingStartedContent"
       },
       "aidream__services__wikibooks_integrations__service__PageMetadata": {
         "properties": {

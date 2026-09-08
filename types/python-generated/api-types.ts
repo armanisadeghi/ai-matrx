@@ -6761,6 +6761,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/outline/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_outline_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -9106,6 +9123,23 @@ export interface paths {
         };
         /** Public Nodeinfo */
         get: operations["public_nodeinfo_diaspora_social_public_nodeinfo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/minds/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_minds_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15787,6 +15821,23 @@ export interface paths {
         };
         /** Public Getting Started */
         get: operations["public_getting_started_pillow_docs_public_getting_started_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/werkzeug-docs/public/getting-started": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Getting Started */
+        get: operations["public_getting_started_werkzeug_docs_public_getting_started_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -74804,7 +74855,7 @@ export interface components {
         };
         /**
          * MandateTestResult
-         * @description A persisted result entry stored in mandate_exemplar.metadata.
+         * @description A persisted result entry stored in agent.exemplar metadata (test_bench_results).
          */
         MandateTestResult: {
             /** Id */
@@ -76538,6 +76589,41 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * MindsServiceStatus
+         * @description Safe aggregate status projection for Minds' fixed status page.
+         */
+        MindsServiceStatus: {
+            /**
+             * Kind
+             * @default minds_public_service_status
+             * @constant
+             */
+            __kind?: "minds_public_service_status";
+            /**
+             * Provider
+             * @default Minds
+             * @constant
+             */
+            provider?: "Minds";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "none" | "minor" | "major" | "critical";
+            /**
+             * Status Page
+             * @default https://status.minds.com
+             * @constant
+             */
+            status_page?: "https://status.minds.com";
         };
         /**
          * MintControlRequest
@@ -80821,6 +80907,33 @@ export interface components {
             rejected?: {
                 [key: string]: string;
             }[];
+        };
+        /** OutlinePublicRelease */
+        OutlinePublicRelease: {
+            /**
+             * Kind
+             * @default outline_public_release
+             * @constant
+             */
+            __kind?: "outline_public_release";
+            /**
+             * Provider
+             * @default Outline
+             * @constant
+             */
+            provider?: "Outline";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
         };
         /** OutlookBasicCalendarEventResponse */
         OutlookBasicCalendarEventResponse: {
@@ -113778,6 +113891,35 @@ export interface components {
             /** Language */
             language: string;
         };
+        /** GettingStartedContent */
+        aidream__services__werkzeug_docs_integrations__service__GettingStartedContent: {
+            /**
+             * Kind
+             * @default werkzeug_docs_getting_started_content
+             * @constant
+             */
+            __kind?: "werkzeug_docs_getting_started_content";
+            /**
+             * Provider
+             * @default Werkzeug Documentation
+             * @constant
+             */
+            provider?: "Werkzeug Documentation";
+            /**
+             * Version
+             * @default stable
+             * @constant
+             */
+            version?: "stable";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
+        };
         /** PageMetadata */
         aidream__services__wikibooks_integrations__service__PageMetadata: {
             /**
@@ -125834,6 +125976,26 @@ export interface operations {
             };
         };
     };
+    public_release_outline_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutlinePublicRelease"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -128845,6 +129007,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiasporaSocialNodeInfo"];
+                };
+            };
+        };
+    };
+    public_status_minds_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MindsServiceStatus"];
                 };
             };
         };
@@ -137522,6 +137704,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__pillow_docs_integrations__service__GettingStartedContent"];
+                };
+            };
+        };
+    };
+    public_getting_started_werkzeug_docs_public_getting_started_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__werkzeug_docs_integrations__service__GettingStartedContent"];
                 };
             };
         };

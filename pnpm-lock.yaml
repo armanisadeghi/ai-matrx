@@ -49,7 +49,7 @@ importers:
         version: 0.9.0(react@19.2.7)
       '@ai-matrx/media':
         specifier: latest
-        version: 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 0.5.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/messaging':
         specifier: latest
         version: 0.10.4(@supabase/supabase-js@2.108.2)(react@19.2.7)
@@ -922,8 +922,8 @@ packages:
     peerDependencies:
       react: 19.2.7
 
-  '@ai-matrx/media@0.5.0':
-    resolution: {integrity: sha512-1+ZeqxF4zX3ssAVeo6I3wL4ttQWDw36pFuptFpHaSCSsAEfchy2s9/Eay6Y1Q6zqVkaHZ8ETtffV4Oblb0vz+w==}
+  '@ai-matrx/media@0.5.1':
+    resolution: {integrity: sha512-NcSLIeeW45rUGYe/QKvn80CA24NFN0PqgePKBFc8acxa3gx8PK7svmdin1k5p+YWHrSc7RpVV++CTT4RAeanYA==}
     engines: {node: '>=20'}
     peerDependencies:
       next: '>=14.0.0'
@@ -13674,10 +13674,10 @@ snapshots:
       jsqr: 1.4.0
       react: 19.2.7
 
-  '@ai-matrx/media@0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@ai-matrx/media@0.5.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next@16.2.9(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@ai-matrx/associations': 0.8.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@ai-matrx/kit': 0.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@ai-matrx/kit': 0.9.0(react@19.2.7)
       react: 19.2.7
       tailwind-merge: 3.6.0
     optionalDependencies:
