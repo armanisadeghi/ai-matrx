@@ -160,7 +160,9 @@ export function useEntityList<TRow>({
   // that has no options yet must be able to tell "still reading" from "read,
   // and there are none" from "the read was refused" (FIX-R6/F1). One boolean
   // shared with the row query would answer none of the three.
-  const [countsLoading, setCountsLoading] = useState(true);
+  const [countsAnsweredFor, setCountsAnsweredFor] = useState<string | null>(
+    null,
+  );
   const [countsError, setCountsError] = useState<string | null>(null);
   const [facets, setFacets] = useState<EntityFacets>(EMPTY_FACETS);
   const [isLoading, setIsLoading] = useState(true);
@@ -248,9 +250,12 @@ export function useEntityList<TRow>({
     service: serviceKey,
   });
 
+  // DERIVED, never written from an effect body: pending is simply "the counts
+  // we are holding do not answer the question currently being asked".
+  const countsLoading = countsAnsweredFor !== countsKey;
+
   useEffect(() => {
     let cancelled = false;
-    setCountsLoading(true);
     void (async () => {
       try {
         const next = await service.fetchCounts(countsQuery);
@@ -272,7 +277,7 @@ export function useEntityList<TRow>({
           );
         }
       } finally {
-        if (!cancelled) setCountsLoading(false);
+        if (!cancelled) setCountsAnsweredFor(countsKey);
       }
     })();
     return () => {
