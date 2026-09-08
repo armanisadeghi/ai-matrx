@@ -6642,6 +6642,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/anytype/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_anytype_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/obsidian/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_obsidian_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -8868,6 +8902,40 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_bombbomb_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ecamm/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_ecamm_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/switcherstudio/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_switcherstudio_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15430,6 +15498,40 @@ export interface paths {
         };
         /** Public Tutorial */
         get: operations["public_tutorial_pandas_docs_public_tutorial_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/matplotlib-docs/public/quickstart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Quickstart */
+        get: operations["public_quickstart_matplotlib_docs_public_quickstart_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests-docs/public/quickstart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Quickstart */
+        get: operations["public_quickstart_requests_docs_public_quickstart_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -39996,6 +40098,33 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** AnytypePublicRelease */
+        AnytypePublicRelease: {
+            /**
+             * Kind
+             * @default anytype_public_release
+             * @constant
+             */
+            __kind?: "anytype_public_release";
+            /**
+             * Provider
+             * @default Anytype
+             * @constant
+             */
+            provider?: "Anytype";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
+        };
         /**
          * ApiVideoServiceStatus
          * @description Safe aggregate status projection for api.video's fixed status page.
@@ -58261,6 +58390,38 @@ export interface components {
              * @default https://api.ebay.com/oauth/api_scope
              */
             scope?: string;
+        };
+        /**
+         * EcammServiceStatus
+         * @description Safe aggregate status projection for Ecamm's fixed status page.
+         */
+        EcammServiceStatus: {
+            /**
+             * Kind
+             * @default ecamm_public_service_status
+             * @constant
+             */
+            __kind?: "ecamm_public_service_status";
+            /**
+             * Provider
+             * @default Ecamm
+             * @constant
+             */
+            provider?: "Ecamm";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.ecamm.com
+             * @constant
+             */
+            status_page?: "https://status.ecamm.com";
         };
         /** EcwidServiceStatus */
         EcwidServiceStatus: {
@@ -78388,6 +78549,33 @@ export interface components {
             source_url: string;
             /** Source Title */
             source_title?: string | null;
+        };
+        /** ObsidianPublicRelease */
+        ObsidianPublicRelease: {
+            /**
+             * Kind
+             * @default obsidian_public_release
+             * @constant
+             */
+            __kind?: "obsidian_public_release";
+            /**
+             * Provider
+             * @default Obsidian
+             * @constant
+             */
+            provider?: "Obsidian";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
         };
         /**
          * OccupationalCodesResponse
@@ -100314,6 +100502,38 @@ export interface components {
             /** Limit */
             limit: number;
         };
+        /**
+         * SwitcherStudioServiceStatus
+         * @description Safe aggregate status projection for SwitcherStudio's fixed status page.
+         */
+        SwitcherStudioServiceStatus: {
+            /**
+             * Kind
+             * @default switcherstudio_public_service_status
+             * @constant
+             */
+            __kind?: "switcherstudio_public_service_status";
+            /**
+             * Provider
+             * @default Switcher Studio
+             * @constant
+             */
+            provider?: "Switcher Studio";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.switcherstudio.com
+             * @constant
+             */
+            status_page?: "https://status.switcherstudio.com";
+        };
         /** SwoogoServiceStatus */
         SwoogoServiceStatus: {
             /**
@@ -111998,6 +112218,38 @@ export interface components {
             /** Language */
             language: string;
         };
+        /**
+         * QuickstartContent
+         * @description Safe projection of the fixed public Matplotlib quickstart.
+         */
+        aidream__services__matplotlib_docs_integrations__service__QuickstartContent: {
+            /**
+             * Kind
+             * @default matplotlib_docs_quickstart_content
+             * @constant
+             */
+            __kind?: "matplotlib_docs_quickstart_content";
+            /**
+             * Provider
+             * @default Matplotlib Documentation
+             * @constant
+             */
+            provider?: "Matplotlib Documentation";
+            /**
+             * Version
+             * @default stable
+             * @constant
+             */
+            version?: "stable";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
+        };
         /** PageMetadata */
         aidream__services__mediawiki_integrations__service__PageMetadata: {
             /**
@@ -112424,6 +112676,38 @@ export interface components {
             content_model: string;
             /** Language */
             language: string;
+        };
+        /**
+         * QuickstartContent
+         * @description Safe projection of the fixed public Requests quickstart.
+         */
+        aidream__services__requests_docs_integrations__service__QuickstartContent: {
+            /**
+             * Kind
+             * @default requests_docs_quickstart_content
+             * @constant
+             */
+            __kind?: "requests_docs_quickstart_content";
+            /**
+             * Provider
+             * @default Requests Documentation
+             * @constant
+             */
+            provider?: "Requests Documentation";
+            /**
+             * Version
+             * @default latest
+             * @constant
+             */
+            version?: "latest";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
         };
         /** PageMetadata */
         aidream__services__samba_wiki_integrations__service__PageMetadata: {
@@ -124639,6 +124923,46 @@ export interface operations {
             };
         };
     };
+    public_release_anytype_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnytypePublicRelease"];
+                };
+            };
+        };
+    };
+    public_release_obsidian_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObsidianPublicRelease"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -127510,6 +127834,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BombBombServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_ecamm_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EcammServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_switcherstudio_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwitcherStudioServiceStatus"];
                 };
             };
         };
@@ -136047,6 +136411,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TutorialContent"];
+                };
+            };
+        };
+    };
+    public_quickstart_matplotlib_docs_public_quickstart_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__matplotlib_docs_integrations__service__QuickstartContent"];
+                };
+            };
+        };
+    };
+    public_quickstart_requests_docs_public_quickstart_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__requests_docs_integrations__service__QuickstartContent"];
                 };
             };
         };

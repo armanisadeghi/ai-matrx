@@ -16685,6 +16685,48 @@
         }
       }
     },
+    "/anytype/public/release": {
+      "get": {
+        "tags": [
+          "Anytype Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_anytype_public_release_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnytypePublicRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/obsidian/public/release": {
+      "get": {
+        "tags": [
+          "Obsidian Integrations"
+        ],
+        "summary": "Public Release",
+        "operationId": "public_release_obsidian_public_release_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObsidianPublicRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -20103,6 +20145,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BombBombServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ecamm/public/status": {
+      "get": {
+        "tags": [
+          "Ecamm Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_ecamm_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EcammServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/switcherstudio/public/status": {
+      "get": {
+        "tags": [
+          "Switcher Studio Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_switcherstudio_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SwitcherStudioServiceStatus"
                 }
               }
             }
@@ -29888,6 +29972,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TutorialContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matplotlib-docs/public/quickstart": {
+      "get": {
+        "tags": [
+          "Matplotlib Documentation Integrations"
+        ],
+        "summary": "Public Quickstart",
+        "operationId": "public_quickstart_matplotlib_docs_public_quickstart_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__matplotlib_docs_integrations__service__QuickstartContent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/requests-docs/public/quickstart": {
+      "get": {
+        "tags": [
+          "Requests Documentation Integrations"
+        ],
+        "summary": "Public Quickstart",
+        "operationId": "public_quickstart_requests_docs_public_quickstart_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__requests_docs_integrations__service__QuickstartContent"
                 }
               }
             }
@@ -91315,6 +91441,48 @@
         "title": "AnyDeskStatusResult",
         "description": "Safe projection of AnyDesk's high-level service status."
       },
+      "AnytypePublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "anytype_public_release",
+            "title": "Kind",
+            "default": "anytype_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Anytype",
+            "title": "Provider",
+            "default": "Anytype"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag",
+          "release_url",
+          "published_at"
+        ],
+        "title": "AnytypePublicRelease"
+      },
       "ApiVideoServiceStatus": {
         "properties": {
           "__kind": {
@@ -133796,6 +133964,47 @@
         ],
         "title": "EbaySandboxTaxonomyResult",
         "description": "Safe proof result; no provider token or credential material."
+      },
+      "EcammServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "ecamm_public_service_status",
+            "title": "Kind",
+            "default": "ecamm_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Ecamm",
+            "title": "Provider",
+            "default": "Ecamm"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.ecamm.com",
+            "title": "Status Page",
+            "default": "https://status.ecamm.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "EcammServiceStatus",
+        "description": "Safe aggregate status projection for Ecamm's fixed status page."
       },
       "EcwidServiceStatus": {
         "properties": {
@@ -177440,6 +177649,48 @@
           "source_url"
         ],
         "title": "ObservedEmailCandidate"
+      },
+      "ObsidianPublicRelease": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "obsidian_public_release",
+            "title": "Kind",
+            "default": "obsidian_public_release"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Obsidian",
+            "title": "Provider",
+            "default": "Obsidian"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url"
+          },
+          "published_at": {
+            "type": "string",
+            "title": "Published At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag",
+          "release_url",
+          "published_at"
+        ],
+        "title": "ObsidianPublicRelease"
       },
       "OccupationalCodesResponse": {
         "properties": {
@@ -225778,6 +226029,47 @@
         ],
         "title": "SweepResult"
       },
+      "SwitcherStudioServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "switcherstudio_public_service_status",
+            "title": "Kind",
+            "default": "switcherstudio_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Switcher Studio",
+            "title": "Provider",
+            "default": "Switcher Studio"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.switcherstudio.com",
+            "title": "Status Page",
+            "default": "https://status.switcherstudio.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SwitcherStudioServiceStatus",
+        "description": "Safe aggregate status projection for SwitcherStudio's fixed status page."
+      },
       "SwoogoServiceStatus": {
         "properties": {
           "__kind": {
@@ -252202,6 +252494,47 @@
         ],
         "title": "PageMetadata"
       },
+      "aidream__services__matplotlib_docs_integrations__service__QuickstartContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "matplotlib_docs_quickstart_content",
+            "title": "Kind",
+            "default": "matplotlib_docs_quickstart_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Matplotlib Documentation",
+            "title": "Provider",
+            "default": "Matplotlib Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "stable",
+            "title": "Version",
+            "default": "stable"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "QuickstartContent",
+        "description": "Safe projection of the fixed public Matplotlib quickstart."
+      },
       "aidream__services__mediawiki_integrations__service__PageMetadata": {
         "properties": {
           "__kind": {
@@ -253008,6 +253341,47 @@
           "language"
         ],
         "title": "PageMetadata"
+      },
+      "aidream__services__requests_docs_integrations__service__QuickstartContent": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "requests_docs_quickstart_content",
+            "title": "Kind",
+            "default": "requests_docs_quickstart_content"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Requests Documentation",
+            "title": "Provider",
+            "default": "Requests Documentation"
+          },
+          "version": {
+            "type": "string",
+            "const": "latest",
+            "title": "Version",
+            "default": "latest"
+          },
+          "format": {
+            "type": "string",
+            "const": "restructuredtext",
+            "title": "Format",
+            "default": "restructuredtext"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 64000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "QuickstartContent",
+        "description": "Safe projection of the fixed public Requests quickstart."
       },
       "aidream__services__samba_wiki_integrations__service__PageMetadata": {
         "properties": {
