@@ -150,7 +150,6 @@ describe("parseAgentVersionSnapshot", () => {
 
     expect(parseAgentVersionSnapshot(raw)).toEqual({
       ...raw,
-      data_issues: [],
       // The column's `'{}'` default IS the empty config, not a parse failure.
       skill_config: {
         included: [],
@@ -271,10 +270,9 @@ describe("parseAgentVersionSnapshot", () => {
     );
   });
 
-  // These five mirror NOT NULL columns on `agent.definition_version` (see
-  // migrations/agent_definition_version_notnull_parity.sql). A NULL here is
-  // genuinely corrupt and must still stop the read.
-  it.each(["name", "agent_type", "tools", "tags", "is_active"])(
+  // Scalar identity/state fields still fail closed. Collection fields recover
+  // below so one malformed historical value cannot take down version history.
+  it.each(["name", "agent_type", "is_active"])(
     "still rejects a null %s — the column is NOT NULL",
     (key) => {
       const raw = validSnapshotRow();
@@ -293,21 +291,42 @@ describe("parseAgentVersionSnapshot", () => {
     );
   });
 
-  it("rejects a missing JSON field instead of manufacturing a default", () => {
+  it("recovers a missing output schema and reports the persisted-data issue", () => {
     const raw = validSnapshotRow();
     delete raw.output_schema;
 
-    expect(() => parseAgentVersionSnapshot(raw)).toThrow(
-      "output_schema must be present in the RPC row",
-    );
+    const parsed = parseAgentVersionSnapshot(raw);
+
+    expect(parsed.output_schema).toBeNull();
+    expect(parsed.data_issues).toEqual([
+      expect.objectContaining({ field: "output_schema" }),
+    ]);
   });
 
-  it("rejects malformed persisted output-schema data", () => {
+  it("recovers malformed persisted output-schema data", () => {
     const raw = validSnapshotRow();
     raw.output_schema = { name: "answer", schema: [] };
 
-    expect(() => parseAgentVersionSnapshot(raw)).toThrow(
-      "output_schema.schema must be a JSON Schema object",
-    );
+    const parsed = parseAgentVersionSnapshot(raw);
+
+    expect(parsed.output_schema).toBeNull();
+    expect(parsed.data_issues).toEqual([
+      expect.objectContaining({ field: "output_schema" }),
+    ]);
   });
+
+  it.each(["tools", "tags"])(
+    "recovers a null %s collection and reports the persisted-data issue",
+    (key) => {
+      const raw = validSnapshotRow();
+      raw[key] = null;
+
+      const parsed = parseAgentVersionSnapshot(raw);
+
+      expect(parsed[key as "tools"]).toEqual([]);
+      expect(parsed.data_issues).toEqual([
+        expect.objectContaining({ field: key }),
+      ]);
+    },
+  );
 });

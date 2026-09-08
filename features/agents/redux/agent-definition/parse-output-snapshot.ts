@@ -40,7 +40,10 @@ import {
   parseAgentContextPolicies,
   parseAgentSettings,
 } from "./parse-settings-context";
-import { recordAgentDataIssue } from "./data-issue-recovery";
+import {
+  recordAgentDataIssue,
+  recoverAgentDataField,
+} from "./data-issue-recovery";
 
 const OUTPUT_SCHEMA_NAME = /^[a-zA-Z0-9_-]{1,64}$/;
 
@@ -443,33 +446,74 @@ export function parseAgentVersionSnapshot(raw: unknown): AgentVersionSnapshot {
     agentId: versionId,
     relation: "agx_get_version_snapshot",
   };
-  const rawOutputSchema = requiredField(raw, "output_schema");
-  const outputSchema = parseAgentOutputSchema(rawOutputSchema, (notice) =>
-    recordAgentDataIssue({
+  const recover = <T>(
+    field: string,
+    parse: () => T,
+    fallback: () => T,
+    recovery: string,
+  ): T =>
+    recoverAgentDataField({
       context: parseContext,
-      field: "output_schema",
-      message: notice.message,
-      recovery: notice.recovery,
-      offending: rawOutputSchema,
+      field,
+      raw: raw[field],
+      parse,
+      fallback,
+      recovery,
       issues: dataIssues,
-    }),
+    });
+  const outputSchema = recover(
+    "output_schema",
+    () =>
+      parseAgentOutputSchema(requiredField(raw, "output_schema"), (notice) =>
+        recordAgentDataIssue({
+          context: parseContext,
+          field: "output_schema",
+          message: notice.message,
+          recovery: notice.recovery,
+          offending: raw.output_schema,
+          issues: dataIssues,
+        }),
+      ),
+    () => null,
+    "Structured output was disabled for this saved-version view. Correct the live agent and save a new version.",
   );
 
-  return {
+  const parsed: AgentVersionSnapshot = {
     version_id: versionId,
     version_number: requiredNumber(raw, "version_number"),
     agent_type: requiredString(raw, "agent_type"),
     name: requiredString(raw, "name"),
     description: requiredNullableString(raw, "description"),
-    messages: parseAgentMessages(requiredField(raw, "messages")),
-    variable_definitions: parseAgentVariableDefinitions(
-      requiredField(raw, "variable_definitions"),
+    messages: recover(
+      "messages",
+      () => parseAgentMessages(requiredField(raw, "messages")),
+      () => [],
+      "Messages were omitted from this saved-version view. Correct the live agent and save a new version.",
+    ),
+    variable_definitions: recover(
+      "variable_definitions",
+      () =>
+        parseAgentVariableDefinitions(
+          requiredField(raw, "variable_definitions"),
+        ),
+      () => null,
+      "Variable definitions were omitted from this saved-version view. Correct the live agent and save a new version.",
     ),
     model_id: requiredNullableString(raw, "model_id"),
-    model_tiers: parseModelTiers(requiredField(raw, "model_tiers")),
+    model_tiers: recover(
+      "model_tiers",
+      () => parseModelTiers(requiredField(raw, "model_tiers")),
+      () => null,
+      "Model tiers were disabled for this saved-version view.",
+    ),
     settings: parseAgentSettings(requiredField(raw, "settings"), parseContext),
     output_schema: outputSchema,
-    tools: requiredStringArray(raw, "tools"),
+    tools: recover(
+      "tools",
+      () => requiredStringArray(raw, "tools"),
+      () => [],
+      "Tool assignments were omitted from this saved-version view.",
+    ),
     custom_tools: parseCustomTools(
       requiredField(raw, "custom_tools"),
       parseContext,
@@ -480,21 +524,48 @@ export function parseAgentVersionSnapshot(raw: unknown): AgentVersionSnapshot {
     ),
     auto_context_disabled: requiredBoolean(raw, "auto_context_disabled"),
     category: requiredNullableString(raw, "category"),
-    tags: requiredStringArray(raw, "tags"),
+    tags: recover(
+      "tags",
+      () => requiredStringArray(raw, "tags"),
+      () => [],
+      "Tags were omitted from this saved-version view.",
+    ),
     is_active: requiredBoolean(raw, "is_active"),
     changed_at: requiredString(raw, "changed_at"),
     change_note: requiredNullableString(raw, "change_note"),
-    mcp_servers: requiredStringArray(raw, "mcp_servers"),
-    tool_config: parseDefaultedRecord(
-      requiredField(raw, "tool_config"),
+    mcp_servers: recover(
+      "mcp_servers",
+      () => requiredStringArray(raw, "mcp_servers"),
+      () => [],
+      "MCP server assignments were omitted from this saved-version view.",
+    ),
+    tool_config: recover(
       "tool_config",
+      () =>
+        parseDefaultedRecord(
+          requiredField(raw, "tool_config"),
+          "tool_config",
+        ),
+      () => ({}),
+      "Tool configuration was disabled for this saved-version view.",
     ),
     skill_config: parseSkillConfig(requiredField(raw, "skill_config")),
-    matrx_actions: parseMatrxDirectives(requiredField(raw, "matrx_actions")),
-    ui_gates: parseUiGates(requiredField(raw, "ui_gates")),
+    matrx_actions: recover(
+      "matrx_actions",
+      () => parseMatrxDirectives(requiredField(raw, "matrx_actions")),
+      () => ({}),
+      "Matrx Actions were disabled for this saved-version view.",
+    ),
+    ui_gates: recover(
+      "ui_gates",
+      () => parseUiGates(requiredField(raw, "ui_gates")),
+      () => ({}),
+      "Invalid UI capability gates were disabled for this saved-version view.",
+    ),
     default_rag_boost: requiredNumber(raw, "default_rag_boost"),
     rag_awareness_mode: requiredString(raw, "rag_awareness_mode"),
     input_kind: requiredNullableString(raw, "input_kind"),
-    data_issues: dataIssues,
   };
+  if (dataIssues.length > 0) parsed.data_issues = dataIssues;
+  return parsed;
 }
