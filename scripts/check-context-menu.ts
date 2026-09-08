@@ -111,6 +111,11 @@ const SKIP: Array<{ match: RegExp; reason: string }> = [
     match: /^features\/overlays\/(OverlayController|surfaces)\b/,
     reason: "the overlay host/chrome — the CONTENT it hosts is the surface",
   },
+  {
+    match: /^features\/overlays\/boundary\//,
+    reason:
+      "error/loading FALLBACKS and the lazyOverlay helper — a fallback shows a failure, it renders no record, and lazyOverlay is not a component at all",
+  },
 ];
 
 function readAll(): Map<string, string> {
