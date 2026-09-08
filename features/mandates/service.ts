@@ -344,11 +344,21 @@ export async function resolveMandate(
       buildPath("/mandates/{mandate_key}/resolution", {
         mandate_key: mandateKey,
       }),
-      // The OPTIONAL lane owns its own outcome: a deliberately-unassigned key
-      // answering 404 is the documented result, not a system error, so it must
-      // not enter the global Error Inspector. Anything that is not a 404 is
-      // re-thrown below and captured by the consumer that asked.
-      { captureErrors: !options.optional },
+      {
+        // BIND THE ORG WE ALREADY PROVED, rather than letting the transport
+        // re-read the store a moment later. The verdict must be bound to the
+        // SAME organization the cache key names: if a switch lands between the
+        // two reads, the answer would be filed under one org and resolved in
+        // another — the exact class of mismatch this campaign exists to close.
+        // `RequestOptions.organizationId` is documented for precisely this case,
+        // a caller that has authoritatively resolved its own scope.
+        organizationId,
+        // The OPTIONAL lane owns its own outcome: a deliberately-unassigned key
+        // answering 404 is the documented result, not a system error, so it must
+        // not enter the global Error Inspector. Anything that is not a 404 is
+        // re-thrown below and captured by the consumer that asked.
+        captureErrors: !options.optional,
+      },
     );
     verdict = data;
   } catch (error) {
