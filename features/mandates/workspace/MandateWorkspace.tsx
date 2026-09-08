@@ -75,7 +75,11 @@ import {
 import { OneBindingWorkspace } from "@/features/bindings/OneBindingWorkspace";
 import { RunThisJobSection } from "./RunThisJobSection";
 import { Section } from "./Section";
-import { SystemAnswerSection } from "./SystemAnswerSection";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import {
+  systemRungHealth,
+  type SystemRungHealth,
+} from "./system-rung-health";
 import {
   useMandateWorkspaceData,
   type MandateWorkspaceData,
@@ -374,7 +378,24 @@ export function MandateWorkspace({
   const personalKey =
     perspective === "person" && data ? data.mandate.mandate_key : "";
   const verdict = useMandate(personalKey);
-  const ladder = useMandateLadder(personalKey, activeOrganizationId);
+  /**
+   * 🚨 ONE DOOR, TWO QUESTIONS — and the SYSTEM host asks only one of them.
+   *
+   * `mandate.resolve` returns one row per rung. The person's route reads the
+   * whole ladder ("how is this decided for me"). The admin route reads exactly
+   * ONE ROW — the `system` rung — because FIX-R1 judges that rung against the
+   * mandate's HOME organization, not against whoever is looking: it is a fact
+   * about the platform's own answer, which is this host's entire subject. No
+   * other row is read here, and no organization is passed.
+   */
+  const ladderKey =
+    data && (perspective === "person" || perspective === "system")
+      ? data.mandate.mandate_key
+      : "";
+  const ladder = useMandateLadder(
+    ladderKey,
+    perspective === "person" ? activeOrganizationId : null,
+  );
 
   if (loading && !data) {
     return (
@@ -416,8 +437,8 @@ export function MandateWorkspace({
     );
   }
 
-  // The SYSTEM perspective has its own section (`SystemAnswerSection`) and no
-  // `FulfillmentView` at all — "fulfilled by" is a per-caller question.
+  // The SYSTEM perspective has no `FulfillmentView` at all — "fulfilled by" is
+  // a per-caller question, and its own answer rides with the three controls.
   const resolution: FulfillmentView | null =
     perspective === "system"
       ? null
@@ -499,12 +520,15 @@ export function MandateWorkspace({
         <TriadFlowMark />
         <TriadOutputSection data={data} />
 
-        {/* §2 — WHAT THE SYSTEM ASSIGNS, or what runs for this caller. Never
-            both: the two answer different questions and only one of them is
-            this host's. */}
-        {perspective === "system" ? (
-          <SystemAnswerSection data={data} />
-        ) : (
+        {/* §2 — WHAT RUNS FOR THIS CALLER.
+            🚨 ABSENT ON THE SYSTEM HOST (Arman, 2026-09-08, FIX-R9). The admin
+            page used to carry a whole "The system answer" section — a holder
+            name, a version badge, two paragraphs about where the assignment is
+            written, and a button to go set it — TEN LINES ABOVE the controls
+            that actually set the same three values. *"One place is all we need
+            and it's 3 things, not more."* The three controls are in the holder
+            section below; the verdict rides with them. */}
+        {perspective === "system" ? null : (
           <FulfillmentSection
             data={data}
             resolution={resolution as FulfillmentView}
@@ -513,10 +537,6 @@ export function MandateWorkspace({
           />
         )}
 
-        {/* Run it — mandate management, so it lives where management lives:
-            the admin route. Still super-admin gated inside (the server endpoint
-            is require_super_admin). */}
-        {authoring ? <RunThisJobSection data={data} /> : null}
         {/* §3 — THE PERSON'S LADDER. It belongs to the person's perspective and
             nowhere else: on the admin panel it is a ladder about the reader,
             on a page whose whole subject is the platform's own answer. */}
@@ -547,9 +567,24 @@ export function MandateWorkspace({
           principal={principal}
           perspective={perspective}
           authoring={authoring}
+          healthNote={
+            perspective === "system"
+              ? systemRungHealthOf(data, ladder, nameOfOrg)
+              : null
+          }
           onChanged={refresh}
         />
       </div>
+
+      {/* Run it — mandate management, so it lives where management lives: the
+          admin route, BELOW the assignment it runs (it used to sit above the
+          only controls that decide what "run" means). Still super-admin gated
+          inside; the server endpoint is `require_super_admin`. */}
+      {authoring ? (
+        <div className="mx-auto w-full max-w-3xl px-4 pb-6 sm:px-6">
+          <RunThisJobSection data={data} />
+        </div>
+      ) : null}
 
       <div className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">
         <MandateNotesPanel
@@ -576,6 +611,56 @@ export function MandateWorkspace({
 // job" jump. That button (and the `matrx:open-mandate-pin` event any surface
 // may fire) now scrolls to THIS section — the one place a holder is chosen.
 
+/**
+ * ── THE VERDICT ON THE PLATFORM'S OWN ANSWER, TAKEN FROM THE DOOR ────────────
+ *
+ * One row (`system`) of `mandate.resolve`, turned into one sentence by
+ * `systemRungHealth`. Nothing here judges: `dropped_code` says WHETHER the rung
+ * decides and `dropped_reason` says why, both in the database's own words — the
+ * F2 class, closed by consuming the column instead of re-deriving it. The scope
+ * half comes from the mandate's HOME (F3), never from a hardcoded "every user
+ * on the platform".
+ */
+export function systemRungHealthOf(
+  data: MandateWorkspaceData,
+  ladder: ReturnType<typeof useMandateLadder>,
+  nameOfOrg: (id: string) => string | null,
+): SystemRungHealth {
+  const home = data.mandate.organization_id ?? null;
+  const scope = {
+    systemHomed:
+      home !== null &&
+      home.toLowerCase() === SYSTEM_ORGANIZATION_ID.toLowerCase(),
+    organizationName: home ? nameOfOrg(home) : null,
+  };
+  const row = ladder.rows.find((r) => r.rung === "system") ?? null;
+  const holder = holderOfMandate(data.mandate);
+  const globalBinding = data.bindings.find(
+    (b) => b.principal_type === "global" && b.is_enabled !== false,
+  );
+  const holderId = globalBinding
+    ? agentHolderOfBinding(globalBinding).holderId
+    : holder.holderId;
+  const holderIsWorkflow =
+    (globalBinding
+      ? (globalBinding as { holder_type?: string | null }).holder_type
+      : data.mandate.default_holder_type) === "workflow";
+
+  return systemRungHealth({
+    status: ladder.loading
+      ? "reading"
+      : ladder.error || !row
+        ? "unreadable"
+        : "read",
+    droppedCode: row?.dropped_code ?? null,
+    droppedReason: row?.dropped_reason ?? null,
+    holderName: holderId ? (data.agentsById[holderId]?.name ?? null) : null,
+    holderIsWorkflow,
+    holderSet: holderId !== null || holderIsWorkflow,
+    home: scope,
+  });
+}
+
 /** The two rungs that decide for everybody, ordered by which one answers now. */
 const SYSTEM_PERSPECTIVE_RUNGS_DEFAULT_FIRST = ["system", "global"] as const;
 const SYSTEM_PERSPECTIVE_RUNGS_GLOBAL_FIRST = ["global", "system"] as const;
@@ -592,12 +677,15 @@ function BindingSection({
   principal,
   perspective,
   authoring,
+  healthNote,
   onChanged,
 }: {
   data: MandateWorkspaceData;
   principal: WorkspacePrincipal;
   perspective: WorkspacePerspective;
   authoring: boolean;
+  /** The door's verdict on the rung this host manages — system host only. */
+  healthNote: SystemRungHealth | null;
   onChanged: () => void;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -616,15 +704,14 @@ function BindingSection({
 
   return (
     <div id="bind" ref={ref}>
-      <Section
-        title={
-          perspective === "system"
-            ? "Assign the system holder"
-            : "Who fulfils this job"
-        }
-      >
+      {/* 🚨 ONE TITLE, ONE PLACE. The admin page's holder used to be described
+          under "The system answer" and set again under "Assign the system
+          holder" — Arman: *"repeating it in the bottom … that's stupid."* */}
+      <Section title={perspective === "system" ? "Holder" : "Who fulfils this job"}>
         <OneBindingWorkspace
           data={data}
+          perspective={perspective}
+          healthNote={healthNote}
           // Ignored under the system perspective — `fixedRung` names the
           // rungs and its first entry is where the page opens.
           initialRung={principal.kind === "org" ? "org" : "user"}

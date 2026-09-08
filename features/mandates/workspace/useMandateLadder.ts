@@ -71,6 +71,19 @@ export interface MandateLadderRow {
    * before, never something it cannot back up.
    */
   dropped_reason?: string | null;
+  /**
+   * 🚨 THE DISCRIMINATOR BEHIND THAT SENTENCE — `mandate._rungs`' 22nd column
+   * (aidream `0599`): `platform_disabled` | `holder_unreachable` |
+   * `output_contract_unmet`, or `null`/empty when the rung can run.
+   *
+   * V-PARITY/UX F2, on production v0.4.1728: this column had **zero consumers
+   * in the frontend**, so `ladderRowIsBroken()` — which keyed on `holder_live`
+   * / `version_live` only — called an output-contract drop *"Names an agent,
+   * running its latest version."* The holder IS live in that state; the rung
+   * still does not decide. A client that re-derives the door's judgement will
+   * always be one rule behind it, so it renders the judgement instead.
+   */
+  dropped_code?: string | null;
 }
 
 /** Generated directly from the live `mandate.resolve` RPC contract. */
@@ -182,6 +195,14 @@ export function useMandateLadder(
  * `iam.runnable_version_fields_for`), so this only reads its verdict.
  */
 export function ladderRowIsBroken(row: MandateLadderRow): boolean {
+  // THE DOOR'S OWN VERDICT FIRST. `dropped_code` is set whenever the rung will
+  // not decide, for ANY reason the database judges — including the ones no
+  // client-side check can see (the output contract, a platform disable). The
+  // two reachability columns stay as the belt for a database that predates the
+  // column: a browser newer than its database still says what it can back up.
+  if (typeof row.dropped_code === "string" && row.dropped_code.length > 0) {
+    return true;
+  }
   return row.holder_live === false || row.version_live === false;
 }
 
@@ -242,8 +263,9 @@ export function ladderRowWords(
     return {
       title,
       // The database's sentence when it has one: it knows WHICH principal
-      // cannot open the Holder, which is the whole difference between "broken
-      // for you" and "broken for everyone in your organization".
+      // cannot open the Holder, and it knows the drops no client can see (an
+      // unmet output contract, a platform disable) — which is the whole
+      // difference between "broken for you" and "broken for everyone".
       detail:
         row.dropped_reason ||
         (row.version_live === false

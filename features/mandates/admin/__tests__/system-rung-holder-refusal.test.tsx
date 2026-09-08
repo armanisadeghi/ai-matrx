@@ -38,7 +38,10 @@ jest.mock(
 );
 
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppDispatch: () => () => undefined,
+  // A FAITHFUL dispatch double: the real one returns a thunk promise with
+  // `.unwrap()`, and the version control calls it. A double that cannot hold
+  // the shape the real framework holds is a false test.
+  useAppDispatch: () => () => ({ unwrap: () => Promise.resolve([]) }),
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
 
@@ -49,6 +52,8 @@ jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
 }));
 jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsListFull: () => ({ type: "noop" }),
+  // The version control reads the agent's history through this thunk.
+  fetchAgentVersionHistory: () => ({ type: "noop" }),
 }));
 jest.mock("@/features/agent-shortcuts/components/AgentVersionPicker", () => ({
   AgentVersionPicker: () => <div data-testid="version-picker" />,

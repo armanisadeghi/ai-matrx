@@ -36,7 +36,10 @@ import { createRoot, type Root } from "react-dom/client";
       copy is exactly what this file exists to read. ─────────────────────────*/
 
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppDispatch: () => () => undefined,
+  // A FAITHFUL dispatch double: the real one returns a thunk promise with
+  // `.unwrap()`, and the version control calls it. A double that cannot hold
+  // the shape the real framework holds is a false test.
+  useAppDispatch: () => () => ({ unwrap: () => Promise.resolve([]) }),
   useAppSelector: () => "org-1",
   useAppStore: () => ({ getState: () => ({}), dispatch: () => undefined }),
 }));
@@ -51,9 +54,22 @@ jest.mock("../../useMandate", () => ({
   useMandate: () => ({ mandate: null, loading: false, error: null }),
 }));
 
+/**
+ * 🚨 THE DOOR, ANSWERING AS PRODUCTION ANSWERS (FIX-R9). `mandate.resolve`
+ * returns `research_client.output_slides`' system rung with FIX-R7's 22nd
+ * column set — the platform's own judgement that the floor cannot run. The
+ * admin route reads THAT ROW and prints THOSE WORDS; it no longer walks the
+ * holder's output schema itself.
+ */
+const OUTPUT_SLIDES_DROPPED_REASON =
+  "The system default cannot run this job: its holder does not declare the structured output this job requires.";
+let ladderRows: unknown[] = [];
 jest.mock("../../workspace/useMandateLadder", () => {
   const actual = jest.requireActual("../../workspace/useMandateLadder");
-  return { ...actual, useMandateLadder: () => ({ rows: [], loading: false, error: null }) };
+  return {
+    ...actual,
+    useMandateLadder: () => ({ rows: ladderRows, loading: false, error: null }),
+  };
 });
 
 jest.mock("../../useCopyMandateAgent", () => ({
@@ -94,6 +110,8 @@ jest.mock("@/components/official/entity-ref/TextWithDoors", () => ({
 type BindingProbe = {
   initialRung?: string;
   fixedRung?: string | readonly string[];
+  perspective?: string;
+  healthNote?: { sentence: string; remedy: string | null; broken: boolean } | null;
 };
 let bindingProps: BindingProbe | null = null;
 jest.mock("@/features/bindings/OneBindingWorkspace", () => ({
@@ -221,6 +239,29 @@ async function renderWorkspace(
   host: "route" | "admin-route",
 ): Promise<{ text: string; root: Root }> {
   workspaceData = OUTPUT_SLIDES;
+  ladderRows = [
+    {
+      rung: "system",
+      binding_id: null,
+      organization_id: "39c38960-d30c-4840-b0c1-c9960de95582",
+      subject_user_id: null,
+      is_enabled: true,
+      holder_type: "agent",
+      holder_id: "8f0bbfc2-85d9-4913-8cea-b09a50c62be6",
+      holder_version_id: null,
+      holder_live: true,
+      version_live: null,
+      chose_holder: true,
+      config_overrides: null,
+      consumption_map: null,
+      auto_run: null,
+      definition_id: "59325dc2-4df9-4eb1-8d77-d4dd0d93a160",
+      definition_enabled: true,
+      fallback_mandate_key: null,
+      dropped_code: "output_contract_unmet",
+      dropped_reason: OUTPUT_SLIDES_DROPPED_REASON,
+    },
+  ];
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -241,22 +282,54 @@ afterEach(() => {
 describe("the admin route renders the SYSTEM's answer and only that", () => {
   it("says nothing about the reader's own answer", async () => {
     const { text, root } = await renderWorkspace("admin-route");
-    // Anti-vacuity: a render that produced nothing would pass trivially.
-    expect(text.length).toBeGreaterThan(80);
+    // Anti-vacuity: a render that produced nothing would pass trivially. The
+    // page IS much smaller than it was — the whole "system answer" section is
+    // gone — so this floor is the job's identity, not the old prose.
+    expect(text).toContain("research_client.output_slides");
+    expect(text).toContain("Holder");
     expect(offendingSentences(text)).toEqual([]);
     act(() => root.unmount());
   });
 
-  it("names the mandate's REAL defect and its remedy, in words", async () => {
+  it("carries the DOOR's own defect sentence and a remedy, to the one place the holder is set", async () => {
     const { text, root } = await renderWorkspace("admin-route");
-    // The exact case Arman was looking at: a live system agent whose structured
-    // output does not exist, under a contract that requires two keys.
-    expect(text).toContain("declares no structured output");
-    expect(text).toContain("`title` and `slides`");
-    expect(text).toContain("or assign a system agent that already does");
-    // …and NOT the sentence that shipped, which named a defect that is not
-    // this mandate's and offered nothing to do about it.
+    // 🚨 FIX-R9 + V-PARITY/UX F2: the verdict is the database's, verbatim, and
+    // it travels WITH the three controls instead of standing in a section of
+    // its own ten lines above them.
+    expect(bindingProps?.perspective).toBe("system");
+    expect(bindingProps?.healthNote?.sentence).toBe(
+      OUTPUT_SLIDES_DROPPED_REASON,
+    );
+    expect(bindingProps?.healthNote?.broken).toBe(true);
+    expect(bindingProps?.healthNote?.remedy).toContain(
+      "Assign a holder that declares the output this job requires",
+    );
+    // …and the page no longer writes a SECOND verdict of its own beside it.
+    expect(text).not.toContain("declares no structured output");
     expect(text).not.toContain("No Holder fulfils this job yet");
+    // The duplicated section is gone with it.
+    expect(text).not.toContain("The system answer");
+    expect(text).not.toContain("Assign the system holder");
+    act(() => root.unmount());
+  });
+
+  it("a HEALTHY system rung names the scope the mandate's HOME gives it, never the platform (F3)", async () => {
+    // `research_client.output_slides` is SYSTEM-homed, so the platform-wide
+    // sentence is the true one here. The org-homed direction is proven in
+    // `workspace/__tests__/holder-assignment.test.tsx`, which drives the same
+    // pure function with an org home.
+    ladderRows = [];
+    workspaceData = OUTPUT_SLIDES;
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<MandateWorkspace mandateKeyOrId="x" host="admin-route" />);
+    });
+    // No system row came back at all — that is unreadable, never "healthy".
+    expect(bindingProps?.healthNote?.sentence).toBe(
+      "Whether this assignment can run could not be read just now.",
+    );
     act(() => root.unmount());
   });
 

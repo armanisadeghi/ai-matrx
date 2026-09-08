@@ -21,21 +21,17 @@
 // offering one would be a control that cannot be saved.
 
 import { useEffect, useMemo } from "react";
-import { AlertTriangle, Workflow as WorkflowIcon } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
-import { AgentVersionPicker } from "@/features/agent-shortcuts/components/AgentVersionPicker";
 import { ShortcutScopePicker } from "@/features/agent-shortcuts/components/ShortcutScopePicker";
 import { AGENT_SCOPES, type AgentScope } from "@/features/agent-shortcuts/constants";
-import { WorkflowHolderPicker } from "./WorkflowHolderPicker";
+import { HolderAssignment } from "./HolderAssignment";
 import {
   SYSTEM_RUNG_COVERS,
   SYSTEM_RUNG_HOLDER_RULE,
@@ -180,6 +176,24 @@ export interface ScopeHolderBarProps {
   /** One honest sentence about the ladder as it stands right now. */
   ladderLine: string;
   disabled?: boolean;
+
+  /**
+   * 🚨 THE SYSTEM PERSPECTIVE IS THREE CONTROLS AND NOTHING ELSE (Arman,
+   * 2026-09-08, FIX-R9): *"3 values are all that is needed and then the mapping
+   * of the inputs. The ui acts as though there are so many more things."*
+   *
+   * On that host the rung is not a choice (the admin page IS the system rung),
+   * the job's identity is already the page's own heading, and everything the
+   * old cells explained is either stated by a control or deleted. Every other
+   * host keeps the three-cell bar.
+   */
+  perspective?: "person" | "organization" | "system";
+  /**
+   * THE DOOR'S OWN VERDICT on the rung this host manages — one sentence and,
+   * when something is wrong, its remedy. Derived from `mandate.resolve`'s
+   * `dropped_code`/`dropped_reason` by the host, never re-derived here.
+   */
+  healthNote?: { sentence: string; remedy: string | null; broken: boolean } | null;
 }
 
 const RUNG_TO_SCOPE: Record<BindingRung, AgentScope> = {
@@ -300,6 +314,8 @@ export function ScopeHolderBar({
   job,
   ladderLine,
   disabled = false,
+  perspective = "person",
+  healthNote = null,
 }: ScopeHolderBarProps) {
   const dispatch = useAppDispatch();
   const pinnedList: readonly WorkspaceRung[] | null = !fixedRung
@@ -369,6 +385,70 @@ export function ScopeHolderBar({
     holder.agentId,
     builtinAgents,
   ]);
+
+  /**
+   * THE THREE CONTROLS, built once and placed by the perspective — so the
+   * system host and every other host are the SAME control, never two that
+   * drift.
+   */
+  const holderControls = (
+    <HolderAssignment
+      holder={holder}
+      onHolderChange={onHolderChange}
+      holderName={holderName}
+      mandateKey={job.mandateKey}
+      agentTabs={restriction}
+      outputKind={job.outputKind}
+      refusal={
+        // Verbatim, unchanged: it is the rule Arman ruled on, and the guard
+        // that pins it (`system-rung-holder-refusal.test.tsx`) reads this
+        // sentence. Only its home moved.
+        systemHolderViolation
+          ? "This holder is NOT a system agent, and the system rung runs for every user on the platform. Duplicate it into a system agent through the system-agents admin, then bind the copy."
+          : null
+      }
+      disabled={disabled}
+    />
+  );
+
+  // 🚨 THE ADMIN PANEL: THREE LABELS, THREE INPUTS, ONE VERDICT. No rung cell
+  // (this host is one rung), no job cell (the page's heading is the job), no
+  // explanatory prose. The only sentence is the door's own verdict, and only
+  // when there is one.
+  if (perspective === "system") {
+    return (
+      <section className="rounded-xl border border-border bg-card p-3">
+        {holderControls}
+        {healthNote ? (
+          <div
+            className={
+              healthNote.broken
+                ? "mt-3 space-y-1 rounded-lg border border-destructive/40 bg-destructive/5 p-2.5"
+                : "mt-3 rounded-lg border border-border/50 bg-muted/30 p-2.5"
+            }
+          >
+            <p
+              className={
+                healthNote.broken
+                  ? "flex items-start gap-1.5 text-[12px] leading-relaxed text-destructive"
+                  : "text-[12px] leading-relaxed text-foreground"
+              }
+            >
+              {healthNote.broken ? (
+                <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              ) : null}
+              <span>{healthNote.sentence}</span>
+            </p>
+            {healthNote.remedy ? (
+              <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+                {healthNote.remedy}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-xl border border-border bg-card">
@@ -581,147 +661,25 @@ export function ScopeHolderBar({
               {restriction.sentence}
             </p>
           ) : null}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <AgentListDropdown
-              consumerId={`one-binding-holder-${job.mandateKey}`}
-              activeAgentId={holder.kind === "agent" ? holder.agentId : null}
-              visibleTabs={restriction.visibleTabs}
-              initialTab={restriction.initialTab}
-              includeSystemInAll={restriction.includeSystemInAll}
-              systemTabLabel="System"
-              label={
-                holder.kind === "agent" && holder.agentId
-                  ? "Change agent"
-                  : "Choose an agent"
-              }
-              onSelect={(id) =>
-                onHolderChange({
-                  kind: "agent",
-                  agentId: id,
-                  agentVersionId: null,
-                  useLatest: true,
-                  workflowId: null,
-                })
-              }
-            />
-            <Button
-              variant={holder.kind === "workflow" ? "secondary" : "outline"}
-              size="sm"
-              className="gap-1.5"
-              disabled={disabled}
-              onClick={() =>
-                onHolderChange({
-                  kind: "workflow",
-                  agentId: null,
-                  agentVersionId: null,
-                  useLatest: true,
-                  workflowId: holder.workflowId,
-                })
-              }
-            >
-              <WorkflowIcon className="h-3.5 w-3.5" />
-              {holder.kind === "workflow" && holder.workflowId
-                ? "Change workflow"
-                : "Use a workflow"}
-            </Button>
-          </div>
-
-          {holder.kind === "workflow" ? (
-            <WorkflowHolderPicker
-              mandateOutputKind={job.outputKind}
-              value={holder.workflowId}
-              onChange={(id) => onHolderChange({ ...holder, workflowId: id })}
-              disabled={disabled}
-            />
-          ) : holder.agentId ? (
-            <div className="space-y-1.5">
-              {/* The holder's IDENTITY gets a full line of its own. It used to
-                  sit in a flex row beside the version panel and rendered as
-                  "Agent G…" / "Specializes i…" — a name nobody could read. */}
-              {/* 🚨 THE NAME, WHOLE (V2 G2). Two defects lived in these six
-                  lines: `EntityRef` with no `name` prints `id.slice(0,8)…`, so
-                  a raw UUID prefix was the loudest thing in the cell; and its
-                  default `truncate` clipped "Masterwork Method Interrog…" at
-                  1280. `name` gives it the identity and `wrap` gives it the
-                  whole line — a holder is the answer to "what runs this", and
-                  half of that answer is not an answer. */}
-              <div className="min-w-0 rounded-md border border-border px-2 py-1.5">
-                {holderName ? (
-                  <EntityRef
-                    token="agent"
-                    id={holder.agentId}
-                    name={holderName}
-                    wrap
-                    fill
-                    className="block w-full text-[12.5px] font-medium"
-                  />
-                ) : (
-                  <p className="text-[12px] text-muted-foreground">
-                    Reading this agent&apos;s name…
-                  </p>
-                )}
-              </div>
-              {/* 🚨 FOLDED (V2 G3 round 2). This block is ~230px of reference
-                  detail and it was setting the height of the whole three-cell
-                  row — the RUNG and JOB cells then measured 64-71% empty, the
-                  exact dead space Arman rejected by name and two adversarial
-                  rounds re-found. Folded it states its own answer in one line
-                  and expands to the identical controls; the shortcut editor,
-                  where this block IS the panel, keeps it open (the prop
-                  defaults to off). */}
-              <AgentVersionPicker
-                collapsible
-                subjectNoun="job"
-                agentId={holder.agentId}
-                agentVersionId={holder.agentVersionId}
-                useLatest={holder.useLatest}
-                onAgentVersionIdChange={(next) =>
-                  onHolderChange({ ...holder, agentVersionId: next })
-                }
-                onUseLatestChange={(next) =>
-                  onHolderChange({
-                    ...holder,
-                    useLatest: next,
-                    agentVersionId: next ? null : holder.agentVersionId,
-                  })
-                }
-                disabled={disabled}
-              />
-              <p className="text-[11px] leading-relaxed text-muted-foreground/80">
-                {holder.useLatest
-                  ? "Latest: your edits to this agent apply here automatically — convenient, but an edit that changes its inputs or output can break this job until you fix it."
-                  : "Pinned: this job keeps running exactly this version, immune to later edits — you choose when to update."}
-              </p>
-            </div>
-          ) : (
-            /* 🚨 AN EMPTY CELL NAMES THE RUNG IT IS EMPTY AT (FIX-R6/F3).
-               This used to read "No holder yet — …" flat, with no subject. A
-               walker who had just set the job's own default holder, watched
-               "Fulfilled by" name it, reloaded, and then read this sentence
-               beside a block headed "The job's own default" concluded the save
-               had not taken. It had: this cell was answering about the USER
-               rung, which is empty and correctly so. A sentence whose subject
-               the reader has to guess is a sentence that will be read wrong. */
+          {holderControls}
+          {/* 🚨 AN EMPTY ASSIGNMENT NAMES THE RUNG IT IS EMPTY AT (FIX-R6/F3),
+              on the hosts where a rung is a choice. A walker who had just set
+              the job's own default read a subject-less "No holder yet" beside
+              a block headed "The job's own default" and reported the save lost.
+              The three controls state everything else; this states the one
+              thing they cannot — WHICH rung is empty, and what that costs.
+              The system host has one rung and its own verdict, so it prints
+              neither. */}
+          {(holder.kind === "agent" && !holder.agentId) ||
+          (holder.kind === "workflow" && !holder.workflowId) ? (
             <p className="text-[11px] leading-snug text-muted-foreground">
               Nothing is set at{" "}
               {/* NOT lowercased: the bottom rung's noun carries the home
-                  organization's NAME, and "write target sandbox" is not that
-                  organization's name. */}
-              {pinnedRungWords(rung, defaultHolderOffer).noun} yet
-              — pick an agent or a workflow to set one, or come back when the
-              intelligence exists.
+                  organization's NAME. */}
+              {pinnedRungWords(rung, defaultHolderOffer).noun} yet.
               {onDefaultHolderRung
                 ? " This is the bottom rung, so while it is empty the job has no holder of its own at all."
                 : " That is only about this rung: whatever a rung below it names is still what runs."}
-            </p>
-          )}
-
-          {systemHolderViolation ? (
-            <p className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-[11px] leading-relaxed text-destructive">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              This holder is NOT a system agent, and the system rung runs for
-              every user on the platform. Duplicate it into a system agent
-              through the system-agents admin, then bind the copy.
             </p>
           ) : null}
         </div>

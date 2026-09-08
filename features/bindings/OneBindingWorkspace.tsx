@@ -174,6 +174,18 @@ export interface OneBindingWorkspaceProps {
    * leaves it undefined and keeps the movable control (P13/D1).
    */
   fixedRung?: WorkspaceRung | readonly WorkspaceRung[];
+  /**
+   * 🚨 THE ADMIN PANEL IS THREE CONTROLS (Arman, 2026-09-08, FIX-R9). Under
+   * `system` the bar drops the rung and job cells and renders the holder
+   * assignment alone — the page is one rung and its own heading is the job.
+   */
+  perspective?: "person" | "organization" | "system";
+  /**
+   * The DOOR's verdict on the rung this host manages — one sentence, its
+   * remedy, and whether it is broken. Built by the host from
+   * `mandate.resolve`'s `dropped_code`/`dropped_reason`; never re-derived here.
+   */
+  healthNote?: { sentence: string; remedy: string | null; broken: boolean } | null;
   onChanged: () => void;
 }
 
@@ -206,6 +218,8 @@ export function OneBindingWorkspace({
   initialOrganizationId = null,
   allowGlobal = false,
   fixedRung,
+  perspective = "person",
+  healthNote = null,
   onChanged,
 }: OneBindingWorkspaceProps) {
   const userId = useAppSelector(selectUserId);
@@ -276,6 +290,8 @@ export function OneBindingWorkspace({
       organizationId={organizationId}
       allowGlobal={allowGlobal}
       fixedRung={fixedRung}
+      perspective={perspective}
+      healthNote={healthNote}
       mode={mode}
       onModeChange={(next) => {
         setMode(next);
@@ -325,6 +341,8 @@ function BindingDraft({
   organizationId,
   allowGlobal,
   fixedRung,
+  perspective,
+  healthNote,
   mode,
   onModeChange,
   onBatchWrote,
@@ -342,6 +360,8 @@ function BindingDraft({
   allowGlobal: boolean;
   /** The rung(s) this host manages, when it manages a fixed set of them. */
   fixedRung?: WorkspaceRung | readonly WorkspaceRung[];
+  perspective: "person" | "organization" | "system";
+  healthNote: { sentence: string; remedy: string | null; broken: boolean } | null;
   mode: BindingMode;
   onModeChange: (next: BindingMode) => void;
   /** A batch wrote rows — the single-place view is stale until it is left. */
@@ -1435,6 +1455,8 @@ function BindingDraft({
         }}
         ladderLine={ladderLine(data.bindings, rung, userId, organizationId)}
         disabled={disabled}
+        perspective={perspective}
+        healthNote={healthNote}
       />
 
       {/* ONE SCREEN, TWO MODES (P17). The rung and the holder above hold still;

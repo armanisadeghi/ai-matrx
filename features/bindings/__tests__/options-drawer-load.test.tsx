@@ -36,7 +36,10 @@ jest.mock("../treatment-writer", () => ({
 }));
 
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppDispatch: () => () => undefined,
+  // A FAITHFUL dispatch double: the real one returns a thunk promise with
+  // `.unwrap()`, and the version control calls it. A double that cannot hold
+  // the shape the real framework holds is a false test.
+  useAppDispatch: () => () => ({ unwrap: () => Promise.resolve([]) }),
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({ userAuth: { id: "user-1" } }),
 }));

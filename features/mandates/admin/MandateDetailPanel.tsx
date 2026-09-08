@@ -1677,30 +1677,15 @@ export function MandateDetailView({
         onOpenRebind={openTheBindingUi}
       />
 
-      {/* 🚨 THE REBIND EDITOR IS GONE (2026-08-31). Choosing who fulfils a job
-          happens in ONE place now — the binding workspace at the top of this
-          page — at whichever rung you mean, with both inventories on screen and
-          the mapping beside the choice. This section is a DOOR to it, never a
-          second editor: two editors for one decision is exactly the divergence
-          that produced a dead agent select nobody could save through. */}
-      <Section
-        title="Who fulfils this job"
-        meta={row.pinLabel}
-        open={pinOpen}
-        onToggle={setPinOpen}
-      >
-        <div className="space-y-2 p-3">
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            The holder, the rung it applies at, and the value mapping are all
-            chosen together in the section above — one screen, showing exactly
-            the rungs this page manages.
-          </p>
-          <Button size="sm" variant="outline" onClick={openTheBindingUi}>
-            Open it
-          </Button>
-        </div>
-      </Section>
-
+      {/* 🚨 AND THE DOOR TO IT IS GONE TOO (FIX-R9, 2026-09-08). The rebind
+          editor left in 2026-08-31 and a fold headed "Who fulfils this job"
+          stood in its place — a title, a paragraph and an "Open it" button
+          pointing at a section on the SAME page. Arman: *"the repitition makes
+          it more and more complex for no reason and the horrible long paragraph
+          explanations are just hiding the fact that it's a horrible ui."* The
+          holder is assigned in exactly one place, and `openTheBindingUi` still
+          exists for the health banner above, which is a REMEDY with somewhere
+          to go rather than a second description of the same three values. */}
       <div ref={benchRef}>
         <Section
           title="Test this mandate"

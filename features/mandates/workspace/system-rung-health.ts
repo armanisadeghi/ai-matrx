@@ -1,58 +1,31 @@
 // features/mandates/workspace/system-rung-health.ts
 //
-// IS THE SYSTEM'S OWN ANSWER SOUND? — the verdict the admin route exists to
-// give, as a pure function, so the sentence can be tested without a database.
+// IS THE SYSTEM'S OWN ANSWER SOUND? — one sentence, one remedy, both derived
+// from the DOOR rather than re-derived on the client.
 //
-// 🚨 WHY THIS EXISTS (Arman, 2026-09-08, on `research_client.output_slides`):
-// the admin route reported the mandate's real, live defect as *"No Holder
-// fulfils this job yet"* — while the job HAS a system holder (the builtin
-// "Research → Slides Generator") and its actual problem is that the holder
-// declares no structured output while the job's consumers require `title` and
-// `slides`. A screen that names the wrong defect and offers no remedy is worse
-// than a blank one: it sends the reader to fix something that is not broken.
+// 🚨 WHAT CHANGED AND WHY (FIX-R9, 2026-09-08). This module used to walk the
+// holder's `output_schema` itself and write its own verdict — a second judge
+// beside `mandate._rungs`, which is the class this campaign exists to kill.
+// V-PARITY/UX found both halves of the cost on production:
 //
-// The output rule is `enforced_holder_contract`'s (aidream): the OUTPUT half of
-// a mandate's contract is in force always, so a holder that does not produce
-// the required keys is dropped at resolution. `missingOutputKeys` is the shared
-// mirror of the server's `_schema_keys` — this module only turns its answer
-// into words, and never re-derives it.
+//   F2 — `dropped_code`, the 22nd column FIX-R7 shipped precisely so a client
+//        would stop matching on sentences, had ZERO consumers in the frontend;
+//   F3 — this file told an ORG-homed job's admin page *"Agent Goal Writer
+//        answers this job for every user on the platform."*, ten lines above
+//        the same page's own correct *"Everyone in Write Target Sandbox runs
+//        this"*. The scope was hardcoded; it belongs to the mandate's HOME.
+//
+// So: the DEFECT is the door's (`dropped_code` + `dropped_reason`, printed in
+// the database's own words), and the SCOPE is the home's. This module turns
+// those two facts into the words on the screen and derives nothing else.
 
-export type SystemRungVerdict =
-  | "ok"
-  | "checking"
-  | "no holder"
-  | "holder unreadable"
-  | "holder is a personal agent"
-  | "holder archived"
-  | "output contract unknown"
-  | "output contract unmet";
-
-export interface SystemRungFacts {
-  /** The holder named by the definition's own defaults, or by a global binding. */
-  holderName: string | null;
-  holderId: string | null;
-  /** `agent.definition.agent_type` — `builtin` is a system agent. */
-  holderAgentType: string | null;
-  holderArchived: boolean;
-  /** A workflow holder — judged by the server, not by this screen. */
-  holderIsWorkflow: boolean;
-  /** The keys this job's consumers require (`required_output_keys`). */
-  requiredOutputKeys: readonly string[];
-  /**
-   * Which of those the holder does NOT declare. `null` means the holder's
-   * output schema has not been read yet — never "none missing".
-   */
-  missingOutputKeys: readonly string[] | null;
-  /**
-   * The holder's declared output could not be READ — a different fact from
-   * "it declares nothing", and it must never be reported as one. Nothing fails
-   * silently: an unanswerable check says it is unanswerable.
-   */
-  outputSchemaUnreadable?: boolean;
-}
+/** The door's discriminator — `mandate._rungs`' 22nd column (aidream 0599). */
+export type DroppedCode =
+  | "platform_disabled"
+  | "holder_unreachable"
+  | "output_contract_unmet";
 
 export interface SystemRungHealth {
-  verdict: SystemRungVerdict;
   /** What is true, in one sentence. Never a hedge, never a euphemism. */
   sentence: string;
   /** What to do about it, named — `null` only when there is nothing to do. */
@@ -61,95 +34,101 @@ export interface SystemRungHealth {
   broken: boolean;
 }
 
-function list(keys: readonly string[]): string {
-  const quoted = keys.map((k) => `\`${k}\``);
-  if (quoted.length <= 1) return quoted.join("");
-  if (quoted.length === 2) return `${quoted[0]} and ${quoted[1]}`;
-  return `${quoted.slice(0, -1).join(", ")} and ${quoted[quoted.length - 1]}`;
+export interface HomeScope {
+  /** Is the mandate homed in the Matrx System organization? */
+  systemHomed: boolean;
+  /** That organization's name, when this screen has read it. */
+  organizationName: string | null;
+}
+
+export interface SystemRungFacts {
+  /** Has the door answered yet? A verdict is never invented from silence. */
+  status: "reading" | "read" | "unreadable";
+  /**
+   * The door's own reason for setting this rung aside — printed VERBATIM.
+   * `null` when the rung can run.
+   */
+  droppedCode: DroppedCode | string | null;
+  droppedReason: string | null;
+  /** Who the rung names, for the healthy sentence. */
+  holderName: string | null;
+  holderIsWorkflow: boolean;
+  holderSet: boolean;
+  /** WHO this rung answers for — the mandate's HOME decides it, never the UI. */
+  home: HomeScope;
+}
+
+/**
+ * WHO A HOME-SCOPED RUNG ANSWERS FOR (F3). A system-homed job's default is the
+ * answer every user on the platform gets; an org-homed job's default answers
+ * for that ONE organization, named. An unread name says so — it never prints an
+ * id and never falls back to the platform-wide claim, which is the lie F3 was.
+ */
+export function homeScopePhrase(home: HomeScope): string {
+  if (home.systemHomed) return "every user on the platform";
+  return home.organizationName
+    ? `every member of ${home.organizationName}`
+    : "every member of the organization that homes this job";
+}
+
+/** The remedy for each thing the door can say. One sentence, always an action. */
+function remedyFor(code: string): string | null {
+  switch (code) {
+    case "output_contract_unmet":
+      return "Assign a holder that declares the output this job requires, or give this one that output schema.";
+    case "holder_unreachable":
+      return "Assign a holder the organization this job answers for can open.";
+    case "platform_disabled":
+      return "Assign a different holder, or ask a platform administrator to turn this one back on.";
+    default:
+      // An unknown code is a newer database than this browser. The door's own
+      // sentence still stands; inventing a remedy for it would not.
+      return null;
+  }
 }
 
 export function systemRungHealth(facts: SystemRungFacts): SystemRungHealth {
-  const who = facts.holderName ?? "The system holder";
-
-  if (!facts.holderId && !facts.holderIsWorkflow) {
+  if (facts.status === "reading") {
     return {
-      verdict: "no holder",
-      sentence:
-        "This job has no system holder, so nothing on the platform runs it.",
-      remedy: "Assign a system agent or a workflow below.",
-      broken: true,
-    };
-  }
-
-  if (!facts.holderIsWorkflow && facts.holderAgentType === null) {
-    return {
-      verdict: "holder unreadable",
-      sentence:
-        "The agent this job assigns could not be read — it may be deleted, or it may not be a system agent this console can open.",
-      remedy: "Assign a system agent below.",
-      broken: true,
-    };
-  }
-
-  if (!facts.holderIsWorkflow && facts.holderAgentType !== "builtin") {
-    return {
-      verdict: "holder is a personal agent",
-      sentence: `${who} is a personal agent, and this job's answer is the one every user on the platform gets.`,
-      remedy:
-        "Duplicate it into a system agent in the system-agents admin, then assign the copy below.",
-      broken: true,
-    };
-  }
-
-  if (facts.holderArchived) {
-    return {
-      verdict: "holder archived",
-      sentence: `${who} is archived, so the answer this job assigns is on its way out.`,
-      remedy: "Assign a live system agent below.",
-      broken: true,
-    };
-  }
-
-  if (facts.requiredOutputKeys.length > 0 && facts.outputSchemaUnreadable) {
-    return {
-      verdict: "output contract unknown",
-      sentence: `This job requires ${list(facts.requiredOutputKeys)}, and whether ${who} produces ${facts.requiredOutputKeys.length === 1 ? "it" : "them"} could not be read just now.`,
-      remedy:
-        "Reload the page; if it keeps failing, the agent's record is not readable from this console.",
-      broken: false,
-    };
-  }
-
-  if (facts.requiredOutputKeys.length > 0 && facts.missingOutputKeys === null) {
-    return {
-      verdict: "checking",
-      sentence: `Checking whether ${who} produces ${list(facts.requiredOutputKeys)}…`,
+      sentence: "Reading how the platform answers this job…",
       remedy: null,
       broken: false,
     };
   }
-
-  const missing = facts.missingOutputKeys ?? [];
-  if (missing.length > 0) {
-    // 🚨 THE SENTENCE ARMAN'S CASE NEEDS, said in full: what the job requires,
-    // what the holder declares, and the two doors that fix it. The old copy
-    // ("No Holder fulfils this job yet") named neither the defect nor a remedy.
-    const declaresNothing = missing.length === facts.requiredOutputKeys.length;
+  if (facts.status === "unreadable") {
     return {
-      verdict: "output contract unmet",
-      sentence: declaresNothing
-        ? `${who} declares no structured output, but this job requires ${list(facts.requiredOutputKeys)} — whatever reads this job's result cannot be produced, so the assignment fails at run time.`
-        : `${who} does not declare ${list(missing)}, which this job requires — whatever reads this job's result cannot be produced, so the assignment fails at run time.`,
-      remedy: `Give ${who} an output schema declaring ${list(facts.requiredOutputKeys)}, or assign a system agent that already does.`,
+      sentence: "Whether this assignment can run could not be read just now.",
+      remedy: "Reload the page.",
+      broken: false,
+    };
+  }
+
+  if (facts.droppedReason || facts.droppedCode) {
+    return {
+      // The DATABASE'S WORDS. A client sentence beside them would be a second
+      // judge, and the two would disagree the day the rule changes.
+      sentence:
+        facts.droppedReason ??
+        "The platform set this assignment aside, and the reason did not reach this screen.",
+      remedy: remedyFor(facts.droppedCode ?? ""),
       broken: true,
     };
   }
 
+  const scope = homeScopePhrase(facts.home);
+  if (!facts.holderSet) {
+    return {
+      sentence: `Nothing is assigned, so nothing runs this job for ${scope}.`,
+      remedy: "Choose an agent or a workflow above.",
+      broken: true,
+    };
+  }
+
+  const who = facts.holderIsWorkflow
+    ? "A workflow"
+    : (facts.holderName ?? "The assigned agent");
   return {
-    verdict: "ok",
-    sentence: facts.holderIsWorkflow
-      ? "A workflow answers this job for every user on the platform."
-      : `${who} answers this job for every user on the platform.`,
+    sentence: `${who} answers this job for ${scope}.`,
     remedy: null,
     broken: false,
   };
