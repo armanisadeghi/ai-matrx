@@ -2,7 +2,7 @@
 
 **Status:** `active` — production, actively maintained
 **Tier:** `1`
-**Last updated:** `2026-09-01`
+**Last updated:** `2026-09-07`
 
 > User-facing README at [`README.md`](./README.md). This doc is the agent-facing architecture view.
 
@@ -146,6 +146,48 @@ instead of fanning out through both services.
 ---
 
 ## Change log
+
+- `2026-09-07` — **Every bespoke confirm body in notes is gone; the platform owns
+  the surface.** The feature carried FOUR hand-built confirmation dialogs for four
+  decisions the canonical door already answers, and two of them were literally the
+  same dialog written twice. **`NoteTabItem`'s delete dialog** was the worst: assembled
+  from `AlertDialog` primitives at `z-[10001]` with a hand-copied
+  `data-[state=open]:animate-in … zoom-in-95 … slide-in-from-top-[48%]` class string —
+  host-plugin utilities no package ships, so it only ever animated in THIS app by
+  accident of our CSS entry — and banned outright by CLAUDE.md. **The collapse is
+  structural, not cosmetic:** `useNoteDelete` no longer hands callers a
+  `confirmOpen`/`cancelDelete`/`confirmDelete` state machine to render a dialog from.
+  It awaits `confirm()` itself and returns an intent (`requestDelete`) plus a busy
+  flag, so `NoteTabItem` AND `MobileNoteEditor` (the second copy) lost their dialogs in
+  one change and no future caller can grow a third. `confirmOpen` survives as a
+  read-only "a confirmation is on screen" flag, which the tab strip uses to keep its
+  idle auto-move parked — it is not a dialog anyone renders. Also collapsed:
+  **`NotesSidebar`'s Delete-All-Notes-in-Folder** (menu item now awaits `confirm()`),
+  **`NoteVersionHistoryPanel`'s Restore Version** (the Restore button awaits it
+  directly; `showRestoreDialog` state deleted), and **`QuickNoteSaveCore`'s overwrite
+  warning**, which is the one that takes the DECLARATIVE `<ConfirmDialog/>` rather than
+  `confirm()` — it has a third action, and "Preview changes" is the
+  destructive-and-expensive-actions law's safe alternative sitting beside the
+  destructive button, so it rides the package's `content` slot instead of being
+  deleted. Its `z-[2147483600]` constant is gone with it: the package portals above
+  every layer, WindowPanel included, without a z-index of its own. **All four copies
+  are now consequence-first** per that law — the single-note delete names the note,
+  says the tab closes, and names both ways back (Undo toast, Trash); the folder
+  bulk delete names the COUNT and says plainly that it is not the soft delete a
+  single note gets (no Trash step, no Undo); the restore names what the overwrite
+  loses and that the current text is kept as a new version; the quick-save overwrite
+  says there is no version to restore. Gates: `type-check` 0, notes suites 11/11,
+  `check:package-twins --strict`, `check:docs-twins`. Live (preview :3001, dev-login,
+  light AND dark): the tab's Delete opens the design-system dialog — centred at
+  (640,360) in 1280×720, `matrx-dialog-in`/`matrx-fade-in` running, ZERO host-plugin
+  classes on the card, scrim from `--matrx-overlay-scrim`, consequence as the
+  `aria-describedby` description, destructive button = the package's destructive
+  button (light `rgb(239,67,67)`, dark `rgb(226,80,80)` — the tokens really answer to
+  the theme); **Cancel kept the note and the page stayed interactive
+  (`pointer-events: auto`), Confirm deleted it with the Undo toast.** 🔶 Found while
+  verifying, filed not fixed (design-system's, above this lane): the ConfirmDialog's
+  sticky footer paints over the last ~8px of a 3-line description when the card is
+  not tall enough to scroll — feedback `bf8fb00b-b5fa-49ba-bb86-dd3e1cc1acc0`.
 
 - `2026-09-01` — **Explicit names survive empty-note reuse.** `createNote`
   still reuses an existing empty draft, but applies a caller-supplied non-default
