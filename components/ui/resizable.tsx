@@ -8,7 +8,7 @@
  * TWICE, disagreeing about exactly one thing: how thick the handle is. That is
  * the density-as-a-fork pattern the package exists to end, so thickness is now
  * `size="xs".."4xl"` and both files are re-exports. This one's historical 2px
- * line is the package default (`size="sm"`), so every call site here is
+ * line is the package DEFAULT (`size="xs"`), so every call site here is
  * unchanged.
  *
  * The v4 knowledge and the drag-outline fix (the library sets `tabIndex=0`, so

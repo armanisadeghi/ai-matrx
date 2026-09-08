@@ -25,11 +25,13 @@ import React from "react";
 // disaster
 import StoreProvider from "@/providers/StoreProvider";
 // disaster
+// ONE tooltip provider. Two used to be mounted here, because
+// `@ai-matrx/tap-target` shipped its own Tooltip and therefore resolved a
+// DIFFERENT @radix-ui/react-tooltip module instance than this app's — a
+// provider only serves the instance it belongs to. design-system 0.7.0 /
+// tap-target 0.2.0 collapsed that to one implementation, so the second
+// provider is gone with the second tooltip.
 import { TooltipProvider } from "@/components/ui/tooltip";
-// The package's tap buttons resolve THEIR radix-tooltip module instance —
-// pnpm may hold a different version than components/ui/tooltip's, so the
-// host provider cannot serve them. Mount the package provider alongside.
-import { TooltipProvider as TapTargetTooltipProvider } from "@ai-matrx/design-system";
 import type { BaseReduxState } from "@/types/reduxTypes";
 import { RefProvider } from "@/lib/refs";
 import { ToastProvider } from "@/providers/toast-context";
@@ -147,7 +149,6 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
             <ToastProvider>
               <RefProvider>
                 <TooltipProvider delayDuration={200}>
-                <TapTargetTooltipProvider delayDuration={200}>
                   <ModuleHeaderProvider>
                       <SelectedImagesProvider>
                             <RequestRecoveryProvider>
@@ -237,7 +238,6 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                             </RequestRecoveryProvider>
                       </SelectedImagesProvider>
                   </ModuleHeaderProvider>
-                </TapTargetTooltipProvider>
                 </TooltipProvider>
               </RefProvider>
             </ToastProvider>
