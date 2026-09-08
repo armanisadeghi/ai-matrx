@@ -6608,6 +6608,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/penpot/public/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Release */
+        get: operations["public_release_penpot_public_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -8800,6 +8817,23 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_devto_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hashnode/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_hashnode_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15328,6 +15362,23 @@ export interface paths {
         };
         /** Public Quickstart */
         get: operations["public_quickstart_flask_docs_public_quickstart_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sphinx-docs/public/quickstart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Quickstart */
+        get: operations["public_quickstart_sphinx_docs_public_quickstart_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -65560,6 +65611,38 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * HashnodeServiceStatus
+         * @description Safe aggregate status projection for Hashnode's fixed status page.
+         */
+        HashnodeServiceStatus: {
+            /**
+             * Kind
+             * @default hashnode_public_service_status
+             * @constant
+             */
+            __kind?: "hashnode_public_service_status";
+            /**
+             * Provider
+             * @default Hashnode
+             * @constant
+             */
+            provider?: "Hashnode";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.hashnode.com
+             * @constant
+             */
+            status_page?: "https://status.hashnode.com";
+        };
         /** HeapServiceStatus */
         HeapServiceStatus: {
             /**
@@ -82054,6 +82137,33 @@ export interface components {
              */
             unsettled_count?: number;
         };
+        /** PenpotPublicRelease */
+        PenpotPublicRelease: {
+            /**
+             * Kind
+             * @default penpot_public_release
+             * @constant
+             */
+            __kind?: "penpot_public_release";
+            /**
+             * Provider
+             * @default Penpot
+             * @constant
+             */
+            provider?: "Penpot";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Tag */
+            tag: string;
+            /** Release Url */
+            release_url: string;
+            /** Published At */
+            published_at: string;
+        };
         /**
          * PermissionRecord
          * @description A single permission grant row (``cld_permissions``).
@@ -87525,38 +87635,6 @@ export interface components {
              * @default false
              */
             stream?: boolean;
-        };
-        /**
-         * QuickstartContent
-         * @description Safe projection of the fixed public Flask quickstart.
-         */
-        QuickstartContent: {
-            /**
-             * Kind
-             * @default flask_docs_quickstart_content
-             * @constant
-             */
-            __kind?: "flask_docs_quickstart_content";
-            /**
-             * Provider
-             * @default Flask Documentation
-             * @constant
-             */
-            provider?: "Flask Documentation";
-            /**
-             * Version
-             * @default stable
-             * @constant
-             */
-            version?: "stable";
-            /**
-             * Format
-             * @default restructuredtext
-             * @constant
-             */
-            format?: "restructuredtext";
-            /** Content */
-            content: string;
         };
         /**
          * QuipStatusResult
@@ -111284,6 +111362,38 @@ export interface components {
             content: string;
         };
         /**
+         * QuickstartContent
+         * @description Safe projection of the fixed public Flask quickstart.
+         */
+        aidream__services__flask_docs_integrations__service__QuickstartContent: {
+            /**
+             * Kind
+             * @default flask_docs_quickstart_content
+             * @constant
+             */
+            __kind?: "flask_docs_quickstart_content";
+            /**
+             * Provider
+             * @default Flask Documentation
+             * @constant
+             */
+            provider?: "Flask Documentation";
+            /**
+             * Version
+             * @default stable
+             * @constant
+             */
+            version?: "stable";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
+        };
+        /**
          * PageContent
          * @description Safe projection for one exact public FreeBSD Wiki page.
          */
@@ -112357,6 +112467,38 @@ export interface components {
              * @default 0
              */
             excluded_low_quality_inputs?: number;
+        };
+        /**
+         * QuickstartContent
+         * @description Safe projection of the fixed public Sphinx getting-started guide.
+         */
+        aidream__services__sphinx_docs_integrations__service__QuickstartContent: {
+            /**
+             * Kind
+             * @default sphinx_docs_quickstart_content
+             * @constant
+             */
+            __kind?: "sphinx_docs_quickstart_content";
+            /**
+             * Provider
+             * @default Sphinx Documentation
+             * @constant
+             */
+            provider?: "Sphinx Documentation";
+            /**
+             * Version
+             * @default master
+             * @constant
+             */
+            version?: "master";
+            /**
+             * Format
+             * @default restructuredtext
+             * @constant
+             */
+            format?: "restructuredtext";
+            /** Content */
+            content: string;
         };
         /** CardMetadata */
         aidream__services__tcgdex_integrations__service__CardMetadata: {
@@ -124315,6 +124457,26 @@ export interface operations {
             };
         };
     };
+    public_release_penpot_public_release_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PenpotPublicRelease"];
+                };
+            };
+        };
+    };
     public_latest_release_packagist_public_latest_release_get: {
         parameters: {
             query: {
@@ -127146,6 +127308,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DevtoServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_hashnode_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HashnodeServiceStatus"];
                 };
             };
         };
@@ -135642,7 +135824,27 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["QuickstartContent"];
+                    "application/json": components["schemas"]["aidream__services__flask_docs_integrations__service__QuickstartContent"];
+                };
+            };
+        };
+    };
+    public_quickstart_sphinx_docs_public_quickstart_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__sphinx_docs_integrations__service__QuickstartContent"];
                 };
             };
         };
