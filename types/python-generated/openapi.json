@@ -16895,6 +16895,27 @@
         }
       }
     },
+    "/zendesk/public/help-article": {
+      "get": {
+        "tags": [
+          "Zendesk Integrations"
+        ],
+        "summary": "Public Help Article",
+        "operationId": "public_help_article_zendesk_public_help_article_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZendeskPublicArticle"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/packagist/public/latest-release": {
       "get": {
         "tags": [
@@ -250459,6 +250480,59 @@
           "privacy_status"
         ],
         "title": "YouTubeVideoPreview"
+      },
+      "ZendeskPublicArticle": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "zendesk_public_help_article",
+            "title": "Kind",
+            "default": "zendesk_public_help_article"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Zendesk",
+            "title": "Provider",
+            "default": "Zendesk"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "article_id": {
+            "type": "integer",
+            "title": "Article Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "article_url": {
+            "type": "string",
+            "title": "Article Url"
+          },
+          "locale": {
+            "type": "string",
+            "const": "en-us",
+            "title": "Locale",
+            "default": "en-us"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "article_id",
+          "title",
+          "article_url",
+          "updated_at"
+        ],
+        "title": "ZendeskPublicArticle"
       },
       "ZenhubServiceStatus": {
         "properties": {

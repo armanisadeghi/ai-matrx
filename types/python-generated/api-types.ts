@@ -6812,6 +6812,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/zendesk/public/help-article": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Help Article */
+        get: operations["public_help_article_zendesk_public_help_article_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packagist/public/latest-release": {
         parameters: {
             query?: never;
@@ -111639,6 +111656,41 @@ export interface components {
             /** Privacy Status */
             privacy_status: string | null;
         };
+        /** ZendeskPublicArticle */
+        ZendeskPublicArticle: {
+            /**
+             * Kind
+             * @default zendesk_public_help_article
+             * @constant
+             */
+            __kind?: "zendesk_public_help_article";
+            /**
+             * Provider
+             * @default Zendesk
+             * @constant
+             */
+            provider?: "Zendesk";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Article Id */
+            article_id: number;
+            /** Title */
+            title: string;
+            /** Article Url */
+            article_url: string;
+            /**
+             * Locale
+             * @default en-us
+             * @constant
+             */
+            locale?: "en-us";
+            /** Updated At */
+            updated_at: string;
+        };
         /**
          * ZenhubServiceStatus
          * @description Safe aggregate status projection for Zenhub's fixed status page.
@@ -126316,6 +126368,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SiYuanPublicRelease"];
+                };
+            };
+        };
+    };
+    public_help_article_zendesk_public_help_article_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZendeskPublicArticle"];
                 };
             };
         };
