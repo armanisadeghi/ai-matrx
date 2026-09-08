@@ -466,12 +466,7 @@ export default function AgentReviewQueueTable() {
     >
       <div className="flex h-full min-h-0 flex-col gap-4 px-4 pb-1 pt-4">
         <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:gap-4">
-          <div>
-            <h1 className="text-xl font-semibold">Agent Review</h1>
-            <p className="text-sm text-muted-foreground">
-              Agents prepare and verify every item before it reaches you.
-            </p>
-          </div>
+          <h1 className="text-xl font-semibold">Agent Review</h1>
           <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
             <Button
               size="sm"

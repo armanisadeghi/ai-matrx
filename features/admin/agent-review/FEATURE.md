@@ -43,6 +43,9 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 
 ## UI contract
 
+- **The list header is title-only.** App routes do not carry generic descriptive
+  prose beneath their page title; operational guidance belongs beside the
+  decision or state it explains.
 - The list's first column is **Open**. One click enters the routed review
   workspace in the current tab and opens the target page in a separate tab;
   the target-page column remains its own explicit door. Its compact button is
@@ -123,6 +126,8 @@ no-unapproved-schedules law.
 
 ## Change log
 
+- 2026-09-08 — Removed the generic Agent Review subtitle; the list header now
+  presents only the page title and its actions.
 - 2026-09-08 — Marked the compact Open door as table control chrome so the
   shared cell wrapping boundary preserves its one-line label and arrow.
 - 2026-09-08 — Tightened the list page's bottom edge to a 4px page gutter after
