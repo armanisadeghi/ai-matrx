@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import type { CardVerification } from "@/features/content-ir/kinds/generated/kinds.generated";
 import type {
   StoredVerification,
   TrustEnvelope,
@@ -128,7 +130,12 @@ export function VerifyAgainstSourceButton({
   );
 }
 
-/** The verify verdict callout (verified / drifted / unverifiable). Shared. */
+/**
+ * The verify verdict — the `card_verification` kind drawn by ITS component
+ * (`card_verification_callout`) through the canonical kind render path. This
+ * host keeps only what is not part of the shape: when a stored verdict was
+ * checked, and the one-click apply of a suggested correction (D151). Shared.
+ */
 export function VerifyVerdict({
   result,
   verifiedAt,
@@ -143,54 +150,70 @@ export function VerifyVerdict({
   applying?: boolean;
 }) {
   const drifted = result.status === "drifted";
+  return (
+    <div className="flex flex-col gap-1 text-xs">
+      <KindInstanceRender
+        kind={CARD_VERIFICATION_KIND}
+        value={cardVerificationValue(result)}
+        variant="bare"
+        showRoutingNote={false}
+        unroutableFallback={<PlainVerdict result={result} />}
+      />
+      {verifiedAt && (
+        <span className="text-muted-foreground">
+          Checked {new Date(verifiedAt).toLocaleDateString()}
+        </span>
+      )}
+      {/* D151 — a corrected answer the user can't apply is the paid result
+          thrown away twice. One click writes it onto the item. */}
+      {drifted && result.suggestedFix && onApplyFix && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="mt-1 h-6 w-fit gap-1 px-2 text-xs"
+          disabled={applying}
+          onClick={onApplyFix}
+        >
+          {applying ? (
+            <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+          ) : (
+            <PencilLine className="h-3 w-3" aria-hidden />
+          )}
+          Use this correction
+        </Button>
+      )}
+    </div>
+  );
+}
+
+const CARD_VERIFICATION_KIND = "card_verification" as const;
+
+/** The verdict, back in the kind's own wire shape (derived, never re-declared). */
+function cardVerificationValue(result: VerifyResult): CardVerification {
+  return {
+    __kind: CARD_VERIFICATION_KIND,
+    status: result.status,
+    explanation: result.explanation,
+    suggested_fix: result.suggestedFix,
+  };
+}
+
+/** Registry floor — never a JSON document in front of a learner. */
+function PlainVerdict({ result }: { result: VerifyResult }) {
   const verified = result.status === "verified";
   const Icon = verified ? CheckCircle2 : AlertTriangle;
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-1 rounded-md border p-2 text-xs",
-        verified
-          ? "border-green-600/30 bg-green-500/10 text-green-800 dark:text-green-300"
-          : drifted
-            ? "border-amber-600/30 bg-amber-500/10 text-amber-800 dark:text-amber-300"
-            : "border-border bg-muted/50 text-muted-foreground",
-      )}
-    >
-      <span className="inline-flex items-center gap-1 font-medium capitalize">
+    <div className="flex flex-col gap-1 rounded-md border border-border bg-muted/50 p-2 text-muted-foreground">
+      <span className="inline-flex items-center gap-1 font-medium capitalize text-foreground">
         <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
         {result.status === "unverifiable" ? "Can't verify" : result.status}
-        {verifiedAt && (
-          <span className="font-normal opacity-70">
-            · checked {new Date(verifiedAt).toLocaleDateString()}
-          </span>
-        )}
       </span>
-      <span className="not-italic">{result.explanation}</span>
-      {drifted && result.suggestedFix && (
-        <>
-          <span className="text-foreground">
-            <span className="font-medium">Suggested:</span> {result.suggestedFix}
-          </span>
-          {/* D151 — a corrected answer the user can't apply is the paid result
-              thrown away twice. One click writes it onto the item. */}
-          {onApplyFix && (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="mt-1 h-6 w-fit gap-1 px-2 text-xs"
-              disabled={applying}
-              onClick={onApplyFix}
-            >
-              {applying ? (
-                <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-              ) : (
-                <PencilLine className="h-3 w-3" aria-hidden />
-              )}
-              Use this correction
-            </Button>
-          )}
-        </>
+      <span>{result.explanation}</span>
+      {result.status === "drifted" && result.suggestedFix && (
+        <span className="text-foreground">
+          <span className="font-medium">Suggested:</span> {result.suggestedFix}
+        </span>
       )}
     </div>
   );
