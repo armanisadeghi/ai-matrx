@@ -303,13 +303,15 @@ export const tasksRealtimeMiddleware: Middleware<
       ],
       // THE CATCH-UP READ. Realtime has no replay, and this fires on reconnect,
       // tab wake, network restore and queue overflow alike.
-      onBackfill: () => {
-        const state = storeApi.getState();
-        if (!state.userAuth?.id || state.userAuth.id !== subscribedUserId) {
-          return;
-        }
-        void storeApi.dispatch(invalidateAndRefetchFullContext());
-      },
+      //
+      // It goes through the SAME debounce as an unplaceable row, and that is
+      // load-bearing rather than tidy: one network flap is several recovery
+      // events, and each one calls this door. Measured live 2026-09-08 —
+      // offline → 30s → online produced FOUR reconnects and FIVE backfills, so
+      // the un-debounced version fired `get_user_full_context` five times for
+      // one interruption. The package is right to announce every recovery; how
+      // many reads that is worth is the consumer's call, and it is one.
+      onBackfill: () => scheduleCatchUp(),
     }));
   }
 

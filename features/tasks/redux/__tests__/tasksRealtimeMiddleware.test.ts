@@ -295,6 +295,18 @@ describe("catch-up budget", () => {
   it("re-reads once on backfill (reconnect / tab wake / network restore)", () => {
     const { dispatched } = harness();
     captured!.onBackfill();
+    jest.runAllTimers();
+    expect(types(dispatched).filter((t) => t === CATCH_UP.type)).toHaveLength(1);
+  });
+
+  it("costs ONE read for a whole flap, not one per recovery event", () => {
+    // Measured live 2026-09-08: a single offline -> 30s -> online cycle
+    // produced four reconnects and FIVE backfill calls. The package is right to
+    // announce every recovery; how many reads that is worth is this consumer's
+    // call, and it is one.
+    const { dispatched } = harness();
+    for (let i = 0; i < 5; i += 1) captured!.onBackfill();
+    jest.runAllTimers();
     expect(types(dispatched).filter((t) => t === CATCH_UP.type)).toHaveLength(1);
   });
 

@@ -180,6 +180,8 @@ export function useTasks() {
     [removeTaskRow],
   );
 
+  const scheduleReload = useDebouncedRefetch(loadTasks);
+
   useEffect(() => {
     loadTasks();
   }, [loadTasks]);
@@ -207,9 +209,10 @@ export function useTasks() {
     ],
     // Realtime has no replay: reconnect, tab wake, network restore and queue
     // overflow all re-read the list instead of leaving a screen that lies.
-    onBackfill: () => {
-      void loadTasks();
-    },
+    // Debounced for the same reason a burst of rows is: ONE interruption is
+    // several recovery events (measured 2026-09-08: one offline/online cycle
+    // produced four reconnects and five backfills), and it is worth one read.
+    onBackfill: () => scheduleReload(),
   });
 
   return {
@@ -361,9 +364,8 @@ export function useProjects() {
         },
       },
     ],
-    onBackfill: () => {
-      void loadProjects();
-    },
+    // One interruption is several recovery events; it is worth one read.
+    onBackfill: () => scheduleRefetch(),
   });
 
   return {
@@ -464,9 +466,8 @@ export function useProjectsWithTasks() {
         },
       },
     ],
-    onBackfill: () => {
-      void loadProjectsWithTasks();
-    },
+    // One interruption is several recovery events; it is worth one read.
+    onBackfill: () => scheduleRefetch(),
   });
 
   return {
