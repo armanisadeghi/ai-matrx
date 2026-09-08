@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";

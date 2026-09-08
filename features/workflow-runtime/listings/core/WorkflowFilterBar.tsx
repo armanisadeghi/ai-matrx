@@ -9,8 +9,8 @@ import {
   Archive,
   ScanSearch,
 } from "lucide-react";
-import { FilterChip } from "@/features/agents/components/agent-listings/core/primitives";
-import type { RightPanel } from "@/features/agents/components/agent-listings/core/types";
+import { FilterChip } from "@ai-matrx/agents/catalog/react";
+import type { RightPanel } from "@ai-matrx/agents/catalog/react";
 import { WORKFLOW_SORT_OPTIONS } from "../types";
 import type { WorkflowListControls } from "../useWorkflowListCore";
 

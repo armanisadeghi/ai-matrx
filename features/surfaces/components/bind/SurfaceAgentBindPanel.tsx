@@ -25,7 +25,7 @@ import {
   type AgentScope,
 } from "@/features/agent-shortcuts/constants";
 import { ShortcutScopePicker } from "@/features/agent-shortcuts/components/ShortcutScopePicker";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectAgentById,

@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ServerNotes } from "@/components/official/ServerNotes";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

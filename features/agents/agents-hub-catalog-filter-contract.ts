@@ -1,4 +1,4 @@
-import { AGENT_NONE_SENTINEL } from "@/features/agents/redux/agent-consumers/slice";
+import { AGENT_NONE_SENTINEL } from "@ai-matrx/agents/catalog";
 
 export const AGENTS_HUB_CATALOG_FILTER_KEYS = [
   "search_query",

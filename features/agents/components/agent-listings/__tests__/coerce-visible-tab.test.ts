@@ -9,11 +9,13 @@
  * the forbidden catalogue with the tab bar removed: the wrong list, and no
  * control that explained why. Hiding the door is not locking it.
  *
- * `coerceVisibleTab` is that rule alone, and `useAgentListCore` runs it on
+ * `coerceVisibleTab` is that rule alone, and the package's `useAgentListCore` runs it on
  * every change of the tab — not only at mount — so a restriction that arrives
  * late is enforced late.
  */
-import { coerceVisibleTab } from "../useAgentListCore";
+// The rule now lives in `@ai-matrx/agents/catalog/react` with the rest of the
+// ONE picker; this guard follows it there rather than dying with the host copy.
+import { coerceVisibleTab } from "@ai-matrx/agents/catalog/react";
 
 describe("coerceVisibleTab", () => {
   it("moves a remembered forbidden tab onto the surface's own initial tab", () => {

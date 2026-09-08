@@ -1,9 +1,18 @@
 /**
  * Agent Definition — Redux Thunks
  *
+ * 🚨 THE LIST IS THE PACKAGE'S (2026-09-08). `@ai-matrx/agents/catalog` owns
+ * every agent-list read on this platform — `agx_get_list_full`, `agx_search`,
+ * the freshness window, the in-flight dedupe. The four list thunks below are
+ * THIN HYDRATORS: they ask the ONE catalog and project its `AgentSummary`
+ * rows into this registry as `_fetchStatus: "list"` records, so the ~50
+ * non-picker surfaces that read names / the builtin catalogue / gallery rows
+ * from `agentDefinition` keep working unchanged. No RPC is issued here, and
+ * adding one back is a defect (guard: `pnpm check:agent-list-reads`).
+ *
  * Read thunks:
- *   fetchAgentsList              — lightweight list for the agents page (owned + shared)
- *   fetchAgentsListFull          — same as above + all active builtins (for pickers/dropdowns)
+ *   fetchAgentsList              — hydrate the registry from the catalog
+ *   fetchAgentsListFull          — same; kept as the picker-era name
  *   fetchSharedAgents            — agents shared with me (for "shared" tab)
  *   fetchSharedAgentsForChat     — minimal shared list for chat agent picker
  *   fetchAgentAccessLevel        — current user's permission level on an agent
@@ -33,6 +42,8 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import type { AgentSummary } from "@ai-matrx/agents/catalog";
+import { getAgentCatalog } from "@/lib/agents/catalog";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import { pgErrorToError } from "@ai-matrx/data";
 import { withRetry } from "@ai-matrx/data/net";
@@ -101,30 +112,65 @@ const AGENT_LIST_RPC_PAGE_SIZE = 100;
  */
 const AGENT_SEARCH_LIMIT = 200;
 
-function mergeAgentListRows(dispatch: AppDispatch, rows: AgentListRow[]) {
+/** The registry's closed `access_level` vocabulary. */
+const REGISTRY_ACCESS_LEVELS = [
+  "owner",
+  "admin",
+  "editor",
+  "viewer",
+  "system",
+] as const;
+
+type RegistryAccessLevel = (typeof REGISTRY_ACCESS_LEVELS)[number];
+
+function toRegistryAccessLevel(value: string | null): RegistryAccessLevel | null {
+  return (
+    REGISTRY_ACCESS_LEVELS.find(
+      (level): level is RegistryAccessLevel => level === value,
+    ) ?? null
+  );
+}
+
+/**
+ * Project the package catalog's rows into this registry. Field names are the
+ * registry's own, unchanged — `AgentSummary` is already the camelCased
+ * `agx_get_list_full` row, so this is a rename-free copy plus the two flags
+ * the registry owns (`isVersion`, `_fetchStatus`).
+ */
+function mergeAgentSummaries(
+  dispatch: AppDispatch,
+  rows: readonly AgentSummary[],
+) {
   for (const row of rows) {
     dispatch(
       mergePartialAgent({
         id: row.id,
-        name: row.name,
+        name: row.name ?? undefined,
         description: row.description,
         category: row.category,
-        tags: row.tags ?? [],
-        agentType: row.agent_type,
-        modelId: row.model_id,
-        isActive: row.is_active,
-        isArchived: row.is_archived,
-        isFavorite: row.is_favorite,
-        createdBy: row.created_by,
-        organizationId: row.organization_id,
-        taskId: row.task_id ?? null,
-        sourceAgentId: row.source_agent_id,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
+        tags: row.tags,
+        agentType: row.agentType,
+        modelId: row.modelId,
+        isActive: row.isActive,
+        isArchived: row.isArchived,
+        isFavorite: row.isFavorite,
+        // The registry spells "absent" as `undefined` where the DB row spells
+        // it `null`. Five fields differ; this is the vocabulary translation
+        // at the seam, not a value change.
+        createdBy: row.createdBy ?? undefined,
+        organizationId: row.organizationId ?? undefined,
+        taskId: row.taskId,
+        sourceAgentId: row.sourceAgentId,
+        createdAt: row.createdAt ?? undefined,
+        updatedAt: row.updatedAt ?? undefined,
         isVersion: false,
-        isOwner: row.is_owner,
-        accessLevel: row.access_level,
-        sharedByEmail: row.shared_by_email,
+        isOwner: row.isOwner,
+        // `access_level` is a DB-owned vocabulary the package deliberately
+        // leaves open (an unknown level renders as itself). This registry's
+        // field is a closed union, so an unrecognised level is stored as
+        // `null` — absent, never silently coerced into a wrong level.
+        accessLevel: toRegistryAccessLevel(row.accessLevel),
+        sharedByEmail: row.sharedByEmail ?? undefined,
       }),
     );
     dispatch(setAgentFetchStatus({ id: row.id, status: "list" }));
@@ -136,43 +182,26 @@ function mergeAgentListRows(dispatch: AppDispatch, rows: AgentListRow[]) {
 // ---------------------------------------------------------------------------
 
 /**
- * Fetches the lightweight agent list for the agents page.
- * Maps AgentListRow → mergePartialAgent (list fields only).
- * Does not overwrite fields already in state that were loaded by other means.
+ * Hydrates this registry from the ONE agent catalog. The gallery, the agent
+ * pages, and every name-resolving surface read `agentDefinition`; the catalog
+ * reads the database. This is the seam between them.
+ *
+ * The catalog's own freshness window and in-flight dedupe make this safe to
+ * dispatch on every mount — no thunk-level TTL guard is needed or wanted.
  */
 export const fetchAgentsList = createAsyncThunk<void, void, ThunkApi>(
   "agentDefinition/fetchList",
   async (_, { dispatch }) => {
     dispatch(setAgentsStatus("loading"));
-
-    let offset = 0;
-    let totalFetched = 0;
-
-    while (true) {
-      const { data, error } = await supabase.rpc("agx_get_list", {
-        p_limit: AGENT_LIST_RPC_PAGE_SIZE,
-        p_offset: offset,
-      });
-
-      if (error) {
-        dispatch(setAgentsError(error.message));
-        dispatch(setAgentsStatus("failed"));
-        throw pgErrorToError(error);
-      }
-
-      const rows = (data ?? []) as AgentListRow[];
-      mergeAgentListRows(dispatch, rows);
-      totalFetched += rows.length;
-
-      if (rows.length < AGENT_LIST_RPC_PAGE_SIZE) break;
-      offset += AGENT_LIST_RPC_PAGE_SIZE;
+    const catalog = getAgentCatalog();
+    try {
+      await catalog.ensureLoaded();
+    } catch (e) {
+      dispatch(setAgentsError(e instanceof Error ? e.message : String(e)));
+      dispatch(setAgentsStatus("failed"));
+      throw e;
     }
-
-    if (totalFetched === 0) {
-      dispatch(setAgentsStatus("succeeded"));
-      return;
-    }
-
+    mergeAgentSummaries(dispatch, catalog.getState().rows);
     dispatch(setAgentsStatus("succeeded"));
   },
 );
@@ -206,93 +235,36 @@ export const searchAgentsServer = createAsyncThunk<
   ThunkApi
 >(
   "agentDefinition/searchServer",
-  async ({ query, deep = false, limit = AGENT_SEARCH_LIMIT }, { dispatch }) => {
+  async ({ query, deep = false }, { dispatch }) => {
     const q = query.trim();
     if (!q) return { ids: [], deep, query: q };
 
-    const { data, error } = await supabase.rpc("agx_search", {
-      p_query: q,
-      p_deep: deep,
-      p_limit: limit,
-      p_offset: 0,
-    });
+    const catalog = getAgentCatalog();
+    const ids = await catalog.searchServer(q, deep);
 
-    if (error) throw pgErrorToError(error);
+    // The catalog merges its hits into its own registry; project them here so
+    // a name the search just discovered resolves on every non-picker surface.
+    const state = catalog.getState();
+    mergeAgentSummaries(
+      dispatch,
+      ids.map((id) => state.byId[id]).filter((r): r is AgentSummary => !!r),
+    );
 
-    const rows = (data ?? []) as AgentSearchRow[];
-    mergeAgentListRows(dispatch, rows);
-
-    return { ids: rows.map((r) => r.id), deep, query: q };
+    return { ids, deep, query: q };
   },
 );
 
 /**
- * Fetches the full agent list for pickers and dropdowns.
- * Returns everything from agx_get_list() PLUS all active builtin agents.
- * Builtins arrive with accessLevel = 'system' so the UI can group them separately.
- *
- * Use this for any picker/dropdown that needs the complete agent catalogue.
- * Use fetchAgentsList() for the agents page where builtins are not shown.
+ * The picker-era name for the same hydration. Kept because ~20 surfaces
+ * dispatch it by name; it is `fetchAgentsList` with no status writes, because
+ * a picker's own loading state comes from the package now.
  */
-/**
- * Shared promise for an in-progress full-list load — see the dedupe note in
- * the thunk body. Session-local guard, deliberately not Redux state.
- */
-let _listFullInFlight: Promise<void> | null = null;
-
 export const fetchAgentsListFull = createAsyncThunk<void, void, ThunkApi>(
   "agentDefinition/fetchListFull",
   async (_, { dispatch }) => {
-    // In-flight dedupe. ~20 surfaces dispatch this on mount and several of
-    // them co-exist on one page (chat sidebar + bootstrap hook + pinned
-    // agents), with their effects running in the same commit — no
-    // component-level or status-based guard can see a sibling's request.
-    // Sharing the promise collapses them to one `agx_get_list_full` RPC
-    // while every caller still awaits a real result.
-    if (_listFullInFlight) return _listFullInFlight;
-
-    const run = (async () => {
-      const { data, error } = await supabase.rpc("agx_get_list_full");
-
-      if (error) throw pgErrorToError(error);
-
-      const rows = (data ?? []) as AgentListRow[];
-
-      for (const row of rows) {
-        dispatch(
-          mergePartialAgent({
-            id: row.id,
-            name: row.name,
-            description: row.description,
-            category: row.category,
-            tags: row.tags ?? [],
-            agentType: row.agent_type,
-            modelId: row.model_id,
-            isActive: row.is_active,
-            isArchived: row.is_archived,
-            isFavorite: row.is_favorite,
-            createdBy: row.created_by,
-            organizationId: row.organization_id,
-            taskId: row.task_id ?? null,
-            sourceAgentId: row.source_agent_id,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at,
-            isVersion: false,
-            isOwner: row.is_owner,
-            accessLevel: row.access_level,
-            sharedByEmail: row.shared_by_email,
-          }),
-        );
-        dispatch(setAgentFetchStatus({ id: row.id, status: "list" }));
-      }
-    })();
-
-    _listFullInFlight = run;
-    try {
-      await run;
-    } finally {
-      if (_listFullInFlight === run) _listFullInFlight = null;
-    }
+    const catalog = getAgentCatalog();
+    await catalog.ensureLoaded();
+    mergeAgentSummaries(dispatch, catalog.getState().rows);
   },
 );
 
@@ -1090,7 +1062,7 @@ export const fetchSharedAgents = createAsyncThunk<
     dispatch(
       mergePartialAgent({
         id: row.id,
-        name: row.name,
+        name: row.name ?? undefined,
         description: row.description,
         category: row.category,
         tags: row.tags ?? [],
@@ -1221,37 +1193,23 @@ export const purgeAgentVersions = createAsyncThunk<
 // ---------------------------------------------------------------------------
 
 /**
- * Module-level TTL guard — avoids hammering the DB when many components mount.
- * This is intentionally NOT stored in Redux: it's a session-local guard, not
- * user-visible state. Reset happens when the module is hot-reloaded in dev.
+ * THE FRESHNESS IS THE PACKAGE'S. `isChatListFresh` and its module-level
+ * timestamp are gone: the catalog owns the 15-minute TTL and the 4-hour
+ * tab-restore threshold, so there is exactly one answer to "is the list
+ * stale" on this platform.
  */
-let _chatListFetchedAt: number | null = null;
-const CHAT_LIST_TTL_MS = 15 * 60 * 1000; // 15 minutes
-const CHAT_LIST_STALE_MS = 4 * 60 * 60 * 1000; // 4 hours — tab-restore threshold
-
-/** True if the chat list was fetched within TTL. */
-export function isChatListFresh(): boolean {
-  if (_chatListFetchedAt === null) return false;
-  return Date.now() - _chatListFetchedAt < CHAT_LIST_TTL_MS;
-}
-
-/** True if the chat list is so old it should be refreshed in the background. */
 export function isChatListStale(): boolean {
-  if (_chatListFetchedAt === null) return true;
-  return Date.now() - _chatListFetchedAt > CHAT_LIST_STALE_MS;
+  return getAgentCatalog().isStale();
 }
 
 /**
- * Initializes the agent catalogue for the chat sidebar.
- * Calls fetchAgentsListFull() — owned + shared + builtins — in a single RPC.
- *
- * TTL-guarded: safe to call on every component mount. Skips the network call
- * if data is still fresh (< 15 min). Stale-while-revalidate: if a tab is
- * restored after > 4 hours, the caller can force a refresh via `force: true`.
+ * Initializes the agent catalogue for the chat sidebar and hydrates this
+ * registry from it. Safe to call on every mount — the catalog's own TTL and
+ * shared in-flight promise collapse concurrent mounts to one read.
  *
  * Usage:
- *   dispatch(initializeChatAgents())          // skip if fresh
- *   dispatch(initializeChatAgents({ force: true }))  // always re-fetch
+ *   dispatch(initializeChatAgents())                 // skip if fresh
+ *   dispatch(initializeChatAgents({ force: true }))  // always re-read
  */
 export const initializeChatAgents = createAsyncThunk<
   void,
@@ -1259,16 +1217,11 @@ export const initializeChatAgents = createAsyncThunk<
   ThunkApi
 >(
   "agentDefinition/initializeChatAgents",
-  async (arg, { dispatch, getState }) => {
+  async (arg, { dispatch }) => {
     const force = (arg as { force?: boolean } | undefined)?.force ?? false;
-
-    if (!force && isChatListFresh()) return;
-
-    // If already loading, don't fire a duplicate request
-    if (getState().agentDefinition.status === "loading" && !force) return;
-
-    await dispatch(fetchAgentsListFull());
-    _chatListFetchedAt = Date.now();
+    const catalog = getAgentCatalog();
+    await catalog.ensureLoaded(force ? { force: true } : undefined);
+    mergeAgentSummaries(dispatch, catalog.getState().rows);
   },
 );
 

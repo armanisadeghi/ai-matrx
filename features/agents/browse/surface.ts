@@ -5,7 +5,7 @@ import { makeScope } from "@/lib/list-scope/types";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { parseAgentsHubCatalogFilters } from "@/features/agents/agents-hub-catalog-filter-contract";
 import { getPeekedAgentId } from "@/features/agents/components/agent-listings/agent-peek-tracker";
-import { SORT_OPTIONS } from "@/features/agents/components/agent-listings/core/types";
+import { SORT_OPTIONS } from "@ai-matrx/agents/catalog/react";
 import {
   AGENTS_HUB_SURFACE_NAME,
   createAgentsHubScope,

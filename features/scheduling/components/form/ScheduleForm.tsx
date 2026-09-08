@@ -50,7 +50,7 @@ import { CronForm } from "./triggers/CronForm";
 import { HeartbeatForm } from "./triggers/HeartbeatForm";
 import { ContextMatchForm } from "./triggers/ContextMatchForm";
 import { VariablesEditor } from "./VariablesEditor";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 

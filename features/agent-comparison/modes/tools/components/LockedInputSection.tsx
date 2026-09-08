@@ -21,7 +21,7 @@ import {
   selectAgentById,
   selectAgentName,
 } from "@/features/agents/redux/agent-definition/selectors";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import SearchableSelect from "@/components/matrx/SearchableSelect";
 import type { Option } from "@/components/matrx/SearchableSelect";
 import { cn } from "@/lib/utils";

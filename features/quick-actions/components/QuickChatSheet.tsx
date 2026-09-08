@@ -17,7 +17,7 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatHistorySidebar } from "@/features/agents/components/chat/ChatHistorySidebar";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { useMandate } from "@/features/mandates/useMandate";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";

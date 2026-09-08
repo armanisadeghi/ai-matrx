@@ -11,7 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import {
   agentAssignmentsActions,
   selectAgentAssignmentsDemo,

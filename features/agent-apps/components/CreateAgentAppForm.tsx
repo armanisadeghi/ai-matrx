@@ -12,8 +12,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
-import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
+import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
+import type { AgentTab } from "@ai-matrx/agents/catalog";
 import {
   DISPLAY_MODE_OPTIONS,
   getTemplateForDisplayMode,

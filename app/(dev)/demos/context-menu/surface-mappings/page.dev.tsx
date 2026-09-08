@@ -31,7 +31,7 @@ import {
   Play,
   RefreshCw,
 } from "lucide-react";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   fetchAgentsListFull,

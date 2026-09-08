@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
-import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
+import type { AgentTab } from "@ai-matrx/agents/catalog";
 import { ShortcutScopePicker } from "@/features/agent-shortcuts/components/ShortcutScopePicker";
 import {
   AGENT_SCOPES,

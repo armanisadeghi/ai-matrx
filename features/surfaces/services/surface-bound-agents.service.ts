@@ -13,7 +13,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { AGENT_PUBLIC_TAB_LABEL } from "@/features/agents/constants/agent-list-labels";
+import { DEFAULT_AGENT_CATALOG_LABELS } from "@ai-matrx/agents/catalog";
 
 export interface SurfaceBoundAgentEntry {
   agentId: string;
@@ -331,7 +331,7 @@ async function fetchMenuAgentsFromDb(
     } else if (defaultAgents.length > 0) {
       sections.push({
         key: "public",
-        label: AGENT_PUBLIC_TAB_LABEL,
+        label: DEFAULT_AGENT_CATALOG_LABELS.publicTab,
         sortOrder: 10,
         agents: defaultAgents,
       });
@@ -413,7 +413,7 @@ function bucketBindingRows(
   if (systemDeduped.length > 0) {
     sections.push({
       key: "public",
-      label: AGENT_PUBLIC_TAB_LABEL,
+      label: DEFAULT_AGENT_CATALOG_LABELS.publicTab,
       sortOrder: 10,
       agents: systemDeduped,
     });

@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { CheckTapButton, CopyTapButton } from "@ai-matrx/tap-target/buttons";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { writeClipboard } from "@/components/agent-copy/clipboard";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";

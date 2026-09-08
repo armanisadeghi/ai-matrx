@@ -106,9 +106,11 @@ jest.mock("@/features/bindings/ScopeHolderBar", () => ({
 
 // The bar's own heavy leaves — registered so the `requireActual` above costs
 // nothing beyond the module's pure words.
-jest.mock(
-  "@/features/agents/components/agent-listings/AgentListDropdown",
-  () => ({ AgentListDropdown: () => <div data-testid="agent-picker" /> }),
+jest.mock("@ai-matrx/agents/catalog/react", () => ({
+  // Spread the REAL module: this entry also carries `SORT_OPTIONS`, which the
+  // agents-hub surface manifest reads at module scope. Replacing the whole
+  // entry with one stub component used to blow up an unrelated import chain.
+  ...jest.requireActual("@ai-matrx/agents/catalog/react"), AgentListDropdown: () => <div data-testid="agent-picker" /> }),
 );
 jest.mock("@/features/agent-shortcuts/components/AgentVersionPicker", () => ({
   AgentVersionPicker: () => <div data-testid="version-picker" />,

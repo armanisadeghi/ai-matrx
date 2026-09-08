@@ -50,7 +50,7 @@ import {
   registerSurface,
   unregisterSurface,
 } from "@/features/agents/redux/surfaces/surfaces.slice";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";

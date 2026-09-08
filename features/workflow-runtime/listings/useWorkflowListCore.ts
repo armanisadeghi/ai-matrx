@@ -23,7 +23,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { HOVER_GRACE_MS } from "@/features/agents/components/agent-listings/useAgentListCore";
+import { HOVER_GRACE_MS } from "@ai-matrx/agents/catalog/react";
 import {
   fetchWorkflowPickerCounts,
   fetchWorkflowPickerFacets,

@@ -38,7 +38,7 @@ import {
 import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { toast } from "@/lib/toast";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { Messages } from "@/features/agents/components/builder/message-builders/Messages";
 import { SystemMessage } from "@/features/agents/components/builder/message-builders/system-instructions/SystemMessage";
 import { AgentVariablesPanel } from "@/features/agents/components/variables-management/AgentVariablesPanel";

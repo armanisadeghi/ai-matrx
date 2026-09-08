@@ -97,7 +97,6 @@ import { surfaceUserStateReducer } from "@/features/surfaces/redux/userStateSlic
 import { agentConnectionsUiReducer } from "@/features/agent-connections/redux/ui/slice";
 import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
 import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";
-import agentConsumersReducer from "@/features/agents/redux/agent-consumers/slice";
 import toolsReducer from "@/features/agents/redux/tools/tools.slice";
 import scopeTypesReducer from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import scopesReducer from "@/features/agent-context/redux/scope/scopesSlice";
@@ -287,7 +286,6 @@ export const slimReducerMap = {
   agentConnectionsUi: agentConnectionsUiReducer,
   agentApp: agentAppReducer,
   agentAppConsumers: agentAppConsumersReducer,
-  agentConsumers: agentConsumersReducer,
   tools: toolsReducer,
 
   appContext: appContextReducer,

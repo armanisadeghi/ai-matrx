@@ -9,7 +9,7 @@ import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
 } from "@ai-matrx/tap-target";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import {
   AlertDialog,
   AlertDialogAction,

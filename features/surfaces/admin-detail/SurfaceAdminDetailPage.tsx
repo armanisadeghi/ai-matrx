@@ -95,7 +95,7 @@ import {
   type AgentSurfaceBinding,
 } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import { evaluateBindingAutoRun } from "@/features/surfaces/utils/binding-auto-run";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import {
   ToolSearchDialog,
   type ToolSearchOption,

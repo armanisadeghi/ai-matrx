@@ -107,6 +107,14 @@ export type CapturedErrorSource =
    */
   | "media"
   /**
+   * `@ai-matrx/agents/catalog`'s errorSink fired — the ONE agent picker's
+   * catalogue read, tier-2 search, favourite write, or mandate default-row
+   * resolution failed, or a row arrived with no identity and was dropped.
+   * Bound once in `lib/agents/catalog.ts`. Without this port the picker's
+   * failures would only reach the console.
+   */
+  | "agent-catalog"
+  /**
    * The model's chain-of-thought (`<thinking>`/`<reasoning>`) leaked into the
    * ANSWER text — i.e. it survived the render-block type-split and reached the
    * canonical JSON-extraction / answer-text path. This firing means the stream

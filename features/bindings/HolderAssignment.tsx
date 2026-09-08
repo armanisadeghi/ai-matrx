@@ -66,8 +66,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
+import type { AgentTab } from "@ai-matrx/agents/catalog";
 import {
   fetchAgentVersionHistory,
   type AgentVersionHistoryItem,

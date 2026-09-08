@@ -99,7 +99,6 @@ const REGISTERED_SLICE_KEYS = new Set<string>([
   "messages",
   "instanceResources",
   "agentShortcut",
-  "agentConsumers",
   "appContext",
   "instanceModelOverrides",
   "instanceContext",
@@ -368,16 +367,6 @@ export function getStateViewerTabs(
         <GenericSliceViewer
           sliceKey="agentShortcut"
           state={completeState.agentShortcut}
-        />
-      ),
-    },
-    {
-      id: "agentConsumers",
-      label: "Agent Consumers",
-      content: (
-        <GenericSliceViewer
-          sliceKey="agentConsumers"
-          state={completeState.agentConsumers}
         />
       ),
     },

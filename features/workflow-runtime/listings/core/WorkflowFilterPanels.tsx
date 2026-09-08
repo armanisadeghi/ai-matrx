@@ -5,7 +5,7 @@ import {
   OptionRow,
   SearchInput,
   SidePanelHeader,
-} from "@/features/agents/components/agent-listings/core/primitives";
+} from "@ai-matrx/agents/catalog/react";
 import { WORKFLOW_SORT_OPTIONS } from "../types";
 import type { WorkflowListControls } from "../useWorkflowListCore";
 

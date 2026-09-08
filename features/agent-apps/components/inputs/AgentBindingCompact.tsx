@@ -13,7 +13,7 @@
 
 import { Webhook } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 
 const BINDABLE_AGENT_TABS = ["mine", "shared", "all"] as const;
 

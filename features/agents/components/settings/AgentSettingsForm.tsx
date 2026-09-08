@@ -7,7 +7,7 @@ import {
   selectAgentIsReadOnly,
   selectAllAgentsArray,
 } from "@/features/agents/redux/agent-definition/selectors";
-import { AGENT_PUBLIC_TAB_LABEL } from "@/features/agents/constants/agent-list-labels";
+import { DEFAULT_AGENT_CATALOG_LABELS } from "@ai-matrx/agents/catalog";
 import { saveAgentField } from "@/features/agents/redux/agent-definition/thunks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Input } from "@ai-matrx/design-system";
@@ -68,7 +68,7 @@ interface AgentSettingsFormProps {
  * panel would repeat. One definition, two readers.
  */
 export function agentOwnershipLabel(agent: AgentDefinition): string {
-  if (agent.agentType === "builtin") return AGENT_PUBLIC_TAB_LABEL;
+  if (agent.agentType === "builtin") return DEFAULT_AGENT_CATALOG_LABELS.publicTab;
   return agent.isOwner ? "Mine" : "Shared";
 }
 
@@ -489,7 +489,7 @@ export function AgentSettingsForm({
                     </span>
                     <span className="inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 max-w-fit">
                       {agent.agentType === "builtin"
-                        ? AGENT_PUBLIC_TAB_LABEL
+                        ? DEFAULT_AGENT_CATALOG_LABELS.publicTab
                         : "User Generated"}
                     </span>
                   </div>

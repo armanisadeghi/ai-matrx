@@ -94,7 +94,7 @@ import {
   useFloatingRunWindow,
   type FloatingRunTrackState,
 } from "@/features/agents/hooks/useFloatingAgentRun";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";

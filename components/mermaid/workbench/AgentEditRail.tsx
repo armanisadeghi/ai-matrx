@@ -12,7 +12,7 @@ import React, { useEffect, useState } from "react";
 import { Check, Loader2, MessageSquare, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { Button } from "@/components/ui/button";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { cn } from "@/lib/utils";

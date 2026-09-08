@@ -80,6 +80,8 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
     "Stream held open after terminal (closed locally)",
   "media-durability": "Media durability violation",
   media: "Media terminal failure (@ai-matrx/media diagnostics port)",
+  "agent-catalog":
+    "Agent catalogue failure (@ai-matrx/agents/catalog errorSink)",
   "reasoning-leak": "Reasoning leaked into answer text",
   "data-shape": "Data-shape contract violation",
   "org-resolution": "Org resolution fallback",

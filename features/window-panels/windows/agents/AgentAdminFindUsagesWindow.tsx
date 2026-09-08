@@ -13,7 +13,7 @@
 import { useCallback, useState } from "react";
 import { ShieldOff, ShieldCheck } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";

@@ -41,7 +41,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { CreateAgentAppForm } from "./CreateAgentAppForm";
 import { AutoCreateAgentAppForm } from "./AutoCreateAgentAppForm";
 import { LiveBuilder } from "./LiveBuilder";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import {
   selectLiveAgents,
   selectAgentById,

@@ -28,9 +28,11 @@ import { createRoot, type Root } from "react-dom/client";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock(
-  "@/features/agents/components/agent-listings/AgentListDropdown",
-  () => ({ AgentListDropdown: () => <div data-testid="agent-picker" /> }),
+jest.mock("@ai-matrx/agents/catalog/react", () => ({
+  // Spread the REAL module: this entry also carries `SORT_OPTIONS`, which the
+  // agents-hub surface manifest reads at module scope. Replacing the whole
+  // entry with one stub component used to blow up an unrelated import chain.
+  ...jest.requireActual("@ai-matrx/agents/catalog/react"), AgentListDropdown: () => <div data-testid="agent-picker" /> }),
 );
 jest.mock("@/lib/redux/hooks", () => ({
   // A FAITHFUL dispatch double: the real one returns a thunk promise with

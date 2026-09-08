@@ -32,8 +32,8 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
-import { SORT_OPTIONS } from "@/features/agents/components/agent-listings/core/types";
-import { AGENT_NONE_SENTINEL } from "@/features/agents/redux/agent-consumers/slice";
+import { SORT_OPTIONS } from "@ai-matrx/agents/catalog/react";
+import { AGENT_NONE_SENTINEL } from "@ai-matrx/agents/catalog";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const AGENTS_HUB_SURFACE_NAME = "matrx-user/agents";

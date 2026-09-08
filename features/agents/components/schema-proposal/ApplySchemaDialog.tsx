@@ -30,7 +30,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { saveAgentField } from "@/features/agents/redux/agent-definition/thunks";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import type { OutputSchema } from "@/features/agents/types/json-schema";
 
 interface ApplySchemaDialogProps {

@@ -5,6 +5,10 @@ import "@ai-matrx/messaging/tokens.css";
 // @ai-matrx/meet, same three-step contract: package defaults, then this app's
 // brand mapping in globals.css, then the structural sheet below.
 import "@ai-matrx/meet/tokens.css";
+// The ONE agent picker's structural CSS + default `--matrx-agent-*` token
+// values (C26). Before globals.css, exactly like the messaging/meet sheets
+// above, so this app's own tokens and Tailwind utilities win.
+import "@ai-matrx/agents/catalog/styles.css";
 import "./globals.css";
 // Tap-button geometry (the .matrx-tap-* system) ships in the package.
 import "@ai-matrx/tap-target/styles.css";

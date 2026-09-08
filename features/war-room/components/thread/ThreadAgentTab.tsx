@@ -20,7 +20,7 @@ import dynamic from "next/dynamic";
 import { Loader2, MessageCircle, MessagesSquare, Plus, Sparkles } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AssociationEntitySelect } from "@ai-matrx/associations/react";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
 import { selectAssistantConversationId } from "@/features/transcript-studio/redux/selectors";
 import { useMandate } from "@/features/mandates/useMandate";

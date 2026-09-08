@@ -30,7 +30,7 @@ import { Input } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import {
   createOrchestra,
   addAgentToOrchestra,

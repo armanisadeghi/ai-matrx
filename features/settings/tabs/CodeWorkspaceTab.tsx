@@ -14,7 +14,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAllAgentCategories,
   selectAllAgentTags,
-} from "@/features/agents/redux/agent-consumers/selectors";
+} from "@ai-matrx/agents/catalog";
+import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
 import { selectActiveAgents } from "@/features/agents/redux/agent-definition/selectors";
 import type {
   CodeAgentFilter,
@@ -39,8 +40,9 @@ export default function CodeWorkspaceTab() {
   const [monacoEnvironmentsEnabled, setMonacoEnvironmentsEnabled] =
     useSetting<boolean>("userPreferences.coding.monacoEnvironmentsEnabled");
 
-  const allTags = useAppSelector(selectAllAgentTags);
-  const allCategories = useAppSelector(selectAllAgentCategories);
+  const agentRows = useAgentCatalogRows();
+  const allTags = selectAllAgentTags(agentRows);
+  const allCategories = selectAllAgentCategories(agentRows);
   const allAgents = useAppSelector(selectActiveAgents);
 
   const tagOptions = useMemo(

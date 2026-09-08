@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import { CircleAlert, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { SearchInput } from "@/features/agents/components/agent-listings/core/primitives";
-import type { RightPanel } from "@/features/agents/components/agent-listings/core/types";
+import { SearchInput } from "@ai-matrx/agents/catalog/react";
+import type { RightPanel } from "@ai-matrx/agents/catalog/react";
 import type { WorkflowListRecord, WorkflowTab } from "../types";
 import type {
   WorkflowListControls,

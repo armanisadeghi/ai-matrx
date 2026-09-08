@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
-import { makeSelectFilteredAgents } from "@/features/agents/redux/agent-consumers/selectors";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import {
+  FavoriteAgentButton,
+  useAgentCatalogRows,
+  useAgentConsumer,
+} from "@ai-matrx/agents/catalog/react";
+import { makeSelectFilteredAgents } from "@ai-matrx/agents/catalog";
 import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
-import { FavoriteAgentButton } from "@/features/agents/components/agent-listings/FavoriteAgentButton";
 
 interface PinnedAgentsSectionProps {
   /** Currently active agentId — used to highlight the row when present. */
@@ -18,7 +21,7 @@ interface PinnedAgentsSectionProps {
 const CONSUMER_ID = "chat-sidebar-pinned";
 /** Collapsed pin list length before "Show all" appears. */
 const PINNED_COLLAPSED_LIMIT = 5;
-const selectPinnedAgents = makeSelectFilteredAgents(CONSUMER_ID);
+const selectPinnedAgents = makeSelectFilteredAgents();
 
 function pinnedAgentHref(agentId: string): string {
   return `/chat/a/${encodeURIComponent(agentId)}`;
@@ -27,9 +30,9 @@ function pinnedAgentHref(agentId: string): string {
 /**
  * Renders the user's pinned agents at the top of the chat sidebar.
  *
- * Backed by the same centralized agent-consumers Redux pipeline that powers
+ * Backed by the SAME `@ai-matrx/agents/catalog` pipeline that powers
  * `AgentListDropdown` — we register a dedicated consumer ("chat-sidebar-pinned")
- * with `favFilter: "yes"`, then read `makeSelectFilteredAgents(consumerId)`.
+ * with `favFilter: "yes"`, then read `makeSelectFilteredAgents()`.
  * This means the section reflects whatever the user has favorited via the
  * canonical FavoriteAgentButton (toggling persists through `saveAgentField`
  * → `agent.definition.is_favorite`), respects archive/access filters consistently
@@ -68,7 +71,8 @@ export function PinnedAgentsSection({
     if (consumer.favFilter !== "yes") consumer.setFavFilter("yes");
   }, [consumer]);
 
-  const pinned = useAppSelector(selectPinnedAgents);
+  const rows = useAgentCatalogRows();
+  const pinned = selectPinnedAgents(rows, consumer.state);
 
   const [open, setOpen] = useState(true);
   const [showAll, setShowAll] = useState(false);
@@ -110,7 +114,7 @@ export function PinnedAgentsSection({
               <li key={agent.id}>
                 <Link
                   href={pinnedAgentHref(agent.id)}
-                  title={agent.description || agent.name}
+                  title={agent.description || agent.name || undefined}
                   className={cn(
                     "group mx-1 flex h-8 items-center gap-1.5 rounded-lg px-2 text-sm",
                     "text-foreground/90 hover:bg-accent/60",

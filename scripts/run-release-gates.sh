@@ -78,6 +78,7 @@ if $STRICT; then
         "Turbopack filesystem tracing|pnpm exec tsx scripts/check-turbopack-fs-tracing.ts"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
+        "One agent-list read (package-owned)|pnpm check:agent-list-reads"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts --strict"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
         # CANONICAL RATCHETS — the two counts from the 2026-08-15 architecture
@@ -353,6 +354,7 @@ else
         "Turbopack filesystem tracing|pnpm exec tsx scripts/check-turbopack-fs-tracing.ts"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
+        "One agent-list read (package-owned)|pnpm check:agent-list-reads"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
         # Blocking in --strict (see the strict list above); loud and exit-0 here,

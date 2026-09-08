@@ -1,8 +1,9 @@
 // features/agents/orchestras/components/AgentLibraryRail.tsx
 //
 // The builder's left rail: every agent the user can add to the Orchestra. It reuses the
-// CANONICAL agent filter system (the same one /agents/all uses) — its own
-// `useAgentConsumer` slot + the filtered selectors + <DesktopFilterPanel> — so
+// CANONICAL agent catalogue (`@ai-matrx/agents/catalog`, the same one
+// /agents/all and every picker use) — its own `useAgentConsumer` slot + the
+// package's filtered selectors + <DesktopFilterPanel> — so
 // Mine/Shared/All tabs, category/tag filters, sort and search all work exactly as
 // elsewhere. Current members + the conductor are excluded. Each row is
 // draggable (drop onto the canvas), clickable (adds to the end), and has a peek.
@@ -14,15 +15,17 @@ import { Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@ai-matrx/design-system";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
+import {
+  useAgentCatalogRows,
+  useAgentConsumer,
+} from "@ai-matrx/agents/catalog/react";
 import {
   makeSelectFilteredOwnedAgents,
   makeSelectFilteredSharedAgents,
   selectAllAgentCategories,
   selectAllAgentTags,
   selectTotalSharedAgentsCount,
-} from "@/features/agents/redux/agent-consumers/selectors";
+} from "@ai-matrx/agents/catalog";
 import { DesktopFilterPanel } from "@/features/agents/components/shared/DesktopFilterPanel";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
@@ -49,13 +52,14 @@ export interface AgentLibraryRailProps {
 export function AgentLibraryRail({ conductorId, memberIds, onAdd }: AgentLibraryRailProps) {
   const consumer = useAgentConsumer(LIBRARY_CONSUMER, { initialTab: "mine" });
 
-  const selOwned = useMemo(() => makeSelectFilteredOwnedAgents(LIBRARY_CONSUMER), []);
-  const selShared = useMemo(() => makeSelectFilteredSharedAgents(LIBRARY_CONSUMER), []);
-  const owned = useAppSelector(selOwned);
-  const shared = useAppSelector(selShared);
-  const allCategories = useAppSelector(selectAllAgentCategories);
-  const allTags = useAppSelector(selectAllAgentTags);
-  const totalShared = useAppSelector(selectTotalSharedAgentsCount);
+  const rows = useAgentCatalogRows();
+  const selOwned = useMemo(makeSelectFilteredOwnedAgents, []);
+  const selShared = useMemo(makeSelectFilteredSharedAgents, []);
+  const owned = selOwned(rows, consumer.state);
+  const shared = selShared(rows, consumer.state);
+  const allCategories = selectAllAgentCategories(rows);
+  const allTags = selectAllAgentTags(rows);
+  const totalShared = selectTotalSharedAgentsCount(rows);
 
   const excluded = useMemo(
     () => new Set([conductorId, ...memberIds]),

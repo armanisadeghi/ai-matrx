@@ -58,7 +58,7 @@ import {
   PopoverContent,
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import {
   ROUTE_MENU_ICON_SIZE,
   ROUTE_MENU_ICON_STROKE_WIDTH,

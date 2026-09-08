@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
 import type { AgentConfig } from "@/features/cx-chat/types/agents";

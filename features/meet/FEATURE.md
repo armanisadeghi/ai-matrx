@@ -70,7 +70,42 @@ belonged (C22, THE SAME-SESSION LAW):
 If a future defect tempts a fifth wrapper, the answer is the same: fix it in the
 package, release, adopt — never a crossing in here.
 
+## Known blockers on this surface (2026-09-08, MRI-A9)
+
+Both were found by the FIRST browser proof of the in-room intelligence panel and
+neither is fixable in this folder or in the package. They are named here because
+a reader of this surface will otherwise conclude the package is broken.
+
+1. **No host control ever appears — the token carries no `role`.** Feedback
+   `7418ef78-6168-42d5-ae79-172ca9ec849d`. `aidream/services/meet/service.py`
+   mints participant metadata without a `role` key, and the package reads a
+   participant's role out of the SERVER-MINTED metadata by design (a client that
+   could name itself host could mute anyone). So the actual host is a plain
+   participant everywhere: no "Start note-taker", no host menu, no lobby
+   admission, no "End meeting for everyone". Absent, not dead — correct
+   behaviour on wrong data. One-line fix at the source.
+2. **The durable realtime feed delivers nothing.** Feedback
+   `761359a4-b799-4e19-8bf5-d1c03f6e7ae2` (critical). None of
+   `communication.meet_transcript_segments`, `meet_notes`, `meet_meetings` are in
+   the `supabase_realtime` publication, so the Postgres Changes subscription the
+   package opens is silent forever — it subscribes successfully and no row ever
+   arrives. Only the join-time backfill read works, which is exactly why the
+   surface looks healthy on load and then stops moving. This is THE blocker for
+   "captions, live notes, Q&A and the wrap-up without a page reload".
+
 ## Change log
+
+- `2026-09-08` — claude: **adopted `@ai-matrx/meet` 0.3.2 then 0.3.3 (MRI-A9),
+  and the in-room intelligence panel was seen in a browser for the first time.**
+  0.3.2 makes attendance independent of devices — a denied microphone no longer
+  aborts the join, which is what had made the whole in-room surface unreachable
+  from the Browser pane. 0.3.3 fixes the second defect the proof itself exposed:
+  the roster was only ever built by a media event, so a listen-only attendee was
+  absent from their own People panel. Proven live on `/meet/1d3-8988-d71`
+  against production and the deployed note-taker: listen-only join with the
+  honest notice, tiles, the consent banner, a note-taker tile, live captions per
+  speaker, and a streamed Q&A answer citing the durable speaker names. Two
+  blockers found and NOT fixed here — see the section above.
 
 - `2026-09-08` — claude: **adopted `@ai-matrx/meet` 0.3.0 (MRI-A5), same
   session.** The assistant is server-owned: `agents` and `transport` are gone

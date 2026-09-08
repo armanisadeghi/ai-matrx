@@ -37,7 +37,7 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { selectAllOrgs } from "@/features/agent-context/redux/organizationsSlice";
 import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";

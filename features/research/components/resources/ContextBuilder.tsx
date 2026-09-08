@@ -41,7 +41,7 @@ import {
   fetchAgentsListFull,
   fetchAgentExecutionMinimal,
 } from "@/features/agents/redux/agent-definition/thunks";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
 import { useMandate } from "@/features/mandates/useMandate";

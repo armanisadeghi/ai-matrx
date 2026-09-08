@@ -67,6 +67,18 @@ import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNu
 // association cache had. Heavy port bindings (WindowPanel, FilePickerWindow)
 // are behind their own lazy edges inside the host — this import stays light.
 import { AssociationsHost } from "@/features/scopes/host/AssociationsHost";
+
+// THE ONE `@ai-matrx/agents/catalog` mount — the agent picker and every piece
+// of its state (rows, tabs, sort, search, filters, favourites, counts,
+// freshness, the mandate-resolved default row) live in the package behind this
+// provider. Owner ruling D1 (2026-09-08): the host receives `onSelect(agentId)`
+// and nothing more; there is NO second agent-list store in this app. Inside
+// StoreProvider because the catalog's identity and transport ports read Redux.
+// See providers/AgentCatalogHost.tsx + lib/agents/catalog.ts.
+import { AgentCatalogHost } from "@/providers/AgentCatalogHost";
+// The live host for `openAgentPeek(agentId)` — the app service bound to the
+// picker's `openPeek` port. Slim shell; the WindowPanel body is lazy.
+import { AgentPeekHost } from "@/providers/AgentPeekHost";
 import DeferredSingletonWrapper from "./DeferredSingletonWrapper";
 import { ServerToggleQueryReset } from "@/providers/ServerToggleQueryReset";
 import { LoopbackApiAccessSync } from "@/providers/LoopbackApiAccessSync";
@@ -149,6 +161,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
     <ReactQueryProvider>
       <StoreProvider initialState={initialReduxState}>
         <AssociationsHost>
+        <AgentCatalogHost>
         <WindowPersistenceManager>
           <PersistentComponentProvider>
             <ToastProvider>
@@ -227,6 +240,13 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   chat's durable tags. Dismiss cancels the send.
                                   See components/dialogs/scope-mismatch/. */}
                                 <ScopeMismatchDialogHost />
+                                {/* Agent quick-look host. `openAgentPeek(id)`
+                                  from anywhere opens the canonical
+                                  AgentPeekWindow; it is what fills the ONE
+                                  agent picker's `openPeek` port.
+                                  See features/agents/components/agent-listings/
+                                  openAgentPeek.ts. */}
+                                <AgentPeekHost />
                                 {/* Audio hosts (modal, TTS output, playback +
                                   session mirrors, devices, recording, recovery)
                                   all live inside <AudioSystemHost /> above. */}
@@ -250,6 +270,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
             </ToastProvider>
           </PersistentComponentProvider>
         </WindowPersistenceManager>
+        </AgentCatalogHost>
         </AssociationsHost>
       </StoreProvider>
     </ReactQueryProvider>

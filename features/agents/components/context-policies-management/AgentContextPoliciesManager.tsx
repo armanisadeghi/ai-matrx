@@ -61,7 +61,7 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { sanitizeVariableName } from "@/features/agents/utils/variable-utils";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import {
   InlinePolicyControl,
   decodeInlinePolicy,

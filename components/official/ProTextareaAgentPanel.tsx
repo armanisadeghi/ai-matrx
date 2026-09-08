@@ -10,8 +10,10 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import {
+  AgentListDropdown,
+  AgentListInlinePicker,
+} from "@ai-matrx/agents/catalog/react";
 import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useConversationDocumentsBridge } from "@/features/agents/hooks/useWorkingDocument";

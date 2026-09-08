@@ -5,7 +5,7 @@
 // this component is only the narrow sidebar trigger/compatibility adapter.
 
 import { ChevronDown, Network } from "lucide-react";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 
 interface SidebarAgent {
   promptId: string;

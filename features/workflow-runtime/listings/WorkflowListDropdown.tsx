@@ -43,11 +43,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { RightPanel } from "@/features/agents/components/agent-listings/core/types";
+import type { RightPanel } from "@ai-matrx/agents/catalog/react";
 import {
   PANEL_HEIGHT,
   LIST_MAX_HEIGHT,
-} from "@/features/agents/components/agent-listings/core/types";
+} from "@ai-matrx/agents/catalog/react";
 import { WorkflowListContent } from "./core/WorkflowListContent";
 import { WorkflowDetailCard } from "./core/WorkflowDetailCard";
 import {

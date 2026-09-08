@@ -38,11 +38,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
+// The gallery is a LIST CONSUMER of the ONE agent catalog (ruling D1): its
+// card UI stays here, its rows and every filter/sort/count come from the
+// package. There is no second agent-list store in this app.
+import {
+  useAgentCatalog,
+  useAgentCatalogRows,
+  useAgentConsumer,
+} from "@ai-matrx/agents/catalog/react";
 import {
   makeSelectFilteredOwnedAgents,
   makeSelectFilteredSharedAgents,
@@ -53,7 +60,7 @@ import {
   selectAllAgentCategories,
   selectAllAgentTags,
   selectTotalSharedAgentsCount,
-} from "@/features/agents/redux/agent-consumers/selectors";
+} from "@ai-matrx/agents/catalog";
 import { selectAgentsSliceStatus } from "@/features/agents/redux/agent-definition/selectors";
 import {
   fetchAgentsList,
@@ -61,16 +68,13 @@ import {
   duplicateAgent,
   resolveAgentVersionId,
 } from "@/features/agents/redux/agent-definition/thunks";
-import {
-  setAgentConsumerFilter,
-  type AgentConsumerState,
-  type AgentSortOption,
-} from "@/features/agents/redux/agent-consumers/slice";
-import { parseAgentsHubCatalogFilters } from "@/features/agents/agents-hub-catalog-filter-contract";
 import type {
-  AgentDefinitionRecord,
-  AgentVersionLookup,
-} from "@/features/agents/types/agent-definition.types";
+  AgentConsumerState,
+  AgentSortOption,
+  AgentSummary,
+} from "@ai-matrx/agents/catalog";
+import { parseAgentsHubCatalogFilters } from "@/features/agents/agents-hub-catalog-filter-contract";
+import type { AgentVersionLookup } from "@/features/agents/types/agent-definition.types";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -78,7 +82,7 @@ import {
   createAgentsHubScope,
 } from "@/features/surfaces/manifests/agents-hub.manifest";
 import { getPeekedAgentId } from "./agent-peek-tracker";
-import { SORT_OPTIONS } from "./core/types";
+import { SORT_OPTIONS } from "@ai-matrx/agents/catalog/react";
 const CONSUMER_ID = "agents-main";
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -108,10 +112,6 @@ function AgentsSkeleton({ count = 4 }: { count?: number }) {
 
 export function AgentsGrid() {
   const dispatch = useAppDispatch();
-  // Read at CALL time inside the write handler — see the note there. The
-  // confirm dialog can sit open indefinitely, so a render snapshot is stale
-  // by the time the user presses Apply.
-  const store = useAppStore();
   const router = useRouter();
   const isMobile = useIsMobile();
 
@@ -133,6 +133,8 @@ export function AgentsGrid() {
   } | null>(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
+  const catalog = useAgentCatalog();
+  const catalogRows = useAgentCatalogRows();
   const consumer = useAgentConsumer(CONSUMER_ID, { initialTab: "all" });
   const {
     tab: activeTab,
@@ -202,48 +204,45 @@ export function AgentsGrid() {
   }, [dispatch, isVersionIdQuery, versionIdQuery]);
 
   // Memoized selectors
-  const selectFilteredOwned = useMemo(
-    () => makeSelectFilteredOwnedAgents(CONSUMER_ID),
-    [],
-  );
-  const selectFilteredShared = useMemo(
-    () => makeSelectFilteredSharedAgents(CONSUMER_ID),
-    [],
-  );
+  // The package's selector factories are memoized pure functions of
+  // (rows, consumerState) — bound once, called on every render.
+  const selectFilteredOwned = useMemo(makeSelectFilteredOwnedAgents, []);
+  const selectFilteredShared = useMemo(makeSelectFilteredSharedAgents, []);
   const selectOwnedCards = useMemo(
-    () => makeSelectOwnedAgentCards(CONSUMER_ID, isMobile),
+    () => makeSelectOwnedAgentCards(isMobile),
     [isMobile],
   );
   const selectOwnedListItems = useMemo(
-    () => makeSelectOwnedAgentListItems(CONSUMER_ID, isMobile),
+    () => makeSelectOwnedAgentListItems(isMobile),
     [isMobile],
   );
   const selectSharedCards = useMemo(
-    () => makeSelectSharedAgentCards(CONSUMER_ID, isMobile),
+    () => makeSelectSharedAgentCards(isMobile),
     [isMobile],
   );
   const selectSharedListItems = useMemo(
-    () => makeSelectSharedAgentListItems(CONSUMER_ID, isMobile),
+    () => makeSelectSharedAgentListItems(isMobile),
     [isMobile],
   );
 
-  const filteredOwnedAgents = useAppSelector(selectFilteredOwned);
-  const filteredSharedAgents = useAppSelector(selectFilteredShared);
-  const ownedAgentCards = useAppSelector(selectOwnedCards);
+  const consumerState = consumer.state;
+  const filteredOwnedAgents = selectFilteredOwned(catalogRows, consumerState);
+  const filteredSharedAgents = selectFilteredShared(catalogRows, consumerState);
+  const ownedAgentCards = selectOwnedCards(catalogRows, consumerState);
   const {
     items: ownedAgentListItems,
     hasMore: hasMoreOwned,
     totalAfterCards: totalOwnedAfterCards,
-  } = useAppSelector(selectOwnedListItems);
-  const sharedAgentCards = useAppSelector(selectSharedCards);
+  } = selectOwnedListItems(catalogRows, consumerState);
+  const sharedAgentCards = selectSharedCards(catalogRows, consumerState);
   const {
     items: sharedAgentListItems,
     hasMore: hasMoreShared,
     totalAfterCards: totalSharedAfterCards,
-  } = useAppSelector(selectSharedListItems);
-  const allCategories = useAppSelector(selectAllAgentCategories);
-  const allTags = useAppSelector(selectAllAgentTags);
-  const totalSharedAgents = useAppSelector(selectTotalSharedAgentsCount);
+  } = selectSharedListItems(catalogRows, consumerState);
+  const allCategories = selectAllAgentCategories(catalogRows);
+  const allTags = selectAllAgentTags(catalogRows);
+  const totalSharedAgents = selectTotalSharedAgentsCount(catalogRows);
 
   const hasShared = filteredSharedAgents.length > 0 || totalSharedAgents > 0;
   const filteredAgents =
@@ -362,8 +361,11 @@ export function AgentsGrid() {
       : undefined;
     return createAgentsHubScope({
       visible_agents: filteredAgents.map((a) => ({
-        id: a.id,
-        name: a.name,
+        id: a.id as string,
+        // The surface value must say what the SCREEN says: every row with no
+        // stored name renders as "Untitled", so that is what an agent reading
+        // `visible_agents` is told it is looking at.
+        name: a.name ?? "Untitled",
         category: a.category,
       })),
       visible_agent_count: filteredAgents.length,
@@ -395,7 +397,7 @@ export function AgentsGrid() {
       available_categories: allCategories,
       available_tags: allTags,
       ...(peekedId ? { peeked_agent_id: peekedId } : {}),
-      ...(peeked ? { peeked_agent_name: peeked.name } : {}),
+      ...(peeked ? { peeked_agent_name: peeked.name ?? undefined } : {}),
       ...(versionLookup && versionLookup.versionId === versionIdQuery
         ? {
             version_lookup: {
@@ -423,7 +425,9 @@ export function AgentsGrid() {
   //    dialog, and that dialog can sit open indefinitely. Anything read off
   //    the render closure is a snapshot from before the user was even asked —
   //    so the live vocabulary and the shared-agent count are read from
-  //    `store.getState()` at CALL time, after the user presses Apply.
+  //    `catalog.getState()` at CALL time, after the user presses Apply.
+  //    The confirm dialog can sit open indefinitely, so a render snapshot is
+  //    stale by the time Apply is pressed.
   //  * Resolving every field in one call also removes write ordering as a
   //    hazard: there is no second target to race and no replace/append pair.
   //
@@ -435,10 +439,10 @@ export function AgentsGrid() {
   const buildHubWriteHandlers = () => ({
     catalog_filters: (value: unknown) => {
       // Live state, read AFTER the user pressed Apply.
-      const state = store.getState();
-      const liveCategories = selectAllAgentCategories(state);
-      const liveTags = selectAllAgentTags(state);
-      const liveSharedTotal = selectTotalSharedAgentsCount(state);
+      const liveRows = catalog.getState().rows;
+      const liveCategories = selectAllAgentCategories(liveRows);
+      const liveTags = selectAllAgentTags(liveRows);
+      const liveSharedTotal = selectTotalSharedAgentsCount(liveRows);
       const parsed = parseAgentsHubCatalogFilters(value, {
         categories: liveCategories,
         tags: liveTags,
@@ -482,7 +486,7 @@ export function AgentsGrid() {
 
       // Validated in full above, so this single dispatch either applies
       // everything the agent asked for or nothing at all.
-      dispatch(setAgentConsumerFilter({ consumerId: CONSUMER_ID, patch }));
+      catalog.setConsumerFilter(CONSUMER_ID, patch);
     },
   });
 
@@ -518,7 +522,7 @@ export function AgentsGrid() {
   };
 
   // Render helpers
-  const renderCards = (agents: AgentDefinitionRecord[]) => (
+  const renderCards = (agents: AgentSummary[]) => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-3 gap-y-3">
       {agents.map((a) => (
         <AgentCard
@@ -537,7 +541,7 @@ export function AgentsGrid() {
     </div>
   );
 
-  const renderList = (agents: AgentDefinitionRecord[]) => (
+  const renderList = (agents: AgentSummary[]) => (
     <div className="mt-4 grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {agents.map((a) => (
         <AgentListItem
@@ -772,8 +776,8 @@ export function AgentsGrid() {
               <ReferencesBulkCopyButton
                 referenceType="agent"
                 records={filteredAgents.map((a) => ({
-                  id: a.id,
-                  label: a.name,
+                  id: a.id as string,
+                  label: a.name ?? undefined,
                 }))}
                 toastLabel={`${filteredAgents.length} agent${filteredAgents.length === 1 ? "" : "s"}`}
               />

@@ -35,9 +35,11 @@ type DropdownProps = {
 
 let lastDropdownProps: DropdownProps | null = null;
 
-jest.mock(
-  "@/features/agents/components/agent-listings/AgentListDropdown",
-  () => ({
+jest.mock("@ai-matrx/agents/catalog/react", () => ({
+  // Spread the REAL module: this entry also carries `SORT_OPTIONS`, which the
+  // agents-hub surface manifest reads at module scope. Replacing the whole
+  // entry with one stub component used to blow up an unrelated import chain.
+  ...jest.requireActual("@ai-matrx/agents/catalog/react"),
     AgentListDropdown: (props: DropdownProps) => {
       lastDropdownProps = props;
       return <div data-testid="agent-picker" />;

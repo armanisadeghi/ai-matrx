@@ -20,7 +20,7 @@ import {
   selectAllAgents,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import {
   selectActiveAssistantAgentId,
   selectAssistantConversationId,

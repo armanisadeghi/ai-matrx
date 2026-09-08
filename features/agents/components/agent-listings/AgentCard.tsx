@@ -25,7 +25,7 @@ import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { AgentActionModal } from "./AgentActionModal";
 import { AgentSneakPeekModal } from "./AgentSneakPeekModal";
 import { ComingSoonModal } from "./ComingSoonModal";
-import { FavoriteAgentButton } from "./FavoriteAgentButton";
+import { FavoriteAgentButton } from "@ai-matrx/agents/catalog/react";
 import { AddToOrchestraMenu } from "@/features/agents/orchestras/components/AddToOrchestraMenu";
 import { useState } from "react";
 import { toast } from "@/lib/toast-service";

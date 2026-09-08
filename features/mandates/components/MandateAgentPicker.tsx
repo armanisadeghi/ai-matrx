@@ -52,7 +52,7 @@ import {
   selectOwnedAgents,
   selectSharedWithMeAgents,
 } from "@/features/agents/redux/agent-definition/selectors";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 import {

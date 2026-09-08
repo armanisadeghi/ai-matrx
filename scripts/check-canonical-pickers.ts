@@ -2,8 +2,9 @@
 /**
  * check:canonical-pickers — stop agent/model picker forks at source.
  *
- * Platform agent choice is rendered by AgentListDropdown or
- * AgentListInlinePicker. Platform ai.model_definition choice is rendered by
+ * Platform agent choice is rendered by `AgentListDropdown` or
+ * `AgentListInlinePicker` from `@ai-matrx/agents/catalog/react` — the ONE
+ * picker, package-owned. Platform ai.model_definition choice is rendered by
  * ModelListDropdown. Callers may configure/wrap those components, but may not
  * build another roster from Select, native select, buttons, or local option
  * maps. Provider wire-contract enums are a different identity domain and must
@@ -17,10 +18,12 @@ import path from "node:path";
 const ROOT = path.resolve(__dirname, "..");
 const MODEL_CANONICAL_IMPORT =
   "@/features/ai-models/components/lab/ModelListDropdown";
-const AGENT_CANONICAL_IMPORTS = [
-  "@/features/agents/components/agent-listings/AgentListDropdown",
-  "@/features/agents/components/agent-listings/AgentListInlinePicker",
-] as const;
+// 🚨 THE ONE AGENT PICKER LIVES IN THE PACKAGE (2026-09-08, ruling D1).
+// `@ai-matrx/agents/catalog/react` ships `AgentListDropdown` and
+// `AgentListInlinePicker` and every piece of their logic; matrx-frontend's
+// copies were deleted, not adapted. A host renders the package component and
+// receives `onSelect(agentId)`.
+const AGENT_CANONICAL_IMPORTS = ["@ai-matrx/agents/catalog/react"] as const;
 const MODEL_EXEMPTION = /canonical-model-picker-exempt:\s*(.{12,})/;
 const AGENT_EXEMPTION = /canonical-agent-picker-exempt:\s*(.{12,})/;
 
@@ -108,7 +111,7 @@ function main(): void {
           file,
           line: lineFor(text, agentSignal.index),
           reason:
-            "agent-selection UI does not render AgentListDropdown or AgentListInlinePicker",
+            "agent-selection UI does not render the package picker (@ai-matrx/agents/catalog/react)",
         });
       }
     }

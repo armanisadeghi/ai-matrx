@@ -7,18 +7,20 @@ import { Separator } from "@/components/ui/separator";
 import { ChevronDown, ChevronRight, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAgentListCore } from "@/features/agents/components/agent-listings/useAgentListCore";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { AgentListContent } from "@/features/agents/components/agent-listings/core/AgentListContent";
-import { AgentDetailCard } from "@/features/agents/components/agent-listings/core/AgentDetailCard";
-import { AgentFilterBar } from "@/features/agents/components/agent-listings/core/AgentFilterBar";
-import { AgentSortPanel } from "@/features/agents/components/agent-listings/core/AgentSortPanel";
-import { AgentCategoriesPanel } from "@/features/agents/components/agent-listings/core/AgentCategoriesPanel";
-import { AgentTagsPanel } from "@/features/agents/components/agent-listings/core/AgentTagsPanel";
-import { AgentMobileSubView } from "@/features/agents/components/agent-listings/core/AgentMobileSubView";
-import { SearchInput } from "@/features/agents/components/agent-listings/core/primitives";
-import type { RightPanel } from "@/features/agents/components/agent-listings/core/types";
-import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
+import {
+  AgentCategoriesPanel,
+  AgentDetailCard,
+  AgentFilterBar,
+  AgentListContent,
+  AgentListDropdown,
+  AgentMobileSubView,
+  AgentSortPanel,
+  AgentTagsPanel,
+  SearchInput,
+  useAgentListCore,
+  type RightPanel,
+} from "@ai-matrx/agents/catalog/react";
+import type { AgentSummary } from "@ai-matrx/agents/catalog";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import {
   Drawer,
@@ -142,7 +144,7 @@ function SidebarListDemo() {
   const [catSearch, setCatSearch] = useState("");
   const [tagSearch, setTagSearch] = useState("");
   const [mobileDetailAgent, setMobileDetailAgent] =
-    useState<AgentDefinitionRecord | null>(null);
+    useState<AgentSummary | null>(null);
   const [mobileSubView, setMobileSubView] = useState<
     "sort" | "categories" | "tags" | null
   >(null);
@@ -209,7 +211,7 @@ function SidebarListDemo() {
       hoveredAgent={hoveredAgent}
       onAgentHover={(a) => handleAgentHover(a, !!activeFilterPanel)}
       onAgentHoverEnd={(a) => handleAgentHoverEnd(a, () => setRightPanel(null))}
-      onDetailPress={setMobileDetailAgent}
+      onDetailPress={(a) => setMobileDetailAgent(a)}
       onFilterChipClick={onFilterChipClick}
       rightPanel={rightPanel}
       tabCounts={tabCounts}
@@ -590,7 +592,7 @@ function CardGridDemo() {
 function DetailCardDemo() {
   const isMobile = useIsMobile();
   const [selectedAgent, setSelectedAgent] =
-    useState<AgentDefinitionRecord | null>(null);
+    useState<AgentSummary | null>(null);
 
   const { agents, ensureLoaded } = useAgentListCore({
     consumerId: "demo-detail",

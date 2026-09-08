@@ -5,8 +5,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Boxes } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import {
+  AgentListDropdown,
+  AgentListInlinePicker,
+} from "@ai-matrx/agents/catalog/react";
 import { beginFreshCodeChat } from "./begin-fresh-code-chat";
 
 interface AgentPickerProps {

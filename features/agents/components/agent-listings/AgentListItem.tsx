@@ -27,7 +27,7 @@ import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { AgentActionModal } from "./AgentActionModal";
 import { AgentSneakPeekModal } from "./AgentSneakPeekModal";
 import { ComingSoonModal } from "./ComingSoonModal";
-import { FavoriteAgentButton } from "./FavoriteAgentButton";
+import { FavoriteAgentButton } from "@ai-matrx/agents/catalog/react";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import {
   DropdownMenu,

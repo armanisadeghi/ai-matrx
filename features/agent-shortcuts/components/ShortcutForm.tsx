@@ -59,7 +59,10 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import {
+  AgentListDropdown,
+  AgentListInlinePicker,
+} from "@ai-matrx/agents/catalog/react";
 import { AgentVersionPicker } from "./AgentVersionPicker";
 import { ScopeMappingEditor } from "./ScopeMappingEditor";
 import type { AgentVariableDefinition } from "./ScopeMappingEditor";
@@ -80,7 +83,6 @@ import {
   fetchAgentExecutionMinimal,
   fetchAgentsListFull,
 } from "@/features/agents/redux/agent-definition/thunks";
-import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import { StoredModelOverridesField } from "@/features/agents/components/run-controls/StoredModelOverridesField";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type { ContextPolicy } from "@/features/agents/types/agent-api-types";

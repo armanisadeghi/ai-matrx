@@ -62,6 +62,14 @@ const config: Config = {
         // subpath rule below (which would resolve it to dist/matrx.js).
         "^@ai-matrx/agents/matrx$":
             "<rootDir>/node_modules/@ai-matrx/agents/dist/matrx/index.js",
+        // `./catalog` and `./catalog/react` are DIRECTORIES as well
+        // (dist/catalog/index.js, dist/catalog/react/index.js) — the ONE agent
+        // picker lives behind them, so they must be mapped before the generic
+        // rule (which would look for dist/catalog.js and dist/catalog/react.js).
+        "^@ai-matrx/agents/catalog$":
+            "<rootDir>/node_modules/@ai-matrx/agents/dist/catalog/index.js",
+        "^@ai-matrx/agents/catalog/react$":
+            "<rootDir>/node_modules/@ai-matrx/agents/dist/catalog/react/index.js",
         // @ai-matrx/associations subpaths are DIRECTORIES too
         // (dist/core/index.js, dist/react/index.js) — map before the generic
         // rule, same reason as agents/matrx above.

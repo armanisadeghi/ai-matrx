@@ -10,39 +10,44 @@
 
 ---
 
-## 🚨 THERE IS ONE AGENT PICKER. Building a second one is a defect.
+## 🚨 THERE IS ONE AGENT PICKER, AND IT LIVES IN THE PACKAGE.
 
 **Any UI that lets a person choose an agent renders `AgentListDropdown` (trigger +
-popover/drawer) or `AgentListInlinePicker` (embedded panel).** Both are shells over the
-ONE core — `useAgentListCore` + `AgentListContent` — so every agent-selection surface in
-the product gets the full set, always:
+popover/drawer) or `AgentListInlinePicker` (embedded panel) from
+`@ai-matrx/agents/catalog/react`.** The picker and ALL of its logic — rows, tabs, sort,
+search, filters, favourites, counts, freshness, the mandate-resolved default row — belong
+to the package (owner ruling D1, 2026-09-08). This repo's copies were DELETED on
+2026-09-08, not adapted.
 
-search · **Mine / Shared / All / System tabs with live counts** · sort · favorites ·
-category filter · tag filter · reset · current-agent pinned on top · per-row origin badge
-(`system` / `shared`) · detail peek · cmd-click to open the agent · footer count.
+**The rule body lives with the code:**
+`/Users/armanisadeghi/code/aidream/apps/shared/matrx-agents/FEATURE.md`
+(design + census: `/Users/armanisadeghi/code/common-docs/projects/npm-package-extraction/AGENT-PICKER-DESIGN.md`).
 
-- **A list + a text box is NOT an agent picker.** That shape (`SearchableAgentSelect`)
-  existed in 8 places, shipped none of the above, and was **deleted 2026-08-08**. Do not
-  reintroduce it under any name. If a surface needs an agent, import the canonical picker.
-- **No tab is allowed to be poorer than its neighbours.** The System tab used to offer
-  sort only; it now carries the identical filter bar, with category/tag options drawn from
-  the builtin population (`selectAllSystemAgentCategories` / `…Tags`).
-- **User vs ADMIN variant — same component, two props.** `initialTab` picks the opening
-  tab; `includeSystemInAll` is the admin reading of "All" (system agents blend into it,
-  and the tab reads **System** instead of **Public**). Admin surfaces that manage system
-  agents pass `initialTab="system" includeSystemInAll` — an admin owns the system agents
-  AND their own, must reach both, and must never confuse them, which is what the per-row
-  `system` badge is for.
-- **Never hand a picker a pre-built `agents` array.** It reads the canonical Redux
-  agent-definition slice itself. A caller-supplied list is how a surface silently ends up
-  showing a partial set.
-- **Constrain the canonical picker instead of forking it.** Use `visibleTabs` for an
-  ownership/type boundary and `excludeAgentIds` for records that are invalid in the current
-  operation; the shared core still owns loading, filtering, sorting, counts, and row actions.
+What this repo still owns:
 
-Files: `features/agents/components/agent-listings/` — `AgentListDropdown.tsx`,
-`AgentListInlinePicker.tsx`, `useAgentListCore.ts`, `core/AgentList{Content,Tabs}.tsx`,
-`core/AgentFilterBar.tsx`, `core/AgentRow.tsx`.
+- **The mount — exactly one.** `<AgentCatalogHost>` in [`app/Providers.tsx`](../../app/Providers.tsx)
+  (inside `StoreProvider`) binds the UI ports; the headless catalog is built in
+  [`lib/agents/catalog.ts`](../../lib/agents/catalog.ts) from the `utils/supabase/client`
+  singleton, `requireUserId`, ONE `createMatrxTransport(store.getState)`, `captureError`
+  and `toast`. `@ai-matrx/agents/catalog/styles.css` is imported in `app/layout.tsx`
+  before `globals.css`.
+- **The host contract is `onSelect(agentId)` and nothing more.** A call site keeps every
+  prop it had (`consumerId`, `initialTab`, `includeSystemInAll`, `visibleTabs`,
+  `systemTabLabel`, `excludeAgentIds`, `resolveAgentHref`, `showPinnedAgent`,
+  `triggerSlot`, `compact`, …) and gains `defaultMandateKey`.
+- **THE REGISTRY RULE.** The `agent-definition` slice is the editable full-record store,
+  never a list. Its four list thunks — `fetchAgentsList`, `fetchAgentsListFull`,
+  `initializeChatAgents`, `searchAgentsServer` — issue NO RPC: they ask the package
+  catalog and project its `AgentSummary` rows in as `_fetchStatus: "list"` records so the
+  ~50 non-picker surfaces that resolve names, the builtin catalogue and gallery rows keep
+  working. Guard: `pnpm check:agent-list-reads` (+ `:self-test`) refuses any
+  `agx_get_list*` / `agx_search` call in this repo.
+- **Needing something the catalog does not expose is a PACKAGE gap** — fix it there,
+  release, adopt. Never massage it in host code (C22).
+
+Guard for the picker itself: `pnpm check:canonical-pickers`
+([`scripts/check-canonical-pickers.ts`](../../scripts/check-canonical-pickers.ts)) fails
+any hand-rolled agent roster that does not import `@ai-matrx/agents/catalog/react`.
 
 ---
 
@@ -435,6 +440,18 @@ model overrides.
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+
+### 2026-09-08 — THE ONE AGENT PICKER moved into `@ai-matrx/agents/catalog`
+
+Wave 2 of the agent-picker unification (design: `common-docs/projects/npm-package-extraction/AGENT-PICKER-DESIGN.md`, row P3).
+
+- 63 call sites repointed from `features/agents/components/agent-listings/AgentList{Dropdown,InlinePicker}` to `@ai-matrx/agents/catalog/react`; props unchanged.
+- DELETED (C9): `redux/agent-consumers/{slice,selectors}.ts` + its reducer registration and state-analyzer tab, `search/score.ts` (+ its parity test and fixtures), `constants/agent-list-labels.ts`, `hooks/useAgentConsumer.ts`, `hooks/useServerAgentSearch.ts`, `components/agent-listings/{AgentListDropdown,AgentListInlinePicker,useAgentListCore,FavoriteAgentButton}.tsx`, all of `components/agent-listings/core/*`, `scripts/agent-picker-parity-fixture.ts` (its proof now lives in the package's `parity.test.ts`), and `__tests__/pickers-stay-in-viewport.test.ts` (the geometry it guarded is package-owned; the picker's own note is in `catalog/react/types.ts`).
+- The four list thunks became registry hydrators over the package catalog; `isChatListFresh` is gone and `isChatListStale()` now asks the catalog.
+- List CONSUMERS repointed to the package hooks/selectors: `AgentsGrid`, `PinnedAgentsSection`, `AgentLibraryRail`, `settings/tabs/CodeWorkspaceTab`, `workflow-runtime/listings/*` (which reuse the picker primitives), `surfaces/manifests/agents-hub.manifest.ts`, `agents/browse/surface.ts`.
+- New: `providers/AgentCatalogHost.tsx`, `lib/agents/catalog.ts`, `providers/AgentPeekHost.tsx` + `components/agent-listings/openAgentPeek.ts` (the app service behind the picker's `openPeek` port), `scripts/check-agent-list-reads.ts`, error-capture source `agent-catalog`.
+- Adopted `@ai-matrx/agents@0.7.1` (0.7.0's two catalog entries did not typecheck together).
+
 
 
 - `2026-09-08` — **The composer no longer flutters while typing past the first wrapped line.** `AgentTextarea`'s auto-resize effect wrote `style.height` on every keystroke and carried a live 150ms `transition-[height]`, so each key restored the mid-animation height and re-targeted it — the box crept, the caret-reveal scroll fought the clipped height, and the whole `SmartAgentInput` shell jittered per character. Now the zero-measure sample is snapped to the line grid (`smart-input/textarea-line-grid.ts` — `chrome + n × lineHeight`, so sub-pixel drift cannot move the box), the scroll offset is restored after the measurement, and the height is written ONLY when the snapped value differs from the rendered one: it changes the instant a line is added or removed and at no other moment. Typing carries no transition class at all; the height transition is applied only for the expand (150ms) and collapse (300ms glide) toggles. Guard: `smart-input/__tests__/textarea-auto-resize.test.ts` (source-shape assertions proven failing against the prior file + `snapToLineGrid` unit cases).

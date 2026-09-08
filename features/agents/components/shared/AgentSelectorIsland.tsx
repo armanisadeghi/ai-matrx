@@ -9,7 +9,7 @@ import {
   selectAgentType,
   selectAgentVersion,
 } from "@/features/agents/redux/agent-definition/selectors";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { deriveAgentMode, getAgentModeHref } from "./AgentModeController";
 
 interface AgentSelectorIslandProps {

@@ -16,7 +16,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
+import type { AgentTab } from "@ai-matrx/agents/catalog";
 
 // Prompt-filter types inlined here so this component has no dependency on
 // features/prompts. The agent consumer slice mirrors these shapes.
