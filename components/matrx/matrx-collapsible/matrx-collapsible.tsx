@@ -43,7 +43,14 @@ export function MatrxCollapsible(
             </CollapsibleTrigger>
             <CollapsibleContent
                 className={cn(
-                    "overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down",
+                    // NO open/close animation, and there never was one: this used
+                    // `animate-accordion-up/-down`, keyframes that interpolate to
+                    // `--radix-accordion-content-height`. Radix Collapsible publishes
+                    // `--radix-COLLAPSIBLE-content-height`, so the target height was
+                    // always an undefined var. The dead classes went with the host
+                    // keyframes (design-system 0.8.0); a real Collapsible transition
+                    // belongs in the package, not back here.
+                    "overflow-hidden text-sm",
                     contentClassName
                 )}
             >

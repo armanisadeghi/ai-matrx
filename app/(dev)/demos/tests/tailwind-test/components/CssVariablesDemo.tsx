@@ -171,8 +171,14 @@ const TailwindDemo = () => {
             <div className="bg-card text-card-foreground rounded-lg shadow-md p-6 mb-8">
                 <h2 className="text-2xl font-semibold mb-4 font-heading">Animations</h2>
                 <div className="space-y-4">
-                    <div className="animate-accordion-down bg-muted p-4 rounded-lg">Accordion Down</div>
-                    <div className="animate-accordion-up bg-muted p-4 rounded-lg">Accordion Up</div>
+                    {/*
+                      * The `animate-accordion-down` / `-up` rows were removed with the
+                      * utilities themselves: the accordion open/close transition is
+                      * package-owned CSS now (`.matrx-accordion-content` in
+                      * @ai-matrx/design-system/styles.css), so a demo of a host utility
+                      * that no longer exists would render a static box captioned as an
+                      * animation.
+                      */}
                     <div className="flex items-center">
                         <span className="mr-2">Caret Blink:</span>
                         <span className="animate-caret-blink">|</span>

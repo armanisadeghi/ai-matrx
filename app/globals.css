@@ -173,23 +173,16 @@
     }
   }
 
-  @keyframes accordion-down {
-    from {
-      height: 0;
-    }
-    to {
-      height: var(--radix-accordion-content-height);
-    }
-  }
-
-  @keyframes accordion-up {
-    from {
-      height: var(--radix-accordion-content-height);
-    }
-    to {
-      height: 0;
-    }
-  }
+  /*
+   * `accordion-down` / `accordion-up` lived here. They were the host-only half
+   * of a silent contract: `components/ui/accordion.tsx` reached for
+   * `animate-accordion-down/-up`, utility names no other consumer could have,
+   * so the same component jumped open with no animation and no error anywhere
+   * else in the fleet. The keyframes are package-owned now
+   * (`.matrx-accordion-content` in @ai-matrx/design-system/styles.css, which
+   * also honours prefers-reduced-motion); the fork and these two rules were
+   * deleted together (design-system 0.8.0, census row 19c).
+   */
 
   @keyframes caret-blink {
     0%,
@@ -568,8 +561,6 @@
   }
 
   /* Animations */
-  --animate-accordion-down: accordion-down 0.4s ease-out;
-  --animate-accordion-up: accordion-up 0.4s ease-out;
   --animate-caret-blink: caret-blink 1.25s ease-out infinite;
   --animate-shimmer: shimmer 2s linear infinite;
   --animate-hover-bounce: hover-bounce 0.3s var(--animated-menu-bounce);

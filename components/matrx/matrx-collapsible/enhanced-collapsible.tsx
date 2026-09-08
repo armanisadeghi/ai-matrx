@@ -55,7 +55,11 @@ export function EnhancedMatrxCollapsible(
                 </div>
             </CollapsibleTrigger>
             <CollapsibleContent
-                className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                // Same dead `animate-accordion-*` classes as matrx-collapsible.tsx —
+                // keyframes keyed off `--radix-accordion-content-height` on a
+                // COLLAPSIBLE panel, so they never animated. Removed with the host
+                // keyframes (design-system 0.8.0).
+                className="overflow-hidden text-sm">
                 <div className="space-y-3 p-4">
                     {children}
                 </div>

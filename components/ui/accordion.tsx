@@ -1,80 +1,38 @@
-"use client"
-
-import * as React from "react"
-import * as AccordionPrimitive from "@radix-ui/react-accordion"
-import {ChevronDownIcon} from "@radix-ui/react-icons"
-
-import {cn} from "@/styles/themes/utils"
+"use client";
 
 /**
- * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
- * rendering until after hydration ("Radix generates dynamic aria-controls ids
- * that differ between SSR and client"), and that justification was false:
- * Radix ids come from React's SSR-stable `useId` (verified against
- * @radix-ui/react-accordion 1.2.14 / react-id 1.1.2). The gate was actively
- * harmful — it deleted EVERY accordion header (and any open item) from SSR
- * and the first client paint. See components/ui/context-menu/context-menu.tsx
- * (the precedent fix, D144).
+ * HOST RE-EXPORT ONLY — the Accordion family lives in
+ * `@ai-matrx/design-system` (0.8.0, census row 19c). This file exists so the
+ * ~14 `@/components/ui/accordion` import sites (and the two DB-authored
+ * component scopes that map this specifier) stay put.
+ *
+ * The fork this replaced drew `p-4` triggers — the package's DEFAULT density
+ * (`size="md"`) — so there is nothing to bind here. Pass `size="sm"` on any
+ * individual `<Accordion>` that wants the dense rung; never re-fork the file.
+ *
+ * Three things the fork got wrong and the package does not:
+ *   - The chevron rotation selector was `[&[data-state=open]>svg]`, but the
+ *     chevron was nested a div deep, so it never matched the chevron — and DID
+ *     match any icon a call site passed as a direct child of the trigger. The
+ *     package targets the chevron's own slot.
+ *   - The trigger had no `focus-visible` ring: keyboard focus was invisible.
+ *   - The open/close transition was `animate-accordion-down/-up`, Tailwind
+ *     utility names defined only in this app's `globals.css`. The package owns
+ *     the keyframes in its `styles.css` (`.matrx-accordion-content`, keyed off
+ *     `--radix-accordion-content-height`, honouring `prefers-reduced-motion`),
+ *     so the host keyframes were deleted with the fork.
+ *
+ * The one visible change: `md` content is `px-4 pb-4`, so a panel's body now
+ * lines up with its `p-4` header instead of sitting 16px to its left.
  */
-const Accordion = AccordionPrimitive.Root
 
-const AccordionItem = React.forwardRef<
-    React.ComponentRef<typeof AccordionPrimitive.Item>,
-    React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
->(({className, ...props}, ref) => (
-    <AccordionPrimitive.Item
-        ref={ref}
-        className={cn(
-            "[&:not(:only-child)]:border-b", // Only apply border if not the only child
-            className
-        )}
-        {...props}
-    />
-))
-
-AccordionItem.displayName = "AccordionItem"
-
-const AccordionTrigger = React.forwardRef<
-    React.ComponentRef<typeof AccordionPrimitive.Trigger>,
-    React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & {
-    rightElements?: React.ReactNode
-}
->(({className, children, rightElements, ...props}, ref) => (
-    <AccordionPrimitive.Header className="flex w-full">
-        <AccordionPrimitive.Trigger
-            ref={ref}
-            className={cn(
-                "flex w-full items-center justify-between rounded-t-lg p-4 text-sm font-medium transition-all hover:bg-accent/50 hover:shadow-sm [&[data-state=open]>svg]:rotate-180",
-                className
-            )}
-            {...props}
-        >
-            {children}
-            <div className="flex items-center">
-                <div className="flex items-center gap-2">
-                    {rightElements}
-                </div>
-                <ChevronDownIcon
-                    className="ml-4 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200"/>
-            </div>
-        </AccordionPrimitive.Trigger>
-    </AccordionPrimitive.Header>
-))
-
-AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName
-
-const AccordionContent = React.forwardRef<
-    React.ComponentRef<typeof AccordionPrimitive.Content>,
-    React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
->(({className, children, ...props}, ref) => (
-    <AccordionPrimitive.Content
-        ref={ref}
-        className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
-        {...props}
-    >
-        <div className={cn("pb-4 pt-0", className)}>{children}</div>
-    </AccordionPrimitive.Content>
-))
-AccordionContent.displayName = AccordionPrimitive.Content.displayName
-
-export {Accordion, AccordionItem, AccordionTrigger, AccordionContent}
+export {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  type AccordionProps,
+  type AccordionSize,
+  type AccordionTriggerProps,
+  useAccordionSize,
+} from "@ai-matrx/design-system";
