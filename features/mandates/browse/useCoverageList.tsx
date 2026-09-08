@@ -27,12 +27,12 @@ import {
 import {
   mandateListService,
   type MandateCoverageNarrowing,
-  type MandateListScope,
+  type MandateListMode,
 } from "./service";
 import type { MandateListRow } from "./types";
 
 export interface CoverageListArgs {
-  scope: MandateListScope;
+  mode: MandateListMode;
   /**
    * Scope the report to ONE owner's mandates (the ownership law: an org page
    * answers for the org). Omit on the personal registry page.
@@ -48,7 +48,7 @@ export interface CoverageList {
 }
 
 export function useCoverageList({
-  scope,
+  mode,
   organizationId = null,
   enabled = true,
 }: CoverageListArgs): CoverageList {
@@ -74,7 +74,7 @@ export function useCoverageList({
       onToggleFilter: (bucket) =>
         setActive((prev) => (prev === bucket ? null : bucket)),
     },
-    service: mandateListService(scope, narrowing),
+    service: mandateListService(mode, narrowing),
   };
 }
 

@@ -12,14 +12,11 @@ import type { EntityListConfig } from "@/lib/entity-list/config";
 import { MANDATE_COLUMNS } from "./columns";
 import { MandateBrowseCards } from "./MandateBrowseCards";
 import { MandateBrowseRows } from "./MandateBrowseRows";
-import {
-  fetchMandateFacets,
-  fetchMandateListPage,
-  fetchMandateScopeCounts,
-} from "./service";
+import { mandateListService } from "./service";
 import { useMandateRowActions } from "./useMandateRowActions";
 import {
   MANDATE_LIST_SCOPES,
+  layerMeta,
   mandateRoute,
   type MandateListRow,
 } from "./types";
@@ -36,13 +33,19 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
     id: row.id,
     title: row.label,
   }),
-  // Platform rows: every caller sees the registry — ONE scope, tabs collapse.
+  // OWNERSHIP tabs: the organizations the caller belongs to. `/mandates` adds
+  // the platform's own corpus for an admin — a module constant cannot read who
+  // is looking, so that subset is passed by the page.
   scopes: MANDATE_LIST_SCOPES,
-  service: {
-    fetchPage: fetchMandateListPage,
-    fetchCounts: fetchMandateScopeCounts,
-    fetchFacets: fetchMandateFacets,
-  },
+  // Every host passes its own `service` (which home, whose ladder). This
+  // default is the honest fallback: the blended corpus, resolved for the
+  // caller with no active organization and therefore no org rung.
+  service: mandateListService({
+    kind: "homes",
+    activeOrganizationId: null,
+    organizations: [],
+    canListSystemHome: false,
+  }),
   columns: MANDATE_COLUMNS,
   prefsVersion: 1,
   getRowId: (row) => row.id,
@@ -70,8 +73,8 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
       label: "Decided by",
       noneLabel: "System",
       countInLabel: false,
-      formatValue: (raw) =>
-        raw === "user" ? "Yours" : raw === "org" ? "Organization" : "System",
+      // ONE naming of a rung, shared with every badge that renders one.
+      formatValue: (raw) => layerMeta(raw).label,
     },
     {
       facet: "output_kind",

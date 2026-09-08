@@ -123,6 +123,10 @@ import {
   isFloatingMandate,
 } from "@/lib/supabase/mandateStorage";
 import {
+  SYSTEM_HOME,
+  isMandateListRefusal,
+} from "@/features/mandates/list-door";
+import {
   fetchMandateCodeTruthReport,
   fetchMandateConsoleData,
   softDeleteMandate,
@@ -258,6 +262,16 @@ export function MandatesConsole() {
   const [loading, setLoading] = useState(true);
   /** Settled fact: the bootstrap resolved and no organization is selected. */
   const [noOrganization, setNoOrganization] = useState<string | null>(null);
+  /**
+   * The list door's own words when it refuses this caller the system home.
+   * The (admin) route tree admits ANY Matrx admin level, while the door
+   * gates on `public.is_platform_admin()` — so a person can legitimately
+   * reach this URL and be refused the corpus behind it. That refusal is
+   * printed, never toasted-and-forgotten behind an empty table.
+   */
+  const [systemHomeRefusal, setSystemHomeRefusal] = useState<string | null>(
+    null,
+  );
   const [fetching, setFetching] = useState(false);
   // SELECTION LIVES IN THE URL — the table's OWN `urlState.selectedRow` key,
   // read and written here so the console's programmatic openers (the coverage
@@ -306,7 +320,12 @@ export function MandatesConsole() {
   // the button-driven reload may flip `fetching` synchronously (event handler).
   const fetchData = useCallback(() => {
     Promise.allSettled([
-      fetchMandateConsoleData(),
+      // 🚨 THE CONSOLE IS THE `system` HOME OF THE ONE LIST DOOR. It lists what
+      // the PLATFORM ships and nothing else — an organization's own mandates
+      // belong to that organization's people, on /mandates and on the org's
+      // settings page. Both of this console's unscoped reads are gone with it
+      // (REVIEW-one-resolution.md §8).
+      fetchMandateConsoleData({ home: SYSTEM_HOME }),
       fetchMandateCodeTruthReport(dispatch),
       fetchMandateCoverage(dispatch),
       fetchMandateCatalogue(dispatch, { refresh: true }),
@@ -325,10 +344,18 @@ export function MandatesConsole() {
           setCatalogueError(null);
         }
         if (consoleResult.status === "rejected") {
-          toast.error(
-            `Failed to load mandates: ${consoleResult.reason instanceof Error ? consoleResult.reason.message : String(consoleResult.reason)}`,
-          );
+          const message = describe(consoleResult.reason);
+          if (isMandateListRefusal(consoleResult.reason)) {
+            // A refusal is a settled fact about this account, not a transient
+            // failure: say it on the page, with what to do, and do not offer a
+            // reload that will refuse again.
+            setSystemHomeRefusal(message);
+          } else {
+            setSystemHomeRefusal(null);
+            toast.error(`Failed to load mandates: ${message}`);
+          }
         } else {
+          setSystemHomeRefusal(null);
           setData(consoleResult.value);
         }
         if (truthResult.status === "rejected") {
@@ -1157,6 +1184,28 @@ export function MandatesConsole() {
           <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-snug text-amber-700 dark:text-amber-400">
             {noOrganization}
           </p>
+        ) : null}
+        {/* THE DOOR'S REFUSAL, IN ITS OWN WORDS. Not a toast that vanishes over
+            an empty table: a refusal is a settled fact about this account, and
+            the page says it and stops. */}
+        {systemHomeRefusal ? (
+          <div className="flex items-start gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-700 dark:text-rose-400">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+            <div className="space-y-1">
+              <div className="font-medium">
+                This console lists the platform&apos;s own jobs, and your account
+                may not.
+              </div>
+              <div className="text-muted-foreground">{systemHomeRefusal}</div>
+              <div className="text-muted-foreground">
+                The jobs your own organizations run are yours to manage at{" "}
+                <Link href="/mandates" className="underline">
+                  /mandates
+                </Link>
+                .
+              </div>
+            </div>
+          </div>
         ) : null}
         <MandateCoverageBoard
           report={coverage}

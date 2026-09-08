@@ -48,7 +48,12 @@ export default function OrgMandatesPage() {
   // own mandates. A platform mandate this org does not own is NOT painted green
   // here; it carries no verdict, because this report does not answer for it.
   const { view: coverage, service } = useCoverageList({
-    scope: { kind: "org", orgId: organizationId ?? "" },
+    // RESOLUTION stays this organization's (p_resolution_for => 'org'), from
+    // the ROUTE param — deliberately independent of the active organization.
+    // OWNERSHIP stays the caller's full corpus: an org's admins bind the
+    // PLATFORM's jobs here, so narrowing the home to this org alone would
+    // empty the page.
+    mode: { kind: "organization", organizationId: organizationId ?? "" },
     organizationId,
     enabled: Boolean(organizationId),
   });

@@ -1,97 +1,77 @@
 // features/mandates/browse/service.ts
 //
 // Direct browser → Supabase (CLAUDE.md § Data flow): the entity-list service
-// triple over the mnd_* RPC set (migrations/mnd_list_scoped.sql). The RPC —
-// not this file — resolves agent names (SQL join), so the canonical-selection
-// law's raw-agent-list ban never comes into play here.
+// triple for the two mandate LIST surfaces. Every row and every count comes
+// from the ONE list door (`features/mandates/list-door.ts` →
+// `public.mnd_list_scoped`), which owns both parameters — OWNERSHIP (`p_home`)
+// and RESOLUTION (`p_resolution_for`). Nothing here resolves a rung, derives a
+// home, or re-implements a predicate.
 //
-// Mandates carry ONE scope (platform rows), no favorites, no archived axis;
-// those pieces of the generic query are inert.
+// TWO MODES, because the two surfaces ask different questions:
+//   `homes`        /mandates. The OWNERSHIP tab picks the home; the ladder is
+//                  always resolved for the caller in their ACTIVE organization
+//                  (D-R1), whichever home is on screen.
+//   `organization` an organization's own settings page. The home stays the
+//                  caller's full corpus — an org's admins must see the
+//                  platform's jobs to bind them — while the RESOLUTION is that
+//                  organization's, so the page answers for every member rather
+//                  than showing the admin their own personal override winning.
 
-import { supabase } from "@/utils/supabase/client";
 import type {
   EntityFacets,
   EntityListPage,
   EntityListQuery,
   EntityListSort,
   EntityScopeCounts,
+  ScopeNarrowOption,
 } from "@/lib/entity-list/types";
+import type { ListScope } from "@/lib/list-scope/types";
+import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
+import {
+  ALL_HOMES,
+  SYSTEM_HOME,
+  countMandatesInHome,
+  listMandatesScoped,
+  orgHome,
+  type MandateHome,
+} from "@/features/mandates/list-door";
 import type { MandateListRow } from "./types";
 
-function pgError(error: { message?: string; code?: string }): Error {
-  return new Error(
-    error.message?.trim()
-      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-      : "Supabase returned an error with no message — usually a gateway/PostgREST " +
-        "failure rather than a query error.",
-  );
+/** One organization the caller belongs to — a personal workspace included. */
+export interface MandateHomeOrganization {
+  id: string;
+  name: string;
 }
 
-/**
- * 🚨 LOCAL RPC TYPING — mnd_* postdates the generated types and the gen CLI
- * currently truncates on regen (see ./types.ts). ONE narrowly-typed seam so
- * every call site stays fully typed; delete with the row-type widening on the
- * next successful `pnpm db-types`.
- */
-interface MndRpcMap {
-  mnd_list_scoped: {
-    args: {
-      p_scope: string;
-      /** Required by `p_scope: "org"` — WHOSE resolution to compute. */
-      p_org_id?: string;
-      p_search?: string;
-      p_sort: string;
-      p_dir: string;
-      p_filters: Json;
-      p_limit: number;
-      p_offset: number;
+export type MandateListMode =
+  | {
+      kind: "homes";
+      /** The organization the ladder resolves in (D-R1: the ACTIVE org). */
+      activeOrganizationId: string | null;
+      /** Every organization the caller belongs to, in tab order. */
+      organizations: readonly MandateHomeOrganization[];
+      /** Whether the door will accept `p_home => 'system'` from this caller. */
+      canListSystemHome: boolean;
+    }
+  | {
+      kind: "organization";
+      organizationId: string;
     };
-    row: MandateListRow;
-  };
-  mnd_list_scope_counts: {
-    args: { p_search?: string };
-    row: { scope: string; narrow_id: string | null; label: string | null; total: number };
-  };
-  mnd_list_facets: {
-    args: { p_search?: string };
-    row: { kind: string; value: string; total: number };
-  };
-}
-
-async function mndRpc<K extends keyof MndRpcMap>(
-  fn: K,
-  args: MndRpcMap[K]["args"],
-): Promise<MndRpcMap[K]["row"][]> {
-  const call = supabase.rpc as unknown as (
-    fn: K,
-    args: MndRpcMap[K]["args"],
-  ) => PromiseLike<{
-    data: MndRpcMap[K]["row"][] | null;
-    error: { message?: string; code?: string } | null;
-  }>;
-  const { data, error } = await call(fn, args);
-  if (error) throw pgError(error);
-  return data ?? [];
-}
 
 /**
- * WHOSE resolution the list computes.
- *
- * `mine` — the caller's own funnel (their user binding, then any of their
- * orgs', then the system default). The right answer on /mandates.
- *
- * `org` — the named organization's funnel, personal bindings EXCLUDED. The
- * only honest answer on an org-settings page: an org admin asking "who fulfils
- * this job for my organization" was being shown their own personal override
- * winning, because the page asked for `mine`. Membership is proved inside the
- * RPC; passing an org id you are not in returns nothing.
+ * The home the OWNERSHIP tab is asking for. `orgs` with no narrowing is the
+ * blended view — the platform's own jobs plus every organization the caller
+ * belongs to — which is the only state in which a member of an organization
+ * with no mandates of its own sees anything at all.
  */
-export type MandateListScope =
-  | { kind: "mine" }
-  | { kind: "org"; orgId: string };
-
-export const MINE_SCOPE: MandateListScope = { kind: "mine" };
+export function homeForScope(scope: ListScope): MandateHome {
+  if (scope.kind === "system") return SYSTEM_HOME;
+  if (scope.kind === "orgs" && scope.organizationId) {
+    return orgHome(scope.organizationId);
+  }
+  return ALL_HOMES;
+}
 
 /**
  * Narrow the page to one coverage state, server-side.
@@ -128,56 +108,114 @@ export function withCoverageKeys(
 export async function fetchMandateListPage(
   query: EntityListQuery,
   sort: EntityListSort,
-  scope: MandateListScope = MINE_SCOPE,
+  mode: MandateListMode,
   coverage: MandateCoverageNarrowing | null = null,
 ): Promise<EntityListPage<MandateListRow>> {
-  const rows = await mndRpc("mnd_list_scoped", {
-    p_scope: scope.kind,
-    ...(scope.kind === "org" ? { p_org_id: scope.orgId } : {}),
-    p_search: query.search.trim() || undefined,
-    p_sort: sort.sort,
-    p_dir: sort.direction,
-    p_filters: withCoverageKeys(query.filters, coverage),
-    p_limit: sort.pageSize,
-    p_offset: (query.page - 1) * sort.pageSize,
+  const rows = await listMandatesScoped({
+    ...(mode.kind === "organization"
+      ? { resolutionFor: "org" as const, organizationId: mode.organizationId }
+      : {
+          home: homeForScope(query.scope),
+          resolutionFor: "mine" as const,
+          organizationId: mode.activeOrganizationId,
+        }),
+    search: query.search.trim() || undefined,
+    sort: sort.sort,
+    dir: sort.direction,
+    filters: withCoverageKeys(query.filters, coverage),
+    limit: sort.pageSize,
+    offset: (query.page - 1) * sort.pageSize,
   });
   return { rows, total: rows.length > 0 ? Number(rows[0].total_count) : 0 };
 }
 
-/** The list-config service triple for one scope. */
-export function mandateListService(
-  scope: MandateListScope,
-  coverage: MandateCoverageNarrowing | null = null,
-) {
-  return {
-    fetchPage: (query: EntityListQuery, sort: EntityListSort) =>
-      fetchMandateListPage(query, sort, scope, coverage),
-    fetchCounts: fetchMandateScopeCounts,
-    fetchFacets: fetchMandateFacets,
-  };
-}
-
+/**
+ * True counts per OWNERSHIP tab, each from the door's own `total_count` — so
+ * the number on a tab and the rows behind it can never disagree.
+ *
+ * A home whose count fails is LEFT OUT rather than shown as 0: a zero pill on
+ * an organization that has mandates is a lie, and the failure is recorded
+ * where the shell's own counts handler can see it.
+ */
 export async function fetchMandateScopeCounts(
   query: EntityListQuery,
+  mode: MandateListMode,
 ): Promise<EntityScopeCounts> {
-  const rows = await mndRpc("mnd_list_scope_counts", {
-    p_search: query.search.trim() || undefined,
-  });
-  const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
-  for (const row of rows) {
-    if (row.scope === "mine") counts.byKind.mine = Number(row.total ?? 0);
+  const search = query.search.trim() || undefined;
+  const filters = query.filters as unknown as Json;
+
+  if (mode.kind === "organization") {
+    const total = await countMandatesInHome(ALL_HOMES, {
+      resolutionFor: "org",
+      organizationId: mode.organizationId,
+      search,
+      filters,
+    });
+    // No narrowing options: this page is ABOUT one organization, fixed by the
+    // route, so a dropdown offering to switch away from it would be a control
+    // that changes nothing.
+    return { byKind: { orgs: total }, narrow: {} };
   }
+
+  const shared = {
+    resolutionFor: "mine" as const,
+    organizationId: mode.activeOrganizationId,
+    search,
+    filters,
+  };
+  const homes: { home: MandateHome; option: ScopeNarrowOption | null }[] = [
+    { home: ALL_HOMES, option: null },
+    ...(mode.canListSystemHome
+      ? [{ home: SYSTEM_HOME, option: null as ScopeNarrowOption | null }]
+      : []),
+    ...mode.organizations.map((organization) => ({
+      home: orgHome(organization.id),
+      option: { id: organization.id, label: organization.name, count: 0 },
+    })),
+  ];
+
+  const settled = await Promise.allSettled(
+    homes.map((entry) => countMandatesInHome(entry.home, shared)),
+  );
+
+  const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
+  const narrowed: ScopeNarrowOption[] = [];
+  settled.forEach((result, index) => {
+    const entry = homes[index];
+    if (result.status === "rejected") {
+      console.error(
+        `[mandates] the list door refused a count for home ${JSON.stringify(entry.home)} — that tab is listed without a number rather than with a wrong one.`,
+        result.reason,
+      );
+      return;
+    }
+    if (entry.option) {
+      narrowed.push({ ...entry.option, count: result.value });
+      return;
+    }
+    if (entry.home.kind === "system") counts.byKind.system = result.value;
+    else counts.byKind.orgs = result.value;
+  });
+  if (narrowed.length > 0) counts.narrow.orgs = narrowed;
   return counts;
 }
 
+/**
+ * Facet options. `mnd_list_facets` takes only a search term, so its counts are
+ * computed over the caller's full corpus rather than the ownership tab in
+ * front of them — a filter option can therefore carry a count larger than the
+ * tab holds. Scoping it needs the same `p_home` parameter the list door grew;
+ * tracked in FOUND_DEFECTS.md.
+ */
 export async function fetchMandateFacets(
   query: EntityListQuery,
 ): Promise<EntityFacets> {
-  const rows = await mndRpc("mnd_list_facets", {
-    p_search: query.search.trim() || undefined,
+  const { data, error } = await supabase.rpc("mnd_list_facets", {
+    ...(query.search.trim() ? { p_search: query.search.trim() } : {}),
   });
+  if (error) throw new Error(error.message);
   const byKind: EntityFacets["byKind"] = {};
-  for (const row of rows) {
+  for (const row of data ?? []) {
     (byKind[row.kind] ??= []).push({
       value: row.value,
       count: Number(row.total ?? 0),
@@ -187,4 +225,18 @@ export async function fetchMandateFacets(
     values.sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
   }
   return { byKind };
+}
+
+/** The list-config service triple for one surface. */
+export function mandateListService(
+  mode: MandateListMode,
+  coverage: MandateCoverageNarrowing | null = null,
+) {
+  return {
+    fetchPage: (query: EntityListQuery, sort: EntityListSort) =>
+      fetchMandateListPage(query, sort, mode, coverage),
+    fetchCounts: (query: EntityListQuery) =>
+      fetchMandateScopeCounts(query, mode),
+    fetchFacets: fetchMandateFacets,
+  };
 }

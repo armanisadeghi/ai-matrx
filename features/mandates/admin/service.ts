@@ -37,6 +37,13 @@ import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
 /** Mandate/exemplar rows are platform rows owned by the system org. */
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+/** OWNERSHIP + the admin refusal come from the ONE list door, never from here. */
+import {
+  ALL_HOMES,
+  MANDATE_HOME_CEILING,
+  listMandatesScoped,
+  type MandateHome,
+} from "@/features/mandates/list-door";
 import {
   mandateBindings,
   mandateDefinitions,
@@ -113,14 +120,55 @@ export interface MandateConsoleData {
 
 export interface FetchMandateConsoleDataOptions {
   /**
-   * Restrict the load to these mandate keys. The console omits it and takes
-   * everything; a WINDOW opened on one surface passes that surface's keys, so
-   * it reads a handful of rows instead of the platform's 365 and their
-   * bindings. Omitted or empty = the whole console load, unchanged.
+   * Restrict the load to these mandate keys. A WINDOW opened on one surface
+   * passes that surface's keys, so it reads a handful of rows instead of the
+   * platform's 409 and their bindings. Omitted or empty = the whole corpus of
+   * the requested HOME.
    */
   mandateKeys?: readonly string[];
+  /**
+   * WHOSE mandates this load is about. The console passes `system` — it IS
+   * the system home of the one list door — and is refused, in words, if the
+   * caller is not a platform admin. Everything else (the mandate window, the
+   * admin workspace's id fallback) takes the default: the platform's own plus
+   * every organization the caller belongs to.
+   */
+  home?: MandateHome;
 }
 
+/**
+ * PostgREST puts every filter in the URL, so one `.in()` over 409 ids is a
+ * ~15KB request line that a gateway may simply cut. Chunked, deliberately,
+ * rather than trading the scope predicate away for a shorter URL.
+ */
+const ID_FILTER_CHUNK = 100;
+
+function chunked<T>(values: readonly T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < values.length; i += size) {
+    out.push(values.slice(i, i + size));
+  }
+  return out;
+}
+
+/**
+ * THE CONSOLE LOAD, SCOPED.
+ *
+ * 🚨 What this used to do, and why it could not stay (REVIEW-one-resolution.md
+ * §8): it read `mandate.definition` with no ownership predicate at all and
+ * `mandate.binding` with none either, on the belief that "RLS already narrows
+ * them to what the caller may see". For a platform admin RLS narrows NOTHING
+ * (`platform_admin_all` is `USING (is_platform_admin())`), so the console
+ * pulled every binding in the database and filtered client-side.
+ *
+ * Both unscoped reads are gone. OWNERSHIP now comes from the ONE list door
+ * (`mnd_list_scoped`), which is also what refuses a non-admin asking for the
+ * system home — this module re-implements neither the predicate nor the gate.
+ * The full definition rows the console needs (contract, provision, default
+ * Holder, metadata — none of which the list projection carries) are then
+ * fetched BY ID, and the bindings by mandate id, so every read is narrowed to
+ * exactly the rows the door admitted.
+ */
 export async function fetchMandateConsoleData(
   options: FetchMandateConsoleDataOptions = {},
 ): Promise<MandateConsoleData> {
@@ -135,28 +183,59 @@ export async function fetchMandateConsoleData(
       ? [...new Set(options.mandateKeys)]
       : null;
 
-  let mandateQuery = mandateDefinitions(supabase)
-    .select("*")
-    .is("deleted_at", null);
-  if (scopedKeys) mandateQuery = mandateQuery.in("mandate_key", scopedKeys);
-
-  const [mandatesRes, bindingsRes] = await Promise.all([
-    mandateQuery.order("mandate_key"),
-    mandateBindings(supabase)
+  let mandates: MandateDefinitionRow[];
+  if (scopedKeys) {
+    // A named handful: the key list IS the declared scope, and RLS is the
+    // ceiling above it. No door round-trip to name rows the caller already
+    // named.
+    const { data, error } = await mandateDefinitions(supabase)
       .select("*")
       .is("deleted_at", null)
-      .order("created_at"),
-  ]);
-  if (mandatesRes.error) throw mandatesRes.error;
-  if (bindingsRes.error) throw bindingsRes.error;
-  const mandates = mandatesRes.data ?? [];
-  // Bindings are read unscoped (RLS already narrows them to what the caller may
-  // see) and filtered to the loaded mandates here — a `.in()` on a second
-  // column would need the ids the first query only just returned.
-  const loadedMandateIds = new Set(mandates.map((row) => row.id));
-  const bindings = (bindingsRes.data ?? []).filter(
-    (binding) => !scopedKeys || loadedMandateIds.has(binding.mandate_id),
+      .in("mandate_key", scopedKeys)
+      .order("mandate_key");
+    if (error) throw error;
+    mandates = data ?? [];
+  } else {
+    // The whole home. The door decides which mandates those are — including
+    // refusing this caller outright, which propagates as it is.
+    const scoped = await listMandatesScoped({
+      home: options.home ?? ALL_HOMES,
+      limit: MANDATE_HOME_CEILING,
+    });
+    if (scoped.length >= MANDATE_HOME_CEILING) {
+      console.error(
+        `[mandates] the console load hit its ${MANDATE_HOME_CEILING}-row ceiling, so this list is TRUNCATED and any count taken from it is wrong. Raise MANDATE_HOME_CEILING in features/mandates/list-door.ts.`,
+      );
+    }
+    const ids = scoped.map((row) => row.id);
+    const pages = await Promise.all(
+      chunked(ids, ID_FILTER_CHUNK).map(async (chunk) => {
+        const { data, error } = await mandateDefinitions(supabase)
+          .select("*")
+          .is("deleted_at", null)
+          .in("id", chunk);
+        if (error) throw error;
+        return data ?? [];
+      }),
+    );
+    mandates = pages
+      .flat()
+      .sort((left, right) => left.mandate_key.localeCompare(right.mandate_key));
+  }
+
+  const mandateIds = mandates.map((row) => row.id);
+  const bindingPages = await Promise.all(
+    chunked(mandateIds, ID_FILTER_CHUNK).map(async (chunk) => {
+      const { data, error } = await mandateBindings(supabase)
+        .select("*")
+        .is("deleted_at", null)
+        .in("mandate_id", chunk)
+        .order("created_at");
+      if (error) throw error;
+      return data ?? [];
+    }),
   );
+  const bindings = bindingPages.flat();
 
   const agentIds = new Set<string>();
   const versionIds = new Set<string>();

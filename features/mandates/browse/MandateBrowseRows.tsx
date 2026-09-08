@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
-import { HEALTH_META, LAYER_META, type MandateListRow } from "./types";
+import { healthMeta, layerMeta, type MandateListRow } from "./types";
 import { MandateCoverageBadge } from "./CoverageBadge";
 
 export function MandateBrowseRows({
@@ -22,8 +22,8 @@ export function MandateBrowseRows({
   return (
     <div className="divide-y divide-border/50 overflow-hidden rounded-xl border border-border/60 bg-card">
       {rows.map((row) => {
-        const layer = LAYER_META[row.resolved_layer];
-        const health = HEALTH_META[row.health];
+        const layer = layerMeta(row.resolved_layer);
+        const health = healthMeta(row.health);
         return (
           <div
             key={row.id}

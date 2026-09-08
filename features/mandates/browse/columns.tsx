@@ -18,24 +18,29 @@ import { cn } from "@/lib/utils";
 import {
   HEALTH_META,
   LAYER_META,
+  healthMeta,
+  layerMeta,
   mandateRoute,
+  type MandateListHealth,
   type MandateListRow,
+  type MandateResolvedLayer,
 } from "./types";
 import { MandateCoverageBadge } from "./CoverageBadge";
 
-const LAYER_FILTER_OPTIONS = [
-  { value: "user", label: "Yours" },
-  { value: "org", label: "Organization" },
-  { value: "system", label: "System" },
-];
+// The filter vocabularies are the DATABASE's, named once in ./types.ts —
+// listing them a second time here is how `global`, `holder unreachable` and
+// `version unreachable` (all three live values since the one-ladder rewire)
+// became rows you could see but never filter to.
+const LAYER_FILTER_OPTIONS = (Object.keys(LAYER_META) as MandateResolvedLayer[]).map(
+  (value) => ({ value, label: LAYER_META[value].label }),
+);
 
-const HEALTH_FILTER_OPTIONS = [
-  { value: "ok", label: "OK" },
-  { value: "drift", label: "Drift (pinned behind)" },
-  { value: "holder archived", label: "Holder archived" },
-  { value: "holder missing", label: "Holder missing" },
-  { value: "disabled", label: "Disabled" },
-];
+const HEALTH_FILTER_OPTIONS = (Object.keys(HEALTH_META) as MandateListHealth[]).map(
+  (value) => ({
+    value,
+    label: value === "drift" ? "Drift (pinned behind)" : HEALTH_META[value].label,
+  }),
+);
 
 export const MANDATE_COLUMNS: EntityColumnSpec<MandateListRow>[] = [
   {
@@ -91,7 +96,7 @@ export const MANDATE_COLUMNS: EntityColumnSpec<MandateListRow>[] = [
       // full doors (open / peek / window) live on the workspace; the list cell
       // stays light so 25 rows don't mount 25 EntityRefs.
       cell: (row) => {
-        const layer = LAYER_META[row.resolved_layer];
+        const layer = layerMeta(row.resolved_layer);
         return (
           <div className="flex min-w-0 items-center gap-2">
             <span className="truncate">
@@ -148,7 +153,7 @@ export const MANDATE_COLUMNS: EntityColumnSpec<MandateListRow>[] = [
       filterOptions: LAYER_FILTER_OPTIONS,
       width: 110,
       cell: (row) => {
-        const layer = LAYER_META[row.resolved_layer];
+        const layer = layerMeta(row.resolved_layer);
         return (
           <Badge variant="outline" className={cn("py-0 text-[10px]", layer.className)}>
             {layer.label}
@@ -212,7 +217,7 @@ export const MANDATE_COLUMNS: EntityColumnSpec<MandateListRow>[] = [
       filterOptions: HEALTH_FILTER_OPTIONS,
       width: 130,
       cell: (row) => {
-        const meta = HEALTH_META[row.health];
+        const meta = healthMeta(row.health);
         return (
           <Badge variant="outline" className={cn("py-0 text-[10px]", meta.className)}>
             {row.health === "drift" && row.drift ? row.drift : meta.label}
