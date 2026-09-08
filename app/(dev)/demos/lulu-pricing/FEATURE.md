@@ -1,13 +1,13 @@
 # Lulu print calculator + paid order flow (`/demos/lulu-pricing`)
 
-Configure a book and get a live Lulu quote. Buying the print through Stripe Checkout
-is **currently switched off** — see the gate below. The server re-quotes
-authoritatively and answers with a real Checkout URL; this surface never computes a
-price.
+Configure a book, get a live Lulu quote, and buy the print through Stripe Checkout —
+but only when the backend confirms which payment mode it is in. The server re-quotes
+authoritatively, applies the buyer's plan markup, and answers with a real Checkout
+URL; this surface never computes a price.
 
 Review row: `agent.review_queue` `d6a2d36d-f2e4-4005-9ec8-c3499e1fcda9`.
 
-## 🚨 THE LIVE-MONEY GATE — ordering is OFF, and this is why
+## 🚨 THE LIVE-MONEY GATE — do not remove
 
 This demo can open a REAL Stripe checkout. On 2026-09-07 an independent reviewer
 driving it from `localhost:3001` was handed an actual `cs_live_` session, under a
@@ -20,25 +20,36 @@ Only the backend can answer "whose money is this?" — `GET /lulu/payment-mode`
 Lulu/Stripe pairings (THE PAIRING LAW) and refuses a live charge returning to
 `localhost`/`127.0.0.1` (THE DEV-ORIGIN LAW), before any provider call.
 
-**That commit is not deployed.** Production returns 404 and the route is absent from
-the generated contract. So `ordering-gate.ts` does the only honest thing left:
-`Order & pay` is disabled, and the page says why. No hostname guess, no probe of a
-route the contract does not carry, no locally-declared shadow of a response shape.
+**That commit deployed on 2026-09-07**, mid-repair: production `GET
+/lulu/payment-mode` answers, and both the path and `PrintPaymentMode` are in the
+generated contract. So `ordering-gate.ts` reads it through the **contract-bound typed
+client** like every other call in this folder — no raw lane, no locally-declared
+shadow of the response shape — badges exactly what comes back, and keeps `Order &
+pay` disabled unless `pairing_ok === true`.
 
-`stripeCheckoutMode()`'s `cs_live_` check and its consequence-naming confirm dialog
-remain in `OrderFlow.tsx` as the last layer, for the day ordering re-opens.
+Three layers, weakest last:
 
-### How ordering re-opens — in this order
+1. **Server** — refuses mismatched pairings and refuses a live charge returning to
+   localhost, before any provider call.
+2. **This page** — the badge tells the human up front; the button will not enable on
+   an unknown, refused, or unanswered mode.
+3. **At redirect** — `stripeCheckoutMode()` sniffs `cs_live_` and makes a live
+   checkout state its consequence before opening.
 
-1. aidream deploys `1c26399d0`, so `GET /lulu/payment-mode` 200s in production;
-2. `pnpm sync-types` brings the route into `types/python-generated`;
-3. the `satisfies` tripwire in `ordering-gate.ts` **stops compiling on purpose** —
-   that is how the next agent finds this file;
-4. read the mode through the **typed** client, badge exactly what it says, and gate
-   `Order & pay` on `pairing_ok === true`, fail-closed on any other answer.
+### The four badge states (all covered by the forcing test)
 
-Do not simply flip the constant. Ordering opens on a backend answer, never on a
-build-time boolean.
+| Backend answer | Badge | `Order & pay` |
+|---|---|---|
+| not yet answered | "Checking which payment mode this backend is in…" | disabled |
+| 404 / error | "Ordering is off — could not confirm payment mode." | disabled |
+| 200, `pairing_ok: false` | "Ordering is off — the backend refuses this pairing" (red) | disabled |
+| 200, `pairing_ok: true`, not charging real money | "Test mode — no real money" | enabled with a complete form |
+| 200, `pairing_ok: true`, charging real money | "Live mode — real money" (amber) | enabled with a complete form |
+
+Fail closed is the rule: `readPaymentMode` never throws, never guesses, and anything
+short of a clean `pairing_ok: true` keeps the button shut. If this reader ever stops
+compiling again, the backend was rolled back — **fix the reader, and leave ordering
+shut while you do. Never delete the gate.**
 
 ### History — three deletions in one evening, and what they were actually about
 
@@ -50,19 +61,22 @@ build-time boolean.
 | `2d90e58b23` | Bare `git revert` of that, empty message, no stated reason. |
 | `774afb54c2` | Restored it, with the reasoning in the commit message. |
 | `69e8b9ff7f` | Deleted it again, this time with a reason: no raw shadow response type for a route absent from the canonical contract. |
-| *this version* | Keeps the SAFETY and drops the disputed mechanism entirely — the gate now reads nothing, so there is nothing left to disagree with. |
+| `9e880748fe` | Kept the safety, dropped the disputed mechanism: ordering simply shut, plus a contract tripwire that fires the moment the route lands. |
+| *this version* | aidream deployed the route mid-repair and the tripwire fired as designed — so the badge is back, on the TYPED client, which is what both sides wanted all along. |
 
 The disagreement was always about HOW to read the backend, never about whether
-ordering should be open while the payment mode is unknowable. Anyone who wants the
-live badge back should deploy `1c26399d0` first; that resolves it for everybody.
+ordering should be open while the payment mode is unknowable. The deploy resolved it:
+there is no longer any reason to read the route any way but the contract-bound one.
 
 ### The forcing test
 
-`__tests__/order-gate.test.tsx` renders the real `OrderFlow` and asserts the BUTTON,
-not an internal flag: disabled with the form completely filled in, an honest
-"Ordering is off" notice on screen, and `createOrder` never called when the button is
-clicked (it is mocked to throw, so no test can reach checkout). Proven falsifiable:
-removing `ORDERING_ALLOWED` from `formComplete` turns 2 of the 4 red.
+`__tests__/order-gate.test.tsx` renders the real `OrderFlow` with the payment-mode
+call mocked at the typed-client seam and asserts the BUTTON, not an internal flag:
+404 → disabled + off-state text; `pairing_ok: false` → disabled; unanswered →
+disabled; `createOrder` never called on a click while the gate is shut; and
+`pairing_ok: true` + complete form → enabled. No test can reach checkout
+(`createOrder` is mocked and throws). Proven falsifiable: removing
+`paymentModeAllowsOrdering` from `formComplete` turns 4 of the 5 red.
 
 ```bash
 npx jest "lulu-pricing/__tests__/order-gate" --no-coverage
@@ -71,13 +85,14 @@ npx jest "lulu-pricing/__tests__/order-gate" --no-coverage
 ## Files
 
 - `page.dev.tsx` — the route; configuration + quote.
-- `OrderFlow.tsx` — order form, the off notice, the gate, the orders list.
-- `ordering-gate.ts` — THE GATE plus the contract tripwire that re-opens it.
+- `OrderFlow.tsx` — order form, `PaymentModeBadge`, the gate, the orders list.
+- `ordering-gate.ts` — the backend's payment-mode answer and THE GATE.
 - `order-api.ts` / `lulu-api.ts` — typed-client transport for the contract-bound routes.
 
 ## Change Log
 
-- **2026-09-07** — Ordering switched off at the surface until the backend's
-  payment-mode check is deployed, after the live-money gate was deleted three times
-  in one evening over how to read an undeployed route. Safety kept, disputed
-  mechanism dropped, contract tripwire + forcing test added.
+- **2026-09-07** — Live-money gate re-landed for good after three deletions in one
+  evening. Ordering was shut outright while the route was undeployed; aidream then
+  deployed it, the contract tripwire fired as designed, and the badge came back on
+  the typed client. Forcing test covers all four states plus "never starts a
+  checkout while shut".

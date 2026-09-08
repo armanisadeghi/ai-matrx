@@ -17422,6 +17422,28 @@
         }
       }
     },
+    "/lulu/payment-mode": {
+      "get": {
+        "tags": [
+          "Lulu Print"
+        ],
+        "summary": "Payment Mode",
+        "description": "What this server's print lane actually is — test or live, and whether the\ntwo money integrations agree.\n\nA surface that offers ordering MUST badge this rather than infer a mode from\nits own hostname: a local page talks to whichever backend the server toggle\nnames, so \"I am on localhost\" says nothing about whose money is at stake.\nCarries no secret — only the derived mode.",
+        "operationId": "payment_mode_lulu_payment_mode_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintPaymentMode"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/lulu/orders": {
       "get": {
         "tags": [
@@ -19472,6 +19494,90 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MiroServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fibery/public/status": {
+      "get": {
+        "tags": [
+          "Fibery Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_fibery_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiberyServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/airtable/public/status": {
+      "get": {
+        "tags": [
+          "Airtable Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_airtable_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AirtableServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/slite/public/status": {
+      "get": {
+        "tags": [
+          "Slite Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_slite_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SliteServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/figma/public/status": {
+      "get": {
+        "tags": [
+          "Figma Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_figma_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigmaServiceStatus"
                 }
               }
             }
@@ -28149,6 +28255,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__qt_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/freecad-wiki/public/page": {
+      "get": {
+        "tags": [
+          "FreeCAD Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_freecad_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__freecad_wiki_integrations__service__PageMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inkscape-wiki/public/page": {
+      "get": {
+        "tags": [
+          "Inkscape Wiki Integrations"
+        ],
+        "summary": "Public Page",
+        "operationId": "public_page_inkscape_wiki_public_page_get",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Title"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__inkscape_wiki_integrations__service__PageMetadata"
                 }
               }
             }
@@ -88348,6 +88540,55 @@
         "title": "AirmeetStatusResult",
         "description": "Safe projection of Airmeet's high-level service status."
       },
+      "AirtableServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "airtable_official_collaborative_database_status",
+            "title": "Kind",
+            "default": "airtable_official_collaborative_database_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Airtable",
+            "title": "Provider",
+            "default": "Airtable"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.airtable.com",
+            "title": "Status Page",
+            "default": "https://status.airtable.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "AirtableServiceStatus"
+      },
       "AirtameServiceStatus": {
         "properties": {
           "__kind": {
@@ -97171,7 +97412,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 64,
+                "maxLength": 320,
                 "minLength": 1
               },
               {
@@ -97187,7 +97428,7 @@
           "provider_account_key"
         ],
         "title": "BridgeAccountIdentity",
-        "description": "Opaque, display-safe provider-account provenance. Never authorization.\n\n``provider_account_key`` version 2 is the canonical contract: a deterministic\nSHA-256 of a fixed public platform namespace plus the provider's stable\naccount fields, so the same provider account produces the same key on every\nmachine. Version 1 (absent field) is the retired per-installation HMAC;\nv1 keys are never comparable across machines or against v2 keys.\n``provider_account_fingerprint`` is the first 12 hex chars of the key.\n``provider_account_label`` is a short display-safe label (masked email or an\norg-id prefix) — never a raw email, credential, or token."
+        "description": "Opaque, display-safe provider-account provenance. Never authorization.\n\n``provider_account_key`` version 2 is the canonical contract: a deterministic\nSHA-256 of a fixed public platform namespace plus the provider's stable\naccount fields, so the same provider account produces the same key on every\nmachine. Version 1 (absent field) is the retired per-installation HMAC;\nv1 keys are never comparable across machines or against v2 keys.\n``provider_account_fingerprint`` is the first 12 hex chars of the key.\n``provider_account_label`` is the provider account's own identity as the\nperson knows it — the signed-in email, else the organization id. It is\nprovenance the owner already has, so it is shown in full (Arman's ruling,\n2026-09-07: an account name is not a secret). Never a credential or token."
       },
       "BridgeAction": {
         "type": "string",
@@ -98091,7 +98332,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 64,
+                "maxLength": 320,
                 "minLength": 1
               },
               {
@@ -130378,6 +130619,64 @@
         "title": "DropboxSelectedFileRequest",
         "description": "One exact Dropbox file reference; directory discovery is not accepted."
       },
+      "DroppedRungResponse": {
+        "properties": {
+          "rung": {
+            "type": "string",
+            "enum": [
+              "global",
+              "org",
+              "user"
+            ],
+            "title": "Rung"
+          },
+          "binding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Binding Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "holder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rung",
+          "reason"
+        ],
+        "title": "DroppedRungResponse",
+        "description": "One rung that named a Holder and was not used, with the reason.\n\nThe wire mirror of ``service.DroppedRung``. `reason` is a finished sentence\nmeant to be shown to a person as-is — it names what was set aside and what\nto do about it."
+      },
       "DrugLabelIdentity": {
         "properties": {
           "__kind": {
@@ -138196,6 +138495,47 @@
         "title": "FellowServiceStatus",
         "description": "Safe aggregate status projection for Fellow's fixed status page."
       },
+      "FiberyServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "fibery_public_service_status",
+            "title": "Kind",
+            "default": "fibery_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Fibery",
+            "title": "Provider",
+            "default": "Fibery"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Status"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.fibery.io",
+            "title": "Status Page",
+            "default": "https://status.fibery.io"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "FiberyServiceStatus",
+        "description": "Safe aggregate status projection for Fibery's fixed status page."
+      },
       "FieldAdd": {
         "properties": {
           "display_name": {
@@ -138493,6 +138833,55 @@
           "id"
         ],
         "title": "FieldRecord"
+      },
+      "FigmaServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "figma_official_collaborative_design_status",
+            "title": "Kind",
+            "default": "figma_official_collaborative_design_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Figma",
+            "title": "Provider",
+            "default": "Figma"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.figma.com",
+            "title": "Status Page",
+            "default": "https://status.figma.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "FigmaServiceStatus"
       },
       "FigsharePublicItem": {
         "properties": {
@@ -165242,6 +165631,14 @@
               }
             ],
             "title": "Auto Run"
+          },
+          "dropped_rungs": {
+            "items": {
+              "$ref": "#/components/schemas/DroppedRungResponse"
+            },
+            "type": "array",
+            "title": "Dropped Rungs",
+            "default": []
           }
         },
         "additionalProperties": false,
@@ -189405,6 +189802,63 @@
         ],
         "title": "PrintOrderPublic",
         "description": "One order as every surface consumes it — also the generated-contract shape."
+      },
+      "PrintPaymentMode": {
+        "properties": {
+          "lulu_environment": {
+            "type": "string",
+            "enum": [
+              "test",
+              "live",
+              "unknown",
+              "unconfigured"
+            ],
+            "title": "Lulu Environment",
+            "description": "Derived from LULU_API_BASE: 'live' is api.lulu.com, 'test' is a sandbox host."
+          },
+          "lulu_api_base": {
+            "type": "string",
+            "title": "Lulu Api Base",
+            "description": "The Lulu base URL in use. Not a secret."
+          },
+          "payment_mode": {
+            "type": "string",
+            "enum": [
+              "test",
+              "live",
+              "unknown",
+              "unconfigured"
+            ],
+            "title": "Payment Mode",
+            "description": "Derived from the STRIPE_SECRET_KEY prefix. Never the key itself."
+          },
+          "pairing_ok": {
+            "type": "boolean",
+            "title": "Pairing Ok",
+            "description": "True only when both providers are configured and in the SAME mode."
+          },
+          "charges_real_money": {
+            "type": "boolean",
+            "title": "Charges Real Money",
+            "description": "True when a completed checkout would move real money and print a real book."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "One human sentence naming the mode and, when refused, the remedy."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lulu_environment",
+          "lulu_api_base",
+          "payment_mode",
+          "pairing_ok",
+          "charges_real_money",
+          "message"
+        ],
+        "title": "PrintPaymentMode",
+        "description": "What the backend's print lane actually is — the honest answer a surface\nbadges instead of asserting a mode from its own hostname."
       },
       "PrintShippingAddress": {
         "properties": {
@@ -215619,6 +216073,44 @@
         ],
         "title": "SlidoStatusResult",
         "description": "Safe projection of Slido's high-level service status."
+      },
+      "SliteServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "slite_public_service_status",
+            "title": "Kind",
+            "default": "slite_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Slite",
+            "title": "Provider",
+            "default": "Slite"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "available": {
+            "type": "boolean",
+            "const": true,
+            "title": "Available",
+            "default": true
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.slite.com",
+            "title": "Status Page",
+            "default": "https://status.slite.com"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SliteServiceStatus",
+        "description": "Safe availability projection for Slite's fixed status endpoint."
       },
       "SmartRecruitersServiceStatus": {
         "properties": {
@@ -246720,6 +247212,52 @@
         ],
         "title": "PageMetadata"
       },
+      "aidream__services__freecad_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "freecad_wiki_page_metadata",
+            "title": "Kind",
+            "default": "freecad_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "FreeCAD Wiki",
+            "title": "Provider",
+            "default": "FreeCAD Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
+      },
       "aidream__services__gentoo_packages_integrations__service__PackageMetadata": {
         "properties": {
           "__kind": {
@@ -247031,6 +247569,52 @@
         ],
         "title": "AsyncAccepted",
         "description": "The 202 body for every async HR endpoint.\n\n🚨 **HR creates no job table, no job status endpoint and no worker of its own**\n(SPEC-CONTRACTS §1.5). This is the runtime spine's own reference; ``poll`` and ``events``\npoint at `/runtime/*` endpoints that already exist."
+      },
+      "aidream__services__inkscape_wiki_integrations__service__PageMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "inkscape_wiki_page_metadata",
+            "title": "Kind",
+            "default": "inkscape_wiki_page_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "Inkscape Wiki",
+            "title": "Provider",
+            "default": "Inkscape Wiki"
+          },
+          "page_id": {
+            "type": "integer",
+            "title": "Page Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "namespace": {
+            "type": "integer",
+            "title": "Namespace"
+          },
+          "content_model": {
+            "type": "string",
+            "title": "Content Model"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "title",
+          "namespace",
+          "content_model",
+          "language"
+        ],
+        "title": "PageMetadata"
       },
       "aidream__services__jsdelivr_integrations__service__PackageMetadata": {
         "properties": {

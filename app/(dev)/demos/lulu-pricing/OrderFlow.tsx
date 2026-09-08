@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   CreditCard,
+  FlaskConical,
   PackageCheck,
   ShieldAlert,
   RefreshCcw,
@@ -26,7 +27,11 @@ import { Label } from "@/components/ui/label";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/utils/cn";
 import { formatMoney, toFetchState } from "./lulu-api";
-import { ORDERING_ALLOWED, ORDERING_OFF_MESSAGE } from "./ordering-gate";
+import {
+  orderingAllowed as backendAllowsOrdering,
+  readPaymentMode,
+  type PaymentModeProbe,
+} from "./ordering-gate";
 import {
   ORDER_STATUS_LABELS,
   cancelOrder,
@@ -146,6 +151,83 @@ function stripeCheckoutMode(url: string): "live" | "test" | null {
   }
 }
 
+/**
+ * LIVE-MONEY GATE — do not remove; if a type error appears here after
+ * sync-types, fix the READER, never delete the gate
+ * (reviewed 2026-09-07, review row d6a2d36d).
+ *
+ * The honest answer to "is this real money?", in the buyer's line of sight.
+ * Every word comes from the backend (see ./ordering-gate.ts) — this component
+ * asserts nothing of its own, because what went wrong on 2026-09-07 was a
+ * surface asserting a mode it could not know. While the backend has not
+ * answered, it says so rather than guessing.
+ *
+ * Four states, all covered by `__tests__/order-gate.test.tsx`:
+ * checking · test · live · off.
+ */
+function PaymentModeBadge({ probe }: { probe: PaymentModeProbe | null }) {
+  if (probe === null) {
+    return (
+      <div
+        data-testid="payment-mode-badge"
+        className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground"
+      >
+        <RefreshCcw className="size-4 shrink-0 animate-spin" />
+        Checking which payment mode this backend is in…
+      </div>
+    );
+  }
+
+  if (probe.status === "unavailable") {
+    return (
+      <div
+        data-testid="payment-mode-badge"
+        className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive"
+      >
+        <ShieldAlert className="mt-px size-4 shrink-0" />
+        <span>
+          Ordering is off — could not confirm payment mode. {probe.reason}
+        </span>
+      </div>
+    );
+  }
+
+  const { report } = probe;
+  const refused = !report.pairing_ok;
+  const live = report.charges_real_money;
+  const Icon = refused ? ShieldAlert : live ? CreditCard : FlaskConical;
+
+  return (
+    <div
+      data-testid="payment-mode-badge"
+      className={cn(
+        "mt-3 flex items-start gap-2 rounded-lg border p-3 text-xs",
+        refused
+          ? "border-destructive/40 bg-destructive/5 text-destructive"
+          : live
+            ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+            : "border-border bg-muted/40 text-muted-foreground",
+      )}
+    >
+      <Icon className="mt-px size-4 shrink-0" />
+      <div className="space-y-1">
+        <div className="font-semibold uppercase tracking-wide">
+          {refused
+            ? "Ordering is off — the backend refuses this pairing"
+            : live
+              ? "Live mode — real money"
+              : "Test mode — no real money"}
+        </div>
+        <div>{report.message}</div>
+        <div className="opacity-80">
+          Backend: printing via {report.lulu_api_base} ({report.lulu_environment})
+          · payments in {report.payment_mode} mode.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function OrderFlow({
   podPackageId,
   pageCount,
@@ -162,6 +244,23 @@ export function OrderFlow({
     status: "idle",
   });
   const [cancelingId, setCancelingId] = useState<string | null>(null);
+
+  /**
+   * LIVE-MONEY GATE — do not remove; if a type error appears here after
+   * sync-types, fix the READER, never delete the gate (reviewed 2026-09-07,
+   * review row d6a2d36d). Null while the backend is being asked — and while it
+   * is null the order button stays shut.
+   */
+  const [modeProbe, setModeProbe] = useState<PaymentModeProbe | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void readPaymentMode(controller.signal).then((probe) => {
+      if (controller.signal.aborted) return;
+      setModeProbe(probe);
+    });
+    return () => controller.abort();
+  }, []);
 
   const refreshOrders = useCallback(() => {
     setOrdersState({ status: "loading" });
@@ -181,10 +280,12 @@ export function OrderFlow({
     shippingLevel !== null;
 
   // LIVE-MONEY GATE — do not remove (reviewed 2026-09-07, review row d6a2d36d).
-  // See ./ordering-gate.ts: ordering stays shut until the backend can say which
-  // payment mode it is in. A complete form is not permission to spend money.
+  // See ./ordering-gate.ts: ordering opens only on the backend's own answer.
+  // A complete form is not permission to spend money.
+  const paymentModeAllowsOrdering = backendAllowsOrdering(modeProbe);
+
   const formComplete =
-    ORDERING_ALLOWED &&
+    paymentModeAllowsOrdering &&
     ready &&
     form.title.trim().length > 0 &&
     form.name.trim().length > 0 &&
@@ -301,15 +402,7 @@ export function OrderFlow({
         </p>
 
         {/* LIVE-MONEY GATE — do not remove (review row d6a2d36d). */}
-        {!ORDERING_ALLOWED ? (
-          <div
-            data-testid="ordering-off-notice"
-            className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive"
-          >
-            <ShieldAlert className="mt-px size-4 shrink-0" />
-            <span>{ORDERING_OFF_MESSAGE}</span>
-          </div>
-        ) : null}
+        <PaymentModeBadge probe={modeProbe} />
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field

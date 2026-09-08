@@ -6785,6 +6785,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lulu/payment-mode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Payment Mode
+         * @description What this server's print lane actually is — test or live, and whether the
+         *     two money integrations agree.
+         *
+         *     A surface that offers ordering MUST badge this rather than infer a mode from
+         *     its own hostname: a local page talks to whichever backend the server toggle
+         *     names, so "I am on localhost" says nothing about whose money is at stake.
+         *     Carries no secret — only the derived mode.
+         */
+        get: operations["payment_mode_lulu_payment_mode_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lulu/orders": {
         parameters: {
             query?: never;
@@ -8349,6 +8375,74 @@ export interface paths {
         };
         /** Public Status */
         get: operations["public_status_miro_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fibery/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_fibery_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/airtable/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_airtable_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/slite/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_slite_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/figma/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_figma_public_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -14316,6 +14410,40 @@ export interface paths {
         };
         /** Public Page */
         get: operations["public_page_qt_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/freecad-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_freecad_wiki_public_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inkscape-wiki/public/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Page */
+        get: operations["public_page_inkscape_wiki_public_page_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -38319,6 +38447,40 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** AirtableServiceStatus */
+        AirtableServiceStatus: {
+            /**
+             * Kind
+             * @default airtable_official_collaborative_database_status
+             * @constant
+             */
+            __kind?: "airtable_official_collaborative_database_status";
+            /**
+             * Provider
+             * @default Airtable
+             * @constant
+             */
+            provider?: "Airtable";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.airtable.com
+             * @constant
+             */
+            status_page?: "https://status.airtable.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
         /** AirtameServiceStatus */
         AirtameServiceStatus: {
             /**
@@ -42555,8 +42717,10 @@ export interface components {
          *     machine. Version 1 (absent field) is the retired per-installation HMAC;
          *     v1 keys are never comparable across machines or against v2 keys.
          *     ``provider_account_fingerprint`` is the first 12 hex chars of the key.
-         *     ``provider_account_label`` is a short display-safe label (masked email or an
-         *     org-id prefix) — never a raw email, credential, or token.
+         *     ``provider_account_label`` is the provider account's own identity as the
+         *     person knows it — the signed-in email, else the organization id. It is
+         *     provenance the owner already has, so it is shown in full (Arman's ruling,
+         *     2026-09-07: an account name is not a secret). Never a credential or token.
          */
         BridgeAccountIdentity: {
             /** Provider Account Key */
@@ -56232,6 +56396,29 @@ export interface components {
              */
             file_ref: string;
         };
+        /**
+         * DroppedRungResponse
+         * @description One rung that named a Holder and was not used, with the reason.
+         *
+         *     The wire mirror of ``service.DroppedRung``. `reason` is a finished sentence
+         *     meant to be shown to a person as-is — it names what was set aside and what
+         *     to do about it.
+         */
+        DroppedRungResponse: {
+            /**
+             * Rung
+             * @enum {string}
+             */
+            rung: "global" | "org" | "user";
+            /** Binding Id */
+            binding_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Holder Id */
+            holder_id?: string | null;
+            /** Reason */
+            reason: string;
+        };
         /** DrugLabelIdentity */
         DrugLabelIdentity: {
             /**
@@ -59708,6 +59895,38 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * FiberyServiceStatus
+         * @description Safe aggregate status projection for Fibery's fixed status page.
+         */
+        FiberyServiceStatus: {
+            /**
+             * Kind
+             * @default fibery_public_service_status
+             * @constant
+             */
+            __kind?: "fibery_public_service_status";
+            /**
+             * Provider
+             * @default Fibery
+             * @constant
+             */
+            provider?: "Fibery";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Status */
+            status: string;
+            /**
+             * Status Page
+             * @default https://status.fibery.io
+             * @constant
+             */
+            status_page?: "https://status.fibery.io";
+        };
         /** FieldAdd */
         FieldAdd: {
             /** Display Name */
@@ -59818,6 +60037,40 @@ export interface components {
             validation_rules?: components["schemas"]["JsonValue"] | null;
         } & {
             [key: string]: unknown;
+        };
+        /** FigmaServiceStatus */
+        FigmaServiceStatus: {
+            /**
+             * Kind
+             * @default figma_official_collaborative_design_status
+             * @constant
+             */
+            __kind?: "figma_official_collaborative_design_status";
+            /**
+             * Provider
+             * @default Figma
+             * @constant
+             */
+            provider?: "Figma";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Page
+             * @default https://status.figma.com
+             * @constant
+             */
+            status_page?: "https://status.figma.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * FigsharePublicItem
@@ -71911,6 +72164,11 @@ export interface components {
             } | null;
             /** Auto Run */
             auto_run?: boolean | null;
+            /**
+             * Dropped Rungs
+             * @default []
+             */
+            dropped_rungs?: components["schemas"]["DroppedRungResponse"][];
         };
         /** MandateResultPromoteRequest */
         MandateResultPromoteRequest: {
@@ -83182,6 +83440,45 @@ export interface components {
             placed_at: string | null;
             /** Refunded At */
             refunded_at: string | null;
+        };
+        /**
+         * PrintPaymentMode
+         * @description What the backend's print lane actually is — the honest answer a surface
+         *     badges instead of asserting a mode from its own hostname.
+         */
+        PrintPaymentMode: {
+            /**
+             * Lulu Environment
+             * @description Derived from LULU_API_BASE: 'live' is api.lulu.com, 'test' is a sandbox host.
+             * @enum {string}
+             */
+            lulu_environment: "test" | "live" | "unknown" | "unconfigured";
+            /**
+             * Lulu Api Base
+             * @description The Lulu base URL in use. Not a secret.
+             */
+            lulu_api_base: string;
+            /**
+             * Payment Mode
+             * @description Derived from the STRIPE_SECRET_KEY prefix. Never the key itself.
+             * @enum {string}
+             */
+            payment_mode: "test" | "live" | "unknown" | "unconfigured";
+            /**
+             * Pairing Ok
+             * @description True only when both providers are configured and in the SAME mode.
+             */
+            pairing_ok: boolean;
+            /**
+             * Charges Real Money
+             * @description True when a completed checkout would move real money and print a real book.
+             */
+            charges_real_money: boolean;
+            /**
+             * Message
+             * @description One human sentence naming the mode and, when refused, the remedy.
+             */
+            message: string;
         };
         /**
          * PrintShippingAddress
@@ -94628,6 +94925,42 @@ export interface components {
             indicator: "none" | "minor" | "major" | "critical";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * SliteServiceStatus
+         * @description Safe availability projection for Slite's fixed status endpoint.
+         */
+        SliteServiceStatus: {
+            /**
+             * Kind
+             * @default slite_public_service_status
+             * @constant
+             */
+            __kind?: "slite_public_service_status";
+            /**
+             * Provider
+             * @default Slite
+             * @constant
+             */
+            provider?: "Slite";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Available
+             * @default true
+             * @constant
+             */
+            available?: true;
+            /**
+             * Status Page
+             * @default https://status.slite.com
+             * @constant
+             */
+            status_page?: "https://status.slite.com";
         };
         /**
          * SmartRecruitersServiceStatus
@@ -108536,6 +108869,31 @@ export interface components {
             /** Language */
             language: string;
         };
+        /** PageMetadata */
+        aidream__services__freecad_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default freecad_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "freecad_wiki_page_metadata";
+            /**
+             * Provider
+             * @default FreeCAD Wiki
+             * @constant
+             */
+            provider?: "FreeCAD Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
+        };
         /** PackageMetadata */
         aidream__services__gentoo_packages_integrations__service__PackageMetadata: {
             /**
@@ -108676,6 +109034,31 @@ export interface components {
              * Format: date-time
              */
             submitted_at: string;
+        };
+        /** PageMetadata */
+        aidream__services__inkscape_wiki_integrations__service__PageMetadata: {
+            /**
+             * Kind
+             * @default inkscape_wiki_page_metadata
+             * @constant
+             */
+            __kind?: "inkscape_wiki_page_metadata";
+            /**
+             * Provider
+             * @default Inkscape Wiki
+             * @constant
+             */
+            provider?: "Inkscape Wiki";
+            /** Page Id */
+            page_id: number;
+            /** Title */
+            title: string;
+            /** Namespace */
+            namespace: number;
+            /** Content Model */
+            content_model: string;
+            /** Language */
+            language: string;
         };
         /** PackageMetadata */
         aidream__services__jsdelivr_integrations__service__PackageMetadata: {
@@ -121686,6 +122069,26 @@ export interface operations {
             };
         };
     };
+    payment_mode_lulu_payment_mode_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrintPaymentMode"];
+                };
+            };
+        };
+    };
     list_orders_lulu_orders_get: {
         parameters: {
             query?: never;
@@ -123579,6 +123982,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MiroServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_fibery_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FiberyServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_airtable_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AirtableServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_slite_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SliteServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_figma_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigmaServiceStatus"];
                 };
             };
         };
@@ -131231,6 +131714,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__qt_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_freecad_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__freecad_wiki_integrations__service__PageMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_page_inkscape_wiki_public_page_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__inkscape_wiki_integrations__service__PageMetadata"];
                 };
             };
             /** @description Validation Error */

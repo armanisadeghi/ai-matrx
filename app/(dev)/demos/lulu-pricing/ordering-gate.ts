@@ -1,63 +1,75 @@
 /**
- * LIVE-MONEY GATE — do not remove (reviewed 2026-09-07, review row d6a2d36d).
+ * LIVE-MONEY GATE — do not remove; if a type error appears here after
+ * sync-types, fix the READER, never delete the gate
+ * (reviewed 2026-09-07, review row d6a2d36d).
  *
  * WHY THIS EXISTS: this demo opens a REAL Stripe Checkout. On 2026-09-07 an
  * independent reviewer driving it from `localhost:3001` was handed an actual
  * `cs_live_` session, under a screen asserting "test mode when pointed at
  * localhost". A page can never know that — the base-URL resolver follows the
- * admin server toggle, so a local page may be talking to production.
+ * admin server toggle, so a local page may be talking to production. Only the
+ * backend can say whose money is at stake, so the backend is asked.
  *
- * The only thing that can answer "whose money is this?" is the backend, via
- * `GET /lulu/payment-mode` (aidream `commerce_mode.py`, commit 1c26399d0),
- * which also refuses mismatched pairings and live charges returning to
- * localhost. That commit IS NOT DEPLOYED: production returns 404 and the route
- * is absent from the generated contract.
+ * `GET /lulu/payment-mode` (aidream `commerce_mode.py`) reports the derived Lulu
+ * environment and Stripe mode and whether the two agree. The same commit refuses
+ * mismatched pairings and refuses a live charge returning to localhost, before
+ * any provider call. This surface adds the human-visible half: it badges exactly
+ * what comes back and keeps `Order & pay` shut unless `pairing_ok` is true.
  *
- * So this surface does the only honest thing available: it does not offer
- * ordering at all. No hostname guess, no probe of a route that is not in the
- * contract, no locally-declared shadow of a response shape the contract does
- * not carry. An unknowable payment mode is a closed door.
+ * FAIL CLOSED: `readPaymentMode` never throws and never guesses. Any answer that
+ * is not a clean 200 — a backend that predates the endpoint, a network failure,
+ * an auth refusal — resolves to `unavailable`, and unavailable keeps the button
+ * shut. An unlabeled payment mode is exactly the state that let a live checkout
+ * pass for a test one.
  *
- * THREE ATTEMPTS AT A LIVE PROBE WERE DELETED IN ONE EVENING (f7a9e3c297,
- * 2d90e58b23, 69e8b9ff7f) — twice for binding to a contract that does not have
- * the route. The disagreement was about HOW to read the backend, never about
- * whether ordering should be open. This version has nothing left to disagree
- * with: it reads nothing.
- *
- * HOW THIS RE-OPENS (do it in this order, do not shortcut it):
- *   1. aidream deploys 1c26399d0, so `GET /lulu/payment-mode` 200s in prod;
- *   2. `pnpm sync-types` brings the route into `types/python-generated`;
- *   3. the `satisfies` line below STOPS COMPILING — deliberately — which is
- *      how you find this file;
- *   4. read the mode through the TYPED client, badge what it says, and gate
- *      `Order & pay` on `pairing_ok === true`, fail-closed on any other answer.
- * Do not simply flip the constant. Ordering opens on a backend answer, never
- * on a build-time boolean.
+ * HISTORY (read before "simplifying" this): the gate was deleted three times on
+ * 2026-09-07 — f7a9e3c297, 2d90e58b23, 69e8b9ff7f. Twice the reason was the
+ * contract: the route was not deployed, so `sync-types` regenerated
+ * `types/python-generated` without it and the reader stopped compiling. aidream
+ * has now DEPLOYED it (production `GET /lulu/payment-mode` answers, and both the
+ * path and `PrintPaymentMode` are in the generated contract), so this reader is
+ * bound to the contract like every other call in this folder — no raw lane, no
+ * locally-declared shadow of the response shape. If it ever stops compiling
+ * again, the backend was rolled back: fix the reader, and leave ordering shut
+ * while you do.
  */
 
-import type { paths } from "@/types/python-generated/api-types";
+import { apiGet } from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 
-/** Does the LIVE generated contract carry the payment-mode route yet? */
-type PaymentModeRouteInContract = "/lulu/payment-mode" extends keyof paths
-  ? true
-  : false;
+export type PrintPaymentMode = components["schemas"]["PrintPaymentMode"];
+
+export type PaymentModeProbe =
+  | { status: "ok"; report: PrintPaymentMode }
+  | { status: "unavailable"; reason: string };
+
+export async function readPaymentMode(
+  signal?: AbortSignal,
+): Promise<PaymentModeProbe> {
+  try {
+    const { data } = await apiGet("/lulu/payment-mode", {
+      signal,
+      // This caller owns the outcome: an unanswered mode is rendered on screen
+      // and closes the button, so it is not an unhandled system error.
+      captureErrors: false,
+    });
+    return { status: "ok", report: data };
+  } catch (error: unknown) {
+    return {
+      status: "unavailable",
+      reason:
+        error instanceof Error && error.message.length > 0
+          ? error.message
+          : "The backend did not report its payment mode.",
+    };
+  }
+}
 
 /**
- * The tripwire. `false` today, and the day sync-types picks the route up this
- * becomes `false satisfies true` — a compile error pointing right at the
- * instructions above.
+ * THE GATE. Ordering is offered only when the backend has SAID what mode it is
+ * in and its two money integrations agree. Unknown mode = closed door, never a
+ * hopeful one.
  */
-const PAYMENT_MODE_ROUTE_IN_CONTRACT = false satisfies PaymentModeRouteInContract;
-
-/**
- * THE GATE. `Order & pay` is disabled while this is false, no matter how
- * complete the form is.
- */
-export const ORDERING_ALLOWED: boolean = PAYMENT_MODE_ROUTE_IN_CONTRACT;
-
-/** What the screen says instead of pretending the button might work. */
-export const ORDERING_OFF_MESSAGE =
-  "Ordering is off — this backend cannot confirm which payment mode it is in. " +
-  "The demo talks to whichever server the admin toggle names, so this page " +
-  "cannot tell a test charge from a real one until the server's payment-mode " +
-  "check is deployed. Nothing can be bought here until then.";
+export function orderingAllowed(probe: PaymentModeProbe | null): boolean {
+  return probe !== null && probe.status === "ok" && probe.report.pairing_ok;
+}
