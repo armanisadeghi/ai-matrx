@@ -123,7 +123,9 @@ export function compileSlotComponent({
     const componentCandidates: string[] = [];
     const importBindings: SandboxImportBinding[] = [];
     const babelResult = transform(code, {
-      presets: ["react", "typescript"],
+      // The sandbox supplies React through its allowlisted function scope;
+      // it has no module loader for automatically injected JSX-runtime imports.
+      presets: [["react", { runtime: "classic" }], "typescript"],
       plugins: [
         collectAndStripImportDeclarationsPlugin(importBindings),
         collectTopLevelBindingsPlugin(declaredTopLevel, componentCandidates),
