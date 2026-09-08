@@ -9,16 +9,6 @@ import { NoteEditorDock } from "./NoteEditorDock";
 import { useNoteDelete } from "../../hooks/useNoteDelete";
 import { useToastManager } from "@/hooks/useToastManager";
 import { toastErrorAlreadyCaptured } from "@/lib/toast";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { RichDocument } from "@/features/rich-document/RichDocument";
@@ -87,13 +77,11 @@ export default function MobileNoteEditor({
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const {
-    confirmOpen: deleteConfirmOpen,
-    isDeleting,
-    requestDelete,
-    cancelDelete,
-    confirmDelete,
-  } = useNoteDelete({
+  // The delete confirmation belongs to the platform, not to this screen —
+  // `requestDelete` opens the canonical `confirm()` (see useNoteDelete). The
+  // AlertDialog this file used to render was the desktop tab's dialog written
+  // a second time, for one decision.
+  const { isDeleting, requestDelete } = useNoteDelete({
     instanceId: "",
     noteId: note.id,
     noteLabel: localLabel || "Untitled Note",
@@ -421,32 +409,6 @@ export default function MobileNoteEditor({
         isDeleting={isDeleting}
       />
 
-      {/* Delete confirmation */}
-      <AlertDialog
-        open={deleteConfirmOpen}
-        onOpenChange={(open) => {
-          if (!open) cancelDelete();
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete note?</AlertDialogTitle>
-            <AlertDialogDescription>
-              &ldquo;{localLabel || "Untitled Note"}&rdquo; will be moved to
-              trash. You can restore it later.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

@@ -7,16 +7,7 @@ import type { Option } from "@/components/matrx/SearchableSelect";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   Loader2,
   Clock,
@@ -70,7 +61,6 @@ export function NoteVersionHistoryPanel({
     "current",
   );
   const [restoring, setRestoring] = useState(false);
-  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<"compare" | "history">("compare");
 
   const dispatch = useAppDispatch();
@@ -153,8 +143,20 @@ export function NoteVersionHistoryPanel({
         ? { content: rightSnapshot.content, label: rightSnapshot.label }
         : null;
 
+  // Restoring OVERWRITES what is on screen now, so the click stops and names
+  // exactly that — and names the safe fact too (the current text is kept as a
+  // new version, so this is undoable by restoring back). The confirmation is
+  // the canonical `confirm()`: this panel used to hand-build an AlertDialog
+  // for it, one of four bespoke confirm bodies the notes feature carried.
   const handleRestore = async () => {
     if (!leftVersion) return;
+    const ok = await confirm({
+      title: `Restore v${leftVersion}?`,
+      description: `The note's current text is replaced by v${leftVersion} — anything typed since then disappears from the editor. It is not lost: the current text is saved to the history as a new version first, so you can restore back to it.`,
+      confirmLabel: `Restore v${leftVersion}`,
+    });
+    if (!ok) return;
+
     setRestoring(true);
     try {
       await restoreVersion(noteId, leftVersion);
@@ -164,7 +166,6 @@ export function NoteVersionHistoryPanel({
       toast.error("Failed to restore version");
     } finally {
       setRestoring(false);
-      setShowRestoreDialog(false);
     }
   };
 
@@ -292,7 +293,7 @@ export function NoteVersionHistoryPanel({
           variant="outline"
           size="sm"
           className={cn("h-8 gap-1.5", isEmbedded && "w-full")}
-          onClick={() => setShowRestoreDialog(true)}
+          onClick={handleRestore}
           disabled={restoring}
         >
           {restoring ? (
@@ -355,28 +356,6 @@ export function NoteVersionHistoryPanel({
       </div>
     );
 
-  const restoreDialog = (
-    <AlertDialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Restore Version</AlertDialogTitle>
-          <AlertDialogDescription>
-            This will replace the current note content with the content from v
-            {leftVersion}. The current content will be saved as a new version in
-            the history.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={restoring}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleRestore} disabled={restoring}>
-            {restoring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Restore v{leftVersion}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-
   if (useStackedLayout) {
     return (
       <div
@@ -410,7 +389,6 @@ export function NoteVersionHistoryPanel({
           />
         </section>
 
-        {restoreDialog}
       </div>
     );
   }
@@ -485,7 +463,6 @@ export function NoteVersionHistoryPanel({
         </TabsContent>
       </Tabs>
 
-      {restoreDialog}
     </div>
   );
 }

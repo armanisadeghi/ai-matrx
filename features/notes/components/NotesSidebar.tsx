@@ -34,16 +34,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { confirm } from '@/components/dialogs/confirm/ConfirmDialogHost';
 import type { Note, NoteFilters, NoteSortConfig } from '../types';
 import { filterNotes, sortNotes, groupNotesByFolder } from '../utils/noteUtils';
 import { getFolderIconAndColor } from '../utils/folderUtils';
@@ -100,8 +91,6 @@ export function NotesSidebar({
     const [renameFolderName, setRenameFolderName] = useState('');
     const [moveNoteOpen, setMoveNoteOpen] = useState(false);
     const [moveNoteData, setMoveNoteData] = useState<Note | null>(null);
-    const [deleteFolderAlertOpen, setDeleteFolderAlertOpen] = useState(false);
-    const [deleteFolderName, setDeleteFolderName] = useState('');
 
     // Filter and sort notes
     const processedNotes = useMemo(() => {
@@ -256,9 +245,18 @@ export function NotesSidebar({
             icon: Trash2,
             label: 'Delete All Notes',
             description: `Delete all ${notesCount} note${notesCount !== 1 ? 's' : ''} in this folder`,
-            action: () => {
-                setDeleteFolderName(folderName);
-                setDeleteFolderAlertOpen(true);
+            action: async () => {
+                // Consequence-first, per the destructive-and-expensive-actions
+                // law: this one is NOT the soft delete a single note gets —
+                // it names the count and says nothing comes back.
+                const ok = await confirm({
+                    title: `Delete all ${notesCount} note${notesCount !== 1 ? 's' : ''} in \u201c${folderName}\u201d?`,
+                    description: `Every note in this folder is deleted for good \u2014 there is no Trash step and no Undo for this one, unlike deleting a single note. Their content, tags and version history go with them. The folder itself stays.`,
+                    confirmLabel: `Delete ${notesCount} note${notesCount !== 1 ? 's' : ''}`,
+                    variant: 'destructive',
+                });
+                if (!ok) return;
+                onDeleteFolderNotes?.(folderName);
             },
             disabled: notesCount === 0,
             iconColor: 'text-red-500',
@@ -567,29 +565,8 @@ export function NotesSidebar({
                 />
             )}
 
-            {/* Delete Folder Alert */}
-            <AlertDialog open={deleteFolderAlertOpen} onOpenChange={setDeleteFolderAlertOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete All Notes in Folder?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently delete all notes in "{deleteFolderName}". This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={() => {
-                                onDeleteFolderNotes?.(deleteFolderName);
-                                setDeleteFolderAlertOpen(false);
-                            }}
-                            className="bg-destructive hover:bg-destructive/90"
-                        >
-                            Delete All
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            {/* NO delete-folder dialog here: the menu item awaits the canonical
+                `confirm()` instead. One confirm surface for the whole app. */}
         </div>
     );
 }

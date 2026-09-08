@@ -27,18 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogOverlay,
-  AlertDialogPortal,
-  AlertDialogContentPrimitive,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
@@ -86,9 +75,6 @@ export interface QuickNoteSaveCoreProps {
    */
   footerHost?: HTMLElement | null;
 }
-
-// Z-index above WindowPanel (runtime z-index ~1000+)
-const ALERT_Z = "z-[2147483600]";
 
 export function QuickNoteSaveCore({
   initialContent,
@@ -592,50 +578,39 @@ export function QuickNoteSaveCore({
         confirmLabel="Create & Select"
       />
 
-      {/* Overwrite confirm — raised above WindowPanel */}
-      <AlertDialog
+      {/* Overwrite confirm — the CANONICAL dialog, declarative form.
+          This was hand-assembled from AlertDialog primitives at
+          z-[2147483600] wearing `data-[state=open]:animate-in … zoom-in-95`
+          host-plugin utilities. It is the imperative `confirm()`'s twin with
+          a THIRD action, so it takes `<ConfirmDialog/>` rather than
+          `confirm()`: "Preview changes" is the law's safe alternative sitting
+          next to the destructive button, and it rides the `content` slot
+          instead of being deleted. No z-index of its own — the package
+          portals above every layer, WindowPanel included. */}
+      <ConfirmDialog
         open={showOverwriteWarning}
         onOpenChange={setShowOverwriteWarning}
-      >
-        <AlertDialogPortal>
-          <AlertDialogOverlay className={cn(ALERT_Z)} />
-          <AlertDialogContentPrimitive
-            className={cn(
-              "fixed left-[50%] top-[50%] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 matrx-glass-core p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg",
-              ALERT_Z,
-            )}
+        title={
+          <span className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            Overwrite “{selectedNote?.label ?? "this note"}”?
+          </span>
+        }
+        description={`Everything currently in this note is replaced by the text you are saving. The old content is not kept anywhere — there is no version to restore and no Undo. Compare the two first if you are not certain.`}
+        content={
+          <Button
+            variant="outline"
+            onClick={handlePreviewOverwrite}
+            className="w-full gap-1.5"
           >
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                Confirm Overwrite
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                You are about to replace the content of{" "}
-                <strong>{selectedNote?.label}</strong>. This action cannot be
-                undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <Button
-                variant="outline"
-                onClick={handlePreviewOverwrite}
-                className="gap-1.5"
-              >
-                <GitCompareArrows className="h-4 w-4" />
-                Preview changes
-              </Button>
-              <AlertDialogAction
-                onClick={handleOverwriteConfirm}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Overwrite
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContentPrimitive>
-        </AlertDialogPortal>
-      </AlertDialog>
+            <GitCompareArrows className="h-4 w-4" />
+            Preview changes
+          </Button>
+        }
+        confirmLabel="Overwrite"
+        variant="destructive"
+        onConfirm={handleOverwriteConfirm}
+      />
     </div>
   );
 }

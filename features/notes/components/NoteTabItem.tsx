@@ -82,18 +82,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { NoteContextStatusIcon } from "./NoteContextSection";
-import {
-  AlertDialog,
-  AlertDialogPortal,
-  AlertDialogOverlay,
-  AlertDialogContentPrimitive,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
 import { MoveNoteDialog } from "./MoveNoteDialog";
 
 interface NoteTabItemProps {
@@ -234,12 +222,15 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     }
   }, [dispatch, noteId, localLabel, label]);
 
-  const {
-    confirmOpen: deleteConfirmOpen,
-    requestDelete,
-    cancelDelete,
-    confirmDelete,
-  } = useNoteDelete({ instanceId, noteId, noteLabel: label, content });
+  // The delete confirmation is NOT rendered here — `requestDelete` opens the
+  // canonical package confirm (see useNoteDelete). `deleteConfirmOpen` is read
+  // only to keep the tab-interaction timestamp warm while the user decides.
+  const { confirmOpen: deleteConfirmOpen, requestDelete } = useNoteDelete({
+    instanceId,
+    noteId,
+    noteLabel: label,
+    content,
+  });
 
   // Keep the "tab-interaction" timestamp warm while any tab-direct
   // popover or modal is open. This prevents the idle-based auto-move
@@ -684,35 +675,12 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
         availableFolders={allFolders}
       />
 
-      {/* Delete confirmation — overlay and content must exceed window panel z-index (~1000) */}
-      <AlertDialog
-        open={deleteConfirmOpen}
-        onOpenChange={(open) => {
-          if (!open) cancelDelete();
-        }}
-      >
-        <AlertDialogPortal>
-          <AlertDialogOverlay className="z-[10000]" />
-          <AlertDialogContentPrimitive className="fixed left-[50%] top-[50%] z-[10001] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border bg-background shadow-lg p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete note?</AlertDialogTitle>
-              <AlertDialogDescription>
-                &ldquo;{label}&rdquo; will be moved to trash. You can restore it
-                later.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={confirmDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContentPrimitive>
-        </AlertDialogPortal>
-      </AlertDialog>
+      {/* NO DELETE DIALOG HERE, ON PURPOSE. It used to be hand-assembled from
+          AlertDialog primitives at z-[10001] with host-plugin animation
+          classes — a second confirm surface for a decision the platform
+          already owns. `requestDelete` opens the canonical `confirm()`
+          instead, which portals above every layer without a z-index of its
+          own. Re-adding a dialog here is the twin that was removed. */}
     </>
   );
 }
