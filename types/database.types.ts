@@ -53393,6 +53393,7 @@ export type Database = {
           consumption_map: Json
           definition_enabled: boolean
           definition_id: string
+          dropped_code: string
           dropped_reason: string
           fallback_mandate_key: string
           holder_id: string
@@ -53455,6 +53456,7 @@ export type Database = {
           consumption_map: Json
           definition_enabled: boolean
           definition_id: string
+          dropped_code: string
           dropped_reason: string
           fallback_mandate_key: string
           holder_id: string
@@ -53482,6 +53484,7 @@ export type Database = {
           consumption_map: Json
           definition_enabled: boolean
           definition_id: string
+          dropped_code: string
           dropped_reason: string
           fallback_mandate_key: string
           holder_id: string
