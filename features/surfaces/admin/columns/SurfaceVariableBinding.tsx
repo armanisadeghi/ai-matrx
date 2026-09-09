@@ -1,5 +1,7 @@
 "use client";
 
+import styles from "./SurfaceVariableBinding.module.css";
+
 import {
   CONFIGURATION_CHOICE_SIZE,
   PropertyRow,
@@ -356,7 +358,7 @@ export function SurfaceVariableBinding({
             )}
           </div>
           {mode === "surface_value" && sourceDetailAside ? (
-            <div className="min-w-0 border-t border-border pt-3 md:border-l md:border-t-0 md:pl-3 md:pt-0">
+            <div className={cn(styles.sourceDetailAside, "min-w-0 border-border")}>
               {sourceDetailAside}
             </div>
           ) : null}
