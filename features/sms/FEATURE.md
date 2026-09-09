@@ -110,6 +110,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 - STOP, HELP, and START take precedence over agent execution and are durably recorded before opt-out enforcement.
 - **Phone number alone is not authorization.** Assistant execution requires the exact verified user/program binding returned by the canonical resolver; ambiguous or missing identity executes nothing.
 - **Global and user stops are distinct.** `sms_phone_numbers.assistant_enabled` is read-only health on user surfaces; `sms_notification_preferences.ai_agent_messages` is the user's pause/resume switch.
+- **Enrollment and transport health are distinct.** An unenrolled account says it is not enrolled; only a returned program state may report an inactive sender or global pause.
 - **Consent, notification families, and assistant replies are independent controls.** Overall verified SMS consent is the delivery prerequisite; `task_notifications` is an explicit family opt-in; `ai_agent_messages` governs only assistant replies.
 - **The communication schema never chooses an agent.** `sms.owner_beta` is the named job; its system/org/user/run Binding selects the Holder. Legacy preferred-agent columns are constrained NULL and legacy configuration RPCs do not exist.
 - **Transport never edits the Holder's tools.** SMS adds only its database-owned channel context. A `db_write`-or-higher call uses the canonical durable delegated-tool suspension, sends the user an authenticated conversation door, and requires a 15-minute, single-use approval bound to the exact canonical tool name, normalized arguments, user, organization, and conversation. Stale sessions complete an email OTP re-authentication before approval; secrets in arguments are redacted in the review card.
@@ -132,6 +133,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Change log
 
+- `2026-09-09` — Distinguished an account with no verified enrollment from an inactive sender or globally paused assistant program on the Messaging health surface.
 - `2026-08-28` — Successful Twilio verification now records the verified mobile number in the shared CRM contact graph, and Resend delivery webhooks stamp the originating notification's first `delivered_at` evidence idempotently.
 - `2026-08-28` — Closed direct client execution of internal workforce-notification sender functions, preserving service-role delivery only, and brought the legacy non-spine sender onto the notification-purpose consent gate.
 - `2026-08-26` — Expanded the versioned opt-in contract and public carrier-review surfaces to name employer-to-employee workforce notifications, added the dedicated HR sender, and kept event-level SMS choices in the canonical Notifications settings.

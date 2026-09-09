@@ -2,6 +2,7 @@ import {
   assistantBlockedReasonLabel,
   smsAssistantProgramFromRpc,
   smsPermissionLabel,
+  smsSenderProgramDisplay,
   type SmsAssistantProgramState,
 } from "./assistant-program";
 
@@ -41,6 +42,32 @@ describe("smsPermissionLabel", () => {
     expect(smsPermissionLabel(base)).toBe("SMS notifications on");
     expect(smsPermissionLabel({ ...base, smsEnabled: false })).toBe(
       "SMS notifications off",
+    );
+  });
+});
+
+describe("smsSenderProgramDisplay", () => {
+  it("does not report a global pause when this account has no enrollment", () => {
+    expect(smsSenderProgramDisplay(null, false)).toEqual({
+      description:
+        "Verify a mobile number above to connect this account to a sender and program.",
+      value: "Not enrolled",
+    });
+  });
+
+  it("distinguishes inactive sender, global pause, and ready transport", () => {
+    expect(
+      smsSenderProgramDisplay({ ...base, numberActive: false }, false)
+        .description,
+    ).toBe("The approved sender is not active.");
+    expect(
+      smsSenderProgramDisplay(
+        { ...base, globalAssistantEnabled: false },
+        false,
+      ).description,
+    ).toBe("Assistant messaging is temporarily paused for everyone.");
+    expect(smsSenderProgramDisplay(base, false).description).toBe(
+      "The approved sender and global assistant program are active.",
     );
   });
 });

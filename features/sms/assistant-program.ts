@@ -64,6 +64,47 @@ export function smsPermissionLabel(state: SmsAssistantProgramState): string {
   return "SMS notifications on · no opt-out recorded";
 }
 
+export function smsSenderProgramDisplay(
+  state: SmsAssistantProgramState | null,
+  loading: boolean,
+): { description: string; value: string } {
+  if (!state) {
+    return loading
+      ? {
+          description: "Checking the approved sender and assistant program.",
+          value: "Checking…",
+        }
+      : {
+          description:
+            "Verify a mobile number above to connect this account to a sender and program.",
+          value: "Not enrolled",
+        };
+  }
+  if (!state.numberActive) {
+    return {
+      description: "The approved sender is not active.",
+      value: state.maskedPhone && state.programKey
+        ? `${state.maskedPhone} · ${state.programKey}`
+        : "Sender inactive",
+    };
+  }
+  if (!state.globalAssistantEnabled) {
+    return {
+      description: "Assistant messaging is temporarily paused for everyone.",
+      value: state.maskedPhone && state.programKey
+        ? `${state.maskedPhone} · ${state.programKey}`
+        : "Program paused",
+    };
+  }
+  return {
+    description: "The approved sender and global assistant program are active.",
+    value:
+      state.maskedPhone && state.programKey
+        ? `${state.maskedPhone} · ${state.programKey}`
+        : "Program active",
+  };
+}
+
 function nullableRpcText(value: string | null): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
