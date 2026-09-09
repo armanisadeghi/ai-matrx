@@ -52325,11 +52325,35 @@ export interface components {
             /** Open Plan Count */
             open_plan_count: number;
             /**
+             * Conversation Id
+             * @description The ONE stored Conductor conversation for this person and this workflow (deterministic; the studio continues it with is_new=false when conversation_exists, else starts it).
+             */
+            conversation_id: string;
+            /**
+             * Conversation Exists
+             * @default false
+             */
+            conversation_exists?: boolean;
+            /**
+             * Messages
+             * @description The stored transcript so far, oldest first — the panel reopens with it.
+             */
+            messages?: {
+                [key: string]: unknown;
+            }[];
+            /**
              * Variables
-             * @description Pass verbatim as the agent-start `variables`: workflow_id, workflow_name, workflow_context (the XML envelope).
+             * @description Pass as the agent-start `variables` on the FIRST turn only: workflow_id, workflow_name.
              */
             variables?: {
                 [key: string]: string;
+            };
+            /**
+             * Context
+             * @description Pass as the agent-start `context` on EVERY turn: workflow_context (the XML envelope, rebuilt fresh each time).
+             */
+            context?: {
+                [key: string]: unknown;
             };
         };
         /** ConfirmCandidateRequest */
@@ -93159,6 +93183,8 @@ export interface components {
             can_record: boolean;
             /** Is Host */
             is_host: boolean;
+            /** Role */
+            role: string;
             /** Lobby */
             lobby: boolean;
         };

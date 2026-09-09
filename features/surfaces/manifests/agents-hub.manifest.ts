@@ -32,7 +32,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
-import { SORT_OPTIONS } from "@ai-matrx/agents/catalog/react";
+import { SORT_OPTIONS } from "@ai-matrx/agents/catalog";
 import { AGENT_NONE_SENTINEL } from "@ai-matrx/agents/catalog";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 

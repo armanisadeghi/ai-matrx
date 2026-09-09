@@ -119035,13 +119035,38 @@
             "type": "integer",
             "title": "Open Plan Count"
           },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id",
+            "description": "The ONE stored Conductor conversation for this person and this workflow (deterministic; the studio continues it with is_new=false when conversation_exists, else starts it)."
+          },
+          "conversation_exists": {
+            "type": "boolean",
+            "title": "Conversation Exists",
+            "default": false
+          },
+          "messages": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "The stored transcript so far, oldest first — the panel reopens with it."
+          },
           "variables": {
             "additionalProperties": {
               "type": "string"
             },
             "type": "object",
             "title": "Variables",
-            "description": "Pass verbatim as the agent-start `variables`: workflow_id, workflow_name, workflow_context (the XML envelope)."
+            "description": "Pass as the agent-start `variables` on the FIRST turn only: workflow_id, workflow_name."
+          },
+          "context": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context",
+            "description": "Pass as the agent-start `context` on EVERY turn: workflow_context (the XML envelope, rebuilt fresh each time)."
           }
         },
         "additionalProperties": false,
@@ -119054,7 +119079,8 @@
           "workflow_id",
           "workflow_name",
           "step_count",
-          "open_plan_count"
+          "open_plan_count",
+          "conversation_id"
         ],
         "title": "ConductorChatContext",
         "description": "Everything the studio needs to open the Conductor for one workflow:\nthe resolved mandate agent + the variables to pass on POST /agents/{id}."
@@ -209406,6 +209432,10 @@
             "type": "boolean",
             "title": "Is Host"
           },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
           "lobby": {
             "type": "boolean",
             "title": "Lobby"
@@ -209422,6 +209452,7 @@
           "can_subscribe",
           "can_record",
           "is_host",
+          "role",
           "lobby"
         ],
         "title": "RoomTokenResponse",
