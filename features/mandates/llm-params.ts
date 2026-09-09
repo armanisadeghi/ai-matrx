@@ -8,6 +8,12 @@
 
 import type { JsonObject } from "@/types/json";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
+import {
+  REASONING_EFFORT_OPTIONS,
+  REASONING_SUMMARY_OPTIONS,
+  THINKING_LEVEL_OPTIONS,
+  VERBOSITY_OPTIONS,
+} from "@/types/python-generated/llm-enums";
 
 export function toLlmParams(obj: JsonObject): Partial<FeLlmParams> {
   const out: Partial<FeLlmParams> = {};
@@ -15,7 +21,8 @@ export function toLlmParams(obj: JsonObject): Partial<FeLlmParams> {
   if (typeof obj.offering_id === "string") out.offering_id = obj.offering_id;
   if (typeof obj.temperature === "number") out.temperature = obj.temperature;
   if (typeof obj.top_p === "number") out.top_p = obj.top_p;
-  if (typeof obj.max_output_tokens === "number") out.max_output_tokens = obj.max_output_tokens;
+  if (typeof obj.max_output_tokens === "number")
+    out.max_output_tokens = obj.max_output_tokens;
   const handled = new Set([
     "model",
     "offering_id",
@@ -24,16 +31,20 @@ export function toLlmParams(obj: JsonObject): Partial<FeLlmParams> {
     "max_output_tokens",
     "thinking_level",
     "reasoning_effort",
+    "reasoning_summary",
     "verbosity",
   ]);
-  const thinkingLevels = ["minimal", "low", "medium", "high"] as const;
-  const thinking = thinkingLevels.find((v) => v === obj.thinking_level);
+  const thinking = THINKING_LEVEL_OPTIONS.find((v) => v === obj.thinking_level);
   if (thinking) out.thinking_level = thinking;
-  const efforts = ["auto", "none", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
-  const effort = efforts.find((v) => v === obj.reasoning_effort);
+  const effort = REASONING_EFFORT_OPTIONS.find(
+    (v) => v === obj.reasoning_effort,
+  );
   if (effort) out.reasoning_effort = effort;
-  const verbosities = ["low", "medium", "high"] as const;
-  const verbosity = verbosities.find((v) => v === obj.verbosity);
+  const summary = REASONING_SUMMARY_OPTIONS.find(
+    (v) => v === obj.reasoning_summary,
+  );
+  if (summary) out.reasoning_summary = summary;
+  const verbosity = VERBOSITY_OPTIONS.find((v) => v === obj.verbosity);
   if (verbosity) out.verbosity = verbosity;
   const dropped = Object.keys(obj).filter((k) => !handled.has(k));
   if (dropped.length > 0) {
