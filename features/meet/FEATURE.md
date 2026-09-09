@@ -1,6 +1,6 @@
 # Meet — calls and meetings on aimatrx.com
 
-**Status:** adopted and running — the room renders, joins, and admits from the lobby against production data · **Package:** [`@ai-matrx/meet`](https://www.npmjs.com/package/@ai-matrx/meet) `latest` · **Cross-repo SoR:** `../../../common-docs/systems/communications/meet/HANDOFF.md` · **Register:** `../../../common-docs/projects/meet-realtime-intelligence/REGISTER.md` (MRI-D1, MRI-A5a)
+**Status:** adopted and running — the room renders, joins, and admits from the lobby against production data · **Package:** [`@ai-matrx/meet`](https://www.npmjs.com/package/@ai-matrx/meet) `latest` · **Cross-repo SoR:** `../../../common-docs/systems/communications/meet/HANDOFF.md` · **Register:** `../../../common-docs/projects/archive/meet-realtime-intelligence/REGISTER.md` (MRI-D1, MRI-A5a)
 
 This folder is the HOST BINDING and nothing else. Every behaviour — ringing, the
 lobby, host controls, the stage arithmetic, device fallbacks, recording consent,
