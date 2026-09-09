@@ -111,11 +111,15 @@ export function MandateContextGate({
       <ShortcutFieldRow
         title="Required context policies"
         source="Mandate"
-        state="Required"
+        state={
+          row.requiredContextPolicyKeys.length ? "Required" : "None required"
+        }
       >
         <span className="text-sm">
           {row.requiredContextPolicyKeys.length
-            ? row.requiredContextPolicyKeys.map((key) => displayLabelForKey(key)).join(", ")
+            ? row.requiredContextPolicyKeys
+                .map((key) => displayLabelForKey(key))
+                .join(", ")
             : "None"}
         </span>
       </ShortcutFieldRow>

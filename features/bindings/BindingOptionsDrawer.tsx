@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
 
 import {
+  ConfigurationTable,
+  ConfigurationTableRow,
   FieldHelp,
   PropertyRow,
   StatusToken,
@@ -44,6 +46,17 @@ import {
   JOB_SETTINGS_WORDS,
   JOB_TREATMENT_OVERRIDE_WORDS,
 } from "./words";
+
+const LAUNCH_SCOPE_COLUMNS = [
+  { key: "defaults", label: "Preferences for" },
+  {
+    key: "features",
+    label: "Feature-launch support",
+    help: "Features can override these defaults or use a different renderer. Per-feature support is not reported to this editor. Display test exercises the default launch, not the original feature.",
+  },
+];
+const GATE_UNAVAILABLE =
+  "Unavailable: mandate launches cannot guarantee a confirmation gate across all callers. Some features explicitly bypass it. Saved gate values are preserved.";
 
 type LoadState =
   | { status: "idle" }
@@ -382,7 +395,24 @@ export function BindingOptionsDrawer({
             </div>
           ) : (
             <>
-              <div hidden={Boolean(section && activeSection !== "display")}>
+              <div
+                hidden={Boolean(section && activeSection !== "display")}
+                className="space-y-3"
+              >
+                <ConfigurationTable
+                  label="Display applicability"
+                  columns={LAUNCH_SCOPE_COLUMNS}
+                >
+                  <ConfigurationTableRow
+                    columns={LAUNCH_SCOPE_COLUMNS}
+                    cells={{
+                      defaults: "Default launch",
+                      features: (
+                        <StatusToken status="unknown" label="Not verified" />
+                      ),
+                    }}
+                  />
+                </ConfigurationTable>
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <h3 className="text-sm font-semibold">Result display</h3>
                   <span className="text-xs">
@@ -410,6 +440,7 @@ export function BindingOptionsDrawer({
                 }}
                 disabled={disabled || busy}
                 omitAutoRun
+                gateUnavailableReason={GATE_UNAVAILABLE}
                 section={section}
                 fieldMeta={section ? settingsMeta : undefined}
                 words={JOB_SETTINGS_WORDS}
@@ -460,6 +491,7 @@ export function BindingOptionsDrawer({
                 ) : null}
               </div>
               <AdvancedSection
+                gateUnavailableReason={GATE_UNAVAILABLE}
                 value={advancedValue}
                 onChange={(field, next) => {
                   if (field === "isActive") {
@@ -540,7 +572,7 @@ export function BindingOptionsDrawer({
                       Reload saved
                     </Button>
                   )}
-                  <FieldHelp label="Save display preferences">
+                  <FieldHelp label="Save shared preferences">
                     Saves display preferences and permissions for this mandate.
                     Holder selection and model overrides are saved separately.
                   </FieldHelp>

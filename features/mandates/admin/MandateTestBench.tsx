@@ -96,6 +96,8 @@ import type {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   PropertyRow,
+  ConfigurationTable,
+  ConfigurationTableRow,
   FieldHelp,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
@@ -571,27 +573,18 @@ function CandidateEditor({
 }
 
 function ReferenceRow({ exemplar }: { exemplar: MandateExemplarRow }) {
+  if (!exemplar.reference_output && !exemplar.reference_artifact)
+    return <PropertyRow label="Reference output" value="Not set" />;
   return (
     <details className="rounded-md border border-border">
       <summary className="flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs font-semibold hover:bg-accent/40">
         <Star className="h-3.5 w-3.5" /> Reference output
-        {!exemplar.reference_output && !exemplar.reference_artifact && (
-          <span className="font-normal text-muted-foreground">
-            Status: Not set
-          </span>
-        )}
       </summary>
       <div className="border-t border-border p-2">
-        {exemplar.reference_output || exemplar.reference_artifact ? (
-          <OutputPreview
-            output={exemplar.reference_output ?? ""}
-            artifact={exemplar.reference_artifact}
-          />
-        ) : (
-          <div className="rounded bg-muted/40 p-2 text-[11px] text-muted-foreground">
-            <PropertyRow label="Reference output" value="Not set" />
-          </div>
-        )}
+        <OutputPreview
+          output={exemplar.reference_output ?? ""}
+          artifact={exemplar.reference_artifact}
+        />
       </div>
     </details>
   );
@@ -1148,15 +1141,6 @@ export function MandateTestBench({
                 <span className="text-muted-foreground">
                   Source: {displayLabelForKey(exemplar.source)}
                 </span>
-                <details className="text-muted-foreground">
-                  <summary className="cursor-pointer">inputs</summary>
-                  <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/40 p-1.5 text-[10px]">
-                    {JSON.stringify(exemplar.variables, null, 1)}
-                    {exemplar.user_input
-                      ? `\nuser_input: ${exemplar.user_input}`
-                      : ""}
-                  </pre>
-                </details>
                 <Button
                   size="icon"
                   variant="ghost"
@@ -1167,6 +1151,54 @@ export function MandateTestBench({
                   <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
               </div>
+
+              <ConfigurationTable
+                label={`${exemplar.label} inputs`}
+                columns={[
+                  { key: "input", label: "Input" },
+                  { key: "value", label: "Value" },
+                ]}
+              >
+                {Object.entries(exemplar.variables ?? {}).map(
+                  ([name, value]) => (
+                    <ConfigurationTableRow
+                      key={name}
+                      columns={[
+                        { key: "input", label: "Input" },
+                        { key: "value", label: "Value" },
+                      ]}
+                      cells={{
+                        input: displayLabelForKey(name),
+                        value: (
+                          <span className="whitespace-pre-wrap break-words">
+                            {value === ""
+                              ? "Empty"
+                              : typeof value === "string"
+                                ? value
+                                : JSON.stringify(value, null, 2)}
+                          </span>
+                        ),
+                      }}
+                    />
+                  ),
+                )}
+                <ConfigurationTableRow
+                  columns={[
+                    { key: "input", label: "Input" },
+                    { key: "value", label: "Value" },
+                  ]}
+                  cells={{
+                    input: "User message",
+                    value: (
+                      <span className="whitespace-pre-wrap break-words">
+                        {exemplar.user_input === ""
+                          ? "Empty"
+                          : (exemplar.user_input ?? "Not set")}
+                      </span>
+                    ),
+                  }}
+                />
+              </ConfigurationTable>
 
               <div className="space-y-1.5">
                 <ReferenceRow exemplar={exemplar} />

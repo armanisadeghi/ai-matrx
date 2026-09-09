@@ -129,7 +129,9 @@ export function AdvancedSection({
   overridesTitle,
   section,
   fieldMeta,
+  gateUnavailableReason,
 }: {
+  gateUnavailableReason?: string;
   section?: "display" | "overrides" | "permissions";
   fieldMeta?: (field: keyof AdvancedFields) => {
     source: string;
@@ -362,7 +364,10 @@ export function AdvancedSection({
               title="Bypass gate after"
               hidden={hidden("bypassGateSeconds")}
               {...fieldMeta?.("bypassGateSeconds")}
-              hint="Auto-confirm the pre-execution gate after N seconds."
+              hint={
+                gateUnavailableReason ??
+                "Auto-confirm the pre-execution gate after N seconds."
+              }
             >
               <div className="flex items-center gap-2">
                 <Input
@@ -373,7 +378,10 @@ export function AdvancedSection({
                     onChange("bypassGateSeconds", Number(e.target.value) || 0)
                   }
                   disabled={
-                    disabled || !value.autoRun || !value.showPreExecutionGate
+                    disabled ||
+                    Boolean(gateUnavailableReason) ||
+                    !value.autoRun ||
+                    !value.showPreExecutionGate
                   }
                   className="h-9 text-sm w-20"
                 />

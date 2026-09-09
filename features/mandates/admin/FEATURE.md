@@ -1,6 +1,6 @@
 # Mandates admin console
 
-Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md` — read it before touching this feature in ANY repo.
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/mandates/STATE.md` — read it before touching this feature in ANY repo.
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/agent-variable-binding/FEATURE.md` — read it before touching this feature in ANY repo. It governs how a mandate's variables actually reach the agent (the mapping vocabulary, the scenario matrix, and why the UI must read live code truth instead of the `contract` column).
 
@@ -46,6 +46,8 @@ surface runtime is the follow-up.
    enforced by `agx_duplicate_agent` / `agx_duplicate_version` and recorded in
    `migrations/agx_system_promotion_superadmin.sql`.
 2. **THE CANONICAL-SELECTION LAW.** Anywhere agents are listed for selection, use the canonical agent listing system — the Redux agent-definition slice (`fetchAgentsListFull` + the purpose-fit selector: `selectBuiltinAgents` here, `selectActiveAgents` for user-facing pickers) or the scoped server RPCs (`agx_list_scoped` with true scopes). **A raw `.from("definition")` query dumped alphabetically is the recurring disease this repo keeps re-catching**: it blends mine/shared/org/public/system into one meaningless list, ignores scopes, and treats an administrator like a user. Never write one. The console consumed exactly this bug at birth (fixed 2026-08-08, same day).
+
+Runtime gap register: `/Users/armanisadeghi/code/common-docs/operations/mandate-ui-runtime-gaps.md` — read before claiming a configuration control is honored by every caller.
 
 ## Owner test bench (Wave 2, 2026-08-09)
 
@@ -118,6 +120,8 @@ The page is the `matrx-admin/mandates` surface (`features/surfaces/manifests/man
 The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate` (`ui`, handled on the console's own provider, which owns `selectedId`) and `mandate_exemplar_draft` (`draft`, registered by `MandateTestBench` via `useSurfaceWriteHandlers`). Both are `applyPolicy: "ask"`. Read the JUDGMENT BAR block at the top of the manifest before adding a third: rebind, enable/disable, the per-principal overrides, Run all, and every health/roll-up value are deliberately NOT writable, and each has its reason written down there.
 
 ## Change Log
+
+- 2026-09-09 — Display preferences identify Default launch scope and unverified feature support; mandate gate controls are unavailable. Test and note metadata use shared tables; saved-case inputs remain visible with display names; Diagnostics preserves unknown evidence and excludes provision-neutral drift from validation; empty required-context policies no longer claim Required. Runtime gaps are tracked in the shared register above.
 
 - 2026-09-08 — **`/administration/mandates/[mandateKey]` is the `matrx-admin/mandate-workspace` surface.** `AdminMandateWorkspacePage` mounts `<SurfaceRuntimeProvider>` (identity + merged descendant contributions); the goal editor publishes `mandate_goal` / `mandate_goal_grounding` / `mandate_output_kind` / `mandate_goal_draft` and owns the one write target `mandate_goal_draft` (draft, ask). *Refine with AI* opens the agent run window on `mandate.goal_writer` with this surface adopted, so the writer's `agent_mandate_specification` renders as itself and its charge lands in the editor via *Use as goal* (kind component) or the writer's own `apply_surface_write` call. Details + rationale: `../FEATURE.md` Change Log, same date. Known: `check:agent-disclosure` still lists this route file because its `params: Promise<{ mandateKey: string }>` matches the guard's `mandateKey:` run-signal — a false positive shared with the `(core)` route, not a missing disclosure (the manifest declares the `goal_writer` role).
 

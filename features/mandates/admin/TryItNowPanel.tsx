@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import {
   PropertyRow,
+  CONFIGURATION_CHOICE_SIZE,
   ConfigurationTable,
   ConfigurationTableRow,
   FieldHelp,
@@ -293,9 +294,38 @@ export function TryItNowPanel({
     }
   }
 
+  const inputColumns = [
+    { key: "format", label: "Format" },
+    { key: "required", label: "Required" },
+    { key: "delivery", label: "Entry" },
+    { key: "source", label: "Source" },
+  ];
+  const scopeColumns = [
+    { key: "declaration", label: "Input scope" },
+    {
+      key: "match",
+      label: "Scope match",
+      help: "Input declarations use your signed-in organization. The input endpoint cannot select the test principal; matching that declaration to the tested holder has not been verified.",
+    },
+  ];
+
   return (
     <section className="min-w-0 space-y-4">
-      <h3 className="text-sm font-semibold">Test inputs</h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold">Test inputs</h3>
+        <span className="flex items-center gap-1 text-sm">
+          Sample data
+          <FieldHelp
+            label="Sample data"
+            triggerLabel="Sample data — unavailable"
+            unavailable
+            triggerIcon={<FlaskConical className="size-3.5 opacity-50" />}
+          >
+            Sample-data fill is not available for mandate tests. Use saved test
+            cases below, or enter values here.
+          </FieldHelp>
+        </span>
+      </div>
       <PropertyRow
         label="Test mode"
         help="Server test returns execution diagnostics. Display test launches the saved presentation using your effective holder, including organization and personal bindings. Surfaces that explicitly choose their own layout can override the saved display."
@@ -304,7 +334,9 @@ export function TryItNowPanel({
             value={testMode}
             onValueChange={(value: "server" | "display") => setTestMode(value)}
           >
-            <SelectTrigger className="w-full max-w-72">
+            <SelectTrigger
+              className={`${CONFIGURATION_CHOICE_SIZE} w-full max-w-72`}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -326,7 +358,9 @@ export function TryItNowPanel({
                 setTestContext(value)
               }
             >
-              <SelectTrigger className="w-full max-w-72">
+              <SelectTrigger
+                className={`${CONFIGURATION_CHOICE_SIZE} w-full max-w-72`}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -338,21 +372,15 @@ export function TryItNowPanel({
         }
         help="System default preserves the administrator bench. My effective holder includes your organization and personal binding overrides. Both execute as the signed-in administrator."
       />
-      <PropertyRow
-        label="Input declaration scope"
-        value="Signed-in organization"
-        source="Served input surface"
-      />
-      <PropertyRow
-        label="Input / test scope match"
-        value={<StatusToken status="unknown" label="Not verified" />}
-        help="The input-surface endpoint has no test-principal selector. Its declarations may differ from the holder selected by the test context. The result reports the actual holder."
-      />
-      <PropertyRow
-        label="Sample-data fill"
-        value="Not available"
-        help="Agent Builder sample-data support is tracked for a later pass. Saved test cases remain available below."
-      />
+      <ConfigurationTable label="Test scope" columns={scopeColumns}>
+        <ConfigurationTableRow
+          columns={scopeColumns}
+          cells={{
+            declaration: "Signed-in organization",
+            match: <StatusToken status="unknown" label="Not verified" />,
+          }}
+        />
+      </ConfigurationTable>
       {surfaceState.status === "loading" ? (
         <div role="status" className="flex items-center gap-2 text-sm">
           <Loader2 className="size-4 animate-spin" />
@@ -394,19 +422,20 @@ export function TryItNowPanel({
                   <FieldHelp label={label}>{field.help}</FieldHelp>
                 ) : null}
               </h4>
-              <PropertyRow
-                label="Format"
-                value={formatVariableDisplayName(field.kind)}
-              />
-              <PropertyRow
-                label="Required"
-                value={field.sourcing !== "optional" ? "Yes" : "No"}
-              />
-              <PropertyRow
-                label="Delivery"
-                value={field.pinned ? "Automatic" : "Entered for test"}
-                source={ORIGIN_LABEL[field.origin]}
-              />
+              <ConfigurationTable
+                label={`${label} input properties`}
+                columns={inputColumns}
+              >
+                <ConfigurationTableRow
+                  columns={inputColumns}
+                  cells={{
+                    format: formatVariableDisplayName(field.kind),
+                    required: field.sourcing !== "optional" ? "Yes" : "No",
+                    delivery: field.pinned ? "Automatic" : "Manual",
+                    source: ORIGIN_LABEL[field.origin],
+                  }}
+                />
+              </ConfigurationTable>
               {field.pinned ? (
                 <PropertyRow
                   label="Value"
