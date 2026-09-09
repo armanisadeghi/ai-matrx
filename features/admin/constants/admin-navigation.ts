@@ -697,6 +697,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/reporting/lint-debt"),
           destination("/administration/reporting/grounding"),
           destination("/administration/reporting/producer-yield"),
+          destination("/administration/reporting/tool-refetch"),
         ],
       },
     ],

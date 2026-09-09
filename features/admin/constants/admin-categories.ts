@@ -1329,6 +1329,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Tool re-fetch",
+        description:
+          "How often an agent asks a tool for something it was already given. Per tool: repeats (identical name + arguments in one conversation), how many returned byte-identical data and therefore bought nothing, how many were legitimate refreshes, how many happened only after the first result was trimmed out of context, and the characters of context that re-fetching cost.",
+        iconName: "Repeat2",
+        link: "/administration/reporting/tool-refetch",
+        isNew: true,
+      },
+      {
         title: "Yield register",
         description:
           "What did the money buy? Every autonomous spender in the platform with its accepted-per-produced yield and cost per accepted outcome — plus the floors that alarm when a producer stops buying anything. NULL is never zero: unmeasurable, unmeasured, and measured-zero are three different problems.",
