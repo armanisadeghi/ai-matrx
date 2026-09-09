@@ -99,6 +99,8 @@ The rule, and why it is not a style preference:
 
 ## Change Log
 
+- 2026-09-09 — Watchdog failure payloads retain the viewport used for diagnosis and render acknowledgement kind; missing acknowledgements remain `none`, never an inferred presentation.
+
 - 2026-09-09 — **Alternate mobile surfaces acknowledge visibility without fake geometry.** A registered window may deliberately replace `WindowPanel` on mobile with a purpose-built surface. Settings, Chat Options, and the four flashcard viewers use `useOverlaySurfaceRenderAck` while their drawer, sheet, or fullscreen viewer is active; the silent-render watchdog treats that mount as visibility proof instead of false-screaming `no-window-registered` and offering a useless `revealWindow` action.
 
 - 2026-08-30 — **`?panels=` deep-linking works everywhere; it had been working
@@ -556,6 +558,8 @@ A triggered panel must **never** silently fail to appear. Two layers enforce it 
 - `registerWindow` clamps the caller's `initial` rect via `clampRectToViewport` (defense in depth for any caller-computed rect), and the watchdog diagnoses/reveals with safe dims so a degenerate measurement can't false-scream `off-screen`.
 
 Never derive window geometry from a raw `window.innerWidth/innerHeight` read.
+
+**Diagnostic context.** Failure payloads include `viewportWidth`, `viewportHeight` (the safe dimensions used by diagnosis), and `renderAcknowledgement` (`window`, `surface`, or `none`). A missing acknowledgement does not identify which presentation rendered. Middleware payload coverage: `__tests__/overlayRenderWatchdogContext.test.ts`.
 
 **Watchdog (loud recovery).** ~2.5 s after an open, the middleware runs the pure `diagnoseOverlayRender` against live Redux + viewport state. If no visible panel is on screen — `windowsHidden` still on, off-screen, or zero-size — it `console.error`s with diagnostics and shows a self-healing `toast.error` ("Show it" → `revealWindow`). Scoped to **singleton window-kind** overlays; minimized and popped-out states count as OK (parked, not failed). Tests: `__tests__/overlayRenderWatchdog.test.ts`, `__tests__/windowManagerReveal.test.ts`.
 

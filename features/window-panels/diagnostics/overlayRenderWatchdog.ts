@@ -240,6 +240,9 @@ function endWatch(watch: Watch): void {
 }
 
 type Evaluation = {
+  viewportWidth: number;
+  viewportHeight: number;
+  renderAcknowledgement: "window" | "surface" | "none";
   diag: RenderDiagnosis;
   windowId: string;
   entry: WindowEntry | undefined;
@@ -261,6 +264,9 @@ function evaluate(store: WMApi, watch: Watch): Evaluation | null {
   // and a false scream trains people to ignore the real ones.
   const { vw, vh } = safeViewportDims();
   return {
+    viewportWidth: vw,
+    viewportHeight: vh,
+    renderAcknowledgement: ack?.kind ?? "none",
     diag: diagnoseOverlayRender({
       entry,
       windowsHidden: state.windowManager.windowsHidden,
@@ -359,6 +365,9 @@ function scream(store: WMApi, watch: Watch, res: Evaluation): void {
     {
       overlayId,
       windowId: res.windowId,
+      viewportWidth: res.viewportWidth,
+      viewportHeight: res.viewportHeight,
+      renderAcknowledgement: res.renderAcknowledgement,
       entry: res.entry,
       windowsHidden: res.windowsHidden,
     },
