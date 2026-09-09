@@ -30,7 +30,7 @@
 import { supabase } from "@/utils/supabase/client";
 
 /** Tool-call rows this report counts as denominator. Matches the views' own scope. */
-const COUNTED_TOOL_TYPES = ["local", "agent", "external"] as const;
+const COUNTED_TOOL_TYPES: string[] = ["local", "agent", "external"];
 
 /** Supabase's own hard cap per request. */
 const PAGE_SIZE = 1000;
@@ -143,31 +143,35 @@ export class RefetchTimeoutError extends Error {
 
 /** Postgres 57014 = canceling statement due to statement timeout. */
 function isStatementTimeout(err: { code?: string | null; message?: string | null }): boolean {
-  return err.code === "57014" || /statement timeout/i.test(err.message ?? "");
+  return (
+    err.code === "57014" ||
+    (typeof err.message === "string" && /statement timeout/i.test(err.message))
+  );
 }
 
-/** ── ALL-TIME: the summary view answers this question directly. ─────────── */
+/** ── ALL-TIME: the hourly materialized rollup answers this directly. ──────── */
 
 async function loadAllTime(): Promise<ToolRefetchSummary> {
+  // chat.vw_tool_refetch_summary plans at ~17s over the full history (over
+  // the data API's 8s statement limit), so all-time reads the materialized
+  // snapshot chat.mv_tool_refetch_summary, refreshed hourly by pg_cron
+  // (aidream db/migrations/0605). refreshed_at says how old the snapshot is.
   const { data, error } = await supabase
     .schema("chat")
-    .from("vw_tool_refetch_summary")
+    .from("mv_tool_refetch_summary")
     .select("*")
     .order("same_data_repeats", { ascending: false })
     .limit(PAGE_SIZE);
   if (error) {
-    // MEASURED 2026-09-09: this view plans at ~17.3s over the full history,
-    // while the `authenticated` role's statement_timeout is 8s — so the
-    // all-time rollup cannot come back over the data API as things stand.
-    // Say that out loud rather than spinning; the 7/30/90 windows do work.
     if (isStatementTimeout(error)) {
       throw new RefetchTimeoutError(
         "all",
-        "The all-time rollup exceeded the data API's 8-second statement limit. chat.vw_tool_refetch_summary recomputes every repeat's same-data and trim verdicts on every read (measured ~17.3s over the full history), so it cannot answer inside the limit until it is materialised or replaced by a stored rollup. The 7 / 30 / 90-day windows are computed a different way and are unaffected.",
+        "Reading the all-time snapshot (chat.mv_tool_refetch_summary) exceeded the data API's 8-second statement limit — it should be a single indexed table scan, so this is a real defect; report it.",
       );
     }
     throw new Error(error.message);
   }
+  const refreshedAt = (data ?? []).find((r) => typeof r.refreshed_at === "string")?.refreshed_at ?? null;
 
   const rows: ToolRefetchSummaryRow[] = (data ?? [])
     .filter((r) => typeof r.tool_name === "string" && r.tool_name.length > 0)
@@ -189,7 +193,13 @@ async function loadAllTime(): Promise<ToolRefetchSummary> {
       lastRepeatAt: r.last_repeat_at ?? null,
     }));
 
-  return { rows, truncated: false, truncationNote: null };
+  return {
+    rows,
+    truncated: false,
+    truncationNote: refreshedAt
+      ? `All-time figures are an hourly snapshot, last refreshed ${new Date(refreshedAt).toLocaleString()}.`
+      : null,
+  };
 }
 
 /** ── WINDOWED: recompute from the per-repeat rows + a windowed denominator. ─ */
@@ -247,7 +257,7 @@ async function pageCallCounts(
       .from("tool_call")
       .select("tool_name")
       .in("tool_name", toolNames)
-      .in("tool_type", COUNTED_TOOL_TYPES as unknown as string[])
+      .in("tool_type", COUNTED_TOOL_TYPES)
       .is("deleted_at", null)
       .gte("created_at", sinceIso)
       .order("created_at", { ascending: false })
@@ -323,11 +333,11 @@ async function loadWindowed(sinceIso: string): Promise<ToolRefetchSummary> {
   const toolNames = [...byTool.keys()];
   const { counts, truncated: callsTruncated } = await pageCallCounts(sinceIso, toolNames);
 
-  const rows: ToolRefetchSummaryRow[] = toolNames.map((toolName) => {
-    const acc = byTool.get(toolName)!;
+  const rows: ToolRefetchSummaryRow[] = [...byTool.entries()].map(([toolName, acc]) => {
     // A tool with repeats necessarily had calls; a missing count means the scan
     // could not establish the denominator, not that the denominator is zero.
-    const totalCalls = counts.has(toolName) ? counts.get(toolName)! : null;
+    const countedCalls = counts.get(toolName);
+    const totalCalls = typeof countedCalls === "number" ? countedCalls : null;
     return {
       toolName,
       totalCalls,

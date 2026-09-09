@@ -2070,9 +2070,11 @@ export type Database = {
           organization_id: string
           provider_id: string | null
           release_date: string | null
+          retired_at: string | null
           retry_fallback_id: string | null
           retry_max_attempts: number
           speed_rating: number | null
+          successor_id: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -2100,9 +2102,11 @@ export type Database = {
           organization_id: string
           provider_id?: string | null
           release_date?: string | null
+          retired_at?: string | null
           retry_fallback_id?: string | null
           retry_max_attempts?: number
           speed_rating?: number | null
+          successor_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -2130,9 +2134,11 @@ export type Database = {
           organization_id?: string
           provider_id?: string | null
           release_date?: string | null
+          retired_at?: string | null
           retry_fallback_id?: string | null
           retry_max_attempts?: number
           speed_rating?: number | null
+          successor_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -2226,6 +2232,34 @@ export type Database = {
           {
             foreignKeyName: "model_definition_retry_fallback_id_fkey"
             columns: ["retry_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
             isOneToOne: false
             referencedRelation: "model_public"
             referencedColumns: ["id"]
@@ -2620,9 +2654,11 @@ export type Database = {
           provider_id: string | null
           provider_model_id: string | null
           release_date: string | null
+          retired_at: string | null
           retry_fallback_id: string | null
           retry_max_attempts: number | null
           speed_rating: number | null
+          successor_id: string | null
           token_billed: boolean | null
           translator_key: string | null
           transport: string | null
@@ -2722,6 +2758,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "offering_api_id_fkey"
             columns: ["api_id"]
             isOneToOne: false
@@ -2753,14 +2817,46 @@ export type Database = {
           controls: Json | null
           cost_rating: number | null
           id: string | null
+          is_deprecated: boolean | null
           is_premium: boolean | null
           is_primary: boolean | null
           maker: string | null
           max_tokens: number | null
           name: string | null
+          retired_at: string | null
           speed_rating: number | null
+          successor_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       model_offering: {
         Row: {
@@ -2768,6 +2864,7 @@ export type Database = {
           is_available: boolean | null
           model_common_name: string | null
           model_id: string | null
+          model_is_deprecated: boolean | null
           model_name: string | null
           offering_id: string | null
           points_per_million_cached_input: number | null
@@ -2893,6 +2990,7 @@ export type Database = {
           description: string | null
           guest_fallback_id: string | null
           id: string | null
+          is_deprecated: boolean | null
           is_premium: boolean | null
           is_primary: boolean | null
           maker: string | null
@@ -2902,7 +3000,9 @@ export type Database = {
           points_per_million_input: number | null
           points_per_million_output: number | null
           release_date: string | null
+          retired_at: string | null
           speed_rating: number | null
+          successor_id: string | null
           token_billed: boolean | null
           usage_basis: string | null
         }
@@ -2959,6 +3059,34 @@ export type Database = {
           {
             foreignKeyName: "ai_model_mid_fallback_id_fkey"
             columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
             isOneToOne: false
             referencedRelation: "model_public"
             referencedColumns: ["id"]
@@ -10140,6 +10268,27 @@ export type Database = {
           unknown_cost_calls: number | null
           updated_at: string | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      mv_tool_refetch_summary: {
+        Row: {
+          after_trim_repeats: number | null
+          chars_refetched_same_data: number | null
+          conversations: number | null
+          last_repeat_at: string | null
+          median_gap_calls: number | null
+          median_gap_secs: number | null
+          new_data_repeats: number | null
+          refreshed_at: string | null
+          repeat_rate: number | null
+          repeats: number | null
+          same_data_rate: number | null
+          same_data_repeats: number | null
+          tool_name: string | null
+          total_calls: number | null
+          total_conversations: number | null
+          unknown_data_repeats: number | null
         }
         Relationships: []
       }
