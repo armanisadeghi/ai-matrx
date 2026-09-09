@@ -1,5 +1,6 @@
 "use client";
 
+import { isConcreteRoute } from "@/utils/route-discovery/shared";
 import { usePathname } from "next/navigation";
 import {
   CrumbTrailHeader,
@@ -57,7 +58,7 @@ export function RouteTreeBreadcrumbHeader({
   const activeSegments = normalizePath(relativePath)
     .split("/")
     .filter(Boolean);
-  const routeSegments = routes.map((route) => normalizePath(route).split("/"));
+  const routeSegments = routes.filter(isConcreteRoute).map((route) => normalizePath(route).split("/"));
 
   const siblingOptions = (parent: readonly string[], active?: string): CrumbOption[] => {
     const candidates = new Map<string, string[]>();

@@ -7,6 +7,7 @@
 //
 // Admin-only. Do not generalize into the shared ModuleHeader.
 
+import { isConcreteRoute } from "@/utils/route-discovery/shared";
 import type { ModulePageIcon } from "@/components/matrx/navigation/types";
 import { MODULE_HOME, MODULE_NAME, filteredPages } from "../config";
 
@@ -97,7 +98,7 @@ export function buildAdminTree(routes: string[]): AdminTreeNode {
   for (const raw of list) {
     const rel = raw.replace(/^\/?administration\/?/, "").replace(/^\/+/, "");
     const segments = rel.split("/").filter(Boolean);
-    if (segments.length === 0) continue;
+    if (segments.length === 0 || !isConcreteRoute(rel)) continue;
 
     let cursor = root;
     let accumulated = MODULE_HOME;

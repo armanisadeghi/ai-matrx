@@ -2,6 +2,7 @@
  * Shared route search/filter for route index pages and the admin dashboard.
  */
 
+import { isConcreteRoute } from "@/utils/route-discovery/shared";
 import { formatTitleCase } from "@ai-matrx/kit/text-case";
 
 export interface RouteSearchRow {
@@ -23,7 +24,7 @@ export function buildRouteSearchRows(
     ? basePath.slice(0, -1)
     : basePath;
 
-  return routes.map((route) => {
+  return routes.filter(isConcreteRoute).map((route) => {
     const parts = route.split("/");
     const segment = parts[parts.length - 1] ?? route;
     const category = parts.length > 1 ? formatTitleCase(parts[0]!) : "Root";
