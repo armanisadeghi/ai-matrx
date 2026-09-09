@@ -1657,6 +1657,18 @@ function BindingDraft({
           activeSection && activeSection !== "holder" ? "hidden" : "space-y-3"
         }
       >
+        {!holderOnlyRung ? (
+          <AutoRunBar
+            targets={holderInputs.targets}
+            map={draftMap}
+            value={autoRun}
+            onChange={setAutoRun}
+            disabled={disabled}
+            // Preserve any real save response; mapping completeness does not
+            // prove that the runtime supports mandate-wide intervention.
+            serverNotes={writeReport?.notes ?? []}
+          />
+        ) : null}
         <ScopeHolderBar
           rung={rung}
           organizationId={organizationId}
@@ -2148,25 +2160,7 @@ function BindingDraft({
                   : null}
               </ConfigurationTable>
             </div>
-            <div hidden={Boolean(activeSection && activeSection !== "holder")}>
-              {/* P14 — AUTO-RUN, narrating itself as the map changes. It is only
-          meaningful once something is actually mapped: before that the bar
-          would be a control about a promise nobody has made yet. */}
-              {holderChosen && holderInputs.targets.length > 0 ? (
-                <AutoRunBar
-                  targets={holderInputs.targets}
-                  map={draftMap}
-                  value={autoRun}
-                  onChange={setAutoRun}
-                  disabled={disabled}
-                  // The bar's own sentence is the PRE-SAVE preview of the draft;
-                  // these are the server's sentences about what the write stored —
-                  // notably the promise refused down to false. Verbatim, and gone
-                  // the moment the draft moves.
-                  serverNotes={writeReport?.notes ?? []}
-                />
-              ) : null}
-            </div>
+
             <div
               className={
                 activeSection && activeSection !== "overrides"

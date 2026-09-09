@@ -26,7 +26,7 @@ Arman's sentence is the spine:
 | `OfferedInventoryColumn.tsx` | The offered reference for untabbed hosts; Definition owns this inventory in the tabbed workspace. |
 | `HolderInputsColumn.tsx` | The consuming reference for untabbed hosts; matching rows own these facts in tabbed workspaces. |
 | `BindingMiddle.tsx` | The match. `SurfaceVariableBinding` rendered **VERBATIM**, plus the many-to-one strip, the absence answer and the per-row problems a job binding needs and a surface binding does not. |
-| `AutoRunBar.tsx` | P14. "Run instantly" belongs to Holder/matching, enabled only while the map leaves nothing to ask. Reuses `ShortcutFieldRow` with source, state and eligibility inline; explanations live in field help. `evaluateBindingAutoRun` owns eligibility; `serverNotes` (`BindingResult.notes`) reports the actual write. |
+| `AutoRunBar.tsx` | Run Instantly is **Unavailable** at the top of Holder until mandate-wide pause/resume is enforced across execution callers. Disabled control exposes the reason on hover/focus/tap; no editable switch, inferred effective value, or mapping-eligibility metadata. Stored `auto_run` is preserved. |
 | `consumption-writer.ts` | 🚨 **THE ONE WRITER.** Nothing else builds a `ConsumptionEntry` or mutates a `ConsumptionMap` — the manual row, the many-to-one strip and the AI map's accept all go through it. |
 | `offered-adapter.ts` | `OfferedValue` → `SurfaceValue`, so the shared picker reads a mandate's inventory. |
 | `useHolderInputs.ts` | `buildBindingTargets` for an agent, `useServedRunForm` for a workflow — one hook, no holder-type branch upstream. |
@@ -237,6 +237,8 @@ choice (P5), rendered on the offered rail and under the chosen value in the midd
 never become an answer, and absent means the declaration gave none — never invent one.
 
 ## Change Log
+
+- 2026-09-09 — Disabled Run Instantly across mandate authoring until universal intervention is supported. Moved it to the top of Holder and removed Source/State/Eligibility fields; stored configuration remains unchanged.
 
 - 2026-09-09 — Offered value and When missing share a responsive two-column source detail region. The shared row accepts a consumer-owned policy slot; the existing absence writer and all four choices are unchanged.
 

@@ -104,7 +104,9 @@ describe("AutoRunBar — the server's note beside the draft's preview", () => {
         />,
       );
     });
-    expect(container.textContent).toContain("Waits for you to press Run");
+    expect(container.textContent).toContain("Unavailable");
+    expect(container.querySelector('[aria-label="Run instantly — unavailable"]')?.getAttribute("aria-disabled")).toBe("true");
+    expect(container.querySelector('[role="switch"]')).toBeNull();
     expect(container.textContent).not.toContain("What the save did");
   });
 
@@ -124,6 +126,7 @@ describe("AutoRunBar — the server's note beside the draft's preview", () => {
     expect(text).toContain(REFUSAL);
     // The client-derived sentence is the PRE-SAVE preview and stays put — the
     // server's note is about the stored row, not about the draft on screen.
-    expect(text).toContain("Waits for you to press Run");
+    expect(text).toContain("Unavailable");
+    expect(text).not.toMatch(/Eligibility|Inherited|Runtime default/);
   });
 });
