@@ -51,7 +51,7 @@ importers:
         version: 0.9.0(react@19.2.8)
       '@ai-matrx/media':
         specifier: latest
-        version: 0.5.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(next@16.3.4(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@26.5.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 0.5.2(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(next@16.3.4(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@26.5.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@ai-matrx/meet':
         specifier: latest
         version: 0.4.14(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/dom-mediacapture-record@1.0.22)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -930,8 +930,8 @@ packages:
     peerDependencies:
       react: '>=18.0.0'
 
-  '@ai-matrx/media@0.5.1':
-    resolution: {integrity: sha512-NcSLIeeW45rUGYe/QKvn80CA24NFN0PqgePKBFc8acxa3gx8PK7svmdin1k5p+YWHrSc7RpVV++CTT4RAeanYA==}
+  '@ai-matrx/media@0.5.2':
+    resolution: {integrity: sha512-BxGTkBVvg2VNF3l9btu3dtHwJAPauBPdKCPj9JgX4MbNp5Ik/aofE5Lbt4D1aRJSERqxi5lf3IehdY16MCXdZg==}
     engines: {node: '>=20'}
     peerDependencies:
       next: '>=14.0.0'
@@ -12788,7 +12788,7 @@ snapshots:
       jsqr: 1.4.0
       react: 19.2.8
 
-  '@ai-matrx/media@0.5.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(next@16.3.4(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@26.5.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@ai-matrx/media@0.5.2(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(next@16.3.4(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@26.5.0)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@ai-matrx/associations': 0.8.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@ai-matrx/kit': 0.9.0(react@19.2.8)
