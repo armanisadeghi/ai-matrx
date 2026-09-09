@@ -66,7 +66,8 @@ Preserve execution identity through rejection capture and independently diagnose
 **Subtasks**
 - [x] Source `824b0541652ac902dc38a86b4624ff4b984328a8` preserves executionRequestId/conversationId/original error name through execute/manual/resume and smart wrappers. Producer string payloads and smart serialized Error behavior remain unchanged; only three named metadata fields are forwarded.
 - [x] Canonical capture dedupe refreshes identity alongside current raw evidence; unknown current identity cannot inherit the first request. Both missing-ID and stale-ID forcing tests failed before.19 execution/recovery tests,21 capture/persistence tests and full typecheck pass.
-- [ ] Complete independent final review of serializer/dedupe delta and containing frontend release through existing release owner.
+- [x] Independent final serializer/dedupe review passed; reviewer reran19 capture/middleware/persistence tests successfully.
+- [ ] Complete containing frontend release through existing release owner `01a020b5-158a-7e82-9c3f-7f73570db247`, notified with full source SHA.
 - [ ] Observe a genuine correlated failure/recovery on the containing browser before closing historical transport incidents. No deliberate execution or fabricated failure is required.
 
 **Notes**
@@ -83,7 +84,7 @@ One canonical transport incident per dropped stream, with verified recovery of t
 **Subtasks**
 - [x] Fix transport Redux wrapper duplication in `c5662ae0e6db5cc3eb52bcc578a3e02c939ad853`; retain the original red/durable transport capture. Exact forcing case produced four entries before and one after; independent review passed.
 - [x] Verify original server outcome without executing again: request `63e2a63f-1241-4a8b-8ead-42db01e09cff` completed at `2026-09-09T01:54:09.730614Z`; four linked request rows completed. Independent canonical ORM read at `02:04:20.912936Z`.
-- [x] Current READY public deployment `dpl_HkRoBCV7mNKfcCLRZqxiUgottyWv` serves `b3a60922332fdb454b2310748159453450c88eb5`, verified to contain `c5662ae0e6db5cc3eb52bcc578a3e02c939ad853` at06:16Z. Historical browser recovery remains unproven.
+- [x] Current READY public deployment `dpl_HkRoBCV7mNKfcCLRZqxiUgottyWv` serves `b3a60922332fdb454b2310748159453450c88eb5`, verified this patrol to contain `c5662ae0e6db5cc3eb52bcc578a3e02c939ad853`. Historical browser recovery remains unproven.
 - [ ] Verify browser reattachment and rendered persisted response without resubmitting the original turn; server completion alone does not prove this.
 
 **Notes**
