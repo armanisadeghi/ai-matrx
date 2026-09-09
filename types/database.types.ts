@@ -10189,11 +10189,16 @@ export type Database = {
           first_output_chars: number | null
           first_result_trimmed_before_repeat: boolean | null
           first_tool_call_id: string | null
+          gap_calls: number | null
+          gap_iterations: number | null
+          gap_secs: number | null
           prior_identical_calls: number | null
           repeat_at: string | null
           repeat_call_id: string | null
           repeat_iteration: number | null
+          repeat_output_chars: number | null
           repeat_tool_call_id: string | null
+          same_data: boolean | null
           tool_name: string | null
         }
         Relationships: [
@@ -10219,6 +10224,26 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vw_tool_refetch_summary: {
+        Row: {
+          after_trim_repeats: number | null
+          chars_refetched_same_data: number | null
+          conversations: number | null
+          last_repeat_at: string | null
+          median_gap_calls: number | null
+          median_gap_secs: number | null
+          new_data_repeats: number | null
+          repeat_rate: number | null
+          repeats: number | null
+          same_data_rate: number | null
+          same_data_repeats: number | null
+          tool_name: string | null
+          total_calls: number | null
+          total_conversations: number | null
+          unknown_data_repeats: number | null
+        }
+        Relationships: []
       }
     }
     Functions: {
