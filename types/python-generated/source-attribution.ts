@@ -55,6 +55,7 @@ export const SOURCE_FEATURES = [
   "ai-results",
   "analysis-studio",
   "canvas",
+  "conductor",
   "chat",
   "cms",
   "code-editor",

@@ -3746,9 +3746,10 @@ export interface paths {
          *     context, no agent id crosses the wire — the answer is built server-side from
          *     durable rows (D16) and the Holder is the Binding's call.
          *
-         *     Both refusals happen BEFORE the stream opens, so the client gets an honest
+         *     Expected refusals happen BEFORE the stream opens, so the client gets an honest
          *     HTTP status instead of a stream that dies: 401/403/404 for who is asking,
-         *     503 naming the Mandate admin when nothing is bound to answer.
+         *     409 for an empty transcript, 422 for a blank question, and 503 naming the
+         *     Mandate admin when nothing is bound to answer.
          */
         post: operations["intelligence_ask_v1_meet_intelligence_ask_post"];
         delete?: never;
@@ -73562,6 +73563,41 @@ export interface components {
             status_page?: "https://status.livechat.com/";
         };
         /**
+         * LiveKitWebhookAck
+         * @description What this server tells LiveKit it did with one callback.
+         *
+         *     A webhook ack is a real answer, not a bare dict: LiveKit retries on a
+         *     non-2xx, so "we refused your signature", "we ignored an event we do not
+         *     handle" and "we applied it" are three DIFFERENT facts that all return 200,
+         *     and the only place they are distinguishable is this body. It is also what an
+         *     operator reads in a delivery log when a meeting's timeline is wrong.
+         */
+        LiveKitWebhookAck: {
+            /**
+             * Accepted
+             * @description Did the signed body verify? False means nothing was read or applied.
+             */
+            accepted: boolean;
+            /**
+             * Handled
+             * @description Did this server act on the event? False with accepted=True is the explicit ignore for an event outside HANDLED_EVENTS — never a silent drop.
+             * @default false
+             */
+            handled?: boolean;
+            /**
+             * Event
+             * @description The LiveKit event name. Empty only when the body never verified.
+             * @default
+             */
+            event?: string;
+            /**
+             * Reason
+             * @description Why the body was refused. Empty on every accepted callback.
+             * @default
+             */
+            reason?: string;
+        };
+        /**
          * LiveResourceRefInput
          * @description A live id-backed reference; snapshots are not meaningful for opaque resources.
          */
@@ -121338,9 +121374,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["LiveKitWebhookAck"];
                 };
             };
             /** @description Validation Error */

@@ -8964,7 +8964,7 @@
           "Meet"
         ],
         "summary": "Intelligence Ask",
-        "description": "Ask the meeting a question and watch the answer arrive.\n\nLike `/token`, this route takes NO authentication dependency: a guest holding\nthe meeting link is a first-class participant (D6), and it is the SERVICE\nthat decides what a guest may do — `authorize_meeting_question` mirrors the\njoin decision exactly, including the org's `meet.guest_join_enabled` knob.\n\nThe body is `{meeting_id, question}` and nothing else. No transcript, no\ncontext, no agent id crosses the wire — the answer is built server-side from\ndurable rows (D16) and the Holder is the Binding's call.\n\nBoth refusals happen BEFORE the stream opens, so the client gets an honest\nHTTP status instead of a stream that dies: 401/403/404 for who is asking,\n503 naming the Mandate admin when nothing is bound to answer.",
+        "description": "Ask the meeting a question and watch the answer arrive.\n\nLike `/token`, this route takes NO authentication dependency: a guest holding\nthe meeting link is a first-class participant (D6), and it is the SERVICE\nthat decides what a guest may do — `authorize_meeting_question` mirrors the\njoin decision exactly, including the org's `meet.guest_join_enabled` knob.\n\nThe body is `{meeting_id, question}` and nothing else. No transcript, no\ncontext, no agent id crosses the wire — the answer is built server-side from\ndurable rows (D16) and the Holder is the Binding's call.\n\nExpected refusals happen BEFORE the stream opens, so the client gets an honest\nHTTP status instead of a stream that dies: 401/403/404 for who is asking,\n409 for an empty transcript, 422 for a blank question, and 503 naming the\nMandate admin when nothing is bound to answer.",
         "operationId": "intelligence_ask_v1_meet_intelligence_ask_post",
         "requestBody": {
           "content": {
@@ -9030,9 +9030,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Livekit Webhook V1 Meet Webhooks Livekit Post"
+                  "$ref": "#/components/schemas/LiveKitWebhookAck"
                 }
               }
             }
@@ -166550,6 +166548,39 @@
           "indicator"
         ],
         "title": "LiveChatServiceStatus"
+      },
+      "LiveKitWebhookAck": {
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted",
+            "description": "Did the signed body verify? False means nothing was read or applied."
+          },
+          "handled": {
+            "type": "boolean",
+            "title": "Handled",
+            "description": "Did this server act on the event? False with accepted=True is the explicit ignore for an event outside HANDLED_EVENTS — never a silent drop.",
+            "default": false
+          },
+          "event": {
+            "type": "string",
+            "title": "Event",
+            "description": "The LiveKit event name. Empty only when the body never verified.",
+            "default": ""
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Why the body was refused. Empty on every accepted callback.",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "accepted"
+        ],
+        "title": "LiveKitWebhookAck",
+        "description": "What this server tells LiveKit it did with one callback.\n\nA webhook ack is a real answer, not a bare dict: LiveKit retries on a\nnon-2xx, so \"we refused your signature\", \"we ignored an event we do not\nhandle\" and \"we applied it\" are three DIFFERENT facts that all return 200,\nand the only place they are distinguishable is this body. It is also what an\noperator reads in a delivery log when a meeting's timeline is wrong."
       },
       "LiveResourceRefInput": {
         "properties": {
