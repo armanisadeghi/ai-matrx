@@ -95,3 +95,31 @@ it("does not tell admins to patch code for a database-owned output", () => {
   expect(html).toContain("has no editor on this page");
   expect(html).not.toContain("is defined in code");
 });
+
+it.each(["unknown", "   ", " unknown "])(
+  "does not misrepresent missing related source %p",
+  (codePath) => {
+    if (!data.offer) throw new Error("Fixture requires an offer");
+    const html = renderToStaticMarkup(
+      <DefinitionEditHelp
+        data={{ ...data, offer: { ...data.offer, codePath } }}
+        section="Output"
+        authoring
+      />,
+    );
+    expect(html).toContain("Not recorded");
+    expect(html).not.toContain("Related Provision module");
+  },
+);
+
+it("keeps a named but unavailable provision code-owned", () => {
+  const html = renderToStaticMarkup(
+    <DefinitionEditHelp
+      data={{ ...data, offer: null }}
+      section="Provision"
+      authoring
+    />,
+  );
+  expect(html).toContain("is defined in code");
+  expect(html).toContain("Not recorded");
+});

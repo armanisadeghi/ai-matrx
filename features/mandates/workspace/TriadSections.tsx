@@ -217,7 +217,7 @@ export function TriadInputSection({
         <SectionEditAction
           label="Edit provision"
           unavailable={
-            data.offer || !authoring ? (
+            data.provisionKey || data.offer || !authoring ? (
               <DefinitionEditHelp
                 data={data}
                 section="Provision"

@@ -31,7 +31,7 @@ export function DefinitionEditHelp({
 
   const codeOwned =
     section === "Provision"
-      ? Boolean(data.offer)
+      ? Boolean(data.provisionKey || data.offer)
       : data.mandate.origin === "code";
   const [location, provisionLocation] = [
     section === "Provision" ? data.offer?.codePath : data.mandate.code_path,
