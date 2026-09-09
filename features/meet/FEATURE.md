@@ -99,11 +99,11 @@ reader of an older tag will otherwise conclude the package is broken.
 ## Change log
 
 
-- **2026-09-09 — adopted `@ai-matrx/meet` 0.4.11 (MRI-A16 at 0.4.8 + 0.4.9 + 0.4.11; 0.4.10 is a parallel
+- **2026-09-09 — adopted `@ai-matrx/meet` 0.4.12 (MRI-A16 at 0.4.8 + 0.4.9 + 0.4.11 + 0.4.12; 0.4.10 is a parallel
   guest-read fix that builds on them).** 0.4.9 is the defect 0.4.8 walked into by fixing the one
   above it: the recording control asked `state === "idle"`, which only worked while the store never
   learned a state it had not patched itself, so once the durable states arrived a meeting whose
-  recording was `available` lost its Start control for the rest of the session. 0.4.11 is the second: the new durable lobby feed ignored every row that was not `knocking`, so admitting a guest from another tab left this host offering to admit somebody already in the meeting. The six defects MRI-C8's independent
+  recording was `available` lost its Start control for the rest of the session. 0.4.11 is the second: the new durable lobby feed ignored every row that was not `knocking`, so admitting a guest from another tab left this host offering to admit somebody already in the meeting. 0.4.12 is the third: streaming a recording rides a `SameSite=None` cookie, which a browser with strict third-party-cookie settings refuses with no readable status, leaving a `<video>` that silently never played — a refused stream is now re-read through the bytes lane and the screen says so. The six defects MRI-C8's independent
   production verification found, all fixed IN the package — this repo changed nothing but the
   version, which is the "zero wrappers" contract working. (1) The record view could not play a
   recording that had landed perfectly: it fetched `/files/{id}/download` with a bearer and no
