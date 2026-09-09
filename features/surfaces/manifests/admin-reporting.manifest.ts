@@ -4,7 +4,7 @@
  * ADMIN SURFACE. Drives `/administration/reporting/**` — six unrelated
  * reporting tools that happen to live under one hub:
  *
- *   /administration/reporting                 hub (AdminDomainDirectory — static link directory, no data)
+ *   /administration/reporting                 hub (AdminDomainLanding — registry-generated link directory, no data)
  *   /administration/reporting/events           live platform.activity_log viewer (MatrxDataTable)
  *   /administration/reporting/reports          admin-mode ReportsLanding (metadata-only report catalog)
  *   /administration/reporting/dead-ends        No Dead Ends scoreboard — committed report.json snapshot

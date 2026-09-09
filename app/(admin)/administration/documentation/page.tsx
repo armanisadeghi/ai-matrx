@@ -1,5 +1,5 @@
-import { AdminDomainDirectory } from "@/features/admin/components/AdminDomainDirectory";
+import { AdminDomainLanding } from "@/features/admin/components/AdminDomainLanding";
 
 export default function DocumentationAdministrationPage() {
-  return <AdminDomainDirectory domainSlug="documentation" />;
+  return <AdminDomainLanding domainSlug="documentation" />;
 }

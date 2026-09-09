@@ -87,18 +87,3 @@ export function AdminDomainSection({
     </section>
   );
 }
-
-export function AdminDomainDirectory({ domainSlug }: { domainSlug: string }) {
-  const domain = findAdminNavigationDomainBySlug(domainSlug);
-  if (!domain) {
-    throw new Error(`Unknown administration domain: ${domainSlug}`);
-  }
-
-  return (
-    <div className="h-full overflow-y-auto bg-textured p-4">
-      <div className="overflow-hidden rounded-lg border border-border bg-background shadow-sm">
-        <AdminDomainSection domain={domain} headingLevel="h1" />
-      </div>
-    </div>
-  );
-}

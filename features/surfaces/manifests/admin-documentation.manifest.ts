@@ -4,7 +4,7 @@
  * ADMIN SURFACE. Drives `/administration/documentation/**` — the Feature
  * Docs browser over `admin.feature_docs` (markdown synced from the repo):
  *
- *   /administration/documentation                              hub (AdminDomainDirectory — static link directory, no data)
+ *   /administration/documentation                              hub (AdminDomainLanding — registry-generated link directory, no data)
  *   /administration/documentation/feature-docs                  redirects to .../codebase
  *   /administration/documentation/feature-docs/codebase          zone=codebase table (app/, features/, components/)
  *   /administration/documentation/feature-docs/docs              zone=docs table (root docs/ only)
