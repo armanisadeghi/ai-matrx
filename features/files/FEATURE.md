@@ -113,6 +113,10 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-09-09 — Realtime identity transitions are synchronous.** Same-turn
+  attach/detach or identity replacement cannot leave a subscription registered
+  after its owner has detached.
+
 - **2026-09-01 — File-tree auth covers the RPC await.** The matching-session preflight remains;
   each page now also uses the shared one-retry session boundary, closing the auth-loss race between
   preflight and `get_user_file_tree`.
@@ -296,5 +300,10 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
   paths, current coming-soon routes, canonical shells, and window panels.
 
 ## Realtime
+
+**Attach/detach registration is synchronous.** The package stop handle unregisters
+its owner immediately; do not insert an await before replacing it, or a detached
+identity can resume setup and leak a subscription. Physical socket teardown remains
+the package's responsibility.
 
 Realtime moved onto `@ai-matrx/realtime` (2026-09-07). The static `cloud-files:<userId>` topic became a namespace with a unique instance topic, and the reconcile moved from the SUBSCRIBED callback to `onBackfill` — so a slept tab reconciles at all now, where before the file tree drifted silently. `request-ledger.ts` deliberately STAYS: it correlates on the backend-stamped `metadata.request_id`, which the package has no equivalent for (allow-listed in `scripts/package-twins.json` with that reason). The client-side LISTING gate in `handleFilePayload` is untouched and still load-bearing.

@@ -223,7 +223,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
   // the thunk-aware `AppDispatch` once here to keep call sites concise.
   const dispatch = store.dispatch as AppDispatch;
 
-  async function teardown(): Promise<void> {
+  function teardown(): void {
     if (stopChannel) {
       stopChannel();
       stopChannel = null;
@@ -232,9 +232,9 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     dispatch(setRealtimeStatus({ status: "detached", userId: null }));
   }
 
-  async function setup(userId: string): Promise<void> {
+  function setup(userId: string): void {
     if (subscribedUserId === userId && stopChannel) return;
-    await teardown();
+    teardown();
 
     subscribedUserId = userId;
     initialSnapshotDoneAt = null;
@@ -666,11 +666,11 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     }
     if (isAttachAction(action as RealtimeAction)) {
       const userId = (action as AttachAction).payload.userId;
-      void setup(userId);
+      setup(userId);
       return next(action);
     }
     if (isDetachAction(action as RealtimeAction)) {
-      void teardown();
+      teardown();
       return next(action);
     }
     return next(action);
