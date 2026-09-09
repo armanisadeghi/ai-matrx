@@ -4,6 +4,7 @@ import {
   createSelector,
 } from "@reduxjs/toolkit";
 import { createClient } from "@/utils/supabase/client";
+import { extractErrorMessage } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { normalizeModel } from "@/features/ai-models/utils/model-normalizer";
 // Minimal local state type — avoids importing RootState from store.ts (which
@@ -79,6 +80,8 @@ interface ModelRegistryState {
   isLoading: boolean;
   error: string | null;
   lastFetched: number | null;
+  detailStatusById: Record<string, "loading" | "succeeded" | "failed">;
+  detailErrorById: Record<string, string>;
   /** Per-record label lookup status for historical/deprecated FK references. */
   identityById: Record<string, ModelIdentityRow>;
   identityStatusById: Record<
@@ -95,6 +98,8 @@ const initialState: ModelRegistryState = {
   isLoading: false,
   error: null,
   lastFetched: null,
+  detailStatusById: {},
+  detailErrorById: {},
   identityById: {},
   identityStatusById: {},
 };
@@ -316,17 +321,21 @@ export const fetchModelById = createAsyncThunk(
       });
     } catch (err: unknown) {
       return rejectWithValue(
-        err instanceof Error ? err.message : "Unknown error",
+        `Model configuration ${modelId}: ${extractErrorMessage(err)}`,
       );
     }
   },
   {
     condition: (modelId: string, { getState }) => {
-      const { entities, isLoading } = (
+      const { entities, detailStatusById } = (
         getState() as { modelRegistry: ModelRegistryState }
       ).modelRegistry;
       const existing = entities[modelId];
-      if (isLoading) return false; // a fetch is already in flight
+      if (
+        detailStatusById?.[modelId] === "loading" ||
+        detailStatusById?.[modelId] === "failed"
+      )
+        return false;
       if (existing?._fetchType === "full") {
         console.log(
           "[modelRegistry] fetchModelById skipped — already full for",
@@ -347,6 +356,10 @@ const modelRegistrySlice = createSlice({
   name: "modelRegistry",
   initialState,
   reducers: {
+    retryModelDetail(state, action: { payload: string }) {
+      delete state.detailStatusById[action.payload];
+      delete state.detailErrorById[action.payload];
+    },
     /**
      * SSR hydration path.
      * Supply options-level or full records from the server shell.
@@ -420,13 +433,13 @@ const modelRegistrySlice = createSlice({
 
     // ── fetchModelById ─────────────────────────────────────────────
     builder
-      .addCase(fetchModelById.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
+      .addCase(fetchModelById.pending, (state, action) => {
+        state.detailStatusById[action.meta.arg] = "loading";
+        delete state.detailErrorById[action.meta.arg];
       })
       .addCase(fetchModelById.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.error = null;
+        state.detailStatusById[action.meta.arg] = "succeeded";
+        delete state.detailErrorById[action.meta.arg];
         const record = action.payload;
         const existing = state.entities[record.id];
         // ai.model_config resolves `maker` itself; fall back to whatever the
@@ -442,8 +455,11 @@ const modelRegistrySlice = createSlice({
         rebuildIdLists(state);
       })
       .addCase(fetchModelById.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
+        state.detailStatusById[action.meta.arg] = "failed";
+        state.detailErrorById[action.meta.arg] =
+          typeof action.payload === "string"
+            ? action.payload
+            : (action.error.message ?? "Model configuration request failed");
       });
 
     // ── fetchModelIdentityById ─────────────────────────────────────
@@ -531,7 +547,7 @@ function rebuildIdLists(state: ModelRegistryState): void {
   state.deprecatedIds = sort(deprecated);
 }
 
-export const { hydrateModels } = modelRegistrySlice.actions;
+export const { hydrateModels, retryModelDetail } = modelRegistrySlice.actions;
 export default modelRegistrySlice.reducer;
 
 // ---------------------------------------------------------------------------
@@ -763,4 +779,12 @@ export const selectModelFullyLoaded = createSelector(
     if (!modelId) return false;
     return entities[modelId]?._fetchType === "full";
   },
+);
+
+export const selectModelDetailError = createSelector(
+  [
+    (state: StateWithModelRegistry) => state.modelRegistry.detailErrorById,
+    (_state: StateWithModelRegistry, modelId: string) => modelId,
+  ],
+  (errors, modelId) => errors?.[modelId] ?? null,
 );

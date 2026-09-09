@@ -35,12 +35,15 @@ import {
   FieldHelp,
 } from "@/components/official/ConfigurationFields";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectAllModels,
   selectModelFullyLoaded,
   fetchModelById,
+  retryModelDetail,
+  selectModelDetailError,
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import { useModelControls } from "@/features/agents/hooks/useModelControls";
 import {
@@ -207,6 +210,9 @@ export function RunConfigOverrides({
   const isFull = useAppSelector((s) =>
     selectModelFullyLoaded(s, effectiveModelId),
   );
+  const modelDetailError = useAppSelector((s) =>
+    selectModelDetailError(s, effectiveModelId),
+  );
   const registryLoading = useAppSelector((s) => s.modelRegistry.isLoading);
   useEffect(() => {
     if (effectiveModelId && !isFull && !registryLoading) {
@@ -250,7 +256,7 @@ export function RunConfigOverrides({
   // Overridden keys the effective model does NOT declare — typically left
   // behind by a per-run model switch. Surfaced loudly, never silently kept.
   const orphanedKeys = Object.keys(overrides).filter(
-    (key) => key !== "model" && !controlsMap?.[key],
+    (key) => isFull && key !== "model" && !controlsMap?.[key],
   );
 
   const overriddenCount =
@@ -274,10 +280,30 @@ export function RunConfigOverrides({
   // Loading only applies while a known model's full record is in flight; an
   // instance with no base model yet (e.g. the landing's default agent before
   // its snapshot resolves) gets the empty-state message, not a forever-spinner.
-  const rowsLoading = groups.length === 0 && !!effectiveModelId && !isFull;
+  const rowsLoading =
+    groups.length === 0 && !!effectiveModelId && !isFull && !modelDetailError;
 
   return (
     <div className={structured ? "min-w-0" : "border-t border-border"}>
+      {modelDetailError ? (
+        <div role="alert" className="flex items-center gap-2 px-3 py-2 text-sm">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <span>Model controls unavailable</span>
+          <FieldHelp label="Model controls unavailable">
+            {modelDetailError}
+          </FieldHelp>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              dispatch(retryModelDetail(effectiveModelId));
+              void dispatch(fetchModelById(effectiveModelId));
+            }}
+          >
+            Retry
+          </Button>
+        </div>
+      ) : null}
       <div className="flex w-full items-center justify-between px-3 pb-1 pt-2">
         <span
           className={
