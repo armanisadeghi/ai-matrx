@@ -242,6 +242,7 @@ function endWatch(watch: Watch): void {
 type Evaluation = {
   viewportWidth: number;
   viewportHeight: number;
+  viewportDegenerate: boolean;
   renderAcknowledgement: "window" | "surface" | "none";
   diag: RenderDiagnosis;
   windowId: string;
@@ -262,10 +263,11 @@ function evaluate(store: WMApi, watch: Watch): Evaluation | null {
   // Judge geometry against sanitized dims — a degenerate 0×0 measurement
   // (hidden/prerendered page) makes every on-screen rect read as off-screen,
   // and a false scream trains people to ignore the real ones.
-  const { vw, vh } = safeViewportDims();
+  const { vw, vh, degenerate } = safeViewportDims();
   return {
     viewportWidth: vw,
     viewportHeight: vh,
+    viewportDegenerate: degenerate,
     renderAcknowledgement: ack?.kind ?? "none",
     diag: diagnoseOverlayRender({
       entry,
@@ -367,6 +369,7 @@ function scream(store: WMApi, watch: Watch, res: Evaluation): void {
       windowId: res.windowId,
       viewportWidth: res.viewportWidth,
       viewportHeight: res.viewportHeight,
+      viewportDegenerate: res.viewportDegenerate,
       renderAcknowledgement: res.renderAcknowledgement,
       entry: res.entry,
       windowsHidden: res.windowsHidden,
