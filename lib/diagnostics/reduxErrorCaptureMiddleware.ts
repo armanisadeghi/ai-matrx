@@ -23,10 +23,7 @@
  */
 
 import type { Middleware } from "@reduxjs/toolkit";
-import {
-  captureError,
-  getSnapshot,
-} from "@/lib/diagnostics/errorCaptureStore";
+import { captureError, getSnapshot } from "@/lib/diagnostics/errorCaptureStore";
 
 interface RejectedAction {
   type: string;
@@ -42,10 +39,12 @@ interface RejectedAction {
 
 function messageOf(a: RejectedAction): string {
   // Prefer a rejectWithValue payload (string or { message } / { error }).
-  if (typeof a.payload === "string" && a.payload.trim()) return a.payload.trim();
+  if (typeof a.payload === "string" && a.payload.trim())
+    return a.payload.trim();
   if (a.payload && typeof a.payload === "object") {
     const p = a.payload as Record<string, unknown>;
-    if (typeof p.message === "string" && p.message.trim()) return p.message.trim();
+    if (typeof p.message === "string" && p.message.trim())
+      return p.message.trim();
     if (typeof p.error === "string" && p.error.trim()) return p.error.trim();
   }
   const m = a.error?.message?.trim();
@@ -73,8 +72,11 @@ export function isStreamWrapperDuplicate(
   const message = messageOf(action);
   return getSnapshot().some(
     (captured) =>
-      captured.source === "agent-stream-client-error" &&
-      captured.message === message &&
+      ((captured.source === "agent-stream-client-error" &&
+        captured.message === message) ||
+        (captured.source === "agent-stream-transport" &&
+          (captured.message === message ||
+            captured.userMessage === message))) &&
       now - captured.lastAt <= 5_000,
   );
 }
@@ -87,7 +89,10 @@ export const reduxErrorCaptureMiddleware: Middleware =
       if (typeof a?.type === "string" && a.type.endsWith("/rejected")) {
         // Not real failures — a superseded or never-run thunk.
         if (a.meta?.aborted || a.meta?.condition) return result;
-        if (a.error?.name === "AbortError" || a.error?.name === "ConditionError") {
+        if (
+          a.error?.name === "AbortError" ||
+          a.error?.name === "ConditionError"
+        ) {
           return result;
         }
         if (a.error?.name === "SessionUnavailableError") return result;

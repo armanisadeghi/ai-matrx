@@ -128,6 +128,10 @@ second symptom instead of deduping the incident.
   (skips aborted / condition-false); `relation` = the thunk name; tiered
   **orange** (handled-by-slice). Promote a critical slice to red, or silence a
   noisy one, by matching `relation` in `errorTierRules.ts`.
+  Execute/manual/smart-execute stream wrappers do not create a second incident
+  when a canonical stream capture in the last five seconds already owns their
+  message. Transport wrappers may carry its `userMessage` instead of the
+  technical message; the original transport capture remains red and durable.
 - **Domain** — `lib/media/durability.ts` (`reportMediaDurabilityViolation` →
   `media-durability`) and `lib/toast-service.ts` (`toast.error` → `user-toast`,
   red unless a specific rule proves the condition expected).
@@ -337,6 +341,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-09-09 — Transport-loss Redux wrappers recognize the canonical capture's human-facing message; the original transport incident remains actionable.
 - 2026-09-01 — **Structured console mirrors persist once.** `mirrorCapturedErrorToConsole` preserves deliberate console screams while marking their synchronous call so the production console adapter does not persist a second generic symptom; the associations error sink uses it for package transport/schema failures.
 - 2026-08-31 — **Browser cancellations stay local for every account tier.** The Supabase adapter recognizes `AbortError: signal is aborted without reason` in addition to the older `operation was aborted` response, and the canonical `request-aborted` rule is explicitly non-durable. React Query navigation/unmount cancellation remains visible as a yellow local diagnostic without entering `system_error`, including during the guest/new-account observation window. Focused adapter and persistence tests pin the exact observed wording and `users.integration_connections` path.
 - 2026-08-30 — **Local-only downgrade rules enforce non-durability.** `persist: false` now keeps proven local recoveries out of `ops.system_error` even during pre-auth hydration and the guest/new-account observation window; the status-0 Supabase transport rule is the first forcing case.
