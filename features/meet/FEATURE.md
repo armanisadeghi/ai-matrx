@@ -117,6 +117,23 @@ reader of an older tag will otherwise conclude the package is broken.
   no massage — the record view, the restriction sentences and the recording
   player all ship in the package so every consumer inherits them.
 
+- `2026-09-08` — claude: **adopted `@ai-matrx/meet` 0.4.1 then 0.4.3 (MRI-A12) — a guest with
+  no session now gets the live meeting.** Everything durable a meeting produces reached clients
+  over Postgres Changes, and `anon` holds no SELECT grant on `communication.meet_notes` /
+  `meet_transcript_segments` / `meet_participants` (MRI-A10 ruled that widening it is forbidden),
+  so a link-follower saw the join backfill and then nothing. The platform now publishes each
+  durable row into the LiveKit room under `matrx.meet.*`, where the room token is the authority,
+  and the package feeds it through the SAME projections and store reducers the database path
+  uses — deduped by row id, database winning on conflict (D16). **No host change was needed**:
+  the handler is inside the room engine. 0.4.3 is the half this repo's own note above had already
+  identified and the package had not acted on — `<MeetingRoom meeting={…}>` now SEEDS
+  `snapshot.meeting` from the row this surface resolves through `meet_meeting_by_slug`, so a guest
+  finally has a meeting record and therefore a Meeting-assistant panel, live captions, and
+  somewhere for a room event to land. `next.config.js` also gained
+  `allowedDevOrigins: ["127.0.0.1", "0.0.0.0"]`, dev-only: cookies are host-scoped, so
+  `http://127.0.0.1:3001` is a genuinely signed-OUT context for verifying any `anon` lane while
+  `http://localhost:3001` stays signed in.
+
 - `2026-09-08` — claude: **adopted `@ai-matrx/meet` 0.3.2 then 0.3.3 (MRI-A9),
   and the in-room intelligence panel was seen in a browser for the first time.**
   0.3.2 makes attendance independent of devices — a denied microphone no longer
