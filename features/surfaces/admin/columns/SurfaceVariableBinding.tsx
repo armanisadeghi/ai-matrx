@@ -117,6 +117,16 @@ export interface SourceLabels {
   prompt_user?: string;
 }
 
+export function offeredAvailabilityLabel(
+  alwaysAvailable: boolean | undefined,
+): string {
+  return alwaysAvailable === undefined
+    ? "Availability unknown"
+    : alwaysAvailable
+      ? "Always available"
+      : "Sometimes available";
+}
+
 export function SurfaceVariableBinding({
   target,
   mapping,
@@ -124,6 +134,7 @@ export function SurfaceVariableBinding({
   disabled = false,
   sourceLabels,
   valueFieldLabel,
+  targetKindLabel,
   structured = false,
   onChange,
 }: {
@@ -135,6 +146,8 @@ export function SurfaceVariableBinding({
   sourceLabels?: SourceLabels;
   /** Label over the picker ("Surface value" by default). */
   valueFieldLabel?: string;
+  /** Explicit destination type for consumers that mix variables and context policies. */
+  targetKindLabel?: string;
   structured?: boolean;
   onChange: (next: ValueMapping | null) => void;
 }) {
@@ -206,6 +219,7 @@ export function SurfaceVariableBinding({
         <header className="px-4 pt-3 pb-2 flex items-start gap-2 min-w-0">
           <div className="min-w-0 flex-1">
             <h4 className="flex items-center gap-1 text-sm font-semibold text-foreground break-words">
+              {targetKindLabel ? <span>{targetKindLabel}:</span> : null}
               {displayName}
               {target.description ? (
                 <FieldHelp label={displayName}>{target.description}</FieldHelp>
@@ -442,8 +456,13 @@ function SurfaceValueDetail({
   return (
     <div className="space-y-2.5">
       <div className="space-y-1.5">
-        <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+        <Label className="flex items-center gap-1 text-xs font-semibold text-foreground">
           {fieldLabel ?? "Surface value"}
+          {selected?.description ? (
+            <FieldHelp label={fieldLabel ?? "Surface value"}>
+              {selected.description}
+            </FieldHelp>
+          ) : null}
         </Label>
         <Select
           value={mapping.target || "__none__"}
@@ -452,7 +471,7 @@ function SurfaceValueDetail({
           }
           disabled={disabled}
         >
-          <SelectTrigger className="h-9 text-sm">
+          <SelectTrigger className="h-auto min-h-9 whitespace-normal text-left text-sm [&>span]:line-clamp-none">
             <SelectValue placeholder="Pick a surface value" />
           </SelectTrigger>
           <SelectContent>
@@ -463,33 +482,18 @@ function SurfaceValueDetail({
             )}
             {availableSurfaceValues.map((sv) => (
               <SelectItem key={sv.name} value={sv.name}>
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-sm font-medium truncate">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span className="break-words text-sm font-medium">
                     {sv.label || formatVariableDisplayName(sv.name)}
                   </span>
-                  {!sv.alwaysAvailable && (
-                    <span className="text-[10px] text-muted-foreground">
-                      · sometimes
-                    </span>
-                  )}
+                  <span className="text-xs text-foreground">
+                    {offeredAvailabilityLabel(sv.alwaysAvailable)}
+                  </span>
                 </div>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {selected ? (
-          <PropertyRow
-            label="Always available"
-            value={
-              selected.alwaysAvailable === undefined
-                ? "Unknown"
-                : selected.alwaysAvailable
-                  ? "Yes"
-                  : "No"
-            }
-            help={selected.description}
-          />
-        ) : null}
       </div>
 
       <RequiredToggle

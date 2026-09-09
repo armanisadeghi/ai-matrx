@@ -115,13 +115,13 @@ with `#bind`.
 
 ## The rules this surface must keep
 
-1. **One concept, one place.** Tabbed hosts put the full provision in Definition and holder targets in Matching; source references remain at their point of use. Untabbed hosts retain both inventories.
+1. **One concept, one place.** Tabbed hosts put the full provision in Definition and holder targets in Provision Mapping; source references remain at their point of use. Untabbed hosts retain both inventories.
 2. **The row is the shared one, verbatim.** If it needs something it does not have, the change
    is made IN `SurfaceVariableBinding` for all five call sites — never forked here.
 3. **Many-to-one is real (D18.2).** Several offered values feed one holder input, joined in
    list order with a blank line. Row 0 is the shared row; the strip owns the rest. Multi-source
    targets take scalar kinds only, and every source of one target agrees on `deliver`.
-4. **Context slots are targets (D18.3)**, symmetric with variables, and each row says which.
+4. **Context policies are targets (D18.3)**, symmetric with variables, and each row says which.
 5. **Described inputs ARE the provision (D18.1).** No provision key is not "no inputs" — the
    served input surface answers, and a mandate that offers nothing still renders the map step
    with an honest sentence. The structural skip is what this build exists to end.
@@ -235,6 +235,8 @@ choice (P5), rendered on the offered rail and under the chosen value in the midd
 never become an answer, and absent means the declaration gave none — never invent one.
 
 ## Change Log
+
+- 2026-09-09 — Provision Mapping uses the standard section heading with inline help. Rows identify Holder destinations (variable, context policy, workflow input); source availability lives inside offered-value pickers, including additional-source choices. Removed the transient Name matching display; exact-name draft seeding and consumption-map persistence are unchanged.
 
 - 2026-09-08 — Reconciled configuration with storage/runtime: API model overrides only in Overrides with one Controls/Advanced draft; canonical shortcut display rows/gallery; removed unconsumed mandate treatment/menu editors while preserving data. Automatic context moved to Permissions, Run instantly stays with Holder, disabled missing-source controls and configuration table alignment are consistent.
 

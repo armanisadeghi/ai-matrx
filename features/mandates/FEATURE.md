@@ -350,6 +350,8 @@ Deferred contract gaps: reusable Agent Builder test-data fill; exact-version-and
 
 ## Change Log
 
+- 2026-09-09 — Grouped Definition constraints and lineage into one consistently spaced property block. Holder mapping now explicitly identifies destinations under Provision Mapping; offered-value availability stays with the source selector.
+
 - 2026-09-09 — Named the definition sections Goal / Provision / Output. Code-owned edit affordances now provide source-aware admin instructions and Copy for AI; non-authoring hosts explain the separate-mandate path. Missing source metadata is explicit.
 
 - 2026-09-08 — Corrected the configuration model: API overrides only in Overrides; shortcut display gallery/rows reused; context access in Permissions; declared constraints in Definition without invented pin enforcement. Removed unconsumed treatment seed/menu/model editors while preserving storage; documented server-test versus actual-display verification.

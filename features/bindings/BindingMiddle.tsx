@@ -50,7 +50,10 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
-import { SurfaceVariableBinding } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
+import {
+  SurfaceVariableBinding,
+  offeredAvailabilityLabel,
+} from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import {
   consumptionMapProblems,
@@ -143,7 +146,6 @@ export function BindingMiddleRow({
   pinnedContext,
   value,
   onChange,
-  autoBound,
   disabled = false,
 }: {
   holderKind: "agent" | "workflow";
@@ -199,24 +201,16 @@ export function BindingMiddleRow({
 
   return (
     <div className="space-y-3 rounded-xl border-2 border-border bg-card p-4">
-      <div className="grid min-w-0 gap-x-6 sm:grid-cols-2">
-        <PropertyRow
-          label="Destination"
-          value={isContext ? "Context slot" : "Variable"}
-        />
-        <PropertyRow
-          label="Name matching"
-          value={
-            autoBound.has(target.name) && sources.length === 1
-              ? "Applied"
-              : "Not applied"
-          }
-        />
-      </div>
-
       {/* THE SHARED ROW, VERBATIM. */}
       <SurfaceVariableBinding
         target={target}
+        targetKindLabel={
+          isContext
+            ? "Context policy"
+            : holderKind === "workflow"
+              ? "Workflow input"
+              : "Variable"
+        }
         structured
         mapping={mappingForRow(sources) ?? { mapType: "unmapped" }}
         availableSurfaceValues={selectableSurfaceValues}
@@ -598,15 +592,13 @@ function AddAnotherSource({
         <SelectContent>
           {remaining.map((v) => (
             <SelectItem key={v.name} value={v.name}>
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="truncate text-sm font-medium">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                <span className="break-words text-sm font-medium">
                   {formatVariableDisplayName(v.name)}
                 </span>
-                {!v.guaranteed ? (
-                  <span className="text-[10px] text-muted-foreground">
-                    · sometimes
-                  </span>
-                ) : null}
+                <span className="text-xs text-foreground">
+                  {offeredAvailabilityLabel(v.guaranteed)}
+                </span>
               </div>
             </SelectItem>
           ))}

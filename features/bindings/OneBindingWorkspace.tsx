@@ -1846,17 +1846,19 @@ function BindingDraft({
                   </div>
                 ) : null}
 
-                <section className="order-1 flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card @5xl:order-none">
-                  <header className="shrink-0 border-b border-border px-3 py-2">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <h3 className="text-[12.5px] font-semibold text-foreground">
-                        Matching
+                <section className="order-1 flex min-h-0 min-w-0 flex-col gap-2 @5xl:order-none">
+                  <header className="shrink-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        Provision Mapping
                       </h3>
-                      {holderInputs.status === "ready" ? (
-                        <span className="rounded bg-muted px-1.5 text-[10px] text-muted-foreground">
-                          {holderInputs.targets.length} inputs
-                        </span>
-                      ) : null}
+                      <FieldHelp label="Provision Mapping">
+                        Each card is a Holder destination. Choose the source for
+                        its variable, context policy or workflow input.
+                        Offered-value availability belongs to the selected
+                        source. Multiple sources are joined in order with a
+                        blank line between them.
+                      </FieldHelp>
                       {/* P11 — the two tabs sit in the middle panel's own header, the
                   way the surface bind panel puts them over its mapping section.
                   AI map PROPOSES into this same editor; it never applies. */}
@@ -1885,13 +1887,8 @@ function BindingDraft({
                         </div>
                       ) : null}
                     </div>
-                    <FieldHelp label="Matching">
-                      Map offered inputs to holder variables or context slots.
-                      Multiple sources are joined in order with a blank line
-                      between them.
-                    </FieldHelp>
                   </header>
-                  <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                  <div className="min-h-0 flex-1">
                     <MiddleBody
                       holderStatus={holderInputs.status}
                       holderMessage={holderInputs.message}

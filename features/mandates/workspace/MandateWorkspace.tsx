@@ -634,16 +634,18 @@ function OneMandateWorkspace({
               authoring={authoring}
             />
             <TriadOutputSection data={data} authoring={authoring} />
-            <EffectiveConfigLayers
-              pinsOnly
-              pins={data.pins}
-              bindingOverrides={null}
-            />
-            <MandateLineageLine
-              mandateId={data.mandate.id}
-              sourceMandateId={data.mandate.source_mandate_id ?? null}
-              host={host}
-            />
+            <div>
+              <EffectiveConfigLayers
+                pinsOnly
+                pins={data.pins}
+                bindingOverrides={null}
+              />
+              <MandateLineageLine
+                mandateId={data.mandate.id}
+                sourceMandateId={data.mandate.source_mandate_id ?? null}
+                host={host}
+              />
+            </div>
           </div>
           {perspective !== "system" ? (
             <div
