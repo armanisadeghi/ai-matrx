@@ -238,6 +238,8 @@ never become an answer, and absent means the declaration gave none — never inv
 
 ## Change Log
 
+- 2026-09-09 — Offered value and When missing share a responsive two-column source detail region. The shared row accepts a consumer-owned policy slot; the existing absence writer and all four choices are unchanged.
+
 - 2026-09-09 — Definition owns Scope/Feature/Enabled. Holder type choices reuse Source styling and the shared 34px `CONFIGURATION_CHOICE_SIZE`; assignment and version pickers share one row, with Version retained as an accessible label. Source pickers use the same baseline and grow only when content wraps.
 
 - 2026-09-09 — Mapping cards have one 12px padding system and separated destination/source/behavior regions. Destination metadata says Type, Name, Required by Holder. Mandate Provision sources use only when_absent controls; their redundant source-required switch is suppressed without changing stored data. Prompt User retains Answer required. Missing-source choices share one compact row, including disabled Not applicable.
