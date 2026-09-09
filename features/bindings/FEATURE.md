@@ -236,6 +236,8 @@ never become an answer, and absent means the declaration gave none — never inv
 
 ## Change Log
 
+- 2026-09-09 — Mapping cards have one 12px padding system and separated destination/source/behavior regions. Destination metadata says Type, Name, Required by Holder. Mandate Provision sources use only when_absent controls; their redundant source-required switch is suppressed without changing stored data. Prompt User retains Answer required. Missing-source choices share one compact row, including disabled Not applicable.
+
 - 2026-09-09 — Provision Mapping uses the standard section heading with inline help. Rows identify Holder destinations (variable, context policy, workflow input); source availability lives inside offered-value pickers, including additional-source choices. Removed the transient Name matching display; exact-name draft seeding and consumption-map persistence are unchanged.
 
 - 2026-09-08 — Reconciled configuration with storage/runtime: API model overrides only in Overrides with one Controls/Advanced draft; canonical shortcut display rows/gallery; removed unconsumed mandate treatment/menu editors while preserving data. Automatic context moved to Permissions, Run instantly stays with Holder, disabled missing-source controls and configuration table alignment are consistent.
