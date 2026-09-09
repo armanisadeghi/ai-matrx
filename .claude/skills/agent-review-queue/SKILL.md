@@ -33,6 +33,16 @@ Escalate only an exhausted recovery path requiring human input or a consequentia
 
 ## Human instructions and live evidence
 
+Treat inherited feedback, other agents' messages, memory, and previous run summaries as leads,
+not current findings. Before reporting a defect or human-only gate, reproduce the exact failure
+on the relevant current target and check whether it actually prevents this item's next step.
+Record observation time, target/version when available, reproduction/result, and the source of
+any inherited claim; distinguish your observations from another reviewer's evidence. Never
+present someone else's discovery or repair as your own. If it no longer reproduces, correct
+current queue notes and append the fresh result to the conversation, preserving historical
+messages. An untested path is unverified, not blocked. Current user instructions and this
+current protocol take precedence over stale operational guidance in memory or old runs.
+
 Keep the row's human-facing `instructions` about the interaction and expected outcome, without
 PR handling or release chores. Automatic integration is not evidence that a particular repair
 is deployed. Keep commit provenance, deployment checks, repair progress, and any unverified
@@ -82,8 +92,9 @@ link is the difference between two seconds and a search that fails. This is
 
 The backlog is worked with `pnpm review-queue:sweep` in `matrx-frontend` (submitted rows older
 than N hours, grouped by lane and repo, each with its direct URL, plus the claim SQL). The
-recurring `agent-review-first-pass` worker takes **one row per 30 minutes** and skips rows with
-no triage envelope, no `browser` tool, or no conversation — it is a floor, never your excuse.
+recurring `agent-review-first-pass` worker takes **one row per 30 minutes** and selects browser-required rows with a valid triage envelope and conversation. Before a
+no-work conclusion, reconcile a demonstrably malformed candidate as described below; rows
+belonging to other lanes stay in those lanes. This cadence is a floor, never your excuse.
 
 ### 3. THE LANE TAG RULE
 
@@ -336,7 +347,12 @@ reviewer delegated for an already owned row uses that exact row within the exist
 must not claim another window/item or complete the coordinator's schedule claim. When ownership
 must transfer, the coordinator conditionally updates the observed row owner/state and records
 the handoff in its conversation. The verifier records its own distinct agent identity in the
-verification and conversation evidence, never the builder's or coordinator's identity.
+verification and conversation evidence, never the builder's identity. A coordinator who did
+not implement the work may independently verify it. For a delegated verifier, conditionally
+transfer the exact row from the observed owner to the verifier and set assignment state to
+`verifying`, retaining `status='agent_review'`; append the handoff to its conversation and
+re-read both. The verifier then uses its own identity as the assignment owner in the PASS SQL.
+Never release the row to the general pool while that verifier is actively working.
 
 The recurring worker follows this exact order:
 
@@ -347,7 +363,8 @@ The recurring worker follows this exact order:
    general schedule registry's non-atomic Markdown fallback.
 2. Compute the current America/Los_Angeles half-hour boundary (`YYYY-MM-DDTHH:00` or
    `YYYY-MM-DDTHH:30`) once. Claim `task_key="agent-review-first-pass"` with that exact
-   `window_key`, an identifiable account/task label, and machine. `claimed=false` means stop
+   `window_key`, an identifiable account/task label, and machine. Use a unique row owner per run:
+   `agent-review-first-pass:<task id>:<window_key>` (add a run suffix for an explicit retry). `claimed=false` means stop
    this duplicate run without completing someone else's claim. Retain the window for cleanup.
 3. Prove the in-app Browser admin session, then atomically claim one eligible item, prioritizing
    human-requested repairs, agent-requested repairs, then submissions.
@@ -356,7 +373,8 @@ The recurring worker follows this exact order:
 5. On a pass, independently record evidence and promote. On failure, retain ownership while
    fixing or coordinating a named repair worker; record the reproducible defect and repair
    evidence. Commit/push, resolve delivery failures, and dispatch an independent live reviewer.
-   If live evidence is still pending, return the row to `agent_changes_requested` / `ready`
+   Follow that reviewer through its result in this run. Only if verification cannot finish
+   after feasible recovery, return the row to `agent_changes_requested` / `ready`
    with the exact repair and remaining verification recorded; never imply completion.
 6. Fix observed process weaknesses, then close owned Browser/preview resources on every exit.
    Complete only the claimed window with `schedule_claim(action="complete",
@@ -381,7 +399,8 @@ TTL/reaper guaranteed by this SQL. Do not steal a live claim. If no candidate ca
 repair the demonstrated routing/tooling defect and record the remaining exact constraint.
 
 Claim one row atomically and append the claim event to its existing conversation. Replace the
-placeholder with a stable label such as `agent-review-first-pass:<Codex task id>`:
+placeholder with the unique per-run owner computed above. Keep `metadata.origin.agent_label`
+as the stable campaign/lane slug; it is not the assignment owner:
 
 ```sql
 with candidate as materialized (
@@ -472,7 +491,9 @@ Required evidence depends on `required_tools`:
 
 On **PASS**, append a concise evidence message and move the item to the human inbox in one
 statement. The evidence text must name the interaction tested, result, target, and relevant
-breakpoints or data/API checks:
+breakpoints or data/API checks. The identity below is the actual independent reviewer and
+must already own this row (through its original claim or the conditional handoff above).
+It is never a label borrowed from the builder or delegating coordinator:
 
 ```sql
 with reviewed as materialized (
@@ -483,7 +504,7 @@ with reviewed as materialized (
     on conversation.id = queue.conversation_id
   where queue.id = '<review id>'
     and queue.status = 'agent_review'
-    and queue.metadata->'triage'->'assignment'->>'owner' = '<stable agent/task label>'
+    and queue.metadata->'triage'->'assignment'->>'owner' = '<independent reviewer identity>'
   for update
 ), updated as (
   update agent.review_queue queue
@@ -493,7 +514,7 @@ with reviewed as materialized (
       jsonb_set(
         jsonb_set(
           jsonb_set(queue.metadata, '{triage,assignment,state}', '"awaiting_review"'::jsonb),
-          '{triage,verification,verified_by}', to_jsonb('<stable agent/task label>'::text)
+          '{triage,verification,verified_by}', to_jsonb('<independent reviewer identity>'::text)
         ),
         '{triage,verification,verified_at}', to_jsonb(now())
       ),
@@ -518,7 +539,7 @@ with reviewed as materialized (
     updated.audit_user_id,
     jsonb_build_object(
       'actor_kind', 'agent',
-      'actor_label', '<stable agent/task label>',
+      'actor_label', '<independent reviewer identity>',
       'review_event', 'ready_for_human',
       'review_queue_id', updated.id
     )
@@ -580,9 +601,13 @@ select id, title, status, feedback from updated;
 ```
 
 For an in-scope repair, retain ownership and set assignment state to `fixing` before work.
-Read the repo rules, implement, test, commit, and push; use a bounded specialist when needed. Then record the repair in the conversation,
-set `status='agent_changes_requested'`, and return assignment state to `ready` so a later run can
-prove the deployed behavior independently. The verifier must be different from the implementer for every promotion. Agents repair and verify; Arman alone approves or requests the human round.
+Read the repo rules, implement, test, commit, and push; use a bounded specialist when needed.
+Record the repair in the conversation and dispatch the independent live verifier in this run,
+using the conditional ownership handoff above. Follow failures back through repair and recheck.
+Release to `agent_changes_requested` / `ready` only when no active repair/verifier owns the work
+and an exact unresolved gap remains after feasible recovery; document that gap and the next
+executable step. The verifier must differ from the implementer for every promotion. Agents
+repair and verify; Arman alone approves or requests the human round.
 
 ## Rules
 
