@@ -68,6 +68,8 @@ task-hygiene's promotion waits do not require another approval for these repairs
    skips. After a tool wait or context restore, confirm renewal succeeds before
    further mutations.
 3. Discover callable `persistence_watchdog`, `system_errors`, and `app_log_errors`.
+   Read each discovered schema before calling it; tools do not necessarily share
+   a request envelope. Correct argument-shape errors and retry the real operation.
    For unavailable/unauthenticated MCP: inspect `codex mcp list`, run
    `codex mcp login aidream`, rediscover, and retry the actual failed operation.
    Use the configured OAuth flow; never expose secrets. If it still fails,
