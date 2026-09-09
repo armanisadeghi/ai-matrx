@@ -397,7 +397,7 @@ Set AIDREAM_DIR to your aidream checkout, or pass --no-migrate to skip
 
     info "Verifying FE migration ledger (pnpm check:migrations:strict)..."
     if pnpm check:migrations:strict; then
-        ok "Migration ledger matches migrations/*.sql."
+    ok "Migration ledger verification completed; review advisory findings above."
     else
         fail "Migration ledger still has unapplied/drifted files after apply.
 Fix the failures above (or re-run from aidream:
