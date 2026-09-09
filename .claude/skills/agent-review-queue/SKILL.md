@@ -331,6 +331,13 @@ the repair is context-heavy. Use a coordinator with specialists when origin iden
 the backlog is large, or the row requires distinct tool access. **`repo_slug` is the repository**
 (registry-backed); `source` is free text and identifies neither a repo nor an agent.
 
+Only the recurring entrypoint claims a schedule window and selects a candidate. An independent
+reviewer delegated for an already owned row uses that exact row within the existing run; it
+must not claim another window/item or complete the coordinator's schedule claim. When ownership
+must transfer, the coordinator conditionally updates the observed row owner/state and records
+the handoff in its conversation. The verifier records its own distinct agent identity in the
+verification and conversation evidence, never the builder's or coordinator's identity.
+
 The recurring worker follows this exact order:
 
 1. Discover `schedule_claim` on the AI Dream MCP. If absent or unauthorized, inspect
