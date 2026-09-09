@@ -99,7 +99,7 @@ The rule, and why it is not a style preference:
 
 ## Change Log
 
-- 2026-09-09 — **Alternate mobile surfaces acknowledge visibility without fake geometry.** A registered window may deliberately replace `WindowPanel` on mobile with a purpose-built surface such as the Settings push-navigation drawer. That surface calls `ackOverlaySurfaceRender`/`clearOverlaySurfaceRender`; the silent-render watchdog treats its mount as visibility proof instead of false-screaming `no-window-registered` and offering a useless `revealWindow` action.
+- 2026-09-09 — **Alternate mobile surfaces acknowledge visibility without fake geometry.** A registered window may deliberately replace `WindowPanel` on mobile with a purpose-built surface. Settings, Chat Options, and the four flashcard viewers use `useOverlaySurfaceRenderAck` while their drawer, sheet, or fullscreen viewer is active; the silent-render watchdog treats that mount as visibility proof instead of false-screaming `no-window-registered` and offering a useless `revealWindow` action.
 
 - 2026-08-30 — **`?panels=` deep-linking works everywhere; it had been working
   nowhere.** `UrlPanelManager` is now mounted globally and unallowlisted in
@@ -559,7 +559,7 @@ Never derive window geometry from a raw `window.innerWidth/innerHeight` read.
 
 **Watchdog (loud recovery).** ~2.5 s after an open, the middleware runs the pure `diagnoseOverlayRender` against live Redux + viewport state. If no visible panel is on screen — `windowsHidden` still on, off-screen, or zero-size — it `console.error`s with diagnostics and shows a self-healing `toast.error` ("Show it" → `revealWindow`). Scoped to **singleton window-kind** overlays; minimized and popped-out states count as OK (parked, not failed). Tests: `__tests__/overlayRenderWatchdog.test.ts`, `__tests__/windowManagerReveal.test.ts`.
 
-**"No panel mounted" is ack-gated, never timer-guessed.** Every window enters through `next/dynamic`, so a still-loading chunk (dev compile, slow fetch) is indistinguishable from a genuine no-mount by timer alone. `WindowPanel` calls `ackOverlayRender(overlayId, id)` from a mount effect — strictly after the dynamic import settled — which doubles as the chunk-settle signal and resolves the real window id when it differs from the slug. A registered window that deliberately swaps `WindowPanel` for a purpose-built mobile surface calls `ackOverlaySurfaceRender`/`clearOverlaySurfaceRender`; that mount is its visibility proof because it owns no window-manager geometry. While no ack exists the watchdog **waits for it** (hard no-mount deadline: 12 s prod / 45 s dev) and diagnoses geometry only once it arrives. If a scream fires and the panel becomes visible while the toast is up, the toast **auto-dismisses** with a recovery `console.info` — a false or stale scream trains people to ignore the real ones.
+**"No panel mounted" is ack-gated, never timer-guessed.** Every window enters through `next/dynamic`, so a still-loading chunk (dev compile, slow fetch) is indistinguishable from a genuine no-mount by timer alone. `WindowPanel` calls `ackOverlayRender(overlayId, id)` from a mount effect — strictly after the dynamic import settled — which doubles as the chunk-settle signal and resolves the real window id when it differs from the slug. A registered window that deliberately swaps `WindowPanel` for a purpose-built mobile surface calls `useOverlaySurfaceRenderAck(overlayId, active)` at its composition root; that mount is its visibility proof because it owns no window-manager geometry, and the hook guarantees cleanup when the alternate surface closes or the viewport changes. While no ack exists the watchdog **waits for it** (hard no-mount deadline: 12 s prod / 45 s dev) and diagnoses geometry only once it arrives. If a scream fires and the panel becomes visible while the toast is up, the toast **auto-dismisses** with a recovery `console.info` — a false or stale scream trains people to ignore the real ones.
 
 ---
 
@@ -671,6 +671,7 @@ Enforced by:
 | `persistence/localWindowSessionStore.ts`    | Composes localStorage + IndexedDB with tab leases, identity isolation, write ordering, and reaping.                |
 | `hooks/useOverlay.ts`                       | Factory hooks (`useOverlayOpen`, `useOverlayData`, `useOverlayInstances`, `useOverlayActions`, `useCloseOverlay`). |
 | `hooks/useWindowPanel.ts`                   | Pointer-driven move/resize; Redux window registration.                                                             |
+| `diagnostics/useOverlaySurfaceRenderAck.ts` | Mount/cleanup contract for registered windows that substitute a mobile drawer, sheet, or fullscreen viewer.       |
 | `mobile/MobileDrawerSurface.tsx`            | Vaul-based bottom sheet for `mobilePresentation: "drawer"`.                                                        |
 | `mobile/MobileCardSurface.tsx`              | Floating card for `mobilePresentation: "card"`.                                                                    |
 | `tools-grid/toolsGridTiles.ts`              | Declarative config for every Tools-grid tile.                                                                      |

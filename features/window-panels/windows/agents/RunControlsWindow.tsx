@@ -16,16 +16,13 @@
  * All tab content + state comes from the shared RunControlsTabPanel core.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import {
-  ackOverlaySurfaceRender,
-  clearOverlaySurfaceRender,
-} from "@/features/window-panels/diagnostics/overlayRenderWatchdog";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import {
   RunControlsTabPanel,
   useRunControlsState,
@@ -82,11 +79,7 @@ function RunControlsWindowInner({
   // WindowPanel. Tell the shared visibility watchdog that this registered
   // window-kind overlay mounted its alternate surface, then remove the ack as
   // soon as the sheet unmounts or the viewport returns to desktop.
-  useEffect(() => {
-    if (!isMobile) return undefined;
-    ackOverlaySurfaceRender(OVERLAY_ID);
-    return () => clearOverlaySurfaceRender(OVERLAY_ID);
-  }, [isMobile]);
+  useOverlaySurfaceRenderAck(OVERLAY_ID, isMobile);
 
   // Mobile: never a draggable window — iOS-style bottom sheet with the same
   // tabs (level 1 list → drill into a tab), matching RunControlsMenu's mobile

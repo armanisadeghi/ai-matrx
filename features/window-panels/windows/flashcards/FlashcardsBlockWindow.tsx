@@ -8,6 +8,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import {
   FlashcardsSetBody,
@@ -85,6 +86,11 @@ export function FlashcardsBlockWindow({
       enterMobileView(0);
     }
   }, [isOpen, isMobile, set.flashcards.length, enterMobileView]);
+
+  useOverlaySurfaceRenderAck(
+    "flashcardsBlockWindow",
+    isOpen && isMobileView && set.flashcards.length > 0,
+  );
 
   if (!isOpen) return null;
 

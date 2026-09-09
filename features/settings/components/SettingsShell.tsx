@@ -8,15 +8,12 @@
  * separately — covered by `userPreferencesWindow`.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Check, Loader2, Settings as SettingsIcon } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/redux/store";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import {
-  ackOverlaySurfaceRender,
-  clearOverlaySurfaceRender,
-} from "@/features/window-panels/diagnostics/overlayRenderWatchdog";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SettingsTree } from "@/components/official/settings/tree/SettingsTree";
 import { SettingsDrawerNav } from "@/components/official/settings/tree/SettingsDrawerNav";
@@ -84,11 +81,7 @@ export function SettingsShell({
   // Mobile intentionally renders the purpose-built push-navigation drawer
   // instead of WindowPanel. Acknowledge that alternate visible surface so the
   // shared watchdog does not demand geometry this presentation never owns.
-  useEffect(() => {
-    if (!isOpen || !isMobile) return undefined;
-    ackOverlaySurfaceRender("userPreferencesWindow");
-    return () => clearOverlaySurfaceRender("userPreferencesWindow");
-  }, [isMobile, isOpen]);
+  useOverlaySurfaceRenderAck("userPreferencesWindow", isOpen && isMobile);
 
   if (!isOpen) return null;
 

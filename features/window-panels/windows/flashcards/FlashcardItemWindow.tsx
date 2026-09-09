@@ -7,6 +7,7 @@
 import React, { useEffect } from "react";
 import { Smartphone } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import { Button } from "@/components/ui/button";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
@@ -61,6 +62,11 @@ export function FlashcardItemWindow({
       enterMobileView(0);
     }
   }, [isOpen, isMobile, front, enterMobileView]);
+
+  useOverlaySurfaceRenderAck(
+    "flashcardItemWindow",
+    isOpen && isMobileView && Boolean(front),
+  );
 
   if (!isOpen) return null;
 

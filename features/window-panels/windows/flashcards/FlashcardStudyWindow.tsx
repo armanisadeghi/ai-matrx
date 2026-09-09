@@ -9,6 +9,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { AlertCircle, BookOpen } from "lucide-react";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
@@ -87,15 +88,21 @@ export function FlashcardStudyWindow({
     onGrade: handleGrade,
   });
 
-  if (!isOpen) return null;
-
   const showMobileStudy =
+    isOpen &&
     isMobile &&
     !mobileDismissed &&
     !study.loading &&
     !study.error &&
     study.cards.length > 0 &&
     !completed;
+
+  useOverlaySurfaceRenderAck(
+    "flashcardStudyWindow",
+    showMobileStudy || (isOpen && completed && isMobile && !mobileDismissed),
+  );
+
+  if (!isOpen) return null;
 
   if (showMobileStudy) {
     return (

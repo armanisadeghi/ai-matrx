@@ -6,6 +6,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import { FlashcardsSubcardsSet } from "@/components/mardown-display/blocks/flashcards/FlashcardsSubcardsSet";
 import { LayoutToggle } from "@/components/mardown-display/blocks/flashcards/flashcards-set-parts";
@@ -85,6 +86,11 @@ export function FlashcardSubcardsWindow({
       enterMobileView(0);
     }
   }, [isOpen, isMobile, cards.length, enterMobileView]);
+
+  useOverlaySurfaceRenderAck(
+    "flashcardSubcardsWindow",
+    isOpen && isMobileView && cards.length > 0,
+  );
 
   if (!isOpen) return null;
 
