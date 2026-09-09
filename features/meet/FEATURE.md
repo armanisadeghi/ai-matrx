@@ -16,7 +16,8 @@ chrome, and the routes.
 | `<CallButton>` — the one place a person is shown on messaging surfaces | [`../messaging/components/MessagingChrome.tsx`](../messaging/components/MessagingChrome.tsx) |
 | `<IncomingCallHost>` — mounted ONCE, directly | [`../../providers/MeetHost.tsx`](../../providers/MeetHost.tsx) |
 | The room, both lanes | [`components/MeetingSurface.tsx`](./components/MeetingSurface.tsx) |
-| Create a meeting, get its link | [`components/MeetingsWorkspace.tsx`](./components/MeetingsWorkspace.tsx) → `/meetings` |
+| Create a meeting, list every meeting incl. ended ones | [`components/MeetingsWorkspace.tsx`](./components/MeetingsWorkspace.tsx) → `/meetings` |
+| The meeting RECORD after `ended_at` | the package's `<MeetingRecordView>`, routed to by `<MeetingRoom>` — nothing here |
 | aidream base URL | [`lib/meetBaseUrl.ts`](./lib/meetBaseUrl.ts) |
 | Stylesheets (tokens → brand → structure) | `app/layout.tsx` imports 1 and 3; the brand map is the `--mx-meet-*` block in `app/globals.css` |
 
@@ -72,18 +73,20 @@ package, release, adopt — never a crossing in here.
 
 ## Known blockers on this surface (2026-09-08, MRI-A9)
 
-Both were found by the FIRST browser proof of the in-room intelligence panel and
-neither is fixable in this folder or in the package. They are named here because
-a reader of this surface will otherwise conclude the package is broken.
+Found by the FIRST browser proof of the in-room intelligence panel; neither was
+fixable in this folder. They are kept here with their resolutions, because a
+reader of an older tag will otherwise conclude the package is broken.
 
-1. **No host control ever appears — the token carries no `role`.** Feedback
-   `7418ef78-6168-42d5-ae79-172ca9ec849d`. `aidream/services/meet/service.py`
-   mints participant metadata without a `role` key, and the package reads a
-   participant's role out of the SERVER-MINTED metadata by design (a client that
-   could name itself host could mute anyone). So the actual host is a plain
-   participant everywhere: no "Start note-taker", no host menu, no lobby
-   admission, no "End meeting for everyone". Absent, not dead — correct
-   behaviour on wrong data. One-line fix at the source.
+1. ~~**No host control ever appears — the token carries no `role`.**~~
+   **RESOLVED 2026-09-08 (MRI-A11), feedback `7418ef78`.** The mint now decides
+   ONE word — `host | participant | guest`, from `host_user_id` or a real `iam`
+   grant — and carries it on the token response, in the token's participant
+   metadata, and as the LiveKit participant attributes
+   `matrx.participant.role` / `matrx.participant.can_record`. `@ai-matrx/meet`
+   0.4.0 takes the stronger of the token grant and the roster entry, so a host's
+   controls are correct on the first frame of the room rather than one roster
+   event later. Nothing in this folder decides it, and nothing in this folder
+   had to change for it.
 2. **The durable realtime feed delivers nothing.** Feedback
    `761359a4-b799-4e19-8bf5-d1c03f6e7ae2` (critical). None of
    `communication.meet_transcript_segments`, `meet_notes`, `meet_meetings` are in
@@ -94,6 +97,25 @@ a reader of this surface will otherwise conclude the package is broken.
    "captions, live notes, Q&A and the wrap-up without a page reload".
 
 ## Change log
+
+- `2026-09-08` — claude: **adopted `@ai-matrx/meet` 0.4.0 (MRI-A11 + MRI-D2),
+  same session.** Two things this surface could not do before. (a) **The host
+  gets host controls**: the server now states the joiner's role on the token and
+  as a LiveKit participant attribute, so lobby admission, lock, remove, the
+  recording control, the note-taker control and "End meeting for everyone"
+  render for the host and are ABSENT — not greyed — for everyone else. Blocker 1
+  above is resolved and required no host code. (b) **An ended meeting has a
+  surface**: `/meet/[slug]` renders the package's `<MeetingRecordView>` instead
+  of a pre-join screen once `ended_at` is set — summary, decisions, action items
+  with owners, live-note windows, the speaker-grouped transcript, the recording,
+  and a Q&A box that still answers from the durable record. Three host changes,
+  all of them injection: `<MeetingRoom meeting={...}>` in both lanes of
+  `MeetingSurface.tsx` (the guest lane NEEDS it — a link-follower is refused the
+  `meet_meetings` table read, so `snapshot.meeting` never populates for them),
+  the guest lane no longer asking for a name on a finished meeting, and
+  `<MeetingList>` on `/meetings` so an ended meeting has a way in. No wrapper,
+  no massage — the record view, the restriction sentences and the recording
+  player all ship in the package so every consumer inherits them.
 
 - `2026-09-08` — claude: **adopted `@ai-matrx/meet` 0.3.2 then 0.3.3 (MRI-A9),
   and the in-room intelligence panel was seen in a browser for the first time.**

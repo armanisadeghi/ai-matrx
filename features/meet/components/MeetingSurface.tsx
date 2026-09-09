@@ -160,10 +160,15 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
           notice for every participant since @ai-matrx/meet 0.3.0 (D10) — the
           host stand-in that used to live in this file was deleted in the same
           session that adopted it. */}
+      {/* THE RESOLVED ROW TRAVELS WITH THE ROOM (MRI-D2). `<MeetingRoom>`
+          renders the meeting RECORD instead of a pre-join screen once
+          `ended_at` is set, and this prop is how it knows before — or without —
+          a durable-feed read. */}
       <MeetingRoom
         roomName={meeting.roomName}
         meetingId={meeting.id}
         slug={meeting.slug}
+        meeting={meeting}
       />
     </div>
   );
@@ -180,7 +185,13 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
 function GuestRoom({ meeting, slug }: { meeting: MeetingRecord; slug: string }) {
   const store = useAppStore();
   const [typedName, setTypedName] = useState("");
-  const [guestName, setGuestName] = useState<string | null>(null);
+  // 🚨 AN ENDED MEETING NEVER ASKS FOR A NAME (MRI-D2). There is no room to
+  // announce anybody into; the link resolves to the record. The provider still
+  // mounts — the record view needs a runtime to read through, and the honest
+  // sentences it renders when the database refuses a link-follower are the
+  // whole point of that lane.
+  const ended = meeting.endedAt !== null;
+  const [guestName, setGuestName] = useState<string | null>(ended ? "Guest" : null);
   const baseUrl = useMemo(() => meetBaseUrl(store.getState()), [store]);
   const noSession = useCallback(async () => null, []);
   const onDiagnostic = useCallback((event: MeetDiagnostic) => {
@@ -245,6 +256,7 @@ function GuestRoom({ meeting, slug }: { meeting: MeetingRecord; slug: string }) 
           roomName={meeting.roomName}
           meetingId={meeting.id}
           slug={slug}
+          meeting={meeting}
         />
       </div>
     </MeetProvider>

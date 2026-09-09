@@ -16,7 +16,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ScheduleMeeting, useMeetHost } from "@ai-matrx/meet/react";
+import { MeetingList, ScheduleMeeting, useMeetHost } from "@ai-matrx/meet/react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 
@@ -77,6 +77,20 @@ export function MeetingsWorkspace() {
           Open the meeting
         </Link>
       ) : null}
+
+      {/* EVERY MEETING, INCLUDING THE FINISHED ONES (MRI-D2). A finished
+          meeting is its summary, its decisions, its action items and its
+          transcript behind the same durable link — and until this list existed
+          there was no way into any of that from the product. The list is the
+          package's, so every consumer inherits it. */}
+      <div>
+        <h2 className="text-base font-semibold">Your meetings</h2>
+        <p className="mt-1 mb-3 text-sm text-muted-foreground">
+          An ended meeting opens its record: what was decided, who owns what,
+          and everything that was said.
+        </p>
+        <MeetingList baseUrl={appBaseUrl} />
+      </div>
     </div>
   );
 }
