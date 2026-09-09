@@ -291,6 +291,19 @@ export const selectConversationKeywords =
 // ---------------------------------------------------------------------------
 
 /**
+ * Human-authored content is an explicit projection. `content` remains the
+ * complete provider payload required for lossless model replay and may include
+ * an agent-authored template plus resolved machine context. New user rows
+ * persist their pristine input in `userContent`; historical rows fall back to
+ * `content` until they are rewritten.
+ */
+function contentForDisplay(record: MessageRecord): MessageRecord["content"] {
+  return record.role === "user" && record.userContent != null
+    ? record.userContent
+    : record.content;
+}
+
+/**
  * Flat text extracted from a MessageRecord's content blocks. Used by
  * components that render plain-text previews (copy buttons, TTS, save, etc.).
  *
@@ -306,8 +319,9 @@ export function extractFlatText(
   if (!record) return "";
   const includeThinking = options?.includeThinking ?? false;
   const withCitationMarkers = options?.withCitationMarkers ?? false;
-  const blocks = Array.isArray(record.content)
-    ? (record.content as Array<{
+  const displayContent = contentForDisplay(record);
+  const blocks = Array.isArray(displayContent)
+    ? (displayContent as Array<{
         type?: string;
         text?: string;
         metadata?: Record<string, unknown>;
@@ -411,8 +425,9 @@ export function extractInspectableText(
 ): InspectableMessageContent {
   const flat = extractFlatText(record, options);
   if (flat.length > 0) return { text: flat, isStructuredRaw: false };
-  const raw = stringifyStructuredContent(record?.content);
-  if (raw !== null && typeof record?.content !== "string") {
+  const displayContent = record ? contentForDisplay(record) : undefined;
+  const raw = stringifyStructuredContent(displayContent);
+  if (raw !== null && typeof displayContent !== "string") {
     return { text: raw, isStructuredRaw: true };
   }
   return { text: raw ?? "", isStructuredRaw: false };
@@ -477,7 +492,7 @@ export function extractContentBlocks(
   record: MessageRecord | undefined,
 ): MessagePart[] {
   if (!record) return [];
-  return messagePartsFromPersistedContent(record.content);
+  return messagePartsFromPersistedContent(contentForDisplay(record));
 }
 
 type AnyMediaPart =
@@ -576,7 +591,7 @@ export const selectMessageInterleavedContent = (
       if (!record) return EMPTY_SEGMENTS;
       if ((record.role as string) === "tool") return EMPTY_SEGMENTS;
 
-      const entries = parsePersistedMessageContent(record.content);
+      const entries = parsePersistedMessageContent(contentForDisplay(record));
       if (entries.length === 0) return EMPTY_SEGMENTS;
       const parts = entries.flatMap((entry) =>
         entry.kind === "message_part" ? [entry.part] : [],

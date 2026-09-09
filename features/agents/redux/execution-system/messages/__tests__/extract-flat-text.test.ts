@@ -41,6 +41,27 @@ describe("extractFlatText", () => {
     ]);
     expect(extractFlatText(rec)).toBe("The answer.");
   });
+
+  it("uses pristine userContent instead of the rendered provider template", () => {
+    const rec = {
+      role: "user",
+      content: [
+        {
+          type: "text",
+          text: "MACHINE TEMPLATE\n\nHUMAN: build a dependable planning room",
+        },
+      ],
+      userContent: [
+        { type: "text", text: "build a dependable planning room" },
+      ],
+    } as unknown as MessageRecord;
+
+    expect(extractFlatText(rec)).toBe("build a dependable planning room");
+    expect(extractInspectableText(rec)).toEqual({
+      text: "build a dependable planning room",
+      isStructuredRaw: false,
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
