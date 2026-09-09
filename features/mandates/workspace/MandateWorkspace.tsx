@@ -633,7 +633,7 @@ function OneMandateWorkspace({
               onChanged={refresh}
               authoring={authoring}
             />
-            <TriadOutputSection data={data} />
+            <TriadOutputSection data={data} authoring={authoring} />
             <EffectiveConfigLayers
               pinsOnly
               pins={data.pins}

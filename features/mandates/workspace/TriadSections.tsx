@@ -4,7 +4,7 @@
 //
 // THE TRIAD — the mandate page's spine, in the mandate's own order:
 //
-//     INPUT  →  GOAL  →  OUTPUT
+//     GOAL  →  PROVISION  →  OUTPUT
 //
 // Arman: "INPUT -> Charge (Goal) -> Output. The UI should show this clearly
 // and since the goal lives ONLY HERE, it needs to be easy to read and quickly
@@ -79,6 +79,7 @@ function goalSectionScope(
 }
 import { MandateUserTextLine } from "../components/MandateUserTextLine";
 import { Section, SectionEditAction } from "./Section";
+import { DefinitionEditHelp } from "./DefinitionEditHelp";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toastFailure } from "@/lib/failure/toastFailure";
@@ -211,18 +212,20 @@ export function TriadInputSection({
 
   return (
     <Section
-      title="Inputs"
+      title="Provision"
       actions={
         <SectionEditAction
-          label="Edit inputs"
+          label="Edit provision"
           unavailable={
-            data.offer
-              ? "Defined in code."
-              : !authoring
-                ? "System admin only."
-                : editing
-                  ? "Editor open."
-                  : undefined
+            data.offer || !authoring ? (
+              <DefinitionEditHelp
+                data={data}
+                section="Provision"
+                authoring={authoring}
+              />
+            ) : editing ? (
+              "Editor open."
+            ) : undefined
           }
           onEdit={() => {
             setDraft(
@@ -250,7 +253,7 @@ export function TriadInputSection({
                 onClick={() => void save()}
               >
                 <Check className="h-3.5 w-3.5" />
-                {saving ? "Saving…" : "Save inputs"}
+                {saving ? "Saving…" : "Save"}
               </Button>
               <Button
                 variant="ghost"
@@ -669,11 +672,15 @@ export function TriadGoalSection({
         <SectionEditAction
           label="Edit goal"
           unavailable={
-            !authoring
-              ? "System admin only."
-              : editing
-                ? "Editor open."
-                : undefined
+            !authoring ? (
+              <DefinitionEditHelp
+                data={data}
+                section="Goal"
+                authoring={authoring}
+              />
+            ) : editing ? (
+              "Editor open."
+            ) : undefined
           }
           onEdit={() => {
             setDraft(goal ?? "");
@@ -760,7 +767,13 @@ const OUTPUT_COLUMNS = [
   { key: "source", label: "Source" },
 ];
 
-export function TriadOutputSection({ data }: { data: MandateWorkspaceData }) {
+export function TriadOutputSection({
+  data,
+  authoring = false,
+}: {
+  data: MandateWorkspaceData;
+  authoring?: boolean;
+}) {
   const constraints = outputConstraintsOf(data.mandate);
   return (
     <Section
@@ -768,7 +781,13 @@ export function TriadOutputSection({ data }: { data: MandateWorkspaceData }) {
       actions={
         <SectionEditAction
           label="Edit output"
-          unavailable="Output editing is not available yet."
+          unavailable={
+            <DefinitionEditHelp
+              data={data}
+              section="Output"
+              authoring={authoring}
+            />
+          }
         />
       }
     >

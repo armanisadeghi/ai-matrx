@@ -34,10 +34,10 @@ export function ProvisionOfferList({
   className,
 }: ProvisionOfferListProps) {
   if (values.length === 0) {
-    return <PropertyRow label="Available inputs" value="None" />;
+    return <PropertyRow label="Offered values" value="None" />;
   }
   const columns = [
-    { key: "name", label: "Input" },
+    { key: "name", label: "Offered value" },
     { key: "format", label: "Format" },
     {
       key: "available",
@@ -54,7 +54,7 @@ export function ProvisionOfferList({
   ];
   return (
     <div className={cn("min-w-0", className)}>
-      <ConfigurationTable label="Mandate inputs" columns={columns}>
+      <ConfigurationTable label="Provision offered values" columns={columns}>
         {values.map((value) => (
           <ConfigurationTableRow
             key={value.name}

@@ -23,7 +23,7 @@ way a surface does; the binding maps them onto the Holder. The rules, all live:
    `/administration/mandates/[mandateKey]`, and inside `MandateWindow`'s Yours
    pane. Named deliberate divergences only: the window's scope list + Admin pane, the
    admin route's header offset, and the `authoring` rule in rule 8.
-4. **Tabs separate concerns:** Definition (goal, inputs, output), Holder (selection, matching, preliminary checks), Overrides (API model parameters only), Display Options (launch presentation), Test, Permissions (write/context access), Diagnostics and Notes. Test and Diagnostics remain admin-only.
+4. **Tabs separate concerns:** Definition (Goal, Provision, Output), Holder (selection, matching, preliminary checks), Overrides (API model parameters only), Display Options (launch presentation), Test, Permissions (write/context access), Diagnostics and Notes. Test and Diagnostics remain admin-only.
 5. **Keep draft owners mounted across tabs.** One binding save owns holder/mapping/API model overrides; one treatment save owns shared display preferences/write policies. Goal, draft inputs and context gating retain their immediate-save paths. `ConfigurationFields` supplies labeled values, explicit state and accessible help. Full validation remains not evaluated until exact-version-and-mapping evidence exists.
 6. **Version binding is first-class**: latest (auto-updates, risks breaks) or pin
    (`agent_version_id`); pinned-and-behind MUST show drift. The bind endpoint always
@@ -123,6 +123,8 @@ deciders so a second one cannot grow. Two consequences the code depends on:
 The button is **Save**. `system-answer-record.ts` decides storage without making that implementation detail a second user choice; scope and provenance remain labeled data.
 
 Routes: `app/(core)/mandates/page.tsx` (list) · `app/(core)/mandates/[mandateKey]/page.tsx` (workspace, read-only triad + own override; segment accepts key or uuid) · `app/(core)/organizations/[orgId]/settings/mandates/{,[mandateKey]}` (org principal) · **admin** `app/(admin)/administration/mandates/{,[mandateKey],new}` (the list, the same workspace with `authoring` on, and creation). `browse/url-compat.ts` owns `adminMandateHref` — never hand-build the admin URL.
+
+**Definition edit guidance:** `workspace/DefinitionEditHelp.tsx` is shared across route, organization and window hosts. Admin code-owned edits open hover/focus/tap help with the recorded `code_path` and canonical Copy for AI handoff. `provisions.ts` retains that field for single and batched reads. Missing locations remain explicit; a related Provision module is never presented as an Output source. Non-authoring hosts explain creating a separate mandate and connecting it to a surface the user controls. Edit permissions and write paths are unchanged.
 
 ## The Provision era (2026-08-22) — inputs come from the PROVISION
 
@@ -347,6 +349,8 @@ The Test surface distinguishes **server/API tests** from **actual display launch
 Deferred contract gaps: reusable Agent Builder test-data fill; exact-version-and-mapping full validation; demonstrated enforcement of declared pins; product decisions on treatment seed/menu fields absent from the imperative mandate consumer. None is represented as a working control or a passed verdict.
 
 ## Change Log
+
+- 2026-09-09 — Named the definition sections Goal / Provision / Output. Code-owned edit affordances now provide source-aware admin instructions and Copy for AI; non-authoring hosts explain the separate-mandate path. Missing source metadata is explicit.
 
 - 2026-09-08 — Corrected the configuration model: API overrides only in Overrides; shortcut display gallery/rows reused; context access in Permissions; declared constraints in Definition without invented pin enforcement. Removed unconsumed treatment seed/menu/model editors while preserving storage; documented server-test versus actual-display verification.
 

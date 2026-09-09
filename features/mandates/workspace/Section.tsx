@@ -42,14 +42,13 @@ export function SectionEditAction({
 }: {
   label: string;
   onEdit?: () => void;
-  unavailable?: string;
+  unavailable?: React.ReactNode;
 }) {
   if (unavailable)
     return (
       <FieldHelp
         label={label}
-        triggerLabel={`${label} (unavailable)`}
-        unavailable
+        triggerLabel={`${label} — instructions`}
         triggerIcon={
           <Pencil className="size-3 opacity-40" aria-hidden="true" />
         }
