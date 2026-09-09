@@ -127,6 +127,25 @@ function rate(numerator: number, denominator: number | null): number | null {
   return numerator / denominator;
 }
 
+/**
+ * A read that blew the API's per-statement time limit, not a bug in the caller.
+ * Carried as its own class so the UI can say what actually happened and offer
+ * the window that does fit, instead of a generic red box or a spinner forever.
+ */
+export class RefetchTimeoutError extends Error {
+  readonly window: RefetchWindow;
+  constructor(w: RefetchWindow, detail: string) {
+    super(detail);
+    this.name = "RefetchTimeoutError";
+    this.window = w;
+  }
+}
+
+/** Postgres 57014 = canceling statement due to statement timeout. */
+function isStatementTimeout(err: { code?: string | null; message?: string | null }): boolean {
+  return err.code === "57014" || /statement timeout/i.test(err.message ?? "");
+}
+
 /** ── ALL-TIME: the summary view answers this question directly. ─────────── */
 
 async function loadAllTime(): Promise<ToolRefetchSummary> {
@@ -136,7 +155,19 @@ async function loadAllTime(): Promise<ToolRefetchSummary> {
     .select("*")
     .order("same_data_repeats", { ascending: false })
     .limit(PAGE_SIZE);
-  if (error) throw new Error(error.message);
+  if (error) {
+    // MEASURED 2026-09-09: this view plans at ~17.3s over the full history,
+    // while the `authenticated` role's statement_timeout is 8s — so the
+    // all-time rollup cannot come back over the data API as things stand.
+    // Say that out loud rather than spinning; the 7/30/90 windows do work.
+    if (isStatementTimeout(error)) {
+      throw new RefetchTimeoutError(
+        "all",
+        "The all-time rollup exceeded the data API's 8-second statement limit. chat.vw_tool_refetch_summary recomputes every repeat's same-data and trim verdicts on every read (measured ~17.3s over the full history), so it cannot answer inside the limit until it is materialised or replaced by a stored rollup. The 7 / 30 / 90-day windows are computed a different way and are unaffected.",
+      );
+    }
+    throw new Error(error.message);
+  }
 
   const rows: ToolRefetchSummaryRow[] = (data ?? [])
     .filter((r) => typeof r.tool_name === "string" && r.tool_name.length > 0)
@@ -187,7 +218,15 @@ async function pageRepeats(sinceIso: string): Promise<{ rows: RawRepeat[]; trunc
       .order("repeat_at", { ascending: false })
       .order("repeat_tool_call_id", { ascending: true })
       .range(offset, offset + PAGE_SIZE - 1);
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (isStatementTimeout(error)) {
+        throw new RefetchTimeoutError(
+          "all",
+          "Reading the repeats for this window exceeded the data API's 8-second statement limit. chat.vw_tool_refetch recomputes each repeat's same-data and trim verdicts on read, so the cost grows with the window. Try a shorter window.",
+        );
+      }
+      throw new Error(error.message);
+    }
     const batch = (data ?? []) as RawRepeat[];
     rows.push(...batch);
     if (batch.length < PAGE_SIZE) return { rows, truncated: false };
@@ -350,7 +389,15 @@ export async function getToolRefetchDetail(
     .order("repeat_at", { ascending: false })
     .order("repeat_tool_call_id", { ascending: true })
     .range(offset, offset + limit - 1);
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isStatementTimeout(error)) {
+      throw new RefetchTimeoutError(
+        w,
+        "Listing this tool's individual repeats exceeded the data API's 8-second statement limit. chat.vw_tool_refetch recomputes each repeat's same-data and trim verdicts on read, so an unbounded window cannot answer. Pick a shorter window.",
+      );
+    }
+    throw new Error(error.message);
+  }
 
   return (data ?? []).map((r, i) => ({
     repeatToolCallId: r.repeat_tool_call_id ?? `${toolName}:${offset + i}`,

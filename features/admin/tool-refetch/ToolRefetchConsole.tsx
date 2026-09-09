@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import {
   DETAIL_PAGE_SIZE,
   REFETCH_WINDOWS,
+  RefetchTimeoutError,
   TRIM_AUDIT_EPOCH,
   getToolRefetchDetail,
   getToolRefetchSummary,
@@ -298,9 +299,10 @@ function ToolDetail({
   const detail = useQuery<ToolRefetchDetailRow[]>({
     queryKey: ["admin", "tool-refetch", "detail", toolName, win, pages],
     queryFn: () => getToolRefetchDetail(toolName, win, 0, pages * DETAIL_PAGE_SIZE),
+    retry: (attempt, err) => !(err instanceof RefetchTimeoutError) && attempt < 1,
   });
 
-  if (detail.isPending) {
+  if (detail.isPending && !detail.isError) {
     return <div className="px-3 py-4 text-xs text-muted-foreground">Loading repeats for {toolName}…</div>;
   }
   if (detail.error) {
@@ -389,15 +391,21 @@ export function ToolRefetchConsole() {
   const report = useQuery({
     queryKey: ["admin", "tool-refetch", "summary", win],
     queryFn: () => getToolRefetchSummary(win),
+    // A statement timeout is a verdict, not a blip. Retrying it silently is
+    // what turned this page into a spinner that never resolved.
+    retry: (attempt, err) => !(err instanceof RefetchTimeoutError) && attempt < 1,
   });
 
-  const loading = report.isPending;
+  const timedOut = report.error instanceof RefetchTimeoutError ? report.error : null;
+  // Never "loading" once we know it failed — that is the dead state.
+  const loading = report.isPending && !report.isError;
   const refreshing = report.isFetching;
-  const error = report.error
-    ? report.error instanceof Error
-      ? report.error.message
-      : "Failed to load the re-fetch report"
-    : null;
+  const error =
+    report.error && !timedOut
+      ? report.error instanceof Error
+        ? report.error.message
+        : "Failed to load the re-fetch report"
+      : null;
 
   const rows = useMemo(() => {
     const list = [...(report.data?.rows ?? [])];
@@ -477,7 +485,7 @@ export function ToolRefetchConsole() {
               {w.label}
             </Button>
           ))}
-          {!loading && !error && (
+          {!loading && !error && !timedOut && (
             <span className="ml-2 text-xs text-muted-foreground">
               {fmtCount(totals.tools)} tools · {fmtCount(totals.repeats)} repeats ·{" "}
               {fmtCount(totals.sameData)} same-data · {fmtCount(totals.chars)} chars re-fetched
@@ -496,6 +504,31 @@ export function ToolRefetchConsole() {
           <Button size="sm" variant="outline" onClick={() => void report.refetch()}>
             Retry
           </Button>
+        </div>
+      )}
+
+      {/*
+        NOTHING FAILS SILENTLY: the read hit a real server limit. Name the
+        cause, name the fix, and hand over the window that does answer — never
+        a spinner, and never an empty table pretending there is no data.
+      */}
+      {timedOut && (
+        <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <div className="font-medium">This window could not be answered — the query timed out.</div>
+              <p className="mt-1 leading-snug">{timedOut.message}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pl-6">
+            <Button size="sm" variant="outline" onClick={() => setWin("90d")}>
+              Show 90 days instead
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => void report.refetch()} disabled={refreshing}>
+              Try again anyway
+            </Button>
+          </div>
         </div>
       )}
 
@@ -542,7 +575,16 @@ export function ToolRefetchConsole() {
               </tr>
             )}
 
-            {!loading && !error && rows.length === 0 && (
+            {/* An empty table after a failed read would claim "no repeats" — it is not empty, it is unknown. */}
+            {!loading && (error || timedOut) && rows.length === 0 && (
+              <tr>
+                <td colSpan={COLUMNS.length + 2} className="px-3 py-8 text-center text-muted-foreground">
+                  Nothing is shown because the read above failed — this is not &ldquo;no repeats&rdquo;.
+                </td>
+              </tr>
+            )}
+
+            {!loading && !error && !timedOut && rows.length === 0 && (
               <tr>
                 <td colSpan={COLUMNS.length + 2} className="px-3 py-8 text-center text-muted-foreground">
                   No tool was called twice with identical arguments in this window. Try a longer
