@@ -55,6 +55,25 @@ failure mode the no-shims rule exists to prevent, not an example of it.
 
 ## Active
 
+### TASK-011: Verify marketing UUID access classification
+- **Status:** ready
+- **Created:** 2026-09-09
+- **Source:** Persistence repair patrol; historical errors `9ba7a55c-e67c-451f-a660-a992b4e30dea`, `da8033ab-6cdf-47d1-99bb-235687ba0b32`, `4fe23694-30ab-4428-8f66-8311e3ee1eaf` remain open.
+
+**Goal**
+Classify unavailable UUID marketing addresses through the authorized AccessGate without falsely claiming absence, preserving opaque-slug 404 and private-record restrictions.
+
+**Subtasks**
+- [x] Source `6c804e586a8112000ab7758e43a106c09da3decb` pushed: shared component and 16 current server consumers; auth, RLS and brand-scoped site resolution unchanged.
+- [x] Two actual-layout guards failed before; 13 tests and full typecheck pass. Independent reviewer `/root/ebay` passed source review and six focused tests.
+- [x] Required isolated Browser reproduced premature 404 on original real UUID address after authorized admin login. Owned tab no longer exists; browser tab inventory empty at 07:05Z.
+- [x] Existing frontend release owner `01a020b5-158a-7e82-9c3f-7f73570db247` notified; do not start duplicate deployment.
+- [ ] Verify containing deployed UI on original route and sibling pages/crawls, plus opaque unknown slug and authorized readable records.
+- [ ] Register canonical agent review row and dispatch independent live reviewer. Available Supabase MCP requires a 20-letter project ref and rejects canonical database URL `https://db.matrxserver.com`; workspace prohibits addressing the database by project ref. No alternate database/queue bypass used. Resume with URL-capable sanctioned connector.
+
+**Notes**
+Original route: `/marketing/brands/53381577-04ae-4a6a-90d2-a3602a25b4e2/sites/42824fac-9ff8-4b89-a93e-f7aaa9ba44c3`. Current premature server 404 is proven; historical August 20 `RecordUnavailableError` reason `ok` has unproven underlying cause, so this repair alone does not justify closing those rows. Proof: `/Users/armanisadeghi/.codex/automations/system-error-repair-patrol/marketing-access-proof-2026-09-09T0705Z.json`. No ARMAN ledger or user records changed.
+
 ### TASK-010: Verify deployed chat rejection correlation
 - **Status:** ready
 - **Created:** 2026-09-09
