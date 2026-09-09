@@ -32177,26 +32177,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/agents": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Agents For User
-         * @description Return the agents available to the authenticated user (owned + public).
-         */
-        get: operations["list_agents_for_user_agents_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/agents/{agent_id}/execution-definition": {
         parameters: {
             query?: never;
@@ -38568,50 +38548,6 @@ export interface components {
             type: "input_agent";
             /** Agent Ids */
             agent_ids: string[];
-        };
-        /** AgentListItem */
-        AgentListItem: {
-            /** Id */
-            id: string;
-            /**
-             * Name
-             * @default
-             */
-            name?: string;
-            /**
-             * Description
-             * @default
-             */
-            description?: string;
-            /**
-             * Category
-             * @default
-             */
-            category?: string;
-            /** Tags */
-            tags?: string[];
-            /**
-             * Type
-             * @default agent
-             */
-            type?: string;
-            /** Variables */
-            variables?: {
-                [key: string]: unknown;
-            }[];
-            orchestra?: components["schemas"]["OrchestraBadge"] | null;
-        };
-        /** AgentListResponse */
-        AgentListResponse: {
-            /** Agents */
-            agents: components["schemas"]["AgentListItem"][];
-            /** Count */
-            count: number;
-            /**
-             * Truncated
-             * @default false
-             */
-            truncated?: boolean;
         };
         /** AgentStartRequest */
         AgentStartRequest: {
@@ -165337,39 +165273,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicWorkflowRecord"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_agents_for_user_agents_get: {
-        parameters: {
-            query?: {
-                /** @description Optional search over name / description / tags / category. */
-                q?: string | null;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentListResponse"];
                 };
             };
             /** @description Validation Error */
