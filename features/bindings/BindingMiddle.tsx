@@ -34,6 +34,7 @@
 import { AlertTriangle, ArrowDown, ArrowUp, X, Zap } from "lucide-react";
 
 import {
+  CONFIGURATION_CHOICE_SIZE,
   PropertyRow,
   StatusToken,
   FieldHelp,
@@ -589,7 +590,10 @@ function AddAnotherSource({
             `[&>span]:line-clamp-1`; both are overridden here so the label
             wraps to a second line instead, and the box grows with it. */}
         <SelectTrigger
-          className="h-auto min-h-8 w-full max-w-[280px] whitespace-normal py-1 text-left text-sm [&>span]:line-clamp-none"
+          className={cn(
+            CONFIGURATION_CHOICE_SIZE,
+            "h-auto w-full max-w-[280px] whitespace-normal py-1 text-left [&>span]:line-clamp-none",
+          )}
           aria-label={`Add another value to ${targetLabel}`}
         >
           <SelectValue placeholder="Add source" />

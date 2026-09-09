@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CONFIGURATION_CHOICE_SIZE,
   PropertyRow,
   FieldHelp,
 } from "@/components/official/ConfigurationFields";
@@ -394,7 +395,8 @@ function ModeButtons({
             onClick={() => onChange(id)}
             title={words}
             className={cn(
-              "flex min-w-0 flex-1 basis-[8.5rem] items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-center",
+              CONFIGURATION_CHOICE_SIZE,
+              "flex min-w-0 flex-1 basis-[8.5rem] items-center justify-center gap-1.5 py-2 text-center",
               "border transition-all",
               active
                 ? "border-primary bg-primary/10 text-foreground shadow-sm"
@@ -514,7 +516,12 @@ function SurfaceValueDetail({
           }
           disabled={disabled}
         >
-          <SelectTrigger className="h-auto min-h-9 whitespace-normal text-left text-sm [&>span]:line-clamp-none">
+          <SelectTrigger
+            className={cn(
+              CONFIGURATION_CHOICE_SIZE,
+              "h-auto whitespace-normal text-left [&>span]:line-clamp-none",
+            )}
+          >
             <SelectValue placeholder="Pick a surface value" />
           </SelectTrigger>
           <SelectContent>

@@ -39,11 +39,10 @@ jest.mock("@ai-matrx/agents/catalog/react", () => ({
   // agents-hub surface manifest reads at module scope. Replacing the whole
   // entry with one stub component used to blow up an unrelated import chain.
   ...jest.requireActual("@ai-matrx/agents/catalog/react"),
-    AgentListDropdown: ({ label }: { label?: string }) => (
-      <button data-testid="agent-picker">{label}</button>
-    ),
-  }),
-);
+  AgentListDropdown: ({ label }: { label?: string }) => (
+    <button data-testid="agent-picker">{label}</button>
+  ),
+}));
 jest.mock("@/lib/redux/hooks", () => ({
   // A FAITHFUL dispatch double — the real one returns a thunk promise.
   useAppDispatch: () => () => ({ unwrap: () => Promise.resolve([]) }),
@@ -135,17 +134,23 @@ describe("the admin holder section is three controls and nothing else", () => {
       ).toBe(1);
     }
     // ONE agent dropdown in the whole subtree — not one per cell.
-    expect(container.querySelectorAll('[data-testid="agent-picker"]').length).toBe(
-      1,
-    );
+    expect(
+      container.querySelectorAll('[data-testid="agent-picker"]').length,
+    ).toBe(1);
     act(() => root.unmount());
   });
 
   it("uses Arman's own labels, verbatim", () => {
-    const { text, root } = renderSystemBar({ agentId: "system-agent-1" });
+    const { container, text, root } = renderSystemBar({
+      agentId: "system-agent-1",
+    });
     expect(text).toContain("Holder Type");
     expect(text).toContain("Assigned Agent");
-    expect(text).toContain("Version");
+    expect(
+      container.querySelector(
+        '[data-holder-control="assignment"] [data-holder-control="version"]',
+      ),
+    ).not.toBeNull();
     act(() => root.unmount());
   });
 
@@ -167,7 +172,9 @@ describe("the admin holder section is three controls and nothing else", () => {
     // Said ONCE — the picker's trigger, and nowhere else in the block.
     expect(text.split("Research → Slides Generator").length - 1).toBe(1);
     expect(text).not.toContain("8f0bbfc2-85d9-4913-8cea-b09a50c62be6");
-    expect(container.querySelector('[data-testid="holder-agent-id"]')).toBeNull();
+    expect(
+      container.querySelector('[data-testid="holder-agent-id"]'),
+    ).toBeNull();
     expect(text).not.toContain("Open it");
     act(() => root.unmount());
   });
@@ -255,7 +262,10 @@ describe("exactly one module in the mandate screens mounts a holder picker", () 
       // JSX MOUNTS only — an import or a comment is not a second chooser.
       const rel = relative(REPO_ROOT, file);
       if (NOT_A_HOLDER_CHOOSER.includes(rel)) continue;
-      if (/<AgentListDropdown\b/.test(source) || /<AgentVersionPicker\b/.test(source)) {
+      if (
+        /<AgentListDropdown\b/.test(source) ||
+        /<AgentVersionPicker\b/.test(source)
+      ) {
         mounts.push(rel);
       }
     }
@@ -265,12 +275,17 @@ describe("exactly one module in the mandate screens mounts a holder picker", () 
 
 /* ── (d) THE VERSION QUESTION COMES AFTER THE INTELLIGENCE ───────────────── */
 
-describe("the version control does not exist before a holder does", () => {
-  it("is absent with no agent chosen — absent, never disabled-looking", () => {
+describe("the version selector exposes unavailable states", () => {
+  it("is disabled with no agent chosen", () => {
     const { container, text, root } = renderSystemBar({ agentId: null });
     expect(
       container.querySelectorAll('[data-holder-control="version"]').length,
-    ).toBe(0);
+    ).toBe(1);
+    expect(
+      container
+        .querySelector('[aria-label="Version"]')
+        ?.hasAttribute("disabled"),
+    ).toBe(true);
     expect(text).not.toContain("Version");
     // …and the two controls that CAN mean something are still there.
     expect(text).toContain("Holder Type");
@@ -278,11 +293,16 @@ describe("the version control does not exist before a holder does", () => {
     act(() => root.unmount());
   });
 
-  it("is absent for a workflow holder, which pins no agent version", () => {
+  it("is disabled for a workflow holder, which pins no agent version", () => {
     const { container, root } = renderSystemBar({ kind: "workflow" });
     expect(
       container.querySelectorAll('[data-holder-control="version"]').length,
-    ).toBe(0);
+    ).toBe(1);
+    expect(
+      container
+        .querySelector('[aria-label="Version"]')
+        ?.hasAttribute("disabled"),
+    ).toBe(true);
     act(() => root.unmount());
   });
 });
@@ -325,7 +345,9 @@ describe("a rung the database dropped is never rendered as a working rung", () =
     const words = ladderRowWords(OUTPUT_CONTRACT_DROP, null);
     expect(words.detail).toBe(OUTPUT_CONTRACT_DROP.dropped_reason);
     // The exact sentence a walker read on production above a dropped floor.
-    expect(words.detail).not.toBe("Names an agent, running its latest version.");
+    expect(words.detail).not.toBe(
+      "Names an agent, running its latest version.",
+    );
   });
 
   it("still says the honest thing on a database that has no such column", () => {
@@ -436,7 +458,8 @@ describe("the holder section speaks the approved vocabulary only", () => {
     const { text, root } = renderSystemBar({
       agentId: "system-agent-1",
       healthNote: {
-        sentence: "Research → Slides Generator answers this job for every user on the platform.",
+        sentence:
+          "Research → Slides Generator answers this job for every user on the platform.",
         remedy: null,
         broken: false,
       },

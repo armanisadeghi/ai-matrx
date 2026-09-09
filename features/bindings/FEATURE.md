@@ -21,7 +21,7 @@ Arman's sentence is the spine:
 | File | What it is |
 |---|---|
 | `OneBindingWorkspace.tsx` | The shell. Owns the draft (rung, holder, consumption map, refusals), resolves the offer, runs the agent pre-flight, hosts settings, saves and removes. Every refusal is adjacent to the control it refuses. |
-| `HolderAssignment.tsx` | 🚨 **THE ONE HOLDER CHOOSER.** Three labelled controls and nothing else — **Holder Type** (Agent | Workflow) · **Assigned Agent/Workflow** (ONE dropdown, and only the dropdown: it names the assigned record on its own trigger and carries every fact and door inside it) · **Version** (Latest, or one version, in ONE dropdown; `Latest` stores `default_holder_version_id = NULL`). Version remains a labeled value before selection; workflows explicitly state the current latest-only limitation. Every host mounts this; a second picker anywhere in the mandate/bindings trees fails `features/mandates/workspace/__tests__/holder-assignment.test.tsx`. |
+| `HolderAssignment.tsx` | **THE ONE HOLDER CHOOSER.** Icon-led Agent/Workflow buttons; **Assigned Agent/Workflow** groups the record picker and version dropdown on one row. Version has an accessible label without a separate visible label; no-holder and latest-only workflow states remain disabled and explicit. Latest stores `default_holder_version_id = NULL`. Every host reuses this component. |
 | `ScopeHolderBar.tsx` | RUNG · HOLDER · JOB, where a rung is genuinely a choice. The rung is `ShortcutScopePicker`; the holder cell IS `HolderAssignment`. Under `perspective="system"` (the admin route) it renders the three controls alone, plus the door's verdict — no rung cell (one rung), no job cell (the page's heading is the job). |
 | `OfferedInventoryColumn.tsx` | The offered reference for untabbed hosts; Definition owns this inventory in the tabbed workspace. |
 | `HolderInputsColumn.tsx` | The consuming reference for untabbed hosts; matching rows own these facts in tabbed workspaces. |
@@ -114,6 +114,8 @@ door) scrolls this section into view. `NewMandatePage` hands a brand-new mandate
 with `#bind`.
 
 ## The rules this surface must keep
+
+Tabbed mandate workspaces show Scope, Feature, and Enabled only inside Definition, below the tabs.
 
 1. **One concept, one place.** Tabbed hosts put the full provision in Definition and holder targets in Provision Mapping; source references remain at their point of use. Untabbed hosts retain both inventories.
 2. **The row is the shared one, verbatim.** If it needs something it does not have, the change
@@ -235,6 +237,8 @@ choice (P5), rendered on the offered rail and under the chosen value in the midd
 never become an answer, and absent means the declaration gave none — never invent one.
 
 ## Change Log
+
+- 2026-09-09 — Definition owns Scope/Feature/Enabled. Holder type choices reuse Source styling and the shared 34px `CONFIGURATION_CHOICE_SIZE`; assignment and version pickers share one row, with Version retained as an accessible label. Source pickers use the same baseline and grow only when content wraps.
 
 - 2026-09-09 — Mapping cards have one 12px padding system and separated destination/source/behavior regions. Destination metadata says Type, Name, Required by Holder. Mandate Provision sources use only when_absent controls; their redundant source-required switch is suppressed without changing stored data. Prompt User retains Answer required. Missing-source choices share one compact row, including disabled Not applicable.
 

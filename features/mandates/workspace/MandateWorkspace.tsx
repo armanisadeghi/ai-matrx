@@ -547,7 +547,7 @@ function OneMandateWorkspace({
     >
       <div className="mx-auto w-full max-w-6xl px-4 pb-12 pt-3 sm:px-6">
         {routeHeader?.(data, authoring ? adminActions?.(data, refresh) : null)}
-        <header className="mb-5 space-y-3">
+        <header className={routeHeader ? "contents" : "mb-5 space-y-3"}>
           {!routeHeader && (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
@@ -558,34 +558,6 @@ function OneMandateWorkspace({
               {authoring ? adminActions?.(data, refresh) : null}
             </div>
           )}
-          <div className="rounded-lg border border-border bg-card px-3">
-            <PropertyRow
-              label="Scope"
-              value={
-                perspective === "system"
-                  ? "System"
-                  : perspective === "organization"
-                    ? (nameOfOrg(
-                        principal.kind === "org" ? principal.orgId : "",
-                      ) ?? "Organization unavailable")
-                    : "Personal"
-              }
-            />
-            <PropertyRow
-              label="Feature"
-              value={formatVariableDisplayName(feature)}
-            />
-            <PropertyRow
-              label="Enabled"
-              value={
-                data.mandate.is_enabled == null
-                  ? "Unknown"
-                  : data.mandate.is_enabled
-                    ? "Yes"
-                    : "No"
-              }
-            />
-          </div>
           {host === "window" ? (
             <Link
               href={`/mandates/${encodeURIComponent(data.mandate.mandate_key)}`}
@@ -628,6 +600,34 @@ function OneMandateWorkspace({
             hidden={activeTab !== "definition"}
             className={activeTab === "definition" ? "space-y-5" : "hidden"}
           >
+            <div className="rounded-lg border border-border bg-card px-3">
+              <PropertyRow
+                label="Scope"
+                value={
+                  perspective === "system"
+                    ? "System"
+                    : perspective === "organization"
+                      ? (nameOfOrg(
+                          principal.kind === "org" ? principal.orgId : "",
+                        ) ?? "Organization unavailable")
+                      : "Personal"
+                }
+              />
+              <PropertyRow
+                label="Feature"
+                value={formatVariableDisplayName(feature)}
+              />
+              <PropertyRow
+                label="Enabled"
+                value={
+                  data.mandate.is_enabled == null
+                    ? "Unknown"
+                    : data.mandate.is_enabled
+                      ? "Yes"
+                      : "No"
+                }
+              />
+            </div>
             <TriadGoalSection
               data={data}
               onChanged={refresh}

@@ -24,6 +24,10 @@ import {
   TableCell,
 } from "@/components/ui/table";
 
+/** Source-selector dimensions shared by configuration choices and pickers. */
+export const CONFIGURATION_CHOICE_SIZE =
+  "h-[34px] min-h-[34px] rounded-lg px-2.5 text-[11.5px] font-medium";
+
 const FIELD_HELP_OPEN = "matrx:field-help-open";
 
 /** Field-attached help, reachable by pointer, keyboard and touch. */
