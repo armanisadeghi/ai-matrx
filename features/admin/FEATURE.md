@@ -38,7 +38,7 @@ product feature that does not already have one.
 - `app/(admin)/administration/launchpad/page.tsx` — always-open Admin Launchpad route.
 - `features/admin/components/AdminLaunchpad.tsx` — dense registry renderer, search, and new-tab launch contract.
 - `features/launchpad/hooks/useVisibilityAwarePageRefresh.ts` — shared visibility-aware hourly refresh used by the Admin and user Launchpads.
-- `features/admin/components/AdminDomainDirectory.tsx` — compact domain renderer shared by the dashboard and every static domain landing page.
+- `features/admin/components/AdminDomainLanding.tsx` — standard registry-backed domain landing template; `AdminDomainSection.tsx` is the compact renderer shared with the dashboard.
 - `app/(admin)/administration/_nav/AdminNavTreeMenu.tsx` — compact header tree over the same hierarchy.
 - `app/(admin)/administration/utilities/all-routes/page.tsx` — filesystem route directory grouped by its declared registry location.
 
@@ -163,7 +163,7 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 
 - `AdminNavigationDomain` / `AdminNavigationSection` / `AdminNavigationDestination` and `adminNavigationRegistry` — one generic hierarchy was required to replace multiple competing two-level category renderings and to give the release audit exact route ownership.
 - `AdminRouteSidebarMenu` — a thin registry renderer matching the existing route-menu component contract; route switching and persistence remain owned by the shared shell primitive.
-- `AdminDomainDirectory` — one compact direct-link renderer shared by the dashboard and static domain roots; it replaces the parameter-driven animated-card view.
+- `AdminDomainLanding` / `AdminDomainSection` — the standard registry-backed domain landing template and compact section renderer shared by the dashboard and static domain roots; they replace the parameter-driven animated-card view.
 - `AdminLaunchpad` — a second presentation of the canonical registry for an always-open operator workflow; it introduces no navigation data, persistence, API, or global state.
 
 **We Are Our Own Customer exception:** the Launchpad organizes private platform
@@ -222,6 +222,8 @@ that existing editor; private keys and client secrets remain outside
 ---
 
 ## Change log
+
+- `2026-09-09` — Standardized every static Administration domain root on `AdminDomainLanding`, whose directory is generated from the canonical registry, and added focused sidebar-rendering plus strict catalog checks to CI. The existing two-level, persistent-DOM sidebar contract remains unchanged.
 
 - `2026-09-08` — Codex: replaced the expanded/collapsed Administration menu
   branches with one persistent icon-led accordion tree, preserving every row's

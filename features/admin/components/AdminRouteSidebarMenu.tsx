@@ -103,7 +103,8 @@ export default function AdminRouteSidebarMenu({
           .filter((domain) => domain.slug !== "launchpad")
           .map((domain) => {
             const domainActive = activeDomain?.name === domain.name;
-            const domainLandingActive = pathname === adminDomainHref(domain);
+            const domainLandingActive =
+              pathname === adminDomainHref(domain) && !activeLocation;
             return (
               <details
                 key={domain.name}
