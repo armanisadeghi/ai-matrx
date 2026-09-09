@@ -388,7 +388,7 @@ const claims: Claim[] = [
   },
   {
     id: "per-pr-ci",
-    claim: "per-PR CI runs Matrx-package freshness, the parse guard and its self-test, the marker law, the one-type law, the Kind Directives shim containment, the HR punch write-path strict lane, the migration slot-guard liveness lane, the realtime-publication guard and its self-test, the five HR nav/URL/envelope/mock/export guards, org context, type-check, and the content-IR + workflow-runtime suites",
+    claim: "per-PR CI runs Matrx-package freshness, the parse guard and its self-test, the marker law, the one-type law, the Kind Directives shim containment, the HR punch write-path strict lane, the migration slot-guard liveness lane, the realtime-publication guard and its self-test, the canonical-picker guard and its self-test, the five HR nav/URL/envelope/mock/export guards, org context, type-check, and the content-IR + workflow-runtime suites",
     where: "CLAUDE.md § Repo doctrine (Nothing runs at commit time)",
     check: () => {
       // The claim in CLAUDE.md is now the opposite of what it used to be: for
@@ -413,6 +413,15 @@ const claims: Claim[] = [
         "run: pnpm check:parse\n",
         "run: pnpm check:parse:self-test\n",
         "check:kind-marker-law",
+        // THERE IS ONE AGENT PICKER. Both lines are required, and both are
+        // matched WITH the trailing newline so the shorter one cannot be
+        // satisfied by the longer `:self-test` line (the same substring trap
+        // that let a sabotaged `check:parse` step stay green on 2026-09-08).
+        // The guard spent its life release-time-only; the self-test is what
+        // proves it can still catch the bare `AgentPicker` name that it missed
+        // until 2026-09-08.
+        "run: pnpm check:canonical-pickers\n",
+        "run: pnpm check:canonical-pickers:self-test\n",
         "check:kind-type-twins",
         "check:kind-types",
         // The strict lane of the hr.punch write-path gate. release.sh runs the

@@ -71,6 +71,20 @@ jobs:
         run: pnpm check:parse:self-test
       - name: THE `__kind` MARKER LAW — no stripping outside the lawful doors
         run: pnpm check:kind-marker-law
+      - name: THERE IS ONE AGENT PICKER — no re-grown agent/model selector
+        # `@ai-matrx/agents/catalog/react` owns agent choice in every Matrx
+        # client (ruling D1, 2026-09-08); ModelListDropdown owns model choice.
+        # This gate ran ONLY in `run-release-gates.sh` — by hand, at release
+        # time — so a fork could sit on main for weeks. Pure static scan over
+        # tracked .ts/.tsx, ~2s.
+        run: pnpm check:canonical-pickers
+      - name: the picker guard can still fail (self-test)
+        # A guard you cannot demonstrate failing is not a guard. Until
+        # 2026-09-08 this script's patterns required a character BEFORE
+        # "Agent", so a component named exactly `AgentPicker` — what
+        # matrx-local shipped for months — walked straight through it. The
+        # self-test plants that exact shape and asserts it is reported.
+        run: pnpm check:canonical-pickers:self-test
       - name: THE RENDER MATRIX — every recognition path x every shape archetype
         # The witness for the 2026-08-28 outage, in which one gate in one
         # package cost ~221 live kinds their component while every unit test
