@@ -30,6 +30,8 @@ same run; sync and validate instruction changes. Make no cosmetic edits merely t
 Record the concrete improvement and remaining evidence gaps in the run outcome. Routine login,
 missing dependencies, localhost failures, deployment lag, and unfamiliar code are repair work.
 Escalate only an exhausted recovery path requiring human input or a consequential decision.
+Any row declaring `human_input` in `required_tools` belongs to the human-required lane and is
+ineligible for this unattended worker, even when its stale primary lane says otherwise.
 
 ## Human instructions and live evidence
 
@@ -386,8 +388,9 @@ The recurring worker follows this exact order:
 
 One queue item is the run's review scope; its prerequisites, repairs, independent verification,
 and demonstrated process improvements are part of that work. This limit is not a reason to
-stop at diagnosis or defer a feasible repair. Rows marked `human_required` or without a browser
-requirement belong to their appropriate lane; do not misclassify them just to claim work.
+stop at diagnosis or defer a feasible repair. Rows marked `human_required`, declaring
+`human_input`, or without a browser requirement belong to their appropriate lane; do not
+misclassify them just to claim work.
 
 Missing triage/conversations and stranded claims require reconciliation, not endless skips.
 Inspect the sweep and existing queue service to repair one malformed candidate from actual
@@ -414,6 +417,7 @@ with candidate as materialized (
     and queue.conversation_id is not null
     and queue.metadata->'triage'->>'lane' <> 'human_required'
     and queue.metadata->'triage'->'required_tools' @> '["browser"]'::jsonb
+    and not (queue.metadata->'triage'->'required_tools' @> '["human_input"]'::jsonb)
     and queue.metadata->'triage'->'assignment'->>'state' = 'ready'
   order by
     case queue.status
