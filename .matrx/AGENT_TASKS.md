@@ -55,6 +55,23 @@ failure mode the no-shims rule exists to prevent, not an example of it.
 
 ## Active
 
+### TASK-009: Verify chat transport recovery after diagnostic fan-out repair
+- **Status:** ready — source pushed; ordinary frontend release and browser recovery proof remain
+- **Created:** 2026-09-09
+- **Source:** Scheduled persistence repair patrol, chat transport loss at 01:54 UTC.
+
+**Goal**
+One canonical transport incident per dropped stream, with verified recovery of the completed response in the browser.
+
+**Subtasks**
+- [x] Fix transport Redux wrapper duplication in `c5662ae0e6db5cc3eb52bcc578a3e02c939ad853`; retain the original red/durable transport capture. Exact forcing case produced four entries before and one after; independent review passed.
+- [x] Verify original server outcome without executing again: request `63e2a63f-1241-4a8b-8ead-42db01e09cff` completed at `2026-09-09T01:54:09.730614Z`; four linked request rows completed. Independent canonical ORM read at `02:04:20.912936Z`.
+- [ ] Verify the ordinary frontend release contains the fix (release owner confirmed v0.4.1770 excludes it).
+- [ ] Verify browser reattachment and rendered persisted response without resubmitting the original turn; server completion alone does not prove this.
+
+**Notes**
+Keep transport `6431486c-e8ec-4e2c-8117-ed4649ba444d` and Redux companions `79456b88-3b18-4759-97ad-d374bf699e4b`, `90c8d43f-7dff-4f58-9dc3-c14b64dd1278` open. Conversation: `1ea1b793-9b12-4723-a840-7356f539362e`. The captured stack's deployment `dpl_G7ex2wkKjs3YZFCRjYyFEUwXxVNF` maps through Vercel to `f41c476c0e66b081aba64ae846d70ba31180decc`; that source already reconnects transport losses, and its reconnect implementation matches current main. The generic network error does not identify an HTTP/auth/timeout cause. No user content, draft, room, or queue was mutated. Resolution remains with the patrol coordinator after deployment and recovery evidence; no owner escalation is required.
+
 ### TASK-005: Build the real AI Work composer and Saved Requests foundation
 - **Status:** done (2026-08-15)
 - **Created:** 2026-08-15
