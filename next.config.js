@@ -235,6 +235,17 @@ const nextConfig = {
   // Giving the second instance its own distDir gives it its own lock, so they
   // coexist safely. Unset in production / normal dev → ".next" as before.
   distDir: process.env.NEXT_DISTDIR || ".next",
+  // A SECOND COOKIE ORIGIN ON THE SAME DEV SERVER (dev only, no production
+  // effect). Verifying a signed-OUT lane — the Meet guest who follows a link
+  // with no session (D12), the public marketing pages, any `anon` RLS path —
+  // needs a browser context that does not carry the developer's session cookie.
+  // Cookies are host-scoped, so `http://127.0.0.1:3001` IS that context while
+  // `http://localhost:3001` stays signed in: one dev server, two identities,
+  // nobody has to sign out. Next 16 refuses to stream the RSC payload to a dev
+  // origin it was not told about — the page renders its fallback forever and
+  // never hydrates, which looks like an app bug rather than a config one — so
+  // the alias is declared here.
+  allowedDevOrigins: ["127.0.0.1", "0.0.0.0"],
   // Vercel Skew Protection — DISABLED on purpose (2026-06-21).
   //
   // The previous line was `deploymentId: process.env.NEXT_DEPLOYMENT_ID`.
