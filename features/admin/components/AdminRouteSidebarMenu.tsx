@@ -16,6 +16,7 @@ import { usePathname } from "next/navigation";
 import { IconResolver } from "@ai-matrx/icons";
 import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
 import {
+  adminDomainHref,
   adminNavigationRegistry,
   destinationOwnsPathname,
   findAdminNavigationDomainByPathname,
@@ -102,6 +103,7 @@ export default function AdminRouteSidebarMenu({
           .filter((domain) => domain.slug !== "launchpad")
           .map((domain) => {
             const domainActive = activeDomain?.name === domain.name;
+            const domainLandingActive = pathname === adminDomainHref(domain);
             return (
               <details
                 key={domain.name}
@@ -112,7 +114,7 @@ export default function AdminRouteSidebarMenu({
                   className={cn(
                     ROUTE_MENU_NAV_ITEM_CLASS,
                     "shell-admin-domain-trigger",
-                    domainActive && "shell-active-pill",
+                    domainLandingActive && "shell-active-pill",
                   )}
                   title={domain.name}
                   aria-label={domain.name}
