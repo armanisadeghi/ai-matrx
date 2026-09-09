@@ -55,6 +55,23 @@ failure mode the no-shims rule exists to prevent, not an example of it.
 
 ## Active
 
+### TASK-014: Verify cloud-files realtime ownership repair
+- **Status:** ready
+- **Created:** 2026-09-09
+- **Source:** Persistence patrol of 74 historical CLOSED captures on the advanced-collapsible route.
+
+**Goal**
+Verify deployed synchronous cloud-files subscription ownership and establish the historical failures' actual cause before closing their incidents.
+
+**Subtasks**
+- [x] Reproduce and repair same-turn attach/detach and actor-replacement subscription leaks.
+- [x] Push source and obtain independent review.
+- [ ] Verify a containing frontend release and actual lifecycle behavior.
+- [ ] Establish historical actor/build/provider provenance; retain all 74 incidents until supported.
+
+**Notes**
+Source `e9b9fcbc58f88413b3edf26a0ee6280e2bc8635c` removes an unnecessary await before synchronous ownership transitions in `features/files/redux/realtime-middleware.ts`. Both forcing tests failed before; seven related tests and full typecheck pass; independent reviewer passed both cases. Canonical frontend release owner notified. This race is proven separately, but the original captures omit provider reason and loaded-build identity, so no historical causal attribution or closure is claimed. Exact 27+25+22 member IDs and gates: `/Users/armanisadeghi/.codex/automations/system-error-repair-patrol/component-realtime-lifecycle-proof-2026-09-09T0916Z.json`. No queue or user-data mutations.
+
 ### TASK-013: Verify workspace admission failure classification
 - **Status:** ready
 - **Created:** 2026-09-09
