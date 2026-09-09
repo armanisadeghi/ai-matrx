@@ -216,6 +216,7 @@ export function StatusToken({
   return (
     <span
       className={cn(
+        styles.status,
         "inline-flex max-w-full items-center gap-1.5 text-xs",
         color,
       )}
@@ -337,7 +338,7 @@ export function ConfigurationTableRow({
       {columns.map((column) => (
         <TableCell
           key={column.key}
-          className={cn(styles.cell, "min-w-0 whitespace-normal align-top")}
+          className={cn(styles.cell, "min-w-0 whitespace-normal align-middle")}
         >
           <span
             className={cn(
@@ -350,7 +351,9 @@ export function ConfigurationTableRow({
               <FieldHelp label={column.label}>{column.help}</FieldHelp>
             ) : null}
           </span>
-          <div className="min-w-0">{cells[column.key] ?? "Not specified"}</div>
+          <div className={styles.cellContent}>
+            {cells[column.key] ?? "Not specified"}
+          </div>
         </TableCell>
       ))}
     </TableRow>

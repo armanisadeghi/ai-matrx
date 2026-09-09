@@ -14,11 +14,8 @@ import {
 import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAllCategoriesArray } from "@/features/agents/redux/agent-shortcut-categories/selectors";
-import { fetchCategoriesForScope } from "@/features/agents/redux/agent-shortcut-categories/thunks";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { WidgetPicker } from "@/features/agent-shortcuts/components/next/WidgetPicker";
-import { CategoryPicker } from "@/features/agent-shortcuts/components/next/CategoryPicker";
 import {
   SettingsSection,
   type SettingsFields,
@@ -93,11 +90,11 @@ export function BindingOptionsDrawer({
   disabled = false,
   section,
 }: BindingOptionsDrawerProps) {
-  const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   const [readAttempt, setReadAttempt] = useState(0);
   const [load, setLoad] = useState<LoadState>({ status: "idle" });
   const [treatmentId, setTreatmentId] = useState<string | null>(null);
+  const [savedVersion, setSavedVersion] = useState<number | null>(null);
   const [enabled, setEnabled] = useState(true);
   const [draft, setDraft] = useState<BindingPresentation>(defaultPresentation);
   const [saved, setSaved] = useState<BindingPresentation>(defaultPresentation);
@@ -132,6 +129,8 @@ export function BindingOptionsDrawer({
       .then((stored) => {
         if (cancelled) return;
         setTreatmentId(stored.treatmentId);
+        setSavedVersion(stored.version);
+        setSaveError(null);
         setDraft(stored.presentation);
         setSaved(stored.presentation);
         setEnabled(!stored.disabled);
@@ -173,33 +172,6 @@ export function BindingOptionsDrawer({
     setOpen(true);
     onProposalsTaken?.();
   }, [proposedWritePolicies, onProposalsTaken]);
-
-  // Categories — the same three scopes the shortcut editor loads, for the same
-  // reason: a single-scope fetch misses two-thirds of what a person may pick.
-  const currentUserId = useAppSelector((s) => s.userAuth?.id ?? null);
-  useEffect(() => {
-    if (!open && section !== "display") return;
-    void dispatch(fetchCategoriesForScope({ scope: "global", scopeId: null }));
-    void dispatch(fetchCategoriesForScope({ scope: "user", scopeId: null }));
-    void dispatch(
-      fetchCategoriesForScope({
-        scope: "organization",
-        scopeId: owner.organizationId,
-      }),
-    );
-  }, [dispatch, open, section, owner.organizationId]);
-  const allCategories = useAppSelector(selectAllCategoriesArray);
-  const categories = allCategories.filter((category) => {
-    if (!category.isActive) return false;
-    const isGlobal =
-      category.userId == null &&
-      category.organizationId == null &&
-      category.projectId == null &&
-      category.taskId == null;
-    if (isGlobal) return true;
-    if (currentUserId && category.userId === currentUserId) return true;
-    return category.organizationId === owner.organizationId;
-  });
 
   function set<K extends keyof BindingPresentation>(
     field: K,
@@ -265,13 +237,15 @@ export function BindingOptionsDrawer({
     setBusy(true);
     setSaveError(null);
     try {
-      const nextId = await writePresentation({
+      const next = await writePresentation({
         owner,
         presentation: draft,
         treatmentId,
+        expectedVersion: savedVersion,
         enabled,
       });
-      setTreatmentId(nextId);
+      setTreatmentId(next.treatmentId);
+      setSavedVersion(next.version);
       setSaved(draft);
       setSavedEnabled(enabled);
     } catch (err) {
@@ -295,13 +269,19 @@ export function BindingOptionsDrawer({
       JSON.stringify(draft[field]) !== JSON.stringify(saved[field])
         ? "Unsaved draft"
         : treatmentId
-          ? "Saved; inheritance unknown"
+          ? "Saved"
           : "Inherited default",
   });
-  const settingsMeta = (field: keyof SettingsFields) =>
-    field === "autoRun"
-      ? { source: "Binding", state: "Saved separately" }
-      : fieldMeta(field);
+  const settingsMeta = (field: keyof SettingsFields) => {
+    if (field === "autoRun")
+      return { source: "Binding", state: "Saved separately" };
+    if (
+      field === "variablesPanelStyle" &&
+      draft.showVariablePanel !== saved.showVariablePanel
+    )
+      return fieldMeta("showVariablePanel");
+    return fieldMeta(field);
+  };
   const advancedMeta = (field: keyof AdvancedFields) => {
     if (field === "isActive")
       return {
@@ -372,13 +352,6 @@ export function BindingOptionsDrawer({
             section ? "space-y-4" : "space-y-5 border-t border-border px-3 py-3"
           }
         >
-          <PropertyRow
-            label="Applies to"
-            value={organizationName ?? "Mandate organization"}
-            source="Mandate shared"
-            state="No personal inheritance"
-            help="These values belong to the mandate's shared presentation record. The holder's system, organization, and personal selection does not change their scope."
-          />
           {load.status === "loading" || load.status === "idle" ? (
             <div
               role="status"
@@ -410,16 +383,24 @@ export function BindingOptionsDrawer({
           ) : (
             <>
               <div hidden={Boolean(section && activeSection !== "display")}>
-                <PropertyRow
-                  label="Result display"
-                  {...fieldMeta("displayMode")}
-                  value={
-                    <WidgetPicker
-                      value={draft.displayMode}
-                      onChange={(next) => set("displayMode", next)}
-                      disabled={disabled || busy}
-                    />
-                  }
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-semibold">Result display</h3>
+                  <span className="text-xs">
+                    <strong>Source:</strong> {fieldMeta("displayMode").source}
+                  </span>
+                  <span className="text-xs">
+                    <strong>State:</strong> {fieldMeta("displayMode").state}
+                  </span>
+                  <FieldHelp label="Result display">
+                    Shared display preferences for{" "}
+                    {organizationName ?? "this mandate"}. They apply to launches
+                    that use the mandate's saved presentation.
+                  </FieldHelp>
+                </div>
+                <WidgetPicker
+                  value={draft.displayMode}
+                  onChange={(next) => set("displayMode", next)}
+                  disabled={disabled || busy}
                 />
               </div>
               <SettingsSection
@@ -433,20 +414,6 @@ export function BindingOptionsDrawer({
                 fieldMeta={section ? settingsMeta : undefined}
                 words={JOB_SETTINGS_WORDS}
               />
-              <div hidden={Boolean(section && activeSection !== "display")}>
-                <PropertyRow
-                  label="Menu category"
-                  {...fieldMeta("categoryId")}
-                  value={
-                    <CategoryPicker
-                      categories={categories}
-                      value={draft.categoryId ?? ""}
-                      onChange={(next) => set("categoryId", next || null)}
-                      disabled={disabled || busy}
-                    />
-                  }
-                />
-              </div>
               <div hidden={Boolean(section && activeSection !== "permissions")}>
                 {writeTargetCount > 0 && draft.surfaceName ? (
                   <WritePolicyEditor
@@ -503,7 +470,17 @@ export function BindingOptionsDrawer({
                   set(field as keyof BindingPresentation, next as never);
                 }}
                 disabled={disabled || busy}
-                omit={["description"]}
+                omit={[
+                  "description",
+                  "llmOverrides",
+                  "defaultUserInput",
+                  "defaultVariables",
+                  "contextOverrides",
+                  "jsonExtraction",
+                  "iconName",
+                  "keyboardShortcut",
+                  "sortOrder",
+                ]}
                 section={section}
                 fieldMeta={section ? advancedMeta : undefined}
                 words={{
@@ -542,10 +519,30 @@ export function BindingOptionsDrawer({
                   }
                 />
                 <div className="flex items-center gap-2">
-                  <FieldHelp label="Save shared configuration">
-                    Saves this shared record's Display Options, Overrides, and
-                    Permissions together. Holder selection and binding overrides
-                    have a separate save.
+                  {saveError && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={busy}
+                      onClick={async () => {
+                        const accepted = await confirm({
+                          title: "Reload saved preferences?",
+                          description:
+                            "This replaces your unsaved display and permission changes with the current saved values.",
+                          confirmLabel: "Reload saved",
+                        });
+                        if (accepted) {
+                          startedFor.current = null;
+                          setReadAttempt((attempt) => attempt + 1);
+                        }
+                      }}
+                    >
+                      Reload saved
+                    </Button>
+                  )}
+                  <FieldHelp label="Save display preferences">
+                    Saves display preferences and permissions for this mandate.
+                    Holder selection and model overrides are saved separately.
                   </FieldHelp>
                   <Button
                     size="sm"
@@ -553,11 +550,7 @@ export function BindingOptionsDrawer({
                     onClick={() => void save()}
                   >
                     {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    {busy
-                      ? "Saving…"
-                      : section
-                        ? "Save shared configuration"
-                        : "Save options"}
+                    {busy ? "Saving…" : "Save"}
                   </Button>
                 </div>
               </div>

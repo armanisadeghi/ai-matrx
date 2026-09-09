@@ -261,17 +261,17 @@ function AdminControls({
   const visible =
     activeTab === "diagnostics" ||
     activeTab === "test" ||
-    activeTab === "overrides";
+    activeTab === "permissions";
   const section =
-    activeTab === "test" || activeTab === "overrides"
+    activeTab === "test" || activeTab === "permissions"
       ? activeTab
       : "diagnostics";
   return (
     <div
       ref={panelRef}
-      role={activeTab === "overrides" ? undefined : "tabpanel"}
+      role={activeTab === "permissions" ? undefined : "tabpanel"}
       id={
-        visible && activeTab !== "overrides"
+        visible && activeTab !== "permissions"
           ? `mandate-panel-${activeTab}`
           : undefined
       }

@@ -494,9 +494,13 @@ function SurfaceValueDetail({
 
       <RequiredToggle
         checked={mapping.required ?? false}
-        disabled={disabled}
+        disabled={disabled || selected?.alwaysAvailable === true}
         onChange={(v) => onChange({ ...mapping, required: v })}
-        hint="Abort the run if the surface doesn't supply this value."
+        hint={
+          selected?.alwaysAvailable
+            ? "This source is always available."
+            : "Abort the run if the surface doesn't supply this value."
+        }
       />
     </div>
   );
@@ -623,7 +627,8 @@ function RequiredToggle({
   return (
     <label
       className={cn(
-        "flex items-center gap-2 text-xs text-muted-foreground cursor-pointer",
+        "flex items-center gap-2 text-xs text-foreground",
+        disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
         compact && "shrink-0 h-9",
       )}
       title={hint}

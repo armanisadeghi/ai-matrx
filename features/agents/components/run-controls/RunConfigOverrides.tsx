@@ -34,18 +34,22 @@ import {
   ConfigurationTableRow,
   FieldHelp,
 } from "@/components/official/ConfigurationFields";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectAllModels,
   selectModelFullyLoaded,
   fetchModelById,
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import { useModelControls } from "@/features/agents/hooks/useModelControls";
-import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
+import {
+  selectInstanceOverrideState,
+  selectSettingsOverridesForApi,
+} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
   setOverrides,
+  replaceOverrides,
   resetOverride,
 } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import {
@@ -57,6 +61,10 @@ import type { ControlDefinition } from "@/lib/redux/slices/agent-settings/types"
 import { SettingControlInput } from "@/features/agents/components/settings-management/controls/SettingControlInput";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { parseRequestOverrides } from "@/features/agents/redux/execution-system/utils/request-overrides";
 
 const OVERRIDE_COLUMNS = [
   { key: "setting", label: "Setting" },
@@ -118,18 +126,61 @@ export function RunConfigOverrides({
   conversationId,
   words,
   structured = false,
+  disabled = false,
+  onValidationChange,
 }: {
   conversationId: string;
+  disabled?: boolean;
+  onValidationChange?: (error: string | null) => void;
   structured?: boolean;
   /** Omit any key to keep the per-conversation wording. */
   words?: Partial<RunConfigOverridesWords>;
 }) {
   const w = { ...CONVERSATION_OVERRIDE_WORDS, ...words };
   const dispatch = useAppDispatch();
+  const store = useAppStore();
+  const [editorTab, setEditorTab] = useState("controls");
+  const [jsonDraft, setJsonDraft] = useState("");
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const lastJsonValue = useRef<string | null>(null);
   const overrideState = useAppSelector(
     selectInstanceOverrideState(conversationId),
   );
   const models = useAppSelector(selectAllModels);
+
+  // Subscribe to the serialized wire document. Reading store.getState() in
+  // render is opaque to React Compiler and can cache the first document.
+  const overrideJson = useAppSelector((state) =>
+    JSON.stringify(
+      selectSettingsOverridesForApi(conversationId)(state) ?? {},
+      null,
+      2,
+    ),
+  );
+  useEffect(() => {
+    if (overrideJson === lastJsonValue.current) return;
+    lastJsonValue.current = overrideJson;
+    setJsonDraft(overrideJson);
+    setJsonError(null);
+    onValidationChange?.(null);
+  }, [overrideJson, onValidationChange]);
+
+  function changeJson(text: string) {
+    setJsonDraft(text);
+    const parsed = parseRequestOverrides(text);
+    const error = parsed.error ? "Enter a valid JSON object." : null;
+    setJsonError(error);
+    onValidationChange?.(error);
+    if (error) return;
+    dispatch(
+      replaceOverrides({ conversationId, changes: parsed.overrides ?? {} }),
+    );
+    lastJsonValue.current = JSON.stringify(
+      selectSettingsOverridesForApi(conversationId)(store.getState()) ?? {},
+      null,
+      2,
+    );
+  }
 
   // baseSettings/overrides are Partial<LLMParams> (fixed named fields, no
   // index signature); the settings catalogue below is genuinely
@@ -140,10 +191,13 @@ export function RunConfigOverrides({
   // MATRX-EXCEPTION: settings-catalogue keys are dynamic; LLMParams has no index signature.
   const overrides = (overrideState?.overrides ?? {}) as Record<string, unknown>;
   const removals = overrideState?.removals ?? [];
-  const effectiveModelId =
-    (overrides.model as string | undefined) ??
-    (base.model as string | undefined) ??
-    "";
+  const effectiveModelId = removals.includes("model")
+    ? ""
+    : typeof overrides.model === "string"
+      ? overrides.model
+      : typeof base.model === "string"
+        ? base.model
+        : "";
 
   // The rows need the model's FULL controls. The registry may hold only the
   // lightweight "options" record (no controls), and a picker-triggered
@@ -223,7 +277,7 @@ export function RunConfigOverrides({
   const rowsLoading = groups.length === 0 && !!effectiveModelId && !isFull;
 
   return (
-    <div className="border-t border-border">
+    <div className={structured ? "min-w-0" : "border-t border-border"}>
       <div className="flex w-full items-center justify-between px-3 pb-1 pt-2">
         <span
           className={
@@ -239,95 +293,174 @@ export function RunConfigOverrides({
         </span>
       </div>
 
-      <div className="flex flex-col gap-2.5 px-3 pb-3">
-        {orphanedKeys.length > 0 && (
-          <div className="flex flex-col gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
-            <span className="flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="h-3 w-3" />
-              Not supported by the selected model
-            </span>
-            {orphanedKeys.map((key) => (
-              <div key={key} className="flex items-center gap-2">
-                <span className="flex-1 truncate text-[11px] text-muted-foreground">
-                  {humanizeSettingKey(key)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    dispatch(resetOverride({ conversationId, key }))
+      <Tabs value={editorTab} onValueChange={setEditorTab}>
+        {structured && (
+          <TabsList className="mx-3 mb-2" aria-label="Model override editor">
+            <TabsTrigger value="controls">Controls</TabsTrigger>
+            <TabsTrigger value="advanced">Advanced</TabsTrigger>
+          </TabsList>
+        )}
+        <TabsContent value="controls" className="mt-0">
+          <div className="flex flex-col gap-2.5 px-3 pb-3">
+            {structured && (
+              <div className="flex flex-wrap items-center gap-3">
+                <Label className="font-semibold">Model</Label>
+                <ModelListDropdown
+                  value={
+                    typeof overrides.model === "string" ? overrides.model : null
                   }
-                  title="Reset to agent default"
-                  className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                </button>
+                  onValueChange={(model) =>
+                    dispatch(
+                      setOverrides({ conversationId, changes: { model } }),
+                    )
+                  }
+                  onClear={() =>
+                    dispatch(resetOverride({ conversationId, key: "model" }))
+                  }
+                  emptyOptionLabel={
+                    w.modelEmptyChoiceLabel ?? DEFAULT_MODEL_EMPTY_CHOICE_LABEL
+                  }
+                  placeholder={
+                    w.modelEmptyChoiceLabel ?? DEFAULT_MODEL_EMPTY_CHOICE_LABEL
+                  }
+                  inputModalities={[]}
+                  outputModalities={["text"]}
+                  disabled={disabled}
+                />
               </div>
-            ))}
-          </div>
-        )}
-
-        {rowsLoading ? (
-          <p className="text-[11px] text-muted-foreground">
-            Loading model settings…
-          </p>
-        ) : groups.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">
-            {structured
-              ? effectiveModelId
-                ? "Adjustable parameters: None"
-                : "Model: Unresolved"
-              : effectiveModelId
-                ? "This model doesn't declare adjustable settings."
-                : w.noModelNote}
-          </p>
-        ) : (
-          groups.map((group) => (
-            <div key={group.id} className="flex flex-col gap-2">
-              {group.label && (
-                <p className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-                  {group.label}
-                </p>
-              )}
-              <OverrideRows
-                structured={structured}
-                label={group.label || "Model parameters"}
-              >
-                {group.rows.map((row) => (
-                  <OverrideRow
-                    key={row.key}
-                    row={row}
-                    structured={structured}
-                    inheritedSource={
-                      base[row.key] != null ? "Holder" : "Model default"
-                    }
-                    value={
-                      row.key in overrides
-                        ? overrides[row.key]
-                        : removals.includes(row.key)
-                          ? undefined
-                          : effectiveDefault(row.key, row.control)
-                    }
-                    isOverridden={row.key in overrides}
-                    isRemoved={removals.includes(row.key)}
-                    onChange={(v) => handleChange(row.key, row.control, v)}
-                    onReset={() =>
-                      dispatch(resetOverride({ conversationId, key: row.key }))
-                    }
-                  />
+            )}
+            {orphanedKeys.length > 0 && (
+              <div className="flex flex-col gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
+                <span className="flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                  <AlertTriangle className="h-3 w-3" />
+                  Not supported by the selected model
+                </span>
+                {orphanedKeys.map((key) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className="flex-1 truncate text-[11px] text-muted-foreground">
+                      {humanizeSettingKey(key)}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() =>
+                        dispatch(resetOverride({ conversationId, key }))
+                      }
+                      title="Reset to agent default"
+                      className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                    </button>
+                  </div>
                 ))}
-              </OverrideRows>
-            </div>
-          ))
-        )}
+              </div>
+            )}
 
-        {structured ? (
-          <FieldHelp label="Override scope">{w.scopeNote}</FieldHelp>
-        ) : (
-          <p className="text-[10px] leading-snug text-muted-foreground">
-            {w.scopeNote}
-          </p>
+            {rowsLoading ? (
+              <p className="text-[11px] text-muted-foreground">
+                Loading model settings…
+              </p>
+            ) : groups.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground">
+                {structured
+                  ? effectiveModelId
+                    ? "Adjustable parameters: None"
+                    : "Model: Unresolved"
+                  : effectiveModelId
+                    ? "This model doesn't declare adjustable settings."
+                    : w.noModelNote}
+              </p>
+            ) : (
+              groups.map((group) => (
+                <div key={group.id} className="flex flex-col gap-2">
+                  {group.label && (
+                    <p className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                      {group.label}
+                    </p>
+                  )}
+                  <OverrideRows
+                    structured={structured}
+                    label={group.label || "Model parameters"}
+                  >
+                    {group.rows.map((row) => (
+                      <OverrideRow
+                        key={row.key}
+                        row={row}
+                        structured={structured}
+                        disabled={disabled}
+                        inheritedSource={
+                          base[row.key] != null ? "Holder" : "Model default"
+                        }
+                        value={
+                          row.key in overrides
+                            ? overrides[row.key]
+                            : removals.includes(row.key)
+                              ? undefined
+                              : effectiveDefault(row.key, row.control)
+                        }
+                        isOverridden={row.key in overrides}
+                        isRemoved={removals.includes(row.key)}
+                        onChange={(v) => handleChange(row.key, row.control, v)}
+                        onReset={() =>
+                          dispatch(
+                            resetOverride({ conversationId, key: row.key }),
+                          )
+                        }
+                      />
+                    ))}
+                  </OverrideRows>
+                </div>
+              ))
+            )}
+
+            {structured ? (
+              <FieldHelp label="Override scope">{w.scopeNote}</FieldHelp>
+            ) : (
+              <p className="text-[10px] leading-snug text-muted-foreground">
+                {w.scopeNote}
+              </p>
+            )}
+          </div>
+        </TabsContent>
+        {structured && (
+          <TabsContent value="advanced" className="mt-0 space-y-2 px-3 pb-3">
+            <div className="flex items-center gap-2">
+              <Label
+                htmlFor={`${conversationId}-override-json`}
+                className="font-semibold"
+              >
+                Overrides JSON
+              </Label>
+              <FieldHelp label="Overrides JSON">
+                Edits the same model overrides as Controls. Omit a key to
+                inherit; use null to remove a setting.
+              </FieldHelp>
+            </div>
+            <Textarea
+              id={`${conversationId}-override-json`}
+              aria-label="Model overrides JSON"
+              aria-invalid={Boolean(jsonError)}
+              aria-describedby={
+                jsonError ? `${conversationId}-override-error` : undefined
+              }
+              value={jsonDraft}
+              onChange={(event) => changeJson(event.target.value)}
+              disabled={disabled}
+              spellCheck={false}
+              className="min-h-64 font-mono text-sm"
+            />
+          </TabsContent>
         )}
-      </div>
+      </Tabs>
+      {jsonError && (
+        <p
+          id={`${conversationId}-override-error`}
+          role="alert"
+          className="px-3 pb-3 text-sm text-destructive"
+        >
+          {jsonError}
+        </p>
+      )}
     </div>
   );
 }
@@ -351,6 +484,7 @@ function OverrideRows({
 
 function OverrideRow({
   structured = false,
+  disabled = false,
   inheritedSource,
   row,
   value,
@@ -360,6 +494,7 @@ function OverrideRow({
   onReset,
 }: {
   structured?: boolean;
+  disabled?: boolean;
   inheritedSource?: string;
   row: SettingsRow;
   value: unknown;
@@ -404,14 +539,14 @@ function OverrideRow({
                   control={row.control}
                   value={value}
                   onChange={onChange}
-                  disabled={isRemoved}
+                  disabled={disabled || isRemoved}
                   id={`run-override-${row.key}`}
                 />
               </div>
               <button
                 type="button"
                 onClick={onReset}
-                disabled={!touched}
+                disabled={disabled || !touched}
                 aria-label={`Reset ${row.label}`}
                 className="shrink-0 rounded p-2 text-muted-foreground disabled:opacity-40"
               >
@@ -449,13 +584,14 @@ function OverrideRow({
           control={row.control}
           value={value}
           onChange={onChange}
-          disabled={isRemoved}
+          disabled={disabled || isRemoved}
           id={`run-override-${row.key}`}
         />
       </div>
       <button
         type="button"
         onClick={onReset}
+        disabled={disabled}
         title="Reset to agent default"
         className={cn(
           "shrink-0 text-muted-foreground transition-colors hover:text-foreground",

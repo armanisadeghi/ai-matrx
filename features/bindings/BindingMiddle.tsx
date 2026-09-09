@@ -48,6 +48,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { cn } from "@/lib/utils";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import { SurfaceVariableBinding } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
@@ -495,7 +496,12 @@ function AbsenceControl({
     { value: "fail", label: "Stop run" },
   ] as const;
   return (
-    <div className="space-y-2 border-t border-border pt-3">
+    <div
+      className={cn(
+        "space-y-2 border-t border-border pt-3",
+        (disabled || unavailable) && "opacity-50",
+      )}
+    >
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="font-semibold">Missing source:</span>
         {unavailable ? (

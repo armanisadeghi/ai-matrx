@@ -55,10 +55,12 @@ describe("treatment-shape — the client codec for mandate.treatment.config", ()
   it("an ABSENT config reads as the defaults — a job with no row and a job with a default row are indistinguishable", () => {
     expect(parseTreatmentConfig(null)).toEqual(defaultPresentation());
     expect(parseTreatmentConfig(undefined)).toEqual(defaultPresentation());
-    expect(parseTreatmentConfig("not an object")).toEqual(defaultPresentation());
+    expect(parseTreatmentConfig("not an object")).toEqual(
+      defaultPresentation(),
+    );
   });
 
-  it("writes the SQL twin's key layout, nested exactly where the view looks", () => {
+  it("writes the shared SQL presentation layout, with job auto-run kept on the binding", () => {
     const config = buildTreatmentConfig(defaultPresentation());
     expect(config).toMatchObject({
       schema_version: TREATMENT_SCHEMA_VERSION,
@@ -131,14 +133,14 @@ describe("treatment-shape — the client codec for mandate.treatment.config", ()
     expect(presentationIsDefault(off)).toBe(false);
   });
 
-  it("`auto_run` is pinned, never authored here — the binding owns that promise", () => {
+  it("does not duplicate the binding's auto_run in presentation", () => {
     const config = buildTreatmentConfig(defaultPresentation()) as Record<
       string,
       unknown
     >;
-    // The view's own default. The drawer offers no control for it, so the codec
-    // must never emit a second, divergent answer.
-    expect(config.auto_run).toBe(true);
+    // The shortcut SQL retains auto_run; job treatment deliberately omits it.
+    // The binding is the only owner of a job's Run instantly value.
+    expect(config).not.toHaveProperty("auto_run");
   });
 
   it("an untouched presentation stores NOTHING — a row that says nothing is never created", () => {

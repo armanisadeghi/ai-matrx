@@ -168,6 +168,7 @@ interface CreateManualInstanceArgs {
   hideToolResults?: boolean;
   responseDensity?: "comfortable" | "compact";
   preExecutionMessage?: string | null;
+  bypassGateSeconds?: number;
   variablesPanelStyle?: VariablesPanelStyle;
   jsonExtraction?: JsonExtractionConfig | null;
   originalText?: string | null;
@@ -213,6 +214,7 @@ export const createManualInstance = createAsyncThunk<
     hideToolResults,
     responseDensity,
     preExecutionMessage,
+    bypassGateSeconds,
     variablesPanelStyle,
     jsonExtraction,
     originalText,
@@ -276,6 +278,7 @@ export const createManualInstance = createAsyncThunk<
         hideToolResults,
         responseDensity,
         preExecutionMessage,
+        bypassGateSeconds,
         variablesPanelStyle,
         jsonExtraction,
         originalText,

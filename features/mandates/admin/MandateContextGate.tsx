@@ -25,11 +25,8 @@
  */
 
 import { useState } from "react";
-import {
-  PropertyRow,
-  FieldHelp,
-  StatusToken,
-} from "@/components/official/ConfigurationFields";
+import { StatusToken } from "@/components/official/ConfigurationFields";
+import { ShortcutFieldRow } from "@/features/agent-shortcuts/components/next/SettingsSection";
 import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
@@ -71,66 +68,57 @@ export function MandateContextGate({
   }
 
   return (
-    <section className="space-y-3">
-      <h3 className="flex items-center gap-2 text-sm font-medium">
-        Automatic context
-        <FieldHelp label="Automatic context">
-          A mandate may block automatic context, but cannot reopen context
-          blocked by its holder. Declared context policies still deliver.
-        </FieldHelp>
-      </h3>
-      <PropertyRow
-        label="Allowed by mandate"
+    <section className="space-y-1">
+      <ShortcutFieldRow
+        title="Automatic context"
         source="Mandate"
-        state={saving ? "Saving" : "Saved"}
-        value={
-          <label
-            className="inline-flex items-center gap-2"
-            htmlFor={`mandate-context-gate-${row.id}`}
-          >
-            <Switch
-              id={`mandate-context-gate-${row.id}`}
-              checked={!gateClosed}
-              disabled={saving || holderClosed}
-              onCheckedChange={handleChange}
-            />
-            <span>{gateClosed ? "No" : "Yes"}</span>
-          </label>
+        hint="A mandate can block automatic context. It cannot reopen context blocked by the holder. Required context policies still apply."
+        metadata={
+          <>
+            <span>
+              <strong>Source:</strong> Mandate
+            </span>
+            <span>
+              <strong>State:</strong> {saving ? "Saving" : "Saved"}
+            </span>
+            <span>
+              <strong>Holder:</strong> {holderClosed ? "Blocked" : "Allowed"}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <strong>Effective:</strong>{" "}
+              <StatusToken
+                status={effectiveClosed ? "neutral" : "ok"}
+                label={effectiveClosed ? "Blocked" : "Allowed"}
+              />
+            </span>
+          </>
         }
-      />
-      <PropertyRow
-        label="Allowed by holder"
-        value={holderClosed ? "No" : "Yes"}
-        source="Holder"
-        state="Read only"
-      />
-      <PropertyRow
-        label="Effective automatic context"
-        value={
-          <StatusToken
-            status={effectiveClosed ? "neutral" : "ok"}
-            label={effectiveClosed ? "No" : "Yes"}
+      >
+        <label
+          className="inline-flex items-center gap-2"
+          htmlFor={`mandate-context-gate-${row.id}`}
+        >
+          <Switch
+            id={`mandate-context-gate-${row.id}`}
+            aria-label="Allow automatic context"
+            checked={!gateClosed}
+            disabled={saving || holderClosed}
+            onCheckedChange={handleChange}
           />
-        }
-        source={
-          holderClosed && gateClosed
-            ? "Holder and mandate"
-            : holderClosed
-              ? "Holder"
-              : "Mandate and holder"
-        }
-      />
-      <PropertyRow
-        label="Required context policies"
-        value={
-          row.requiredContextPolicyKeys.length
-            ? row.requiredContextPolicyKeys
-                .map((key) => displayLabelForKey(key))
-                .join(", ")
-            : "None"
-        }
+          <span className="text-sm">{gateClosed ? "No" : "Yes"}</span>
+        </label>
+      </ShortcutFieldRow>
+      <ShortcutFieldRow
+        title="Required context policies"
         source="Mandate"
-      />
+        state="Required"
+      >
+        <span className="text-sm">
+          {row.requiredContextPolicyKeys.length
+            ? row.requiredContextPolicyKeys.map((key) => displayLabelForKey(key)).join(", ")
+            : "None"}
+        </span>
+      </ShortcutFieldRow>
     </section>
   );
 }

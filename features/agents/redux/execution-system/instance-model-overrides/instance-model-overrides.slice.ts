@@ -84,6 +84,28 @@ const instanceModelOverridesSlice = createSlice({
       }
     },
 
+    /** Replace the editable override document, preserving its base snapshot.
+     * JSON null has the same removal meaning as the individual controls.
+     */
+    replaceOverrides(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        changes: Record<string, unknown>;
+      }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (!entry) return;
+      const overrides: Record<string, unknown> = {};
+      const removals: string[] = [];
+      for (const [key, value] of Object.entries(action.payload.changes)) {
+        if (value === null) removals.push(key);
+        else overrides[key] = value;
+      }
+      entry.overrides = overrides;
+      entry.removals = removals;
+    },
+
     /**
      * Mark a setting key as explicitly removed.
      * Removes it from overrides if present.
@@ -183,6 +205,7 @@ const instanceModelOverridesSlice = createSlice({
 export const {
   initInstanceOverrides,
   setOverrides,
+  replaceOverrides,
   markRemoved,
   resetOverride,
   resetAllOverrides,

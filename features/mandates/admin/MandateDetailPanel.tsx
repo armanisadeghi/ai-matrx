@@ -1570,7 +1570,7 @@ export function MandateDetailView({
   showHolderAnswer = true,
   section,
 }: {
-  section?: "diagnostics" | "test" | "overrides";
+  section?: "diagnostics" | "test" | "permissions";
   row: MandateRow;
   data: MandateConsoleData;
   lineage: AgentLineage;
@@ -1747,7 +1747,7 @@ export function MandateDetailView({
             passesUserInput={row.codeTruth?.passes_user_input}
           />
         </div>
-        <div hidden={section !== "overrides"}>
+        <div hidden={section !== "permissions"}>
           <MandateContextGate key={row.id} row={row} onSaved={onSaved} />
         </div>
       </div>

@@ -36,10 +36,16 @@ jest.mock(
 const AGENT_ID = "mandate-agent-1";
 /** Mutable so one test can give the mandate a required document variable. */
 const __requiredVariables: string[] = [];
+let __autoRun: boolean | null = null;
+let __presentation:
+  import("@/features/bindings/treatment-shape").BindingPresentation | null =
+  null;
 jest.mock("@/features/mandates/service", () => ({
   resolveMandate: jest.fn(async (mandateKey: string) => ({
     mandateKey,
     agentId: AGENT_ID,
+    autoRun: __autoRun,
+    presentation: __presentation,
     // A SETTINGS-ONLY binding: no agent swap, just "run this on my model".
     configOverrides: { model: "user-override-model", thinking_level: "low" },
     provenance: "user",
@@ -71,6 +77,7 @@ jest.mock("@/features/mandates/service", () => ({
   },
 }));
 
+import { defaultPresentation } from "@/features/bindings/treatment-shape";
 import { configureStore, type UnknownAction } from "@reduxjs/toolkit";
 import { launchAgentExecution } from "../launch-agent-execution.thunk";
 import { assembleRequest } from "../execute-instance.thunk";
@@ -163,23 +170,22 @@ async function launch(
   // state type is narrower than RootState, so route dispatch through the
   // app-level thunk dispatch type.
   return (store.dispatch as unknown as AppDispatch)(
-      launchAgentExecution({
-        mandateKey: "plan_client.shape_planner",
-        surfaceKey: "test-surface",
-        sourceFeature: "marketing",
-        runtime: { variables: { site: "example.com" } },
-        // Background + `callerExecutes`: the instance is created and seeded and
-        // nothing runs, because THIS TEST is the caller that drives the
-        // request — it calls assembleRequest directly below. Without the
-        // declaration a headless launch executes on its own (autoRun is a UI
-        // control and `background` has no UI), which is the whole point of
-        // the flag: the deferral has to be claimed, never assumed.
-        callerExecutes: true,
-        config: { displayMode: "background" },
-        ...extra,
-      } as Parameters<typeof launchAgentExecution>[0]),
-    )
-    .unwrap();
+    launchAgentExecution({
+      mandateKey: "plan_client.shape_planner",
+      surfaceKey: "test-surface",
+      sourceFeature: "marketing",
+      runtime: { variables: { site: "example.com" } },
+      // Background + `callerExecutes`: the instance is created and seeded and
+      // nothing runs, because THIS TEST is the caller that drives the
+      // request — it calls assembleRequest directly below. Without the
+      // declaration a headless launch executes on its own (autoRun is a UI
+      // control and `background` has no UI), which is the whole point of
+      // the flag: the deferral has to be claimed, never assumed.
+      callerExecutes: true,
+      config: { displayMode: "background" },
+      ...extra,
+    } as Parameters<typeof launchAgentExecution>[0]),
+  ).unwrap();
 }
 
 describe("launchAgentExecution mandateKey — THE DOOR is the run target", () => {
@@ -193,9 +199,9 @@ describe("launchAgentExecution mandateKey — THE DOOR is the run target", () =>
       state.conversations.byConversationId[conversationId]?.mandateKey,
     ).toBe("plan_client.shape_planner");
     // The resolved agent is display identity for the instance snapshot.
-    expect(
-      state.conversations.byConversationId[conversationId]?.agentId,
-    ).toBe(AGENT_ID);
+    expect(state.conversations.byConversationId[conversationId]?.agentId).toBe(
+      AGENT_ID,
+    );
   });
 
   test("the binding's config_overrides are NOT re-sent — the server applies them", async () => {
@@ -289,7 +295,9 @@ describe("launchAgentExecution mandateKey — a required document variable is a 
     const store = makeStore();
     await expect(
       launch(store, {
-        runtime: { variables: { rulebook_id: "rb-1", rulebook_document: "  " } },
+        runtime: {
+          variables: { rulebook_id: "rb-1", rulebook_document: "  " },
+        },
       }),
     ).rejects.toMatchObject({
       message: expect.stringContaining("rulebook_document"),
@@ -298,10 +306,13 @@ describe("launchAgentExecution mandateKey — a required document variable is a 
 
   test("launches when the document is bound, and it reaches the wire as a NAMED variable", async () => {
     __requiredVariables.push("rulebook_document");
-    const document = "# Their Rulebook\n### Rule 3 [r3]\nNever open with an apology.";
+    const document =
+      "# Their Rulebook\n### Rule 3 [r3]\nNever open with an apology.";
     const store = makeStore();
     const { conversationId } = await launch(store, {
-      runtime: { variables: { rulebook_id: "rb-1", rulebook_document: document } },
+      runtime: {
+        variables: { rulebook_id: "rb-1", rulebook_document: document },
+      },
     });
 
     const state = store.getState() as unknown as RootState;
@@ -309,6 +320,67 @@ describe("launchAgentExecution mandateKey — a required document variable is a 
     // THE POINT: the Rulebook arrives under its own NAME, not as prose in the
     // human's turn and not as a tool result the model chose to fetch.
     expect(request?.variables).toMatchObject({ rulebook_document: document });
-    expect(request?.user_input ?? "").not.toContain("Never open with an apology");
+    expect(request?.user_input ?? "").not.toContain(
+      "Never open with an apology",
+    );
+  });
+});
+
+describe("saved mandate display and execution preferences reach instance state", () => {
+  afterEach(() => {
+    __autoRun = null;
+    __presentation = null;
+  });
+
+  test("carries the resolved auto-run answer and gate delay through the real manual-instance thunk", async () => {
+    __autoRun = true;
+    __presentation = {
+      ...defaultPresentation(),
+      showPreExecutionGate: true,
+      bypassGateSeconds: 5,
+      hideReasoning: true,
+      hideToolResults: true,
+    };
+    const store = makeStore();
+    const { conversationId } = await launch(store, {
+      config: { displayMode: "modal-full" },
+    });
+    expect(
+      store.getState().instanceUIState.byConversationId[conversationId],
+    ).toMatchObject({
+      autoRun: true,
+      showPreExecutionGate: true,
+      bypassGateSeconds: 5,
+      hideReasoning: true,
+      hideToolResults: true,
+    });
+  });
+
+  test("explicit caller false and zero retain precedence over saved preferences", async () => {
+    __autoRun = true;
+    __presentation = {
+      ...defaultPresentation(),
+      bypassGateSeconds: 5,
+      hideReasoning: true,
+      hideToolResults: true,
+    };
+    const store = makeStore();
+    const { conversationId } = await launch(store, {
+      config: {
+        displayMode: "modal-full",
+        autoRun: false,
+        bypassGateSeconds: 0,
+        hideReasoning: false,
+        hideToolResults: false,
+      },
+    });
+    expect(
+      store.getState().instanceUIState.byConversationId[conversationId],
+    ).toMatchObject({
+      autoRun: false,
+      bypassGateSeconds: 0,
+      hideReasoning: false,
+      hideToolResults: false,
+    });
   });
 });

@@ -7,15 +7,15 @@
 // TREATMENT (how the job shows itself — widget, variable panel, reveal toggles,
 // gate, menu placement, agent write access). This file is treatment's half.
 //
-// NOTHING HERE IS INVENTED. The shape is `schema_version: 1`, the exact object
+// The shared shape is `schema_version: 1`, which
 // `mandate.shortcut_treatment_config(p_row)` writes and `mandate.vw_shortcut`
 // reads back — the storage the 208 migrated shortcuts have been serving out of
 // since the cutover (`lib/supabase/shortcutStorage.ts`,
 // `SHORTCUT_WRITE_POLICIES_ON_TREATMENT`). A job authored in the one binding UI
-// and a shortcut authored in the Gen-A editor land in the SAME columns with the
-// SAME keys; `__tests__/treatment-shape.test.ts` pins every one of them against
-// the view's own COALESCE defaults, so a drift here is a failing test, not a
-// silent fork.
+// and a shortcut authored in the Gen-A editor share presentation columns and
+// defaults; `__tests__/treatment-shape.test.ts` pins that layout. One deliberate
+// job-specific omission: this writer never emits `auto_run`. The shortcut SQL
+// retains it, but a job's value belongs only to `mandate.binding.auto_run`.
 //
 // The DB's `mandate.validate_treatment_config(tier, config)` is the authority on
 // what is storable and rejects anything this codec could get wrong; the enums
@@ -232,12 +232,7 @@ export function buildTreatmentConfig(
     schema_version: TREATMENT_SCHEMA_VERSION,
     display_mode: presentation.displayMode,
     allow_chat: presentation.allowChat,
-    // `auto_run` is a stored treatment key for shortcut parity, but on a JOB the
-    // promise lives on `mandate.binding.auto_run`, where the bar narrates it,
-    // the write refuses it and the resolver re-checks it. Writing a second copy
-    // here would be a fact with two homes and one reader, so this codec pins it
-    // to the view's own default and the AutoRunBar stays the only author.
-    auto_run: true,
+    // Job auto-run belongs only to mandate.binding.auto_run.
     response_density: presentation.responseDensity,
     variables: {
       show_panel: presentation.showVariablePanel,
@@ -245,7 +240,8 @@ export function buildTreatmentConfig(
     },
     reveal: {
       show_definition_messages: presentation.showDefinitionMessages,
-      show_definition_message_content: presentation.showDefinitionMessageContent,
+      show_definition_message_content:
+        presentation.showDefinitionMessageContent,
       hide_reasoning: presentation.hideReasoning,
       hide_tool_results: presentation.hideToolResults,
     },

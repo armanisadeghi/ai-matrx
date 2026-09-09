@@ -764,8 +764,12 @@ function BindingDraft({
 
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [overrideValidationError, setOverrideValidationError] = useState<
+    string | null
+  >(null);
   const [settingsRetry, setSettingsRetry] = useState(0);
-  const settingsVisible = settingsOpen || activeSection === "overrides";
+  const settingsVisible =
+    settingsOpen || activeSection === "overrides" || overridesReady;
   const selectedVersionId = holder.useLatest ? null : holder.agentVersionId;
   function openSettings() {
     setSettingsOpen((open) => !open);
@@ -1010,39 +1014,41 @@ function BindingDraft({
             : null;
 
   /** Why Save cannot act — adjacent to the button, never a transient toast. */
-  const saveRefusal = settingsBusy
-    ? "Holder defaults: Reading"
-    : settingsError
-      ? "Holder defaults: Unavailable"
-      : writingDefinitionDefault
-        ? defaultHolderRefusal
-        : !holderChosen
-          ? "Choose an agent or a workflow first — a binding names who runs the job."
-          : !rungReady
-            ? "Pick the organization this answer is for."
-            : rung === "org" && !canBindThisOrg
-              ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there. Ask an owner to set it, or pick an organization you administer — your own answer above always works.`
-              : writesForEveryone && !canBindGlobal
-                ? "The system answer is a super-admin decision — the server refuses this write."
-                : /* 🚨 A HARD REFUSAL, not a warning (Arman, 2026-08-31, restated
+  const saveRefusal =
+    overrideValidationError ??
+    (settingsBusy
+      ? "Holder defaults: Reading"
+      : settingsError
+        ? "Holder defaults: Unavailable"
+        : writingDefinitionDefault
+          ? defaultHolderRefusal
+          : !holderChosen
+            ? "Choose an agent or a workflow first — a binding names who runs the job."
+            : !rungReady
+              ? "Pick the organization this answer is for."
+              : rung === "org" && !canBindThisOrg
+                ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there. Ask an owner to set it, or pick an organization you administer — your own answer above always works.`
+                : writesForEveryone && !canBindGlobal
+                  ? "The system answer is a super-admin decision — the server refuses this write."
+                  : /* 🚨 A HARD REFUSAL, not a warning (Arman, 2026-08-31, restated
              2026-09-08). The picker was restricted and the save was not: an
              agent drafted before the restriction existed, or handed in by the
              guard dialog, could still be written as the answer every user on
              the platform gets. Now Save is DISABLED with the reason and the
              remedy beside it. */
-                  writesForEveryone && systemHolderIsPersonal
-                  ? SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL
-                  : holder.kind === "agent" && !verdict.passed
-                    ? verdict.checking
-                      ? "Preliminary check: Checking"
-                      : "Preliminary check: Failed"
-                    : awaitingPick
-                      ? "One input is still waiting for you to pick which offered value feeds it."
-                      : mapProblems.length > 0
-                        ? "Fix the mapping problems named on the rows above."
-                        : unfedRequired.length > 0
-                          ? `Required mapping: ${unfedRequired.join(", ")}`
-                          : null;
+                    writesForEveryone && systemHolderIsPersonal
+                    ? SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL
+                    : holder.kind === "agent" && !verdict.passed
+                      ? verdict.checking
+                        ? "Preliminary check: Checking"
+                        : "Preliminary check: Failed"
+                      : awaitingPick
+                        ? "One input is still waiting for you to pick which offered value feeds it."
+                        : mapProblems.length > 0
+                          ? "Fix the mapping problems named on the rows above."
+                          : unfedRequired.length > 0
+                            ? `Required mapping: ${unfedRequired.join(", ")}`
+                            : null);
 
   const storedAgentId = binding ? agentHolderOfBinding(binding).holderId : null;
   const holderChanged =
@@ -2145,13 +2151,7 @@ function BindingDraft({
                   : null}
               </ConfigurationTable>
             </div>
-            <div
-              className={
-                activeSection && activeSection !== "overrides"
-                  ? "hidden"
-                  : "space-y-3"
-              }
-            >
+            <div hidden={Boolean(activeSection && activeSection !== "holder")}>
               {/* P14 — AUTO-RUN, narrating itself as the map changes. It is only
           meaningful once something is actually mapped: before that the bar
           would be a control about a promise nobody has made yet. */}
@@ -2169,7 +2169,14 @@ function BindingDraft({
                   serverNotes={writeReport?.notes ?? []}
                 />
               ) : null}
-
+            </div>
+            <div
+              className={
+                activeSection && activeSection !== "overrides"
+                  ? "hidden"
+                  : "space-y-3"
+              }
+            >
               {/* Settings — rare, de-emphasized, and the canonical overrides layer. */}
               {holder.kind === "agent" && agentId ? (
                 <div className="rounded-xl border border-border bg-card px-3 py-2">
@@ -2186,7 +2193,9 @@ function BindingDraft({
                         : "Overrides"}
                     </Button>
                   ) : null}
-                  {settingsOpen || activeSection === "overrides" ? (
+                  {settingsOpen ||
+                  activeSection === "overrides" ||
+                  overridesReady ? (
                     settingsBusy ? (
                       <PropertyRow label="Holder defaults" value="Reading" />
                     ) : settingsError ? (
@@ -2214,6 +2223,8 @@ function BindingDraft({
                           // on a screen that stores a binding.
                           words={JOB_OVERRIDE_WORDS}
                           structured
+                          disabled={disabled}
+                          onValidationChange={setOverrideValidationError}
                         />
                       </div>
                     ) : (
@@ -2233,11 +2244,12 @@ function BindingDraft({
                   }
                 />
               )}
-              <EffectiveConfigLayers
-                pinsOnly={Boolean(activeSection)}
-                pins={data.pins}
-                bindingOverrides={storedOverrides}
-              />
+              {!activeSection ? (
+                <EffectiveConfigLayers
+                  pins={data.pins}
+                  bindingOverrides={storedOverrides}
+                />
+              ) : null}
             </div>
             {/* OPTIONS (P16) — the folded stack over the shortcut editor's own
           sections. Last on the page and folded shut, because the match is what
@@ -2246,7 +2258,11 @@ function BindingDraft({
           itself, and there is nothing to present until something runs it. */}
             {holderChosen ? (
               <div
-                className={activeSection === "holder" ? "hidden" : undefined}
+                className={
+                  activeSection === "holder" || activeSection === "overrides"
+                    ? "hidden"
+                    : undefined
+                }
               >
                 <BindingOptionsDrawer
                   section={

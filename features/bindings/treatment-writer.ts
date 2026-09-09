@@ -30,6 +30,8 @@
 //   · `name` — the mandate's label, which is what the row is called in the
 //     admin browser; it is not a second editable title.
 
+import { guardedUpdate } from "@ai-matrx/data/db";
+import { invalidateMandateCache } from "@/features/mandates/service";
 import { createClient } from "@/utils/supabase/client";
 import { isJsonObject } from "@/types/json";
 import {
@@ -49,6 +51,7 @@ import {
 export interface StoredPresentation {
   /** The treatment row's id — null when this job has no stored presentation. */
   treatmentId: string | null;
+  version: number | null;
   presentation: BindingPresentation;
   /** True when the row exists and is switched off. */
   disabled: boolean;
@@ -72,7 +75,7 @@ export async function readPresentation(
 ): Promise<StoredPresentation> {
   const supabase = createClient();
   const { data, error } = await mandateTreatments(supabase)
-    .select("id, config, is_enabled")
+    .select("id, config, is_enabled, version")
     .eq("mandate_id", mandateId)
     .eq("tier", TREATMENT_TIER_WIDGET)
     .eq("is_default", true)
@@ -88,12 +91,14 @@ export async function readPresentation(
   if (!data) {
     return {
       treatmentId: null,
+      version: null,
       presentation: defaultPresentation(),
       disabled: false,
     };
   }
   return {
     treatmentId: data.id,
+    version: data.version,
     presentation: parseTreatmentConfig(
       isJsonObject(data.config) ? data.config : null,
     ),
@@ -114,18 +119,21 @@ export async function writePresentation({
   owner,
   presentation,
   treatmentId,
+  expectedVersion,
   enabled,
 }: {
   owner: PresentationOwner;
   presentation: BindingPresentation;
   treatmentId: string | null;
+  expectedVersion: number | null;
   enabled: boolean;
-}): Promise<string | null> {
+}): Promise<{ treatmentId: string | null; version: number | null }> {
   const supabase = createClient();
   const config = buildTreatmentConfig(presentation);
 
   if (!treatmentId) {
-    if (presentationIsDefault(presentation) && enabled) return null;
+    if (presentationIsDefault(presentation) && enabled)
+      return { treatmentId: null, version: null };
     const { data, error } = await mandateTreatments(supabase)
       .insert({
         mandate_id: owner.mandateId,
@@ -137,7 +145,7 @@ export async function writePresentation({
         visibility: owner.visibility,
         config,
       })
-      .select("id")
+      .select("id, version")
       .single();
     if (error) {
       throw new Error(
@@ -145,17 +153,41 @@ export async function writePresentation({
         { cause: error },
       );
     }
-    return data.id;
+    invalidateMandateCache();
+    return { treatmentId: data.id, version: data.version };
   }
 
-  const { error } = await mandateTreatments(supabase)
-    .update({ config, is_enabled: enabled })
-    .eq("id", treatmentId);
-  if (error) {
-    throw new Error(
-      `This job's display options could not be saved: ${error.message}`,
-      { cause: error },
-    );
-  }
-  return treatmentId;
+  if (expectedVersion === null)
+    throw new Error("Saved revision unavailable. Reload preferences.");
+
+  const result = await guardedUpdate({
+    expectedVersion,
+    applyUpdate: ({ expectedVersion: expected, nextVersion }) =>
+      mandateTreatments(supabase)
+        .update({
+          config,
+          is_enabled: enabled,
+          organization_id: owner.organizationId,
+          version: nextVersion,
+        })
+        .eq("id", treatmentId)
+        .eq("organization_id", owner.organizationId)
+        .eq("version", expected)
+        .is("deleted_at", null)
+        .select("id, version")
+        .maybeSingle(),
+    fetchCurrent: () =>
+      mandateTreatments(supabase)
+        .select("id, version")
+        .eq("id", treatmentId)
+        .eq("organization_id", owner.organizationId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+  });
+  if (result.status === "conflict")
+    throw new Error("Changed elsewhere. Reload saved preferences.");
+  if (result.status === "not_found")
+    throw new Error("Preferences unavailable. Reload to check access.");
+  invalidateMandateCache();
+  return { treatmentId, version: result.row.version };
 }

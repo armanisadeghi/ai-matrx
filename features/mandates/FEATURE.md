@@ -23,8 +23,8 @@ way a surface does; the binding maps them onto the Holder. The rules, all live:
    `/administration/mandates/[mandateKey]`, and inside `MandateWindow`'s Yours
    pane. Named deliberate divergences only: the window's scope list + Admin pane, the
    admin route's header offset, and the `authoring` rule in rule 8.
-4. **Tabs separate concerns:** Definition (goal, inputs, output), Holder (selection, matching, preliminary checks), Overrides, Display Options, Test, Permissions, Diagnostics and Notes. Test and Diagnostics remain admin-only.
-5. **Keep draft owners mounted across tabs.** One binding save owns holder/mapping/execution overrides; one treatment save owns shared presentation/execution seeds/write policies. Goal, draft inputs and context gating retain their immediate-save paths. `ConfigurationFields` supplies labeled values, explicit state and accessible help. Full validation remains not evaluated until exact-version-and-mapping evidence exists.
+4. **Tabs separate concerns:** Definition (goal, inputs, output), Holder (selection, matching, preliminary checks), Overrides (API model parameters only), Display Options (launch presentation), Test, Permissions (write/context access), Diagnostics and Notes. Test and Diagnostics remain admin-only.
+5. **Keep draft owners mounted across tabs.** One binding save owns holder/mapping/API model overrides; one treatment save owns shared display preferences/write policies. Goal, draft inputs and context gating retain their immediate-save paths. `ConfigurationFields` supplies labeled values, explicit state and accessible help. Full validation remains not evaluated until exact-version-and-mapping evidence exists.
 6. **Version binding is first-class**: latest (auto-updates, risks breaks) or pin
    (`agent_version_id`); pinned-and-behind MUST show drift. The bind endpoint always
    accepted the version triple — only this surface used to forbid it.
@@ -42,7 +42,7 @@ way a surface does; the binding maps them onto the Holder. The rules, all live:
    (`features/mandates/admin/`) is now the LIST only — its row click, coverage board,
    drift strip, right-click menu and `?mandate=` all land on the admin workspace page, and
    its old side-panel drawer (`MandateDetailPanel`) is off every default path; it still
-   renders the operational depth, inside that page's Test, Overrides and Diagnostics tabs.
+   renders the operational depth, inside that page's Test, Permissions and Diagnostics tabs.
 
 ## What lives here
 
@@ -68,7 +68,7 @@ way a surface does; the binding maps them onto the Holder. The rules, all live:
 | `workspace/` | **THE core** — `MandateWorkspace` (the shared scope-parameterized tab shell), `OneBindingWorkspace` (persistent holder/mapping/override draft), `RunThisJobSection` (the run affordance — ADMIN ROUTE only since 2026-08-29 and still super-admin gated inside, Provision-driven inputs, canonical output pipeline, workflow-run door), `Section.tsx` (the shared section chrome), `useMandateWorkspaceData` (the ONE single-mandate load both hosts share; establishes authenticated browser identity before any protected read; refresh reloads ONE mandate, never the registry), `save-payload.ts` (pure, jest-pinned wipe guards: full map re-send; stored `config_overrides` survive when the settings step never opened; legacy mandates send NO map — the server 422s on `{}`). |
 | `provision-shapes.ts` | LEAF module (the `contract.ts` pattern) for the Provision era: `OfferedValue` + `parseOfferedValues`, the ONE client consumption-map deserializer `parseConsumptionMap` (`surface_value` from the shared binding writer and legacy `code_value` normalize to `offered_value`), `parseMandateWave1`/`parseBindingWave1` (runtime narrowing of the wave-1 columns off `select("*")` rows — see the DB-types note below), the kind-law mirrors (`SCALAR_VALUE_KINDS`, `GENERIC_VALUE_KINDS`, `ALLOWED_PIN_KEYS`, `EXECUTABLE_HOLDER_TYPES`), the ONE holder-refusal message (`holderNotExecutableMessage`), and the `consumptionMapProblems` pre-flight — the ONE refusal voice of both binding modes on both hosts, which since V2 round 5 names every input/offered value by `displayLabelForKey` and every kind by `kindPhrase` (no raw key or slug inside a sentence; guarded by `__tests__/mandate-screen-vocabulary.test.ts`). 🚨 Its `offer` argument is NULLABLE (FIX-11): `null` means _the offer is not known here_ and silences ONLY the four sentences that must look a value up — never pass `{ values: [] }` to mean that, which claims the job offers nothing. `valueMappingsProblems` reaches the same judge for the single-source `ValueMappingMap` shape a surface/shortcut binding stores, and `assertMappingsAreAnswerable` is the throw both write seams call. Guarded by `__tests__/one-preflight-every-writer.test.ts`. |
 | `provisions.ts` | Client reads of `agent.provision` — `fetchProvision` (one key) and `fetchProvisions` (the BATCHED list read: cache-aware, chunked at 100 keys, negative-caches misses) over a shared 5-min cache. A list surface resolves every key it renders in ONE call — never one request per card. Carries the ONE clearly-marked local-type widening for the table (`ProvisionRowLocal` / `Wave1Database`) — **delete it and rerun `pnpm db-types` when the CLI can authenticate**; the generated `types/database.types.ts` predates `agent.provision` and the wave-1 mandate/binding columns (live-verified 2026-08-22). |
-| `components/EffectiveConfigLayers.tsx` | The truthful three-layer settings view per key: agent's own → binding overrides → mandate PINS (pins win, rendered locked "set by the mandate"). Pins are code-owned levers only (`reasoning`/`streaming`); a model id is NEVER rendered as a pin — `parseMandateWave1` refuses non-lever keys at ingress. |
+| `components/EffectiveConfigLayers.tsx` | Displays declared `pins` in Definition, read-only. Empty pins render Constraints: None. Never enumerate guessed constraints or imply runtime enforcement from stored metadata alone; `parseMandateWave1` accepts only recognized lever keys. |
 
 ## 🚨 THE HOST DECIDES THE PERSPECTIVE (Arman, 2026-09-08)
 
@@ -120,8 +120,7 @@ deciders so a second one cannot grow. Two consequences the code depends on:
   must not be skippable by standing on the bottom rung while writing a global
   row.
 
-The record is not a secret either: `systemAnswerSaveWords()` names it on the
-Save button — a label, never a paragraph.
+The button is **Save**. `system-answer-record.ts` decides storage without making that implementation detail a second user choice; scope and provenance remain labeled data.
 
 Routes: `app/(core)/mandates/page.tsx` (list) · `app/(core)/mandates/[mandateKey]/page.tsx` (workspace, read-only triad + own override; segment accepts key or uuid) · `app/(core)/organizations/[orgId]/settings/mandates/{,[mandateKey]}` (org principal) · **admin** `app/(admin)/administration/mandates/{,[mandateKey],new}` (the list, the same workspace with `authoring` on, and creation). `browse/url-compat.ts` owns `adminMandateHref` — never hand-build the admin URL.
 
@@ -151,8 +150,7 @@ through which channel (`variable` | `context`). SoR (rulings 2026-08-22):
 - **The server REPLACES `consumption_map` with what the PUT sends** (omitted → wiped) —
   every save on a provision mandate re-sends the full current map (`putMandateBinding`
   `consumptionMap`; the picker re-sends the existing map on a quick agent swap).
-- **Pins are code-owned levers only** (`reasoning`, `streaming`) — never model ids;
-  precedence agent definition → binding overrides → mandate pins (pins win). Rendered once in Overrides by `EffectiveConfigLayers` in pins-only mode.
+- **Pins are declared metadata, not editable overrides.** `EffectiveConfigLayers` renders only stored keys in Definition; empty pins render **Constraints: None**. The September 2026 consumer audit did not establish runtime enforcement, so the UI must not claim pins win or lock effective API settings. Enforcement is a tracked contract gap, not fabricated UI state.
 - **`pinned_context`** values are force-delivered as context — locked in the editor.
 - **The input model is visible at LIST level** (`/mandates`). Every mandate with a
   `provision_key` renders a provision strip on its collapsed card — the provision key, the
@@ -340,7 +338,17 @@ entry in `scripts/hardcoded-agents-allowlist.json`. Baseline
 `--write` only ratchets down. Advisory in `run-release-gates.sh`; nothing runs at
 commit time.
 
+## Configuration verification and deferred work
+
+The field/storage/consumer map lives in [`../bindings/FEATURE.md`](../bindings/FEATURE.md#shared-treatment-configuration). **Display preferences are not API overrides.** Keep one editor per value and use the shortcut components directly; preserve omitted stored treatment values rather than deleting data during presentation cleanup.
+
+The Test surface distinguishes **server/API tests** from **actual display launches**. A successful server response proves execution, not the selected widget or visibility flags. Display verification must save preferences, launch through `launchAgentExecution`, and observe the actual result surface; model-override verification must inspect the saved binding and the executed configuration. Caller-explicit display values continue to win over mandate defaults.
+
+Deferred contract gaps: reusable Agent Builder test-data fill; exact-version-and-mapping full validation; demonstrated enforcement of declared pins; product decisions on treatment seed/menu fields absent from the imperative mandate consumer. None is represented as a working control or a passed verdict.
+
 ## Change Log
+
+- 2026-09-08 — Corrected the configuration model: API overrides only in Overrides; shortcut display gallery/rows reused; context access in Permissions; declared constraints in Definition without invented pin enforcement. Removed unconsumed treatment seed/menu/model editors while preserving storage; documented server-test versus actual-display verification.
 
 - 2026-09-08 — Configuration table headers center vertically with consistent help-icon height. Holder checks use only the table chrome; the binding action is labeled Save in every scope, with existing permissions and confirmations unchanged.
 

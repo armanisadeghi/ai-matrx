@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/select";
 import {
   PropertyRow,
+  ConfigurationTable,
+  ConfigurationTableRow,
   FieldHelp,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
@@ -58,12 +60,17 @@ import {
   type MandateDefinitionRow,
 } from "./service";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
 interface CompletedRun {
   result: MandateTestResponse;
   variables: JsonObject;
   userInput: string | null;
 }
+const APPLIED_OVERRIDE_COLUMNS = [
+  { key: "setting", label: "Applied override" },
+  { key: "value", label: "Value" },
+];
 const ORIGIN_LABEL: Record<ServedInput["origin"], string> = {
   provision: "Provision",
   mandate_input: "Mandate",
@@ -104,6 +111,8 @@ export function TryItNowPanel({
   onSavedTestCase: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const { launchMandate } = useAgentLauncher();
+  const [testMode, setTestMode] = useState<"server" | "display">("server");
   const viewerUserId = useAppSelector(selectUserId);
   const viewerOrgId = useAppSelector(selectEffectiveOrganizationId);
   const [testContext, setTestContext] = useState<"system" | "viewer">("system");
@@ -206,6 +215,19 @@ export function TryItNowPanel({
     setCompleted(null);
     setFailure(null);
     try {
+      if (testMode === "display") {
+        await launchMandate(mandate.mandate_key, {
+          surfaceKey: `mandate-test:${mandate.mandate_key}`,
+          sourceFeature: "agent-runner",
+          apiEndpointMode: "agent",
+          runtime: {
+            variables,
+            userInput: message ?? undefined,
+            surfaceName: null,
+          },
+        });
+        return;
+      }
       const result = await runMandateAdHocTest(dispatch, mandate.mandate_key, {
         variables,
         userInput: message,
@@ -275,22 +297,44 @@ export function TryItNowPanel({
     <section className="min-w-0 space-y-4">
       <h3 className="text-sm font-semibold">Test inputs</h3>
       <PropertyRow
-        label="Test context"
+        label="Test mode"
+        help="Server test returns execution diagnostics. Display test launches the saved presentation using your effective holder, including organization and personal bindings. Surfaces that explicitly choose their own layout can override the saved display."
         value={
           <Select
-            value={testContext}
-            onValueChange={(value: "system" | "viewer") =>
-              setTestContext(value)
-            }
+            value={testMode}
+            onValueChange={(value: "server" | "display") => setTestMode(value)}
           >
             <SelectTrigger className="w-full max-w-72">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="system">System default</SelectItem>
-              <SelectItem value="viewer">My effective holder</SelectItem>
+              <SelectItem value="server">Server test</SelectItem>
+              <SelectItem value="display">Display test</SelectItem>
             </SelectContent>
           </Select>
+        }
+      />
+      <PropertyRow
+        label="Test context"
+        value={
+          testMode === "display" ? (
+            "My effective holder"
+          ) : (
+            <Select
+              value={testContext}
+              onValueChange={(value: "system" | "viewer") =>
+                setTestContext(value)
+              }
+            >
+              <SelectTrigger className="w-full max-w-72">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="system">System default</SelectItem>
+                <SelectItem value="viewer">My effective holder</SelectItem>
+              </SelectContent>
+            </Select>
+          )
         }
         help="System default preserves the administrator bench. My effective holder includes your organization and personal binding overrides. Both execute as the signed-in administrator."
       />
@@ -487,6 +531,43 @@ export function TryItNowPanel({
             label="Duration"
             value={`${((result.duration_ms ?? 0) / 1000).toFixed(1)} seconds`}
           />
+          <ConfigurationTable
+            label="Applied model overrides"
+            columns={APPLIED_OVERRIDE_COLUMNS}
+          >
+            {Object.entries(result.applied_config_overrides ?? {}).length ? (
+              Object.entries(result.applied_config_overrides ?? {}).map(
+                ([key, value]) => (
+                  <ConfigurationTableRow
+                    key={key}
+                    columns={APPLIED_OVERRIDE_COLUMNS}
+                    cells={{
+                      setting: formatVariableDisplayName(key),
+                      value:
+                        key === "model" && typeof value === "string" ? (
+                          <EntityRef token="ai_model" id={value} />
+                        ) : typeof value === "boolean" ? (
+                          value ? (
+                            "Yes"
+                          ) : (
+                            "No"
+                          )
+                        ) : typeof value === "string" ? (
+                          value
+                        ) : (
+                          JSON.stringify(value)
+                        ),
+                    }}
+                  />
+                ),
+              )
+            ) : (
+              <ConfigurationTableRow
+                columns={APPLIED_OVERRIDE_COLUMNS}
+                cells={{ setting: "None", value: "Holder defaults" }}
+              />
+            )}
+          </ConfigurationTable>
           <PropertyRow
             label="Resolution source"
             value={

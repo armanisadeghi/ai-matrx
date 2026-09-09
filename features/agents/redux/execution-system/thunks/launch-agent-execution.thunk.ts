@@ -371,7 +371,8 @@ export const launchAgentExecution = createAsyncThunk<
   const jobHideToolResults = jobPresentation?.hideToolResults;
   const jobResponseDensity = jobPresentation?.responseDensity;
   const jobShowPreExecutionGate = jobPresentation?.showPreExecutionGate;
-  const jobPreExecutionMessage = jobPresentation?.preExecutionMessage ?? undefined;
+  const jobPreExecutionMessage =
+    jobPresentation?.preExecutionMessage ?? undefined;
 
   // ── Trace: launch envelope ────────────────────────────────────────────────
   // One line summarizing what the caller actually sent, then a structured
@@ -438,11 +439,12 @@ export const launchAgentExecution = createAsyncThunk<
   // inside the direct-agent branch while `effectiveAutoRun` is computed at
   // Step 3. `null` = no binding layer had an opinion.
   //
-  // Set ONLY on the direct-agent path. A shortcut is the most opinionated
+  // A mandate supplies its resolved binding answer; surface-only launches
+  // fill this from their binding lookup. A shortcut is the most opinionated
   // binding layer there is, and it already carries its own `auto_run` through
   // instance-ui-state — letting a weaker surface binding override it would
   // invert the precedence the whole layer stack is built on.
-  let bindingAutoRun: boolean | null = null;
+  let bindingAutoRun: boolean | null = resolvedMandate?.autoRun ?? null;
   // Populated when a stored `auto_run: true` is REFUSED because the mapping
   // did not resolve every required variable for this page. Drives the scream
   // and keeps the run stopping at the panel to ask for exactly the gap.
@@ -710,6 +712,8 @@ export const launchAgentExecution = createAsyncThunk<
         hideToolResults: hideToolResults ?? jobHideToolResults,
         responseDensity: responseDensity ?? jobResponseDensity,
         preExecutionMessage: preExecutionMessage ?? jobPreExecutionMessage,
+        bypassGateSeconds:
+          bypassGateSeconds ?? jobPresentation?.bypassGateSeconds,
         jsonExtraction,
         originalText,
         ...(isEphemeral !== undefined ? { isEphemeral } : {}),
@@ -1000,9 +1004,7 @@ export const launchAgentExecution = createAsyncThunk<
     // The binding decided. Seed instance-ui-state too, so any consumer that
     // renders AgentRunner directly (its own autoRun effect) agrees with the
     // launcher instead of reading a stale hard default.
-    dispatch(
-      setAutoRun({ conversationId, value: effectiveAutoRun }),
-    );
+    dispatch(setAutoRun({ conversationId, value: effectiveAutoRun }));
   }
 
   if (effectiveShowPreExecutionGate) {

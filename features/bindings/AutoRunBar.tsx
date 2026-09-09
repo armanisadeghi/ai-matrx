@@ -26,16 +26,11 @@
 // This file only owns the translation from a job binding's ordered, many-source
 // consumption map to the one-mapping-per-target shape that fact reads.
 
-import {
-  PropertyRow,
-  StatusToken,
-  FieldHelp,
-} from "@/components/official/ConfigurationFields";
-import { Zap } from "lucide-react";
+import { StatusToken } from "@/components/official/ConfigurationFields";
+import { ShortcutFieldRow } from "@/features/agent-shortcuts/components/next/SettingsSection";
 
 import { Switch } from "@/components/ui/switch";
 import { ServerNotes } from "@/components/official/ServerNotes";
-import { cn } from "@/lib/utils";
 import {
   evaluateBindingAutoRun,
   type BindingAutoRunEligibility,
@@ -143,54 +138,53 @@ export function AutoRunBar({
   const on = value === true && eligibility.eligible;
 
   return (
-    <div className="rounded-xl border border-border bg-card px-3 py-2">
-      <div className="flex items-center gap-2">
-        <Zap
-          className={cn(
-            "h-3.5 w-3.5",
-            on ? "text-primary" : "text-muted-foreground",
-          )}
-        />
-        <span className="text-[12.5px] font-semibold text-foreground">
-          Run instantly
-        </span>
-        <Switch
-          className="ml-auto"
-          checked={on}
-          disabled={disabled || !eligibility.eligible}
-          aria-label="Run instantly when this job fires"
-          onCheckedChange={(next) => onChange(next)}
-        />
-      </div>
-      <PropertyRow
-        label="Effective value"
-        value={on ? "Yes" : "No"}
+    <div>
+      <ShortcutFieldRow
+        title="Run instantly"
         source={value === null ? "Runtime default" : "Binding"}
-        state={value === null ? "Inherited" : "Overridden"}
-      />
-      <PropertyRow
-        label="Eligibility"
-        value={
-          <StatusToken
-            status={eligibility.eligible ? "ok" : "caution"}
-            label={
-              eligibility.eligible
-                ? "Eligible"
-                : eligibility.reason === "prompts_user"
-                  ? "Human input required"
-                  : "Required mapping missing"
-            }
+        hint={autoRunSentence(eligibility, on)}
+        metadata={
+          <>
+            <span>
+              <strong>Source:</strong>{" "}
+              {value === null ? "Runtime default" : "Binding"}
+            </span>
+            <span>
+              <strong>State:</strong>{" "}
+              {value === null ? "Inherited" : "Explicit"}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <strong>Eligibility:</strong>{" "}
+              <StatusToken
+                status={eligibility.eligible ? "ok" : "caution"}
+                label={
+                  eligibility.eligible
+                    ? "Eligible"
+                    : eligibility.reason === "prompts_user"
+                      ? "Needs input"
+                      : "Unmapped"
+                }
+              />
+            </span>
+            {eligibility.blockers.length > 0 && (
+              <span>
+                <strong>Inputs:</strong>{" "}
+                {eligibility.blockers.map(formatVariableDisplayName).join(", ")}
+              </span>
+            )}
+          </>
+        }
+      >
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={on}
+            disabled={disabled || !eligibility.eligible}
+            aria-label="Run instantly when this job fires"
+            onCheckedChange={onChange}
           />
-        }
-      />
-      <PropertyRow
-        label="Blocking inputs"
-        value={
-          eligibility.blockers.length
-            ? eligibility.blockers.map(formatVariableDisplayName).join(", ")
-            : "None"
-        }
-      />
+          <span className="text-sm">{on ? "Yes" : "No"}</span>
+        </div>
+      </ShortcutFieldRow>
       {/* WHAT THE SAVE ACTUALLY DID, in the server's words. Amber, because
           every sentence that lands here is the write telling you it did not do
           what you asked — never decoration. */}

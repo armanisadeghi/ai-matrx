@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { PropertyRow } from "@/components/official/ConfigurationFields";
-import { Switch } from "@/components/ui/switch";
+import {
+  ShortcutFieldRow as FieldRow,
+  ShortcutToggleRow as ToggleRow,
+} from "./SettingsSection";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -185,6 +188,8 @@ export function AdvancedSection({
       "keyboardShortcut",
       "sortOrder",
       "responseDensity",
+      "defaultUserInput",
+      "bypassGateSeconds",
     ];
     return (
       section === "permissions" ||
@@ -367,7 +372,9 @@ export function AdvancedSection({
                   onChange={(e) =>
                     onChange("bypassGateSeconds", Number(e.target.value) || 0)
                   }
-                  disabled={disabled}
+                  disabled={
+                    disabled || !value.autoRun || !value.showPreExecutionGate
+                  }
                   className="h-9 text-sm w-20"
                 />
                 <span className="text-xs text-muted-foreground">seconds</span>
@@ -381,28 +388,33 @@ export function AdvancedSection({
               one binding UI it was the ONLY way to pick a model at all. It is
               now the canonical model picker plus the canonical settings panel,
               both mounted unchanged. */}
-          <div hidden={hidden("llmOverrides")}>
-            {section && (
-              <PropertyRow
-                label="Model overrides"
-                value={value.llmOverrides == null ? "None" : "Configured"}
-                {...fieldMeta?.("llmOverrides")}
-                help={w.llmOverridesHint}
+          {!hidden("llmOverrides") && (
+            <div>
+              {section && (
+                <PropertyRow
+                  label="Model overrides"
+                  value={value.llmOverrides == null ? "None" : "Configured"}
+                  {...fieldMeta?.("llmOverrides")}
+                  help={w.llmOverridesHint}
+                />
+              )}
+              <StoredModelOverridesField
+                structured={Boolean(section)}
+                instanceKey={`${overridesInstanceKey}-llm`}
+                value={asJsonObject(value.llmOverrides)}
+                onChange={(next) =>
+                  onChange(
+                    "llmOverrides",
+                    next as AgentShortcut["llmOverrides"],
+                  )
+                }
+                hint={section ? "" : w.llmOverridesHint}
+                title={overridesTitle}
+                words={overridesWords}
+                disabled={disabled}
               />
-            )}
-            <StoredModelOverridesField
-              structured={Boolean(section)}
-              instanceKey={`${overridesInstanceKey}-llm`}
-              value={asJsonObject(value.llmOverrides)}
-              onChange={(next) =>
-                onChange("llmOverrides", next as AgentShortcut["llmOverrides"])
-              }
-              hint={section ? "" : w.llmOverridesHint}
-              title={overridesTitle}
-              words={overridesWords}
-              disabled={disabled}
-            />
-          </div>
+            </div>
+          )}
 
           {/* 🚨 RAW JSON IS A DEVELOPER'S BACK DOOR, NEVER THE PRIMARY EDITOR.
               Three fields still have no control of their own, and the honest
@@ -413,7 +425,13 @@ export function AdvancedSection({
               are above and are not repeated here. */}
           <div
             className="pt-1"
-            hidden={section === "display" || section === "permissions"}
+            hidden={
+              section === "display" ||
+              section === "permissions" ||
+              ["defaultVariables", "contextOverrides", "jsonExtraction"].every(
+                (field) => hidden(field as keyof AdvancedFields),
+              )
+            }
           >
             {!section && (
               <button
@@ -496,105 +514,6 @@ export function AdvancedSection({
 // ─────────────────────────────────────────────────────────────────────────
 // Local primitives
 // ─────────────────────────────────────────────────────────────────────────
-
-function ToggleRow({
-  title,
-  hint,
-  checked,
-  onChange,
-  disabled,
-  source,
-  state,
-}: {
-  source?: string;
-  state?: string;
-  title: string;
-  hint: string;
-  checked: boolean;
-  onChange: (next: boolean) => void;
-  disabled?: boolean;
-}) {
-  if (source)
-    return (
-      <PropertyRow
-        label={title}
-        source={source}
-        state={state}
-        help={hint}
-        value={
-          <div className="flex items-center gap-3">
-            <span>
-              {checked === true ? "Yes" : checked === false ? "No" : "Unknown"}
-            </span>
-            <Switch
-              aria-label={title}
-              checked={checked}
-              onCheckedChange={onChange}
-              disabled={disabled}
-            />
-          </div>
-        }
-      />
-    );
-  return (
-    <div className="flex items-start gap-3 py-2.5">
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-foreground">{title}</div>
-        <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
-          {hint}
-        </p>
-      </div>
-      <Switch
-        checked={checked}
-        onCheckedChange={(v) => onChange(v === true)}
-        disabled={disabled}
-        className="mt-0.5"
-      />
-    </div>
-  );
-}
-
-function FieldRow({
-  title,
-  hint,
-  children,
-  source,
-  state,
-  hidden,
-}: {
-  hidden?: boolean;
-  source?: string;
-  state?: string;
-  title: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  if (source)
-    return (
-      <div hidden={hidden}>
-        <PropertyRow
-          label={title}
-          source={source}
-          state={state}
-          help={hint}
-          value={children}
-        />
-      </div>
-    );
-  return (
-    <div hidden={hidden} className="py-2.5 space-y-1.5">
-      <div>
-        <div className="text-sm font-medium text-foreground">{title}</div>
-        {hint && (
-          <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
-            {hint}
-          </p>
-        )}
-      </div>
-      {children}
-    </div>
-  );
-}
 
 /**
  * Free-form JSON editor. Parses on every change so the parent only ever

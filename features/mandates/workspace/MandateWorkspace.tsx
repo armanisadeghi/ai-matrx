@@ -52,6 +52,7 @@ import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { cn } from "@/lib/utils";
+import styles from "./MandateWorkspace.module.css";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -78,6 +79,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PropertyRow } from "@/components/official/ConfigurationFields";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import { Section } from "./Section";
+import { EffectiveConfigLayers } from "../components/EffectiveConfigLayers";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { systemRungHealth, type SystemRungHealth } from "./system-rung-health";
 import {
@@ -597,7 +599,7 @@ function OneMandateWorkspace({
         >
           <TabsList
             aria-label="Mandate sections"
-            className="mb-5 grid h-auto w-full grid-cols-2 gap-1 bg-muted/60 p-1 sm:flex sm:flex-wrap sm:justify-start"
+            className={cn(styles.tabs, "mb-5 bg-muted/60 p-1")}
           >
             {WORKSPACE_TABS.filter((item) => !item.admin || authoring).map(
               (item) => (
@@ -606,7 +608,7 @@ function OneMandateWorkspace({
                   value={item.id}
                   id={`mandate-tab-${item.id}`}
                   aria-controls={`mandate-panel-${item.id}`}
-                  className="min-h-10 whitespace-normal px-3 text-xs sm:min-h-9 sm:flex-1"
+                  className={cn(styles.tab, "min-h-10 px-3 text-xs")}
                 >
                   {item.label}
                 </TabsTrigger>
@@ -632,6 +634,11 @@ function OneMandateWorkspace({
               authoring={authoring}
             />
             <TriadOutputSection data={data} />
+            <EffectiveConfigLayers
+              pinsOnly
+              pins={data.pins}
+              bindingOverrides={null}
+            />
             <MandateLineageLine
               mandateId={data.mandate.id}
               sourceMandateId={data.mandate.source_mandate_id ?? null}

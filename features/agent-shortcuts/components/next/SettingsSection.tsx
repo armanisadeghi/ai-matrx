@@ -1,7 +1,8 @@
 "use client";
 
 import { Input } from "@ai-matrx/design-system";
-import { PropertyRow } from "@/components/official/ConfigurationFields";
+import { FieldHelp } from "@/components/official/ConfigurationFields";
+import styles from "./SettingsSection.module.css";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -114,14 +115,14 @@ export function SettingsSection({
       onChange("showVariablePanel", false);
       return;
     }
-    if (!section) onChange("showVariablePanel", true);
+    onChange("showVariablePanel", true);
     onChange("variablesPanelStyle", next as VariablesPanelStyle);
   };
 
   return (
     <div className="space-y-1">
       {!omitAutoRun && !section && (
-        <ToggleRow
+        <ShortcutToggleRow
           title="Auto run"
           {...fieldMeta?.("autoRun")}
           hint={w.autoRunHint}
@@ -131,33 +132,25 @@ export function SettingsSection({
         />
       )}
 
-      {section === "overrides" && (
-        <PropertyRow
-          label="Confirmation active"
-          value={value.autoRun && value.showPreExecutionGate ? "Yes" : "No"}
-          help="The confirmation gate is used only when auto-run and the gate are both enabled."
-        />
-      )}
-
       {/* The GATE is presentation, not the promise: it is what the person sees
           in the moment an auto-run fires. So it survives `omitAutoRun` — the
           host that owns the promise still passes the current `autoRun` fact,
           and the gate is offered exactly while that fact makes it meaningful. */}
-      {(value.autoRun || section === "overrides") &&
-        section !== "display" &&
+      {(value.autoRun || section === "display") &&
+        section !== "overrides" &&
         section !== "permissions" && (
-          <Indent>
-            <ToggleRow
+          <Indent flat={Boolean(section)}>
+            <ShortcutToggleRow
               title="Show pre-execution gate"
               {...fieldMeta?.("showPreExecutionGate")}
               hint="Show a confirmation step before the auto-run fires."
               checked={value.showPreExecutionGate}
               onChange={(v) => onChange("showPreExecutionGate", v)}
-              disabled={disabled}
+              disabled={disabled || !value.autoRun}
             />
-            {(value.showPreExecutionGate || section === "overrides") && (
-              <Indent>
-                <FieldRow
+            {(value.showPreExecutionGate || section === "display") && (
+              <Indent flat={Boolean(section)}>
+                <ShortcutFieldRow
                   title="Pre-execution message"
                   {...fieldMeta?.("preExecutionMessage")}
                   hint="Text shown to the user during the confirmation step."
@@ -173,34 +166,26 @@ export function SettingsSection({
                         : "Click anywhere to cancel; runs in 3s…"
                     }
                     aria-label="Pre-execution message"
-                    disabled={disabled}
+                    disabled={
+                      disabled || !value.autoRun || !value.showPreExecutionGate
+                    }
                     className="h-9 text-sm"
                     style={{ fontSize: "16px" }}
                   />
-                </FieldRow>
+                </ShortcutFieldRow>
               </Indent>
             )}
           </Indent>
         )}
 
       <div hidden={section === "overrides" || section === "permissions"}>
-        {section && (
-          <ToggleRow
-            title="Show variable panel"
-            hint="Allow inputs to be shown before or during the run."
-            checked={value.showVariablePanel}
-            onChange={(next) => onChange("showVariablePanel", next)}
-            disabled={disabled}
-            {...fieldMeta?.("showVariablePanel")}
-          />
-        )}
-        <FieldRow
-          title={section ? "Variable panel style" : "Variable panel"}
+        <ShortcutFieldRow
+          title="Variable panel"
           {...fieldMeta?.("variablesPanelStyle")}
           hint="How the user supplies variable values before / during the run."
         >
           <Select
-            value={section ? value.variablesPanelStyle : panelStyleSelectValue}
+            value={panelStyleSelectValue}
             onValueChange={onPanelStyleChange}
             disabled={disabled}
           >
@@ -211,9 +196,7 @@ export function SettingsSection({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {!section && (
-                <SelectItem value={HIDDEN_PANEL_STYLE}>Hide</SelectItem>
-              )}
+              <SelectItem value={HIDDEN_PANEL_STYLE}>Hide</SelectItem>
               {VARIABLE_PANEL_STYLE_OPTIONS.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
@@ -221,9 +204,9 @@ export function SettingsSection({
               ))}
             </SelectContent>
           </Select>
-        </FieldRow>
+        </ShortcutFieldRow>
 
-        <ToggleRow
+        <ShortcutToggleRow
           title="Allow chat"
           {...fieldMeta?.("allowChat")}
           hint="Permit the user to continue the conversation after the initial run."
@@ -232,7 +215,7 @@ export function SettingsSection({
           disabled={disabled}
         />
 
-        <ToggleRow
+        <ShortcutToggleRow
           title="Show definition messages"
           {...fieldMeta?.("showDefinitionMessages")}
           hint="Render the agent's instruction / system messages in the result UI."
@@ -241,8 +224,8 @@ export function SettingsSection({
           disabled={disabled}
         />
         {(value.showDefinitionMessages || section === "display") && (
-          <Indent>
-            <ToggleRow
+          <Indent flat={Boolean(section)}>
+            <ShortcutToggleRow
               title="Show definition content"
               {...fieldMeta?.("showDefinitionMessageContent")}
               hint="Also reveal the body of each definition message (not just titles)."
@@ -253,19 +236,27 @@ export function SettingsSection({
           </Indent>
         )}
 
-        <ToggleRow
+        <ShortcutToggleRow
           title={section ? "Show reasoning" : "Hide reasoning"}
           {...fieldMeta?.("hideReasoning")}
-          hint="Suppress the agent's intermediate reasoning blocks from the output."
+          hint={
+            section
+              ? "Display reasoning blocks in the result."
+              : "Suppress the agent's intermediate reasoning blocks from the output."
+          }
           checked={section ? !value.hideReasoning : value.hideReasoning}
           onChange={(v) => onChange("hideReasoning", section ? !v : v)}
           disabled={disabled}
         />
 
-        <ToggleRow
+        <ShortcutToggleRow
           title={section ? "Show tool results" : "Hide tool results"}
           {...fieldMeta?.("hideToolResults")}
-          hint="Suppress tool-call outputs from the output."
+          hint={
+            section
+              ? "Display tool-call results in the output."
+              : "Suppress tool-call outputs from the output."
+          }
           checked={section ? !value.hideToolResults : value.hideToolResults}
           onChange={(v) => onChange("hideToolResults", section ? !v : v)}
           disabled={disabled}
@@ -275,7 +266,7 @@ export function SettingsSection({
   );
 }
 
-function ToggleRow({
+export function ShortcutToggleRow({
   title,
   hint,
   checked,
@@ -294,25 +285,17 @@ function ToggleRow({
 }) {
   if (source)
     return (
-      <PropertyRow
-        label={title}
-        source={source}
-        state={state}
-        help={hint}
-        value={
-          <div className="flex items-center gap-3">
-            <span>
-              {checked === true ? "Yes" : checked === false ? "No" : "Unknown"}
-            </span>
-            <Switch
-              aria-label={title}
-              checked={checked}
-              onCheckedChange={onChange}
-              disabled={disabled}
-            />
-          </div>
-        }
-      />
+      <ShortcutFieldRow title={title} source={source} state={state} hint={hint}>
+        <div className="flex items-center gap-2">
+          <Switch
+            aria-label={title}
+            checked={checked}
+            onCheckedChange={onChange}
+            disabled={disabled}
+          />
+          <span className="text-sm">{checked ? "Yes" : "No"}</span>
+        </div>
+      </ShortcutFieldRow>
     );
   return (
     <div className="flex items-start gap-3 py-2.5">
@@ -323,6 +306,7 @@ function ToggleRow({
         </p>
       </div>
       <Switch
+        aria-label={title}
         checked={checked}
         onCheckedChange={(v) => onChange(v === true)}
         disabled={disabled}
@@ -332,13 +316,17 @@ function ToggleRow({
   );
 }
 
-function FieldRow({
+export function ShortcutFieldRow({
   title,
   hint,
   children,
   source,
   state,
+  hidden,
+  metadata,
 }: {
+  hidden?: boolean;
+  metadata?: React.ReactNode;
   source?: string;
   state?: string;
   title: string;
@@ -347,16 +335,30 @@ function FieldRow({
 }) {
   if (source)
     return (
-      <PropertyRow
-        label={title}
-        source={source}
-        state={state}
-        help={hint}
-        value={children}
-      />
+      <div hidden={hidden} className={styles.row}>
+        <div className={styles.label}>
+          <span>{title}</span>
+          {hint && <FieldHelp label={title}>{hint}</FieldHelp>}
+        </div>
+        <div className={styles.control}>{children}</div>
+        <div className={styles.metadata}>
+          {metadata ?? (
+            <>
+              <span>
+                <strong>Source:</strong> {source}
+              </span>
+              {state && (
+                <span>
+                  <strong>State:</strong> {state}
+                </span>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     );
   return (
-    <div className="py-2.5 space-y-1.5">
+    <div hidden={hidden} className="py-2.5 space-y-1.5">
       <div>
         <div className="text-sm font-medium text-foreground">{title}</div>
         {hint && (
@@ -370,7 +372,14 @@ function FieldRow({
   );
 }
 
-function Indent({ children }: { children: React.ReactNode }) {
+function Indent({
+  children,
+  flat,
+}: {
+  children: React.ReactNode;
+  flat?: boolean;
+}) {
+  if (flat) return <div>{children}</div>;
   return (
     <div className="ml-4 pl-3 border-l border-border/70 space-y-1">
       {children}

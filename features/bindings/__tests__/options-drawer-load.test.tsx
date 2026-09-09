@@ -44,9 +44,12 @@ jest.mock("@/lib/redux/hooks", () => ({
     selector({ userAuth: { id: "user-1" } }),
 }));
 
-jest.mock("@/features/agents/redux/agent-shortcut-categories/selectors", () => ({
-  selectAllCategoriesArray: () => [],
-}));
+jest.mock(
+  "@/features/agents/redux/agent-shortcut-categories/selectors",
+  () => ({
+    selectAllCategoriesArray: () => [],
+  }),
+);
 
 jest.mock("@/features/agents/redux/agent-shortcut-categories/thunks", () => ({
   fetchCategoriesForScope: () => ({ type: "noop" }),
@@ -122,7 +125,7 @@ describe("BindingOptionsDrawer — the one-shot read", () => {
     expect(readPresentation).toHaveBeenCalledTimes(1);
     // Folded: the sections are not mounted, but the trigger is not silent.
     expect(container.querySelector('[data-testid="widget-picker"]')).toBeNull();
-    expect(container.textContent).toContain("All platform defaults");
+    expect(container.textContent).toContain("0 configured");
   });
 
   it("counts the answered options ON THE CLOSED TRIGGER, without being opened", async () => {
@@ -134,7 +137,7 @@ describe("BindingOptionsDrawer — the one-shot read", () => {
     await act(async () => {
       root.render(drawer());
     });
-    expect(container.textContent).toContain("1 set");
+    expect(container.textContent).toContain("1 configured");
     expect(container.querySelector('[data-testid="widget-picker"]')).toBeNull();
   });
 
@@ -143,7 +146,7 @@ describe("BindingOptionsDrawer — the one-shot read", () => {
     await act(async () => {
       root.render(drawer());
     });
-    expect(container.textContent).toContain("Couldn’t read");
+    expect(container.textContent).toContain("Read failed");
   });
 
   it("SETTLES when opened, and reads exactly once", async () => {
@@ -162,13 +165,17 @@ describe("BindingOptionsDrawer — the one-shot read", () => {
     // The whole point: the reading sentence is GONE and the sections are here.
     expect(container.textContent).not.toContain("Reading this job’s options");
     expect(container.textContent).not.toContain("Reading this job's options");
-    expect(container.querySelector('[data-testid="widget-picker"]')).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="widget-picker"]'),
+    ).not.toBeNull();
     expect(readPresentation).toHaveBeenCalledTimes(1);
   });
 
   it("a failed read is a sentence with a remedy, never a spinner that never stops", async () => {
     readPresentation.mockRejectedValue(
-      new Error("This job's display options could not be read: permission denied"),
+      new Error(
+        "This job's display options could not be read: permission denied",
+      ),
     );
     await act(async () => {
       root.render(drawer());

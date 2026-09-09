@@ -17,7 +17,11 @@
  * binding/pin overrides it.
  */
 
-import { PropertyRow } from "@/components/official/ConfigurationFields";
+import {
+  ConfigurationTable,
+  ConfigurationTableRow,
+  PropertyRow,
+} from "@/components/official/ConfigurationFields";
 import { humanizeSettingKey } from "@/lib/redux/slices/agent-settings/settings-catalogue";
 import { Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -44,30 +48,38 @@ export function EffectiveConfigLayers({
   className?: string;
   pinsOnly?: boolean;
 }) {
-  if (pinsOnly)
+  if (pinsOnly) {
+    const declared = Object.keys(pins).filter((key) =>
+      ALLOWED_PIN_KEYS.has(key),
+    );
+    if (declared.length === 0)
+      return <PropertyRow label="Constraints" value="None" />;
+    const columns = [
+      { key: "setting", label: "Constraint" },
+      { key: "value", label: "Value" },
+      { key: "source", label: "Source" },
+    ];
     return (
-      <section className={cn("space-y-1", className)}>
-        <h3 className="text-xs font-semibold">Mandate constraints</h3>
-        {[...ALLOWED_PIN_KEYS].map((key) => (
-          <PropertyRow
+      <ConfigurationTable label="Declared constraints" columns={columns}>
+        {declared.map((key) => (
+          <ConfigurationTableRow
             key={key}
-            label={humanizeSettingKey(key)}
-            value={
-              key in pins
-                ? typeof pins[key] === "boolean"
+            columns={columns}
+            cells={{
+              setting: humanizeSettingKey(key),
+              value:
+                typeof pins[key] === "boolean"
                   ? pins[key]
                     ? "Yes"
                     : "No"
-                  : display(pins[key])
-                : "Not constrained"
-            }
-            source={key in pins ? "Mandate" : "Holder and overrides"}
-            state={key in pins ? "Locked" : "Not pinned"}
-            help="Code-owned constraints take precedence over holder defaults and binding overrides."
+                  : display(pins[key]),
+              source: "Code declaration",
+            }}
           />
         ))}
-      </section>
+      </ConfigurationTable>
     );
+  }
   const pinKeys = Object.keys(pins).filter((k) => ALLOWED_PIN_KEYS.has(k));
   const overrideKeys = Object.keys(bindingOverrides ?? {});
   const keys = [...new Set([...overrideKeys, ...pinKeys])];

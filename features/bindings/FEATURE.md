@@ -26,14 +26,14 @@ Arman's sentence is the spine:
 | `OfferedInventoryColumn.tsx` | The offered reference for untabbed hosts; Definition owns this inventory in the tabbed workspace. |
 | `HolderInputsColumn.tsx` | The consuming reference for untabbed hosts; matching rows own these facts in tabbed workspaces. |
 | `BindingMiddle.tsx` | The match. `SurfaceVariableBinding` rendered **VERBATIM**, plus the many-to-one strip, the absence answer and the per-row problems a job binding needs and a surface binding does not. |
-| `AutoRunBar.tsx` | P14. "Run instantly", live only while the map leaves nothing to ask, narrating the four sentences as the map changes. The FACT is the shared `evaluateBindingAutoRun`; this file owns only the many-source → one-mapping translation. Its own sentences are the PRE-SAVE preview; `serverNotes` (`BindingResult.notes`) is what the write actually did, verbatim. |
+| `AutoRunBar.tsx` | P14. "Run instantly" belongs to Holder/matching, enabled only while the map leaves nothing to ask. Reuses `ShortcutFieldRow` with source, state and eligibility inline; explanations live in field help. `evaluateBindingAutoRun` owns eligibility; `serverNotes` (`BindingResult.notes`) reports the actual write. |
 | `consumption-writer.ts` | 🚨 **THE ONE WRITER.** Nothing else builds a `ConsumptionEntry` or mutates a `ConsumptionMap` — the manual row, the many-to-one strip and the AI map's accept all go through it. |
 | `offered-adapter.ts` | `OfferedValue` → `SurfaceValue`, so the shared picker reads a mandate's inventory. |
 | `useHolderInputs.ts` | `buildBindingTargets` for an agent, `useServedRunForm` for a workflow — one hook, no holder-type branch upstream. |
 | _(the two pickers)_ | Not in this feature: `AgentListDropdown` (`features/agents/components/agent-listings/`) and `WorkflowListDropdown` (`features/workflow-runtime/listings/`). Both are self-contained — trigger names the record, and the panel carries search, scope tabs, filters, the detail card, the sneak peek, favorite, copy and the doors. **Never wrap either in a name/id/link cluster.** |
 | `described-offer.ts` | What a job offers when no code declared it (D18.1). ONE derivation, shared by both modes. |
 | `words.ts` | The four sources' names and the fill-down limits sentence — one vocabulary, so no two controls name one thing differently. |
-| `BindingOptionsDrawer.tsx` | One persistent treatment draft, sectioned into Overrides, Display Options and Permissions when hosted in tabs; untabbed hosts keep the accordion. |
+| `BindingOptionsDrawer.tsx` | One persistent treatment draft for Display Options and Permissions; no model, menu or input-seed editor. Untabbed hosts keep the accordion. |
 | `treatment-shape.ts` | 🚨 **THE ONE CODEC** for `mandate.treatment.config` — a job's presentation. |
 | `treatment-writer.ts` | 🚨 **THE ONE WRITER** for that row, as `consumption-writer` is for the map. |
 | `batch/` | **Batch mode** — the same middle transposed. See below. |
@@ -125,8 +125,7 @@ with `#bind`.
 5. **Described inputs ARE the provision (D18.1).** No provision key is not "no inputs" — the
    served input surface answers, and a mandate that offers nothing still renders the map step
    with an honest sentence. The structural skip is what this build exists to end.
-6. **Nothing dead, nothing silent.** Every empty, loading, unreadable and refused state is a
-   sentence with a remedy. Save is disabled only with its reason printed beside it.
+6. **Nothing dead, nothing silent.** Every empty, loading, unreadable and refused state is explicit. Use concise status values and field-attached help; disabled controls retain an accessible reason.
 7. **A selection closes before its confirmation opens.** The shared `confirm()` boundary
    calls `afterCurrentLayerCloses`, so every Select/Menu caller waits for the current body
    lock to remain released for two consecutive paints before AlertDialog opens. Neither a
@@ -173,23 +172,24 @@ verbatim — a `logger.warning` is a scream only the server hears.
 
 ## Shared treatment configuration
 
-`BindingOptionsDrawer.section` selects Display Options, Overrides or Permissions without unmounting the draft. `SettingsSection` and `AdvancedSection` remain canonical editors. State and scope are explicit; false/default/unset fields remain present. Untabbed hosts omit `section` and retain the existing accordion. Storage stays unchanged:
+**Overrides means API model parameters only.** `RunConfigOverrides` edits the selected binding's `config_overrides`; Controls and Advanced are two input modes over the same `instanceModelOverrides` draft. Invalid JSON blocks Save. There is no treatment model editor: `treatment.config.seeds.llm_overrides` has no imperative mandate-launch consumer and must not masquerade as this binding's API overrides.
 
-| Section | Composed of | Stored at |
+`BindingOptionsDrawer.section` selects Display Options or Permissions without unmounting the shared treatment draft. `WidgetPicker`, `SettingsSection` and `AdvancedSection` are the canonical shortcut components; their shared `ShortcutFieldRow`/`ShortcutToggleRow` put the control before inline Source/State metadata, with explanation in `FieldHelp`. Narrow layouts stack identical content. False, default and inactive values remain explicit; dependent gate controls remain visible and disabled when inapplicable.
+
+| UI owner | Stored field | Consumer |
 |---|---|---|
-| **Display** | `WidgetPicker` + `SettingsSection` (`omitAutoRun`) | `display_mode`, `allow_chat`, `variables.*`, `reveal.*`, `gate.*` |
-| **Visibility** | `CategoryPicker` | `menu.category_id` |
-| **Write access** | `WritePolicyEditor` | `write_policies` |
-| **Advanced** | `AdvancedSection` (`omit: ["description"]`) | `seeds.*`, `menu.sort_order`, `icon_name`, `keyboard_shortcut`, `json_extraction`, and the row's `is_enabled` |
+| Holder / Run instantly | `mandate.binding.auto_run` | Binding eligibility + server resolution + launch |
+| Display / Result display | `treatment.config.display_mode` | `ResolvedMandate.presentation` → `launchAgentExecution` display selection |
+| Display / Chat and variable panel | `allow_chat`, `variables.show_panel`, `variables.panel_style` | Instance UI state; Hide and panel style share one selector |
+| Display / Definition, reasoning, tools | `reveal.*` | Instance UI visibility; showing reasoning does not change model reasoning effort |
+| Display / Confirmation | `gate.enabled`, `gate.message`, `gate.bypass_seconds` | Launch gate; caller values take precedence |
+| Display / Density and enable | `response_density`, treatment `is_enabled` | Instance density; disabled treatment omitted by resolvers |
+| Permissions / Write access | `treatment.config.write_policies` | Surface write-policy merge where a registered surface declares targets |
+| Admin Permissions / Automatic context | `mandate.definition.auto_context_disabled` | Existing context gate; holder refusal cannot be reopened here |
 
-**Explicit states in tabs:** Permissions states when no write targets exist. Gate and dependent display values remain visible even when inactive. Untabbed hosts retain their conditional reveals. Advanced's raw-JSON fields
-parse on every keystroke and never propagate invalid JSON upward.
+**No duplicate or unconsumed controls.** The mandate drawer omits shortcut menu category, icon, keyboard shortcut and sort order, plus treatment default user input, default variables, context overrides, JSON extraction and model overrides. Their stored values remain unchanged. Mapping stays in Holder, specification stays in Definition, and model parameters stay in Overrides. These omissions do not change the shortcut editor.
 
-**Three things are deliberately NOT in the drawer**, each because it already has
-one home: *Run instantly* (the `AutoRunBar` — on a job it is a fact about the
-mapping, not a preference, which is what `omitAutoRun` exists for), the
-*mapping* (the middle), and the job's own *description* (the job, not its
-presentation — hence the `omit`).
+**Save boundaries remain separate.** Holder/matching/model parameters share the binding Save. Display Options and write policies share one treatment Save. Automatic context saves immediately through `updateMandateDefinition`. Successful treatment writes invalidate mandate resolution cache, so the next launch reads the saved presentation.
 
 ### Where these options live, and who they cover
 
@@ -197,9 +197,11 @@ presentation — hence the `omit`).
 natural key `mandate.vw_shortcut` joins on. This is not a new home: the 208
 migrated shortcuts have served their presentation out of this table since the
 cutover (`SHORTCUT_WRITE_POLICIES_ON_TREATMENT`), and `treatment-shape.ts` is a
-client codec for the SAME `schema_version: 1` object that
-`mandate.shortcut_treatment_config` builds — nine jest cases pin every key and
-default against the view's own SQL, so a drift is a failing test, not a fork.
+client codec for that shared `schema_version: 1` layout. Its tests pin the
+presentation keys and defaults used by `mandate.shortcut_treatment_config`,
+with one deliberate job-specific omission: treatment writes never emit
+`auto_run`. Shortcuts retain that SQL field; a job's Run instantly value belongs
+only to `mandate.binding.auto_run`, so presentation cannot supply a second answer.
 
 🚨 **A treatment has no per-person rung, and the drawer says so.** The holder
 above can differ for you, your organization and everyone; how the job PRESENTS
@@ -233,6 +235,8 @@ choice (P5), rendered on the offered rail and under the chosen value in the midd
 never become an answer, and absent means the declaration gave none — never invent one.
 
 ## Change Log
+
+- 2026-09-08 — Reconciled configuration with storage/runtime: API model overrides only in Overrides with one Controls/Advanced draft; canonical shortcut display rows/gallery; removed unconsumed mandate treatment/menu editors while preserving data. Automatic context moved to Permissions, Run instantly stays with Holder, disabled missing-source controls and configuration table alignment are consistent.
 
 - 2026-09-08 — Added sectioned binding/treatment presentation for the shared mandate tabs, preserving existing save boundaries. Name-match display no longer invents an unsaved mandate mapping. Preliminary declaration checks are separate from mapping and full validation. Canonical overrides load the exact selected version and rebase retained edits when the holder changes; failed loads cannot initialize a blank default.
 
