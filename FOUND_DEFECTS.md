@@ -3093,3 +3093,55 @@ export type CmsHtmlPageResultData = Pick<CmsHtmlPageResult, "page" | "pages"> & 
 ```
 
 Whoever takes it must re-check the block's null handling, not just swap the declaration.
+
+## 2026-09-08 — 24 jest suites fail on main, and CI runs none of them
+
+Found by accidentally triggering an unscoped `pnpm test` while working on admin navigation.
+The full suite is **24 suites / 37 tests failing** (1196 suites / 8941 tests pass). None are
+admin-nav files; all predate that work.
+
+The reason nobody noticed is structural, and it is the same trap `.github/workflows/ci.yml`
+already documents for the HR guards at `:234-236`: **CI's jest jobs are scoped**
+(`test:content-ir`, `test:workflow-runtime`, `test:render-matrix`, plus two explicitly-named HR
+files). `package.json:27` `"test": "jest --no-coverage"` is invoked by nothing. So any suite
+outside those four scopes can rot indefinitely while CI stays green.
+
+Failing suites, for whoever picks this up:
+
+```
+app/api/cms/_lib/validateContent.test.ts
+components/image/shared/ImageCards.test.tsx
+components/kind-kit/kind-kit.test.tsx
+components/ui/__tests__/dialog-mobile-sheet.test.tsx
+features/access-gate/components/GovernedActionDialog.responsive-contract.test.ts
+features/agent-apps/utils/compile-slot.test.ts
+features/agents/components/inputs/resources/resource-family-policy.test.ts
+features/agents/components/messages-display/message-options/__tests__/resolveAssistantEditTarget.test.ts
+features/agents/components/settings-management/validation/__tests__/constraint-eval-fixture.test.ts
+features/canvas/materialization/__tests__/planMaterialization.test.ts      (already logged 2026-08-31)
+features/canvas/services/__tests__/canvasArtifactService.test.ts
+features/cms/accessGateTokens.test.ts
+features/dynamic-react/toolRendererScope.bundle-contract.test.ts
+features/hr/__tests__/no-hand-built-hr-urls.test.ts                        (IS a CI-blocking step)
+features/marketing/analytics/campaign-pause.test.ts
+features/masterwork/components/masterworks/TryMasterworkBox.test.tsx
+features/organizations/__tests__/memberships-session-boundary.test.ts
+features/podcasts/studio/runs/__tests__/runsRepository.test.ts
+features/resource-manager/resource-picker/__tests__/resource-picker-menu-items.test.ts
+features/window-panels/windows/seo/KeywordWindow.test.tsx
+lib/sandbox/__tests__/active-binding-local-pc.test.ts
+scripts/pattern-patrol/manifest.test.ts
+utils/permissions/__tests__/registry.parity.test.ts
+utils/permissions/__tests__/registry.routes.test.ts
+```
+
+Two notes worth acting on. `features/hr/__tests__/no-hand-built-hr-urls.test.ts` is wired into
+CI as a blocking step (`ci.yml:246`) and is failing, which is a second red gate on main beyond
+the two already logged above. And `utils/permissions/__tests__/registry.routes.test.ts` fails on
+`interview_session -> /vision-interview/{id}` and `web_brand -> /marketing/brands/{id}` — a
+sharing registry handing callers URLs that resolve to no route, i.e. a live dead-end, not just a
+stale test.
+
+The class fix is not "fix 24 suites": it is that a suite nothing runs is not a test. Either
+scope-in the directories that are meant to be green, or run the full suite with a known-failing
+allowlist that only shrinks.
