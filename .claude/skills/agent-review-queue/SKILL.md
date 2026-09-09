@@ -119,6 +119,24 @@ one FAILS — deliberately, because a skill instruction alone is exactly the loo
 agents route around. `feature_id` is nullable on purpose: **domain-only is an honest
 answer**, and it beats a wrong guess.
 
+### SQL access and mutation confirmation
+
+Discover the available SQL tool first. If no SQL MCP is exposed, the existing local operator
+path is `matrx-frontend/scripts/review-queue-sweep.ts`: it calls `public.execute_admin_query`
+through `supabase-js`, loading `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SECRET_KEY` privately
+from local env files. Verify the URL is `https://db.matrxserver.com`; use that existing RPC
+contract, never a guessed endpoint or printed credential. Explicitly select schema `public`;
+raw REST calls require both `Content-Profile: public` and `Accept-Profile: public`. A default
+`api` profile produces `PGRST202` even when this RPC exists. This SQL path does not replace
+`schedule_claim` for schedule ownership.
+
+**Re-read every mutation.** The admin-query RPC can execute a data-modifying CTE yet return only
+`{"result":{"message":"Query executed successfully"}}`. Missing returned rows is not proof
+nothing changed. After claim, query the exact unique assignment owner and confirm exactly one
+owned row before proceeding; never rerun the claim merely because its payload omitted rows.
+After transitions, re-read the row and conversation event to verify the intended state/evidence.
+Resolve an uncertain result before retrying any mutation.
+
 ### Look them up first — one query, do not guess a slug
 
 ```sql
@@ -254,6 +272,14 @@ profile. It never borrows Arman's browser state.
   installed browser runtime documentation; a missing skill name is not proof the Browser
   is unavailable. Use the documented runtime bootstrap, not guessed browser APIs. Never use `getForUrl`, `getDefault`,
   Chrome, the Chrome extension, Computer Use, or a tab that was already open.
+  Discover `browser-client.mjs` under `~/.codex/plugins/cache/openai-bundled/browser/` with
+  `rg --files`; read that bundle's `docs/bootstrap-troubleshooting.md` and
+  `docs/api-use-behavior.md`. In the callable `mcp__node_repl__js`, bootstrap with
+  `var { setupBrowserRuntime } = await import('<discovered absolute scripts/browser-client.mjs>');`
+  then `var agent = await setupBrowserRuntime();`. Next select
+  `var browser = await agent.browsers.get('iab');` and read
+  `nodeRepl.write(await browser.documentation());` before operating. Use the discovered bundle
+  path rather than a pinned version; browser operation follows its documentation only.
 - Before claiming a queue row, open the admin list in a new built-in Browser tab and prove the
   admin surface is signed in. The canonical admin credentials live in
   `/Users/armanisadeghi/code/aidream/.env.agents` and
@@ -494,7 +520,8 @@ with reviewed as materialized (
 select id, title, status, metadata->'triage' as triage from updated;
 ```
 
-On **FAIL**, append the reproducible finding and return the row to the repair pool:
+When **releasing a failed item** after repair or explicit coordination, append the reproducible
+finding and return it to the repair pool. Do not release ownership before an active repair:
 
 ```sql
 with reviewed as materialized (

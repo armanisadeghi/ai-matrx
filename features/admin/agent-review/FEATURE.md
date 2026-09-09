@@ -101,7 +101,7 @@ Both routes are agent-aware surfaces, and they are TWO surfaces on purpose: the 
 - The data path is direct `supabase-js`; no Next.js database proxy.
 - Queue and registry reads use `runWithSessionRetry`; session loss stops before
   the three complete-list queries can reach PostgREST as `anon`.
-- `Agent Review First Pass` is the active recurring Codex reviewer: every 30 minutes, exactly one item per run. It uses only Codex's built-in Browser and stops before claiming work when that persistent profile is not signed in as an admin. Canonical credential locations are documented in the shared skill; secrets never enter automation text or queue evidence.
+- `Agent Review First Pass` is the active recurring Codex reviewer: every 30 minutes, exactly one item per run. It uses only Codex's built-in Browser, recovers routine sign-in failures with the authorized admin credentials, and proves the admin session before claiming work. Canonical credential locations are documented in the shared skill; secrets never enter automation text or queue evidence.
 - Every transition to `ready_for_human` requires recorded verifier identity, verification time, and `assignment.state='awaiting_review'`. The rollout returned all 16 legacy rows missing that evidence to `submitted`, then validated the database constraint.
 - The list defaults to the human inbox (`ready_for_human`) and exposes all workflow activity only through the explicit **All activity** view.
 - Each workflow count card is a real filter control: selecting it opens the all-activity view and applies the matching status filter to the canonical URL-driven table. The combined Changes card selects both agent- and human-requested changes, and the active card remains visibly pressed.
@@ -112,9 +112,9 @@ Arman, 2026-09-07: _"I'm trying to find what you need me to review in agent-revi
 but I can't seem to find it — it's one of the biggest weaknesses of the system."_
 Measured that day: **573 rows at `submitted` against 74 at `ready_for_human`**,
 oldest submission 2026-07-24. Only `ready_for_human` reaches him, and the single
-recurring promoter (`agent-review-first-pass`) moves ONE row per 30 minutes and
-skips rows with no triage envelope, no `browser` tool, or no conversation — so
-nearly everything agents built was invisible to him by design.
+recurring promoter (`agent-review-first-pass`) then moved ONE row per 30 minutes and
+skipped malformed routing/conversation rows. The shared skill now requires bounded repair
+of those eligibility defects and recovery of routine access failures.
 
 Two halves of the fix live outside this surface, and both are in the shared
 `agent-review-queue` skill (canonical body: `common-docs/skills/`):
@@ -133,6 +133,8 @@ A recurring `agent-review-sweep` schedule is PROPOSED, not created, in
 no-unapproved-schedules law.
 
 ## Change log
+
+- 2026-09-09 — Aligned recurring review with authorized sign-in recovery before claim and bounded repair of malformed routing; the shared skill owns the execution protocol.
 
 - **2026-09-08** — Preserved 44px review navigation and decision targets on
   touch-width layouts while keeping the denser desktop controls; the mobile
