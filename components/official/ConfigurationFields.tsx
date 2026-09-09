@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
-  Circle,
   CircleCheck,
   CircleHelp,
   CircleX,
@@ -191,7 +190,7 @@ export function FieldHelp({
 const STATUS = {
   neutral: {
     label: "Not evaluated",
-    Icon: Circle,
+    Icon: null,
     color: "text-foreground",
   },
   ok: { label: "Passed", Icon: CircleCheck, color: "text-success" },
@@ -204,7 +203,7 @@ const STATUS = {
   },
 } as const;
 
-/** A named severity with both text and an icon; never a color-only verdict. */
+/** Status always has text. Only meaningful severity icons accompany it. */
 export function StatusToken({
   status,
   label,
@@ -221,7 +220,7 @@ export function StatusToken({
         color,
       )}
     >
-      <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+      {Icon ? <Icon className="size-3.5 shrink-0" aria-hidden="true" /> : null}
       <span className="break-words">{label ?? defaultLabel}</span>
     </span>
   );
