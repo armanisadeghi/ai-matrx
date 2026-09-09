@@ -66,11 +66,12 @@ Verify deployed synchronous cloud-files subscription ownership and establish the
 **Subtasks**
 - [x] Reproduce and repair same-turn attach/detach and actor-replacement subscription leaks.
 - [x] Push source and obtain independent review.
-- [ ] Verify a containing frontend release and actual lifecycle behavior.
+- [x] Verify containing frontend release (READY v0.4.1781 / `e7dd283931801148487bb4ff750f14a755732d13`, independently confirmed 2026-09-09T09:51:09.928560Z).
+- [ ] Verify actual same-turn lifecycle behavior; no current host UI exposes disposer ownership.
 - [ ] Establish historical actor/build/provider provenance; retain all 74 incidents until supported.
 
 **Notes**
-Source `e9b9fcbc58f88413b3edf26a0ee6280e2bc8635c` removes an unnecessary await before synchronous ownership transitions in `features/files/redux/realtime-middleware.ts`. Both forcing tests failed before; seven related tests and full typecheck pass; independent reviewer passed both cases. Canonical frontend release owner notified. This race is proven separately, but the original captures omit provider reason and loaded-build identity, so no historical causal attribution or closure is claimed. Exact 27+25+22 member IDs and gates: `/Users/armanisadeghi/.codex/automations/system-error-repair-patrol/component-realtime-lifecycle-proof-2026-09-09T0916Z.json`. No queue or user-data mutations.
+Source `e9b9fcbc58f88413b3edf26a0ee6280e2bc8635c` removes an unnecessary await before synchronous ownership transitions in `features/files/redux/realtime-middleware.ts`. Both forcing tests failed before; seven related tests and full typecheck pass; independent reviewer passed both cases. Containing production alias `dpl_8MTa2HYGGhkH2693tQzvDvxzPh8U` is verified; ordinary asynchronous logout/login cannot discriminate the same-turn race, so that live gate remains open. This race is proven separately, but the original captures omit provider reason and loaded-build identity, so no historical causal attribution or closure is claimed. Exact 27+25+22 member IDs and gates: `/Users/armanisadeghi/.codex/automations/system-error-repair-patrol/component-realtime-lifecycle-proof-2026-09-09T0916Z.json`. No queue or user-data mutations.
 
 ### TASK-013: Verify workspace admission failure classification
 - **Status:** ready
