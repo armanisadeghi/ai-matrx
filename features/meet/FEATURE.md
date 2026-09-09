@@ -98,6 +98,21 @@ reader of an older tag will otherwise conclude the package is broken.
 
 ## Change log
 
+
+- **2026-09-09 — adopted `@ai-matrx/meet` 0.4.8 (MRI-A16).** The six defects MRI-C8's independent
+  production verification found, all fixed IN the package — this repo changed nothing but the
+  version, which is the "zero wrappers" contract working. (1) The record view could not play a
+  recording that had landed perfectly: it fetched `/files/{id}/download` with a bearer and no
+  organization and got 400 `organization_required`. The package now builds every aidream request
+  in ONE org-aware client and a guard fails its build if a second way appears; playback also
+  streams through the platform's `POST /files/session` cookie instead of downloading the whole
+  file. (2)+(3) The recording indicator never went solid and a guest saw none at all — the durable
+  `meet_recordings` state now reaches a member over Postgres Changes and a guest over a new
+  `matrx.meet.recording` room event (**needs the matching aidream deploy**; without it a guest
+  sees the same nothing as before, never a wrong indicator). (4) The guest's caption rail printed
+  the raw LiveKit identity where the host read a name. (5) A knocking participant was invisible
+  unless that browser held the lobby broadcast. (6) The guest record view claimed "No wrap-up was
+  written" under a panel that had just refused to read those rows.
 - `2026-09-08` — claude: **adopted `@ai-matrx/meet` 0.4.0 (MRI-A11 + MRI-D2),
   same session.** Two things this surface could not do before. (a) **The host
   gets host controls**: the server now states the joiner's role on the token and
