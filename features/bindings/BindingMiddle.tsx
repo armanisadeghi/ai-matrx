@@ -213,6 +213,20 @@ export function BindingMiddleRow({
               : "Variable"
         }
         structured
+        sourceDetailAside={
+          sources[0] &&
+          isOfferedSource(sources[0]) &&
+          sources[0].target !== "" ? (
+            <AbsenceControl
+              entry={sources[0]}
+              offered={offeredByName.get(sources[0].target)}
+              disabled={disabled}
+              onPatch={(patch) =>
+                onChange(patchSourceAt(value, target.name, 0, patch))
+              }
+            />
+          ) : null
+        }
         sourceAbsenceManaged
         mapping={mappingForRow(sources) ?? { mapType: "unmapped" }}
         availableSurfaceValues={selectableSurfaceValues}
@@ -258,19 +272,6 @@ export function BindingMiddleRow({
                 ) : null;
               })()
             : null}
-
-          {sources[0] &&
-          isOfferedSource(sources[0]) &&
-          sources[0].target !== "" ? (
-            <AbsenceControl
-              entry={sources[0]}
-              offered={offeredByName.get(sources[0].target)}
-              disabled={disabled}
-              onPatch={(patch) =>
-                onChange(patchSourceAt(value, target.name, 0, patch))
-              }
-            />
-          ) : null}
 
           {awaitingPick ? (
             <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
@@ -491,16 +492,11 @@ function AbsenceControl({
     { value: "fail", label: "Stop run" },
   ] as const;
   return (
-    <div
-      className={cn(
-        "flex flex-wrap items-center gap-2",
-        (disabled || unavailable) && "opacity-50",
-      )}
-    >
+    <div className={cn("space-y-2", (disabled || unavailable) && "opacity-50")}>
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="font-semibold">Missing source:</span>
+        <span className="font-semibold">When missing</span>
         {!offered ? <StatusToken status="unknown" label="Unknown" /> : null}
-        <FieldHelp label="Missing source">
+        <FieldHelp label="When missing">
           {offered?.guaranteed
             ? "This input is always available, so missing-source behavior does not apply."
             : !offered
@@ -517,7 +513,7 @@ function AbsenceControl({
           <Button
             key={choice.value}
             size="sm"
-            className="h-7 px-2 text-xs"
+            className={cn(CONFIGURATION_CHOICE_SIZE, "px-2")}
             variant={
               !unavailable && (entry.when_absent ?? "skip") === choice.value
                 ? "default"
@@ -534,7 +530,7 @@ function AbsenceControl({
         ))}
         <Button
           size="sm"
-          className="h-7 px-2 text-xs"
+          className={cn(CONFIGURATION_CHOICE_SIZE, "px-2")}
           variant={offered?.guaranteed ? "default" : "outline"}
           disabled
           aria-pressed={offered?.guaranteed === true}

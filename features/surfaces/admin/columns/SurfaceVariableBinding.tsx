@@ -138,6 +138,7 @@ export function SurfaceVariableBinding({
   targetKindLabel,
   structured = false,
   sourceAbsenceManaged = false,
+  sourceDetailAside,
   onChange,
 }: {
   target: BindingTarget;
@@ -153,6 +154,8 @@ export function SurfaceVariableBinding({
   structured?: boolean;
   /** Mandate mappings own when_absent; their source-required flag is not the runtime policy. */
   sourceAbsenceManaged?: boolean;
+  /** Consumer-owned policy paired with the selected source. */
+  sourceDetailAside?: React.ReactNode;
   onChange: (next: ValueMapping | null) => void;
 }) {
   const surfaceValueIndex = useMemo(() => {
@@ -292,57 +295,71 @@ export function SurfaceVariableBinding({
 
         {/* Detail panel — fixed height, no UI shift between modes */}
         <div
-          className={structured ? "px-3 py-3" : "px-4 pt-3 pb-4 min-h-[120px]"}
+          className={cn(
+            structured ? "px-3 py-3" : "px-4 pt-3 pb-4 min-h-[120px]",
+            mode === "surface_value" &&
+              sourceDetailAside &&
+              "grid gap-3 md:grid-cols-2",
+          )}
         >
-          {mode === "agent_default" && (
-            <AgentDefaultDetail
-              autoBindCandidate={autoBindCandidate}
-              structured={structured}
-              defaultValue={target.defaultValue}
-            />
-          )}
-          {mode === "surface_value" && mapping?.mapType === "surface_value" && (
-            <SurfaceValueDetail
-              mapping={mapping}
-              availableSurfaceValues={availableSurfaceValues}
-              disabled={disabled}
-              fieldLabel={valueFieldLabel}
-              showRequired={!sourceAbsenceManaged}
-              onChange={onChange}
-            />
-          )}
-          {mode === "surface_value" && mapping?.mapType !== "surface_value" && (
-            // Auto-bind case — there's no explicit mapping yet, but we've
-            // surfaced it as "Surface Value" because of the name match.
-            <SurfaceValueDetail
-              mapping={{
-                mapType: "surface_value",
-                target: autoBindCandidate?.name ?? "",
-                required: false,
-              }}
-              availableSurfaceValues={availableSurfaceValues}
-              disabled={disabled}
-              fieldLabel={valueFieldLabel}
-              showRequired={!sourceAbsenceManaged}
-              onChange={onChange}
-            />
-          )}
-          {mode === "direct_value" && mapping?.mapType === "direct_value" && (
-            <DirectValueDetail
-              mapping={mapping}
-              agentDefault={target.defaultValue}
-              disabled={disabled}
-              onChange={onChange}
-            />
-          )}
-          {mode === "prompt_user" && mapping?.mapType === "prompt_user" && (
-            <PromptUserDetail
-              mapping={mapping}
-              agentDefault={target.defaultValue}
-              disabled={disabled}
-              onChange={onChange}
-            />
-          )}
+          <div className="min-w-0">
+            {mode === "agent_default" && (
+              <AgentDefaultDetail
+                autoBindCandidate={autoBindCandidate}
+                structured={structured}
+                defaultValue={target.defaultValue}
+              />
+            )}
+            {mode === "surface_value" &&
+              mapping?.mapType === "surface_value" && (
+                <SurfaceValueDetail
+                  mapping={mapping}
+                  availableSurfaceValues={availableSurfaceValues}
+                  disabled={disabled}
+                  fieldLabel={valueFieldLabel}
+                  showRequired={!sourceAbsenceManaged}
+                  onChange={onChange}
+                />
+              )}
+            {mode === "surface_value" &&
+              mapping?.mapType !== "surface_value" && (
+                // Auto-bind case — there's no explicit mapping yet, but we've
+                // surfaced it as "Surface Value" because of the name match.
+                <SurfaceValueDetail
+                  mapping={{
+                    mapType: "surface_value",
+                    target: autoBindCandidate?.name ?? "",
+                    required: false,
+                  }}
+                  availableSurfaceValues={availableSurfaceValues}
+                  disabled={disabled}
+                  fieldLabel={valueFieldLabel}
+                  showRequired={!sourceAbsenceManaged}
+                  onChange={onChange}
+                />
+              )}
+            {mode === "direct_value" && mapping?.mapType === "direct_value" && (
+              <DirectValueDetail
+                mapping={mapping}
+                agentDefault={target.defaultValue}
+                disabled={disabled}
+                onChange={onChange}
+              />
+            )}
+            {mode === "prompt_user" && mapping?.mapType === "prompt_user" && (
+              <PromptUserDetail
+                mapping={mapping}
+                agentDefault={target.defaultValue}
+                disabled={disabled}
+                onChange={onChange}
+              />
+            )}
+          </div>
+          {mode === "surface_value" && sourceDetailAside ? (
+            <div className="min-w-0 border-t border-border pt-3 md:border-l md:border-t-0 md:pl-3 md:pt-0">
+              {sourceDetailAside}
+            </div>
+          ) : null}
         </div>
       </article>
     </TooltipProvider>
