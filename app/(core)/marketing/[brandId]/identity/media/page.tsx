@@ -1,5 +1,5 @@
+import { MarketingAddressUnavailable } from "@/features/marketing/components/shared/MarketingAddressUnavailable";
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
 
 import { BrandAssetsWorkspace } from "@/features/marketing/components/brands/BrandAssetsWorkspace";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
@@ -13,7 +13,7 @@ export default async function BrandMediaPage({
 }) {
   const { brandId } = await params;
   const brand = await resolveBrandParam(brandId);
-  if (!brand) notFound();
+  if (!brand) return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
   return (
     <Suspense fallback={<LoadingSurface label="Loading brand media…" />}>
       <BrandAssetsWorkspace brandId={brand.id} view="library" />

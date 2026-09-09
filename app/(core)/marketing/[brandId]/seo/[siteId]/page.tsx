@@ -1,3 +1,4 @@
+import { MarketingAddressUnavailable } from "@/features/marketing/components/shared/MarketingAddressUnavailable";
 import { notFound, permanentRedirect } from "next/navigation";
 
 import { marketingSeg } from "@/features/marketing/lib/keys";
@@ -23,9 +24,9 @@ export default async function MarketingSeoSiteRootPage({
 }) {
   const { brandId, siteId } = await params;
   const brand = await resolveBrandParam(brandId);
-  if (!brand) notFound();
+  if (!brand) return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
   const site = await resolveSiteParam(brand.id, siteId);
-  if (!site) notFound();
+  if (!site) return <MarketingAddressUnavailable token="web_site" address={siteId} />;
   permanentRedirect(
     marketingRoutes.siteKeywords(marketingSeg(brand), marketingSeg(site)),
   );

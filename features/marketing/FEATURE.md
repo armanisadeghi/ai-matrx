@@ -82,6 +82,11 @@ Tree" artifact):
   list) and let the unique index, not an RLS-filtered select, decide
   availability. The affordance is ONE component: `MarketingAddressCard`
   (`components/settings/`), on brand settings and website settings.
+- **An empty UUID read is an access question, not proof of absence.** Brand/site
+  server layouts and pages return `MarketingAddressUnavailable`, which delegates
+  to the canonical `AccessGate`. Unresolved opaque keys retain their 404. Site
+  resolution remains scoped to its brand; this never grants access or performs
+  a global site lookup.
 - **Route params are ADDRESSES, never identifiers.** Client code takes UUIDs
   from `useMarketingBrand()`/`useMarketingSite()` (`lib/brand-context.tsx`);
   server code from `resolveBrandParam`/`resolveSiteParam`.
@@ -663,6 +668,8 @@ judgments are removed rather than silently transplanted to a different offering.
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. Google approved GA4 and YouTube read-only access on 2026-08-25: their code-controlled campaign phases are `approved`, so normal signed-in users can authorize, bind, manually sync GA4, and read an explicitly discovered owned YouTube channel. The GA4 recurring dispatcher remains disabled pending exact name-and-interval approval. Google Ads now has a real reporting-only workspace and server path behind an `internal_test` super-admin gate; live certification remains blocked on Google's passkey requirement for revealing the existing Explorer Access developer token and on a distinct Ads test identity. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
+
+- 2026-09-09 — UUID brand/site read failures reach the canonical access gate across server shells and pages; opaque key misses remain 404.
 
 - 2026-09-07 — **The Google read-only reviewer route uses the canonical same-tab OAuth redirect.** Review mode now reuses `startAuthorizationCodeRedirect` with the same focused scope bundle, owner, organization context, force-consent flag, exchange endpoint, and vault-backed connection path. Normal product connection actions retain popup mode. This prevents an inaccessible Google Identity Services popup from interrupting the continuous reviewer evidence Google requested.
 - 2026-09-01 — **Marketing reads validate the JWT before reaching PostgREST.**

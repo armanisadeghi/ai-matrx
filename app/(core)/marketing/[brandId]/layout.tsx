@@ -1,3 +1,4 @@
+import { MarketingAddressUnavailable } from "@/features/marketing/components/shared/MarketingAddressUnavailable";
 // The CLIENT workspace shell — everything under /marketing/[brandId].
 //
 // The segment is an ADDRESS (brand key or UUID), never an identifier: this
@@ -10,7 +11,7 @@
 // No body wrapper and no padding here: every page under this tree owns its own
 // header offset (some mount a RouteHeader, some ride the breadcrumb below).
 
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/server";
 
@@ -40,7 +41,7 @@ export default async function MarketingBrandLayout({
     redirect(`/login?redirectTo=${encodeURIComponent(`/marketing/${brandId}`)}`);
   }
   const brand = await resolveBrandParam(brandId);
-  if (!brand) notFound();
+  if (!brand) return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
 
   const seg = marketingSeg(brand);
 

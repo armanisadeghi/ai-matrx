@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { MarketingAddressUnavailable } from "@/features/marketing/components/shared/MarketingAddressUnavailable";
 import Link from "next/link";
 import {
   BookOpen,
@@ -27,7 +27,7 @@ export default async function BrandIdentityPage({
 }) {
   const { brandId } = await params;
   const brand = await resolveBrandParam(brandId);
-  if (!brand) notFound();
+  if (!brand) return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
   const seg = marketingSeg(brand);
   const identity = marketingRoutes.brandIdentity(seg);
 

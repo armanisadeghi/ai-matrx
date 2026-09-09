@@ -1,5 +1,5 @@
+import { MarketingAddressUnavailable } from "@/features/marketing/components/shared/MarketingAddressUnavailable";
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
 
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import LocalListingsWorkspace from "@/features/marketing/local/LocalListingsWorkspace";
@@ -13,7 +13,7 @@ export default async function BrandLocationPage({
 }) {
   const { brandId, locationId } = await params;
   const brand = await resolveBrandParam(brandId);
-  if (!brand) notFound();
+  if (!brand) return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
   return (
     <Suspense fallback={<LoadingSurface label="Loading location…" />}>
       <LocalListingsWorkspace brandId={brand.id} locationId={locationId} />

@@ -1,5 +1,5 @@
+import { MarketingAddressUnavailable } from "@/features/marketing/components/shared/MarketingAddressUnavailable";
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
 
 import { BrandWorkspace } from "@/features/marketing/components/brands/BrandWorkspace";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
@@ -13,7 +13,7 @@ export default async function MarketingBrandPage({
   const { brandId } = await params;
   // Cache hit — the layout already resolved this address.
   const brand = await resolveBrandParam(brandId);
-  if (!brand) notFound();
+  if (!brand) return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
   return (
     <Suspense fallback={<LoadingSurface label="Loading brand…" />}>
       <BrandWorkspace brandId={brand.id} />

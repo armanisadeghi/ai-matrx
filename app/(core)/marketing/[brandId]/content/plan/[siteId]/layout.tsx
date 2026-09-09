@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { MarketingAddressUnavailable } from "@/features/marketing/components/shared/MarketingAddressUnavailable";
 
 import { CanonicalSiteSegment } from "@/features/marketing/components/brand/CanonicalSegment";
 import { MarketingSiteProvider } from "@/features/marketing/lib/brand-context";
@@ -32,9 +32,9 @@ export default async function BrandContentPlanSiteLayout({
 }) {
   const { brandId, siteId } = await params;
   const brand = await resolveBrandParam(brandId);
-  if (!brand) notFound();
+  if (!brand) return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
   const site = await resolveSiteParam(brand.id, siteId);
-  if (!site) notFound();
+  if (!site) return <MarketingAddressUnavailable token="web_site" address={siteId} />;
   const seg = marketingSeg(site);
   return (
     <MarketingSiteProvider

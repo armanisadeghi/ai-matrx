@@ -1,5 +1,6 @@
+import { MarketingAddressUnavailable } from "@/features/marketing/components/shared/MarketingAddressUnavailable";
 import { Suspense } from "react";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { SeoCapabilitiesWorkspace } from "@/features/marketing/seo/capabilities/SeoCapabilitiesWorkspace";
@@ -31,9 +32,9 @@ export default async function MarketingSeoCapabilitiesPage({
     searchParams,
   ]);
   const brand = await resolveBrandParam(brandId);
-  if (!brand) notFound();
+  if (!brand) return <MarketingAddressUnavailable token="web_brand" address={brandId} />;
   const site = await resolveSiteParam(brand.id, siteId);
-  if (!site) notFound();
+  if (!site) return <MarketingAddressUnavailable token="web_site" address={siteId} />;
 
   if (query.site !== site.id) {
     redirect(
