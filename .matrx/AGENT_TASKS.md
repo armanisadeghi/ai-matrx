@@ -55,6 +55,23 @@ failure mode the no-shims rule exists to prevent, not an example of it.
 
 ## Active
 
+### TASK-012: Verify original data-panel media failures
+- **Status:** ready
+- **Created:** 2026-09-09
+- **Source:** Persistence repair patrol; media class `sec_2f421a08ae9aeeb390c14df5d559715954462137713964235574d0eda519ef4c`, 39 exact rows on `/data` from September 3.
+
+**Goal**
+Establish the original media transport failure and verify its repair with authorized real media rendering; do not close historical rows from similar error wording.
+
+**Subtasks**
+- [x] Load all 39 members through sanctioned system_errors get; retain their exact file identities in the proof ledger below.
+- [x] Verify existing candidate repair `2a21912f04967a9ee67b91fe80a36d598108d093` in aidream: private thumbnail object URLs use client-approved durable-ref recovery.25 component tests pass. Frontend adoption `ec4d10ff6f4944982810250dd2a19db652421150`; READY serving build `35c30f0e601d50446dd8b2cb983ec62e69fc3236` contains media0.5.1.
+- [ ] Establish original actor access and media state without changing grants. All39 authorized admin record reads returned403 at07:41:58Z; these are refusals, not byte or deletion proof.
+- [ ] Restore or otherwise identify the original renderer, then verify original media and bounded recovery independently. Required IAB reviewer opened the captured `/data` URL at07:43Z, but the agent panel did not hydrate and no media rendered. Do not run the agent merely to manufacture evidence.
+
+**Notes**
+Representative `8c040828-2c69-48ae-8caf-1a4f915236eb`, file `948d349f-8c02-4d4a-82fb-9dee38b1e64b`. Historical payload lacks loaded build and transport, so the existing blob recovery fix is a candidate, not proven attribution. Exact39 map and read-only proof: `/Users/armanisadeghi/.codex/automations/system-error-repair-patrol/media-data-proof-2026-09-09T0744Z.json`. No new media errors07:35–07:43:52Z; all39 remain open. No user data, permissions, or queue state changed.
+
 ### TASK-011: Verify marketing UUID access classification
 - **Status:** ready
 - **Created:** 2026-09-09
