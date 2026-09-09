@@ -55,6 +55,23 @@ failure mode the no-shims rule exists to prevent, not an example of it.
 
 ## Active
 
+### TASK-013: Verify workspace admission failure classification
+- **Status:** ready
+- **Created:** 2026-09-09
+- **Source:** Eight `/chat/new` mandate console failures at07:40:17–18Z.
+
+**Goal**
+Identify the actual workspace admission failure and verify honest initialization guidance and recovery without choosing an organization for the user.
+
+**Subtasks**
+- [x] Sanctioned details: all eight share page session `fa1f3ef2-dc7d-479f-ac06-8e7bab1d1f1b`, loaded deployment `dpl_GgnpJxtyYmoKrG8RDpDFj3tyQBVR` / `35c30f0e601d50446dd8b2cb983ec62e69fc3236`, hidden page age29.3s. They are mandate context failures, not Realtime disconnects.
+- [x] Shared classifier repair `a196a78c8594521dfb40bc03e2240c589d7940d8`: preserve timed-out bootstrap and unavailable store separately from authoritative empty selection. Mandate error retains the outcome and truthful remedy. No retry, deadline, header, or organization selection changes. Two forcing guards failed before;32 tests and fulltypecheck pass; independent24 tests/source review pass.
+- [x] Real required-IAB fresh chat subsequently admitted workspaceTIT and enabled the quick actions without execution or errors. This does not identify the earlier page's admission timeline. Owned tab closed.
+- [ ] Existing release owner `01a020b5-158a-7e82-9c3f-7f73570db247` deploys containing source; verify genuine failure/recovery and sanctioned recurrence before closure.
+
+**Notes**
+Original IDs remain open: `130f5e31-a8c5-4375-ad53-742676e5450a`, `96ea013b-c8d4-4e5d-9456-afa883cc74f2`, `3a6a2d69-9a7a-4352-b4c2-b5d335621d82`, `86f7e51c-c9d9-4f72-9632-bc16e6af2f46`, `88e710d2-0905-4bc4-805c-ada13e66d0e6`, `13b724e9-a887-480a-9e77-a5f849fc5b6d`, `bd5d31cd-60b7-4e40-b27c-273c8c85033f`, `e4b1949e-663c-4afd-a86e-86f06f96e4ed`. Old payload cannot distinguish timeout from no selection. Diagnostic/state repair alone is not closure.
+
 ### TASK-012: Verify original data-panel media failures
 - **Status:** ready
 - **Created:** 2026-09-09
