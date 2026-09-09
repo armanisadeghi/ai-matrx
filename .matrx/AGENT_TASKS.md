@@ -55,6 +55,23 @@ failure mode the no-shims rule exists to prevent, not an example of it.
 
 ## Active
 
+### TASK-010: Verify deployed chat rejection correlation
+- **Status:** ready
+- **Created:** 2026-09-09
+- **Source:** Heartbeat rejection `47e1b705-3234-4677-b3d1-7fa1be9a0047` at05:56:59.518822Z and five realtime TIMED_OUT captures on the same chat.
+
+**Goal**
+Preserve execution identity through rejection capture and independently diagnose the actual transport interruption without resubmitting a completed request.
+
+**Subtasks**
+- [x] Source `824b0541652ac902dc38a86b4624ff4b984328a8` preserves executionRequestId/conversationId/original error name through execute/manual/resume and smart wrappers. Producer string payloads and smart serialized Error behavior remain unchanged; only three named metadata fields are forwarded.
+- [x] Canonical capture dedupe refreshes identity alongside current raw evidence; unknown current identity cannot inherit the first request. Both missing-ID and stale-ID forcing tests failed before.19 execution/recovery tests,21 capture/persistence tests and full typecheck pass.
+- [ ] Complete independent final review of serializer/dedupe delta and containing frontend release through existing release owner.
+- [ ] Observe a genuine correlated failure/recovery on the containing browser before closing historical transport incidents. No deliberate execution or fabricated failure is required.
+
+**Notes**
+Companions remain open: `ecb6b7ad-c950-4e42-adb3-30a2e07f11cd`, `ac581a5e-4a5f-4f16-9fea-212197c0b6da`, `5ce69409-1457-4061-93f4-e8367c98ed35`, `9342d7ac-944d-4811-b190-ad52d335a399`, `6b054ec7-8140-4564-ad47-ef6d1129690a`. All lack browser provenance and execution identity. A temporal candidate request completed05:57:26, but there is no exact captured link; do not attribute the error by timing. Current public alias `dpl_HkRoBCV7mNKfcCLRZqxiUgottyWv` serves `b3a60922332fdb454b2310748159453450c88eb5`; it includes existing provenance stamping, but historical loaded identity is unknown. This is a diagnostic repair, not transport closure. No user content or ARMAN ledger changed.
+
 ### TASK-009: Verify chat transport recovery after diagnostic fan-out repair
 - **Status:** ready — source pushed; ordinary frontend release and browser recovery proof remain
 - **Created:** 2026-09-09
@@ -66,7 +83,7 @@ One canonical transport incident per dropped stream, with verified recovery of t
 **Subtasks**
 - [x] Fix transport Redux wrapper duplication in `c5662ae0e6db5cc3eb52bcc578a3e02c939ad853`; retain the original red/durable transport capture. Exact forcing case produced four entries before and one after; independent review passed.
 - [x] Verify original server outcome without executing again: request `63e2a63f-1241-4a8b-8ead-42db01e09cff` completed at `2026-09-09T01:54:09.730614Z`; four linked request rows completed. Independent canonical ORM read at `02:04:20.912936Z`.
-- [ ] Verify the ordinary frontend release contains the fix (release owner confirmed v0.4.1770 excludes it).
+- [x] Current READY public deployment `dpl_HkRoBCV7mNKfcCLRZqxiUgottyWv` serves `b3a60922332fdb454b2310748159453450c88eb5`, verified to contain `c5662ae0e6db5cc3eb52bcc578a3e02c939ad853` at06:16Z. Historical browser recovery remains unproven.
 - [ ] Verify browser reattachment and rendered persisted response without resubmitting the original turn; server completion alone does not prove this.
 
 **Notes**
