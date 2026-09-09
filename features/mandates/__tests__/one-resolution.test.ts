@@ -86,7 +86,7 @@ let doorStatus: number | null = null;
 /** Every org header the transport was asked to bind, in order. */
 let doorOrgCalls: string[] = [];
 
-let admission: "ready" | "unresolved" = "ready";
+let admission: "ready" | "unresolved" | "timed-out" | "unavailable" = "ready";
 let selectedOrg: string | null = ORG_A;
 
 class FakeBackendApiError extends Error {
@@ -226,6 +226,16 @@ describe("resolveMandate refuses without an admitted organization", () => {
     const error = await rejectedError(resolveMandate(KEY));
     expect(error.message).toContain("no organization is selected");
     expect(error.message).toContain("select a workspace");
+  });
+
+  it.each(["timed-out", "unavailable"] as const)("preserves %s admission instead of inventing a selection verdict", async (outcome) => {
+    admission = outcome;
+    selectedOrg = null;
+    const error = await rejectedError(resolveMandate(KEY));
+    expect(error).toMatchObject({ name: "MandateOrganizationUnresolvedError", admission: outcome });
+    expect(error.message).not.toContain("no organization is selected");
+    expect(error.message).not.toContain("select a workspace");
+    expect(doorOrgCalls).toEqual([]);
   });
 
   it("refuses the OPTIONAL lane too — optional means unassigned, not un-scoped", async () => {

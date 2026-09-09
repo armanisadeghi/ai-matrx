@@ -17,8 +17,8 @@
  *
  * `waitForOrganizationAdmission()` resolves "ready" the moment an organization
  * is selected, "unresolved" when the active-org bootstrap has authoritatively
- * finished with NO selection (or the bounded wait expires — SSR/tests/no
- * store). It never guesses and never picks an organization.
+ * finished with NO selection. "timed-out" means bootstrap did not finish within
+ * the bounded wait; "unavailable" means there is no store to observe. It never guesses and never picks an organization.
  *
  * Consumers: `lib/python-client.ts` and `features/files/media-client` (whose
  * private copy of this wait was consolidated onto this module on 2026-08-31).
@@ -36,7 +36,7 @@ import {
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
 
-export type OrganizationAdmission = "ready" | "unresolved";
+export type OrganizationAdmission = "ready" | "unresolved" | "timed-out" | "unavailable";
 
 /** Bootstrap completes in milliseconds; this only bounds a broken boot. */
 const ORGANIZATION_ADMISSION_TIMEOUT_MS = 8_000;
@@ -56,7 +56,7 @@ export function peekSelectedOrganizationId(): string | null {
 
 export function waitForOrganizationAdmission(): Promise<OrganizationAdmission> {
   const store = getStoreSingleton();
-  if (!store) return Promise.resolve("unresolved");
+  if (!store) return Promise.resolve("unavailable");
 
   const immediate = readAdmission(store.getState() as RootState);
   if (immediate) return Promise.resolve(immediate);
@@ -72,7 +72,7 @@ export function waitForOrganizationAdmission(): Promise<OrganizationAdmission> {
       resolve(verdict);
     };
     const timer = setTimeout(
-      () => finish("unresolved"),
+      () => finish("timed-out"),
       ORGANIZATION_ADMISSION_TIMEOUT_MS,
     );
     unsubscribe = store.subscribe(() => {

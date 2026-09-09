@@ -61,6 +61,7 @@ import { BackendApiError } from "@/lib/api/errors";
 import {
   peekSelectedOrganizationId,
   waitForOrganizationAdmission,
+  type OrganizationAdmission,
 } from "@/lib/api/organization-admission";
 import type { components } from "@/types/python-generated/api-types";
 import { toLlmParams } from "./llm-params";
@@ -308,9 +309,12 @@ type MandateResolutionResponse =
  */
 export class MandateOrganizationUnresolvedError extends Error {
   readonly code = "mandate_organization_unresolved";
-  constructor(readonly mandateKey: string) {
-    super(
-      `mandate "${mandateKey}" cannot resolve yet: no organization is selected. ` +
+  constructor(readonly mandateKey: string, readonly admission: Exclude<OrganizationAdmission, "ready"> = "unresolved") {
+    super(admission === "timed-out"
+      ? `mandate "${mandateKey}" cannot resolve yet: workspace initialization timed out. Wait for initialization or reload if it remains stuck; no workspace was chosen for you.`
+      : admission === "unavailable"
+      ? `mandate "${mandateKey}" cannot resolve yet: workspace state is unavailable. Reload the application to initialize it; no workspace was chosen for you.`
+      : `mandate "${mandateKey}" cannot resolve yet: no organization is selected. ` +
         `Which agent runs this job depends on your active workspace, so there is ` +
         `no honest answer until one is chosen — select a workspace and try again.`,
     );
@@ -394,7 +398,7 @@ export async function resolveMandate(
   const admission = await waitForOrganizationAdmission();
   const organizationId = peekSelectedOrganizationId();
   if (admission !== "ready" || !organizationId) {
-    throw new MandateOrganizationUnresolvedError(mandateKey);
+    throw new MandateOrganizationUnresolvedError(mandateKey, admission === "ready" ? "unresolved" : admission);
   }
 
   const cacheKey = mandateCacheKey(userId, organizationId, mandateKey);

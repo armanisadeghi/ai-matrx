@@ -136,6 +136,14 @@ is a defect, never recovery. The blocking `check:organization-context` suite
 includes a real `callApi` NDJSON configuration and proves absent organization
 context performs zero `fetch` calls before a stream can start.
 
+**Background organization admission preserves its outcome.**
+`organization-admission.ts` distinguishes a selected organization (`ready`), a
+finished bootstrap with no selection (`unresolved`), an unfinished bootstrap
+past its deadline (`timed-out`), and an unavailable store (`unavailable`).
+Mandate resolution retains that outcome and gives initialization/reload guidance
+for the latter two; it must not claim the person selected no workspace. The
+existing deadline, org-switch retry, and fail-closed transport remain unchanged.
+
 ## Multipart nuance (read before touching a `*/multipart` call)
 
 FastAPI multipart bodies encode JSON fields as **strings** at the wire
