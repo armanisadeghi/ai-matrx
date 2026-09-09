@@ -108,7 +108,10 @@ export function AdminMandateWorkspacePage({
               trail={[
                 { label: "Administration", href: "/administration" },
                 { label: "Mandates", href: "/administration/mandates" },
-                { label: data.mandate.label?.trim() || "Display name unavailable" },
+                {
+                  label:
+                    data.mandate.label?.trim() || "Display name unavailable",
+                },
               ]}
               right={actions}
             />
@@ -377,12 +380,15 @@ function RemoveMandate({
         type="button"
         variant="destructive"
         size="sm"
-        className="h-7 gap-1.5 text-[12px]"
+        className="h-7 w-7 shrink-0 gap-1.5 p-0 text-[12px] sm:w-auto sm:px-2"
+        aria-label={busy ? "Removing mandate" : "Remove mandate"}
         disabled={busy}
         onClick={() => void remove()}
       >
         <Trash2 className="h-3.5 w-3.5" />
-        {busy ? "Removing…" : "Remove"}
+        <span className="sr-only sm:not-sr-only">
+          {busy ? "Removing…" : "Remove"}
+        </span>
       </Button>
       <FieldHelp label="Remove mandate">
         Stops this mandate from resolving. Its record and history are retained

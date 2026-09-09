@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-09-08`
+**Last updated:** `2026-09-09`
 
 ---
 
@@ -113,6 +113,9 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 
 ## Invariants & gotchas
 
+- Filesystem parameter templates (`[id]`, `[...path]`, `[[...slug]]`) remain route inventory, never clickable destinations. `utils/route-discovery/shared.ts:isConcreteRoute` filters generated breadcrumb, module-picker, grouped-directory, and search links.
+- `AdminModuleHeader` uses the shared fallback portal: a page-owned header replaces it at every breakpoint and the fallback returns on navigation away. The mandate detail host reuses `CrumbTrailHeader` with the loaded display name and its existing actions; it does not repeat the title in the workspace body or change user/org workspace chrome.
+
 - `admin-navigation.ts` is the only hierarchy. Never create a second dashboard, sidebar, or mobile grouping object.
 - The expanded Administration route sidebar has exactly two visual levels:
   icon-and-label all-caps domain accordions and clickable destination rows.
@@ -222,6 +225,8 @@ that existing editor; private keys and client secrets remain outside
 ---
 
 ## Change log
+
+- `2026-09-09` — Excluded unresolved filesystem parameters from generated navigation and replaced the mandate detail header with linked Administration/Mandates ancestors plus its actual display name.
 
 - `2026-09-09` — Standardized every static Administration domain root on `AdminDomainLanding`, whose directory is generated from the canonical registry, and added focused sidebar-rendering plus strict catalog checks to CI. The existing two-level, persistent-DOM sidebar contract remains unchanged.
 

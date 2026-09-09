@@ -7,9 +7,7 @@ export function isConcreteRoute(path: string): boolean {
   return !pathname.split("/").some((segment) => /^\[.+\]$/.test(segment));
 }
 
-export function groupRoutes(
-  routes: string[],
-): Record<string, string[]> {
+export function groupRoutes(routes: string[]): Record<string, string[]> {
   const groups: Record<string, string[]> = {};
 
   const parentSegments = new Set(

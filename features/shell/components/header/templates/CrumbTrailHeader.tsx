@@ -108,7 +108,10 @@ function CrumbOptions({ crumb }: { crumb: Crumb }) {
 
 function CrumbNode({ crumb, isLast }: { crumb: Crumb; isLast: boolean }) {
   const text = isLast ? (
-    <span className="truncate max-w-[12rem] text-sm font-medium text-foreground">
+    <span
+      className="min-w-0 break-words text-xs leading-4 font-medium text-foreground sm:text-sm"
+      title={crumb.label}
+    >
       {crumb.label}
     </span>
   ) : crumb.href ? (

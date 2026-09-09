@@ -548,14 +548,16 @@ function OneMandateWorkspace({
       <div className="mx-auto w-full max-w-6xl px-4 pb-12 pt-3 sm:px-6">
         {routeHeader?.(data, authoring ? adminActions?.(data, refresh) : null)}
         <header className="mb-5 space-y-3">
-          {!routeHeader && <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="break-words text-xl font-semibold tracking-tight text-foreground">
-                {data.mandate.label?.trim() || "Display name unavailable"}
-              </h2>
+          {!routeHeader && (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="break-words text-xl font-semibold tracking-tight text-foreground">
+                  {data.mandate.label?.trim() || "Display name unavailable"}
+                </h2>
+              </div>
+              {authoring ? adminActions?.(data, refresh) : null}
             </div>
-            {authoring ? adminActions?.(data, refresh) : null}
-          </div>}
+          )}
           <div className="rounded-lg border border-border bg-card px-3">
             <PropertyRow
               label="Scope"

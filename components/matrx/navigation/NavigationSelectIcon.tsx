@@ -17,15 +17,17 @@ const NavigationSelectIcon = ({
   getFullPath,
   handleNavigation,
 }: NavigationSelectIconProps) => {
-  const navigationItems = pages.filter((page) => isConcreteRoute(getFullPath(page))).map((page, index) => {
-    const path = getFullPath(page);
-    return {
-      id: `${path}-${index}`,
-      label: page.title,
-      value: path,
-      href: path,
-    };
-  });
+  const navigationItems = pages
+    .filter((page) => isConcreteRoute(getFullPath(page)))
+    .map((page, index) => {
+      const path = getFullPath(page);
+      return {
+        id: `${path}-${index}`,
+        label: page.title,
+        value: path,
+        href: path,
+      };
+    });
 
   return (
     <IconSelect
