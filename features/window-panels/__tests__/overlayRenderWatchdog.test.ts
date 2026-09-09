@@ -34,6 +34,16 @@ describe("rectOnScreen", () => {
 });
 
 describe("diagnoseOverlayRender", () => {
+  it("passes a visible alternate surface that intentionally has no window geometry", () => {
+    expect(diagnoseOverlayRender({
+      entry: undefined,
+      windowsHidden: false,
+      viewportWidth: VW,
+      viewportHeight: VH,
+      surfaceAcknowledged: true,
+    })).toEqual({ ok: true, reason: null });
+  });
+
   it("flags a missing window entry as no-window-registered", () => {
     expect(diagnoseOverlayRender({ entry: undefined, windowsHidden: false, viewportWidth: VW, viewportHeight: VH }))
       .toEqual({ ok: false, reason: "no-window-registered" });
