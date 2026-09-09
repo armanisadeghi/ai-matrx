@@ -21,6 +21,7 @@
 // fold, which is where Arman found "the actual things I need" hiding).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -101,6 +102,17 @@ export function AdminMandateWorkspacePage({
         <MandateWorkspace
           mandateKeyOrId={mandateKey}
           host="admin-route"
+          routeHeader={(data, actions) => (
+            <CrumbTrailHeader
+              backHref="/administration/mandates"
+              trail={[
+                { label: "Administration", href: "/administration" },
+                { label: "Mandates", href: "/administration/mandates" },
+                { label: data.mandate.label?.trim() || "Display name unavailable" },
+              ]}
+              right={actions}
+            />
+          )}
           adminActions={(data, refresh) => (
             <div className="flex flex-wrap items-center gap-2">
               {data.mandate.organization_id !== SYSTEM_ORGANIZATION_ID ? (

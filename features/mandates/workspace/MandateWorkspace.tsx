@@ -157,6 +157,7 @@ const WORKSPACE_TABS: {
 
 export interface MandateWorkspaceProps {
   adminContent?: (tab: MandateWorkspaceTab) => ReactNode;
+  routeHeader?: (data: MandateWorkspaceData, actions: ReactNode) => ReactNode;
   adminActions?: (
     data: MandateWorkspaceData,
     onChanged: () => void,
@@ -407,6 +408,7 @@ function OneMandateWorkspace({
   principal = { kind: "user" },
   adminContent,
   adminActions,
+  routeHeader,
 }: MandateWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<MandateWorkspaceTab>("definition");
   useEffect(() => {
@@ -544,15 +546,16 @@ function OneMandateWorkspace({
       )}
     >
       <div className="mx-auto w-full max-w-6xl px-4 pb-12 pt-3 sm:px-6">
+        {routeHeader?.(data, authoring ? adminActions?.(data, refresh) : null)}
         <header className="mb-5 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          {!routeHeader && <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <h2 className="break-words text-xl font-semibold tracking-tight text-foreground">
                 {data.mandate.label?.trim() || "Display name unavailable"}
               </h2>
             </div>
             {authoring ? adminActions?.(data, refresh) : null}
-          </div>
+          </div>}
           <div className="rounded-lg border border-border bg-card px-3">
             <PropertyRow
               label="Scope"
