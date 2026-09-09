@@ -741,6 +741,10 @@ keep that honest:
    dialog's read view. `PageDraftEditor` is the EDIT surface at the one place
    that knows _which_ page this is and can therefore save. Never add a second
    read-only draft renderer; extend the kind component instead.
+5. **One run set opens one floating window.** `RunSetWindowController`
+   canonicalizes its overlay identity from `setKey`; multiple mounted views of
+   the same page-step set may supply different labels, but must never stack
+   duplicate live-run panels.
 
 **Open gap (deliberate):** the guided AI actions are verb-labeled buttons, not
 assist chips, because an assist action runs through `AssistActionContext`,
@@ -877,6 +881,12 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-09-09 — **One page-step run opens one floating window.** Content Plan's
+  Write tab mounted both its page editor and pipeline controller over the same
+  run set with different overlay ids, so a guided review opened duplicate
+  “Page content” and “Page pipeline step” panels. The shared
+  `RunSetWindowController` now derives the overlay identity from `setKey`, with
+  a regression proving two callers converge on one panel.
 - 2026-08-30 — **The shared research-topic picker now accepts new topics in
   place.** `ResearchTopicSelect` uses the platform `CreatablePicker`, writes
   typed names through Research's one `createTopic` service with the viewed

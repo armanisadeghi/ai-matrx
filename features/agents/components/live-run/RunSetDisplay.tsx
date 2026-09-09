@@ -127,8 +127,12 @@ export function useRunSet(setKey: string) {
 export interface RunSetWindowControllerProps {
   /** Stable Redux identity for every run rendered in this window. */
   setKey: string;
-  /** Stable overlay identity so host remounts re-bind one existing window. */
-  instanceId: string;
+  /**
+   * Caller-local identity retained for source readability. The controller
+   * canonicalizes the actual overlay identity from `setKey`, because two
+   * mounted views of one run set must converge on one floating window.
+   */
+  instanceId?: string;
   label: string;
   /** Opens before adoption while the first request id is still pending. */
   active?: boolean;
@@ -142,7 +146,6 @@ export interface RunSetWindowControllerProps {
  */
 export function RunSetWindowController({
   setKey,
-  instanceId,
   label,
   active,
   width,
@@ -151,7 +154,7 @@ export function RunSetWindowController({
   const entries = useAppSelector((state) => selectRunSetEntries(state, setKey));
   useFloatingLiveRun({
     active: (active ?? false) || entries.length > 0,
-    instanceId,
+    instanceId: `run-set:${setKey}`,
     runSetKey: setKey,
     label,
     width,
