@@ -417,6 +417,26 @@ export interface AgentDefinition {
  * Does NOT include system/builtin agents.
  * SECURITY DEFINER — explicit access metadata per row.
  */
+/**
+ * The Orchestra badge as the RPC returns it (snake_case, `jsonb`), present on
+ * `agx_get_list` / `agx_get_list_full` / `agx_search` since 2026-09-08 and
+ * `null` for every agent that is not a conductor.
+ *
+ * 🚨 Rendering it is NOT this repo's job. Every agent-selection surface on the
+ * platform renders `@ai-matrx/agents/catalog/react`, which parses this column
+ * itself into `AgentSummary.orchestra` (camelCased) and draws the conductor
+ * marker. This declaration exists ONLY so the SSR seed row
+ * (`lib/agents/data.ts` `getAgentListSeed`) stays structurally honest about
+ * what the RPC hands back — do not grow a second badge renderer from it.
+ */
+export interface AgentOrchestraBadgeRow {
+  mode: string;
+  tagline: string | null;
+  depth_budget: number | null;
+  member_count: number;
+  member_titles: string[];
+}
+
 export interface AgentListRow {
   id: string;
   name: string;
@@ -438,6 +458,8 @@ export interface AgentListRow {
   is_owner: boolean;
   access_level: AccessLevel;
   shared_by_email: string;
+  /** Set only when this agent is an Orchestra. See `AgentOrchestraBadgeRow`. */
+  orchestra: AgentOrchestraBadgeRow | null;
 }
 
 /**

@@ -64566,6 +64566,7 @@ export type Database = {
           is_owner: boolean
           model_id: string
           name: string
+          orchestra: Json
           organization_id: string
           shared_by_email: string
           source_agent_id: string
@@ -64590,6 +64591,7 @@ export type Database = {
           is_owner: boolean
           model_id: string
           name: string
+          orchestra: Json
           organization_id: string
           shared_by_email: string
           source_agent_id: string
@@ -65053,6 +65055,13 @@ export type Database = {
           visibility: string
         }[]
       }
+      agx_orchestra_badges: {
+        Args: never
+        Returns: {
+          agent_id: string
+          orchestra: Json
+        }[]
+      }
       agx_promote_shortcut_to_global: {
         Args: {
           p_label?: string
@@ -65111,6 +65120,7 @@ export type Database = {
           match_score: number
           model_id: string
           name: string
+          orchestra: Json
           organization_id: string
           shared_by_email: string
           source_agent_id: string
