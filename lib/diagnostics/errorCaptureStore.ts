@@ -542,6 +542,10 @@ export function captureError(input: CaptureInput): string {
       browserProvenance: collectBrowserProvenance(),
       status: input.status ?? existing.status,
       raw: input.raw ?? existing.raw,
+      // The displayed raw evidence belongs to this occurrence, not the first
+      // matching request. Unknown current identity must not inherit an old one.
+      requestId: input.requestId,
+      conversationId: input.conversationId,
     };
     bumpUnseen(existing.id, existing.tier);
     const next = entries.slice();

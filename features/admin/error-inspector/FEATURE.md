@@ -132,6 +132,15 @@ second symptom instead of deduping the incident.
   when a canonical stream capture in the last five seconds already owns their
   message. Transport wrappers may carry its `userMessage` instead of the
   technical message; the original transport capture remains red and durable.
+  Execute/manual/resume rejection metadata preserves the execution request id,
+  conversation id and original stream error name. Producer string rejection
+  payloads stay unchanged; smart-execute preserves its serialized Error shape
+  while forwarding only those named fields. The capture adapter
+  maps them to structured identity rather than confusing the RTK dispatch id
+  with the execution id. No thunk arguments, prompts or credentials are added.
+  Browser provenance remains stamped by the common capture store.
+  Deduplicated occurrences refresh request/conversation identity with their raw
+  evidence; an occurrence without identity never inherits an earlier request.
 - **Domain** — `lib/media/durability.ts` (`reportMediaDurabilityViolation` →
   `media-durability`) and `lib/toast-service.ts` (`toast.error` → `user-toast`,
   red unless a specific rule proves the condition expected).

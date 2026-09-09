@@ -1,4 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { serializeExecutionRejection } from "@/lib/diagnostics/executionRejectionMeta";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectAutoClearConversation } from "../instance-ui-state/instance-ui-state.selectors";
 import { executeInstance } from "./execute-instance.thunk";
@@ -406,7 +407,11 @@ export const smartExecute = createAsyncThunk<
           typeof executeResult.payload === "string"
             ? executeResult.payload
             : (executeResult.error?.message ?? "Send failed");
-        throw new Error(reason);
+        throw Object.assign(new Error(reason), {
+          conversationId,
+          executionRequestId: executeResult.meta.executionRequestId,
+          originalErrorName: executeResult.meta.originalErrorName,
+        });
       }
     } finally {
       // Covers every gate cancellation, validation failure, and thrown error.
@@ -414,6 +419,7 @@ export const smartExecute = createAsyncThunk<
       releaseClaim();
     }
   },
+  { serializeError: serializeExecutionRejection },
 );
 
 /**

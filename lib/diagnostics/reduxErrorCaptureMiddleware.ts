@@ -24,12 +24,13 @@
 
 import type { Middleware } from "@reduxjs/toolkit";
 import { captureError, getSnapshot } from "@/lib/diagnostics/errorCaptureStore";
+import type { ExecutionRejectionMeta } from "./executionRejectionMeta";
 
 interface RejectedAction {
   type: string;
-  error?: { name?: string; message?: string; code?: string; stack?: string };
+  error?: ExecutionRejectionMeta & { name?: string; message?: string; code?: string; stack?: string };
   payload?: unknown;
-  meta?: {
+  meta?: ExecutionRejectionMeta & {
     aborted?: boolean;
     condition?: boolean;
     rejectedWithValue?: boolean;
@@ -100,9 +101,11 @@ export const reduxErrorCaptureMiddleware: Middleware =
         captureError({
           source: "redux-rejected",
           relation: a.type.slice(0, -"/rejected".length),
-          code: a.error?.code ?? a.error?.name,
+          code: a.error?.code ?? a.meta?.originalErrorName ?? a.error?.originalErrorName ?? a.error?.name,
           message: messageOf(a),
-          name: a.error?.name,
+          name: a.meta?.originalErrorName ?? a.error?.originalErrorName ?? a.error?.name,
+          requestId: a.meta?.executionRequestId ?? a.error?.executionRequestId,
+          conversationId: a.meta?.conversationId ?? a.error?.conversationId,
           stack: a.error?.stack,
           raw: {
             type: a.type,

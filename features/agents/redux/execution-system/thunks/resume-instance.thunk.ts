@@ -1,3 +1,4 @@
+import { executionRejectionMeta, type ExecutionRejectionMeta } from "@/lib/diagnostics/executionRejectionMeta";
 /**
  * resumeInstance — continue an agent loop whose original stream has ended
  * because a client-delegated tool was answered after the hard-suspend.
@@ -94,14 +95,17 @@ interface ResumeInstanceResult {
 
 export const resumeInstance = createAsyncThunk<
   ResumeInstanceResult,
-  ResumeInstanceArgs
+  ResumeInstanceArgs,
+  { rejectedMeta: ExecutionRejectionMeta }
 >(
   "instances/resume",
   async (
     { conversationId, userRequestId, debug = false },
-    { getState, dispatch, rejectWithValue },
+    { getState, dispatch, rejectWithValue: reject },
   ) => {
     const requestId = generateRequestId();
+    const rejectWithValue = (value: unknown, originalErrorName?: string) =>
+      reject(value, executionRejectionMeta(requestId, conversationId, originalErrorName));
 
     // Single-flight claim per user_request — taken SYNCHRONOUSLY, before the
     // first `await`. Two /tool_results POSTs for parallel delegated calls can
@@ -367,7 +371,7 @@ export const resumeInstance = createAsyncThunk<
       }
       if (error instanceof StreamPhaseError) {
         releaseResumeClaim(userRequestId);
-        return rejectWithValue(error.message);
+        return rejectWithValue(error.message, error.originalName);
       }
 
       // Pre-stream failure (backend resolve, buildToolInjection, etc.). Mark
@@ -384,7 +388,7 @@ export const resumeInstance = createAsyncThunk<
           error: { error_type: "client_error", message },
         }),
       );
-      return rejectWithValue(message);
+      return rejectWithValue(message, error instanceof Error ? error.name : undefined);
     }
   },
 );

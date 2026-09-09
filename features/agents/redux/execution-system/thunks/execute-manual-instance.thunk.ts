@@ -1,3 +1,4 @@
+import { executionRejectionMeta, type ExecutionRejectionMeta } from "@/lib/diagnostics/executionRejectionMeta";
 /**
  * Execute Manual Instance Thunk
  *
@@ -569,14 +570,17 @@ type ManualExecutionRequest = Partial<ChatRequestPayload> & {
 
 export const executeManualInstance = createAsyncThunk<
   ExecuteManualInstanceResult,
-  ExecuteManualInstanceArgs
+  ExecuteManualInstanceArgs,
+  { rejectedMeta: ExecutionRejectionMeta }
 >(
   "instances/executeManual",
   async (
     { conversationId, debug = false, initiation },
-    { getState, dispatch, rejectWithValue },
+    { getState, dispatch, rejectWithValue: reject },
   ) => {
     const requestId = generateRequestId();
+    const rejectWithValue = (value: unknown, originalErrorName?: string) =>
+      reject(value, executionRejectionMeta(requestId, conversationId, originalErrorName));
     let recoveryId: string | null = null;
 
     try {
@@ -1017,6 +1021,7 @@ export const executeManualInstance = createAsyncThunk<
 
       return rejectWithValue(
         error instanceof Error ? error.message : "Manual execution failed",
+        error instanceof Error ? error.name : undefined,
       );
     }
   },

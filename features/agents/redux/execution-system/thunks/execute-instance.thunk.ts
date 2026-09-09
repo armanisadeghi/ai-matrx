@@ -1,3 +1,4 @@
+import { executionRejectionMeta, type ExecutionRejectionMeta } from "@/lib/diagnostics/executionRejectionMeta";
 /**
  * Execute Instance Thunk
  *
@@ -452,7 +453,7 @@ interface ExecuteInstanceResult {
 export const executeInstance = createAsyncThunk<
   ExecuteInstanceResult,
   ExecuteInstanceArgs,
-  { state: RootState }
+  { state: RootState; rejectedMeta: ExecutionRejectionMeta }
 >(
   "instances/execute",
   async (
@@ -464,9 +465,11 @@ export const executeInstance = createAsyncThunk<
       initiation,
       onRequestId,
     },
-    { getState, dispatch, rejectWithValue },
+    { getState, dispatch, rejectWithValue: reject },
   ) => {
     const requestId = generateRequestId();
+    const rejectWithValue = (value: unknown, originalErrorName?: string) =>
+      reject(value, executionRejectionMeta(requestId, conversationId, originalErrorName));
 
     try {
       // `let`, not `const`: the organization gate below can suspend for human
@@ -1128,7 +1131,7 @@ export const executeInstance = createAsyncThunk<
         return rejectWithValue("Cancelled");
       }
       if (error instanceof StreamPhaseError) {
-        return rejectWithValue(error.message);
+        return rejectWithValue(error.message, error.originalName);
       }
       if (error instanceof RunInFlightError) {
         // Retry window exhausted — surface with the marker so callers
@@ -1167,7 +1170,7 @@ export const executeInstance = createAsyncThunk<
           await import("../instance-user-input/clear-composer.thunk");
         dispatch(clearComposerIfUnsubmitted(conversationId, { via: "clear" }));
       }
-      return rejectWithValue(message);
+      return rejectWithValue(message, error instanceof Error ? error.name : undefined);
     }
   },
 );
