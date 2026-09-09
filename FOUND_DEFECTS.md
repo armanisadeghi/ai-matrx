@@ -15,6 +15,53 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D301 — the route-manifest chain is broken at both links, and the half that has a guard runs nowhere
+
+Found by the `dedupe-and-verify` rotation pass on the `route-liveness` node, 2026-09-09.
+Cross-repo SoR: `../common-docs/systems/platform/route-liveness/STATE.md`.
+
+The notification spine decides whether a deep link can be sent by reading a manifest
+generated from `app/**/page.tsx`. That chain has two links and **both are stale today**:
+
+| Link | State on 2026-09-09 | Guarded by |
+| --- | --- | --- |
+| fresh walk → `lib/route-manifest/manifest.generated.json` | **RED — 58 live routes missing from the lockfile** | `pnpm check:route-manifest --strict`, which **no CI job, hook or release script invokes** |
+| lockfile → `platform.route_manifest` | **11 days / 98 page-touching commits stale** — the live table is still at `source_sha 3961cc07` (1029 rows), the lockfile at HEAD has 1081 | **nothing** |
+
+**The guard exists and is red.** `pnpm check:route-manifest --strict` exits 1 right now on
+`main` with 58 `route not in the manifest` lines (`/meetings`, `/meet/[slug]`,
+`/marketing/reports/search-console/*`, `/marketing/operations/*`, …). It is declared in
+`package.json:307-308` and referenced by nothing in `.github/workflows/ci.yml` — a repo
+whose CI runs ~20 other `pnpm check:*` gates. This is the blocking-gate-that-blocks-nothing
+class again.
+
+**What the DB staleness actually costs.** The live table was verified byte-identical to the
+lockfile as it stood at `3961cc07` (md5 of the sorted patterns matches on both sides), which
+proves the sync is faithful *and* that it has not run since 2026-08-29. Diffing that sync
+against HEAD:
+
+- **116 routes are live at HEAD that the server calls `unbuilt`** (absence is the third
+  state) — their SMS legs are refused and their email/in-app links degraded to an ancestor,
+  for surfaces that shipped.
+- **64 patterns the server still calls `live` no longer exist at HEAD** — two renames,
+  `/marketing/brands/[brandId]/…` → `/marketing/[brandId]/…` and `/agents/mandates` →
+  `/mandates`. For those the spine would put a 404 in a text message, which is the original
+  defect this whole system was built to close, running in reverse.
+
+No *declared* notification deep link points at any of the 64 today (the only catalog link in
+that space is `/administration/agents/hindsight/…`), so nothing has reached a phone yet — the
+exposure is structural, not yet realised. `scripts/check_deep_link_liveness.py` still answers
+165 — 64 live / 29 placeholder / 72 unbuilt and ratchet 32 from **both** sources, so the
+existing ratchet cannot see this: it prints the two route counts (1081 vs 1029) on its own
+summary line and compares nothing.
+
+**The fix.** (1) `pnpm route-manifest:generate` and commit the lockfile. (2) Add
+`check:route-manifest --strict` to `.github/workflows/ci.yml` alongside the other gates.
+(3) Wire `pnpm route-manifest:sync` into the frontend deploy — the standing open limit named
+in STATE.md, and the reason link 2 drifts at all. (4) Give something the ability to see link 2:
+the deep-link guard already reads both sources, so comparing their `source_sha`/route counts
+and failing on divergence is a few lines in `scripts/check_deep_link_liveness.py` (aidream).
+
 ### D300 — the org-backstop guard is a going-forward tripwire on a condition 240 live tables already meet
 
 Found by the docs-steward `ddl_guard_log` sweep 2026-09-09. The guard rule
