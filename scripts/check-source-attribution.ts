@@ -22,7 +22,7 @@ const ROOTS = [
   "utils",
 ];
 const EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
-const EXCLUDED_DIRS = new Set([".next", "node_modules", "dist", "build"]);
+const EXCLUDED_DIRS = new Set([".next", "node_modules", "dist", "build", "__tests__"]);
 /** File-capture metadata also uses `source_feature` — not CX attribution. */
 const EXCLUDED_PATH_PARTS = new Set(["media-capture"]);
 
@@ -40,7 +40,13 @@ function walk(dir: string, files: string[]): void {
     if (entry.isDirectory() && EXCLUDED_PATH_PARTS.has(entry.name)) continue;
     const target = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(target, files);
-    else if (EXTENSIONS.has(path.extname(entry.name))) files.push(target);
+    else if (
+      EXTENSIONS.has(path.extname(entry.name)) &&
+      !entry.name.includes(".test.") &&
+      !entry.name.includes(".spec.")
+    ) {
+      files.push(target);
+    }
   }
 }
 
