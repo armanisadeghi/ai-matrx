@@ -156,6 +156,8 @@ fixes need current verification; they are not new work by this patrol.
 - Return exact commits, affected IDs, proof timestamp, test/canary method,
   environment/build identity, results, recurrence interval, and remaining work.
   Coordinate release with its existing owner; do not create a competing release.
+  Resolve the current release task with `list_threads` and verify its returned title
+  and project before sending; historical task IDs are leads, never routing proof.
   Continue the verification when it lands. Deployment lag is engineering work.
 - An independent reviewer verifies against the original failure and real surface
   or runtime. A healthy page is not proof of subscription delivery; an in-process
@@ -221,12 +223,20 @@ gaps, exact resolved count/IDs or evidence pointer, commits/proof, and selected 
 continuations. Distinguish new repairs, verified prior repairs, unverified historical
 leads, and actual human gates. Never claim clean with an unavailable/incomplete lane.
 For recurring runs, notify on meaningful repairs, new actionable failures, completion,
-or required human action; unchanged non-actionable state stays quiet. When a human
-gate exists, finish with `🚨 ISSUES PENDING ARMAN INVOLVEMENT: N` and the verified
-items. Otherwise state no human action is required when a report is warranted.
+or required human action; unchanged non-actionable state stays quiet. Only when at
+least one freshly verified human-only gate exists, finish with
+`🚨 ISSUES PENDING ARMAN INVOLVEMENT: N` and list those verified items. When the
+count is zero, omit the entire heading, count, alarm symbol, and “None” placeholder;
+do not create an attention signal merely to announce that no attention is needed.
+Ordinary bugs, unfinished verification, deployment lag, tooling failures, and other
+engineering work are not blockers and must remain owned and repaired by agents. Do
+not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
 
+- 2026-09-09 — Made the owner-attention alarm conditional on at least one verified
+  human-only gate. Zero-count runs omit the heading and placeholder; all engineering
+  problems remain agent-owned repair work.
 - 2026-09-09 — Created from the installed patrol and the user's five-weakness audit;
   added recover-before-degrade, scoped repair authorization, current evidence,
   complete lane coverage, independent proof, bounded continuity, and durable improvement.
