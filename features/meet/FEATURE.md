@@ -99,7 +99,11 @@ reader of an older tag will otherwise conclude the package is broken.
 ## Change log
 
 
-- **2026-09-09 — adopted `@ai-matrx/meet` 0.4.8 (MRI-A16).** The six defects MRI-C8's independent
+- **2026-09-09 — adopted `@ai-matrx/meet` 0.4.10 (MRI-A16 at 0.4.8 + 0.4.9; 0.4.10 is a parallel
+  guest-read fix that builds on them).** 0.4.9 is the defect 0.4.8 walked into by fixing the one
+  above it: the recording control asked `state === "idle"`, which only worked while the store never
+  learned a state it had not patched itself, so once the durable states arrived a meeting whose
+  recording was `available` lost its Start control for the rest of the session. The six defects MRI-C8's independent
   production verification found, all fixed IN the package — this repo changed nothing but the
   version, which is the "zero wrappers" contract working. (1) The record view could not play a
   recording that had landed perfectly: it fetched `/files/{id}/download` with a bearer and no
