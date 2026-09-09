@@ -78,6 +78,8 @@ import {
 } from "./rebind-impact";
 import {
   PropertyRow,
+  ConfigurationTable,
+  ConfigurationTableRow,
   FieldHelp,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
@@ -1164,6 +1166,148 @@ function FactsPanel({
       cancelled = true;
     };
   }, [factProvisionKey]);
+  if (diagnosticsOnly) {
+    const truth = row.codeTruth;
+    const declarationFound = truth?.resolution === "code_declaration_found";
+    const columns = [
+      { key: "fact", label: "Diagnostic" },
+      { key: "value", label: "Result" },
+    ];
+    const unknown = <StatusToken status="unknown" label="Unknown" />;
+    const facts = [
+      {
+        fact: "Code declaration",
+        value: (
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusToken
+              status={
+                declarationFound
+                  ? "ok"
+                  : truth?.import_error
+                    ? "error"
+                    : "unknown"
+              }
+              label={
+                declarationFound
+                  ? "Found"
+                  : truth?.resolution === "code_exists_but_import_failed"
+                    ? "Import failed"
+                    : truth
+                      ? "Not found"
+                      : "Unknown"
+              }
+            />
+            {truth?.source ? (
+              <CopyButton
+                content={`${truth.source.class_name}\n${truth.source.source_file}:${truth.source.line}`}
+                label="Copy source location"
+                size="sm"
+              />
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        fact: "Code inputs",
+        value: declarationFound
+          ? truth.code_variables
+              .map((name) => displayLabelForKey(name))
+              .join(", ") || "None"
+          : unknown,
+      },
+      {
+        fact: "Agent variables",
+        value: truth?.bound_agent
+          ? truth.bound_agent.declared_variables
+              .map((name) => displayLabelForKey(name))
+              .join(", ") || "None"
+          : unknown,
+      },
+      {
+        fact: "User text declared",
+        value:
+          declarationFound && typeof truth.passes_user_input === "boolean"
+            ? truth.passes_user_input
+              ? "Yes"
+              : "No"
+            : unknown,
+      },
+      {
+        fact: "Call sites",
+        value:
+          declarationFound && truth.call_sites ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span>{truth.call_sites.length}</span>
+              {truth.call_sites.length > 0 ? (
+                <CopyButton
+                  content={truth.call_sites
+                    .map((site) => `${site.source_file}:${site.line}`)
+                    .join("\n")}
+                  label="Copy call sites"
+                  size="sm"
+                />
+              ) : null}
+            </div>
+          ) : (
+            unknown
+          ),
+      },
+      {
+        fact: "Code / contract check",
+        value: wave1.provisionKey ? (
+          <span className="inline-flex items-center gap-1.5">
+            <StatusToken status="neutral" label="Not applicable" />
+            <FieldHelp label="Code / contract check">
+              Provision inputs are checked through holder matching. This legacy
+              variable comparison does not evaluate them.
+            </FieldHelp>
+          </span>
+        ) : declarationFound ? (
+          <StatusToken
+            status={truth.drift === "match" ? "ok" : "caution"}
+            label={
+              truth.drift === "match"
+                ? "Preliminary match"
+                : "Preliminary mismatch"
+            }
+          />
+        ) : (
+          <StatusToken status="unknown" label="Not yet evaluated" />
+        ),
+      },
+      {
+        fact: "Variable flow",
+        value: !declarationFound ? (
+          <StatusToken status="unknown" label="Not yet evaluated" />
+        ) : verdictsLoading ? (
+          <span className="inline-flex items-center gap-1.5">
+            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+            Checking
+          </span>
+        ) : verdictsError ? (
+          <div className="inline-flex items-center gap-1.5">
+            <StatusToken status="error" label="Check failed" />
+            <FieldHelp label="Variable flow error">{verdictsError}</FieldHelp>
+          </div>
+        ) : variableVerdicts.length > 0 ? (
+          <VariableVerdictList items={variableVerdicts} />
+        ) : (
+          <StatusToken status="unknown" label="Not yet evaluated" />
+        ),
+      },
+    ];
+    return (
+      <ConfigurationTable label="Code diagnostics" columns={columns}>
+        {facts.map((fact) => (
+          <ConfigurationTableRow
+            key={fact.fact}
+            columns={columns}
+            cells={fact}
+          />
+        ))}
+      </ConfigurationTable>
+    );
+  }
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)] items-center gap-x-4 gap-y-1.5 rounded-md border border-border bg-card px-3 py-2.5">
       {!diagnosticsOnly && (
@@ -1717,25 +1861,7 @@ export function MandateDetailView({
               onTest={() => setBenchFocus((n) => n + 1)}
               onOpenRebind={openTheBindingUi}
             />
-          ) : (
-            <PropertyRow
-              label="Code / contract check"
-              value={
-                <StatusToken
-                  status={
-                    row.codeTruth?.resolution === "code_declaration_found"
-                      ? "neutral"
-                      : "unknown"
-                  }
-                  label={
-                    row.codeTruth?.resolution === "code_declaration_found"
-                      ? "No reported drift"
-                      : "Not yet evaluated"
-                  }
-                />
-              }
-            />
-          )}
+          ) : null}
         </div>
         <div hidden={section !== "test"}>
           <MandateTestBench
