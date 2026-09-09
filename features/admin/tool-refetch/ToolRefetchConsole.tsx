@@ -154,7 +154,7 @@ function TrimBadge({ value }: { value: boolean | null }) {
   return (
     <Badge
       variant="outline"
-      title={`No per-iteration trim audit exists for this repeat. Those audits only start on ${TRIM_AUDIT_EPOCH}.`}
+      title={`No per-iteration context-trim audit was recorded for this repeat, so whether the first result was still visible cannot be known. Audit coverage widens from ${TRIM_AUDIT_EPOCH} on and is partial before it. This is not "No".`}
       className="whitespace-nowrap text-muted-foreground"
     >
       n/a
@@ -449,8 +449,11 @@ export function ToolRefetchConsole() {
               longer see the answer it had.
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Per-iteration trim audits exist only from {TRIM_AUDIT_EPOCH} on; every repeat older
-              than that reads <em>n/a</em> for after-trim, never <em>No</em>.
+              After-trim is answerable only where a per-iteration context-trim audit was recorded
+              for that conversation — coverage widens from {TRIM_AUDIT_EPOCH} on and is partial
+              before it, so a repeat with no audit reads <em>n/a</em>, never <em>No</em>. Measured
+              on this database, rows on both sides of that date still come back unaudited, so treat
+              the after-trim column as a floor.
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => void report.refetch()} disabled={refreshing}>

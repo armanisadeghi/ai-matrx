@@ -41,7 +41,12 @@ const MAX_REPEAT_ROWS = 20_000;
 /** Ceiling on tool_call rows scanned for the windowed denominator. Honesty flag if hit. */
 const MAX_CALL_ROWS = 60_000;
 
-/** The date per-iteration context-trim audits start existing. Older repeats: unknown. */
+/**
+ * The date per-iteration context-trim audit coverage widens. NOT a clean line:
+ * measured 2026-09-09, repeats before it are partly audited and repeats after it
+ * are not all audited, so `first_result_trimmed_before_repeat` is null on both
+ * sides and the after-trim count is a floor everywhere. Never render null as No.
+ */
 export const TRIM_AUDIT_EPOCH = "2026-09-08";
 
 export type RefetchWindow = "7d" | "30d" | "90d" | "all";
