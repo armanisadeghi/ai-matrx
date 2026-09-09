@@ -68,6 +68,7 @@ import {
   selectAttachedScratchpadIds,
   selectWorkingDocEntry,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
 
 interface ChatRoomClientProps {
   agentId: string;
@@ -118,6 +119,8 @@ interface ChatRoomClientProps {
    * where the user picked THAT agent).
    */
   mandateKey?: string;
+  /** Surface-owned presentation for variables bound outside the composer. */
+  variablesPanelStyle?: VariablesPanelStyle;
 }
 
 const defaultConversationHref = (conversationId: string) =>
@@ -147,6 +150,7 @@ export function ChatRoomClient({
   aboveInput,
   buildConversationHref = defaultConversationHref,
   mandateKey,
+  variablesPanelStyle,
 }: ChatRoomClientProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -651,6 +655,7 @@ export function ChatRoomClient({
               sendButtonVariant: "blue",
               // Lives in the Chat Options (+) → Preferences tab now.
               showSubmitOnEnterToggle: false,
+              variablesPanelStyle,
             }}
             landingContent={
               typeof landingContent === "function"

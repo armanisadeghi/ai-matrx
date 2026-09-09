@@ -408,6 +408,7 @@ export function RoomChatPane({
                 key={binding.conversationId}
                 agentId={binding.agentId}
                 conversationId={binding.conversationId}
+                variablesPanelStyle="hidden"
               />
               <PendingAnswersRider conversationId={binding.conversationId} />
               {/* A finished exchange is reported to the Scribe from here —
