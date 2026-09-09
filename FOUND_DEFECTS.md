@@ -15,6 +15,55 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D300 — the org-backstop guard is a going-forward tripwire on a condition 240 live tables already meet
+
+Found by the docs-steward `ddl_guard_log` sweep 2026-09-09. The guard rule
+`org_not_null_no_backstop` fires only on **new DDL**, so every table that predates
+the sentinel is invisible to it — and nobody had ever run the guard's own predicate
+as a census. Run live 2026-09-09 (`pg_attribute` + `pg_trigger` join `pg_proc`,
+non-internal triggers only), across every non-catalog schema:
+
+| `organization_id NOT NULL` tables | count |
+| --- | --- |
+| have `_stamp_org_default` or `inherit_org_from_parent` | 412 |
+| column default only, no backstop trigger | 9 |
+| **no backstop and no default** | **240** |
+| total | 661 |
+
+`hr.*` alone is **131** of the 240.
+
+**This resizes D262 and D290, and falsifies one of D290's claims.** D290 (2026-08-30)
+reports "of the 89 objects in the unacked backlog, 85 have since gained a backstop
+trigger" — but D262's seven (`agent.prompt_remediation`, `seo.engine_schedule`,
+`seo.site_keyword_offering`, `seo.site_offering_value`, `web.brand_offering`,
+`web.offering_template`, `web.site_offering`) are ALL still backstop-free today, as
+are D290's own two (`platform.knob_override_audit`, `workflow.trigger_event`). Both
+entries stay open. The error was sizing the class by *the guard's unacked backlog*
+instead of by the live database — the backlog is a sample of recent DDL, never the
+population.
+
+**Not all 240 are defects, and this entry does not claim they are.** D262 already
+established the carve-out: a table whose `organization_id` IS its row identity
+(`iam.system_orgs`, `iam.org_industries`, `iam.organization_preferences`,
+`iam.api_keys`) is correctly un-backstopped. The finding is that **the ratio is
+unmeasured** — 240 tables match the predicate the guard treats as a defect, no one
+has separated the correct-by-design ones from the real gaps, and the guard cannot
+ever surface them because it only watches new DDL.
+
+**Fix, in this order:**
+
+1. Classify the 240 — org-keyed identity (correct), inherits from a parent (wants
+   `inherit_org_from_parent`), or standalone org-scoped (wants `_stamp_org_default`).
+   The 131 `hr.*` tables are one decision, not 131, since they share a write path.
+2. Attach the backstop where it is wanted, per class, largest schema first.
+3. **Give the guard a census mode** so this cannot recur: a check that runs the
+   predicate against the whole database and compares against a declared exemption
+   list, rather than only tailing new DDL. Without step 3 the next steward run is
+   blind again, and the same undercount happens.
+
+Guard rows acked 2026-09-09 with `p_reason` citing this entry; they re-fire on the
+next DDL touch until the triggers exist.
+
 ### D299 — ESLint is broken repo-wide: `eslint-plugin-react` crashes on ESLint 10
 
 Found 2026-09-08 linting the `@ai-matrx/meet` adoption. EVERY file fails, including
