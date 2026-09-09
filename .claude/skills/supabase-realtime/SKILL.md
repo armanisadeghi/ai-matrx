@@ -21,6 +21,8 @@ description: The canonical doctrine for ALL Supabase realtime in matrx-frontend 
 >
 > Anything else writing `.channel(` is a code-review defect. Per-channel closure table + live proof: `../../../common-docs/projects/npm-package-extraction/DUPLICATION-CENSUS.md` § The realtime closure.
 >
+> 🚨 **THE PUBLICATION RULE: a table you subscribe to with `postgres_changes` must be in the `supabase_realtime` publication.** It is not granted by `platform.create_entity_table` — it is a separate, idempotent migration guarded on `pg_publication_tables` (precedent: `migrations/meet_realtime_publication.sql`). Miss it and the channel joins, reports `SUBSCRIBED`, and delivers NOTHING, forever, with no error anywhere. Four instances shipped — `workbench.notes` (data loss), `tool.ui` + `app.definition`, `users.user_memory` + `iam.permissions`, and all six `communication.meet_*`. Guard: **`pnpm check:realtime-publication`** — a TypeScript-AST resolver over every binding in this repo AND `aidream/apps/shared/*/src`, diffed against the live publication; a binding it cannot resolve statically FAILS as UNRESOLVED (annotate the call site `// realtime-publication: <schema>.<table>` and it verifies that instead). In CI, and blocking in the release gates.
+>
 > **Which door to use:**
 >
 > | You are… | Use |

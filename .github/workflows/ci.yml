@@ -384,6 +384,68 @@ jobs:
           pnpm check:soft-delete-cascade:strict
 
   # ---------------------------------------------------------------------------
+  # realtime-publication — a `postgres_changes` binding on a table that is NOT in
+  # the `supabase_realtime` publication joins, reports SUBSCRIBED, and delivers
+  # nothing, forever, with no error anywhere. That has shipped FOUR times:
+  # `workbench.notes` (2026-07-10, real user data lost), `tool.ui` +
+  # `app.definition`, `users.user_memory` + `iam.permissions`, and all six
+  # `communication.meet_*` tables (Meet was silent from launch until MRI-A10 on
+  # 2026-09-08). Publication membership is not granted by
+  # `platform.create_entity_table` — it is a separate, forgettable migration.
+  #
+  # NOT A GREP. MRI-A10's census found `schema:`/`table:` are usually indirect
+  # (`repository.tables.notes`, `adapter.realtimeTable`, a `scoped()` spread), so
+  # a regex scanner reports GREEN over exactly the shape that keeps failing. This
+  # is a TypeScript-AST resolver, and anything it cannot resolve statically FAILS
+  # as UNRESOLVED rather than being skipped.
+  #
+  # TWO dependencies, and BOTH are hard-fail-if-absent (THE STRICTNESS LAW clause
+  # 7): the live `pg_publication_tables` read (credential-gated, like
+  # kind-registry / hr-punch / migration-slot-guard above) and the sibling
+  # aidream checkout, because the @ai-matrx packages hold real bindings —
+  # @ai-matrx/meet's `watchMeeting` is where the fourth instance lived. Scanning
+  # only this repo and reporting green would be the defect wearing a tick. The
+  # checkout mirrors aidream's own `kinds-parity` job (test.yml pulls this repo
+  # the same way), sparse to `apps/shared`.
+  #
+  # Falsifiability: `pnpm check:realtime-publication:self-test` plants an
+  # unpublished subscription AND an unresolvable one and proves both are caught;
+  # it runs here in the same job, before the real check.
+  # ---------------------------------------------------------------------------
+  realtime-publication:
+    name: subscribed tables are in supabase_realtime (UNMEASURED without the secret)
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      AIDREAM_DIR: ${{ github.workspace }}/aidream
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out aidream's shared packages (the other half of the census)
+        uses: actions/checkout@v4
+        with:
+          repository: AI-Matrix-Engine/aidream
+          path: aidream
+          sparse-checkout: apps/shared
+          sparse-checkout-cone-mode: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: The guard can still fail (planted unpublished + planted unresolvable)
+        run: pnpm check:realtime-publication:self-test
+      - name: Every subscribed table is in the supabase_realtime publication
+        run: |
+          if [ -z "$SUPABASE_SECRET_KEY" ]; then
+            echo "::error title=UNMEASURED — realtime publication membership was NOT verified::SUPABASE_SECRET_KEY is not configured for this repo, so pnpm check:realtime-publication could not read pg_publication_tables, and a postgres_changes subscription may again be joined to a table that publishes nothing — silent, error-free, and permanent. This job reports UNMEASURED, never success (THE STRICTNESS LAW clause 7). Fix: add the SUPABASE_SECRET_KEY and NEXT_PUBLIC_SUPABASE_URL repo secrets."
+            exit 2
+          fi
+          pnpm check:realtime-publication
+
+  # ---------------------------------------------------------------------------
   # type-check — `next.config.js` sets `ignoreBuildErrors: true`, so a green
   # build proves NOTHING about types and Vercel will happily deploy a repo full
   # of type errors. `pnpm type-check` is the only type gate this repo has.

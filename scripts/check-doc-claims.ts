@@ -388,7 +388,7 @@ const claims: Claim[] = [
   },
   {
     id: "per-pr-ci",
-    claim: "per-PR CI runs Matrx-package freshness, the parse guard and its self-test, the marker law, the one-type law, the Kind Directives shim containment, the HR punch write-path strict lane, the migration slot-guard liveness lane, the five HR nav/URL/envelope/mock/export guards, org context, type-check, and the content-IR + workflow-runtime suites",
+    claim: "per-PR CI runs Matrx-package freshness, the parse guard and its self-test, the marker law, the one-type law, the Kind Directives shim containment, the HR punch write-path strict lane, the migration slot-guard liveness lane, the realtime-publication guard and its self-test, the five HR nav/URL/envelope/mock/export guards, org context, type-check, and the content-IR + workflow-runtime suites",
     where: "CLAUDE.md § Repo doctrine (Nothing runs at commit time)",
     check: () => {
       // The claim in CLAUDE.md is now the opposite of what it used to be: for
@@ -429,6 +429,20 @@ const claims: Claim[] = [
         // it; four campaign lanes each proved the removal on screen and each left
         // live rows behind (2026-09-08). Dropped from CI, that returns in silence.
         "check:soft-delete-cascade:strict",
+        // A postgres_changes subscription on a table missing from the
+        // supabase_realtime publication delivers NOTHING, silently, forever —
+        // four shipped instances, one of which (workbench.notes) cost real user
+        // data. Both lines are required: the self-test is what proves the
+        // resolver can still fail, and the check itself is what actually
+        // compares the AST census to live pg_publication_tables. Deleting
+        // either goes red here instead of quietly re-opening the class.
+        "run: pnpm check:realtime-publication:self-test\n",
+        // Matched WITH the trailing newline, so it cannot be satisfied by the
+        // longer `:self-test` line above it — the same substring trap that let a
+        // sabotaged `check:parse` step stay green on 2026-09-08. This one lives
+        // inside a `run: |` block (it is credential-gated), hence no `run: `
+        // prefix.
+        "pnpm check:realtime-publication\n",
         // The five HR guards that were invoked by NOTHING until 2026-08-29: two
         // jest files jest only sees in an unscoped `pnpm test` (which nothing
         // runs), and three `pnpm` scripts whose only references were their own

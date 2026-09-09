@@ -183,6 +183,16 @@ if $STRICT; then
         # advisory carve-out. (db-rules FEATURE.md §6d-1.)
         "Component ownership law (no created_by)|pnpm check:component-created-by:strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts --strict"
+        # A postgres_changes binding on a table that is NOT in the
+        # supabase_realtime publication joins, says SUBSCRIBED, and delivers
+        # nothing, silently, forever. Four instances shipped (workbench.notes
+        # cost real user data; Meet was silent from launch). Resolves every
+        # binding through the TS AST in BOTH repos and diffs against live
+        # pg_publication_tables — anything it cannot resolve FAILS as
+        # UNRESOLVED. Zero backlog by construction, so it exits 1 in both lanes;
+        # no creds or no aidream checkout prints LIVE PULL FAILED (a marker
+        # run_gate knows) and exits 2 as UNMEASURED, never a quiet green.
+        "Subscribed tables in supabase_realtime|pnpm check:realtime-publication"
         # The kind loading-component slug list lives in the frontend (compiled
         # in, so the skeleton paints with zero latency) and is mirrored by
         # aidream's kind_create. A slug on one side only is invisible until a
@@ -421,6 +431,16 @@ else
         # scream, never block, which is the contract this list actually has.
         "Component ownership law (no created_by)|pnpm check:component-created-by:strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"
+        # A postgres_changes binding on a table that is NOT in the
+        # supabase_realtime publication joins, says SUBSCRIBED, and delivers
+        # nothing, silently, forever. Four instances shipped (workbench.notes
+        # cost real user data; Meet was silent from launch). Resolves every
+        # binding through the TS AST in BOTH repos and diffs against live
+        # pg_publication_tables — anything it cannot resolve FAILS as
+        # UNRESOLVED. Zero backlog by construction, so it exits 1 in both lanes;
+        # no creds or no aidream checkout prints LIVE PULL FAILED (a marker
+        # run_gate knows) and exits 2 as UNMEASURED, never a quiet green.
+        "Subscribed tables in supabase_realtime|pnpm check:realtime-publication"
         "Kind loading-slug twin (aidream)|pnpm exec tsx scripts/check-loading-slug-twin.ts"
         # CONTENT IR / KINDS — the two halves of the kinds program's frontend
         # gate (KINDS_EVERYWHERE_PLAN.md §6.4). The surface export regenerates
