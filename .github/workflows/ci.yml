@@ -536,3 +536,24 @@ jobs:
         # `always()` so a content-IR failure never hides a workflow-runtime one.
         if: always() && steps.content_ir.outcome != 'cancelled'
         run: pnpm test:workflow-runtime
+
+      - name: Administration navigation cannot lose a route
+        # features/admin/components/AdminRouteSidebarMenu.test.tsx asserts every
+        # registry destination and every domain landing is reachable from the
+        # rendered sidebar, that no href renders twice, and that only one
+        # .shell-active-pill is live at a time (two share a static
+        # view-transition-name and kill the nav transition).
+        #
+        # check:admin-catalog compares the registry to the FILESYSTEM and is
+        # happy whether or not the menu renders what it declares, so it cannot
+        # catch a destination vanishing from the sidebar. Run both: the catalog
+        # check owns "the route exists", this owns "you can get to it".
+        #
+        # Neither ran in CI before 2026-09-08. Like the HR guards above, jest
+        # picks this file up only in an unscoped `pnpm test`, which nothing runs.
+        if: always() && steps.content_ir.outcome != 'cancelled'
+        run: pnpm test:admin-nav
+
+      - name: Administration route registry matches the filesystem
+        if: always() && steps.content_ir.outcome != 'cancelled'
+        run: pnpm check:admin-catalog:strict

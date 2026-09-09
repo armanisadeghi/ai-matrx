@@ -2,7 +2,6 @@ import AppLink from "@/components/navigation/AppLink";
 import { IconResolver } from "@ai-matrx/icons";
 import {
   adminDomainHref,
-  findAdminNavigationDomainBySlug,
   type AdminNavigationDomain,
 } from "@/features/admin/constants/admin-navigation";
 

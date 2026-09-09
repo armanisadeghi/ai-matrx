@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
-import {
-  findAdminNavigationDomainBySlug,
-  type AdminNavigationDomain,
-} from "@/features/admin/constants/admin-navigation";
+import { findAdminNavigationDomainBySlug } from "@/features/admin/constants/admin-navigation";
 import { AdminDomainSection } from "@/features/admin/components/AdminDomainSection";
 
 /**
@@ -58,15 +55,5 @@ export function AdminDomainLanding({
         ) : null}
       </div>
     </div>
-  );
-}
-
-/** Count of destinations a domain owns — for callers rendering their own summary. */
-export function countAdminDomainDestinations(
-  domain: AdminNavigationDomain,
-): number {
-  return domain.sections.reduce(
-    (count, section) => count + section.destinations.length,
-    0,
   );
 }

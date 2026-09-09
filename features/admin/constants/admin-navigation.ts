@@ -721,6 +721,11 @@ export function getAdminNavigationLocations(): AdminNavigationLocation[] {
   );
 }
 
+/** Strip any query string and trailing slash so a path compares cleanly. */
+export function adminPathOnly(path: string): string {
+  return pathOnly(path);
+}
+
 function pathOnly(path: string): string {
   return (path.split("?")[0] ?? path).replace(/\/$/, "");
 }
