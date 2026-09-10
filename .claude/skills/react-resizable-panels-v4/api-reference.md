@@ -17,9 +17,9 @@ import { Group, type GroupProps } from "react-resizable-panels";
 |---|---|---|---|
 | `id` | `string \| number` | `useId()` fallback | **Pass an explicit, stable `id` always.** Storage key uses it. |
 | `orientation` | `"horizontal" \| "vertical"` | `"horizontal"` | (v3 was `direction`) |
-| `defaultLayout` | `{ [panelId: string]: number }` (percentages 0..100) | undefined | Pair with `onLayoutChanged` for persistence. |
+| `defaultLayout` | `{ [panelId: string]: number }` (percentages 0..100) | undefined | Pair with `onLayoutChanged` for persistence. **The server render treats a `0` entry as missing** — that panel paints at its `defaultSize` and snaps to 0 on client mount (see collapse-and-toggle.md, server paint). |
 | `onLayoutChange` | `(layout) => void` | undefined | Fires every pointer move during drag. **Avoid for persistence — use the past-tense one.** |
-| `onLayoutChanged` | `(layout) => void` | undefined | Fires on pointer-up. **Use this for cookie writes.** |
+| `onLayoutChanged` | `(layout, meta: LayoutChangedMeta) => void` | undefined | Fires on pointer-up, resize keys, imperative `setLayout`, constraint recompute, and initial mount; `meta.isUserInteraction` is `true` only for a separator drag or key. **Use this for cookie writes.** |
 | `disableCursor` | `boolean` | false | Disables the global resize-cursor side effect. |
 | `disabled` | `boolean` | false | Disables resize for the whole group. |
 | `resizeTargetMinimumSize` | `{ coarse: number; fine: number }` | `{ coarse: 20, fine: 10 }` | Hit-target px for touch / mouse. |
@@ -83,7 +83,7 @@ The library renders `role="separator"`, `aria-controls`, `aria-orientation`, `ar
 
 The library sets `tabIndex={0}` on the Separator, so clicking it focuses it. Without `focus:outline-none` the browser draws its default focus outline — a 1px near-white line in the center — which looks fine in light mode but stands out in dark mode. **Always set `focus:outline-none` and explicitly style `hover`, `active`, AND `dragging`** (style only `hover` and the bar reverts to `bg-border` the moment you click — that's the bug).
 
-In this codebase: use [`components/ui/resizable.tsx`](../../../components/ui/resizable.tsx)'s `ResizableHandle` for theme-aware horizontal handles, OR import the demo-shared `Handle` from [`app/(dev)/demos/resizables/_lib/Handle.tsx`](../../../app/(dev)/demos/resizables/_lib/Handle.tsx) which is orientation-aware (works in both horizontal and vertical Groups, no hardcoded cursor). Don't reinvent the class string in every demo.
+In this codebase: use `ResizableHandle` from [`components/ui/resizable.tsx`](../../../components/ui/resizable.tsx) — a host re-export of `@ai-matrx/design-system` (orientation-aware cursor, thickness via `size="xs".."4xl"`, 44px grab target on touch) — OR import the shared `Handle` from [`features/resizable-panels/Handle.tsx`](../../../features/resizable-panels/Handle.tsx), which is orientation-aware and adds `hideWhenCollapsed` for `<PanelControlProvider>` pages. Don't reinvent the class string in every demo.
 
 ### Imperative handles
 
@@ -129,6 +129,7 @@ import type {
   GroupProps,
   GroupImperativeHandle,
   Layout,                 // { [panelId: string]: number }   — percentages 0..100
+  LayoutChangedMeta,      // { isUserInteraction: boolean } — 2nd arg of onLayoutChanged
   LayoutStorage,          // Pick<Storage, "getItem" | "setItem">
   OnGroupLayoutChange,
   Orientation,            // "horizontal" | "vertical"

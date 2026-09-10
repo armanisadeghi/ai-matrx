@@ -3,11 +3,11 @@
 ## Contents
 
 - §5 — Conditional panels (mount/unmount, not just collapse)
-- Mount/unmount panels (different beast — and a hydration trap)
+- Mount/unmount panels (different beast — and a hydration trap) — **the shape every SSR page uses**
 
 ## §5 — Conditional panels (mount/unmount, not just collapse)
 
-If a panel can be **fully removed from the DOM** (not collapsed to zero), each combination of mounted panels gets its own remembered layout via `useDefaultLayout({ id, panelIds })`.
+If a panel can be **fully removed from the DOM** (not collapsed to zero), each combination of mounted panels gets its own remembered layout. **Server-rendered page (every route in this repo) → the two-cookie shape in the next section, never `useDefaultLayout` (SKILL.md pitfall #24).** `useDefaultLayout({ id, panelIds })` below is only for a group that is not server-rendered with persisted sizes; it shows the library mechanics the two-cookie shape reuses (per-combination keys).
 
 ```tsx
 "use client";
@@ -57,10 +57,10 @@ export const cookieStorage: LayoutStorage = {
 };
 ```
 
-Note: `useDefaultLayout` only runs on the client (it's in a `'use client'` component). For SSR-correct first paint with conditional panels, ALSO read the toggle state from a cookie on the server so the initial render mounts the correct set of panels:
+Note: `useDefaultLayout` only runs on the client (it's in a `'use client'` component). Reading the toggle state from a cookie on the server makes the initial render mount the correct set of panels — but the sizes still hydrate-mismatch with this hook (next section). This variant lives unrouted in `05-conditional-panels/Workbench.tsx`; the page renders `ConditionalGroup.tsx`:
 
 ```tsx
-// Server page — page.tsx
+// Server page — page.dev.tsx (readJsonCookie from @/features/resizable-panels/readLayoutCookie)
 const toggles = await readJsonCookie<Toggles>("panels:demo-05:toggles");
 return (
   <ConditionalWorkbench initialShowRight={toggles?.showRight ?? true} />
@@ -95,7 +95,7 @@ If you genuinely want to remove a panel from the DOM (not just collapse it), fol
 5. `onLayoutChanged` writes back to whichever combo's cookie is currently active.
 
 ```tsx
-// page.tsx (server)
+// page.dev.tsx (server)
 const GROUP_ID = "demo-05";
 const TOGGLE_COOKIE = "panels:demo-05:toggles";
 
@@ -105,7 +105,7 @@ function buildLayoutCookieKey(panelIds: string[]) {
 
 async function readState() {
   const store = await cookies();
-  const showRight = JSON.parse(store.get(TOGGLE_COOKIE)?.value ?? "{}")?.showRight ?? true;
+  const showRight = JSON.parse(decodeURIComponent(store.get(TOGGLE_COOKIE)?.value ?? "{}"))?.showRight ?? true;
   const panelIds = ["left", "center", ...(showRight ? ["right"] : [])];
   const layoutRaw = store.get(buildLayoutCookieKey(panelIds))?.value;
   const initialLayout = layoutRaw ? JSON.parse(decodeURIComponent(layoutRaw)) : undefined;
