@@ -28,9 +28,9 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AgentCatalogProvider } from "@ai-matrx/agents/catalog/react";
-import type { AgentArchFilter } from "@ai-matrx/agents/catalog";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { getAgentCatalog, toCatalogArchiveFilter } from "@/lib/agents/catalog";
+import { createArchiveKnobReconciler } from "@/lib/agents/archiveKnobReconciler";
 import { openAgentPeek } from "@/features/agents/components/agent-listings/openAgentPeek";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectArchivedDefault } from "@/lib/redux/preferences/userPreferenceSelectors";
@@ -69,55 +69,25 @@ export function AgentCatalogHost({ children }: { children: ReactNode }) {
   );
   const navigate = useCallback((href: string) => router.push(href), [router]);
 
-  /** consumerId → the archive filter THIS host last applied to it. */
-  const appliedRef = useRef(new Map<string, AgentArchFilter>());
-  /** Consumers whose archive axis a person has taken over. Never re-seeded. */
-  const ownedRef = useRef(new Set<string>());
+  // ONE reconciler for the life of the catalog. Rebuilding it on every knob
+  // change would forget which pickers a person had already taken over, and the
+  // next flip of the setting would yank them back — the opposite of the rule.
+  const reconciler = useMemo(
+    () =>
+      createArchiveKnobReconciler({
+        creationDefault: catalog.consumerDefaults.archFilter,
+        getConsumers: () => catalog.getState().consumers,
+        apply: (consumerId, archFilter) =>
+          catalog.setConsumerFilter(consumerId, { archFilter }),
+      }),
+    [catalog],
+  );
 
   useEffect(() => {
-    const applied = appliedRef.current;
-    const owned = ownedRef.current;
-    const creationDefault = catalog.consumerDefaults.archFilter;
-
-    const reconcile = () => {
-      const consumers = catalog.getState().consumers;
-      const live = new Set(Object.keys(consumers));
-
-      // Forget slots that were unregistered — a recycled id starts fresh.
-      for (const id of [...applied.keys()]) if (!live.has(id)) applied.delete(id);
-      for (const id of [...owned]) if (!live.has(id)) owned.delete(id);
-
-      for (const [consumerId, state] of Object.entries(consumers)) {
-        if (owned.has(consumerId)) continue;
-        const last = applied.get(consumerId);
-        if (last === undefined) {
-          // First sighting. A consumer that registered on the catalog's own
-          // default is following the knob; one that arrived with its own
-          // `initialArchFilter` owns its axis from birth.
-          if (state.archFilter !== creationDefault) {
-            owned.add(consumerId);
-            continue;
-          }
-        } else if (state.archFilter !== last) {
-          // Somebody moved the control on that picker. It is theirs now.
-          owned.add(consumerId);
-          continue;
-        }
-        if (state.archFilter === archiveFilter) {
-          applied.set(consumerId, archiveFilter);
-          continue;
-        }
-        // Record BEFORE writing: the write publishes synchronously and calls
-        // this reconciler back, which would otherwise read its own write as a
-        // person's touch and hand the axis away.
-        applied.set(consumerId, archiveFilter);
-        catalog.setConsumerFilter(consumerId, { archFilter: archiveFilter });
-      }
-    };
-
+    const reconcile = () => reconciler.reconcile(archiveFilter);
     reconcile();
     return catalog.subscribe(reconcile);
-  }, [catalog, archiveFilter]);
+  }, [catalog, reconciler, archiveFilter]);
 
   return (
     <AgentCatalogProvider
