@@ -55,7 +55,7 @@ import {
   selectBuilderAdvancedSettings,
   selectIsCreator,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
+import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
 import { useVerifiedSandboxBinding } from "@/hooks/sandbox/use-verified-binding";
 import {
   selectShowCreatorPanel,

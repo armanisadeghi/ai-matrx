@@ -7,7 +7,7 @@ import {
   selectChatIncognitoActive,
   setChatIncognitoActive,
   toggleChatIncognito,
-} from "./chat-incognito.slice";
+} from "@/features/agents/redux/chat/chat-incognito.slice";
 import { isNewChatRoute } from "./chat-incognito.routes";
 
 interface ChatIncognitoContextValue {

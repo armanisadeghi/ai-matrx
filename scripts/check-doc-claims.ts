@@ -422,6 +422,13 @@ const claims: Claim[] = [
         // until 2026-09-08.
         "run: pnpm check:canonical-pickers\n",
         "run: pnpm check:canonical-pickers:self-test\n",
+        // THE ARCHIVED-ITEMS LAW (Arman, 2026-09-09). Both lines required,
+        // both matched with the trailing newline for the same substring reason
+        // as the pair above. The guard is worth nothing without the self-test:
+        // its whole job is a heuristic over query chains, and a heuristic that
+        // cannot be shown failing is a green light nobody earned.
+        "run: pnpm check:archived-items-law\n",
+        "run: pnpm check:archived-items-law:self-test\n",
         "check:kind-type-twins",
         "check:kind-types",
         // The strict lane of the hr.punch write-path gate. release.sh runs the

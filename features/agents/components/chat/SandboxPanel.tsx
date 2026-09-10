@@ -34,7 +34,7 @@ import {
   selectConversationIsEphemeral,
 } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { setConversationSandbox } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
+import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useComputeTargets } from "@/hooks/sandbox/use-compute-targets";
 import { useVerifiedSandboxBinding } from "@/hooks/sandbox/use-verified-binding";

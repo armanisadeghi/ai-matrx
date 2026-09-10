@@ -5,7 +5,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import type { RootState } from "@/lib/redux/store";
 import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { resolveMandate } from "@/features/mandates/service";
-import { bumpFreshSession } from "./chat-route.slice";
+import { bumpFreshSession } from "@/features/agents/redux/chat/chat-route.slice";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 
 /** Derive the active conversation + active agent from the chat URL. */

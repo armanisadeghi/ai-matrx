@@ -7,6 +7,18 @@ import {
 } from "@/components/membership/copy";
 import type { PanelInvitation } from "@/components/membership/InvitationsPanel";
 import type { PanelMember } from "@/components/membership/MembersPanel";
+import { hrEmployeeHref } from "@/features/hr/routes";
+
+/**
+ * The employee-record door this fixture carries is built the ONE sanctioned way —
+ * exactly as `useMemberEmployeeCopyDetails` builds it in
+ * `features/hr/entry-points/MemberEmployeeSeam.tsx`. A literal here would be a
+ * hand-assembled HR URL (banned by `features/hr/__tests__/no-hand-built-hr-urls.test.ts`)
+ * AND a fixture that keeps passing after the real builder's shape changes.
+ */
+const EMPLOYEE_RECORD_HREF = hrEmployeeHref("employee-1", null, {
+  org: "example",
+});
 
 const member: PanelMember = {
   id: "membership-1",
@@ -18,11 +30,11 @@ const member: PanelMember = {
     fields: {
       employee_relationship: "linked",
       employee_id: "employee-1",
-      employee_record_href: "/hr/people/employee-1?org=example",
+      employee_record_href: EMPLOYEE_RECORD_HREF,
     },
     summary: [
       ["Employee", "Ada Lovelace"],
-      ["Employee record", "/hr/people/employee-1?org=example"],
+      ["Employee record", EMPLOYEE_RECORD_HREF],
     ],
   },
 };
@@ -41,11 +53,11 @@ describe("membership copy fidelity", () => {
     expect(memberRow(member)).toMatchObject({
       employee_relationship: "linked",
       employee_id: "employee-1",
-      employee_record_href: "/hr/people/employee-1?org=example",
+      employee_record_href: EMPLOYEE_RECORD_HREF,
     });
     expect(memberSummary(member)).toContain("Employee: Ada Lovelace");
     expect(memberSummary(member)).toContain(
-      "Employee record: /hr/people/employee-1?org=example",
+      `Employee record: ${EMPLOYEE_RECORD_HREF}`,
     );
 
     const payload = buildMemberListPayload({

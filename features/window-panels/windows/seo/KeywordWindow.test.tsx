@@ -2,6 +2,7 @@ import React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
+import { ReactQueryProvider } from "@/providers/ReactQueryProvider";
 import KeywordWindow from "./KeywordWindow";
 
 jest.mock("@/features/window-panels/WindowPanel", () => ({
@@ -47,11 +48,13 @@ describe("KeywordWindow external opens", () => {
   it("adds and selects a new phrase when the singleton window is already open", async () => {
     await act(async () => {
       root.render(
-        <KeywordWindow
-          isOpen
-          onClose={() => undefined}
-          initialPhrase="first keyword"
-        />,
+        <ReactQueryProvider>
+          <KeywordWindow
+            isOpen
+            onClose={() => undefined}
+            initialPhrase="first keyword"
+          />
+        </ReactQueryProvider>,
       );
       await Promise.resolve();
     });
@@ -62,11 +65,13 @@ describe("KeywordWindow external opens", () => {
 
     await act(async () => {
       root.render(
-        <KeywordWindow
-          isOpen
-          onClose={() => undefined}
-          initialPhrase="second keyword"
-        />,
+        <ReactQueryProvider>
+          <KeywordWindow
+            isOpen
+            onClose={() => undefined}
+            initialPhrase="second keyword"
+          />
+        </ReactQueryProvider>,
       );
       await Promise.resolve();
     });

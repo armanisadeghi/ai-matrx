@@ -19,8 +19,8 @@ import {
 } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { consumeChatDraftTransfer } from "./chat-draft-transfer";
 import { chatRouteSurfaceKey } from "./begin-fresh-chat";
-import { selectChatIncognitoActive } from "./chat-incognito.slice";
-import { selectChatFreshSessionNonce } from "./chat-route.slice";
+import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
+import { selectChatFreshSessionNonce } from "@/features/agents/redux/chat/chat-route.slice";
 import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { linkConversationDocumentThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 import { useOpenWorkingDocumentPanel } from "@/features/overlays/openers/workingDocumentPanel";

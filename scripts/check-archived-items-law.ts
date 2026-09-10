@@ -44,6 +44,15 @@
  *     wired to the predicate; whether the pixels are right is a browser
  *     verification, not a static one.
  *
+ * WHAT IT CANNOT SEE (say so, never let a green run imply more than it proves)
+ *
+ *   A service that ALREADY exposes an archive option which no caller ever
+ *   passes reads as green here — the option exists, so the query is not
+ *   hardcoded. `features/page-extraction/api/jobs.ts` shipped exactly that for
+ *   months: `includeArchived` in the signature, no UI able to set it. Wiring a
+ *   control to a visible affordance is proven in the browser, on the surface,
+ *   not by this file.
+ *
  * ESCAPE HATCH: an internal reader that genuinely must not offer a control
  * (a machine path, a lineage walk, a health probe) declares it at the query:
  *

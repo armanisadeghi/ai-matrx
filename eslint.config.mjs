@@ -33,10 +33,15 @@ const windowPanelsImportRestriction = {
     // File-handling: the public index barrel was deleted (2026-07-26).
     // Import directly from the owning module. Internal subdirs below
     // stay banned. See features/files/FEATURE.md.
+    // `features/files/api/<module>` ARE the owning modules (direct.ts, assets.ts,
+    // files.ts, pdf-pages.ts, ...). Only the bare directory path is banned — a
+    // directory import would need an index barrel, and invariant 17 forbids one.
+    // (Until 2026-09-10 this banned api/* too, with a message written when api/
+    // held HTTP shims; 24 legitimate consumers were red with no sanctioned door.)
     {
-      group: ["@/features/files/api", "@/features/files/api/*"],
+      group: ["@/features/files/api"],
       message:
-        "Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.).",
+        "Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). Raw HTTP helpers live in @/lib/python-client.",
     },
     {
       group: ["@/features/files/cache", "@/features/files/cache/*"],
