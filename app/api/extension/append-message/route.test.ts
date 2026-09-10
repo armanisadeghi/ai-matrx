@@ -83,7 +83,7 @@ const conversationRow = {
   updated_by: null,
   variables: {},
   version: 1,
-  visibility: "private",
+  visibility: "personal",
 } satisfies CxConversation;
 
 const storedMessageRow = {

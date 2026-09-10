@@ -7,55 +7,70 @@ description: "Recipe for creating or changing a floating window panel. Use when 
 
 ## Quick Orientation
 
-All floating windows share one shell (`WindowPanel`), one persistence system (local-first IndexedDB/localStorage workspace cache via `WindowPersistenceManager` — the old `window_sessions` Supabase table was dropped 2026-08-12), and one central registry (`windowRegistry.ts`). The registry is the single source of truth — every window must be registered there.
+Every floating window is a `WindowPanel` shell rendered by ONE hand-maintained controller, `features/overlays/OverlayController.tsx`. **No registry renders windows** — `windowRegistry.ts` is deleted; any doc that says "add a registry entry to render a window" is stale. Persistence is a **local-first, tab-scoped workspace** (localStorage mirror + IndexedDB, `features/window-panels/persistence/`, coordinated by `WindowPersistenceManager`); nothing window-related is stored server-side (the `window_sessions` table was dropped 2026-08-12). Slots / drag / tray internals → `window-panels` skill. Openers / controller / catalogue rules → `overlay-system` skill.
 
 **Key files:**
 
 | File | When you touch it |
 |------|-------------------|
-| `features/window-panels/registry/windowRegistry.ts` | Every new window or `data` shape change |
-| `features/window-panels/windows/MyWindow.tsx` | New window component |
-| `components/overlays/OverlayController.tsx` | Mount the window via `dynamic()` |
-| `features/window-panels/SidebarWindowToggle.tsx` | Add to the Tools grid |
+| `features/window-panels/registry/overlay-ids.ts` | Every new overlay id (the typed `OverlayId` union) |
+| `features/window-panels/registry/windowRegistryMetadata.ts` | Every new window; any `defaultData` / `preservation` change |
+| `features/window-panels/windows/[<feature>/]MyFeatureWindow.tsx` | New window component |
+| `features/overlays/OverlayController.tsx` | Mount: `lazyOverlay` import + selectors + gated block |
+| `features/overlays/openers/<overlayId>.tsx` | Typed `useOpenX` hook + `XController` |
+| `features/overlays/catalogue.ts` | `{ label, instanceMode, isWindow }` entry |
+| `features/window-panels/tools-grid/toolsGridTiles.ts` | Optional Tools-grid tile |
 | `features/window-panels/url-sync/initUrlHydration.ts` | Optional `?panels=` deep-link |
 
 ---
 
 ## Step-by-Step: Creating a New Window
 
-### 1. Register in `windowRegistry.ts`
+A window is registered **at every boundary, by hand** (no codegen): id → metadata → component → controller → opener + catalogue, then the optional tile and hydrator.
+
+### 1. Add the id to `overlay-ids.ts`
+
+Append `"myFeatureWindow"` to `OVERLAY_IDS`. The `OverlayId` union narrows every opener and `openOverlay` call at compile time.
+
+### 2. Declare static metadata in `windowRegistryMetadata.ts`
 
 ```ts
-// features/window-panels/registry/windowRegistry.ts — add to REGISTRY array
+// features/window-panels/registry/windowRegistryMetadata.ts
 {
-  slug: "my-feature-window",       // kebab-case; the persistence identity slug
-  overlayId: "myFeatureWindow",    // camelCase; must match overlaySlice key exactly
+  slug: "my-feature-window",       // kebab-case; URL / diagnostic identity
+  overlayId: "myFeatureWindow",    // camelCase; the exact string from overlay-ids.ts
+  kind: "window",
   label: "My Feature",
   defaultData: {
     selectedId: null,
     search: "",
   },
-  // ephemeral: true,  // uncomment for debug/tool windows that should NOT persist
+  mobilePresentation: "drawer",    // required for kind "window": fullscreen | drawer | card | hidden
+  // ephemeral: true,                            // never enters the local workspace
+  // preservation: { dataKeys: ["selectedId"] }, // opt in to refresh restore (default-deny)
+  // instanceMode: "multi",
+  // urlSync: { key: "my_feature" },             // needs a hydrator (step 7)
 },
 ```
 
 Rules:
-- `slug` is globally unique, kebab-case, stored as a DB column value.
-- `overlayId` is the key dispatched in `openOverlay({ overlayId })` everywhere.
+- `slug` and `overlayId` are each unique across the registry.
+- `overlayId` is the key every opener and `openOverlay({ overlayId })` uses.
 - `defaultData` documents every key `onCollectData()` will ever return.
+- **Component-free** — never import component code here; this file is safe in boot code only because it has none.
 
-### 2. Create `windows/MyFeatureWindow.tsx`
+### 3. Create `windows/[<feature>/]MyFeatureWindow.tsx`
 
 ```tsx
 "use client";
-import React, { useCallback, useState } from "react";
+import { useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MyFeatureBody } from "@/features/my-feature/components/MyFeatureBody";
 
 interface MyFeatureWindowProps {
   isOpen: boolean;
   onClose: () => void;
-  initialSelectedId?: string | null;   // from overlayData passed by OverlayController
+  initialSelectedId?: string | null;   // from overlay data, wired by the controller block
 }
 
 export default function MyFeatureWindow({ isOpen, onClose, initialSelectedId }: MyFeatureWindowProps) {
@@ -66,10 +81,7 @@ export default function MyFeatureWindow({ isOpen, onClose, initialSelectedId }: 
 function MyFeatureWindowInner({ onClose, initialSelectedId }: Omit<MyFeatureWindowProps, "isOpen">) {
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? null);
 
-  const collectData = useCallback(
-    (): Record<string, unknown> => ({ selectedId }),
-    [selectedId],
-  );
+  const collectData = (): Record<string, unknown> => ({ selectedId, search: "" });
 
   return (
     <WindowPanel
@@ -81,8 +93,9 @@ function MyFeatureWindowInner({ onClose, initialSelectedId }: Omit<MyFeatureWind
       height={440}
       position="center"
       onClose={onClose}
-      overlayId="myFeatureWindow"     // must match registry
+      overlayId="myFeatureWindow"     // identical to overlay-ids.ts + metadata
       onCollectData={collectData}
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
       <MyFeatureBody selectedId={selectedId} onSelect={setSelectedId} />
     </WindowPanel>
@@ -92,57 +105,75 @@ function MyFeatureWindowInner({ onClose, initialSelectedId }: Omit<MyFeatureWind
 
 Critical rules:
 - Outer guard `if (!isOpen) return null` — inner component does the real work.
-- `id` must be stable (not random UUID) — it is the Redux key for geometry.
-- `overlayId` must exactly match the registry `overlayId`.
-- `onCollectData` must return **all** keys that appear in `defaultData`. Wrap in `useCallback` with all dependencies.
+- `id` must be stable (not a random UUID; omitted → `useId()`) — it is the Redux key for geometry.
+- `overlayId` must exactly match `overlay-ids.ts` and the metadata `overlayId`. It is also the close binding: `overlayId` or `onClose` is required (type-enforced).
+- `instanceMode: "multi"` → also pass `overlayInstanceId`, or close and restore cannot find the exact instance.
+- `onCollectData` must return **all** keys that appear in `defaultData`, read from live state. No manual `useCallback` — the React Compiler memoizes it.
+- Body is content only; header / footer / sidebar are `WindowPanel` slots → `window-panels` skill.
 
-### 3. Register in `OverlayController.tsx`
+### 4. Mount in `features/overlays/OverlayController.tsx`
+
+Three hand edits. Props are wired **by name** — a `{...spread}` is an ESLint error.
 
 ```ts
-// Add dynamic import near other window imports
-const MyFeatureWindow = dynamic(
-  () => import("@/features/window-panels/windows/MyFeatureWindow"),
+// 1 — lazy import near the other window imports
+const MyFeatureWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/my-feature/MyFeatureWindow"),
   { ssr: false },
 );
 ```
 
 ```ts
-// Add selectors near other window selectors
-const isMyFeatureWindowOpen = useAppSelector((s) => selectIsOverlayOpen(s, "myFeatureWindow"));
-const myFeatureWindowData = useAppSelector((s) => selectOverlayData(s, "myFeatureWindow"));
+// 2 — one entry in `isOpenById`, one in `dataById`
+myFeatureWindow: useAppSelector((s) => selectIsOverlayOpen(s, "myFeatureWindow")),
+// …
+myFeatureWindow: useAppSelector((s) => selectOverlayData(s, "myFeatureWindow")),
 ```
 
 ```tsx
-{/* Add inside the overlay render section */}
-{isMyFeatureWindowOpen && (
-  <MyFeatureWindow
-    isOpen={isMyFeatureWindowOpen}
-    onClose={() => dispatch(closeOverlay("myFeatureWindow"))}
-    initialSelectedId={myFeatureWindowData?.selectedId ?? null}
-  />
-)}
+{/* 3 — gated render block; NEVER render ungated */}
+{/* myFeatureWindow */}
+{(() => {
+  const isOpen = isOpenById.myFeatureWindow;
+  const data = dataById.myFeatureWindow as Record<string, unknown> | null | undefined;
+  if (!isOpen) return null;
+  return (
+    <MyFeatureWindow
+      isOpen
+      onClose={() => dispatch(closeOverlay({ overlayId: "myFeatureWindow" }))}
+      initialSelectedId={typeof data?.selectedId === "string" ? data.selectedId : null}
+    />
+  );
+})()}
 ```
 
-### 4. Add to `SidebarWindowToggle.tsx`
+### 5. Add the opener and catalogue entry
+
+- `features/overlays/openers/myFeatureWindow.tsx` — copy an existing opener (`feedbackDialog.tsx`): `useOpenMyFeatureWindow()` + `<MyFeatureWindowController />`. New code opens the window through the opener, never a raw `dispatch(openOverlay(...))`.
+- `features/overlays/catalogue.ts`: `myFeatureWindow: { label: "My Feature", instanceMode: "singleton", isWindow: true },`
+
+### 6. (Optional) Tools grid — `tools-grid/toolsGridTiles.ts`
+
+Tiles are declarative; `ToolsGrid.tsx` reads them and opens the overlay. Never add a tile inside `components/SidebarWindowToggle.tsx`.
 
 ```ts
 {
+  id: "tile.my-feature",
   label: "My Feature",
-  icon: MyFeatureIcon,   // Lucide icon
-  action: () => dispatch(openOverlay({ overlayId: "myFeatureWindow" })),
+  icon: MyFeatureIcon,             // Lucide icon component
+  category: "general",
+  overlayId: "myFeatureWindow",
+  // seedData: (ctx) => ({ selectedId: null }),
 },
 ```
 
-### 5. (Optional) URL hydrator — `initUrlHydration.ts`
+### 7. (Optional) URL hydrator — `url-sync/initUrlHydration.ts`
 
-Only needed if you want `?panels=my_feature` to reopen the window:
+Only needed if you want `?panels=my_feature` to reopen the window. The hydrator and the metadata `urlSync.key` (step 2) come as a pair: a hydrator without the key opens from the URL but never writes back.
 
 ```ts
-registerPanelHydrator("my_feature", (params) => {
-  dispatch(openOverlay({
-    overlayId: "myFeatureWindow",
-    data: { selectedId: params.selectedId ?? null },
-  }));
+registerPanelHydrator("my_feature", (dispatch, id) => {
+  dispatch(openOverlay({ overlayId: "myFeatureWindow" }));   // multi-instance: add instanceId: id
 });
 ```
 
@@ -152,16 +183,18 @@ registerPanelHydrator("my_feature", (params) => {
 
 When you add/remove keys from a window's content state:
 
-1. Update `defaultData` in `windowRegistry.ts` — add new keys with null/empty defaults; remove stale ones.
+1. Update `defaultData` in `windowRegistryMetadata.ts` — add new keys with null/empty defaults; remove stale ones. A preserved window: update `preservation.dataKeys` too, or the new key is silently dropped from storage.
 2. Update `onCollectData` in the window component to return all current keys.
 3. Update the inner component to read new keys from `initialXxx` props.
-4. Update `OverlayController.tsx` if `overlayData` destructuring changes.
+4. Props changed → update the gated block in `OverlayController.tsx` AND the opener's `Open…Options` interface.
 
 ---
 
 ## Persistence Contract
 
-`WindowPanel` handles geometry persistence automatically when `overlayId` is set. The child only supplies content via `onCollectData`.
+**Default-deny.** A window survives a refresh only when its metadata declares `preservation.dataKeys` and is not `ephemeral` (multi-instance: plus `overlayInstanceId`). Every other window simply closes on reload. The opted-in list and full lifecycle: `features/window-panels/FEATURE.md` § Persistence.
+
+For a preserved window, `WindowPanel` captures chrome automatically when `overlayId` is set. The child only supplies content via `onCollectData`.
 
 **What `panelState` captures (automatic):**
 - `rect`: `{ x, y, width, height }`
@@ -170,28 +203,28 @@ When you add/remove keys from a window's content state:
 - `zIndex`: number
 
 **What `data` captures (child's responsibility):**
-- Whatever `onCollectData()` returns — must be JSON-serializable, must match `defaultData` shape.
+- Whatever `onCollectData()` returns, merged over the launch data and **filtered to `preservation.dataKeys`** — JSON-serializable, ≤ `maxDataBytes` (32 KiB default). Functions, callbacks, and blobs never reach storage.
 
 **Save triggers:**
+- Any `windowManagerSlice` change (move, resize, minimize, sidebar toggle) → workspace save, debounced 250 ms.
+- `onCollectData` or launch data changes → semantic data re-staged automatically; minimize collects and saves too.
 - Explicit: user clicks "Save window state" in the green traffic-light dropdown.
-- Piggyback: child triggers its own save and includes `onCollectData` in the same write.
+- `pagehide` → synchronous localStorage flush.
 
-**Not saved on:** move, resize, sidebar toggle, tab switch.
+**On close:** `closeOverlay` (and toggle-close / close-all) tombstones the session and the close middleware flushes localStorage synchronously, so the window doesn't reopen next load — even when closed mid-hydration.
 
-**On close:** the DB row is deleted so the window doesn't reopen next load.
-
-**On page load:** `WindowPersistenceManager` fetches all rows and re-dispatches `openOverlay` + `restoreWindowState`.
+**On page load:** `WindowPersistenceManager` reads the tab's identity-scoped workspace (localStorage mirror, then IndexedDB), clamps rects to the viewport, stages each session, and dispatches `openOverlay`; `registerWindow` consumes the staged state when the window mounts.
 
 ---
 
 ## Ephemeral Windows
 
-Use `ephemeral: true` in the registry for windows that must NOT persist:
+Use `ephemeral: true` in the metadata for windows that must NOT persist:
 - Debug/dev tool windows
 - One-shot dialogs (file upload, confirmation flows)
-- Windows whose state cannot be serialized (file blobs, live streams)
+- Windows whose state cannot be serialized (file blobs, live streams, callback-group windows)
 
-Ephemeral windows: no DB row, no "Save window state" button, no restore on reload.
+Ephemeral windows never enter the workspace and never restore on reload. The "Save window state" item still renders for every `overlayId` window — without `preservation` it does nothing.
 
 ---
 
@@ -217,18 +250,21 @@ Ephemeral windows: no DB row, no "Save window state" button, no restore on reloa
 
 | Mistake | Symptom | Fix |
 |---------|---------|-----|
-| `overlayId` in component ≠ registry `overlayId` | Window never saves, no "Save" button appears | Make them identical |
-| `onCollectData` returns stale closure | Saved data has old values | Add all state deps to `useCallback` |
-| Missing from `OverlayController.tsx` | Window never renders | Add `dynamic()` import + render block |
-| Missing from `windowRegistry.ts` | No persistence, "Save" button hidden | Add registry entry |
+| `overlayId` in component ≠ `overlay-ids.ts` / metadata `overlayId` | Type error, or the window reads another overlay's mobile / restore metadata | Make them identical |
+| `onCollectData` returns stale values | Saved data has old values | Read live state in the collector, never a cached copy |
+| Missing gated block in `OverlayController.tsx` | Window never renders | Add `lazyOverlay` import + selectors + gated block |
+| Missing metadata entry in `windowRegistryMetadata.ts` | No mobile presentation, URL sync, or restore | Add the entry (`kind`, `mobilePresentation`) |
+| No `preservation` on the metadata entry | Window doesn't reopen after refresh; "Save window state" does nothing | Declare `preservation.dataKeys` |
+| Multi-instance window without `overlayInstanceId` | Close logs `Cannot close multi-instance…`; no restore | Pass `overlayInstanceId` |
 | Random `id` passed to `WindowPanel` | Geometry lost on re-render | Use stable string like `"my-feature-window"` |
-| `ephemeral: true` but window needs restore | Window doesn't reopen | Remove `ephemeral` flag |
+| `ephemeral: true` but window needs restore | Window doesn't reopen | Remove `ephemeral`, declare `preservation` |
 
 ---
 
 ## Additional Resources
 
-- Full prop reference and all registered windows: `features/window-panels/README.md`
-- Registry source of truth: `features/window-panels/registry/windowRegistry.ts`
-- Persistence service: `features/window-panels/service/windowPersistenceService.ts`
-- Context provider: `features/window-panels/WindowPersistenceManager.tsx`
+- Deep reference (registry fields, persistence lifecycle, URL sync, Tools grid): `features/window-panels/FEATURE.md`
+- Static metadata: `features/window-panels/registry/windowRegistryMetadata.ts` (types: `windowRegistryTypes.ts`)
+- Local workspace store: `features/window-panels/persistence/localWindowSessionStore.ts` (+ `windowSessionSerialization.ts`, `windowPersistenceCloseMiddleware.ts`)
+- Persistence coordinator: `features/window-panels/WindowPersistenceManager.tsx` → `WindowPersistenceCore.tsx`
+- Openers, controller, catalogue: `overlay-system` skill · slots, drag, tray: `window-panels` skill

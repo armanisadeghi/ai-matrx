@@ -1,6 +1,6 @@
 ---
 name: create-agent
-description: "The recipe for production-grade AI Matrx platform agents built through the AI Dream MCP. Use when asked to create, build, configure, improve, rename, or re-instruct a platform agent, or when a deliverable or kind needs an agent to emit it. NOT for aidream's in-process code-runner lane (use matrx-agents)."
+description: "The recipe for production-grade AI Matrx platform agents built through the AI Dream MCP. Use when asked to create, build, configure, improve, rename, or re-instruct a platform agent, or when a deliverable or kind needs an agent to emit it. NOT for Claude Code subagents or .claude/agents files."
 ---
 
 <!-- SYNCED COPY — do not edit here.

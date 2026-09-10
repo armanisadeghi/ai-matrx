@@ -152,6 +152,11 @@ async function mount(store: TestStore, element: ReactElement) {
     root.render(<Provider store={store}>{element}</Provider>);
   });
   return {
+    async rerender(next: ReactElement) {
+      await act(async () => {
+        root.render(<Provider store={store}>{next}</Provider>);
+      });
+    },
     async unmount() {
       await act(async () => root.unmount());
       container.remove();
@@ -213,12 +218,55 @@ describe("StudioRoute", () => {
       ]);
       await settle();
 
+      // StrictMode really re-ran the effect: two lookups, one promotion.
+      expect(fetchTranscriptById).toHaveBeenCalledTimes(2);
       expect(promoteTranscriptToStudio).toHaveBeenCalledTimes(1);
       expect(promoteTranscriptToStudio).toHaveBeenCalledWith({
         transcript,
         userId: USER_ID,
       });
       expect(mockRouterPush).not.toHaveBeenCalled();
+      await view.unmount();
+    });
+
+    it("imports only the transcript the page links to now when the link changes mid-lookup", async () => {
+      const otherTranscriptId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+      const otherTranscript = {
+        ...transcript,
+        id: otherTranscriptId,
+        title: "Second interview",
+      } satisfies Transcript;
+      const pendingLookups = new Map<string, (found: Transcript) => void>();
+      jest.mocked(fetchTranscriptById).mockImplementation(
+        (id: string) =>
+          new Promise<Transcript | null>((resolve) => {
+            pendingLookups.set(id, resolve);
+          }),
+      );
+      const store = makeStore();
+      store.dispatch(setUserAuth({ id: USER_ID }));
+
+      const view = await mount(
+        store,
+        <StudioRoute importTranscriptId={TRANSCRIPT_ID} />,
+      );
+      await eventually(() => [...pendingLookups.keys()], [TRANSCRIPT_ID]);
+      await view.rerender(<StudioRoute importTranscriptId={otherTranscriptId} />);
+      await eventually(
+        () => [...pendingLookups.keys()],
+        [TRANSCRIPT_ID, otherTranscriptId],
+      );
+
+      pendingLookups.get(otherTranscriptId)?.(otherTranscript);
+      pendingLookups.get(TRANSCRIPT_ID)?.(transcript);
+      await eventually(() => mockRouterReplace.mock.calls.length, 1);
+      await settle();
+
+      expect(promoteTranscriptToStudio).toHaveBeenCalledTimes(1);
+      expect(promoteTranscriptToStudio).toHaveBeenCalledWith({
+        transcript: otherTranscript,
+        userId: USER_ID,
+      });
       await view.unmount();
     });
 

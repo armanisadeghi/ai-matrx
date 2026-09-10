@@ -138,7 +138,8 @@ When a mistake you're fixing looks like a PATTERN — same class in a third
 place, something Arman has ranted about, a check you wish existed — **stop and
 tell him**: the pattern in one sentence, grep-level evidence with real counts
 (run the greps; no vibes), proposed tier + cadence. On approval: add the
-registry row (or Candidate-bench line), spin the sweep chip, and note which of
+registry row (or Candidate-bench line), dispatch the sweep to a subagent with a
+named lane (law 7 — never a `spawn_task` chip), and note which of
 the five parts already exist. Promotion patterns (presence of something good —
 copy-for-AI, assists, admin-map rows) qualify exactly like elimination
 patterns.

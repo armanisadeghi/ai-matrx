@@ -2,7 +2,7 @@
 name: drift-audit
 type: Skill
 title: "drift-audit — refresh the canonical-DB conformance numbers, then act"
-description: "The re-measure and standing report of the canonical data model's live DB conformance. Use when asked 'where are we at' on DB drift or conformance, to update the drift numbers, when a drift-audit brief is re-issued, or on /drift-audit. NOT the per-table fix recipe (use db-canonicalize-table)."
+description: "The re-measure and standing report of the canonical data model's live DB conformance. Use when asked 'where are we at' on DB drift or conformance, to update the drift numbers, when a drift-audit brief is re-issued, or on /drift-audit. NOT the per-table fix recipe (use matrx-frontend's db-canonicalize-table)."
 tags: [db, canonical-model, audit, conformance, chips]
 timestamp: 2026-08-21T00:00:00Z
 ---

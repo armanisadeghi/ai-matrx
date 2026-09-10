@@ -80,7 +80,8 @@ Handler rules (see the TaskEditorBody block):
 
 ## Step 3 — verify with a REAL agent run (non-negotiable)
 
-Mock nothing. On a dev server (`pnpm dev:status` for existing ones; login
+Mock nothing. On the one machine-wide dev server (`pnpm preview:start`, port
+3001 — never raw `pnpm dev`; login
 `/login` admin@admin.com / <see AI_ADMIN_PASSWORD in .env>):
 
 1. Open the page; open the header **Agents** popover ("Agents for this
@@ -114,14 +115,20 @@ server-side; the client tool works either way.
   FEATURE.md "360 loop" section lists live adopters — add yours.
 - Register the surface in `agent.review_queue` (skill `agent-review-queue`)
   so Arman can test it.
-- **End your task by firing 3-5 `spawn_task` chips**, each assigning ONE
-  concrete surface (name the manifest + page component + candidate targets
-  you scouted), instructing the agent to invoke THIS skill
-  (`surface-write-targets`), verify with a live agent run, and **end with
-  3-5 chips of its own for further surfaces**. Skip chips only when you
-  genuinely cannot find worthy surfaces left — check
-  `features/surfaces/manifests/` for manifests without `writeTargets` whose
-  pages have real editable state.
+- **Keep the avalanche going with SUBAGENTS, never `spawn_task` chips**
+  (law 7; `common-docs/policies/subagent-model-ladder.md`). Scout 3-5 further
+  surfaces and dispatch ONE subagent per surface, **lane named**
+  (`standard` = opus, medium — this is implementation). Each brief names the
+  manifest + page component + candidate targets you scouted, and tells the
+  subagent to invoke THIS skill (`surface-write-targets`), verify with a live
+  agent run, and **return 3-5 scouted next surfaces to you** — it does not
+  dispatch further. You own every result: check it, then dispatch the next
+  wave from what came back. Stop only when you genuinely cannot find worthy
+  surfaces left — check `features/surfaces/manifests/` for manifests without
+  `writeTargets` whose pages have real editable state.
+- **Live verification is one lane at a time.** Step 3 runs on the one
+  machine-wide dev server + Browser: code work fans out in parallel, live
+  agent runs never do.
 
 ## Traps
 
@@ -142,8 +149,8 @@ server-side; the client tool works either way.
   If a target legitimately takes structured data, accept the OBJECT and
   serialize it yourself. Bit `shapes`; don't rediscover it.
 - **CHECK FOR A COLLISION BEFORE YOU WRITE ANYTHING, and again before you
-  commit.** These chips fan out in parallel and the same surface gets
-  assigned more than once. `git fetch origin main` and confirm the manifest
+  commit.** Subagents and other sessions fan out in parallel, and the same
+  surface gets assigned more than once. `git fetch origin main` and confirm the manifest
   still lacks `writeTargets` ON LATEST MAIN — not on your clone's base, which
   goes stale within the hour — and `git ls-remote origin <your-branch>` to
   see whether someone is already pushing there. If a DIFFERENT design already

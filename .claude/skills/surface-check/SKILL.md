@@ -156,8 +156,10 @@ Only a passed verifier writes `ui.ui_surface.last_checked_*` with the candidate,
 claim fields. This makes the ledger the durable per-surface checklist without
 letting the builder certify itself.
 
-Then: `agent-review-queue` row for anything Arman should sample; `spawn_task`
-chips for tangential work; FEATURE.md Change Log line `surface-check <date>:
+Then: `agent-review-queue` row for anything Arman should sample; tangential
+work goes to a subagent you dispatch with a named lane (law 7) — or, as a
+claimed Work Loop worker, back to your coordinator in your report — never a
+`spawn_task` chip; FEATURE.md Change Log line `surface-check <date>:
 candidate (<n> fixes)` and, after verifier promotion, `certified r<ruleVersion>`.
 
 Admin view of the ledger: `/administration/ui/surfaces` (Last checked column, never-checked filter — see the skill's open items if not yet built).
@@ -187,7 +189,7 @@ name on a `skipBaselineValues` surface is a WARN (the launch floor fills it) —
 never "fix" that by re-adding baselines to a surface that deliberately opted out.
 It is also an advisory release gate ("Surface value blast radius").
 
-## Open items for this system (build when you hit them; chip if out of scope)
+## Open items for this system (build when you hit them; out of scope → dispatch a subagent with a named lane)
 
 1. ~~Ledger columns~~ — LIVE (`ui.ui_surface.last_checked_at / last_checked_by / last_check`; `check_claimed_*` is display-only, never lock authority).
 2. ~~`/administration/ui/surfaces` Checked column + never/stale filter~~ — LIVE (sortable; never-checked first). Still missing: the per-section result popover reading `last_check.sections`.

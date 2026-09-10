@@ -89,8 +89,8 @@ async function resolveAuth(request: NextRequest): Promise<AuthResult> {
         },
       );
       const { data, error } = await bearerClient.auth.getUser(token);
-      if (token) {
-        return { ok: true, userId: data.user?.id ?? null, client: bearerClient };
+      if (!error && data.user?.id) {
+        return { ok: true, userId: data.user.id, client: bearerClient };
       }
     }
   }
