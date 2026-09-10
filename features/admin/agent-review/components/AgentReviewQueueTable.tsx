@@ -39,6 +39,7 @@ import { matchesTableSearch } from "@/components/official/matrx-data-table/filte
 import { useShare } from "@/features/sharing/hooks/useShare";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { ReviewCount } from "@/features/admin/agent-review/components/ReviewCount";
 
 /** The row's own page — the link every agent owes Arman (see the
  *  `agent-review-queue` skill, THE DIRECT-LINK RULE). */
@@ -475,14 +476,16 @@ export default function AgentReviewQueueTable() {
               variant={view === "inbox" ? "default" : "outline"}
               onClick={() => setQueueView("inbox")}
             >
-              Ready for you ({inboxRows.length})
+              Ready for you (
+              <ReviewCount count={inboxRows.length} loading={loading} />)
             </Button>
             <Button
               size="sm"
               variant={view === "all" ? "default" : "outline"}
               onClick={() => setQueueView("all")}
             >
-              All activity ({rows.length})
+              All activity (
+              <ReviewCount count={rows.length} loading={loading} />)
             </Button>
             <Button
               variant="outline"
@@ -533,7 +536,11 @@ export default function AgentReviewQueueTable() {
                 >
                   <div className="text-sm font-medium">{step.label}</div>
                   <div className="mt-1 text-2xl font-semibold tabular-nums">
-                    {count}
+                    <ReviewCount
+                      count={count}
+                      loading={loading}
+                      skeletonClassName="h-7 w-12"
+                    />
                   </div>
                 </button>
               </div>
