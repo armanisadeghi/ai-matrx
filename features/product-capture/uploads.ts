@@ -54,7 +54,7 @@ export async function uploadItemFile(args: {
       kind !== "video" ||
       args.video.mime !== file.type ||
       !Number.isInteger(args.video.durationMs) ||
-      args.video.durationMs < 0
+      args.video.durationMs <= 0
     ) {
       throw new Error(
         "[product-capture] video upload facts must match the file MIME and carry a positive integer duration.",
