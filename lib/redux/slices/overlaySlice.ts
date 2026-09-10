@@ -14,7 +14,7 @@
 // All existing callers that omit instanceId continue to work with zero changes.
 
 import { createSlice, createSelector } from "@reduxjs/toolkit";
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 
 export const DEFAULT_INSTANCE_ID = "default";
 

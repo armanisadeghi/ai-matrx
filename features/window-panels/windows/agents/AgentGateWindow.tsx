@@ -1,7 +1,7 @@
 "use client";
 
 import { AgentGateBody } from "@/features/agents/components/agent-widgets/execution-gates/AgentGateInput";
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 interface AgentGateWindowProps {

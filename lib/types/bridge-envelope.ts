@@ -199,7 +199,7 @@ export type KnownFrontendRpcAction = (typeof KNOWN_FRONTEND_RPC_ACTIONS)[number]
  * Payload shape for the `openPanel` action. The matrx-extend extension
  * publishes one of these envelopes when it wants this app to surface a
  * specific window-panels overlay. The `panelId` MUST be a registered
- * overlayId — see `features/window-panels/registry/overlay-ids.ts`.
+ * overlayId — see `features/overlays/catalogue.ts`.
  *
  * Consumed by `lib/extension-bridge/openPanelHandler.ts`, which validates
  * with this schema before dispatching `openOverlay(...)`.

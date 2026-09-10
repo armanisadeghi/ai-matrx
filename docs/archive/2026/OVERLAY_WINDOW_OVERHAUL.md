@@ -460,7 +460,7 @@ Already-existing `WindowPersistenceManager` reads/writes `window_sessions` — j
 - `features/window-panels/registry/windowRegistry.ts` (was the runtime renderer)
 - `features/window-panels/registry/windowRegistryMetadata.ts` (replaced by `features/windows/catalogue.ts` slimmed)
 - `features/window-panels/diagnostics/` (the OverlayErrorBoundary + OverlayRenderProbe) — no longer needed; controller has explicit boundaries
-- `features/window-panels/registry/overlay-ids.ts` → move to `features/overlays/ids.ts`
+- the hand-kept id list → move to `features/overlays/ids.ts` (superseded 2026-09-10: deleted; `OverlayId` now derives from the `features/overlays/catalogue.ts` keys)
 - `scripts/check-overlay-key-alignment.ts` (collapses to a 30-line "every id in catalogue is rendered" check)
 
 ### Kept unchanged
@@ -503,7 +503,7 @@ The blob-cache service worker is currently intercepting *all* fetches and breaki
 
 1. Remove `UnifiedOverlayController*`, `OverlaySurface`, `windowRegistry*`.
 2. Strip `componentImport`/`defaultData`/`kind` from the catalogue.
-3. Rename `features/window-panels/registry/` → `features/windows/`. Move overlay-ids out.
+3. Rename `features/window-panels/registry/` → `features/windows/`. Move the id list out (superseded 2026-09-10: folded into the catalogue keys).
 4. ESLint rules enabled.
 5. Audit script collapses to the 30-line check.
 

@@ -13,12 +13,11 @@ Every floating window is a `WindowPanel` shell rendered by ONE hand-maintained c
 
 | File | When you touch it |
 |------|-------------------|
-| `features/window-panels/registry/overlay-ids.ts` | Every new overlay id (the typed `OverlayId` union) |
+| `features/overlays/catalogue.ts` | Every new overlay: its key IS the id (`OverlayId = keyof typeof OVERLAY_CATALOGUE`) + `{ label, instanceMode, isWindow }` |
 | `features/window-panels/registry/windowRegistryMetadata.ts` | Every new window; any `defaultData` / `preservation` change |
 | `features/window-panels/windows/[<feature>/]MyFeatureWindow.tsx` | New window component |
 | `features/overlays/OverlayController.tsx` | Mount: `lazyOverlay` import + selectors + gated block |
 | `features/overlays/openers/<overlayId>.tsx` | Typed `useOpenX` hook + `XController` |
-| `features/overlays/catalogue.ts` | `{ label, instanceMode, isWindow }` entry |
 | `features/window-panels/tools-grid/toolsGridTiles.ts` | Optional Tools-grid tile |
 | `features/window-panels/url-sync/initUrlHydration.ts` | Optional `?panels=` deep-link |
 
@@ -26,11 +25,11 @@ Every floating window is a `WindowPanel` shell rendered by ONE hand-maintained c
 
 ## Step-by-Step: Creating a New Window
 
-A window is registered **at every boundary, by hand** (no codegen): id → metadata → component → controller → opener + catalogue, then the optional tile and hydrator.
+A window is registered **at every boundary, by hand** (no codegen): catalogue entry (the id) → metadata → component → controller → opener, then the optional tile and hydrator.
 
-### 1. Add the id to `overlay-ids.ts`
+### 1. Add the catalogue entry — it defines the id
 
-Append `"myFeatureWindow"` to `OVERLAY_IDS`. The `OverlayId` union narrows every opener and `openOverlay` call at compile time.
+In `features/overlays/catalogue.ts`: `myFeatureWindow: { label: "My Feature", instanceMode: "singleton", isWindow: true },`. The key IS the overlay id — the `OverlayId` union is `keyof typeof OVERLAY_CATALOGUE`, so every opener and `openOverlay` call narrows at compile time. There is no second id list.
 
 ### 2. Declare static metadata in `windowRegistryMetadata.ts`
 
@@ -38,7 +37,7 @@ Append `"myFeatureWindow"` to `OVERLAY_IDS`. The `OverlayId` union narrows every
 // features/window-panels/registry/windowRegistryMetadata.ts
 {
   slug: "my-feature-window",       // kebab-case; URL / diagnostic identity
-  overlayId: "myFeatureWindow",    // camelCase; the exact string from overlay-ids.ts
+  overlayId: "myFeatureWindow",    // camelCase; the exact catalogue key (step 1)
   kind: "window",
   label: "My Feature",
   defaultData: {
@@ -93,7 +92,7 @@ function MyFeatureWindowInner({ onClose, initialSelectedId }: Omit<MyFeatureWind
       height={440}
       position="center"
       onClose={onClose}
-      overlayId="myFeatureWindow"     // identical to overlay-ids.ts + metadata
+      overlayId="myFeatureWindow"     // identical to the catalogue key + metadata
       onCollectData={collectData}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
@@ -106,7 +105,7 @@ function MyFeatureWindowInner({ onClose, initialSelectedId }: Omit<MyFeatureWind
 Critical rules:
 - Outer guard `if (!isOpen) return null` — inner component does the real work.
 - `id` must be stable (not a random UUID; omitted → `useId()`) — it is the Redux key for geometry.
-- `overlayId` must exactly match `overlay-ids.ts` and the metadata `overlayId`. It is also the close binding: `overlayId` or `onClose` is required (type-enforced).
+- `overlayId` must exactly match the catalogue key and the metadata `overlayId`. It is also the close binding: `overlayId` or `onClose` is required (type-enforced).
 - `instanceMode: "multi"` → also pass `overlayInstanceId`, or close and restore cannot find the exact instance.
 - `onCollectData` must return **all** keys that appear in `defaultData`, read from live state. No manual `useCallback` — the React Compiler memoizes it.
 - Body is content only; header / footer / sidebar are `WindowPanel` slots → `window-panels` skill.
@@ -147,10 +146,9 @@ myFeatureWindow: useAppSelector((s) => selectOverlayData(s, "myFeatureWindow")),
 })()}
 ```
 
-### 5. Add the opener and catalogue entry
+### 5. Add the opener
 
 - `features/overlays/openers/myFeatureWindow.tsx` — copy an existing opener (`feedbackDialog.tsx`): `useOpenMyFeatureWindow()` + `<MyFeatureWindowController />`. New code opens the window through the opener, never a raw `dispatch(openOverlay(...))`.
-- `features/overlays/catalogue.ts`: `myFeatureWindow: { label: "My Feature", instanceMode: "singleton", isWindow: true },`
 
 ### 6. (Optional) Tools grid — `tools-grid/toolsGridTiles.ts`
 
@@ -250,7 +248,7 @@ Ephemeral windows never enter the workspace and never restore on reload. The "Sa
 
 | Mistake | Symptom | Fix |
 |---------|---------|-----|
-| `overlayId` in component ≠ `overlay-ids.ts` / metadata `overlayId` | Type error, or the window reads another overlay's mobile / restore metadata | Make them identical |
+| `overlayId` in component ≠ catalogue key / metadata `overlayId` | Type error, or the window reads another overlay's mobile / restore metadata | Make them identical |
 | `onCollectData` returns stale values | Saved data has old values | Read live state in the collector, never a cached copy |
 | Missing gated block in `OverlayController.tsx` | Window never renders | Add `lazyOverlay` import + selectors + gated block |
 | Missing metadata entry in `windowRegistryMetadata.ts` | No mobile presentation, URL sync, or restore | Add the entry (`kind`, `mobilePresentation`) |

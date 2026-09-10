@@ -42,7 +42,7 @@ import {
 } from "@/lib/redux/slices/windowManagerSlice";
 import { deriveIdentity } from "@/lib/sync/identity";
 import type { IdentityKey } from "@/lib/sync/types";
-import type { OverlayId } from "./registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import type { PanelState } from "./registry/windowRegistryMetadata";
 import {
   getPendingPopoutWindowIds,

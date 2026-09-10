@@ -12,7 +12,7 @@ import reducer, {
   pruneStaleInstances,
   DEFAULT_INSTANCE_ID,
 } from "@/lib/redux/slices/overlaySlice";
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 
 // Test fixtures use synthetic ids ("x", "multi", "other", "singleton") to
 // validate reducer behavior independently of the real registry. Cast them

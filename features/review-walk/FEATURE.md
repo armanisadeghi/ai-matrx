@@ -58,8 +58,7 @@ payload with an honest banner.
 | `features/overlays/openers/reviewWalkWindow.tsx` | multi-instance opener; deterministic instanceId `review-walk\|{unit_kind}\|{unit_id}`, focus-don't-duplicate (modeled on `gscDrilldownWindow`) |
 
 Overlay registration: `reviewWalkWindow` in
-`features/window-panels/registry/overlay-ids.ts`,
-`features/overlays/catalogue.ts` (`multi`, window), and a gated multi-instance
+`features/overlays/catalogue.ts` (`multi`, window — its key is the overlay id), and a gated multi-instance
 block in `features/overlays/OverlayController.tsx`.
 
 ## Entry points

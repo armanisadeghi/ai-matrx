@@ -7,7 +7,7 @@ import {
   WindowPanel,
   type WindowPanelProps,
 } from "@/features/window-panels/WindowPanel";
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import AiVoiceFloatingWorkspace from "@/features/audio/voice/AiVoiceFloatingWorkspace";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 // context-menu-exempt: entity — the window is a tabbed voice-tools shell (playground / voices / custom actions), not a single record; a per-voice entity would require wiring inside VoicesList, which this window does not own

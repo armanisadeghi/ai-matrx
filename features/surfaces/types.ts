@@ -385,7 +385,7 @@ export interface SurfaceManifest {
   readinessNote?: string;
   /**
    * For OVERLAY/WINDOW surfaces (no route of their own): the overlay id from
-   * `features/window-panels/registry/overlay-ids.ts` this surface belongs to.
+   * `features/overlays/catalogue.ts` this surface belongs to.
    * Identifies the surface's home unambiguously (the overlay twin of
    * `urlPattern`). Mirrored to `ui_surface.overlay_id`.
    */

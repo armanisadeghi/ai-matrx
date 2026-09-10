@@ -35,7 +35,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { formatChars } from "@/lib/tokens/estimate";
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 // context-menu-exempt: entity — a generic "labeled chunks of text" primitive with no identity of its own; each consumer's sections carry whatever record they came from, which is the consumer's menu to wire
 

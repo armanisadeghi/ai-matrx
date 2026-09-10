@@ -321,7 +321,6 @@ UI self-gates on `selectIsAdmin` (any admin level), not super-admin.
 
 ## Registration sites (keep in sync)
 
-`features/window-panels/registry/overlay-ids.ts` ·
 `features/window-panels/registry/windowRegistryMetadata.ts` ·
 `features/overlays/catalogue.ts` ·
 `features/overlays/OverlayController.tsx` (lazy import + `isOpenById` +

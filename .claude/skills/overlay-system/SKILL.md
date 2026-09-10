@@ -94,7 +94,7 @@ If you need callbacks on a new overlay, look at one of these as a template. The 
 
 3 steps. Do them in order:
 
-1. **Register the overlayId** in [`features/window-panels/registry/overlay-ids.ts`](../../../features/window-panels/registry/overlay-ids.ts). The `OverlayId` union narrows every dispatch site at compile time.
+1. **Register the overlayId** by adding its entry to [`features/overlays/catalogue.ts`](../../../features/overlays/catalogue.ts): `{ label, instanceMode, isWindow }`. The key IS the id — `OverlayId = keyof typeof OVERLAY_CATALOGUE` narrows every dispatch site at compile time; there is no second id list.
 
 2. **Write the component** with an explicit Props interface. Use `initial*` for state-seed inputs (TypeScript convention for `useState` seeds):
 
@@ -106,10 +106,9 @@ If you need callbacks on a new overlay, look at one of these as a template. The 
    }
    ```
 
-3. **Add the three artifacts** (controller block, opener file, catalogue entry). The controller is hand-maintained — there is NO codegen (the one-shot seed script was deleted with the legacy registry):
-   - [`features/overlays/OverlayController.tsx`](../../../features/overlays/OverlayController.tsx) — add the `const Comp = dynamic(...)` import at the top, the `isOpenById` selector entry, and the **gated** JSX block (see existing patterns). NEVER render the component ungated.
+3. **Add the two remaining artifacts** (controller block, opener file). The controller is hand-maintained — there is NO codegen (the one-shot seed script was deleted with the legacy registry):
+   - [`features/overlays/OverlayController.tsx`](../../../features/overlays/OverlayController.tsx) — add the `const Comp = lazyOverlay(...)` import at the top, the `isOpenById` selector entry, and the **gated** JSX block (see existing patterns). NEVER render the component ungated.
    - `features/overlays/openers/<overlayId>.tsx` — copy an existing opener as the template.
-   - `features/overlays/catalogue.ts` — one entry: `{ label, instanceMode, isWindow }`.
 
 ### Migrate a legacy dispatch site
 

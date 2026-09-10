@@ -65,7 +65,7 @@ import {
   ackOverlayRender,
   clearOverlayRender,
 } from "./diagnostics/overlayRenderWatchdog";
-import type { OverlayId } from "./registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import type { MobilePresentation } from "./registry/windowRegistryTypes";
 import MobileDrawerSurface from "./mobile/MobileDrawerSurface";
 import MobileCardSurface from "./mobile/MobileCardSurface";

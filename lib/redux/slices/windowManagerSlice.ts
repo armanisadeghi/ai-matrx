@@ -13,7 +13,7 @@ import {
   rectsEqual,
 } from "@/features/window-panels/utils/rectClamp";
 import type { DockWindowPayload } from "@/features/window-panels/popout/dockWindowPayload";
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import {
   TRAY_CHIP_H_DESKTOP,
   TRAY_CHIP_W_DESKTOP,

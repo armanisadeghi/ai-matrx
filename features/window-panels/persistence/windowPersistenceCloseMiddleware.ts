@@ -3,7 +3,7 @@ import {
   markWindowClosing,
   type WindowManagerState,
 } from "@/lib/redux/slices/windowManagerSlice";
-import { isOverlayId, type OverlayId } from "../registry/overlay-ids";
+import { isOverlayId, type OverlayId } from "@/features/overlays/catalogue";
 
 interface CloseIdentity {
   overlayId: OverlayId;

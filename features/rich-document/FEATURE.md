@@ -98,7 +98,7 @@ This feature owns no database tables. It composes content originating elsewhere 
 2. `resolveActions` includes it in the visible set alongside the built-ins.
 3. Click → `run` dispatches `openOverlay` with the standard shape.
 
-**Constraint** — `overlayId` must already exist in `features/overlays/overlay-ids.ts` + the controller + the catalogue. To add a new overlay, follow `features/overlays/FEATURE.md` — the 3-file process.
+**Constraint** — `overlayId` must already be a key of `features/overlays/catalogue.ts` and rendered by the controller. To add a new overlay, follow `features/overlays/FEATURE.md` — the 3-file process.
 
 ---
 

@@ -8,7 +8,7 @@ Copy-paste code templates for every scaffold file, taken from the original `/not
 
 - Phase 1 — `features/[feature]/types.ts`
 - Phase 2 — `lib/[feature]/data.ts`
-- Phase 3 — route files: `layout.tsx` (route root), `page.tsx` (route root — index), `[id]/layout.tsx`, `[id]/page.tsx`, view sub-pages
+- Phase 3 — route files: `layout.tsx` (route root), `page.tsx` (route root — index), `[id]/layout.tsx`, `[id]/page.tsx`, view sub-layout (`titlePrefix`), view sub-pages
 - Phase 4 — Redux hydrators: `NoteListHydrator.tsx`, `NoteHydrator.tsx`
 
 ---
@@ -92,7 +92,6 @@ export type NoteViewMode = "edit" | "split" | "rich" | "md" | "preview" | "diff"
 import "server-only";          // Build fails if imported by a Client Component
 import { cache } from "react"; // Deduplicates within one request pass
 import { createClient } from "@/utils/supabase/server";
-import { notFound } from "next/navigation";
 import type { Note, NoteListItem } from "@/features/notes/types";
 
 // ── List seed ────────────────────────────────────────────────────────────────
@@ -117,13 +116,15 @@ export const getNoteListSeed = cache(async (): Promise<NoteListItem[]> => {
 
 // ── Single entity (full) ─────────────────────────────────────────────────────
 // cache() means layout + generateMetadata + page = ONE DB hit total.
-export const getNote = cache(async (id: string): Promise<Note> => {
+// Empty under RLS = deleted | missing | denied | signed out — return null and let the
+// route render <AccessGate>. NEVER notFound() here (authInterrupts is ON; CLAUDE.md).
+export const getNote = cache(async (id: string): Promise<Note | null> => {
     const supabase = await createClient();
     const { data, error } = await supabase
         .schema("workbench").from("notes")
-        .select("*").is("deleted_at", null).eq("id", id).single();
-    if (error || !data) notFound(); // triggers not-found.tsx
-    return data as Note;
+        .select("*").is("deleted_at", null).eq("id", id).maybeSingle();
+    if (error) throw error; // a transport fault is not an empty read → error.tsx
+    return data as Note | null;
 });
 
 // ── Preload helper ───────────────────────────────────────────────────────────
@@ -189,6 +190,7 @@ function NotesEmptyState() {
 import { Suspense } from "react";
 import { getNote, getNoteListSeed, preloadNote } from "@/lib/notes/data";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { NoteListHydrator } from "@/features/notes/route/NoteListHydrator";
 import { NoteHydrator } from "@/features/notes/route/NoteHydrator";
 import { NotesShell } from "@/features/notes/components/shell/NotesShell";
@@ -197,6 +199,8 @@ import NotesLoading from "../loading";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const note = await getNote(id); // cache() deduplicates this with the layout call below
+    // An empty read says nothing about WHY — the title must not pick one.
+    if (!note) return createDynamicRouteMetadata("/notes", { title: "Note" });
     return createDynamicRouteMetadata("/notes", {
         title: note.label,
         description: note.content ? note.content.slice(0, 120) : `Edit ${note.label}`,
@@ -215,6 +219,15 @@ export default async function NoteDetailLayout({
     // Parallel fetch — preloadNote kicks off getNote before getNoteListSeed awaits.
     preloadNote(id);
     const [seeds, note] = await Promise.all([getNoteListSeed(), getNote(id)]);
+
+    // AccessGate resolves denied / deleted / missing / signed-out / ok and offers the next step.
+    if (!note) {
+        return (
+            <div className="h-full overflow-hidden">
+                <AccessGate token="note" id={id} fallbackHref="/notes" fallbackLabel="All notes" />
+            </div>
+        );
+    }
 
     return (
         <>
@@ -239,13 +252,37 @@ export default async function NoteIndexPage({ params }: { params: Promise<{ id: 
 }
 ```
 
+### View sub-layout (`[id]/edit/layout.tsx`) — only for a view that needs its own tab title
+
+Live model: `app/(core)/agents/[id]/run/layout.tsx`. Tab reads `Edit | My Note — AI Matrx`.
+
+```typescript
+import { getNote } from "@/lib/notes/data";
+import { createDynamicRouteMetadata } from "@/utils/route-metadata";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const note = await getNote(id); // cache() — same DB hit as the [id] layout
+    return createDynamicRouteMetadata("/notes", {
+        titlePrefix: "Edit",
+        title: note?.label ?? "Note",
+        description: "Edit this note.",
+        letter: "Ne", // unique per view — ask Arman
+    });
+}
+
+export default function NoteEditLayout({ children }: { children: React.ReactNode }) {
+    return children;
+}
+```
+
 ### View sub-pages (`[id]/edit/page.tsx`, etc.)
+
+No metadata export — the sub-layout above (or the `[id]` layout) owns it.
 
 ```typescript
 import { NoteViewShell } from "@/features/notes/components/shell/NoteViewShell";
 import { NoteEditorPlaceholder } from "@/features/notes/components/shell/NoteEditorPlaceholder";
-
-export function generateMetadata() { return { title: "Edit" }; }
 
 export default async function NoteEditPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;

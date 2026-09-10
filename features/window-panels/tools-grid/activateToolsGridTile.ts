@@ -1,5 +1,5 @@
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import { getStaticEntryByOverlayId } from "@/features/window-panels/registry/windowRegistryMetadata";
 import {
   TOOLS_GRID_TILES,

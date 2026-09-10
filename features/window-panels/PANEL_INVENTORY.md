@@ -137,7 +137,7 @@ resourcePickerWindow (DELETE — latent-crash open path) · codeWorkspaceWindow 
 ### Stale/incorrect registry — P0 (user-visible)
 
 - **agentFindUsagesWindow + agentAdminFindUsagesWindow** carry a stale `deprecated` block → SHIPPED features show a red "deprecated" ring/banner + destructive tile. Delete the 2 blocks. **(P0·S)**
-- WhatsApp demo windows are in the prod `STATIC_REGISTRY`/`OVERLAY_IDS` (compile into core) → gate out. (P1·S) · StateViewerWindow passes no `overlayId` (unbound from manager). (P1·S) · emailDialogWindow submit is a STUB; the legacy modal sends. (P1·M)
+- WhatsApp demo windows are in the prod `STATIC_REGISTRY` / `OverlayId` union (compile into core) → gate out. (P1·S) · StateViewerWindow passes no `overlayId` (unbound from manager). (P1·S) · emailDialogWindow submit is a STUB; the legacy modal sends. (P1·M)
 
 ### Canonical-core consolidations (merge-to-modes / kill duplicate cores)
 

@@ -20,7 +20,7 @@ meant to be one.
 
 ## Entry points
 
-- **Overlay id** `galleryWindow` (`features/window-panels/registry/overlay-ids.ts`),
+- **Overlay id** `galleryWindow` (`features/overlays/catalogue.ts`),
   rendered by `features/overlays/OverlayController.tsx`.
 - **Shell** `features/window-panels/windows/image/GalleryWindow.tsx` — the
   `WindowPanel` chrome, the surface provider, the window's context menu, and the

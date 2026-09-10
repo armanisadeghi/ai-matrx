@@ -1,5 +1,5 @@
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { OverlayId } from "../registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
 import { initUrlHydration } from "../url-sync/initUrlHydration";
 import { getHydrator } from "../url-sync/UrlPanelRegistry";

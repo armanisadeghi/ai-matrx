@@ -12,7 +12,7 @@
  */
 
 import { ALL_MANIFESTS } from "@/features/surfaces/manifests/registry";
-import { OVERLAY_IDS } from "@/features/window-panels/registry/overlay-ids";
+import { OVERLAY_CATALOGUE } from "@/features/overlays/catalogue";
 
 const manifestsByOverlay = new Map<string, string[]>();
 
@@ -23,14 +23,9 @@ for (const manifest of ALL_MANIFESTS) {
   manifestsByOverlay.set(manifest.overlayId, names);
 }
 
-const overlayIdCounts = new Map<string, number>();
-for (const overlayId of OVERLAY_IDS) {
-  overlayIdCounts.set(overlayId, (overlayIdCounts.get(overlayId) ?? 0) + 1);
-}
-const duplicateRegistryIds = [...overlayIdCounts.entries()].filter(
-  ([, count]) => count > 1,
-);
-const overlayIds = new Set<string>(OVERLAY_IDS);
+// The catalogue's keys ARE the overlay ids; object keys cannot repeat, and
+// TypeScript rejects a duplicate key in the literal, so no duplicate-id pass.
+const overlayIds = new Set<string>(Object.keys(OVERLAY_CATALOGUE));
 const missing = [...overlayIds].filter(
   (overlayId) => !manifestsByOverlay.has(overlayId),
 );
@@ -45,15 +40,6 @@ console.log(
   `Surface overlay coverage: ${overlayIds.size} unique registered overlay ids, ${manifestsByOverlay.size} declared by manifests, ${missing.length} UNDECLARED.`,
 );
 
-if (duplicateRegistryIds.length > 0) {
-  console.error(
-    "\nDUPLICATE canonical overlay ids: OVERLAY_IDS must contain each identity exactly once:",
-  );
-  for (const [overlayId, count] of duplicateRegistryIds) {
-    console.error(`  - ${overlayId} (${count} entries)`);
-  }
-}
-
 if (missing.length > 0) {
   console.warn(
     `\n${missing.length} registered overlay${missing.length === 1 ? " has" : "s have"} NO Surface manifest. Each needs a completeness audit, canonical declaration, live emitter, Locate anchors, and browser-earned readiness:`,
@@ -63,7 +49,7 @@ if (missing.length > 0) {
 
 if (unknown.length > 0) {
   console.error(
-    "\nPHANTOM overlay declarations: these manifests name an overlay id that is absent from OVERLAY_IDS:",
+    "\nPHANTOM overlay declarations: these manifests name an overlay id that is absent from OVERLAY_CATALOGUE:",
   );
   for (const [overlayId, surfaceNames] of unknown) {
     console.error(`  - ${overlayId} <- ${surfaceNames.join(", ")}`);
@@ -79,8 +65,4 @@ if (duplicates.length > 0) {
   }
 }
 
-process.exit(
-  duplicateRegistryIds.length > 0 || unknown.length > 0 || duplicates.length > 0
-    ? 1
-    : 0,
-);
+process.exit(unknown.length > 0 || duplicates.length > 0 ? 1 : 0);

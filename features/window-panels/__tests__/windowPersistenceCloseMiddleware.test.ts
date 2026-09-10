@@ -13,7 +13,7 @@ import {
   registerWindowPersistenceFlusher,
   windowPersistenceCloseMiddleware,
 } from "../persistence/windowPersistenceCloseMiddleware";
-import type { OverlayId } from "../registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 
 const RECT = { x: 20, y: 20, width: 640, height: 420 };
 

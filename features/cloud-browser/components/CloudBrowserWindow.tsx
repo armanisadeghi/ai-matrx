@@ -12,7 +12,7 @@
 
 import React from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import { CloudBrowserBody } from "./CloudBrowserBody";
 
 export interface CloudBrowserWindowProps {

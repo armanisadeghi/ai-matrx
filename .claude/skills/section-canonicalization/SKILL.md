@@ -79,7 +79,7 @@ The `window-panel-authoring` skill predates the registry split — the CURRENT
 five touch points are:
 
 1. `features/window-panels/registry/windowRegistryMetadata.ts` — `STATIC_REGISTRY` entry (slug, overlayId, label, defaultData, mobilePresentation, optional `urlSync`).
-2. `features/window-panels/registry/overlay-ids.ts` — add the overlayId to `OVERLAY_IDS` (typed union; forgetting it is a compile error at dispatch sites).
+2. `features/overlays/catalogue.ts` — add `<overlayId>: { label, instanceMode, isWindow }`; the key IS the id (`OverlayId = keyof typeof OVERLAY_CATALOGUE`), so forgetting it is a compile error at dispatch sites.
 3. `features/window-panels/windows/<area>/<Name>Window.tsx` — outer `if (!isOpen) return null` guard; inner renders `WindowPanel` with stable `id`, `overlayId`, `onCollectData`, `urlSyncKey` matching the registry. Track live child values in a **ref** for `onCollectData` — don't re-render the shell per keystroke.
 4. `features/overlays/OverlayController.tsx` — `lazyOverlay(() => import(...))` const + `isOpenById` + `dataById` selectors + a render block (typed prop narrowing from `data`).
 5. Opener hook `features/overlays/openers/<overlayId>.tsx` — `useOpenXWindow(options)` dispatching `openOverlay` with normalized data. Optionally a Tools-grid tile (`tools-grid/toolsGridTiles.ts`).

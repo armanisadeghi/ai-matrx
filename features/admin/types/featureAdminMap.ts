@@ -93,7 +93,7 @@ export interface FeatureAdminLaunchFrom {
 }
 
 export interface FeatureAdminWindowPanel {
-  /** Matching overlayId from `features/window-panels/registry/overlay-ids.ts`. */
+  /** Matching overlayId — a key of `OVERLAY_CATALOGUE` in `features/overlays/catalogue.ts`. */
   overlayId: string;
   /** Optional override for the description — falls back to the registry label. */
   description?: string;

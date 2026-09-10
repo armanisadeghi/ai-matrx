@@ -1,4 +1,4 @@
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import type { MenuIconKey } from "./menuIconRegistry";
 
 export interface OverlayMenuItemConfig {

@@ -8,8 +8,8 @@
  *
  * This module owns the translation:
  *   1. Validate the inbound payload with `OpenPanelPayloadSchema`.
- *   2. Confirm `panelId` is a registered overlayId (string-literal union
- *      kept in sync with the static registry by `pnpm check:registry`).
+ *   2. Confirm `panelId` is a registered overlayId (`isOverlayId` — a key of
+ *      `OVERLAY_CATALOGUE` in `features/overlays/catalogue.ts`).
  *   3. Dispatch the existing `openOverlay({ overlayId, instanceId, data })`
  *      Redux action — exactly the same path every in-app caller takes.
  *
@@ -36,7 +36,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   isOverlayId,
   type OverlayId,
-} from "@/features/window-panels/registry/overlay-ids";
+} from "@/features/overlays/catalogue";
 
 /**
  * Result returned to the extension over the bridge. Mirrors the
@@ -86,7 +86,7 @@ export function handleExtensionOpenPanel(
       error: "unknown_panel",
       details: {
         panelId: payload.panelId,
-        hint: "panelId must match a registered window-panels overlayId. See features/window-panels/registry/overlay-ids.ts.",
+        hint: "panelId must match a registered window-panels overlayId. See features/overlays/catalogue.ts (OVERLAY_CATALOGUE keys).",
       },
     };
   }

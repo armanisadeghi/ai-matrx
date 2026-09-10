@@ -964,7 +964,7 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 - 2026-08-24 — **Per-page research: "Run research for this page."** New
   `PageResearchWindow` (`features/window-panels/windows/marketing/`) +
   `useOpenPageResearchWindow` opener + the six registration points
-  (`overlay-ids.ts`, `windowRegistryMetadata.ts`, `catalogue.ts`, and the lazy
+  (the id list, `windowRegistryMetadata.ts`, `catalogue.ts`, and the lazy
   import / isOpen / data / render blocks in `OverlayController.tsx`). It is a
   COMPACT launcher over the existing research service (`createTopic` →
   `addKeywords` → `runPipeline` → `generateDocument`) — not a fork of

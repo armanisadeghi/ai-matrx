@@ -3,7 +3,7 @@
 > Chunk row file for the [Panel Inventory](../../PANEL_INVENTORY.md). Covers the file/image/PDF panels.
 > Legend: ✓ present · ◑ partial · ✗ missing · — n/a. Priority P0/P1/P2 · Effort S/M/L.
 >
-> **Scope note.** Nine panels assigned. **Seven are registered overlays** (`cloudFilesWindow`, `filePreviewWindow`, `galleryWindow`, `imageUploaderWindow`, `imageViewer`, `cropStudioWindow`, `pdfExtractorWindow`). **Two are NOT registered** — `cropPreviewWindow` and `initialCropWindow` are inline-only `<WindowPanel>`s, `dynamic()`-mounted by `ImageStudioShell` (`/images/convert`); they pass `File[]` + callbacks that can't survive Redux serialization, so by design they are not in `overlay-ids.ts` / `OverlayController` / `windowRegistryMetadata`. They are listed for completeness and for the consolidation verdict.
+> **Scope note.** Nine panels assigned. **Seven are registered overlays** (`cloudFilesWindow`, `filePreviewWindow`, `galleryWindow`, `imageUploaderWindow`, `imageViewer`, `cropStudioWindow`, `pdfExtractorWindow`). **Two are NOT registered** — `cropPreviewWindow` and `initialCropWindow` are inline-only `<WindowPanel>`s, `dynamic()`-mounted by `ImageStudioShell` (`/images/convert`); they pass `File[]` + callbacks that can't survive Redux serialization, so by design they are not in `catalogue.ts` / `OverlayController` / `windowRegistryMetadata`. They are listed for completeness and for the consolidation verdict.
 
 ---
 

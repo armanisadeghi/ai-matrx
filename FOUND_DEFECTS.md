@@ -15,6 +15,42 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D304 — 51 sites still `notFound()` on an empty single-record read (CLAUDE.md `authInterrupts` law)
+
+Found 2026-09-10 correcting `new-route-scaffold`, which taught the pattern. Law: `CLAUDE.md` § Core
+invariants — never `notFound()` on an empty single-record read; under RLS empty means deleted,
+missing, denied, or signed out. Census: `git grep -n "notFound()"`, keeping only sites whose
+condition is an empty/errored DB or RPC read.
+
+- **Server data layer (fan out to every caller):** `lib/notes/data.ts:46` · `lib/agents/data.ts:45,61,63`
+  (`getAgent` also feeds ~9 `agents/[id]/*/layout.tsx` metadata) · `lib/agent-apps/data.ts:169` ·
+  `features/marketing/lib/keys-server.ts:143,155` · `features/marketing/search-console/components/SiteSearchConsolePage.tsx:42,44`
+- **`app/(core)`:** `agent-apps/[id]/v/[version]/page.tsx:33` · `chat/message-templates/[id]/page.tsx:29` ·
+  `chat/message-templates/edit/[id]/page.tsx:20` · `education/family/[studentId]/page.tsx:28,36` ·
+  `education/learn/[...slug]/page.tsx:49` · `education/subjects/quick-math/[id]/page.tsx:53` ·
+  `files/f/[fileId]/studio/page.tsx:32` · `marketing/changes/[changeId]/page.tsx:35,37` ·
+  `marketing/content-plan/nodes/[nodeId]/page.tsx:32,35` · `marketing/sites/[siteId]/page.tsx:32` ·
+  `marketing/sites/[siteId]/[...rest]/page.tsx:54` · `podcast/[slug]/page.tsx:154` · `podcast/[slug]/blog/page.tsx:107` ·
+  `research/tags/[tagId]/page.tsx:24` · `scopes/s/[scopeId]/page.tsx:48` · `shapes/(workspace)/id/[id]/page.tsx:21` ·
+  `shapes/(workspace)/[kind]/` × 9 (`page`, `examples`, `gate`, `inputs`, `instances`, `schema`, `stream`, `template`, `test`)
+- **`app/(admin)/administration`:** `agents/mcp-tools/[toolId]/` × 4 (`page`, `edit`, `incidents`, `ui`, line 26) ·
+  `chat/cx-dashboard/conversations/[id]/page.tsx:32` · `chat/cx-dashboard/requests/[id]/page.tsx:32` ·
+  `ui/surfaces/[...name]/page.tsx:23` · `utilities/kind-registry/[kind]/page.tsx:36`
+- **`app/(public)` — confirm the anonymous-disclosure ruling in `features/access-gate/FEATURE.md` before converting:**
+  `c/[handle]/page.tsx:56` · `p/[slug]/page.tsx:114` · `p/e/[resourceType]/[id]/page.tsx:70` · `r/[token]/page.tsx:41`
+- **`app/(dev)`:** `demos/lists-junk/[id]/page.dev.tsx:56` · `demos/lists-junk/v1/[id]/page.dev.tsx:55`
+
+**Not in the class (left alone):** malformed-URL guards (`isFullUuid`, `UUID_RE`, `isNaN`, `isFinite`)
+and static-registry misses (education axis entries, `EDU_TOOL_BY_SLUG`, `VALID_MODES`, dotdirs, official
+components, `findingSpec`, `findProvider`, `getAppConfig`, `tryGetEntityInfo`, `resolveIntakeAssetRouteTarget`).
+
+**The fix:** reads return `null`; the route renders `<AccessGate token id/>` (live model
+`app/(core)/lists/[id]/page.tsx`) or refuses with `requireAccess(..., { forbid: true })`. Guard: no check
+sees this — `check:access-errors` scans copy, not `notFound()`; add a pass that flags `notFound()` gated on
+a Supabase/RPC result, proven failing on today's tree.
+
+---
+
 ### D303 — the `mandate.*` L1 tables broke their OWN schema's org-backstop convention (D300's class is still growing)
 
 Found by the docs-steward `ddl_guard_log` sweep 2026-09-10. Three rows of

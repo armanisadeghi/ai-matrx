@@ -89,7 +89,7 @@
 | **diffViewerWindow** | ✓ `useOpenDiffViewerWindow` | **multi-instance keyed ✓** | portable | ✗ no tile (could add one) | ok | **4** (agents `EditHistoryDialog`, `UnifiedAgentContextMenu`, + 2 demos) | could back every "compare versions" action (notes, code, agents) | distribute + maybe a tile (P2·S) |
 | **browserFrameWindow** | ✓ `useOpenBrowserFrameWindow` | — | portable | ✓ "Site Frame" / files-web (seed Lucide) | competes with workbench | 0 (grid-only) | grid-only | consolidate (P2·M) |
 | **browserWorkbenchWindow** | ✓ `useOpenBrowserWorkbenchWindow` | — | portable | ✓ "Site Workbench" / files-web | competes with frame | 0 (grid-only) | grid-only | consolidate (P2·M) |
-| **whatsappShellWindow** | ✓ `useOpenWhatsAppShellWindow` | — | portable | ✗ no tile | **DEMO in the production `STATIC_REGISTRY` + `OVERLAY_IDS` union** | 0 (demo route only) | only reachable from `/demos/whatsapp-window-demo` | gate out of prod registry (P1·S) |
+| **whatsappShellWindow** | ✓ `useOpenWhatsAppShellWindow` | — | portable | ✗ no tile | **DEMO in the production `STATIC_REGISTRY` + `OverlayId` union** | 0 (demo route only) | only reachable from `/demos/whatsapp-window-demo` | gate out of prod registry (P1·S) |
 | **whatsappSettings** | ✓ `useOpenWhatsAppSettingsWindow` | — | route-locked to demo shell | ✗ no tile | demo in prod registry | 1 (`WhatsAppShellInner`) | demo only | gate out of prod registry (P1·S) |
 | **whatsappMedia** | ✓ `useOpenWhatsAppMediaWindow` | — | route-locked to demo shell | ✗ no tile | demo in prod registry | 1 (`WhatsAppShellInner`) | demo only | gate out of prod registry (P1·S) |
 
@@ -103,7 +103,7 @@
 
 2. **Email + Share each ship as a window AND a legacy modal bridge** (`emailDialogWindow`/`emailDialog`, `shareModalWindow`/`shareModal`). The window variants are tools-grid entry points; the bridges carry the **real** wiring (email send / public-chat share) and the bespoke callers. This is a `merge-to-modes` duplication — the window's email submit is even a stub while the bridge sends for real. **Highest-value cleanup in this chunk (P1·M ×2).**
 
-3. **WhatsApp demo windows are in the production registry.** `whatsappShellWindow` / `whatsappSettings` / `whatsappMedia` sit in `STATIC_REGISTRY` and the `OVERLAY_IDS` union (so they compile into `core`), yet they are mock-data demos reachable only from `(dev)/demos/*`. They should be gated out of the production registry (or moved behind the `full` profile) so the canonical overlay set isn't padded with a demo app (P1·S).
+3. **WhatsApp demo windows are in the production registry.** `whatsappShellWindow` / `whatsappSettings` / `whatsappMedia` sit in `STATIC_REGISTRY` and the `OverlayId` union (so they compile into `core`), yet they are mock-data demos reachable only from `(dev)/demos/*`. They should be gated out of the production registry (or moved behind the `full` profile) so the canonical overlay set isn't padded with a demo app (P1·S).
 
 4. **Utility primitives are under-distributed but well-built.** `curatedIconPickerWindow` (callback-registry, 3 callers) and `diffViewerWindow` (multi-instance keyed, thin chrome over canonical `DiffViewer`, 4 callers) are exactly the "reusable primitive invoked via callbacks" shape the system wants — both could back many more sites (every icon field; every compare-versions action) and neither needs surface/agents wiring (transient).
 
@@ -117,7 +117,7 @@
 
 ## Remaining system / ephemeral overlays (lighter pass)
 
-Overlays in `OVERLAY_IDS` / `STATIC_REGISTRY` that no domain chunk claims — acknowledged here so the inventory covers all ~120 registered ids. These are system/ephemeral plumbing (mostly `kind: "modal" | "widget"`, ephemeral, opener-driven), not feature panels:
+Overlays in the catalogue / `STATIC_REGISTRY` that no domain chunk claims — acknowledged here so the inventory covers all ~120 registered ids. These are system/ephemeral plumbing (mostly `kind: "modal" | "widget"`, ephemeral, opener-driven), not feature panels:
 
 | overlayId | One-line state |
 |---|---|

@@ -22,7 +22,7 @@ import {
   WINDOW_WORKSPACE_SCHEMA_VERSION,
 } from "@/features/window-panels/persistence/windowSessionSerialization";
 import { traySlotRect } from "@/features/window-panels/constants/tray";
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import {
   closeAllInstancesOfOverlay,
   closeOverlay,

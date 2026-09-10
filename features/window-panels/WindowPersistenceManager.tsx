@@ -29,7 +29,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { OverlayId } from "./registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import type { PanelState } from "./registry/windowRegistryMetadata";
 
 const WindowPersistenceCore = dynamic(

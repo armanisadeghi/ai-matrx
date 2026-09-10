@@ -55,7 +55,7 @@ Curated guides that already exist. Prefer **skills** for step-by-step; use **FEA
 
 1. **Hook + Core** — UI-agnostic save logic; shell does not own form state.
 2. **Shell** — Dialog/Drawer (mobile) or `WindowPanel` or `FullScreenOverlay`; all render the same Core.
-3. **Register** — `overlay-ids.ts` → component + opener → gated block in `OverlayController.tsx` → `catalogue.ts`.
+3. **Register** — `catalogue.ts` entry (its key is the `OverlayId`) → component + opener → gated block in `OverlayController.tsx`.
 4. **Trigger** — `contentActionRegistry` item and/or `registerAction` in rich-document handlers.
 5. **Post-save** — reuse [`OpenDestinationDialog`](../features/page-extraction/data-review/OpenDestinationDialog.tsx) where navigation choice matters.
 

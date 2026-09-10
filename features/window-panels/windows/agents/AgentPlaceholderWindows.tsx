@@ -3,7 +3,7 @@
 import { PartyPopper, Layers, Database } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import { AgentComingSoonContent } from "@/features/agents/components/coming-soon/AgentComingSoonContent";
 
 // ── Shared wrapper ──────────────────────────────────────────────────────────

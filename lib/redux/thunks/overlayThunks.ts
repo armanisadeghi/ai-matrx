@@ -40,7 +40,7 @@ import { overlaySchemaRegistry } from "../overlaySchemaRegistry";
 import { setOverlayData, selectOverlayData } from "../slices/overlayDataSlice";
 import { openOverlay, DEFAULT_INSTANCE_ID } from "../slices/overlaySlice";
 import type { RootState } from "../store";
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import type { OverlayId } from "@/features/overlays/catalogue";
 
 // ============================================================================
 // TYPES

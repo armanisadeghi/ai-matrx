@@ -22,7 +22,7 @@ This skill enforces the architecture established in [features/files/FEATURE.md](
 - **Realtime is the source of truth for cross-session sync.** The middleware dedups echoes of local writes via the request ledger — always register a `requestId` on every mutation.
 - **Mobile rules:** `Drawer` not `Dialog`; push-nav not tabs; `dvh` not `vh`; `pb-safe` on fixed bottoms; 16px inputs.
 - **`FieldFlags<K>` not `Set<K>`** in Redux state (JSON-serializability).
-- **`app/(a)/files/`** routes follow [app/(a)/_read_first_route_rules/RULES.md](../../app/(a)/_read_first_route_rules/RULES.md). SSR-first, zero layout shift, Cache Components.
+- **`app/(core)/files/`** routes follow [app/(core)/_read_first_route_rules/RULES.md](../../app/(core)/_read_first_route_rules/RULES.md). SSR-first, zero layout shift; **`'use cache'` is NOT available** (`cacheComponents` off — see `CLAUDE.md`).
 
 ---
 
@@ -34,8 +34,7 @@ Read, in this order:
 2. [features/files/FEATURE.md](FEATURE.md) — current FE architecture.
 3. [features/agents/redux/agent-shortcuts/slice.ts](../agents/redux/agent-shortcuts/slice.ts) — the record + dirty-tracking pattern you're copying.
 
-For route work under `app/(a)/files/`, additionally run these skills before writing code:
-- `Skill(vercel-plugin:next-cache-components)`
+For route work under `app/(core)/files/`, additionally run these skills before writing code:
 - `.claude/skills/nextjs-ssr-architecture/SKILL.md`
 - `.claude/skills/ssr-zero-layout-shift/SKILL.md`
 - `.claude/skills/ios-mobile-first/SKILL.md` (for any mobile branch)
@@ -105,7 +104,7 @@ const link = await createShareLink(fileId, {
 - Local types declarations for `CloudFile`, `CloudFolder`, etc. Import from [features/files/index.ts](index.ts).
 - `window.alert / confirm / prompt`. Use [components/ui/alert-dialog](../../components/ui/alert-dialog.tsx).
 - `Dialog` on mobile. Branch via `useIsMobile()` to `Drawer`.
-- `h-screen` / `vh` under `app/(a)/files/` — use `dvh`, `--header-height`, `pb-safe`.
+- `h-screen` / `vh` under `app/(core)/files/` — use `dvh`, `--header-height`, `pb-safe`.
 - Hardcoded paths. Use [features/files/utils/path.ts](utils/path.ts).
 - `Set` in Redux state. Use `FieldFlags<K>` from [features/agents/redux/shared/field-flags.ts](../agents/redux/shared/field-flags.ts).
 - Directly importing core components from `components/core/FileTree/internal/*`. Consume from the barrel.

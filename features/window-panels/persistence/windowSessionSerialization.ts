@@ -11,7 +11,7 @@ import {
   getStaticEntryByOverlayId,
   type WindowStaticMetadata,
 } from "../registry/windowRegistryMetadata";
-import { isOverlayId } from "../registry/overlay-ids";
+import { isOverlayId } from "@/features/overlays/catalogue";
 import { clampRectToViewport, centerRectInViewport } from "../utils/rectClamp";
 import { traySlotRect } from "../constants/tray";
 

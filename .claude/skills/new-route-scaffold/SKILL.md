@@ -61,8 +61,8 @@ Create `lib/[feature]/data.ts`. This is the **only** place server-side DB querie
 
 **Critical rules:**
 - `import "server-only"` is mandatory — it prevents accidental client import
-- Every function must be wrapped in `cache()` — layout, `generateMetadata`, and page all call the same function; `cache()` collapses them to one DB hit
-- `notFound()` inside a cached function triggers `not-found.tsx` automatically
+- Every function must be wrapped in React `cache()` — layout, `generateMetadata`, and page all call the same function; `cache()` collapses them to one DB hit. **`'use cache'` is NOT available** (`cacheComponents` off; build error)
+- 🚨 **Never `notFound()` on an empty single-record read** (`authInterrupts` is ON) — under RLS, empty means deleted, missing, denied, or signed out. The single-record read returns `null`; the route renders `<AccessGate token id/>` (live: `app/(core)/lists/[id]/page.tsx`) or refuses with `requireAccess(type, id, level, { forbid: true })`. Read `features/access-gate/FEATURE.md` first
 - The preload pattern starts a fetch before an await chain, eliminating waterfalls
 
 ---
@@ -81,8 +81,9 @@ app/(core)/[feature]/
     ├── layout.tsx      ← parallel fetch, generateMetadata, BOTH hydrators, shell
     ├── loading.tsx     ← skeleton of the content area only (not the full shell)
     ├── error.tsx       ← <ErrorBoundaryView context="[Feature] Detail" /> one-liner
-    ├── not-found.tsx   ← not-found UI
+    ├── not-found.tsx   ← malformed-URL 404 only; an empty record read renders <AccessGate>
     ├── page.tsx        ← redirect to default view
+    ├── edit/layout.tsx ← titlePrefix sub-layout (Phase 6), one per view that needs its own tab title
     ├── edit/page.tsx
     ├── split/page.tsx
     ├── rich/page.tsx
@@ -141,7 +142,7 @@ Key rules:
 
 This is where both hydrators live and parallel fetching happens.
 
-**Template → [file-templates.md](file-templates.md) § Phase 3** (`generateMetadata`, `preloadNote` + `Promise.all`, both hydrators, shell).
+**Template → [file-templates.md](file-templates.md) § Phase 3** (`generateMetadata`, `preloadNote` + `Promise.all`, `<AccessGate>` on an empty read, both hydrators, shell).
 
 ### `[id]/page.tsx` — redirect to default view
 
@@ -149,9 +150,9 @@ This is where both hydrators live and parallel fetching happens.
 
 ### View sub-pages (`[id]/edit/page.tsx`, etc.)
 
-Sub-pages return `{ title }` only — the layout handles all favicon/OG. No data fetching.
+Sub-pages export no metadata and fetch no data. A view that needs its own tab title gets a sibling `layout.tsx` with `titlePrefix` (Phase 6) — never a page-level `{ title }`.
 
-**Templates → [file-templates.md](file-templates.md) § Phase 3** (single-panel view and the split view that passes both panels).
+**Templates → [file-templates.md](file-templates.md) § Phase 3** (the `titlePrefix` sub-layout, the single-panel view, and the split view that passes both panels).
 
 ---
 
@@ -202,7 +203,7 @@ From `app/(core)/_read_first_route_rules/metadata-and-seo.md` (full recipe: the 
 |---|---|---|
 | `layout.tsx` (root) | `createRouteMetadata("/path", { title, description })` | Provides favicon + OG for entire route |
 | `[id]/layout.tsx` | `createDynamicRouteMetadata("/path", { title, description })` inside `generateMetadata` | Provides favicon + OG for item detail |
-| Sub-page `page.tsx` | `export function generateMetadata() { return { title: "View Name" }; }` | Title only — layout already covers favicon/OG |
+| `[id]/<view>/layout.tsx` | `createDynamicRouteMetadata("/path", { titlePrefix: "View Name", title: entity.name, letter })` (static route: `createRouteMetadata` + `titlePrefix`) | Tab reads `View Name \| Entity — AI Matrx`. A page-level `{ title }` renders `View Name — AI Matrx` and loses the name. No distinct title → no metadata; the parent layout covers favicon/OG. Live: `agents/[id]/run/layout.tsx` |
 | New route | Add favicon entry in `constants/favicon-route-data.ts` | Ask Arman for color and letter |
 
 ---
@@ -236,7 +237,8 @@ Every `loading.tsx` must satisfy:
 - [ ] `app/(core)/[feature]/page.tsx` — list seed + both hydrators + Suspense
 - [ ] `app/(core)/[feature]/[id]/layout.tsx` — parallel fetch + both hydrators + generateMetadata
 - [ ] `app/(core)/[feature]/[id]/loading.tsx` — content-area skeleton only
-- [ ] `app/(core)/[feature]/[id]/error.tsx` — one-liner wrapping `<ErrorBoundaryView context="[Feature] Detail" />`, plus `not-found.tsx`
+- [ ] `app/(core)/[feature]/[id]/error.tsx` — one-liner wrapping `<ErrorBoundaryView context="[Feature] Detail" />`, plus `not-found.tsx` (malformed URLs only)
+- [ ] Empty single-record read renders `<AccessGate token id/>` — no `notFound()` anywhere in `lib/[feature]/data.ts`
 - [ ] `app/(core)/[feature]/[id]/page.tsx` — redirect to default view
 - [ ] All view sub-pages created (ask Arman for the list)
 - [ ] `features/[feature]/route/` — `ListHydrator` + `EntityHydrator`
