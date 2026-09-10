@@ -15,6 +15,42 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D303 — the `mandate.*` L1 tables broke their OWN schema's org-backstop convention (D300's class is still growing)
+
+Found by the docs-steward `ddl_guard_log` sweep 2026-09-10. Three rows of
+`org_not_null_no_backstop` fired at 2026-09-10T05:54Z for `mandate.scan`,
+`mandate.reference` and `mandate.observation` — the tables the Mandate Declaration
+& Usage Reporting campaign's L1/L2 lanes created.
+
+This is **not** the D262 "organization_id IS the row identity" exemption. Censused
+live across the whole `mandate` schema (`pg_attribute` + non-internal `pg_trigger`,
+matching `_stamp_org_default` / `inherit_org_from_parent`):
+
+| `mandate.*` table | `organization_id NOT NULL` | backstop trigger |
+| --- | --- | --- |
+| `binding`, `definition`, `provision`, `treatment` | yes | **yes** |
+| `scan`, `reference`, `observation` | yes | **no** |
+
+All seven are NOT NULL with no column default. The four older tables carry the
+backstop; the three new ones do not. The schema's own convention is unambiguous and
+the new tables simply missed it, so an org-forgetting write to any of the three
+500s instead of being stamped.
+
+**The fix:** attach the same backstop the four siblings use, in one migration under
+`migrations/`, then re-run the sentinel. Confirm first which parent each inherits
+from — `reference` and `observation` hang off a `scan`, so `inherit_org_from_parent`
+is likely right for those two and `_stamp_org_default` for `scan` itself.
+
+**Why this is filed separately from D300 rather than folded into it:** D300's finding
+was that the guard is a going-forward tripwire on a condition **240 live tables
+already meet**, and therefore cannot size its own class. These three arrived the day
+*after* D300 was filed — new DDL, guard working exactly as designed, convention
+broken anyway. The class is not just unmeasured, it is still growing at the point
+where the guard *does* fire. D300's ask (a census mode alongside the triggers)
+stands; this is the first datum showing the going-forward half needs teeth too.
+
+---
+
 ### D302 — `sync-types` silently DELETES the contract for any endpoint aidream has merged but not yet deployed
 
 Found 2026-09-09 building campaign lane L7 (`../common-docs/projects/mandate-declaration-reporting/`).
