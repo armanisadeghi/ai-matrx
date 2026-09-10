@@ -270,54 +270,15 @@ export function TriadInputSection({
             </div>
           </div>
         ) : draftInputs.length > 0 ? (
-          <ul className="divide-y divide-border/40">
-            {draftInputs.map((item, index) => (
-              <li key={index} className="py-2">
-                <PropertyRow
-                  label="Input"
-                  value={
-                    item.name
-                      ? displayLabelForKey(item.name)
-                      : "Display name missing"
-                  }
-                  help={item.description || "No description provided."}
-                />
-                <PropertyRow
-                  label="Format"
-                  value={
-                    item.kind ? displayLabelForKey(item.kind) : "Not specified"
-                  }
-                />
-                <PropertyRow label="Always available" value="Unknown" />
-                <PropertyRow label="Retrieval" value="Unknown" />
-                <PropertyRow
-                  label="Automatic context delivery"
-                  value="Unknown"
-                />
-                <PropertyRow
-                  label="Example"
-                  value={item.example || "Not provided"}
-                />
-              </li>
-            ))}
-          </ul>
+          <ProvisionOfferList values={draftInputs} declarationOnly />
         ) : data.contract.requiredVariables.length > 0 ? (
-          <div className="divide-y divide-border/40">
-            {data.contract.requiredVariables.map((name) => (
-              <div key={name} className="py-2">
-                <PropertyRow label="Input" value={displayLabelForKey(name)} />
-                <PropertyRow label="Required" value="Yes" />
-                <PropertyRow label="Format" value="Not specified" />
-                <PropertyRow label="Always available" value="Unknown" />
-                <PropertyRow label="Retrieval" value="Unknown" />
-                <PropertyRow
-                  label="Automatic context delivery"
-                  value="Unknown"
-                />
-                <PropertyRow label="Example" value="Not provided" />
-              </div>
-            ))}
-          </div>
+          <ProvisionOfferList
+            values={data.contract.requiredVariables.map((name) => ({
+              name,
+              required: true,
+            }))}
+            declarationOnly
+          />
         ) : (
           // 🚨 "User text only" is a MEASURED answer, never a fallback. The
           // served input surface is the one thing that knows all four
@@ -399,24 +360,17 @@ function HolderDeclaredInputs({ mandateKey }: { mandateKey: string }) {
         value={surface.holderName || "Holder name unavailable"}
       />
       <PropertyRow label="Declared inputs" value={surface.inputs.length} />
-      {surface.inputs.map((input) => (
-        <div key={input.name} className="border-t border-border/40 py-2">
-          <PropertyRow
-            label="Input"
-            value={displayLabelForKey(input.name, input.label)}
-            help={input.help || "No description provided."}
-          />
-          <PropertyRow label="Format" value={displayLabelForKey(input.kind)} />
-          <PropertyRow label="Required" value={input.required ? "Yes" : "No"} />
-          <PropertyRow label="Always available" value="Unknown" />
-          <PropertyRow label="Retrieval" value="Unknown" />
-          <PropertyRow label="Automatic context delivery" value="Unknown" />
-          <PropertyRow
-            label="Example"
-            value={input.example || "Not provided"}
-          />
-        </div>
-      ))}
+      <ProvisionOfferList
+        values={surface.inputs.map((input) => ({
+          name: input.name,
+          label: input.label,
+          kind: input.kind,
+          required: input.required,
+          description: input.help,
+          example: input.example,
+        }))}
+        declarationOnly
+      />
       <ServerNotes
         heading="Input declaration issues"
         notes={surface.notes}

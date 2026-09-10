@@ -12,7 +12,10 @@
 // not grow a second, drifting copy of it.
 
 import { cn } from "@/lib/utils";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import {
+  displayLabelForKey,
+  formatVariableDisplayName,
+} from "@/features/agents/utils/variable-utils";
 import {
   FieldHelp,
   PropertyRow,
@@ -22,23 +25,33 @@ import {
 import type { OfferedValue } from "../provision-shapes";
 
 export interface ProvisionOfferListProps {
-  values: readonly OfferedValue[];
+  /** Presentation accepts incomplete declarations without inventing runtime facts. */
+  values: readonly (Partial<OfferedValue> & {
+    label?: string;
+    required?: boolean;
+  })[];
   /** Value names the platform delivers automatically — never hand-mapped. */
   pinnedContext?: readonly string[];
   className?: string;
+  declarationOnly?: boolean;
 }
 
 export function ProvisionOfferList({
   values,
   pinnedContext = [],
   className,
+  declarationOnly = false,
 }: ProvisionOfferListProps) {
   if (values.length === 0) {
     return <PropertyRow label="Offered values" value="None" />;
   }
+  const showRequired = values.some(
+    (value) => typeof value.required === "boolean",
+  );
   const columns = [
     { key: "name", label: "Offered value" },
     { key: "format", label: "Format" },
+    ...(showRequired ? [{ key: "required", label: "Required" }] : []),
     {
       key: "available",
       label: "Availability",
@@ -55,23 +68,34 @@ export function ProvisionOfferList({
   return (
     <div className={cn("min-w-0", className)}>
       <ConfigurationTable label="Provision offered values" columns={columns}>
-        {values.map((value) => (
+        {values.map((value, index) => (
           <ConfigurationTableRow
-            key={value.name}
+            key={`${value.name || "input"}:${index}`}
             columns={columns}
             cells={{
               name: (
                 <span className="inline-flex items-center gap-1 font-semibold">
-                  {formatVariableDisplayName(value.name) ||
+                  {displayLabelForKey(value.name || "", value.label) ||
                     "Display name missing"}
                   <FieldHelp
-                    label={formatVariableDisplayName(value.name) || "Input"}
+                    label={
+                      displayLabelForKey(value.name || "", value.label) ||
+                      "Input"
+                    }
                   >
                     {value.description || "No description provided."}
                   </FieldHelp>
                 </span>
               ),
-              format: formatVariableDisplayName(value.kind) || "Unknown",
+              format: value.kind
+                ? formatVariableDisplayName(value.kind) || "Unknown"
+                : "Not specified",
+              required:
+                typeof value.required === "boolean"
+                  ? value.required
+                    ? "Yes"
+                    : "No"
+                  : "Unknown",
               available:
                 typeof value.guaranteed === "boolean"
                   ? value.guaranteed
@@ -84,7 +108,11 @@ export function ProvisionOfferList({
                     ? "On demand"
                     : "At launch"
                   : "Unknown",
-              context: pinnedContext.includes(value.name) ? "Yes" : "No",
+              context: declarationOnly
+                ? "Unknown"
+                : value.name && pinnedContext.includes(value.name)
+                  ? "Yes"
+                  : "No",
               example: (
                 <span className="whitespace-pre-wrap">
                   {value.example || "Not provided"}
