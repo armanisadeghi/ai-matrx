@@ -80,120 +80,21 @@ In v3, `defaultSize={30}` meant 30%. **In v4, it means 30 pixels.** Use strings 
 
 ---
 
+## Where the rest of this skill lives (read only the branch your task hits)
+
+- **Looking up a prop, imperative method, hook, exported type, or styling a custom `<Separator>`** → read [api-reference.md](api-reference.md) (§1 + §10).
+- **A button/toolbar/header toggle that collapses or expands a panel, or any cross-portal toggle** → read [collapse-and-toggle.md](collapse-and-toggle.md) (§4 + `<PanelControlProvider>` / `setLayout` pivot trap).
+- **Panels that mount/unmount (not just collapse), with or without SSR persistence** → read [conditional-panels.md](conditional-panels.md) (§5 + the hydration-safe two-cookie shape).
+- **Building a VSCode-style nested shell or an Apple Mail / Notes multi-sidebar layout** → read [layout-recipes.md](layout-recipes.md) (§6 + §7).
+- **Composing the page body under the shell header: top spacing per panel, `<PageHeader>` content** → read [page-shell-chrome.md](page-shell-chrome.md).
+
+---
+
 ## §1 — API reference (verbatim from source)
 
-### `<Group>` — replaces v3 `<PanelGroup>`
+Prop tables for `<Group>` / `<Panel>` / `<Separator>`, the required custom-Separator CSS, imperative handles, and the full hook export list.
 
-```tsx
-import { Group, type GroupProps } from "react-resizable-panels";
-```
-
-| Prop | Type | Default | Notes |
-|---|---|---|---|
-| `id` | `string \| number` | `useId()` fallback | **Pass an explicit, stable `id` always.** Storage key uses it. |
-| `orientation` | `"horizontal" \| "vertical"` | `"horizontal"` | (v3 was `direction`) |
-| `defaultLayout` | `{ [panelId: string]: number }` (percentages 0..100) | undefined | Pair with `onLayoutChanged` for persistence. |
-| `onLayoutChange` | `(layout) => void` | undefined | Fires every pointer move during drag. **Avoid for persistence — use the past-tense one.** |
-| `onLayoutChanged` | `(layout) => void` | undefined | Fires on pointer-up. **Use this for cookie writes.** |
-| `disableCursor` | `boolean` | false | Disables the global resize-cursor side effect. |
-| `disabled` | `boolean` | false | Disables resize for the whole group. |
-| `resizeTargetMinimumSize` | `{ coarse: number; fine: number }` | `{ coarse: 20, fine: 10 }` | Hit-target px for touch / mouse. |
-| `groupRef` | `Ref<GroupImperativeHandle \| null>` | — | Imperative API. **Named prop, NOT React `ref`.** |
-| `elementRef` | `Ref<HTMLDivElement \| null>` | — | Root `<div>` ref. |
-| `className` / `style` | standard | — | `display`, `flex-direction`, `flex-wrap`, `overflow` are forced by the lib and CANNOT be overridden. |
-
-### `<Panel>`
-
-```tsx
-import { Panel, type PanelProps } from "react-resizable-panels";
-```
-
-| Prop | Type | Default | Notes |
-|---|---|---|---|
-| `id` | `string \| number` | `useId()` fallback | **Pass an explicit, stable `id` always.** |
-| `defaultSize` | `number \| string` | auto-distributed | Number = px. String without unit = percent. (`30` = 30px, `"30"` = 30%, `"30%"` = 30%, `"240px"` = 240px.) |
-| `minSize` | `number \| string` | `"0%"` | Same unit rules. |
-| `maxSize` | `number \| string` | `"100%"` | Same unit rules. |
-| `collapsible` | `boolean` | false | Auto-collapses if dragged below `minSize`. Required for `panelRef.collapse()`. |
-| `collapsedSize` | `number \| string` | `"0%"` | Size when collapsed. |
-| `disabled` | `boolean` | false | Cannot be resized via pointer. **Imperative API still works.** |
-| `groupResizeBehavior` | `"preserve-relative-size" \| "preserve-pixel-size"` | `"preserve-relative-size"` | When parent group resizes: keep ratio (default) or keep pixels. At least one panel per group must be `preserve-relative-size`. |
-| `onResize` | `(next, id, prev) => void` | — | `next`/`prev` = `PanelSize` (`{ asPercentage, inPixels }`). `prev` is `undefined` on first mount. |
-| `panelRef` | `Ref<PanelImperativeHandle \| null>` | — | **Named prop, NOT React `ref`.** |
-| `elementRef` | `Ref<HTMLDivElement>` | — | Root `data-panel` div ref. |
-| `className` / `style` | standard | — | **Applied to a NESTED inner div, not the outer `data-panel` div.** Target outer with `[data-panel]` selector or `elementRef`. |
-
-### `<Separator>` — replaces v3 `<PanelResizeHandle>`
-
-```tsx
-import { Separator, type SeparatorProps } from "react-resizable-panels";
-```
-
-| Prop | Type | Default | Notes |
-|---|---|---|---|
-| `id` | `string \| number` | `useId()` fallback | |
-| `disabled` | `boolean` | false | Direct resize disabled (neighbors may still resize indirectly). |
-| `disableDoubleClick` | `boolean` | false | Disables 4.5.0+ double-click-to-reset behavior. |
-| `elementRef` | `Ref<HTMLDivElement>` | — | |
-| `className` / `style` | standard | — | `flex-grow`, `flex-shrink` cannot be overridden. |
-
-The library renders `role="separator"`, `aria-controls`, `aria-orientation`, `aria-valuemin/max/now`, plus `data-separator="default" | "hover" | "dragging" | "focus"`. Style off `data-separator=*`, not pseudo-classes.
-
-**Required CSS for any custom Separator** (you WILL hit this in dark mode otherwise):
-
-```tsx
-<Separator
-  className={[
-    "bg-border transition-colors focus:outline-none",
-    // kill the browser's default focus outline (the lib sets tabIndex={0})
-    "data-[separator=hover]:bg-primary",
-    "data-[separator=active]:bg-primary",   // mouse-down / focused — covers the "click reveals a white line" bug
-    "data-[separator=dragging]:bg-primary",
-    // orientation-aware sizing (works in both horizontal and vertical Groups)
-    "[&[aria-orientation=vertical]]:w-0.5 [&[aria-orientation=vertical]]:cursor-col-resize",
-    "[&[aria-orientation=horizontal]]:h-0.5 [&[aria-orientation=horizontal]]:cursor-row-resize",
-  ].join(" ")}
-/>
-```
-
-The library sets `tabIndex={0}` on the Separator, so clicking it focuses it. Without `focus:outline-none` the browser draws its default focus outline — a 1px near-white line in the center — which looks fine in light mode but stands out in dark mode. **Always set `focus:outline-none` and explicitly style `hover`, `active`, AND `dragging`** (style only `hover` and the bar reverts to `bg-border` the moment you click — that's the bug).
-
-In this codebase: use [`components/ui/resizable.tsx`](../../../components/ui/resizable.tsx)'s `ResizableHandle` for theme-aware horizontal handles, OR import the demo-shared `Handle` from [`app/(dev)/demos/resizables/_lib/Handle.tsx`](../../../app/(dev)/demos/resizables/_lib/Handle.tsx) which is orientation-aware (works in both horizontal and vertical Groups, no hardcoded cursor). Don't reinvent the class string in every demo.
-
-### Imperative handles
-
-```tsx
-interface PanelImperativeHandle {
-  collapse(): void;                  // no-op if not collapsible OR already collapsed
-  expand(): void;                    // restores pre-collapse size automatically (falls back to minSize, then 1)
-  getSize(): { asPercentage: number; inPixels: number };
-  isCollapsed(): boolean;            // returns false for non-collapsible panels even at size 0
-  resize(size: number | string): void; // accepts "30%" / "200px" / "1rem" / etc.
-}
-
-interface GroupImperativeHandle {
-  getLayout(): { [panelId: string]: number };           // percentages 0..100
-  setLayout(layout: { [panelId: string]: number }): Layout; // returns post-validation layout
-}
-```
-
-All methods are **synchronous**. Safe in event handlers and effects. **No-op if called during render** (the ref holds a stub until first layout effect runs).
-
-### Hooks — the full export list
-
-```tsx
-import {
-  Group, Panel, Separator,
-  useDefaultLayout,        // SSR/persistence helper
-  useGroupRef,             // = useRef<GroupImperativeHandle | null>(null) — type sugar
-  useGroupCallbackRef,     // callback-ref form
-  usePanelRef,             // = useRef<PanelImperativeHandle | null>(null) — type sugar
-  usePanelCallbackRef,     // callback-ref form
-  isCoarsePointer,         // utility
-} from "react-resizable-panels";
-```
-
-There is **no `usePanelGroupContext`**. Don't import it.
+**Looking up a prop, a handle method, or styling a custom Separator → read [api-reference.md](api-reference.md).**
 
 ---
 
@@ -312,239 +213,27 @@ export function ClientGroup({ cookieName, ...props }: Props) {
 
 ## §4 — Show/hide a panel that remembers its prior size
 
-**The library handles size memory automatically.** Do NOT add `useState` to track the previous width. Do NOT add a `useRef` to capture it before collapse. The library stores it in the panel's internal `expandToSize` and `expand()` reads it back.
+The library remembers pre-collapse size itself (`panel.collapse()` / `panel.expand()`); Redux holds only intent; an icon flip mirrors only a boolean from `onResize`.
 
-```tsx
-"use client";
-import { Group, Panel, Separator, usePanelRef } from "react-resizable-panels";
-
-export function ToggleSidebar() {
-  const sidebarRef = usePanelRef();
-
-  const toggle = () => {
-    const panel = sidebarRef.current;
-    if (!panel) return;
-    panel.isCollapsed() ? panel.expand() : panel.collapse();
-  };
-
-  return (
-    <>
-      <button onClick={toggle}>Toggle</button>
-      <Group id="root">
-        <Panel
-          id="sidebar"
-          panelRef={sidebarRef}
-          collapsible
-          collapsedSize="0%"
-          defaultSize="240px"
-          minSize="180px"
-        >
-          <Sidebar />
-        </Panel>
-        <Separator />
-        <Panel id="main"><Main /></Panel>
-      </Group>
-    </>
-  );
-}
-```
-
-That's the entire pattern. No state, no effects, no refs to capture sizes. The library does it.
-
-If you need the toggle from a button **rendered far away** (toolbar in a different subtree), put the boolean in Redux and use one effect to drive the panel:
-
-```tsx
-"use client";
-import { useEffect } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-
-function SidebarPanel() {
-  const sidebarRef = usePanelRef();
-  const isOpen = useAppSelector((s) => s.layout.sidebarOpen);
-
-  useEffect(() => {
-    const panel = sidebarRef.current;
-    if (!panel) return;
-    if (isOpen && panel.isCollapsed()) panel.expand();
-    if (!isOpen && !panel.isCollapsed()) panel.collapse();
-  }, [isOpen]);
-
-  return <Panel id="sidebar" panelRef={sidebarRef} collapsible collapsedSize="0%" defaultSize="240px" />;
-}
-```
-
-The Redux value is the "intent." The library still owns the size. Don't put the size in Redux — that's drift waiting to happen.
-
-**If you need a toggle button whose icon flips when the panel is collapsed (whether by click OR by drag-to-collapse), mirror only the BOOLEAN in `useState` and update it inside `onResize`:**
-
-```tsx
-const [collapsed, setCollapsed] = useState(false);
-
-const trackCollapse: OnPanelResize = (next, _id, prev) => {
-  if (prev === undefined) return;             // first mount — skip
-  const wasCollapsed = prev.asPercentage === 0;
-  const isCollapsed = next.asPercentage === 0;
-  if (wasCollapsed !== isCollapsed) setCollapsed(isCollapsed);
-};
-
-<Panel
-  id="sidebar"
-  panelRef={sidebarRef}
-  collapsible
-  collapsedSize="0%"
-  defaultSize="20%"
-  minSize="5%"
-  onResize={trackCollapse}
-/>
-```
-
-The `useState` here tracks **intent** (open/closed boolean) — NOT size. Size still lives in the library. This is the only legitimate `useState` you should add for a panel.
+**Any collapse/expand toggle → read [collapse-and-toggle.md](collapse-and-toggle.md).**
 
 ---
 
 ## §5 — Conditional panels (mount/unmount, not just collapse)
 
-If a panel can be **fully removed from the DOM** (not collapsed to zero), each combination of mounted panels gets its own remembered layout via `useDefaultLayout({ id, panelIds })`.
+`useDefaultLayout({ id, panelIds })`, the cookie storage adapter, and per-combination storage keys.
 
-```tsx
-"use client";
-import { Group, Panel, Separator, useDefaultLayout } from "react-resizable-panels";
-
-export function Workbench({ showLeft, showRight }: Props) {
-  const panelIds = [
-    ...(showLeft ? ["left"] : []),
-    "center",
-    ...(showRight ? ["right"] : []),
-  ];
-  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
-    id: "workbench",
-    panelIds,
-    storage: cookieStorage, // see below
-  });
-
-  return (
-    <Group id="workbench" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged}>
-      {showLeft && <><Panel id="left" minSize="160px"><Left /></Panel><Separator /></>}
-      <Panel id="center"><Editor /></Panel>
-      {showRight && <><Separator /><Panel id="right" minSize="240px"><Right /></Panel></>}
-    </Group>
-  );
-}
-```
-
-Storage key format (from library source): `react-resizable-panels:${groupId}:${...sortedPanelIds}`. Each `panelIds` permutation gets its own key, so toggling the right panel off and on again restores the same layout you had last time it was visible.
-
-Cookie storage adapter (works with `useDefaultLayout`):
-
-```ts
-import type { LayoutStorage } from "react-resizable-panels";
-
-export const cookieStorage: LayoutStorage = {
-  getItem(key) {
-    if (typeof document === "undefined") return null;
-    const row = document.cookie.split("; ").find((r) => r.startsWith(`${encodeURIComponent(key)}=`));
-    return row ? decodeURIComponent(row.split("=")[1]) : null;
-  },
-  setItem(key, value) {
-    if (typeof document === "undefined") return;
-    document.cookie =
-      `${encodeURIComponent(key)}=${encodeURIComponent(value)}` +
-      `; path=/; max-age=31536000; SameSite=Lax`;
-  },
-};
-```
-
-Note: `useDefaultLayout` only runs on the client (it's in a `'use client'` component). For SSR-correct first paint with conditional panels, ALSO read the toggle state from a cookie on the server so the initial render mounts the correct set of panels:
-
-```tsx
-// Server page — page.tsx
-const toggles = await readJsonCookie<Toggles>("panels:demo-05:toggles");
-return (
-  <ConditionalWorkbench initialShowRight={toggles?.showRight ?? true} />
-);
-
-// Client component
-const [showRight, setShowRight] = useState(initialShowRight);
-useEffect(() => {
-  // persist toggle state so SSR can pick the right initial set next time
-  document.cookie = `panels:demo-05:toggles=${encodeURIComponent(JSON.stringify({ showRight }))}; path=/; max-age=31536000; SameSite=Lax`;
-}, [showRight]);
-const panelIds = ["left", "center", ...(showRight ? ["right"] : [])];
-const { defaultLayout, onLayoutChanged } = useDefaultLayout({ id, panelIds, storage: cookieStorage });
-```
-
-Working example: [`05-conditional-panels/`](../../../app/(dev)/demos/resizables/05-conditional-panels/).
+**Panels that mount/unmount → read [conditional-panels.md](conditional-panels.md).**
 
 ---
 
 ## §6 — VSCode-style nested layout
 
-```tsx
-"use client";
-import { Group, Panel, Separator } from "react-resizable-panels";
-
-export function VSCodeShell() {
-  return (
-    <Group id="root" orientation="horizontal" className="h-dvh">
-      <Panel id="activity-bar" defaultSize="48px" minSize="48px" maxSize="48px">
-        <ActivityBar />
-      </Panel>
-      <Separator disabled />
-
-      <Panel id="sidebar" defaultSize="240px" minSize="180px" collapsible collapsedSize="0%">
-        <Sidebar />
-      </Panel>
-      <Separator />
-
-      <Panel id="main" minSize="40%">
-        <Group id="main-vertical" orientation="vertical">
-          <Panel id="editor" minSize="20%"><Editor /></Panel>
-          <Separator />
-          <Panel id="terminal" defaultSize="30%" collapsible collapsedSize="0%">
-            <Terminal />
-          </Panel>
-        </Group>
-      </Panel>
-      <Separator />
-
-      <Panel id="chat" defaultSize="320px" minSize="240px" collapsible collapsedSize="0%">
-        <Chat />
-      </Panel>
-    </Group>
-  );
-}
-```
-
-Rules for nesting:
-- Each `<Group>` needs its own stable `id` (and therefore its own cookie).
-- Panels and Separators must be **direct DOM children of their Group**. Never wrap them in a `<div>`. (TSDoc spec.)
-- A nested Group goes **inside** a parent Panel's children, not as a sibling of other Panels.
-- For the immovable activity-bar pattern, set `defaultSize=minSize=maxSize` to the same pixel value AND mark the adjacent `<Separator disabled />`.
-
----
-
 ## §7 — Apple Mail / Notes multi-sidebar layout
 
-```tsx
-"use client";
-import { Group, Panel, Separator } from "react-resizable-panels";
+Worked shells plus the rules for nesting Groups.
 
-export function MailShell() {
-  return (
-    <Group id="mail" orientation="horizontal" className="h-dvh">
-      <Panel id="folders"  defaultSize="200px" minSize="160px" collapsible collapsedSize="0%"><Folders /></Panel>
-      <Separator />
-      <Panel id="messages" defaultSize="300px" minSize="220px" collapsible collapsedSize="0%"><Messages /></Panel>
-      <Separator />
-      <Panel id="reader"   minSize="40%"><Reader /></Panel>
-      <Separator />
-      <Panel id="inspector" defaultSize="280px" minSize="200px" collapsible collapsedSize="0%"><Inspector /></Panel>
-    </Group>
-  );
-}
-```
-
-Each separator is independent — pulling separator B doesn't move separator A. Each collapsible panel remembers its own pre-collapse size.
+**Building either layout → read [layout-recipes.md](layout-recipes.md).**
 
 ---
 
@@ -641,161 +330,17 @@ export default async function MyPage() {
 
 ### The `<main>` is pulled UP under the header — content extends behind it (this is the design)
 
-`shell.css` defines `.shell-main` with `margin-top: calc(-1 * var(--shell-header-h))`. The shell header is **transparent**, the page does not scroll vertically, and the design intent is that **content extends all the way to the top of the page, behind the glass header**. That gives panels (chat conversations especially) the maximum possible vertical real estate and feels open.
-
-**Default page wrapper:**
-
-```tsx
-<div className="h-full overflow-hidden">
-  <ClientGroup .../>
-</div>
-```
-
-**No `paddingTop: var(--shell-header-h)`** on the outer wrapper — that forces every panel below the header and creates the "boxed" feeling the design rejects.
-
-**Per-panel top-spacing is each column's own responsibility.** The page wrapper does NOT impose top padding; each panel surface decides based on its content:
-
-- **Scrolling content (no `pt-` needed)** — chat conversations, message lists, any panel where the user scrolls. Content flows behind the header icons; if something is obscured, scrolling reveals it. Latest messages stay at the bottom (visible) by default. Example: the chat panel in [`03-vscode-shell/page.tsx`](../../../app/(dev)/demos/resizables/03-vscode-shell/page.tsx) has no `pt-` and no top label — messages flow all the way to the top edge.
-
-- **Static or interactive top content (`pt-[var(--shell-header-h)]` required)** — anything that sits at the top and won't scroll out of the way: panel titles, file tabs, terminal tabs, search inputs, agent dropdowns, "+New" buttons. These MUST clear the shell header zone, otherwise the glass icons render on top of important UI. Add the padding at the OUTERMOST element of the panel surface so everything inside is safely below the header.
-
-```tsx
-// SCROLLING — no top padding, content can flow up under the header
-function ChatSurface() {
-  return (
-    <div className="h-full flex flex-col bg-muted">
-      <div className="flex-1 overflow-auto p-3 …">{messages}</div>
-      <div className="shrink-0 p-2">{input}</div>
-    </div>
-  );
-}
-
-// STATIC / INTERACTIVE TOP — pt clears the header
-function FilesSidebar() {
-  return (
-    <div className="h-full overflow-auto bg-muted pt-[var(--shell-header-h)]">
-      <div className="px-3 py-1.5 text-[11px] uppercase …">Files</div>
-      <ul>{items}</ul>
-    </div>
-  );
-}
-```
-
-Tailwind arbitrary-value `pt-[var(--shell-header-h)]` is preferred over the inline `style={{paddingTop: "var(--shell-header-h)"}}` — same effect, less noise, still resolves the live CSS var so a future header-height change propagates everywhere.
-
-The agent builder uses inline `paddingTop: "var(--shell-header-h)"` on individual single-column readers — same idea, just inline-style flavor. Both are valid; pick what reads cleanest in context.
-
 ### `<PageHeader>` rules (non-negotiable)
 
-- `<PageHeader>` is a **server component** that portals its children into the shell header center slot. The shell header already has the glass background; you don't add it.
-- **Do NOT render your own `<header>` element inside the page body.** If you do, you double-stack headers and leave a gap at the bottom.
-- Children must be **self-contained and transparent at the root** — never give the root child `bg-card`, `bg-muted`, or any background class. The shell header is the surface; let it show through.
-- Use **TapTargetButtons** for icons (`PanelLeftTapButton`, `PanelRightTapButton`, `TerminalTapButton`, `MessageTapButton`, etc., from [`components/icons/tap-buttons.tsx`](../../../components/icons/tap-buttons.tsx)). They include their own padding, glass disc, focus ring, and tooltip — **don't wrap them in extra padding** or add `className="p-1 rounded hover:bg-accent"` around them.
-- For non-icon content (titles, subtitles), use plain text spans/h1 with no bg — see [`_lib/DemoTitle.tsx`](../../../app/(dev)/demos/resizables/_lib/DemoTitle.tsx).
+**Deciding a panel's top spacing or writing `<PageHeader>` content → read [page-shell-chrome.md](page-shell-chrome.md).**
 
 ### Cross-portal panel control via `<PanelControlProvider>` — and why it uses `setLayout`, NOT `panel.collapse()`
 
-The header is portaled into a different DOM subtree than the panels. **React Context propagates through portals along the React tree, NOT the DOM tree** — so a Provider above both `<PageHeader>` and the page body bridges the two sides.
-
-#### The `panel.collapse()` / `panel.expand()` pivot trap (REAL bug, verified in v4 source)
-
-`getImperativePanelMethods.ts` implements `collapse`/`expand`/`resize` via `setPanelSize`, which uses **`pivotIndices: isLastPanel ? [index-1, index] : [index, index+1]`**. The freed/required space is redistributed via the IMMEDIATE adjacent panel.
-
-**This breaks adjacent collapsibles:**
-
-```
-Layout: ... | chat (open) | chat-history (open) |
-              ──────────── ─────────────────────
-                index n-1     index n (last)
-
-User collapses chat-history → pivot [n-1, n] → freed 14% goes to chat.
-If chat is currently at 0% (already collapsed), it RE-EXPANDS to 14%.
-The user collapsed one and the other came back.
-```
-
-The same trap exists for any two adjacent collapsibles in the middle of a group: collapsing one pushes its space into the immediate neighbor.
-
-#### The fix: `groupRef.setLayout()` for whole-group updates
-
-`setLayout(layout: { [panelId: string]: number })` sets every panel's size at once and bypasses the pivot. Other already-collapsed panels stay collapsed because we explicitly pass `0` for them.
-
-[`_lib/PanelControlProvider.tsx`](../../../app/(dev)/demos/resizables/_lib/PanelControlProvider.tsx) implements this:
-- Each `<RegisteredPanel>` calls `registerPanel(panelId, groupKey, panelRef, defaultSizePercent)` and reports its size to `notifyResize` on every `onResize`. The provider keeps a fresh `lastOpenSize` per panel.
-- Each `<ClientGroup groupKey="...">` registers its `groupRef` (via `useGroupRef`) so the provider has setLayout access for that group.
-- `toggle(panelId)` reads `groupRef.getLayout()`, modifies ONLY the toggled panel's size in the layout map (0 to collapse, `lastOpenSize` to expand), and calls `groupRef.setLayout(newLayout)`. All other panels keep their current sizes; the lib normalizes the sum, so the delta is absorbed by panels with room (typically the non-collapsible "filler" like `main` or `editor`).
-
-#### Plumbing — what the page provides
-
-```tsx
-<PanelControlProvider>
-  <PageHeader><MyHeaderControls /></PageHeader>
-  <div className="h-full overflow-hidden">
-    <ClientGroup id="my-page-root" groupKey="root" cookieName={...}>
-      <RegisteredPanel registerAs="sidebar" groupKey="root" id="sidebar" collapsible defaultSize="20%" minSize="5%">
-        <ServerSidebar />
-      </RegisteredPanel>
-      <Handle />
-      <Panel id="main">…</Panel>
-      <Handle />
-      <RegisteredPanel registerAs="inspector" groupKey="root" id="inspector" collapsible defaultSize="20%" minSize="5%">
-        <ServerInspector />
-      </RegisteredPanel>
-    </ClientGroup>
-  </div>
-</PanelControlProvider>
-```
-
-For nested groups (a vertical group inside a panel of an outer horizontal group), pass a different `groupKey` — toggleable panels in each group register against their own group's ref. Panels with no toggle don't register.
-
-#### Drag-to-collapse still works
-
-`<RegisteredPanel>` listens to `onResize` and calls `notifyResize` — when the user drags a panel below `minSize` and the lib auto-collapses it, the boolean intent flips to `true` and the toggle button icon updates accordingly. No effect-loop because `notifyResize` short-circuits when state is unchanged.
+**Any header/toolbar toggle reaching panels in another subtree → read [collapse-and-toggle.md](collapse-and-toggle.md).**
 
 ### Mount/unmount panels (different beast — and a hydration trap)
 
-If you genuinely want to remove a panel from the DOM (not just collapse it), follow [`05-conditional-panels/`](../../../app/(dev)/demos/resizables/05-conditional-panels/). The pattern has two cookies and a hand-rolled persistence step — `useDefaultLayout` is NOT safe here:
-
-**Why not `useDefaultLayout`:** the hook's `defaultLayout` return value is `undefined` on the server (no `document`) but populated on the first client paint. That mismatch produces React's "tree hydrated but some attributes... didn't match" error — the server sends `flex-grow: 1` (auto-distributed) and the client computes `flex-grow: 20` (from the cookie).
-
-**The SSR-safe shape:**
-
-1. **Toggle cookie** holds the mount state (e.g. `{ showRight: true }`). Server reads it to decide which panels to mount.
-2. **Layout cookie keyed per combination** — the lib's storage key format is `react-resizable-panels:${groupId}:${...panelIds}`. Server reads the cookie for the current `panelIds` permutation and passes it as `defaultLayout` directly to `<Group>`.
-3. The client component takes `initialLayout` as a prop and gives it straight to `<Group>` as `defaultLayout`. Same value SSR + first client render → no mismatch.
-4. When the user toggles, `panelIds` changes. A `useEffect` reads the new combo's cookie and calls `groupRef.setLayout(newLayout)` to swap.
-5. `onLayoutChanged` writes back to whichever combo's cookie is currently active.
-
-```tsx
-// page.tsx (server)
-const GROUP_ID = "demo-05";
-const TOGGLE_COOKIE = "panels:demo-05:toggles";
-
-function buildLayoutCookieKey(panelIds: string[]) {
-  return `react-resizable-panels:${[GROUP_ID, ...panelIds].join(":")}`;
-}
-
-async function readState() {
-  const store = await cookies();
-  const showRight = JSON.parse(store.get(TOGGLE_COOKIE)?.value ?? "{}")?.showRight ?? true;
-  const panelIds = ["left", "center", ...(showRight ? ["right"] : [])];
-  const layoutRaw = store.get(buildLayoutCookieKey(panelIds))?.value;
-  const initialLayout = layoutRaw ? JSON.parse(decodeURIComponent(layoutRaw)) : undefined;
-  return { showRight, initialLayout };
-}
-
-// ConditionalGroup.tsx (client) — see the demo file for full impl.
-// Key shape:
-<Group
-  id={GROUP_ID}
-  groupRef={groupRef}
-  defaultLayout={initialLayout}     // ← from server prop, identical SSR + client
-  onLayoutChanged={writeToCurrentComboKey}
->
-  ...
-</Group>
-```
-
-This shape is the only conditional-panel persistence pattern that's hydration-clean. **If you're tempted to use `useDefaultLayout` here, don't** — the convenience isn't worth the SSR mismatch.
+**Conditional panels with SSR persistence → read [conditional-panels.md](conditional-panels.md).**
 
 ---
 
@@ -818,25 +363,7 @@ This shape is the only conditional-panel persistence pattern that's hydration-cl
 
 ## §10 — Quick TypeScript reference (verbatim from `lib/index.ts`)
 
-```ts
-import type {
-  GroupProps,
-  GroupImperativeHandle,
-  Layout,                 // { [panelId: string]: number }   — percentages 0..100
-  LayoutStorage,          // Pick<Storage, "getItem" | "setItem">
-  OnGroupLayoutChange,
-  Orientation,            // "horizontal" | "vertical"
-  PanelProps,
-  PanelImperativeHandle,
-  PanelSize,              // { asPercentage: number; inPixels: number }
-  OnPanelResize,
-  SizeUnit,               // "px" | "%" | "em" | "rem" | "vh" | "vw"
-  SeparatorProps,
-} from "react-resizable-panels";
-```
-
-`MixedSizes` is **not** exported in v4. The replacement is `PanelSize`.
-`ImperativePanelHandle` / `ImperativePanelGroupHandle` are **not** exported. Use `PanelImperativeHandle` / `GroupImperativeHandle`.
+**Need an exported type name → read [api-reference.md](api-reference.md).**
 
 ---
 

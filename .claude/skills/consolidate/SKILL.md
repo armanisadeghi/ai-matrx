@@ -38,6 +38,12 @@ fixed inline, never silently dropped.
 4. [`/policies/unfinished-work-alarm.md`](/policies/unfinished-work-alarm.md) — **docs are the
    only thing you delete. Never a purpose-built code artifact.**
 
+## Companion files — read only when you reach the branch
+
+- **Any two sources disagree (Step 3.6)** → [conflicts.md](conflicts.md).
+- **Writing the final report (Step 8)** → [report.md](report.md).
+- **Revising this skill, or tracing why a rule exists** → [changelog.md](changelog.md).
+
 ## Step 1 — Resolve the node, exactly
 
 `/consolidate <name>`. Resolve it yourself, in this order:
@@ -204,33 +210,9 @@ older is corrected. Between two owner docs, you do not rule at all (see Step 3.6
 
 ## Step 3.6 — Conflicts: resolve what you can, escalate what you cannot
 
-**Resolve yourself, and say what you did:**
-
-- **Fact vs fact** → reality arbitrates. Query the live DB, read the live code, check the deployed
-  state. The doc that loses is corrected with the evidence in its changelog.
-- **Stale vs current at equal provenance** → the verified-against-reality one wins.
-- **Vocabulary drift** → [`/systems/platform/vocabulary/FEATURE.md`](/systems/platform/vocabulary/FEATURE.md) wins, always.
-- **An owner doc's claim about BUILD STATE being out of date** → correct the build state; his
-  intent is untouched. His docs go stale on facts like any other; they never go stale on intent.
-
-🚨 **Escalate, and do NOT resolve:**
-
-- **An owner document vs the code.** THE CODE IS THE DEFECT — never "fix" his doc to match what got
-  built, and never record the code's behavior as the design. Write both readings into `DECISIONS.md`
-  as an open conflict, file the attention-board row, and leave his document untouched.
-- **Owner doc vs owner doc** — two of his statements that genuinely disagree. Never resolved by an
-  agent, ever.
-- **An agent doc that contradicts an owner doc and matches the code.** This is the disease above,
-  not evidence. The agent doc is deleted or corrected; what it justified goes on the board.
-- **Interpretation vs interpretation** — nobody disputes the measurements, two docs read them
-  differently. Record both readings, decide neither.
-
-**The escalation must be one he can act on cold** — a row on
-[`operations/attention.md`](/operations/attention.md), guided-session shaped: plain-language
-background in two or three sentences with no jargon or doc numbering, **a clickable path to the
-document**, the two readings side by side, **the concrete consequence of each**, and your
-recommendation. A question he cannot answer from what you gave him is a defect in your question,
-not a hard question. Batch them; never page him one at a time.
+What you resolve yourself (reality arbitrates fact) and what goes to the attention board untouched
+(owner doc vs code, owner vs owner, interpretation vs interpretation).
+**Any source disagreement → read [conflicts.md](conflicts.md) before you resolve or escalate it.**
 
 ## Step 4 — Extract into the node kit
 
@@ -415,28 +397,8 @@ on disk still holds the old copies — out of scope, but say so if you find one.
 
 ## Step 8 — The report
 
-1. **The node** — slug, level, home path, and the lane you drew (what was in, what was a seam).
-2. **Census counts** — files found per repo, and the MEANING / LANDMINE / SEAM / OUT split.
-3. **What moved** — into which kit file, with anything notable you verified or corrected.
-4. **The proof gate** — the per-repo table from Step 6: deleted (+ lines removed), cut down
-   (`before → after`), references repointed, survivors by class. State the deleted-path grep came
-   back empty, or what it found.
-5. **Flagged, not resolved** — contradictions, `VISION MISSING`, UNVERIFIABLE claims, attention-board
-   rows filed, code defects spotted.
-
-   🚨 **These three go at the TOP of your report, each with a clickable path — never buried at the
-   end, never summarised away:**
-   - **Owner-doc conflicts** — anything built or written contrary to one of Arman's documents.
-   - **Claims that were WRONG** — a doc that sent agents at a dead table, a fictional contract, a
-     "shipped" that isn't, a "pending" that is. Say what was wrong, what is true, and how you
-     proved it. You will find these constantly; they are the most valuable thing you produce.
-   - **Anything found in a PROTECTED lane** (`inbox/`, a repo `.arman/`) — reported with its path
-     and your byte-level comparison, for HIM to decide. You touched nothing.
-6. **Nominated as owner-authored** — documents you believe are Arman's, each with path and one line
-   of evidence, so he can confirm and they can be marked `authority: owner`.
-7. **Blockers and friction** — anything that stopped you, and anything in THIS SKILL that was
-   ambiguous, missing, or wrong when you tried to follow it. Be blunt; the skill is being revised
-   from these reports.
+Seven required sections, with owner-doc conflicts, wrong claims, and protected-lane finds at the TOP.
+**Writing the final report → read [report.md](report.md) for the required sections and their order.**
 
 ## Definition of done
 
@@ -459,65 +421,5 @@ on disk still holds the old copies — out of scope, but say so if you find one.
 
 # Changelog
 
-- 2026-08-25 (v5 — the ordering law, learned from a crash). **MOVE, NEVER COPY.** The unit of work
-  is ONE file: write the kit entry, `git rm` the source, repoint its references, and commit all
-  three together, then move to the next. Previously the skill let a run write the kit and defer the
-  deletions, which means that for the whole middle of a run the corpus holds BOTH copies — and a run
-  killed there leaves it worse than it found it. A batch-3 run died exactly there, adding 8
-  satellites (2,771 lines) with zero deletions and duplicating all 8 against live repo sources. The
-  new rule makes every crash point safe: interrupt at any moment and some files are moved, the rest
-  untouched, none duplicated.
-- 2026-08-25 (v4 — Arman's provenance ruling; the corpus-level fix). **Provenance now outranks
-  type**, in this skill (new Steps 3.5/3.6) and in the ladder itself
-  ([`document-types.md` Rung 0](/policies/document-types.md)). His documents are the bible whatever
-  their `type:` — the trigger was his own 1,371-line agent-graph-v2 design record being typed
-  `Reference`, so the type ladder ranked it below any agent's `State` doc while work got built
-  contrary to it. Adds: the named disease (an agent justifies its mistake with a doc that reads
-  easier than his, matches the code, and contradicts his rules — that is drift, not truth); dates
-  arbitrate only at equal provenance; the resolve-vs-escalate split (reality arbitrates fact-vs-fact;
-  owner-doc-vs-code means the CODE is the defect and his doc is never edited to match it; owner-vs-owner
-  and interpretation-vs-interpretation are never agent-resolved); escalation shaped as a
-  guided attention-board row with a clickable path, both readings, and each one's consequence;
-  `authority: owner` as the marker with agents NOMINATING only; owner-conflicts, wrong-claims, and
-  protected-lane finds reported at the TOP with links, never buried; and protected lanes
-  (`inbox/`, any repo `.arman/`) never deleted or edited AND never called duplicates without a
-  byte-level diff — wave 2 nearly deleted a `junk/` folder whose protected copies turned out to be
-  the FULLER originals.
-- 2026-08-25 (v3, revised from wave-2 evidence — 5 more parallel runs; both waves together deleted
-  201 repo docs and 62,836 lines, measured from git). Fixes: **`git commit -m "msg" -- <paths>`** —
-  v2's own mandated syntax was broken (git parses everything after `--` as pathspecs) and two runs
-  hit it; the deletion-commit imperative moved INTO Step 5, because a staged deletion swept into an
-  unrelated commit got REVERTED by a third agent as apparent collateral damage; an honest statement
-  of what the pathspec protocol does and does not protect (it stops you committing others' work, not
-  others committing yours); enumerate paths as you touch them (never from `git status`); zsh
-  word-splitting; count deletions with `git log --diff-filter=D`, since `git show --stat` on your
-  own SHA under-reports when you have been swept; the scratchpad documented as contended, with
-  read-back-your-DB-writes; bookkeeping verified with `git diff --stat` because a passing lint
-  proves nothing; **the cap now counts non-imperative lines only** (a survivor that is 68 lines of
-  guards has PASSED — four runs hit this); a landmine may carry the minimum of its own why; **SEAM
-  beats MEANING**; two new fixed verdicts — **CODE ARTIFACT** (a `.md` that code reads or a guard
-  scans; a literal v2 reading would have broken a guard script) and **PUBLISHED PAYLOAD** (shipped
-  in an npm tarball); working-backlog lanes ruled, with a repo `.arman/` protected exactly like
-  `inbox/`; bannered-STALE-in-a-live-path now extract-and-delete, distinguished from
-  `docs/archive/`; satellites plural for foundational nodes, plus a check for a CONCURRENT run
-  writing the same satellite; read every file over ~200 lines whatever its name (a 513-line README
-  turned out to be a node's only vision doc); HANDOFF judged by content not line count; board rows
-  keyed by node slug after two runs claimed the same integer; proof-gate exception for the kit's own
-  required provenance lines.
-- 2026-08-25 (v2, revised from wave-1 evidence — 5 parallel runs, 70 repo docs deleted, ~20,400
-  lines removed). Every change below fixes something at least two runs hit independently:
-  satellites permitted (the old text contradicted the registry policy and would have forced a
-  415-line wire contract into STATE); the shared-checkout git protocol (`git commit -- <paths>`,
-  stage-nothing, verify-it-landed — all five runs had work swept into other agents' commits);
-  the proof gate rebuilt around the deleted-path grep + per-member re-check + grouped sweep, with
-  deleted-line and repoint counts; the line cap scoped to your node's content and exempted for
-  `CLAUDE.md`-class rulebooks; SEAM named as a fourth verdict; fixed verdicts for generated files,
-  repo skills, repo changelogs, and bannered historical docs; comment/docstring repointing ruled
-  documentation rather than code; homeless truth protected; Domain runs give child Features their
-  own homes; `ls -R` added to the census; the DB addressed by URL rather than project ref
-  (the v1 text violated standing doctrine on its first instruction); board rows moved to their own
-  section; counts taken from git, not memory.
-- 2026-08-25 — Created from Arman's centralization ruling: node-scoped extraction, the
-  MEANING/LANDMINE line with the ambiguity-resolves-to-MEANING rule and the ~80-line cap,
-  outright deletion of pure-meaning files, and the proof gate that makes deletion verifiable
-  instead of asserted. Intended as the mandatory step before `/take` on an unconsolidated node.
+Version history (v1–v5) and the wave evidence behind each rule → [changelog.md](changelog.md).
+Read it when revising this skill or tracing why a rule exists.
