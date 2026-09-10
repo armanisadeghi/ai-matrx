@@ -1,6 +1,6 @@
 # SSR Zero Layout Shift — Examples
 
-Real-world component examples composing all five patterns with cache components.
+Real-world component examples composing all five patterns. Rendering is dynamic by default; the cached sections use `unstable_cache` over cookie-free reads — **`'use cache'` is NOT available** (`cacheComponents` is off; the directive is a build error).
 
 ---
 
@@ -11,7 +11,7 @@ Full page with cached column config, dynamic user-specific data, and interactive
 ```tsx
 // app/(authenticated)/agents/page.tsx — Server Component
 import { Suspense } from 'react'
-import { cacheLife, cacheTag } from 'next/cache'
+import { unstable_cache } from 'next/cache'
 import { cookies } from 'next/headers'
 import PageHeader from '@/features/shell/components/header/PageHeader'
 
@@ -41,13 +41,15 @@ export default function AgentsPage() {
   )
 }
 
-// Cached Server Component — column config and filter options
-async function FilterBar() {
-  'use cache'
-  cacheLife('hours')
-  cacheTag('agent-filters')
+// Cached read — column config and filter options (cookie-free, same for every user)
+const getCachedAgentCategories = unstable_cache(
+  async () => getAgentCategories(),
+  ['agent-filters'],
+  { tags: ['agent-filters'], revalidate: 3600 },
+)
 
-  const categories = await getAgentCategories()
+async function FilterBar() {
+  const categories = await getCachedAgentCategories()
   return (
     <div className="h-10 flex items-center gap-2">
       {/* Interactive filter is a thin client island */}
@@ -229,7 +231,7 @@ Three content tiers in one page: static shell, cached stats, dynamic user feed.
 ```tsx
 // app/(authenticated)/dashboard/page.tsx
 import { Suspense } from 'react'
-import { cacheLife, cacheTag } from 'next/cache'
+import { unstable_cache } from 'next/cache'
 import { cookies } from 'next/headers'
 import PageHeader from '@/features/shell/components/header/PageHeader'
 
@@ -267,13 +269,15 @@ export default function DashboardPage() {
   )
 }
 
-// Cached Server Component
-async function TotalAgentsMetric() {
-  'use cache'
-  cacheLife('hours')
-  cacheTag('dashboard-metrics')
+// Cached read — platform-wide metric, cookie-free
+const getCachedTotalAgents = unstable_cache(
+  async () => getTotalAgents(),
+  ['dashboard-metrics:total-agents'],
+  { tags: ['dashboard-metrics'], revalidate: 3600 },
+)
 
-  const count = await getTotalAgents()
+async function TotalAgentsMetric() {
+  const count = await getCachedTotalAgents()
   return (
     <div className="h-28 rounded-lg border bg-card p-4 flex flex-col justify-between">
       <p className="text-sm text-muted-foreground">Total Agents</p>
@@ -401,12 +405,14 @@ export async function updateAgent(id: string, data: FormData) {
 
 ```tsx
 // AgentDetail.tsx — cached, invalidated by the action above
+// keyParts include agentId: a static keyParts would collapse every agent onto one entry.
+// getPublicAgent must use the anon cookie-free client — never a per-user read.
 async function AgentDetail({ agentId }: { agentId: string }) {
-  'use cache'
-  cacheLife('hours')
-  cacheTag(`agent-${agentId}`)
-
-  const agent = await getAgent(agentId)
+  const agent = await unstable_cache(
+    async () => getPublicAgent(agentId),
+    ['agent', agentId],
+    { tags: [`agent-${agentId}`], revalidate: 3600 },
+  )()
   return (
     <div className="h-auto min-h-20 rounded-lg border bg-card p-4">
       <h2 className="text-lg font-semibold">{agent.name}</h2>

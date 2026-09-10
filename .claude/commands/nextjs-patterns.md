@@ -118,17 +118,19 @@ Both should use shared services.
 
 ## Caching (Opt-In)
 
-```typescript
-async function getStaticData() {
-  'use cache'
-  cacheTag('static-data')
-  cacheLife('hours')
-  return await fetchData();
-}
+Dynamic rendering is the default. **`'use cache'` / `cacheLife` / `cacheTag` are NOT available** (`cacheComponents` is off; the directive is a build error). Cache only cookie-free (anon) reads — live exemplar `features/education/publishing/queries.ts`:
 
-// Invalidation
-import { revalidateTag } from 'next/cache'
-revalidateTag('static-data');
+```typescript
+import { unstable_cache } from 'next/cache'
+
+export const getStaticData = unstable_cache(
+  async () => fetchData(),           // anon client only — never a per-user read
+  ['static-data'],                   // keyParts carry every argument
+  { tags: ['static-data'], revalidate: 3600 },
+);
+
+// Invalidation — Server Action: updateTag('static-data'); Route Handler: revalidateTag('static-data')
+// Route-level ISR on a cookie-free page: export const revalidate = 3600
 ```
 
 ---

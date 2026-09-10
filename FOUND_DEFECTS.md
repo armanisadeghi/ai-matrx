@@ -15,6 +15,39 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D305 — 100 `(core)` sub-pages export a title-only `metadata`/`generateMetadata`, so the tab drops the section name
+
+Found 2026-09-10 by the route-rules correction pass. Rule:
+`app/(core)/_read_first_route_rules/metadata-and-seo.md` — the `(core)` template is `"%s — AI Matrx"`
+and wraps only `%s`; `createRouteMetadata` emits a plain string (no template), so a page-level
+`{ title: "Runs" }` renders `"Runs — AI Matrx"` and the section is gone. Guard: none —
+`check:route-metadata` checks module roots only. Census: every `page.tsx`/`layout.tsx` two or more
+segments deep under `app/(core)` that exports metadata without `createRouteMetadata` /
+`createDynamicRouteMetadata` or a feature helper built on them (`toolMetadata`, shape/podcast helpers).
+Paths are relative to `app/(core)/<section>/`.
+
+- **workflows** (8): `[id]` "Run a workflow" · `[id]/runs` "Runs" · `[id]/triggers` "Run it without me" · `bakeoff/dense-2/[id]` "Workflow run" · `bakeoff/dense/[id]` "Run a workflow" · `runs` "Runs" · `runs/[runId]` "Workflow run" · `waiting` "Waiting on you"
+- **work** (5): `connections` · `conversations` · `conversations/[conversationId]` · `new` · `requests`
+- **hr** (49): `compliance/laws` · `leave` · `leave/balances` · `leave/balances/[employmentId]/[policyId]` · `leave/calendar` · `me` · `me/documents` · `me/pay` · `me/schedule` · `me/time-off` · `me/time-off/[policyId]` · `me/timesheet` · `me/training` · `people` · `people/[employeeId]` · `people/[employeeId]/[tab]` · `people/[employeeId]/c/[tabKey]` · `people/new` · `people/org-chart` · `people/relations` · `people/relations/[caseId]` · `people/verifications` · `settings` · `settings/{access,ai,alerts,calendars,codes,devices,employer,exit-surveys,fields,notifications,pay-groups,retention,schedule-rules,structure,time-rules,workflows}` · `settings/leave-policies` · `settings/leave-policies/[policyId]` · `settings/leave-policies/[policyId]/enrollment` · `tasks` · `tasks/[instanceId]` · `time/clock` · `time/exceptions` · `time/punches` · `time/timesheets` · `time/timesheets/[employmentId]`
+- **marketing** (21; `marketing/layout.tsx` composes a per-path title that each page then overrides): `[brandId]/email` · `[brandId]/intelligence/competitors` + `/{competitors,evidence,history,opportunities,review}` · `[brandId]/intelligence/monitoring` · `[brandId]/intelligence/reputation` · `[brandId]/pr` · `[brandId]/pr/outreach` · `operations/automations` + `/{history,proposals,unplaced}` · `operations/capabilities` · `reports/search-console` + `/{digs,insights,new-pages,watchlist}`
+- **agents** (5): `[id]/v/[version]` · `go/[...slug]` · `new/studio` · `orchestras` · `orchestras/[conductorId]`
+- **education** (6): `classes/join` · `family/[studentId]` · `fastfire/capture-test` · `kits` · `kits/[sourceId]` · `media/[id]`
+- **crm** (2): `chasebox` · `inbox` · **knowledge** (2): `extractions` · `extractions/[id]` · **maps** (1): `[id]` (`maps/layout.tsx` exports no metadata at all) · **shapes** (1): `(workspace)/instances/[id]`
+
+**Same fix, hand-typed variant (22)** — section or brand typed into the string, bypassing the helper;
+the `"| AI Matrx"` ones render the brand twice: agent-apps `templates/[mode]` · crm `duplicates`,
+`import`, `outreach-lists`, `outreach-lists/[listId]`, `outreach-lists/[listId]/dial` · education
+`creator`, `game/{host,join,solo}`, `game/play/[roomId]`, `learn/admin`, `library/suggestions`,
+`offline`, `subjects/quick-math`, `subjects/quick-math/[id]` · files `webhooks` · lists `[id]` ·
+podcast `[slug]`, `[slug]/blog` · reports `agent-drift` · vault `[itemId]`.
+
+**The fix:** delete the page-level export; add a sub-`layout.tsx` calling the section's helper with
+`titlePrefix` + a unique `letter` (static: `notes/[id]/diff/layout.tsx`; dynamic:
+`agents/[id]/run/layout.tsx`). No distinct title → export nothing. Guard: extend
+`check:route-metadata` to fail a sub-page title that bypasses the helpers, proven failing on today's tree.
+
+---
+
 ### D304 — 51 sites still `notFound()` on an empty single-record read (CLAUDE.md `authInterrupts` law)
 
 Found 2026-09-10 correcting `new-route-scaffold`, which taught the pattern. Law: `CLAUDE.md` § Core
@@ -51,39 +84,41 @@ a Supabase/RPC result, proven failing on today's tree.
 
 ---
 
-### D303 — the `mandate.*` L1 tables broke their OWN schema's org-backstop convention (D300's class is still growing)
+### D303 — the org guard flags the three `mandate.*` tables that follow the emergency org law; the four that carry a backstop are the defect
 
 Found by the docs-steward `ddl_guard_log` sweep 2026-09-10. Three rows of
 `org_not_null_no_backstop` fired at 2026-09-10T05:54Z for `mandate.scan`,
 `mandate.reference` and `mandate.observation` — the tables the Mandate Declaration
 & Usage Reporting campaign's L1/L2 lanes created.
 
-This is **not** the D262 "organization_id IS the row identity" exemption. Censused
-live across the whole `mandate` schema (`pg_attribute` + non-internal `pg_trigger`,
-matching `_stamp_org_default` / `inherit_org_from_parent`):
+Censused live across the whole `mandate` schema (`pg_attribute` + non-internal `pg_trigger`,
+matching `_stamp_org_default` / `inherit_org_from_parent`; re-verified 2026-09-10):
 
-| `mandate.*` table | `organization_id NOT NULL` | backstop trigger |
+| `mandate.*` table | `organization_id NOT NULL` | org-assignment trigger |
 | --- | --- | --- |
-| `binding`, `definition`, `provision`, `treatment` | yes | **yes** |
-| `scan`, `reference`, `observation` | yes | **no** |
+| `binding`, `definition`, `provision`, `treatment` | yes | **`_stamp_org_default`** |
+| `scan`, `reference`, `observation` | yes | **none** |
 
-All seven are NOT NULL with no column default. The four older tables carry the
-backstop; the three new ones do not. The schema's own convention is unambiguous and
-the new tables simply missed it, so an org-forgetting write to any of the three
-500s instead of being stamped.
+All seven are NOT NULL with no column default. Under
+`../common-docs/projects/no-db-assigned-org/PLAN.md` (owner ruling: the database refuses an
+absent org and never chooses one; "a trigger or column default filling the org" and "a release
+guard treating an automatic org backstop as healthy" are defects), **`scan`, `reference` and
+`observation` are the correct shape** — an org-forgetting write refusing is the intended outcome.
 
-**The fix:** attach the same backstop the four siblings use, in one migration under
-`migrations/`, then re-run the sentinel. Confirm first which parent each inherits
-from — `reference` and `observation` hang off a `scan`, so `inherit_org_from_parent`
-is likely right for those two and `_stamp_org_default` for `scan` itself.
+**The fix (corrected 2026-09-10 to the PLAN; the earlier "attach the backstop" recommendation
+contradicted it and must not be executed):**
+1. **Never attach a backstop to the three new tables.** Confirm their writers put an explicit
+   `organization_id` in every payload (PLAN rules 1 and 4 — `reference`/`observation` copy
+   their `scan`'s org application-side).
+2. **The guard rule is the defect:** `org_not_null_no_backstop` rewards a backstop — PLAN row
+   **DB-T02** (invert `platform._ddl_guard`, remove that rule, require explicit-writer proof).
+   Ack these three rows as correct-by-law.
+3. **The four older tables are DB-01 debt:** fix their writers, then detach
+   `_stamp_org_default` per PLAN row **DB-T06**.
 
-**Why this is filed separately from D300 rather than folded into it:** D300's finding
-was that the guard is a going-forward tripwire on a condition **240 live tables
-already meet**, and therefore cannot size its own class. These three arrived the day
-*after* D300 was filed — new DDL, guard working exactly as designed, convention
-broken anyway. The class is not just unmeasured, it is still growing at the point
-where the guard *does* fire. D300's ask (a census mode alongside the triggers)
-stands; this is the first datum showing the going-forward half needs teeth too.
+**Why filed separately from D300:** D300 sizes the guard's going-forward-only reach. This is
+the first live case where that same guard fired against new DDL that is right — evidence
+that the rule's direction, not just its reach, has to change (DB-T02).
 
 ---
 
@@ -2728,7 +2763,9 @@ the existing access-request lane. Specified in `SHARE_LEVELS.md`.
 
 Editor-sharee B attaches owner A's doc to B's conversation and shares it → conveys up to EDITOR to third parties, invisible to A. Options: drop `conveys_max` to `viewer` for this pair, or require doc-OWNER for new conveying edges in `assoc_add`. **Decides: Arman** (access-architecture policy).
 
-### D118b — invisible inbox injections may seed a phantom user bubble in-session (2026-07-29)
+### D306 — invisible inbox injections may seed a phantom user bubble in-session (2026-07-29)
+
+(was D118b, a duplicate D118 — renumbered 2026-09-10; D118 keeps its number because `features/agents/FEATURE.md` cites it.)
 
 Server announces the persisted invisible steering row via `record_reserved cx_message`; `process-stream`'s `reserveMessage` fallback seeds it with no visibility flag → possible phantom bubble until reload. Fix: carry visibility on reservation metadata (server) or skip the reservation for announced invisible positions. Low frequency — no product UI sends these yet.
 

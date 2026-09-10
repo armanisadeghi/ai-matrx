@@ -1,6 +1,6 @@
 ---
 name: cloud-files
-description: Use when modifying anything under features/files/, app/(a)/files/, app/(public)/share/, or any caller that uploads, downloads, lists, moves, renames, shares, or previews user files.
+description: Use when modifying anything under features/files/, app/(core)/files/, app/(public)/share/, or any caller that uploads, downloads, lists, moves, renames, shares, or previews user files.
 ---
 
 # Cloud Files — Skill

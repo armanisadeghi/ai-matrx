@@ -292,7 +292,7 @@ export const getAgent = cache(async (id: string) => {
 })
 ```
 
-**`cache()` vs `'use cache'`:** `cache()` deduplicates within a single request (same render pass). `'use cache'` persists data across requests (cross-user caching). They serve different purposes and are often used together.
+**`cache()` is per-request dedup only** (one render pass). Cross-request caching is a separate, rare opt-in — see "Cross-request caching" below; **`'use cache'` is NOT available here** (`cacheComponents` is off; the directive is a build error).
 
 ### `server-only` Import Guard
 
@@ -370,19 +370,27 @@ Types must include the `Promise<>` wrappers.
 
 Both go through shared services.
 
-### Cross-request caching (`'use cache'`)
+### Cross-request caching — dynamic by default
 
-Opt-in and explicit. `cache()` deduplicates within one request; `'use cache'` persists across requests — often used together:
+**Dynamic rendering is the default. `'use cache'` / `cacheLife` / `cacheTag` are NOT available** (`cacheComponents` is off; the directive is a build error). Opting in uses the pre-Cache-Components APIs — live exemplar `features/education/publishing/queries.ts` + `actions.ts`:
 
 ```tsx
-async function getStaticData() {
-  'use cache'
-  cacheTag('static-data')
-  cacheLife('hours')  // seconds, minutes, hours, days, max
-  return await fetchData()
-}
-// Invalidate: revalidateTag('static-data') from next/cache after a mutation.
+import 'server-only'
+import { unstable_cache } from 'next/cache'
+import { getScriptSupabaseClient } from '@/utils/supabase/getScriptClient'
+
+// Anon, cookie-free client ONLY — a per-user read inside unstable_cache serves one user's data to everyone.
+export const listPublishedDocs = unstable_cache(
+  async () => fetchPublishedRows(getScriptSupabaseClient()),
+  ['docs:list'],                       // keyParts must carry every argument, or all args collapse onto one entry
+  { tags: ['docs'], revalidate: 3600 },
+)
+// Invalidate from a Server Action: updateTag('docs') (Route Handler: revalidateTag).
 ```
+
+- **Route-level ISR:** `export const revalidate = <seconds>` on a cookie-free page (`app/(core)/education/learn/page.tsx`).
+- **User-specific data is never cached across requests** — it renders dynamically inside `<Suspense>`.
+- Reference: `node_modules/next/dist/docs/01-app/02-guides/caching-without-cache-components.md`.
 
 ### `"use client"` audit
 
@@ -421,8 +429,8 @@ Building a new component?
 │   └── Is it non-critical? → next/dynamic ssr:false (Pattern 4)
 │
 ├── Does it display user-specific data (cookies, session)?
-│   ├── Yes → Dynamic Server Component inside Suspense, outside 'use cache'
-│   └── No → Candidate for 'use cache' with cacheLife/cacheTag
+│   ├── Yes → Dynamic Server Component inside Suspense (never cached across requests)
+│   └── No → Dynamic by default; hot + cookie-free → unstable_cache with tags/revalidate
 │
 └── Does the fetched data need to be in Redux?
     ├── Yes → Add Hydrator component in layout (Pattern 7)
@@ -450,7 +458,7 @@ Before shipping any page or component:
 
 ## Additional Resources
 
-- For complete page examples with cache components, see [examples.md](examples.md)
+- For complete page examples (cached + dynamic sections), see [examples.md](examples.md)
 - For route-level architecture (layouts, nested routes, metadata, error boundaries), see [route-architecture.md](route-architecture.md)
 - For detailed Next.js 16 templates (services, API routes, signatures), see [nextjs16-patterns-reference.md](nextjs16-patterns-reference.md)
 - For splitting heavy client code out of the bundle, see the `code-splitting` skill; for the full new-route workflow, see `new-route-scaffold`

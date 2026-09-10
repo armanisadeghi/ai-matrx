@@ -481,36 +481,39 @@ export function LikeButton({ itemId, initialLiked }: LikeButtonProps) {
 
 ## Cached Data Fetching
 
-For data that doesn't change frequently.
+For public data that doesn't change frequently. Dynamic rendering is the default; **`'use cache'` / `cacheLife` / `cacheTag` are NOT available** (`cacheComponents` is off; the directive is a build error). Live exemplar: `features/education/publishing/queries.ts` + `actions.ts`.
 
 ```typescript
 // lib/services/events.ts
-import { cacheLife, cacheTag } from 'next/cache'
-import { createClient } from '@/utils/supabase/server'
+import 'server-only'
+import { unstable_cache } from 'next/cache'
+import { getScriptSupabaseClient } from '@/utils/supabase/getScriptClient'
 
-export async function getUpcomingEvents() {
-  'use cache'
-  cacheTag('events')
-  cacheLife('hours')  // Refresh every hour
-  
-  const supabase = await createClient()
-  
-  const { data } = await supabase
-    .from('events')
-    .select('*')
-    .gte('start_date', new Date().toISOString())
-    .order('start_date', { ascending: true })
-    .limit(20)
-  
-  return data ?? []
-}
+// Anon, cookie-free client — never `@/utils/supabase/server` (cookies) inside unstable_cache.
+export const getUpcomingEvents = unstable_cache(
+  async () => {
+    const { data, error } = await getScriptSupabaseClient()
+      .from('events')
+      .select('*')
+      .gte('start_date', new Date().toISOString())
+      .order('start_date', { ascending: true })
+      .limit(20)
+    if (error) throw new Error(`[events] upcoming list failed: ${error.message}`)
+    return data ?? []
+  },
+  ['events:upcoming'],
+  { tags: ['events'], revalidate: 3600 },  // Refresh every hour
+)
+```
 
-// Invalidation (call from Server Action after event creation)
-import { revalidateTag } from 'next/cache'
+```typescript
+// actions.ts — invalidation after event creation
+'use server'
+import { updateTag } from 'next/cache'
 
 export async function createEvent(data: EventData) {
   // ... create event
-  revalidateTag('events')
+  updateTag('events')  // Route Handlers use revalidateTag('events')
 }
 ```
 
