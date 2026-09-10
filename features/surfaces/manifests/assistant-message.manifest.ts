@@ -50,6 +50,7 @@
  * instead — it catches both.
  */
 
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -206,7 +207,7 @@ This surface is for acting ON rendered output (explain, transform, extract, save
       // back to (see LISTENING_HOME_SURFACE in features/audio/service/listeningConfig.ts,
       // opener), so the mandate makes the Listen actions work for every user
       // on every surface.
-      mandateKey: "ambient.spoken_summary",
+      mandateKey: MANDATE_KEYS.ambient__spoken_summary,
       defaultAgentId: null,
       allowCustom: true,
       autoRun: "always",

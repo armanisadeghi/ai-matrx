@@ -13,12 +13,13 @@
  * shapes what they are told and narrows what they answer.
  */
 
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { FacetDimension } from "@/features/marketing/seo/value-system/dimensions/data";
 import type { MatcherProbeHit, SessionQueueRow } from "./data";
 
 /** The two mandates this loop runs. Never an agent id — see the SoR. */
-export const STAMP_PROPOSER_MANDATE = "seo.session_stamp_proposer";
-export const RULE_WRITER_MANDATE = "seo.session_rule_writer";
+export const STAMP_PROPOSER_MANDATE = MANDATE_KEYS.seo__session_stamp_proposer;
+export const RULE_WRITER_MANDATE = MANDATE_KEYS.seo__session_rule_writer;
 
 /** Matcher kinds a rule proposal may use — the text ones need no foreign id. */
 export const TEXT_MATCHER_KINDS = [

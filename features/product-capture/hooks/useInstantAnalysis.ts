@@ -42,6 +42,7 @@
  * trigger never double-processes an instant item (`markProcessed`).
  */
 
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useCallback, useEffect, useState } from "react";
 
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
@@ -78,7 +79,8 @@ import {
 } from "../pipeline-types";
 
 /** The one mandate key of this lane — resolved in the DB, rebindable there. */
-export const INSTANT_ANALYSIS_MANDATE_KEY = "product_capture.instant_analysis";
+export const INSTANT_ANALYSIS_MANDATE_KEY =
+  MANDATE_KEYS.product_capture__instant_analysis;
 
 /**
  * Durable producer attribution for this lane. `mandate:<feature>.<key>` is a
