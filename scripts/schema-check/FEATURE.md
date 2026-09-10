@@ -131,6 +131,11 @@ again.
 
 ## Change Log
 
+- **2026-09-10** — `entity-registry-drift` iterated a local re-export shim with zero
+  `token/schema/table` rows, so it silently passed every token (DC-009). It now iterates the
+  installed `@ai-matrx/associations` `ENTITY_TYPE_METADATA` (injectable for the jest test,
+  which plants a nonexistent `schema.table`), and the shim is deleted. Snapshot refreshed.
+
 - **2026-08-17** — Missing relations now ERROR even when the old name exists in
   no other schema. This closes the blind spot that let a stale
   `platform.expertise_pack` reader reach PostgREST after the canonical rename to
