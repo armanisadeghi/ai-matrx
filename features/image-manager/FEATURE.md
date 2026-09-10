@@ -37,7 +37,7 @@ Layout/sidebar shell: `app/(core)/images/layout.tsx` + `app/(core)/images/_compo
 
 **Hooks**
 
-- `useBrowseAction()` from `features/image-manager/browse/BrowseImageProvider.tsx` — hook every Browse-aware tab calls. Wraps `openImageViewer()` from `features/window-panels/windows/image/ImageViewerWindow.tsx`.
+- `useBrowseAction()` from `features/image-manager/browse/BrowseImageProvider.tsx` — hook every Browse-aware tab calls. Wraps `openImageViewer()` from `features/overlays/openers/imageViewer.tsx` (the sanctioned openers layer — never the window component).
 - `useSelectedImages()` (re-used) from `components/image/context/SelectedImagesProvider.tsx` — adds Selection vs. Browse mode awareness via `selectionMode: "single" | "multiple" | "none"` (`"none"` semantically = Browse).
 
 **Registry**
@@ -160,7 +160,7 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 
 1. Tab calls `useBrowseAction()` and gets a `browse(payload)` function.
 2. On click, the tab resolves cloud-file identity through `resolveCloudFileUrl` (which delegates to `fileHandler.use(source).as({ kind: "html_src" })`) and dispatches the returned durable URL string through `browse({ images, alts, initialIndex, title })`.
-3. `<BrowseImageProvider>` invokes `openImageViewer(dispatch, payload)` from `ImageViewerWindow.tsx`, which dispatches `openOverlay({ overlayId: "imageViewer", instanceId: "default", data })`.
+3. `<BrowseImageProvider>` invokes `openImageViewer(dispatch, payload)` from `features/overlays/openers/imageViewer.tsx`, which dispatches `openOverlay({ overlayId: "imageViewer", instanceId: "default", data })`.
 4. `OverlayController` mounts `ImageViewerWindow` with the payload spread as props.
 
 ### Branded upload flow (preset variants)

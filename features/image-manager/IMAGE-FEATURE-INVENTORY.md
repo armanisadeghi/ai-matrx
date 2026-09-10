@@ -39,7 +39,7 @@ Selection state is shared with the rest of the app via `SelectedImagesProvider` 
   - `components/image/gallery/mobile/MobileImageGallery.tsx`
   - `components/image/gallery/mobile/MobileImageViewer.tsx`
 - **Unsplash gallery stack** → `components/image/unsplash/ResponsiveUnsplashGallery.tsx`, `desktop/EnhancedUnsplashGallery.tsx`, `desktop/EnhancedImageViewer.tsx`, `mobile/MobileUnsplashGallery.tsx`, `mobile/MobileUnsplashSearch.tsx`, `mobile/MobileUnsplashViewer.tsx`, `demo/EnhancedSearchDemo.tsx`. **Already integrated** via Public Images tab. **KEEP.**
-- **`ImageViewerWindow` / `openImageViewer`** → `features/window-panels/windows/image/ImageViewerWindow.tsx` — floating window with zoom/pan/keyboard nav/download. **LINK-FROM (use as the lightbox click-target from /image-manager tiles).**
+- **`ImageViewerWindow` / `openImageViewer`** → `features/window-panels/windows/image/ImageViewerWindow.tsx` (opener: `features/overlays/openers/imageViewer.tsx`) — floating window with zoom/pan/keyboard nav/download. **LINK-FROM (use as the lightbox click-target from /image-manager tiles).**
 - **`GalleryFloatingWorkspace`** → `features/gallery/components/GalleryFloatingWorkspace.tsx` (and `features/window-panels/windows/image/GalleryWindow.tsx`) — floating-panel Unsplash gallery with favorites/topic shortcuts. **LINK-FROM (mini overlay version of Public Images).**
 - **`ImagePreview` (cloud-files previewer)** → `features/files/components/core/FilePreview/previewers/ImagePreview.tsx` — rendered by `FilePreview` for image MIMEs in /files. **KEEP.**
 - **`MediaThumbnail`** → `@ai-matrx/media/react` — single source of truth for cloud-file thumbnails (image, video poster, pdf-firstpage, backend-thumb, icon). **KEEP — already used by `CloudImagesTab`.**

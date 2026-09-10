@@ -87,10 +87,54 @@ array (a dep that can never fire — a lie in the deps). Concentrated:
 `applet-card/{Default,Enhanced}.tsx` (16 each — near-identical files; fix one,
 port it, and ask whether they should be one component).
 
-**4 — `no-restricted-imports` (86) + `no-restricted-syntax` (19).**
+**4 — `no-restricted-imports` (26 left) + `no-restricted-syntax` (19).**
 Architectural bans, never silenced — the import or the shape changes, and the
 message names the canonical path. **Read the `code-splitting` skill rule 3
 first.**
+
+*Burned down 2026-09-09 from 49 → 26.* The `window-panels/windows/**` group is
+at **zero**: `openImageViewer` moved into the openers layer
+(`features/overlays/openers/imageViewer.tsx`, alongside the hook), and the four
+modules that were never window components at all moved to the features that own
+them (`CodeEditorTabBar` + `useCodeEditorWindowState` →
+`features/code-editor/multi-file-core/`, `feedbackDraftWrite` →
+`features/feedback/`, `site-workbench-bookmarks` → `features/settings/`). The
+`window-demo` page now opens the real Notes window through
+`useOpenNotesWindow` and reads `selectIsOverlayOpen` for its toggle state.
+Four `features/files/**` findings cleared via a three-file scoped override for
+the mounts the ban's own config comment NAMES as correct (`app/Providers.tsx`,
+`app/DeferredSingletonCore.tsx`, the blob-cache admin page).
+
+**What is left, and why it is not a mechanical fix (24 of the 26):** every
+remaining finding is an outside consumer of `features/files/api/*` (plus one
+`upload/tusUpload` pair and one `virtual-sources/path`) reaching for a real
+domain function — `getAssetForFile`, `addAssetVariants`, `uploadAsset`,
+`previewAssetMultipart`, `compressPdfMultipart`, `materializeAssetResult`,
+`downloadFile`, `listFiles`, `uploadFileWithProgress`, `selectPdfPages`,
+`resolveCanonicalProcessedDocumentId`, `clearFileDocumentCache`,
+`restoreFileDirect`, `normalizeFileResourceId`, `listStoredTusUploads`,
+`isSyntheticId`. **There is no sanctioned public door for any of them.**
+`features/files/FEATURE.md` invariant 17 says the barrel is gone and must not
+come back (ESLint bans `@/features/files` exactly), so re-creating
+`features/files/index.ts` is not the fix — it would re-ban itself and
+re-collapse the chunk graph the deletion bought. The ban's own message
+("use direct module paths or `@/lib/python-client` for HTTP helpers") is stale
+against what `api/` holds today: it was written when `api/` was a shelf of HTTP
+shims, not domain operations. Closing this needs ONE ruling from the files
+feature's owner, and it is one of two:
+
+  a. **Promote the operations.** Give each of these a public home under
+     `features/files/hooks/**` or `features/files/handler/**` and redirect the
+     24 call sites. Largest change, and the one that makes the invariant true.
+  b. **Narrow the ban.** `api/` today is a public operations layer; keep
+     `api/direct.ts` (raw Supabase writes) ring-fenced and let the rest out,
+     with the config comment rewritten to say what changed.
+
+Do NOT split the difference per call site — that is how a ban becomes noise.
+The two remaining non-files findings are `createSlice` in
+`features/agents/components/chat/chat-{incognito,route}.slice.ts`, which sit
+outside the widened `features/**/redux/**` allowlist; they belong to whoever
+owns that allowlist.
 
 **5 — `react-hooks/set-state-in-effect` (1,107).** Biggest number, lowest
 urgency per finding: all 61 self-feeding effects already converge behind a

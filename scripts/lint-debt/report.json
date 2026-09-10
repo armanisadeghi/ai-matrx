@@ -1,21 +1,21 @@
 {
-  "generatedAt": "2026-09-10T05:47:47.204Z",
-  "commit": "95d39fdf31566f2ecd55d9e791d850f9a6f69dde",
+  "generatedAt": "2026-09-10T06:07:08.465Z",
+  "commit": "c303617f6a662f6ec5573c3a6c2a58a9c0061948",
   "totals": {
-    "errors": 2196,
-    "filesWithFindings": 1154,
-    "filesScanned": 14830,
+    "errors": 2175,
+    "filesWithFindings": 1134,
+    "filesScanned": 14836,
     "byClass": {
       "bug": 0,
-      "correctness": 2144,
-      "doctrine": 50,
+      "correctness": 2146,
+      "doctrine": 27,
       "style": 2
     }
   },
   "byRule": [
     {
       "rule": "react-hooks/set-state-in-effect",
-      "count": 1151,
+      "count": 1153,
       "klass": "correctness"
     },
     {
@@ -65,7 +65,7 @@
     },
     {
       "rule": "no-restricted-imports",
-      "count": 49,
+      "count": 26,
       "klass": "doctrine"
     },
     {
@@ -289,12 +289,12 @@
     },
     {
       "key": "features/agents",
-      "count": 123,
+      "count": 120,
       "real": 117
     },
     {
       "key": "app/(dev)",
-      "count": 111,
+      "count": 110,
       "real": 109
     },
     {
@@ -319,7 +319,7 @@
     },
     {
       "key": "app/(admin)",
-      "count": 51,
+      "count": 50,
       "real": 50
     },
     {
@@ -373,13 +373,13 @@
       "real": 33
     },
     {
-      "key": "features/window-panels",
-      "count": 33,
-      "real": 33
+      "key": "features/scraper",
+      "count": 32,
+      "real": 32
     },
     {
-      "key": "features/scraper",
-      "count": 33,
+      "key": "features/window-panels",
+      "count": 32,
       "real": 32
     },
     {
@@ -408,14 +408,14 @@
       "real": 26
     },
     {
-      "key": "features/data-tables",
+      "key": "features/code-editor",
       "count": 25,
       "real": 25
     },
     {
-      "key": "features/code-editor",
-      "count": 26,
-      "real": 24
+      "key": "features/data-tables",
+      "count": 25,
+      "real": 25
     },
     {
       "key": "features/research",
@@ -453,17 +453,17 @@
       "real": 20
     },
     {
-      "key": "features/surfaces",
-      "count": 20,
-      "real": 19
-    },
-    {
       "key": "features/agent-apps",
       "count": 19,
       "real": 19
     },
     {
       "key": "features/ai-models",
+      "count": 19,
+      "real": 19
+    },
+    {
+      "key": "features/surfaces",
       "count": 19,
       "real": 19
     },
@@ -933,15 +933,6 @@
       "feature": "app/(admin)",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(admin)/administration/utilities/blob-cache/page.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "app/(admin)",
-      "route": "/administration/utilities/blob-cache",
-      "message": "'@/features/files/cache/admin/BlobCacheInspector' import is restricted from being used by a pattern. features/files/cache is internal infrastructure (in-memory LRU, IndexedDB store, Service Worker registration). Use @/features/files/hooks/…"
     },
     {
       "file": "app/(core)/cms/[siteId]/collections/[collectionId]/page.tsx",
@@ -2168,15 +2159,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(dev)/demos/window-demo/page.dev.tsx",
-      "line": 5,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "app/(dev)",
-      "route": "/demos/window-demo",
-      "message": "'@/features/window-panels/windows/notes/NotesWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct impo…"
-    },
-    {
       "file": "app/(popup)/popup-window/_client.tsx",
       "line": 27,
       "column": 3,
@@ -2600,15 +2582,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/DeferredSingletonCore.tsx",
-      "line": 32,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "app/DeferredSingletonCore.tsx",
-      "route": null,
-      "message": "'@/features/files/cache/register-service-worker' import is restricted from being used by a pattern. features/files/cache is internal infrastructure (in-memory LRU, IndexedDB store, Service Worker registration). Use @/features/files/hooks/u…"
-    },
-    {
       "file": "app/DeferredSingletonWrapper.tsx",
       "line": 83,
       "column": 5,
@@ -2625,24 +2598,6 @@
       "feature": "app/oauth",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/Providers.tsx",
-      "line": 115,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "app/Providers.tsx",
-      "route": null,
-      "message": "'@/features/files/providers/CloudFilesRealtimeProvider' import is restricted from being used by a pattern. features/files/providers is internal. The CloudFilesRealtimeProvider mount lives in app/Providers.tsx."
-    },
-    {
-      "file": "app/Providers.tsx",
-      "line": 120,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "app/Providers.tsx",
-      "route": null,
-      "message": "'@/features/files/upload/UploadGuardHost' import is restricted from being used by a pattern. features/files/upload is internal. Use useFileUpload from @/features/files/handler/hooks/useFileUpload (or requestUpload from @/features/files/upl…"
     },
     {
       "file": "components/admin/AudioTestModal.tsx",
@@ -8045,15 +8000,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-comparison/modes/model/redux/slice.ts",
-      "line": 1,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/agent-comparison",
-      "route": null,
-      "message": "'createSlice' import from '@reduxjs/toolkit' is restricted. createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLE…"
-    },
-    {
       "file": "features/agent-comparison/modes/request-mod/components/LockedAgentSection.tsx",
       "line": 52,
       "column": 7,
@@ -8061,15 +8007,6 @@
       "feature": "features/agent-comparison",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/agent-comparison/modes/request-mod/redux/slice.ts",
-      "line": 1,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/agent-comparison",
-      "route": null,
-      "message": "'createSlice' import from '@reduxjs/toolkit' is restricted. createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLE…"
     },
     {
       "file": "features/agent-comparison/modes/settings/components/LockedInputSection.tsx",
@@ -8081,15 +8018,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-comparison/modes/settings/redux/slice.ts",
-      "line": 15,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/agent-comparison",
-      "route": null,
-      "message": "'createSlice' import from '@reduxjs/toolkit' is restricted. createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLE…"
-    },
-    {
       "file": "features/agent-comparison/modes/system-prompt/components/LockedInputSection.tsx",
       "line": 61,
       "column": 7,
@@ -8097,15 +8025,6 @@
       "feature": "features/agent-comparison",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/agent-comparison/modes/system-prompt/redux/slice.ts",
-      "line": 1,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/agent-comparison",
-      "route": null,
-      "message": "'createSlice' import from '@reduxjs/toolkit' is restricted. createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLE…"
     },
     {
       "file": "features/agent-comparison/modes/tools/components/LockedInputSection.tsx",
@@ -8117,15 +8036,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agent-comparison/modes/tools/redux/slice.ts",
-      "line": 1,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/agent-comparison",
-      "route": null,
-      "message": "'createSlice' import from '@reduxjs/toolkit' is restricted. createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLE…"
-    },
-    {
       "file": "features/agent-comparison/modes/tuning/components/LockedInputSection.tsx",
       "line": 59,
       "column": 7,
@@ -8133,24 +8043,6 @@
       "feature": "features/agent-comparison",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/agent-comparison/modes/tuning/redux/slice.ts",
-      "line": 1,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/agent-comparison",
-      "route": null,
-      "message": "'createSlice' import from '@reduxjs/toolkit' is restricted. createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLE…"
-    },
-    {
-      "file": "features/agent-comparison/modes/variations/redux/slice.ts",
-      "line": 1,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/agent-comparison",
-      "route": null,
-      "message": "'createSlice' import from '@reduxjs/toolkit' is restricted. createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLE…"
     },
     {
       "file": "features/agent-connections/components/AgentConnectionsRouteShell.tsx",
@@ -8817,15 +8709,6 @@
       "feature": "features/agents",
       "route": null,
       "message": "Error: Cannot call impure function during render `Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rule…"
-    },
-    {
-      "file": "features/agents/components/notifications/ImageArrivalPeekHost.tsx",
-      "line": 26,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/agents",
-      "route": null,
-      "message": "'@/features/window-panels/windows/image/openImageViewer' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct …"
     },
     {
       "file": "features/agents/components/notifications/useImageArrivalPeeks.ts",
@@ -9602,24 +9485,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agents/ui-first-tools/redux/agent-lists.slice.ts",
-      "line": 20,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/agents",
-      "route": null,
-      "message": "'createSlice' import from '@reduxjs/toolkit' is restricted. createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLE…"
-    },
-    {
-      "file": "features/agents/ui-first-tools/redux/pending-asks.slice.ts",
-      "line": 17,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/agents",
-      "route": null,
-      "message": "'createSlice' import from '@reduxjs/toolkit' is restricted. createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLE…"
-    },
-    {
       "file": "features/agents/ui-first-tools/ui/AskCardCountdown.tsx",
       "line": 52,
       "column": 5,
@@ -10196,24 +10061,6 @@
       "message": "Compilation Skipped: Existing memoization could not be preserved React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation …"
     },
     {
-      "file": "features/code-editor/agent-code-editor/components/parts/CodeOrDiffColumn.tsx",
-      "line": 36,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/code-editor",
-      "route": null,
-      "message": "'@/features/window-panels/windows/code/CodeEditorTabBar' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct …"
-    },
-    {
-      "file": "features/code-editor/agent-code-editor/components/SmartCodeEditor.tsx",
-      "line": 65,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/code-editor",
-      "route": null,
-      "message": "'@/features/window-panels/windows/code/useCodeEditorWindowState' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx).…"
-    },
-    {
       "file": "features/code-editor/agent-code-editor/hooks/useCodeEditorWidgetHandle.ts",
       "line": 91,
       "column": 3,
@@ -10424,6 +10271,15 @@
       "file": "features/code-editor/hooks/useAICodeEditor.ts",
       "line": 404,
       "column": 7,
+      "rule": "react-hooks/set-state-in-effect",
+      "feature": "features/code-editor",
+      "route": null,
+      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
+    },
+    {
+      "file": "features/code-editor/multi-file-core/useCodeEditorWindowState.ts",
+      "line": 116,
+      "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/code-editor",
       "route": null,
@@ -12194,15 +12050,6 @@
       "message": "Error: Cannot access variable before it is declared `handleGrade` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time. /Users/armanisadeghi/code/matrx-frontend/features/flash…"
     },
     {
-      "file": "features/gallery/components/GalleryFloatingWorkspace.tsx",
-      "line": 40,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/gallery",
-      "route": null,
-      "message": "'@/features/window-panels/windows/image/openImageViewer' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct …"
-    },
-    {
       "file": "features/hindsight/components/EnrollDialog.tsx",
       "line": 165,
       "column": 5,
@@ -12770,15 +12617,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/image-manager/browse/BrowseImageProvider.tsx",
-      "line": 30,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/image-manager",
-      "route": null,
-      "message": "'@/features/window-panels/windows/image/openImageViewer' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct …"
-    },
-    {
       "file": "features/image-manager/components/StudioLibraryTab.tsx",
       "line": 32,
       "column": 5,
@@ -12786,15 +12624,6 @@
       "feature": "features/image-manager",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/image-manager/components/ToolsTab.tsx",
-      "line": 42,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/image-manager",
-      "route": null,
-      "message": "'@/features/window-panels/windows/image/openImageViewer' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct …"
     },
     {
       "file": "features/image-studio/components/CropPreview.tsx",
@@ -13185,8 +13014,17 @@
     },
     {
       "file": "features/mandates/admin/MandateDetailPanel.tsx",
-      "line": 1155,
+      "line": 1156,
       "column": 7,
+      "rule": "react-hooks/set-state-in-effect",
+      "feature": "features/mandates",
+      "route": null,
+      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
+    },
+    {
+      "file": "features/mandates/admin/MandateReferenceBoardView.tsx",
+      "line": 184,
+      "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/mandates",
       "route": null,
@@ -13205,6 +13043,15 @@
       "file": "features/mandates/admin/MandatesConsole.tsx",
       "line": 553,
       "column": 7,
+      "rule": "react-hooks/set-state-in-effect",
+      "feature": "features/mandates",
+      "route": null,
+      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
+    },
+    {
+      "file": "features/mandates/admin/MandateSourceUsage.tsx",
+      "line": 132,
+      "column": 19,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/mandates",
       "route": null,
@@ -14985,7 +14832,7 @@
     },
     {
       "file": "features/pdf-extractor/studio/hooks/usePdfStudioDocs.ts",
-      "line": 128,
+      "line": 133,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/pdf-extractor",
@@ -17099,15 +16946,6 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/scraper/parts/ScraperFloatingWorkspace.tsx",
-      "line": 64,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/scraper",
-      "route": null,
-      "message": "'@/features/window-panels/windows/image/openImageViewer' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct …"
-    },
-    {
       "file": "features/search/components/SearchBox.tsx",
       "line": 41,
       "column": 5,
@@ -17160,15 +16998,6 @@
       "feature": "features/settings",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/settings/tabs/SiteWorkbenchTab.tsx",
-      "line": 16,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/settings",
-      "route": null,
-      "message": "'@/features/window-panels/windows/iframe/site-workbench-bookmarks' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx…"
     },
     {
       "file": "features/sharing/components/ShareLinkPanel.tsx",
@@ -17709,15 +17538,6 @@
       "feature": "features/surfaces",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/surfaces/manifests/feedback.manifest.ts",
-      "line": 27,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/surfaces",
-      "route": null,
-      "message": "'@/features/window-panels/windows/feedbackDraftWrite' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct imp…"
     },
     {
       "file": "features/tasks/components/ImportTasksModal.tsx",
@@ -19352,15 +19172,6 @@
       "file": "features/window-panels/windows/CanvasViewerWindow.tsx",
       "line": 45,
       "column": 7,
-      "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/window-panels",
-      "route": null,
-      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/window-panels/windows/code/useCodeEditorWindowState.ts",
-      "line": 116,
-      "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/window-panels",
       "route": null,
