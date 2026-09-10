@@ -761,15 +761,19 @@ function AgentRunWindowInner({
   // agent it ran under — survives agent switches so nothing started here is
   // ever off-screen. Session-only by design: history that outlives the window
   // is the agent-scoped list below it.
+  // Derived during render (React's adjust-state-on-change pattern), not in
+  // an effect: the row must exist the same frame the conversation does.
   const [sessionChats, setSessionChats] = useState<SessionChat[]>([]);
-  useEffect(() => {
-    if (!activeConversationId || !agentId) return;
-    setSessionChats((prev) =>
-      prev.some((c) => c.conversationId === activeConversationId)
-        ? prev
-        : [{ conversationId: activeConversationId, agentId }, ...prev],
-    );
-  }, [activeConversationId, agentId]);
+  if (
+    activeConversationId &&
+    agentId &&
+    !sessionChats.some((c) => c.conversationId === activeConversationId)
+  ) {
+    setSessionChats([
+      { conversationId: activeConversationId, agentId },
+      ...sessionChats,
+    ]);
+  }
 
   const handleAgentSelect = useCallback((nextId: string) => {
     setAgentId(nextId);
