@@ -1966,8 +1966,10 @@ export default [
     files: [
       "lib/redux/**",
       "lib/sync/**",
-      "features/*/redux/**",
-      "features/*/state/**",
+      // Any depth: a slice under features/<x>/modes/<y>/redux/ is still "in a
+      // redux directory" — the intent is the directory, not the nesting.
+      "features/**/redux/**",
+      "features/**/state/**",
       "styles/themes/**",
       "**/__tests__/**",
       "**/*.test.ts",
