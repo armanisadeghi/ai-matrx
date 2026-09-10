@@ -218,6 +218,14 @@ export function isBlockLoading(block: {
   content: string;
 }): boolean {
   if (block.isStreamingBlock) return true;
+  // A kind envelope is the parser's authoritative completion signal. During
+  // streaming it can be structurally balanced between fields, so brace
+  // counting alone briefly declared the block complete. A bridge that had
+  // not reached its first renderable unit then fell through to JsonBlock and
+  // exposed a registered Shape as raw JSON until the next token arrived.
+  // Keep that balanced partial frame in the kind loading/component path.
+  const envelope = readEnvelope(block.metadata);
+  if (envelope?.root.kind && envelope.root.status !== "complete") return true;
   if (
     block.metadata?.isComplete === false &&
     isGenuinelyIncomplete(block.content)
@@ -717,7 +725,6 @@ export function reportUnregisteredBlockType(
   const message = `[block-dispatch] UNREGISTERED render-block type "${type}" — no dispatch registration exists. Rendering as basic markdown. Classify it in block-dispatch.tsx (per the content-vocab crosswalk) and register a renderer.`;
   if (!reportedUnregisteredTypes.has(type)) {
     reportedUnregisteredTypes.add(type);
-    // eslint-disable-next-line no-console
     console.error(message, meta);
   }
   captureError({
@@ -744,7 +751,6 @@ const expectUnifiedArtifactStage: BlockRenderFn = (ctx) => {
   const message = `[block-dispatch] block type "${block.type}" should have rendered via the unified artifact stage (features/canvas/artifact-types/artifact-renderers.tsx) but fell through to the dispatch table — its unified renderer registration is missing. Rendering as basic markdown.`;
   if (!reportedArtifactStageMisses.has(block.type)) {
     reportedArtifactStageMisses.add(block.type);
-    // eslint-disable-next-line no-console
     console.error(message);
   }
   captureError({
@@ -780,7 +786,7 @@ function renderJsonFallback(block: RenderBlock, index: number) {
  */
 const searchKindEntry =
   (Component: React.ComponentType<{ serverData?: unknown }>): BlockRenderFn =>
-  ({ block, index }) => {
+  function SearchKindEntry({ block, index }) {
     if (block.serverData) {
       return <Component key={index} serverData={block.serverData} />;
     }

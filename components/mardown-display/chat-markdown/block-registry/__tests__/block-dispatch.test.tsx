@@ -17,6 +17,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import React from "react";
+import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
 
 // Heavy chat components reached through the registry's imports pull
 // next/dynamic trees (JsonInspector, players, …). The registry tests assert
@@ -91,6 +92,7 @@ import {
   resolveBlockDispatch,
   reportUnregisteredBlockType,
   BLOCK_DISPATCH_CLASSIFICATION,
+  isBlockLoading,
 } from "../block-dispatch";
 
 interface CrosswalkRow {
@@ -158,6 +160,25 @@ const FE_SYNTHESIZED_TYPES = [
 ];
 
 describe("block-dispatch registry", () => {
+  it("keeps a balanced partial kind envelope out of the raw JSON fallback", () => {
+    const complete = envelopeFromCompleteValue(
+      { __kind: "flashcard_set", title: "Water cycle", cards: [] },
+      "flashcard_set",
+    );
+    const streaming = {
+      ...complete,
+      root: { ...complete.root, status: "streaming" as const },
+    };
+    const content = '{"__kind":"flashcard_set","title":"Water cycle"}';
+
+    expect(
+      isBlockLoading({ content, metadata: { __ir: streaming } }),
+    ).toBe(true);
+    expect(
+      isBlockLoading({ content, metadata: { __ir: complete } }),
+    ).toBe(false);
+  });
+
   it("covers every render-block vocabulary item in the crosswalk", () => {
     expect(renderBlockRows.length).toBeGreaterThan(50);
     const missing = renderBlockRows
