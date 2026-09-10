@@ -608,7 +608,7 @@ export function EditAiToolbar({
               {busy === "prompt" ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <Zap className="h-3.5 w-3.5" />
+                <BrainCircuit className="h-3.5 w-3.5" />
               )}
               AI edit
               {mask.hasPixels ? (

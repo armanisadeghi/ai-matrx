@@ -36,6 +36,7 @@
 import { useEffect, useState } from "react";
 import {
   BrainCircuit,
+  Radar,
   ChevronDown,
   ChevronRight,
   Maximize2,
@@ -240,7 +241,7 @@ export function SurfaceMandatesSection({
             title="Portable AI whose required page values all resolve here — availability is capability"
             className="flex w-full min-w-0 items-center gap-1 text-left text-[9px] font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
           >
-            <BrainCircuit className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <Radar className="h-3 w-3 shrink-0" aria-hidden="true" />
             <span className="truncate">
               Also available here ({discovered.available.length})
             </span>
