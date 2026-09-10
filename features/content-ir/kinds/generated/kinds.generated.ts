@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "e5cc67997cc5";
+export const KIND_REGISTRY_FINGERPRINT = "aa8dbe766b86";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -9642,13 +9642,13 @@ export interface JsonPathResult {
 }
 
 /**
- * Kind `keyword_classification_batch_v1` (registry v9).
+ * Kind `keyword_classification_batch_v1` (registry v10).
  */
 export interface KeywordClassificationBatchV1 {
   /**
    * Always keyword_classification_batch_v1
    */
-  __kind?: string;
+  __kind: string;
   /**
    * One result per input keyword
    */
@@ -9721,7 +9721,7 @@ export interface KeywordClassificationBatchV1 {
     /**
      * Cost focus in the query
      */
-    price_sensitivity: "budget_seeking" | "cost_research" | "free_seeking" | "none";
+    price_sensitivity: "temp_clear_value" | "budget_seeking" | "cost_research" | "free_seeking" | "none";
     /**
      * Regulatory / certification signals
      */
