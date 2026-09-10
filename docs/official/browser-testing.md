@@ -20,11 +20,11 @@ Every rule here was verified live on 2026-08-09 against production and localhost
 
 ## THE ONE BROWSER LAW
 
-**Use the provider's separate in-app browser**: Claude Browser pane or Codex Browser plugin.
+**Use your own isolated browser first**, preferably the provider's separate in-app Browser. Use the available tool's documented API; Computer Use is allowed, including for controlling the isolated browser. A missing older skill or API is not a reason to stop when another available tool can open it.
 
-Use Chrome only when the task explicitly needs Arman's existing Chrome state. Routine localhost testing belongs in a separate in-app profile, so an agent cannot disrupt his tabs or cookies.
+**If your isolated browser cannot complete the task, use the user's browser in a new tab.** This includes a required account signed in only there or an unavailable isolated browser. The fallback is pre-authorized; no additional permission is needed just to switch browsers. Never navigate, control, or close a tab the user is using. Close only the tabs/groups you create when finished; leave pre-existing tabs/groups untouched.
 
-**Claude mechanics below apply to the Claude Browser pane.** Codex agents invoke the `browser` skill and drive the Browser plugin through its documented Node-REPL client; they do not expect Claude's `preview_*` tools.
+**Claude mechanics below apply to the Claude Browser pane.** Codex agents use the available browser tool's own instructions; do not require a particular plugin name or Node-REPL bootstrap.
 
 ## Mechanics that will otherwise waste your turn
 

@@ -1,6 +1,6 @@
 ---
 name: agent-review-queue
-timestamp: 2026-09-09T00:00:00Z
+timestamp: 2026-09-10T00:00:00Z
 type: Skill
 title: agent-review-queue — get your work seen, get feedback back
 description: Register anything you built that Arman must go see/test in the UI, read feedback, and route repair work by primary lane, required tools, ownership, and verification state. Use at the END of any task that produced something reviewable, at the START of a task to check prior feedback, and when coordinating or claiming review repairs. Every row is classified from the registry tables (platform.taxonomy_node + platform.repo) — domain_id and repo_slug are REQUIRED and free-text classification is banned. One table (agent.review_queue), written via the Supabase MCP; the human side is /administration/users/agent-review. Cross-repo — aidream/matrx-extend agents use the same table with their own source value.
@@ -276,24 +276,18 @@ that drains one row per half hour.
 
 ## Codex Browser isolation — mandatory for every automated review
 
-The automated worker runs in **Codex's built-in Browser**, using its persistent signed-in
-profile. It never borrows Arman's browser state.
+**Use an isolated browser first**, preferably Codex's built-in Browser with its own
+signed-in profile. Computer Use and other browser tools are allowed. If the isolated
+browser cannot complete the task (for example, a required account is signed in only
+in Arman's browser, or no isolated browser is available), use Arman's browser in a
+**new tab**. This fallback is pre-authorized; do not ask again just to switch browsers.
+Never navigate, control, or close a tab Arman is using. Close only your own tabs/groups.
 
-- Load the available in-app Browser instructions and explicitly select
-  `agent.browsers.get("iab")` before opening the target. If the old named
-  `browser:control-in-app-browser` skill is absent, discover the callable Node REPL and
-  installed browser runtime documentation; a missing skill name is not proof the Browser
-  is unavailable. Use the documented runtime bootstrap, not guessed browser APIs. Never use `getForUrl`, `getDefault`,
-  Chrome, the Chrome extension, Computer Use, or a tab that was already open.
-  Discover `browser-client.mjs` under `~/.codex/plugins/cache/openai-bundled/browser/` with
-  `rg --files`; read that bundle's `docs/bootstrap-troubleshooting.md` and
-  `docs/api-use-behavior.md`. In the callable `mcp__node_repl__js`, bootstrap with
-  `var { setupBrowserRuntime } = await import('<discovered absolute scripts/browser-client.mjs>');`
-  then `var agent = await setupBrowserRuntime();`. Next select
-  `var browser = await agent.browsers.get('iab');` and read
-  `nodeRepl.write(await browser.documentation());` before operating. Use the discovered bundle
-  path rather than a pinned version; browser operation follows its documentation only.
-- Before claiming a queue row, open the admin list in a new built-in Browser tab and prove the
+- Read the available browser tool's documentation and explicitly select its isolated
+  browser where supported. No particular tool name, skill, or API is required.
+  A missing older Browser skill or Node REPL is not proof the isolated browser is
+  unavailable; check other available browser tools, including Computer Use.
+- Before claiming a queue row, open the admin list in a new tab using the browser selection rule above and prove the
   admin surface is signed in. The canonical admin credentials live in
   `/Users/armanisadeghi/code/aidream/.env.agents` and
   `/Users/armanisadeghi/code/matrx-frontend/.env.local` under `AI_ADMIN_USERNAME` and
@@ -319,7 +313,7 @@ Never stop another task's preview. On exit close only this run's tabs, restore c
 settings, and stop a preview only if this run owns it; check cleanup without demanding another
 owner's preview disappear.
 
-Preserve Browser isolation and prove the admin session before claiming a review row. While
+Follow the browser selection rule above and prove the admin session before claiming a review row. While
 recovering access, continue safe prerequisite repair; do not label routine authentication
 failure a terminal blocker.
 
@@ -372,7 +366,7 @@ The recurring worker follows this exact order:
    continue non-conflicting audit/repair work, coordinate an exact-row handoff with its owner,
    or wait for the next real cadence window. Never invent a window or steal a claim; overlap
    alone is not a human-only blocker.
-3. Prove the in-app Browser admin session, then atomically claim one eligible item, prioritizing
+3. Prove the selected browser admin session, then atomically claim one eligible item, prioritizing
    human-requested repairs, agent-requested repairs, then submissions.
 4. Read the entire durable conversation and target repo's `CLAUDE.md`. Execute the real test
    instructions on the live target, including declared browser/data/API checks.

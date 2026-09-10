@@ -155,12 +155,15 @@ fixes need current verification; they are not new work by this patrol.
   with another task, and use the repo's managed server commands. Do not kill an
   unrelated live server. Repeated friction warrants a durable repair. Production
   verification does not depend on starting localhost when a live surface suffices.
-- UI work uses Codex's isolated Browser: explicitly select
-  `agent.browsers.get("iab")`. No default browser, Chrome, Computer Use, or existing
-  user tab. Sign in as `admin@admin.com` using `AI_ADMIN_PASSWORD` from the aidream
+- UI work uses an isolated browser first through the available tool's documented
+  API; Computer Use is allowed and no particular API or skill name is required.
+  If the isolated browser cannot complete the task, use Arman's browser in a new
+  tab (for example, for an account signed in only there). This fallback is
+  pre-authorized. Never navigate, control, or close a tab Arman is using.
+  Sign in to Matrx as `admin@admin.com` using `AI_ADMIN_PASSWORD` from the aidream
   or frontend `.env`, or the local `DEV_LOGIN_TOKEN` flow where available.
-  Routine login is preauthorized; credentials never enter output. Recover the
-  IAB runtime if unavailable. Close every owned tab/group before the run ends.
+  Routine login is preauthorized; credentials never enter output.
+  Close every owned tab/group before the run ends; leave pre-existing ones untouched.
 - Return exact commits, affected IDs, proof timestamp, test/canary method,
   environment/build identity, results, recurrence interval, and remaining work.
   Coordinate release with its existing owner; do not create a competing release.
@@ -241,6 +244,9 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 — Clarified isolated-browser preference, tool-neutral access, and the
+  pre-authorized fallback to a new user-browser tab when isolation cannot complete the task.
 
 - 2026-09-10 — Required projection before parent display/state writes after a
   bounded list returned embedded stacks and oversized error text.
