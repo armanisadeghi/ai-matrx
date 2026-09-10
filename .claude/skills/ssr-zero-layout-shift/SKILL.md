@@ -1,6 +1,6 @@
 ---
 name: ssr-zero-layout-shift
-description: "SSR-first Next.js App Router doctrine with zero layout shift. Use when creating a page or data-fetching UI, fixing CLS, layout shift, or hydration mismatches, placing 'use client', Suspense, or skeleton boundaries, awaiting params/searchParams/cookies, or choosing Route Handlers vs Server Actions."
+description: "SSR-first Next.js App Router doctrine with zero layout shift. Use when creating a page or data-fetching UI, fixing CLS, layout shift, or hydration mismatches, placing 'use client', Suspense, or skeleton boundaries, awaiting params/searchParams/cookies, adding server-only guards or cache() dedup, or choosing Route Handlers vs Server Actions."
 ---
 
 # SSR-First Zero Layout Shift

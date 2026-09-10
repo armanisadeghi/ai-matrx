@@ -1,6 +1,6 @@
 ---
 name: agent-execution-redux
-description: "Redux state for agent execution and firing agent shortcuts. Use when editing features/agents/redux/, building agent UI, wiring agent-state selectors, adding a per-conversation capability, or triggering a shortcut from a button, menu, or code (useShortcutTrigger, launchAgentExecution)."
+description: "Redux state for agent execution and firing agent shortcuts. Use when editing features/agents/redux/, building agent UI, creating a conversation, touching assembleRequest or NDJSON stream state, wiring agent-state selectors, adding a per-conversation capability, or triggering a shortcut from a button, menu, or code (useShortcutTrigger, launchAgentExecution)."
 ---
 
 # Agent Execution Redux — State Management

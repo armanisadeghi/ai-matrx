@@ -1,6 +1,6 @@
 ---
 name: agent-provision
-description: "The provision for a call site: the exhaustive menu of values that place in the code can realistically produce. Use before creating or fixing a mandate or agent that reasons about more than its own input, or when an agent's output 'looks right' but nobody checked it could be. NOT for building the agent (use create-agent)."
+description: "The provision for a call site: the exhaustive menu of values that place in the code can realistically produce. Use before creating or fixing a mandate or agent that reasons about more than its own input, when deciding whether an agent can answer at all with what it is sent, or when its output 'looks right' but nobody checked it could be. NOT for building the agent (use create-agent)."
 ---
 
 <!-- SYNCED COPY — do not edit here.

@@ -1,6 +1,6 @@
 ---
 name: rich-document-actions
-description: "RichDocument action toolkit for markdown and interactive content outside live chat. Use when touching features/rich-document/**, <RichDocument> or <RichDocumentActionSurface>, the richDocumentActionSurfaces slice, registerAction, ContentSource/ContentSourceAdapter, or enableContextMenu, or adding actions to a MarkdownStream/BasicMarkdownContent consumer. NOT for the live chat message bar (use overlay-system)."
+description: "RichDocument action toolkit for markdown and interactive content outside live chat. Use when adding an action or content source, wiring a remote action surface, putting actions on a MarkdownStream/BasicMarkdownContent preview, or touching features/rich-document/**, <RichDocument>, <RichDocumentActionSurface>, registerAction, ContentSourceAdapter, or enableContextMenu. NOT for the live chat message bar (use overlay-system)."
 ---
 
 # RichDocument Actions

@@ -1,6 +1,6 @@
 ---
 name: code-splitting
-description: "next/dynamic code splitting and build-graph cost; first stop for build failures. Use before adding a dynamic import, React.lazy, or ssr: false; on 'window is not defined' or a hydration mismatch; shrinking the bundle; or on 'build failed', OOM, SIGKILL, a slower build, or 'Collecting page data'."
+description: "next/dynamic code splitting and build-graph cost; first stop for build failures. Use before lazy-loading or deferring a heavy component, adding a dynamic import, React.lazy, or ssr: false; on 'window is not defined' or a hydration mismatch; shrinking the bundle; or on 'build failed', OOM, SIGKILL, a slower build, or 'Collecting page data'."
 ---
 
 # code-splitting — `next/dynamic` done right

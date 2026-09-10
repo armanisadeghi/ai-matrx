@@ -1,6 +1,6 @@
 ---
 name: vision-to-fleet
-description: "Pipeline that turns a big system idea into briefs for an agent fleet. Use when Arman says 'let's plan out X', 'overhaul the X system', 'do the full discovery process', 'get this ready for a fleet', or 'do what we did for education', or when carrying forward a VISION, COMPETITIVE_INSIGHTS, or briefs doc. NOT for one feature in a live system (use build-sub-feature)."
+description: "Pipeline that turns a big system idea into briefs for an agent fleet. Use when Arman says 'let's plan out X', 'build or overhaul the X system', 'create the vision and plan for X', 'do the full discovery process', 'get this ready for a fleet', or 'do what we did for education', or when carrying forward a VISION, COMPETITIVE_INSIGHTS, roadmap, or briefs doc. NOT for one feature in a live system (use build-sub-feature)."
 ---
 
 # Vision → Fleet: the discovery-to-execution pipeline

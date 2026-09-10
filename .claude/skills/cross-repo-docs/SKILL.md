@@ -2,7 +2,7 @@
 name: cross-repo-docs
 type: Skill
 title: cross-repo-docs — the one-truth/pointers/zero-mirrors system
-description: "The one-canonical-doc, pointer-lines, zero-mirrors system for docs spanning AI Matrx repos. Use when documenting or building a feature that touches 2+ repos, editing anything in common-docs/, finding one feature documented in several repos, or deciding where a doc lives. NOT for single-repo docs (use context-docs)."
+description: "The one-canonical-doc, pointer-lines, zero-mirrors system for docs spanning AI Matrx repos. Use when documenting, auditing, or building a feature that touches 2+ repos, editing anything in common-docs/, finding one feature documented in several repos, or deciding where a doc lives. NOT for single-repo docs (use context-docs)."
 tags: [meta, docs-system, okf]
 timestamp: 2026-07-10T00:00:00Z
 ---

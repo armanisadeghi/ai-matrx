@@ -1,6 +1,6 @@
 ---
 name: mandate-conversion
-description: "No-loss protocol for changing an existing mandate's output contract. Use when changing what an agent or mandate emits or how it is typed: binding a kind, declaring output_kind, kind-backfill batches, or provision reconciliation. NOT for creating a new agent (use create-agent)."
+description: "No-loss protocol for changing an existing mandate's output contract. Use when changing what an agent or mandate emits or how it is typed: binding a kind, declaring output_kind, kind-backfill batches, provision reconciliation, or any make-this-contract-honest sweep. NOT for creating a new agent (use create-agent)."
 ---
 
 <!-- SYNCED COPY — do not edit here.

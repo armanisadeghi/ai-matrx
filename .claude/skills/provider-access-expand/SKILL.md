@@ -1,6 +1,6 @@
 ---
 name: provider-access-expand
-description: "Discovery batch that grows the Provider Access Launch queue. Use when asked to find more user-connected OAuth, API-key, remote MCP, marketplace, or partner-access campaigns for a capability, provider family, MCP/plugin catalog, or competitive gap. NOT for client Local Listings distribution."
+description: "Discovery batch that grows the Provider Access Launch queue. Use when asked to find more user-connected OAuth, API, API-key, remote MCP, marketplace, or partner-access campaigns for a capability, provider family, MCP/plugin catalog, or competitive gap. NOT for client Local Listings distribution."
 ---
 
 <!-- SYNCED COPY — do not edit here.

@@ -2,7 +2,7 @@
 name: consolidate
 type: Skill
 title: "consolidate — pull one node's meaning out of every repo and delete the source"
-description: "Node-level doc consolidation: one registry node's meaning moved from every repo into common-docs, with the repo sources deleted. Use on /consolidate <node>, before /take on a never-consolidated node, or when a node's docs sprawl across repos. NOT for disagreeing docs on one subject (use dedupe-and-verify)."
+description: "Node-level doc consolidation: one registry node's meaning moved from every repo into common-docs, with the repo sources deleted. Use on /consolidate <node>, before /take on a never-consolidated node, or when a node's docs sprawl across repos. NOT for disagreeing docs on one subject (use dedupe-and-verify in aidream or matrx-frontend)."
 tags: [meta, docs-system, centralization, migration, deletion]
 timestamp: 2026-08-25T00:00:00Z
 ---

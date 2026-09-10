@@ -1,6 +1,6 @@
 ---
 name: campaign-pattern
-description: "The doctrine for turning a vision into a finished, verified, deployed system with near-zero owner involvement. Use before launching, coordinating, or working any large build, module, campaign, or multi-agent project, or when writing its launch prompt."
+description: "The doctrine for turning a vision into a finished, verified, deployed system with near-zero owner involvement. Use when launching, coordinating, resuming, or working any large build, module, campaign, or multi-agent project, or when writing its launch prompt."
 ---
 
 <!-- SYNCED COPY — do not edit here.

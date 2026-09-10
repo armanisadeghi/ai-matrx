@@ -1,6 +1,6 @@
 ---
 name: enhance-file-type
-description: "Adding a file type or upgrading its preview, edit, thumbnail, or rail panel in the files feature. Use when supporting a new extension or MIME type, building a previewer, touching FILE_TYPES, PreviewKind, FilePreview.tsx, EDITABLE_KINDS, or surfaces/single-file/, or working the FILE_SURFACES.md wishlist."
+description: "Adding a file type or upgrading any of its capability slots in the files feature (preview, edit, thumbnail, grid card, info, share, versions, conversion, diff, rail panel). Use when supporting a new extension or MIME type, building a previewer, touching FILE_TYPES, PreviewKind, FilePreview.tsx, EDITABLE_KINDS, or surfaces/single-file/, or working the FILE_SURFACES.md wishlist."
 ---
 
 # Enhance a file type

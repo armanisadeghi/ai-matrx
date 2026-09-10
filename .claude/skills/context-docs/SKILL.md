@@ -2,7 +2,7 @@
 name: context-docs
 type: Skill
 title: "context-docs — agent-facing docs that stay true and land every rule"
-description: "House rules for editing agent-facing docs: CLAUDE.md, AGENTS.md, FEATURE.md, a feature README.md, PRINCIPLES.md, FOUND_DEFECTS.md, SKILL.md. Use when adding, moving, trimming, or compressing a rule, pointer, invariant, or defect entry in one, in any repo or the workspace root."
+description: "House rules for editing agent-facing docs: CLAUDE.md, AGENTS.md, FEATURE.md, a feature README.md, PRINCIPLES.md, FOUND_DEFECTS.md, SKILL.md. Use when creating or reorganizing one, documenting a new feature or subsystem in one, or adding, moving, trimming, or compressing a rule, pointer, invariant, or defect entry, in any repo or the workspace root."
 tags: [meta, docs-system, skills, agents]
 timestamp: 2026-09-10T00:00:00Z
 ---

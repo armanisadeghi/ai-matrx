@@ -1,6 +1,6 @@
 ---
 name: token-broker-client
-description: "Brokered short-lived provider credentials client in matrx-frontend (`lib/api/broker/`). Use when browser code needs a provider realtime session, a direct provider call, an ephemeral token, or a provider API key in the browser or `NEXT_PUBLIC_*`. NOT for adding a new audience server-side (use token-broker)."
+description: "Brokered short-lived provider credentials client in matrx-frontend (`lib/api/broker/`). Use when browser code needs a provider realtime session, a direct provider call, an ephemeral token, or a provider API key in the browser or `NEXT_PUBLIC_*`. NOT for adding a new audience server-side (use aidream's token-broker)."
 ---
 
 # token-broker-client — consume brokered credentials
