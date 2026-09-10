@@ -57,7 +57,7 @@ import {
 import { toast } from "@/lib/toast";
 import { cn } from '@/lib/utils';
 import FeedbackDetailDialog from './FeedbackDetailDialog';
-import { useRegisterCategoryEditor } from './FeedbackConsoleEditorStore';
+import { useRegisterCategoryEditor } from '@/features/admin/users/components/FeedbackConsoleEditorStore';
 
 const COLOR_OPTIONS = Object.keys(CATEGORY_COLORS) as (keyof typeof CATEGORY_COLORS)[];
 

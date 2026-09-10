@@ -13,7 +13,7 @@ import { toast } from "@/lib/toast";
 import { Eye, EyeOff, AlertCircle, AlertTriangle, Info, Megaphone, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { renderAnnouncementMessage } from '@/utils/render-announcement-message';
-import { useRegisterAnnouncementEditor } from './FeedbackConsoleEditorStore';
+import { useRegisterAnnouncementEditor } from '@/features/admin/users/components/FeedbackConsoleEditorStore';
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface EditAnnouncementDialogProps {

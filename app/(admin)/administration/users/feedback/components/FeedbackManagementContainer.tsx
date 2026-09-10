@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FeedbackTable from './FeedbackTable';
 import WorkQueueTab from './WorkQueueTab';
 import AnnouncementTable from './AnnouncementTable';
-import CreateAnnouncementDialog from './CreateAnnouncementDialog';
+import CreateAnnouncementDialog from '@/features/admin/users/components/CreateAnnouncementDialog';
 import CategoriesTab from './CategoriesTab';
 import { Button } from '@/components/ui/button';
 import { Plus, MessageSquare, Megaphone, ListOrdered, Tag } from 'lucide-react';
@@ -24,7 +24,7 @@ import {
     resolveAnnouncementEditor,
     useFeedbackConsoleEditorStore,
     type FeedbackConsoleEditorStore,
-} from './FeedbackConsoleEditorStore';
+} from '@/features/admin/users/components/FeedbackConsoleEditorStore';
 
 const VALID_TABS = ['feedback', 'work-queue', 'announcements', 'categories'] as const;
 type TabValue = typeof VALID_TABS[number];
