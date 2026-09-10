@@ -103,6 +103,7 @@ export function SystemAgentsLayoutClient({
       icon={Zap}
       navLabel="System agents sections"
       tabs={NAV_ITEMS}
+      activeMatch="longest"
     >
       {children}
     </AdminSectionShell>

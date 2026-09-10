@@ -209,6 +209,48 @@ Design rules (the primitive enforces them):
 
 ---
 
+## Section shell — `AdminSectionShell` (route-tab sections)
+
+`features/admin/components/AdminSectionShell.tsx` is THE shell for an
+`/administration` section whose destinations are a flat set of route tabs: a
+back link to `/administration`, the section icon + title, a tab strip where
+each tab is its own route (pending spinner on the clicked tab, every tab
+disabled while the transition runs), and the one scrolling body — the section
+layout owns the viewport height through this shell.
+
+Props: `title` (string), `icon` (`LucideIcon`), `navLabel` (accessible name of
+the tab strip), `tabs` (`AdminSectionTab[]` — each `{label, href, icon,
+exact?}`), `activeMatch` (`"prefix"` default or `"longest"`), `navSurfaceValue`
+(optional Surface Context "Locate" anchor), and `children`. `activeMatch`
+controls how a tab lights up: `"prefix"` marks every tab whose href is an
+exact match (when `exact`) or a plain string prefix of the pathname — so a
+parent tab and a nested-path tab under it can both read active at once;
+`"longest"` instead picks the single longest tab href that *owns* the
+pathname (equal to it, or a `/`-bounded prefix), guaranteeing exactly one
+active tab even when one tab's href is itself a path segment of another's
+(e.g. `.../shortcuts` and `.../shortcuts/all`). A section supplies only its
+title, icon, aria label, and tabs — anything else it needs (a surface runtime
+provider, a route that renders without the shell) stays in that section's own
+`LayoutClient`.
+
+Seven admin sections' `LayoutClient` components render through
+`AdminSectionShell`: `agents/agent-apps/AgentAppsAdminLayoutClient.tsx`,
+`agents/system-agents/SystemAgentsLayoutClient.tsx` (uses
+`activeMatch="longest"` — its `shortcuts` tab href is a path segment of its
+`shortcuts/all` tab href), `applications/ApplicationsAdminLayoutClient.tsx`,
+`automation/scheduling/SchedulingAdminLayoutClient.tsx`,
+`database/relationships/RelationshipsAdminLayoutClient.tsx`,
+`hr/HrAdminLayoutClient.tsx`, and `users/UsersAdminLayoutClient.tsx`.
+
+`database/DatabaseAdminLayoutClient.tsx`,
+`database/canonicalization/CanonicalizationLayoutClient.tsx`, and
+`chat/cx-dashboard/CxDashboardLayoutClient.tsx` are **deliberately different
+shells**, not unmigrated copies of this one — their sections have needs this
+shell does not serve (a different chrome contract), so do not "consolidate"
+them into `AdminSectionShell` on sight.
+
+---
+
 ## Current work / migration state
 
 The old category catalog remains only as destination display metadata. All
@@ -225,6 +267,12 @@ that existing editor; private keys and client secrets remain outside
 ---
 
 ## Change log
+
+- `2026-09-10` — Documented `AdminSectionShell` (title/icon/navLabel/tabs/
+  activeMatch/navSurfaceValue) and its seven adopting section LayoutClients;
+  fixed the pre-existing System Agents bug where `/shortcuts/all` lit both
+  the "Shortcuts" and "All Shortcuts" tabs by switching that section to the
+  shell's existing `activeMatch="longest"` prop (no shell change).
 
 - `2026-09-09` — Excluded unresolved filesystem parameters from generated navigation and replaced the mandate detail header with linked Administration/Mandates ancestors plus its actual display name.
 
