@@ -3236,3 +3236,123 @@ allowlist that only shrinks.
   assert anything. Now wrapped in the app's real `ReactQueryProvider` over a minimal redux store,
   the shape the sibling `features/window-panels/__tests__/*` suites use, plus the `matchMedia`
   stub jsdom lacks.
+
+**2026-09-09 (later) — the remaining 21 closed, plus 12 more the first census never saw. CLOSED.**
+
+A fresh unscoped run before starting found **32 suites / 56 tests** red, not 21: the original
+list was taken on 2026-09-08 and 12 suites had gone red since (six under `features/mandates`,
+two under `lib/entity-list`, `components/official/__tests__/server-notes-folded`,
+`components/official/matrx-data-table/ColumnHeaderCell.focus`,
+`components/ui/__tests__/toaster-stale-sweep`, `features/bindings/__tests__/holder-block-affordances`).
+`lib/sandbox/__tests__/active-binding-local-pc.test.ts` had gone green on its own. That drift in
+one day is the entry's own point made twice: nothing was running these.
+
+All 32 are fixed at their roots. **No test was skipped, deleted or weakened**, and three suites
+came out guarding MORE than they did before. The repair splits three ways:
+
+**A. The test was RIGHT and a real product defect was hiding behind it (9 suites).**
+- `app/api/cms/_lib/validateContent.test.ts` — the worst of them. `validateContent` built its
+  backend client with no organization scope, so since the fail-closed org kernel landed
+  `requireOrganizationContext(null)` threw BEFORE any networking and the `catch` reported it as
+  *"aidream is unreachable or timed out"*. **The CMS content guard has been silently dead in
+  production, every CMS write proceeding unvalidated while the log blamed the network.** Fixed:
+  `organizationId` is now an explicit input threaded from the site row at all 7 call sites, it
+  travels in the header only (aidream's `CmsValidationRequest` is `extra="forbid"`, so
+  `BackendClient` gained `sendScopeInBody`), and the skip path now distinguishes our own wiring
+  defect from a genuine transport failure, each with its own remedy. New guard: a missing org
+  never blames aidream and never calls it.
+- `features/masterwork/.../TryMasterworkBox.tsx` — asked the generated `TERMINAL_RUN_STATUSES`,
+  which answers the ENGINE's resume question and excludes `errored`, so an errored run never
+  settled: no failure explanation, screen waiting on a row poll. Root fix is the shared
+  `runIsOver(status)` primitive in `features/workflow-runtime/types.ts`. Proven failing-then-
+  passing. The sibling census (~12 surfaces still hand-rolling `TERMINAL_RUN_STATUSES.has(s) ||
+  s === "errored"`) is logged separately above.
+- `features/bindings/__tests__/holder-block-affordances.test.tsx` — `96e45f3aa2` deleted the JOB
+  cell and set `coverageLine={null}`; `jobCoverage` was computed and thrown away, so a person
+  could set a holder, read a healthy verdict, and never learn a required input was unmapped and
+  the run would refuse. Coverage is rendered again, once per page.
+- `features/mandates/authoring/AutomationButton.tsx` + `automation-availability-honesty` —
+  `46330d9f93` moved a blocked control's reason into a hover popover; the component's own header
+  forbids exactly that ("a tooltip is not words on the screen"). The screen said only "Not
+  configured". The sentence is inline visible text again, all three blocked states.
+- `features/mandates/__tests__/user-text-sentence.test.ts` — the shared sentence had no renderer
+  left; it is the row's `help` now.
+- `features/mandates/__tests__/mandate-screen-vocabulary.test.ts` — four real vocabulary leaks
+  (internal nouns on screen, plus `ProvisionOfferList` re-typing the provision flags locally
+  while the shared `OFFERED_*` constants said something else).
+- `features/mandates/__tests__/default-holder-has-one-road.test.ts` — `MandateTestBench` composed
+  the exact `default_holder_*` payload the gated door exists to prevent; it passes a resolved
+  `HolderRef` now.
+- `features/mandates/admin/__tests__/mandate-delete.test.ts` — the destructive control had lost
+  half its consequence sentence (what else stops working, that it is reversible). Restored.
+- `utils/permissions/__tests__/registry.routes.test.ts` — see D below.
+
+**B. The assertion was stale because a ruling moved the truth (13 suites).** Each rewritten to
+guard the NEW true behaviour with the commit that changed it named in the file: the C9/C26
+design-system extraction (`animate-pulse` → the package-owned `MOTION_PULSE`, `slide-in-from-bottom`
+→ `MOTION_BOTTOM_SHEET` — 3 suites; two of them now assert the exported constant and the package
+keyframes rather than a literal utility name), the knowledge/RAG surface consolidation, the
+access-gate vocabulary ruling (`"CMS site"` → `"website"`), the canvas icon-name canonicalization,
+the `AssistantEditTarget` third field, the retry moving into `@ai-matrx/data`, the podcast
+repository's refusal that deliberately stopped guessing WHY, two picker rows added by ruling, and
+P7's move from ERADICATION to MAINTENANCE (that guard is now strictly stronger: `PatrolDefinition`
+is a discriminated union where `mode: "MAINTENANCE"` REQUIRES a `maintenanceProof` string, so the
+manifest's zero-backlog claim is typed instead of asserted).
+
+**C. The harness was lying, in ways worth naming (10 suites).** Blanket `jest.mock` of a whole
+published package once a host file became a thin re-export (so `Card` resolved to `undefined`);
+a `jest.mock("sonner")` returning a bare object where the real `toast` is a CALLABLE, which the
+package's own guard correctly rejected; components rendered with no redux `Provider` after
+`useEntityList` started reading THE ARCHIVED-ITEMS LAW knob; a suite mocking a thunk module that
+had not existed since the run-adapter rename; a cross-repo fixture that moved inside `common-docs`
+(now repointed, and a missing fixture THROWS as `UNMEASURED:` with a remedy — never a skip); and a
+guard that had quietly become a no-op by grepping a `components/ui/*.tsx` file that is now a pure
+re-export (rewritten to render the real shared component and read the DOM).
+
+One of these was an environment pathology worth the whole repo's attention:
+`ColumnHeaderCell.focus.test.tsx` was not slow, it was quadratic. jsdom 30 has no native selector
+engine, so `Element.matches` IS nwsapi, and nwsapi's `isModal()`/`isFullscreen()` ask for the
+"native" answer by calling `node.matches(':modal')` — re-entering themselves. `@floating-ui`
+calls those on every element it positions, so 32k calls became **37 million**. `jest.setup.ts` now
+answers the three top-layer pseudo-classes (`:modal`, `:fullscreen`, `:popover-open`) as `false`
+— the honest answer, since jsdom implements no top layer — and passes everything else to the real
+engine. One popover open: **12,107ms → 61ms**; that suite 55s → ~4s. Every popper/dropdown/select/
+tooltip suite in the repo was paying this.
+
+**D. The live dead-end was 15 rows, not two.** The entry flagged
+`interview_session -> /vision-interview/{id}` and `web_brand -> /marketing/brands/{id}`.
+`web_brand` was never broken — the GUARD was: its route matcher did not consume the separator
+before an OPTIONAL catch-all, so `/marketing/brands/[brandId]/[[...rest]]` was held to demand a
+trailing slash the real URL never has. Fixed, with both arms of the optional catch-all now pinned
+in the scan's self-test.
+
+Chasing the real one exposed the bigger hole. The routes guard only ever read the TS MIRROR, and
+the parity guard only ever compared that mirror to a COMMITTED SNAPSHOT — and the snapshot was
+itself **31 rows behind the live table**, because `pnpm check:shareable-registry` (which pulls the
+live registry and screams on drift) was, like `pnpm test`, invoked by nothing. A census of the
+LIVE `platform.shareable_resource_registry` against the `app/` tree found **15 rows advertising a
+URL that resolves to no route** — each one rendered as a link on the org sharing surfaces.
+Repaired per the registry's own two lawful fixes, in
+`migrations/20260909_shareable_registry_dead_end_urls.sql` (applied + ledgered):
+`interview_session` → the real `/masterwork/vision-interview/{id}`; `code_repository` /
+`data_store` → the canonical `/knowledge/*` the TS mirror had already moved to; and `''` — "no
+signed-in destination", so the surface renders NO link — for the twelve whose detail route simply
+does not exist in `app/` (`browser_profile`, both `custom_*`, both `esign_*`, seven `hr_*`, plus
+three retired rows). A list page was deliberately NOT substituted for a missing detail route: a
+link that lands on a list does not show the record the share was for. The snapshot was
+regenerated (90 → 121 rows) and the TS mirror caught up (84 → 114 active rows, +32 mirrored, 2
+deactivated rows retired with their reason).
+
+**THE CLASS FIX.** `scripts/run-release-gates.sh` now runs, in both lanes:
+- `"Whole jest suite (every suite, not CI's four scopes)|pnpm test"` — the whole battery, 221s
+  over 1,257 suites, the same order as `type-check` which was already there. STRICT (no
+  `--advisory`): the suite is at **zero red**, so there is no backlog to grandfather and any
+  finding is new.
+- `"Shareable registry: live DB vs committed snapshot|pnpm check:shareable-registry"` — the guard
+  that would have caught D years earlier had anything called it.
+
+Both are the same lesson the 2026-09-08 entry drew and neither half had: a check nothing invokes
+is not a check. CI still runs its four fast scopes on every PR; the ship path now runs everything.
+
+Final run on this checkout: **1,257 suites passed / 1,257 total; 9,311 tests passed, 3 todo, 0
+failed; 220.6s**. Before: 32 suites / 56 tests red. `pnpm type-check` clean.

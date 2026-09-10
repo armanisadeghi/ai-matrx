@@ -265,8 +265,10 @@ if $STRICT; then
         # silence, and 32 of them had: an accidental unscoped `pnpm test` on
         # 2026-09-08 found 32 red suites / 56 red tests that nothing had run in
         # months (FOUND_DEFECTS, that date). A suite nothing runs is not a test,
-        # so the ship path runs all of them. ~200s over 1,256 suites on a warm
+        # so the ship path runs all of them. 221s over 1,257 suites on a warm
         # checkout — the same order as `type-check`, which is already here.
+        # Zero red at introduction (2026-09-09), so there is no backlog to
+        # grandfather and it carries no `--advisory`: a finding here is new.
         "Whole jest suite (every suite, not CI's four scopes)|pnpm test"
         # THE LIVE REGISTRY vs THE COMMITTED SNAPSHOT. Same class, same day:
         # `check:shareable-registry` existed and nothing invoked it either, so
@@ -533,8 +535,10 @@ else
         # silence, and 32 of them had: an accidental unscoped `pnpm test` on
         # 2026-09-08 found 32 red suites / 56 red tests that nothing had run in
         # months (FOUND_DEFECTS, that date). A suite nothing runs is not a test,
-        # so the ship path runs all of them. ~200s over 1,256 suites on a warm
+        # so the ship path runs all of them. 221s over 1,257 suites on a warm
         # checkout — the same order as `type-check`, which is already here.
+        # Zero red at introduction (2026-09-09), so there is no backlog to
+        # grandfather and it carries no `--advisory`: a finding here is new.
         "Whole jest suite (every suite, not CI's four scopes)|pnpm test"
         # THE LIVE REGISTRY vs THE COMMITTED SNAPSHOT. Same class, same day:
         # `check:shareable-registry` existed and nothing invoked it either, so
