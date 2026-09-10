@@ -751,4 +751,6 @@ function main(): void {
   process.exit(1);
 }
 
-main();
+// Importing this file (the self-test harness, ad-hoc census scripts) must not
+// run the whole scan — only invoking it does.
+if (require.main === module) main();
