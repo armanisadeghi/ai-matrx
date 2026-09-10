@@ -96,6 +96,7 @@ export function ShareButton({
         button
       )}
 
+      {isModalOpen && (
       <ShareModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -107,6 +108,7 @@ export function ShareButton({
         resourceName={resourceName}
         isOwner={isOwner}
       />
+      )}
     </>
   );
 }

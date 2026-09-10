@@ -48,8 +48,6 @@ import {
   GripVertical,
   Settings,
   Type,
-  Eye,
-  EyeOff,
   AlertTriangle,
   Loader2,
   Save,
@@ -81,7 +79,6 @@ interface TableInfo {
   id: string;
   table_name: string;
   description: string;
-  is_public: boolean;
   version: number;
   /**
    * Optional because the callsites hand this component a cast of the full
