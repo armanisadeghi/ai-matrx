@@ -1,7 +1,7 @@
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 
-import { fetchSitePipeline } from "./bridge";
+import { bridgeShellCheck, fetchSitePipeline } from "./bridge";
 
 jest.mock("@/lib/api/call-api", () => ({
   callApi: jest.fn((config: unknown) => config),
@@ -44,5 +44,30 @@ describe("fetchSitePipeline", () => {
     expect(result.stages).toEqual([
       expect.objectContaining({ key: "live", done: 28, total: 28 }),
     ]);
+  });
+});
+
+describe("bridgeShellCheck", () => {
+  it("outlives the server's per-page fetch ceiling", async () => {
+    const dispatch = jest.fn(async () => ({
+      data: {
+        site: "cosmeticinjectables-com",
+        pages_checked: 1,
+        pages_passed: 1,
+        site_issues: [],
+        pages: [],
+        truncation_note: null,
+      },
+    })) as unknown as AppDispatch;
+
+    await bridgeShellCheck(dispatch, SITE_ID);
+
+    expect(callApi).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "/content-plan/sites/{site_id}/shell-check",
+        connectTimeoutMs: 60_000,
+        totalTimeoutMs: 60_000,
+      }),
+    );
   });
 });

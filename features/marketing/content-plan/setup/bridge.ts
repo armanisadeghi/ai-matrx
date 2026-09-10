@@ -208,6 +208,11 @@ export async function bridgeShellCheck(
     callApi({
       path: "/content-plan/sites/{site_id}/shell-check",
       method: "POST",
+      // The server checks up to 25 remote pages and caps each fetch at 20s.
+      // Give it room to return structured per-page failures instead of
+      // turning a slow origin into the transport's generic 15s timeout.
+      connectTimeoutMs: 60_000,
+      totalTimeoutMs: 60_000,
       pathParams: { site_id: siteId },
       body: {
         state: options.state ?? "auto",

@@ -889,6 +889,11 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   Setup stages scroll to Research, SEO strategy, Design, or the build/publish
   bridge instead of dropping every non-plan stage at Setup's first section.
 
+- 2026-09-10 — **Rendered-page inspection can return its real findings.** The
+  shell-check request has an explicit 60-second JSON budget, above the
+  server's 20-second per-page fetch ceiling, instead of dying at the shared
+  15-second response-header default before a slow page could be reported.
+
 - 2026-09-10 — **The site pipeline survives cross-organization navigation and
   fails visibly.** `useSitePipeline` waits for and binds the viewed site's own
   organization on the backend request; `SitePipelineStrip` renders the shared
