@@ -1,6 +1,6 @@
 ---
 name: protected-resources
-description: Single-path-of-resistance pattern for tables/operations that must NOT be modifiable by anyone except Super Admins — even contributors with full codebase access. Mandatory reading whenever a task touches `admin.admins`, `admin.admin_audit_log`, the `is_super_admin()` / `requireSuperAdmin()` / `selectIsSuperAdmin` gates, anything in `app/api/admin/admins/**`, `app/(admin)/administration/users/admins/**`, the SECURITY DEFINER admin RPCs (`admin_promote`, `admin_update`, `admin_revoke`, `admin_list`, `admin_list_audit`, `admin_find_user_by_email`), or when adding a new table/feature you intend to lock down to Super Admin only (billing, feature flags, secrets, audit data, anything sensitive). Use this skill before writing any new RLS policy, SECURITY DEFINER RPC, `createAdminClient()` call, or admin-gated API route.
+description: "Super-Admin-only lock-down pattern. Use before touching admin.admins, admin.admin_audit_log, is_super_admin() / requireSuperAdmin() / selectIsSuperAdmin, app/api/admin/admins/**, app/(admin)/administration/users/admins/**, the admin RPCs (admin_promote, admin_update, admin_revoke, admin_list, admin_list_audit, admin_find_user_by_email), createAdminClient(), a new RLS policy, SECURITY DEFINER RPC, or admin-gated route, or when locking a sensitive table to Super Admin."
 ---
 
 # Protected Resources — Single Path of Resistance
@@ -92,7 +92,7 @@ Bricking guards inside the RPCs (worth knowing — they raise `42501`):
 
 ## Recipe: locking down a new table
 
-When the user says "I don't want regular admins touching X", do exactly this — in order. Skipping a step breaks the model.
+When the user says "I don't want regular admins touching X" (billing, feature flags, secrets, audit data, anything sensitive), do exactly this — in order. Skipping a step breaks the model.
 
 ### 1. Secret-key isolation (one-time, project-wide)
 

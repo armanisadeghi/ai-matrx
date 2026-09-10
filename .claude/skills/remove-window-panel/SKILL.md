@@ -1,13 +1,13 @@
 ---
 name: remove-window-panel
-description: Use when permanently deleting / killing / retiring a window panel or overlay at matrx-frontend and leaving NO trace — no shim, no fallback, no commented-out tombstone, no dead name in a comment. Triggers on "kill this panel", "remove the X window", "retire the deprecated overlay", "consolidate X into Y and delete X", or any task that ends a window/overlay's life. Covers finding every usage, rewiring callsites to the replacement, the full registration-removal checklist (component, opener, catalogue, OverlayId union, registry metadata, tools-grid tile, OverlayController block, url-sync hydrator), and independent verification. NOT for ADDING or OPENING an overlay (use `overlay-system`) or editing the WindowPanel component primitive (use `window-panels`).
+description: "No-trace removal recipe for a window panel or overlay. Use when deleting, killing, or retiring a window/overlay, or consolidating X into Y and deleting X ('kill this panel', 'remove the X window'). NOT for adding or opening an overlay (use overlay-system)."
 ---
 
 # Remove a Window Panel (kill it completely)
 
 Deleting a window panel/overlay means removing it from **every** place the registration system spreads it across — then proving zero residue. A panel that "looks deleted" but leaves a stale `OverlayId`, a dangling opener, or a tile is a half-kill. **No shims. No back-compat aliases. No fallback opener that forwards to the replacement. No commented-out block or `// removed X` tombstone. No dead panel name left in a comment.**
 
-Read the [`overlay-system`](../overlay-system/SKILL.md) skill first if you don't know how the overlay layer is wired. This skill is the reverse operation.
+Read the [`overlay-system`](../overlay-system/SKILL.md) skill first if you don't know how the overlay layer is wired. This skill is the reverse operation. Editing the WindowPanel component primitive itself (drag, resize, tray) → the [`window-panels`](../window-panels/SKILL.md) skill, not this one.
 
 ## The keystone strategy — pull the union member, let TypeScript hunt
 

@@ -1,6 +1,6 @@
 ---
 name: surface-certification-loop
-description: Coordinate an autonomous fleet that repairs and independently certifies registered UI surfaces with atomic Work Loop claims, durable checklist evidence, live desktop/mobile and light/dark proof, and rule-version rechecks. Use for pilot batches, recurring certification, repair rounds, or retroactive audits after the surface-check rules change. NOT for checking one already-assigned surface (use surface-check), or discovering unregistered surfaces (run a separate discovery lane).
+description: "Coordinator for the fleet that repairs and independently certifies registered UI surfaces through Work Loop claims. Use for pilot batches, recurring certification, repair rounds, or retroactive rechecks after surface-check rules change. NOT for one assigned surface (use surface-check)."
 ---
 
 # Surface Certification Loop

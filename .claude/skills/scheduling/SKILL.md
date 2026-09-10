@@ -1,6 +1,6 @@
 ---
 name: scheduling
-description: Work on the scheduling system — sch_* tables, /schedules user UI, /administration/scheduling admin UI, the matrx-scheduler Python package, and the aidream /scheduling/* router. Triggers on any of: editing files under `features/scheduling/**`, `app/(authenticated)/schedules/**`, `app/(authenticated)/(admin-auth)/administration/scheduling/**`, `lib/services/scheduling-admin-service.ts`, `migrations/sch_*.sql`; or, in the aidream repo, files under `packages/matrx-scheduler/**`, `aidream/api/routers/scheduling.py`, `aidream/services/scheduling/**`; or any task mentioning sch_task, sch_trigger, sch_run, cron parser, scheduled agent, lease, claim, heartbeat task, scanner.
+description: "The cross-repo scheduling system (sch_* tables, matrx-scheduler). Use when touching features/scheduling/**, /schedules or /administration/scheduling, migrations/sch_*.sql, a scheduled agent, cron, trigger, lease, or claim, or debugging ghost tasks, missed fires, double-runs, or stuck claims."
 ---
 
 # Scheduling
@@ -23,7 +23,7 @@ Spec: [`docs/SCHEDULING.md`](../../../docs/SCHEDULING.md). FEATURE doc:
 ```
 sch_task           kind='agent' (today). Spine: title, surfaces[], next_due_at.
   ↳ sch_agent_task   1:1 extension: agent_id, prompt, variables, conversation_id.
-sch_trigger        when it fires. v1 = one trigger per task.
+sch_trigger        when it fires (one-shot, interval, cron, heartbeat, context-match, …). v1 = one trigger per task.
 sch_run            each execution attempt. Lease via claim_token + claim_expires_at.
 ```
 

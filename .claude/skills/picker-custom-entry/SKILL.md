@@ -1,16 +1,6 @@
 ---
 name: picker-custom-entry
-description: >-
-  Fix a closed-choice picker — a Select / Popover list / DropdownMenu built from
-  data that offers a set of choices with no way for the person to add one. Use
-  whenever you build or touch ANY control that offers choices (a tier / level /
-  band / class / dimension / value / category / tag / status / owner picker),
-  whenever `pnpm check:picker-add` names a file, when running Pattern Patrol P13,
-  or when the user says "there was no way to add my own", "it forced me to pick
-  from the list", "why can't I type a new one", "add an inline create". Covers
-  the required shape, the write path, the P11 platform-vocabulary exception, and
-  the exemptions that are genuinely closed sets. NOT for choosing WHAT a picker
-  should offer — that is the feature's own doctrine.
+description: "Custom-entry fix for pickers with no way to add a choice (Select, Popover list, DropdownMenu). Use when building or touching any choice control (tier, category, tag, status, owner), `pnpm check:picker-add` names a file, running Pattern Patrol P13, or the user says 'no way to add my own' or 'why can't I type a new one'."
 ---
 
 # picker-custom-entry — every picker takes new input (P23)
@@ -34,6 +24,8 @@ churn, and nobody ever files a ticket saying so.
 Doctrine: **P23** in
 `common-docs/systems/marketing/seo/seo-keywords/keyword-system-decisions.md`
 (the exception is **P11** in the same file). Detector: `pnpm check:picker-add`.
+Out of scope: choosing WHAT a picker should offer — that is the feature's own
+doctrine.
 
 ## THE LAW
 

@@ -1,6 +1,6 @@
 ---
 name: db-canonicalize-table
-description: Bring a table (and its feature) into full conformance with the Matrx platform standard during the 2026 DB transition — base columns + base FK constraints, canonical RLS, entity_types registration, sharing registry, the polymorphic satellites (associations/comments/categories/activity/favorites), and versioning — preserving existing behavior exactly. This is the ONE recipe for getting any table onto the base standard, whether you take it all the way to certified or stop at the transition-state floor (zero FAIL + legacy WARNs). Use whenever the task is "canonicalize <table/feature>", "retrofit <table>", "base retrofit", "Wave 3", "bring <X> onto the platform base entity / standard", "apply_rls / org backfill on <table>", "make <X> use the platform comments/associations/permissions instead of its own", or "fully conform <table> to platform". Encodes the exact ordered pipeline (columns → base FKs → register → edges → sharing → apply_rls → versioning → satellites → verify+certify), the real function calls, and the gotchas. Read db-change/SKILL.md + db-change/TOOLKIT.md first. NOT for a schema move (db-move-table-schema) or a retire (db-graveyard-table).
+description: "Bringing an existing table onto the platform base standard. Use when asked to canonicalize, retrofit, or 'Wave 3' a table, run apply_rls or an org backfill, retire a bespoke *_versions table, or move it onto platform comments/associations/permissions. NOT for a schema move (use db-move-table-schema)."
 ---
 
 # Canonicalize a table

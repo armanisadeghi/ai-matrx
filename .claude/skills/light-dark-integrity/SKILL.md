@@ -1,6 +1,6 @@
 ---
 name: light-dark-integrity
-description: Detect, triage, repair, and certify light/dark theme violations for Pattern Patrol P4. Use for raw bg-white/text-black classes, invisible theme states, or any P4 patrol run.
+description: "Light/dark theme violation repair for Pattern Patrol P4. Use when you find raw bg-white/text-black classes or a state invisible in one theme, or when running a P4 patrol."
 ---
 
 # Light/Dark Integrity

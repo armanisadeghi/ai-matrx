@@ -1,6 +1,6 @@
 ---
 name: section-canonicalization
-description: The platform recipe for taking ONE small feature section (a preview, a calculator, an analyzer, any focused piece of UI + logic) and building it out COMPLETELY — canonical reusable component, floating window panel, in-page section integration, deterministic shared utility, DB persistence written by both client and server, Python twin exposed as an agent tool, surface manifest for AI agents, and a public page. Use whenever the task is "make this section canonical", "set this up properly like the SEO metadata system", "productize this widget", "this section needs the full treatment", or when building a new analyzer/preview/calculator section anywhere in the app. The SEO metadata / Search Appearance system is the worked reference implementation for every step.
+description: "Recipe for building one focused UI section out for every consumer. Use when asked to 'make this section canonical', 'productize this widget', give it 'the full treatment', or set it up 'like the SEO metadata system', or when building a new analyzer, preview, or calculator section."
 ---
 
 # Section canonicalization — one section, every consumer

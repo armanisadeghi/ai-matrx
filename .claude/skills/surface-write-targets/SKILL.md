@@ -1,6 +1,6 @@
 ---
 name: surface-write-targets
-description: Make a surface AGENT-WRITABLE — declare writeTargets on its manifest, register page handlers, and verify a live agent run end-to-end. Use whenever a task says "let agents write/update/fill X on this page", "add write targets to <surface>", "make <surface> agent-writable", "wire apply_surface_write on <page>", or is an avalanche-campaign chip. Covers the judgment bar (which fields EARN a target), the draft/entity/ui + applyPolicy doctrine, the manifest + handler recipe, the mandatory live-agent verification, and the avalanche contract (end by firing 3-5 chips for further surfaces). NOT for creating a brand-new surface (surface-authoring first) or for the writeback seam internals (features/surfaces/runtime/surface-writeback.ts + FEATURE.md).
+description: "Recipe for making an existing surface agent-writable via manifest writeTargets. Use when asked to 'let agents write/update/fill X on this page', 'add write targets', or 'wire apply_surface_write', or for an avalanche-campaign item. NOT for a brand-new surface (use surface-authoring)."
 ---
 
 # surface-write-targets — make a page agent-writable
@@ -13,7 +13,8 @@ targets, every agent run on it is offered ONE inline tool
 (`features/surfaces/runtime/surface-writeback.ts`) with `origin: "agent"`:
 `ask` shows an in-place confirm, `auto` applies, `manual` refuses loudly, a
 decline returns a non-error result. **You add ZERO plumbing** — only manifest
-declarations + page handlers.
+declarations + page handlers. Changing the writeback seam itself is not this
+skill: that is `surface-writeback.ts` + `features/surfaces/FEATURE.md`.
 
 **Worked references (read one before writing anything):**
 - `features/surfaces/manifests/tasks.manifest.ts` + handler block in

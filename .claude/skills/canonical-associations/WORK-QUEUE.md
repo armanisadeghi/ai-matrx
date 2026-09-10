@@ -1,5 +1,16 @@
 # Canonical Associations — Campaign Work Queue
 
+## Contents
+
+- Triage key
+- A. Bespoke M2M / junction tables
+- B. Bespoke association-read RPCs (outside `assoc_*`)
+- C. Reference hardening (Recipe C / guards)
+- D. DB retirement — SOAK-GATED, do LAST
+- Reference patterns
+- Per-item Definition of Done
+- E. Edge-payload adoption
+
 The prioritized, file-anchored backlog for the canonicalization campaign. One subagent takes one item, applies the matching recipe in [`SKILL.md`](./SKILL.md), runs the checks, ticks the box. **Read `SKILL.md` first** — especially the load-bearing boundary (`platform.associations` vs `iam.permissions`/`iam.memberships`).
 
 > **State of play (2026-06-29 inventory):** FE schema-qualification for the 2026-moved tables is **already done** — there are **zero** bare `supabase.from("<moved-table>")` calls; everything uses `workspaceDb`/`filesDb`/`transcriptsDb`/`.schema(...)`. `pnpm check:schema` is at **0 errors**. No live FE code reads `ctx_scope_assignments`. So the real remaining work is **(A) collapsing bespoke M2M tables + association-read RPCs into `platform.associations`/`assoc_*`**, then **(B) the soak-gated DB retirement**. The "fix bare refs" sub-campaign is reduced to registry hardening + stale-comment cleanup.

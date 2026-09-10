@@ -1,6 +1,6 @@
 ---
 name: core-route-headers
-description: Bring any (core) route into conformance with the AppShell header + body-height + mobile doctrine — the repeatable fix recipe for the campaign to kill faux in-body headers, banned viewport-height calcs, avatar collisions, and mobile menus that vanish instead of collapsing into bottom sheets. Use whenever a task touches a (core) route's header, page chrome, title bar, back button, breadcrumbs, sub-route nav, body wrapper height, or mobile header behavior; whenever a page's buttons hide behind the shell avatar or float over the glass header; on "fix the header on /X", "route conformance", "PageHeader", "shell header", "h-page / calc(100dvh…) on a core route", or a fleet assignment from the header-conformance campaign. NOT for /administration/* or (transitional)/(legacy) routes — those sit BELOW the header by design.
+description: "(core) route header and body-height conformance via PageHeader. Use when fixing a (core) page's header, title bar, breadcrumbs, sub-route nav, body height (h-page, calc(100dvh…)), mobile header, or buttons hidden behind the avatar, or on a header-conformance assignment. NOT for /administration/* routes."
 ---
 
 # core-route-headers — (core) shell header + page conformance

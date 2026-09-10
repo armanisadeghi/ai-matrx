@@ -1,6 +1,6 @@
 ---
 name: admin-debug-context
-description: Wire any route or feature to the admin debug system so the floating AdminIndicator shows live debug context and enables one-click full-context copy for AI agents. Use when asked to add debug visibility, wire a route to the debug panel, add console error capture, or enable the copy-context workflow for a page.
+description: "Admin debug system wiring for the floating AdminIndicator's live debug data and Copy Full Context. Use when adding debug visibility to a route or feature, wiring useDebugContext or the debug panel, capturing console errors, or enabling the copy-context workflow for a page."
 ---
 
 # Admin Debug Context

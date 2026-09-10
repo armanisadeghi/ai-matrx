@@ -1,13 +1,6 @@
 ---
 name: surface-authoring
-description: >-
-  Create, register, complete, or repair an AI Matrx agent-aware UI surface end
-  to end: manifest identity, values, groups, inheritance, write targets, roles,
-  DB mirror, live scope, canonical v3 context menus, Pro inputs, bindings, and
-  verification. Use for new surfaces and for existing surfaces that are partial,
-  stubbed, unregistered, missing runtime context, missing canonical menus, or not
-  fully agent-wired. NOT for context-menu primitive internals or binding-service
-  internals.
+description: "Lifecycle for AI Matrx agent-aware UI surfaces. Use when creating a surface in features/surfaces/manifests/, or completing or repairing one that is partial, stubbed, unregistered, missing runtime context or context menus, or not agent-wired. NOT for certifying a surface (use surface-check)."
 ---
 
 # Surface authoring
@@ -25,6 +18,7 @@ This is the ONE surface lifecycle skill. It owns the manifest contract, layered 
 - **Existing surface that needs completion or repair:** read [`references/runtime-rollout.md`](./references/runtime-rollout.md), then close every applicable contract here.
 - **Context-menu wiring or repair:** invoke `context-menu-v3`; its skill owns wrapper choice, per-row delegation, `contentSource`, `entity`, and no-fake-menu proof. This skill owns making that canonical menu part of a complete surface.
 - **Full certification:** invoke `surface-check`; it drives the S1–S18 checklist and ledger.
+- **Binding-service internals** (`features/surfaces/services/bind-agent-to-surface.service.ts` itself) and **context-menu primitive internals** are not this skill — this skill consumes them.
 
 ## Branch references — read only when the run reaches that branch
 

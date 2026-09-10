@@ -1,21 +1,6 @@
 ---
 name: agent-copy
-description: >-
-  Add the canonical compact two-icon copy/export pair to any surface that shows data
-  (rows, cards, lists, detail/record pages) using `components/agent-copy`:
-  one icon-only human Copy control plus one icon-only CopyForAiIcon menu
-  containing Copy JSON, Copy for AI, AI variants, downloads, destinations,
-  and any custom/Groomer workspace. Build payloads as
-  WHAT THE USER SEES (rendered
-  view, live form state, errors, KPIs), sized to the data. Use when wiring copy
-  actions, consolidating duplicate Copy/JSON/AI/Groomer controls, continuing
-  the app-wide rollout, reviewing or upgrading a Copy-for-AI payload, or
-  extending agent payload context. Triggers on `components/agent-copy/**`,
-  `CopyButtons`, `AiCopyMenu`, `AgentCopyGroomerLauncher`, `buildAgentPayload`,
-  "add copy buttons", "copy this row/list/record", or "copy for AI/agent". NOT
-  for the live-chat message bar (`AssistantActionBar` /
-  `messageActionRegistry`) or markdown content actions (the
-  `rich-document-actions` skill).
+description: "Compact two-icon Copy / Copy-for-AI controls (components/agent-copy). Use when adding copy buttons to a row, card, list, or record; merging duplicate Copy/JSON/AI controls; continuing the copy rollout; or writing a Copy-for-AI payload. NOT for markdown content actions (use rich-document-actions)."
 ---
 
 # agent-copy — copy data (human + AI) anywhere
@@ -31,6 +16,9 @@ Source + full docs: [`components/agent-copy/README.md`](../../../components/agen
 `/Users/armanisadeghi/code/aidream/.claude/skills/copy-for-ai/SKILL.md` — its
 cx-explorer implementation is the platform's best-of-breed reference; keep the
 two skills and the two `AiCopyMenu`s in step.
+
+**Not this primitive:** the live-chat message bar (`AssistantActionBar` /
+`messageActionRegistry`) or markdown content actions (the `rich-document-actions` skill).
 
 **Branches (read only when the run needs them):**
 

@@ -1,6 +1,6 @@
 ---
 name: server-log-analyzer
-description: Analyze raw AI Matrx server logs to discover new module names, log patterns, and categories, then update the log-rules.ts parsing system and produce a migration report for the Python backend team. Use when examining server logs, adding new module recognition, fixing log categorization, or when new [ModuleName] patterns appear in logs that aren't being classified correctly.
+description: "Workflow for classifying AI Matrx server log lines in features/server-logs/log-rules.ts. Use when examining raw server logs, new [ModuleName] bracket tokens appear unclassified, log categories are wrong, or adding module recognition to the log viewer."
 ---
 
 # Server Log Analyzer

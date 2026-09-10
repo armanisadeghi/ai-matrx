@@ -1,15 +1,6 @@
 ---
 name: context-menu-rollout
-description: >-
-  Wire ONE assigned surface to the v3 right-click menu as part of the
-  mass rollout — the fleet worker's contract. Use when you have been handed a
-  file (or a short list) from `pnpm check:context-menu` and told to give it a
-  menu, or when told to "wire the menu on X", "do your assigned rows", or
-  "clear your shard". Covers the adoption protocol (reuse a shared section,
-  grow it, disable what cannot work here), THE DENSITY LAW, the exact props,
-  and the acceptance evidence that cannot be faked. NOT for designing the menu
-  system itself (that is `context-menu-v3` + features/context-menu-v3/FEATURE.md)
-  and NOT for a full surface audit (that is `surface-check`).
+description: "Fleet worker contract for wiring assigned files to the v3 right-click menu. Use when handed files from pnpm check:context-menu, or told to 'wire the menu on X', 'do your assigned rows', or 'clear your shard'. NOT for an unassigned one-off menu wiring (use context-menu-v3)."
 ---
 
 # Context-menu rollout — the fleet worker's contract
@@ -19,7 +10,9 @@ right-click the thing this surface shows, and the menu that opens is the SAME
 menu that identity gets everywhere else in the app.**
 
 Read [`.claude/skills/context-menu-v3/SKILL.md`](../context-menu-v3/SKILL.md)
-once for the wrapper mechanics. This file is the assembly line.
+once for the wrapper mechanics. This file is the assembly line. Not this contract:
+designing the menu system itself (`context-menu-v3` + `features/context-menu-v3/FEATURE.md`)
+or a full surface audit (the `surface-check` skill).
 
 ## Your assignment is disjoint — do not wander
 

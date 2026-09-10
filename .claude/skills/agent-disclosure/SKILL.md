@@ -1,13 +1,6 @@
 ---
 name: agent-disclosure
-description: >-
-  Register the fixed AI jobs a surface already runs in the existing top Agents
-  menu, and open each mandate in place. Use when a page, panel, overlay, or
-  window already runs a mandate behind a button, assist, automatic action, or
-  mode; when the agent-disclosure guard names a file; or during a surface check.
-  Disclosure never adds agent labels, chips, cards, rosters, or any other visible
-  page content. Not for agent-native surfaces or universal agent hosts, where no
-  fixed worker is bound to the surface.
+description: "Disclosing a surface's existing fixed AI jobs in the shell's top Agents menu. Use when a page, panel, overlay, or window already runs a mandate behind a button, assist, automatic action, or mode; when the agent-disclosure guard names a file; or during a surface check."
 ---
 
 # Agent disclosure — register existing fixed jobs in the top menu

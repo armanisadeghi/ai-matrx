@@ -1,6 +1,6 @@
 ---
 name: connect-matrx-extend
-description: Wire matrx-frontend into the matrx-extend Chrome extension's bridge — adding or modifying a `FRONTEND_RPC` action handler, declaring a new window-panels deep-link entry point for the extension to trigger, exposing a new headless API route for the extension to call, or debugging a silent `chrome.runtime.sendMessage` / Broadcast round-trip. Scope guardrail: this skill is for the matrx-frontend side of the bridge (Next.js admin UI at aimatrx.com). Do NOT use it for changes that live inside the matrx-extend repo itself, the matrx-local Tauri desktop app, or the aidream backend — each of those has its own connect-* skill.
+description: "The matrx-frontend side of the matrx-extend Chrome extension bridge. Use when adding or changing a FRONTEND_RPC action handler, a window-panels deep-link the extension opens, a headless API route it calls, or debugging a silent chrome.runtime.sendMessage or Broadcast round-trip. NOT for code in matrx-extend, matrx-local, or aidream (each has its own connect-* skill)."
 ---
 
 # Connect matrx-extend (frontend side)

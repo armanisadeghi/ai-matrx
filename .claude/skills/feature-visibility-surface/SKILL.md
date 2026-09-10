@@ -1,16 +1,6 @@
 ---
 name: feature-visibility-surface
-description: >-
-  Use whenever you build or extend a feature whose results the user would
-  otherwise not see — especially one backed by a server capability in aidream.
-  The rule: in the SAME work, ship a live visibility/test page — a no-privilege
-  DEMO page, or an ADMIN page when it needs special access — that reads the LIVE
-  backend and lets the user trigger/test it with a few controls, so they have one
-  place to verify your results after every change instead of being blind for
-  multiple turns. Triggers on "I added a backend endpoint", "new feature with no
-  UI to see it", "how do I test this", or any capability whose output only shows
-  up in logs / the DB / an agent run. Worked example: features/directive-catalog/ +
-  /administration/directive-catalog.
+description: "A live demo or admin page shipped with every feature whose results the user would otherwise not see. Use when adding a backend endpoint or feature with no UI to see it, when output only shows in logs, the DB, or an agent run, or when the user asks 'how do I test this'."
 ---
 
 # Ship a visibility surface with every feature (frontend recipe)

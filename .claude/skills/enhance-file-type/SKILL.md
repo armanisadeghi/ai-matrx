@@ -1,6 +1,6 @@
 ---
 name: enhance-file-type
-description: Add a new file type to the matrx-admin file system, or enhance any of the ~55 capability slots on an existing one (preview, edit, thumbnail, grid card, info, analysis, share, versions, control rail, action bar, conversion, diff, etc.). Use when adding support for a file extension, building a new previewer, expanding the `PreviewKind` union, modifying `FILE_TYPES`, touching `FilePreview.tsx` / `FileTabsBody.tsx` / `CloudFileInlineEditor.tsx` / `preview-actions.ts` / `EDITABLE_KINDS` / `LANGUAGE_BY_EXT`, building or editing a rail panel under `features/files/components/surfaces/single-file/`, wiring `FileViewerControlsContext`, or working an item off the wishlist in `/Users/armanisadeghi/code/common-docs/systems/media/file-service/FILE_SURFACES.md`.
+description: "Adding a file type or upgrading its preview, edit, thumbnail, or rail panel in the files feature. Use when supporting a new extension or MIME type, building a previewer, touching FILE_TYPES, PreviewKind, FilePreview.tsx, EDITABLE_KINDS, or surfaces/single-file/, or working the FILE_SURFACES.md wishlist."
 ---
 
 # Enhance a file type

@@ -1,6 +1,6 @@
 ---
 name: create-tool-renderer
-description: Create a custom display for an MCP/agent tool's result in the chat interface — the rich UI shown when a tool call expands. Default path is a DB-LOADED renderer (agent-authored React code stored in the `tool_ui` table, compiled at runtime); a hardcoded in-repo renderer is the rare escape hatch. Use when the user wants to add/customize a tool visualization, make a tool result look good, render MCP tool output, or "author a renderer" for a tool that currently shows the generic view.
+description: "Custom chat display for an MCP or agent tool's result, DB-loaded from tool_ui by default. Use when adding or customizing a tool visualization, making a tool result look good, rendering MCP tool output, or authoring a renderer for a tool that shows the generic view."
 ---
 
 # Create Tool Renderer

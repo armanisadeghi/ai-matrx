@@ -1,14 +1,6 @@
 ---
 name: live-ui-iteration
-description: >-
-  Work with Arman on an AI Matrx UI through a continuous localhost loop:
-  implement his requested changes first, keep working autonomously through full
-  surface completion and certification, verify desktop and mobile, and hand back
-  only when the whole focused surface is genuinely ready. Use when he asks an
-  agent to fix, refine, review, or iterate on a page, route, panel, overlay, or
-  other UI while he may inspect localhost during the work. Not for a report-only
-  UI audit or an agent-native surface whose product is choosing, building,
-  running, testing, or comparing agents.
+description: "Continuous localhost UI iteration loop with Arman, through full surface certification. Use when he asks to fix, refine, review, or iterate on a page, route, panel, overlay, or other UI while he may inspect localhost. NOT for a report-only UI audit."
 ---
 
 # Live UI iteration

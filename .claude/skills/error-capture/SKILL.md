@@ -1,6 +1,6 @@
 ---
 name: error-capture
-description: Add or improve a captured error/warning source in the systemwide Error Inspector. Use when wiring a new error class into the inspector (a new CapturedErrorSource + adapter), calling captureError from a new site, deciding an error's visibility tier (red/orange/yellow), adding a downgrade rule, or turning a loud console.error / swallowed catch into a structured captured error. Triggers on lib/diagnostics/**, captureError, CapturedErrorSource, errorTierRules, "capture this error", "add X to the Error Inspector", "make this a warning", "downgrade/quiet this error", "stop swallowing this error".
+description: "The frontend Error Inspector capture system (captureError, lib/diagnostics/**). Use when wiring a new CapturedErrorSource or adapter, calling captureError from a new site, picking a red/orange/yellow tier or errorTierRules downgrade, or turning a console.error or swallowed catch into a captured error."
 ---
 
 # Error Capture

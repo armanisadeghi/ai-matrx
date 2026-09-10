@@ -1,14 +1,6 @@
 ---
 name: ui-bakeoff
-description: >-
-  Design one UI several ways at once and pick the best — the orchestrator for the ui-*
-  family. Spins up four parallel subagents, each driven by a different posture skill
-  (ui-sharp, ui-reimagine, ui-refine, ui-dense) on IDENTICAL instructions, so you get
-  four genuinely different takes on the same brief, then helps you choose a winner and
-  graft the best features of the others into it. Trigger this when a screen matters enough
-  to explore multiple directions, or when the user says "build it a few ways", "design
-  options", "bake-off", "show me variations", "run the four skills", or "compare
-  approaches". This is the empirically best way to get great UI in this app.
+description: "Orchestrator that runs one UI brief through all four ui-* posture skills in parallel, then picks and merges a winner. Use when a screen matters enough to explore several directions, or the user says 'build it a few ways', 'design options', 'bake-off', 'show me variations', or 'compare approaches'."
 ---
 
 # ui-bakeoff — design it four ways, then pick and merge

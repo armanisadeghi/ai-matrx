@@ -1,6 +1,6 @@
 ---
 name: surface-check
-description: Run THE full UI surface check on one assigned surface — fix every failed section, produce durable checklist evidence, and prove the real surface on desktop and mobile in light and dark. Use for a named surface check or a `surface-certification` Work Loop item. The independent verifier, never the builder, writes final certification. NOT for fleet selection or claims (use surface-certification-loop), or for building a brand-new surface from nothing (surface-authoring first).
+description: "THE full UI surface checklist (S1–S18) run on one assigned surface. Use for a named surface check, `/surface-check <surface>`, or a claimed `surface-certification` Work Loop item. NOT for fleet selection or claims (use surface-certification-loop)."
 ---
 
 # surface-check — the driver for THE UI SURFACE CHECKLIST
@@ -18,7 +18,8 @@ how you run it on a surface end to end without coming back with questions.
 ## Invocation
 
 `/surface-check <surfaceName | route | overlayId>` or a claimed
-`surface-certification` Work Loop contract.
+`surface-certification` Work Loop contract. A brand-new surface with nothing
+built yet goes through `surface-authoring` first; this skill checks one that exists.
 
 **This skill never selects or claims fleet work.** In an autonomous run, the
 `work_loop(action="claim")` result is the sole claim authority. Do not query or

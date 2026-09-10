@@ -1,13 +1,15 @@
 ---
 name: no-dead-ends
-description: The concrete matrx-frontend recipe for THE DOOR LAW and THE INVENTORY LAW — if the UI names a record it must open it (open / new tab / peek / window), every resolvable relationship is rendered AND linked, every detected problem ships with its one-click fix, and no surface is built before its builder inventories the primitives that already exist. Use BEFORE building or fixing any surface that displays a record — a table cell, a list row, a dialog that names an agent/note/task/file, a health or drift badge, a "you're using X" warning, a comparison panel, an id or a count. Triggers on "this UI is useless", "there's no link to X", "why can't I click this", "add links to X", "dead end", "no way to open", EntityRef, peek, "open in new tab", "open in window", or an assignment from the no-dead-ends sweep campaign. NOT for page-level chrome (use core-route-headers) or for choosing what data to show (use canvas-doctrine).
+description: "Recipe for THE DOOR LAW (every record the UI names opens) and THE INVENTORY LAW. Use before building or fixing a surface that names a record (cell, row, dialog, badge, id, count), or on 'no link to X', 'why can't I click this', 'dead end', EntityRef, peek. NOT for page chrome (use core-route-headers)."
 ---
 
 # no-dead-ends — every identity is a door, every capability is on the table
 
 **Read the doctrine first:** `/Users/armanisadeghi/code/common-docs/policies/no-dead-ends.md`.
 It is canonical and cross-repo. This skill is the *frontend mechanics*: which
-primitive to reach for, how to wire it, and how to prove it.
+primitive to reach for, how to wire it, and how to prove it. **Out of scope:**
+page-level chrome (use the `core-route-headers` skill) and choosing WHAT data a
+surface shows — this skill makes what is shown openable.
 
 ## The two laws, one paragraph
 

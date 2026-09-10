@@ -1,6 +1,6 @@
 ---
 name: compact-nav-menus
-description: Build compact, space-efficient navigation sidebars, menus, and list panels using the project's established sizing tokens. Covers flat lists, grouped sections, two-tier expandable trees, and filter bars. Use when creating or refactoring sidebars, nav panels, settings menus, category lists, filter toolbars, or any UI that lists clickable items in a constrained-width column. Also use when a sidebar looks too wide, too padded, or wastes space.
+description: "Sizing tokens for compact sidebars, nav panels, and menu lists. Use when building or refactoring a sidebar, settings menu, category list, filter bar, or expandable nav tree, or when a sidebar looks too wide, too padded, or wastes space."
 ---
 
 # Compact Navigation & Menu Panels

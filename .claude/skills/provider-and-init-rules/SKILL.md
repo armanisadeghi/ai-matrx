@@ -1,11 +1,6 @@
 ---
 name: provider-and-init-rules
-description: >
-  Enforces initialization, provider, and data-fetching rules for the app shell, layout, and global provider tree.
-  Use when working on app/Providers.tsx, app/DeferredSingletons.tsx, any layout.tsx, any provider file,
-  any context that wraps children globally, StoreProvider, or when adding new providers, data-fetching to
-  the startup path, or useEffect calls that run on mount in upper-level components. Also use when someone
-  references Redux user state, auth checks, isAdmin, isGuest, or fingerprintId on the client side.
+description: "Startup rules for the app shell, layouts, and global providers. Use when editing app/Providers.tsx, app/DeferredSingletons.tsx, a layout.tsx, StoreProvider, or a global provider; adding startup fetches or mount-time useEffects high in the tree; or reading auth state (isAdmin, isGuest, fingerprintId) client-side."
 ---
 
 # Provider & Initialization Rules

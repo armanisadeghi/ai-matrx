@@ -1,6 +1,6 @@
 ---
 name: context-assignment
-description: Use whenever a task touches context selection, scope tagging, or the ctx system UI at matrx-frontend — adding a context picker to a surface, showing per-entity context status, tagging files/notes/agents to scopes, setting the working (active) context, filtering by context, or upload-time context prompts. Triggers on features/scopes/components/context-assignment/**, active-context/**, ContextAssignmentField, ActiveContextButton, ContextStatusButton, UploadContextPrompt, appContextSlice, or any request like "add context selection to X", "tag this entity", "show context status". Read this BEFORE wiring any context UI — picking the wrong mode or writer is the #1 recurring failure.
+description: "Context and scope-tagging UI. Use when adding a context picker to a surface, tagging an entity to scopes, setting or filtering by the active (working) context, showing per-entity context status, prompting for context on upload, or editing context-assignment/** or appContextSlice."
 ---
 
 # Context assignment — picking the right component

@@ -1,6 +1,6 @@
 ---
 name: module-landing-pages
-description: The marketing-page ↔ logged-in-page duality — how every feature gets a public marketing landing and an authed workspace on the SAME route, with no error ever shown to an anonymous visitor and a deliberate per-page decision for signed-in users (land with a header CTA, or push straight in). Use whenever a task creates or fixes a marketing/landing page, a feature's public face, guest/anonymous access to a route, SEO surfaces for a feature, or the authed-user experience on a marketing page. Triggers on "marketing page", "landing page", "public page for X", "guests see an error", "logged-in users hitting the landing", "ModuleLanding", "AuthedWorkspaceCTA", "conversion nudges", "make /X work signed out", or building any new feature's front door. Education and Legal-vertical routes are the worked references. NOT for the (public) route group's share viewers / free tools (different shell) or /administration.
+description: "One-route pattern: public marketing landing plus signed-in workspace. Use when creating or fixing a landing page or a feature's front door, guests see an error, 'make /X work signed out', signed-in users land on a pitch, or ModuleLanding / AuthedWorkspaceCTA. NOT for (public) share viewers or free tools."
 ---
 
 # module-landing-pages — one route, two audiences, zero errors

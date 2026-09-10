@@ -1,6 +1,6 @@
 ---
 name: type-safety
-description: The canonical doctrine for fixing TypeScript type errors and writing type-safe boundary code. Generated types (database.types.ts, python-generated/api-types.ts) are the source of truth — code and data conform to them, never the reverse. Use when fixing type errors, resolving tsc failures, triaging type-errors files, running a type-fix pass, writing or editing any supabase.rpc()/.from() call, when errors mention Json/unknown/Database types, when adding DB shape guards, or whenever tempted to cast or suppress. Silencing an error is the opposite of fixing it — an error you cannot fix properly gets ESCALATED, never hidden.
+description: "Doctrine for fixing TypeScript errors against generated types (database.types.ts, api-types.ts). Use when fixing tsc or type-check failures, working a type-errors batch, writing supabase .rpc()/.from() calls, errors mention Json/unknown/Database, or you are tempted to cast, `as any`, or suppress."
 ---
 
 # Type Safety

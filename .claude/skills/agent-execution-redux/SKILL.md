@@ -1,24 +1,6 @@
 ---
 name: agent-execution-redux
-description: >
-  State management architecture for the AI agent execution system AND the rules for
-  triggering agent shortcuts from product code. Covers the four-layer Redux structure
-  (agent source, app context, execution instances, request lifecycle), slice ownership,
-  body assembly, NDJSON streaming, the rules for extending instance slices, and the
-  consumption-side rules for engaging shortcuts (trigger APIs, registry, warm-up,
-  direct vs non-direct display modes, scope/mapping contract, cleanup). Use when working
-  on any file in features/agents/redux/, building agent UI components, creating execution
-  instances, wiring selectors for agent state, adding new per-instance capabilities, OR
-  when firing/engaging/triggering an agent shortcut from any surface (button, context
-  menu, mounted component, programmatic). Triggers on: instanceId, agentDefinition,
-  executionInstances, instanceUIState, instanceModelOverrides, instanceVariableValues,
-  instanceResources, instanceContext, instanceUserInput, instanceClientTools,
-  activeRequests, instanceConversationHistory, assembleRequest, executeInstance,
-  createManualInstance, createInstanceFromShortcut, launchAgentExecution,
-  useShortcutTrigger, useShortcut, triggerShortcut, launchShortcut, useAgentLauncher,
-  getSystemShortcut, SYSTEM_SHORTCUTS, ensureShortcutLoaded, applicationScope,
-  scopeMappings, EditableContextMenu, NonEditableContextMenu, AgentGenerator, displayMode, "trigger
-  shortcut", "fire shortcut", "engage shortcut", "run a shortcut", "use a shortcut".
+description: "Redux state for agent execution and firing agent shortcuts. Use when editing features/agents/redux/, building agent UI, wiring agent-state selectors, adding a per-conversation capability, or triggering a shortcut from a button, menu, or code (useShortcutTrigger, launchAgentExecution)."
 ---
 
 # Agent Execution Redux — State Management

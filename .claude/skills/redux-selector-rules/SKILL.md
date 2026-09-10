@@ -1,11 +1,6 @@
 ---
 name: redux-selector-rules
-description: >
-  Rules for writing Redux Toolkit selectors that don't cause re-renders, recalculation warnings,
-  or runtime loops. Use this skill ANY time you write a useSelector/useAppSelector call,
-  create a selector with createSelector, or derive state in a Redux-connected component.
-  Trigger on: createSelector, useSelector, useAppSelector, selectX naming patterns, Reselect,
-  shallowEqual, memoized selectors, Redux state derivation.
+description: "Redux Toolkit selector rules against re-renders, recalculation warnings, and render loops. Use when writing useSelector/useAppSelector or createSelector, deriving state in a connected component, or seeing 'Selector returned a different result when called with the same parameters'."
 ---
 
 # Redux Selector Rules

@@ -1,6 +1,6 @@
 ---
 name: create-render-block-skill
-description: Create the platform agent-skill (skl_* tables) + content blocks that teach AI Matrx agents to emit a render block — and, when the block type doesn't exist yet, build the whole render block end-to-end first. Use whenever the task is "create the skill for the <X> render block", "skill-ify flashcards/quiz/timeline/diagram/etc.", "add content blocks for <X>", "teach agents to use the <X> block", "give the <X> render block its skill + AI-prompt entries", or "add a new render block type from scratch". This is the dispatchable recipe for the 40-50 existing render blocks that still need skills, and for any new block. Mermaid is the paved worked example. NOT for building a one-off MCP tool result display (that's create-tool-renderer) or printing blocks (block-print-system).
+description: "Platform agent skill and content blocks that teach agents a render block, building the block first if new. Use when asked to create the skill for a render block, skill-ify flashcards or quiz, add content blocks for a block, or add a new render block type. NOT for tool result displays (use create-tool-renderer)."
 ---
 
 # Create a render block's skill + content blocks
@@ -10,7 +10,9 @@ Given a render block, produce the two things that make agents actually USE it:
 1. **A platform skill** — a `skl_definitions` row (`skill_type='render_block'`, `is_system=true`) whose **body** is the teaching doc injected into an agent's system prompt when the agent includes it. Optionally the render registry (`skl_render_definitions` + per-platform `skl_render_components`).
 2. **Content blocks** — `content_blocks` rows: the lightweight prompt snippets a user injects into ONE agent's instructions from the right-click context menu ("a couple of clicks"). Grouped in a `shortcut_categories` (placement `content-block`) category.
 
-Both ship in **ONE idempotent migration**, applied AND live-verified. That's the whole job for an existing block. For a NEW block type you first build the block end-to-end (Part 2), then do Part 1.
+Both ship in **ONE idempotent migration**, applied AND live-verified. That's the whole job for an existing block. For a NEW block type you first build the block end-to-end (Part 2), then do Part 1. This is the dispatchable recipe for the 40-50 existing blocks that still need skills and for any new block; Mermaid is the paved worked example throughout.
+
+Not this recipe: a one-off MCP tool result display (the `create-tool-renderer` skill) or printing a block (the `block-print-system` skill).
 
 ## Cardinal rules
 

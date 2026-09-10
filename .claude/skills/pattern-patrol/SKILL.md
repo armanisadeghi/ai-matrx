@@ -1,6 +1,6 @@
 ---
 name: pattern-patrol
-description: The Pattern Patrols system — recurring, certified sweeps that keep eradicated problem-patterns dead (dead ends, mobile breakage, light/dark violations, missing copy-for-AI, emojis, bare Loading text, unregistered coming-soon, type-suppression debt, and a growing registry). Use when (1) you ARE a patrol run (a scheduled or chip-launched sweep for a registered pattern), (2) you SPOT a violation of a registered patrol while on another mission (log a sighting, don't fix off-mission), or (3) you notice a RECURRING class of mistake that looks like a new patrol candidate (nominate it with evidence). Triggers on "patrol", "recurring sweep", "this keeps happening", "log a sighting", PATROL_SIGHTINGS, PATROL_REGISTRY, "schedule a check for this", or any assignment naming a P# patrol id. NOT for one-off bug fixes with no pattern behind them.
+description: "Pattern Patrols system of recurring, certified sweeps. Use when you are a patrol run or an assignment names a P# id, you spot a registered-pattern violation off-mission (log a sighting), a mistake class keeps recurring, or you touch PATROL_REGISTRY or PATROL_SIGHTINGS. NOT for one-off bug fixes."
 ---
 
 # pattern-patrol — keep eradicated problems dead

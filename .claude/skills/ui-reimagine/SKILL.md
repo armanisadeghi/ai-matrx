@@ -1,14 +1,6 @@
 ---
 name: ui-reimagine
-description: >-
-  Redesign a UI for the AI Matrx app by reinventing it from scratch — the boldest,
-  highest-ceiling, highest-variance posture. Throw out the current structure and ask
-  "what should this actually BE?": merge separate screens, rethink the core interaction
-  model, build the ideal tool for the job as if it didn't exist yet. Trigger this when
-  you want to break the frame rather than polish it, when you want surprising new
-  paradigms, or when you want an idea generator (running it more than once yields
-  genuinely different concepts). One of the ui-* family (ui-sharp / ui-reimagine /
-  ui-refine / ui-dense, orchestrated by ui-bakeoff) — this is the break-the-frame one.
+description: "Reimagine UI posture — bold from-scratch reinvention of a screen. Use when asked to rethink or reinvent a UI, merge screens, change its core interaction model, break the frame rather than polish, or generate surprising new concepts."
 ---
 
 # ui-reimagine — the bold from-scratch reinvention

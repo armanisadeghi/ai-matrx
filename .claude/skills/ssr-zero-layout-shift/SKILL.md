@@ -1,19 +1,6 @@
 ---
 name: ssr-zero-layout-shift
-description: >-
-  Enforces SSR-first rendering with zero Cumulative Layout Shift using seven composable patterns:
-  Server Component shells with Client Component islands, Suspense boundaries as static-shell-with-dynamic-holes,
-  selective hydration, lazy-loaded client components via next/dynamic, dimension-matched skeleton fallbacks,
-  interaction-triggered data fetching, and one-shot Redux hydration. Also covers React cache() deduplication,
-  server-only guards, the slot pattern, preloading, and the loading state hierarchy.
-  Also the canonical Next.js 15/16 App Router doctrine (absorbed nextjs-ssr-architecture +
-  nextjs-app-router-expert): server/client component boundaries, shared service patterns, async request
-  APIs (awaited params/searchParams/cookies/headers), Route Handlers vs Server Actions, and 'use cache'.
-  Use when creating pages, components, forms, dropdowns, data tables, dashboards, or any UI that fetches data.
-  Also use when fixing layout shift, CLS issues, hydration mismatches, or reviewing component architecture
-  for rendering performance. Triggers on: Suspense, skeleton, layout shift, CLS, SSR, streaming, hydration,
-  next/dynamic, lazy loading, prerender, static shell, cache components, Redux hydration, server-only,
-  "use client" audit, API route patterns, Server Actions.
+description: "SSR-first Next.js App Router doctrine with zero layout shift. Use when creating a page or data-fetching UI, fixing CLS, layout shift, or hydration mismatches, placing 'use client', Suspense, or skeleton boundaries, awaiting params/searchParams/cookies, or choosing Route Handlers vs Server Actions."
 ---
 
 # SSR-First Zero Layout Shift
@@ -340,7 +327,7 @@ const logs = await getAgentLogs(id)
 
 ---
 
-## Next.js 15/16 App Router Rules (merged from nextjs-app-router-expert)
+## Next.js 15/16 App Router Rules (merged from nextjs-app-router-expert and nextjs-ssr-architecture)
 
 ### Business logic lives in shared services
 

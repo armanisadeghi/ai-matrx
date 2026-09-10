@@ -2,6 +2,16 @@
 
 Full composition patterns and anti-patterns for `app/(a)/` routes.
 
+## Contents
+
+- Complete File Tree (notes as reference)
+- Data Flow
+- Why Each Decision Was Made
+- Common Anti-Patterns (from agents route audit)
+- Metadata Quick Reference
+- Mobile Considerations
+- Questions to Always Ask Arman
+
 ## Complete File Tree (notes as reference)
 
 ```

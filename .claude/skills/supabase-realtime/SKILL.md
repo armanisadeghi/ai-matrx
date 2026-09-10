@@ -1,6 +1,6 @@
 ---
 name: supabase-realtime
-description: The canonical doctrine for ALL Supabase realtime in matrx-frontend — postgres_changes, broadcast, and presence. Use BEFORE writing or modifying any `.channel(` subscription, any handler that reacts to a table this client also writes (echo suppression), any autosave/optimistic-update loop that coexists with realtime, reconnect/backoff logic, live-collaboration UX (who-is-editing indicators), or when replacing a polling loop with realtime. Triggers on "realtime", "postgres_changes", "broadcast", "presence", "echo", "subscription", "channel", "the tab freezes", "duplicate messages", "live sync", "collaborative editing". This bug class froze whole browsers ~10 times in 6 months — this skill is the reason it stopped.
+description: "Doctrine for all Supabase realtime: postgres_changes, broadcast, presence. Use before writing or changing a `.channel(` or useChannel subscription, echo suppression, reconnect logic, or an autosave loop beside realtime, or when the tab freezes, messages duplicate, or a subscription delivers nothing."
 ---
 
 # Supabase Realtime — the Matrx doctrine

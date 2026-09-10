@@ -1,6 +1,6 @@
 ---
 name: overlay-system
-description: Use whenever a task touches the overlay rendering system at matrx-frontend — opening / closing / adding / debugging dialogs, sheets, modals, draggable windows, toasts, or any other component that lives at the top of the tree via dispatch. Triggers on `features/overlays/**`, `app/DeferredSingletons.tsx`, the overlay slice in `lib/redux/slices/overlaySlice.ts`, any `dispatch(openOverlay(...))` site, `useOpenX` opener hooks, `XController` components, or anything mentioning "overlay", "open in window", "dialog", "modal", "sheet", "fullscreen overlay", "dispatch overlay", "openOverlay", or "overlay rendering". This skill is the FIRST thing to read before changing how an overlay is rendered, opened, or registered. For the WindowPanel COMPONENT itself (drag, resize, minimize, tray) use the separate `window-panels` skill.
+description: "Overlay controller for dialogs, sheets, modals, windows, and toasts opened by dispatch. Use when opening, adding, registering, or debugging an overlay, or touching features/overlays/**, app/DeferredSingletons.tsx, lib/redux/slices/overlaySlice.ts, dispatch(openOverlay(...)), useOpenX hooks, or XController components. NOT for the WindowPanel component itself (use window-panels)."
 ---
 
 # Overlay System

@@ -1,6 +1,6 @@
 ---
 name: association-entity-select
-description: Place or extend the canonical AssociationEntitySelect — the ONE compact "name dropdown" for the entities of one token associated with a container (active entity's name + inline rename + always-visible switcher + unlink + "+ Add New" create-and-attach). Use whenever a surface needs to show WHICH note/session/chat/document a panel is bound to and let the user rename it, switch among the container's entities, or start a new one — "add a note switcher", "show the session name", "let the user rename this from the toolbar", "the dropdown should offer add-new". Covers the default adapter, writing a bespoke adapter, and the generic createEntityRow/renameEntityRow services. NOT for count cards (AssociationCard), row lists (AssociationList), or cross-type attach (UniversalAssociationPicker).
+description: "AssociationEntitySelect, the name dropdown for the note, session, chat, or document a panel is bound to. Use when a surface must show that name and let the user rename, switch, unlink, or add new ('add a note switcher', 'show the session name'). NOT for count cards or row lists (use canonical-associations)."
 ---
 
 # AssociationEntitySelect — the canonical name dropdown
@@ -35,6 +35,7 @@ References: `ThreadResourcesTab.handleFilesSelected` (upload → attach, all out
 - **The dropdown never hides.** `items.length === 1` (or 0) still renders the chevron — "add another" must always be reachable. That gap is the bug this component exists to kill.
 - Unlink ≠ delete: `detach` removes the association edge only. The active row never shows the X (switch first).
 - Registry-driven: icon/labels come from `getEntityInfo(token)`. The token needs a `titleColumn` in `ENTITY_OVERLAY` (`features/scopes/registry/entityRegistry.ts`) for generic create/rename.
+- **Not this control:** count cards (`AssociationCard`), row lists (`AssociationList`), and cross-type attach (`UniversalAssociationPicker`) — those faces are the `canonical-associations` skill.
 
 ## Plain container → default adapter
 

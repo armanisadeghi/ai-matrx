@@ -1,19 +1,6 @@
 ---
 name: vision-to-fleet
-description: >-
-  The full discovery-to-execution pipeline for taking a major feature area or system from Arman's
-  initial ideas all the way to a fleet of parallel agents building it — vision capture, reality
-  audit against live code + DB, world-class competitive research (with screenshots + design),
-  vision ratification, infrastructure groundwork, decomposition into hand-off-blind project
-  briefs, and fleet assignment. Use this whenever Arman says anything like "let's plan out X",
-  "I want to build/overhaul the X system", "do the full discovery process on X", "get this ready
-  for a fleet of agents", "create the vision and plan for X", "do what we did for education for
-  X", or hands over rough ideas for a big feature area and wants them turned into an executable
-  multi-agent plan. Also use it when picking up ANY intermediate artifact of this pipeline (a
-  VISION doc, a COMPETITIVE_INSIGHTS doc, a roadmap, a work-packages briefs folder)
-  and being asked to carry it forward. NOT for single features inside a live system
-  (build-sub-feature) or auditing one existing feature (feature-deep-dive) — this is for
-  system-scale work that ends in many parallel agents.
+description: "Pipeline that turns a big system idea into briefs for an agent fleet. Use when Arman says 'let's plan out X', 'overhaul the X system', 'do the full discovery process', 'get this ready for a fleet', or 'do what we did for education', or when carrying forward a VISION, COMPETITIVE_INSIGHTS, or briefs doc. NOT for one feature in a live system (use build-sub-feature)."
 ---
 
 # Vision → Fleet: the discovery-to-execution pipeline
@@ -32,6 +19,10 @@ Phases run in order, but this is a pipeline you can enter mid-stream: figure out
 already exist (vision? insights doc? briefs?), verify them instead of trusting them, and continue
 from there. Templates for every artifact: [references/templates.md](references/templates.md).
 Research mechanics: [references/research-playbook.md](references/research-playbook.md).
+
+**Not this skill:** a single feature inside a live system → `build-sub-feature`; auditing one
+existing feature → `feature-deep-dive`. This one is system-scale work that ends in many parallel
+agents.
 
 ---
 

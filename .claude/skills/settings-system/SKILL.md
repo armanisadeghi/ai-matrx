@@ -1,6 +1,6 @@
 ---
 name: settings-system
-description: Single source of truth for adding, editing, or migrating settings in the Matrx settings system. Use when adding a new preference, creating a settings tab, binding a new Redux slice, wiring a deep link, or touching anything under features/settings, components/official/settings, or the old components/user-preferences folder. Covers primitives, useSetting, the registry, admin gating, persistence tiers, and mobile parity.
+description: "The Matrx user settings system (SettingsShell, useSetting, tab registry). Use when adding a preference or settings tab, binding a Redux slice to settings, wiring a settings deep link, or touching features/settings, components/official/settings, or components/user-preferences."
 ---
 
 # Settings System

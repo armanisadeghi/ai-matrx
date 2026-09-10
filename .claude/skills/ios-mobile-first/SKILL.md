@@ -1,6 +1,6 @@
 ---
 name: ios-mobile-first
-description: Single source of truth for iOS-native mobile web UX. Covers viewport units, safe areas, Dialog-to-Drawer conversion, Tabs-to-vertical-stacking, touch targets, input zoom prevention, and responsive patterns. Use when building any UI component, fixing mobile issues, reviewing responsive code, or when mobile UX is mentioned.
+description: "iOS-native mobile web UX rules. Use when building any UI component, fixing mobile issues, reviewing responsive code, or touching viewport heights (dvh vs h-screen), safe areas, Dialog vs Drawer, tabs on mobile, touch targets, or input zoom."
 ---
 
 # iOS Mobile-First Design

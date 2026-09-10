@@ -1,14 +1,6 @@
 ---
 name: ui-refine
-description: >-
-  Improve an existing UI in the AI Matrx app without reinventing it — the safest,
-  most consistent, lowest-variance posture. Keep the user's mental model and the
-  current structure intact, and raise the quality bar: cleaner hierarchy, spacing on
-  the scale, humanized labels, real loading/empty/error states, fixed mobile breakage,
-  polished details. Trigger this when the current page is roughly right and you want it
-  sharpened without surprises, or when consistency with the rest of the app matters more
-  than novelty. One of the ui-* family (ui-sharp / ui-reimagine / ui-refine / ui-dense,
-  orchestrated by ui-bakeoff) — this is the safe, improve-what-exists one.
+description: "Refine UI posture — improve an existing screen without reinventing it. Use when the current page is roughly right but needs polish (hierarchy, spacing, labels, loading/empty/error states, mobile breakage), or when consistency with the rest of the app matters more than novelty."
 ---
 
 # ui-refine — improve what's there, don't reinvent it

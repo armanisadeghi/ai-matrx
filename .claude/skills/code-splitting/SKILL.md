@@ -1,17 +1,6 @@
 ---
 name: code-splitting
-description: >-
-  Split heavy CLIENT code out of the bundle with `next/dynamic({ ssr: false })` the right way.
-  Use BEFORE adding a dynamic import, making a component "lazy", deferring a heavy widget, cutting
-  bundle/first-load size, fixing a "window is not defined" / hydration mismatch on a browser-only
-  component, or reaching for `React.lazy`. Triggers on `next/dynamic`, `dynamic(`, `ssr: false`,
-  `React.lazy` / `lazy(`, `loading:`, "code split", "lazy load", "defer this", "make this not
-  load on every page", "heavy client component", "shrink the bundle", or wrapping a heavy core in
-  a thin shell. ALSO the first stop for BUILD FAILURES and build-time regressions: "build failed",
-  "OOM", "SIGKILL", "out of memory", "build got slower", "Vercel build error", "Collecting page
-  data" — rule 3 (THE FRAGMENTATION LAW) + docs/handoffs/build-graph-fragmentation-campaign.md
-  hold the measured incident, the diagnosis order, and the fix pattern. Read this whenever a task
-  touches how a component enters (or stays out of) a chunk.
+description: "next/dynamic code splitting and build-graph cost; first stop for build failures. Use before adding a dynamic import, React.lazy, or ssr: false; on 'window is not defined' or a hydration mismatch; shrinking the bundle; or on 'build failed', OOM, SIGKILL, a slower build, or 'Collecting page data'."
 ---
 
 # code-splitting — `next/dynamic` done right

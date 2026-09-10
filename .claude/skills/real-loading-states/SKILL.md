@@ -1,6 +1,6 @@
 ---
 name: real-loading-states
-description: Detect, triage, repair, and certify generic loading UI for Pattern Patrol P8. Use for `Loading...`/`Loading…` text, unlabeled spinners, meaningless pulses, Suspense fallbacks, loading placeholders, or any P8 patrol run.
+description: "Generic loading UI repair for Pattern Patrol P8. Use when you find 'Loading...' text, unlabeled spinners, meaningless pulses, Suspense fallbacks, or loading placeholders, or when running a P8 patrol."
 ---
 
 # Real Loading States

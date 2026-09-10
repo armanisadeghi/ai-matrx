@@ -1,6 +1,6 @@
 ---
 name: route-metadata-favicons
-description: Add or update Next.js route metadata, custom per-route favicons, OpenGraph, and Twitter card social sharing for any route or subroute tree in matrx-admin. Use when adding a new route, wiring up metadata for a layout, adding a favicon to a route, setting up social share images, auditing missing metadata, or understanding the tab-title naming convention. Triggers on: createRouteMetadata, createDynamicRouteMetadata, generateFaviconMetadata, navigation-links, favicon, openGraph, twitter card, metadata layout, titlePrefix.
+description: "Next.js route metadata, per-route favicons, OpenGraph, and Twitter cards. Use when adding a route or layout, adding a favicon or social share image, auditing missing metadata, naming tab titles, or touching createRouteMetadata, createDynamicRouteMetadata, generateFaviconMetadata, or titlePrefix."
 ---
 
 # Route Metadata & Favicons
@@ -10,8 +10,8 @@ description: Add or update Next.js route metadata, custom per-route favicons, Op
 | File                              | Role                                                                                   |
 | --------------------------------- | -------------------------------------------------------------------------------------- |
 | `constants/favicon-route-data.ts` | Master registry — `favicon: { color, letter }` per route                               |
-| `utils/favicon-utils.ts`          | Generates inline SVG favicon as `data:image/svg+xml` URI; holds system-route overrides |
-| `utils/route-metadata.ts`         | `createRouteMetadata` / `createDynamicRouteMetadata` helpers                           |
+| `utils/favicon-utils.ts`          | `generateFaviconMetadata` — inline SVG favicon as `data:image/svg+xml` URI; holds system-route overrides |
+| `utils/route-metadata.ts`         | `createRouteMetadata` / `createDynamicRouteMetadata` helpers — also emit OpenGraph + Twitter card metadata (override via `additionalMetadata.openGraph` / `.twitter`; per-entity `ogImage`) |
 | `config/extras/site.ts`           | `siteConfig.ogImage`, `siteConfig.description` — global social defaults                |
 | `app/(a)/layout.tsx`              | Root template: `"%s — AI Matrx"` — sets the brand suffix automatically                 |
 

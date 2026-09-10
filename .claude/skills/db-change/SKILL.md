@@ -1,6 +1,6 @@
 ---
 name: db-change
-description: Entry point and shared SOP for the 2026 Matrx DB transition — any structural change to the live Supabase database (Matrx Main) during downtime. Use whenever the task is to move a table to the graveyard, move a table to another schema, canonicalize a table/feature onto the platform standard, drop or merge tables, or change DB logic. Triggers on graveyard-table, move-table-to-schema, canonicalize-feature, retire/drop/merge-table, bring an entity onto the platform base entity, or any DDL on project brsgrqvjdzwihsvnfqkf. Holds the zero-data-loss law, the cross-repo apply order (Supabase MCP → pnpm db-types/sync-types → aidream db/generate.py → both repos commit), the constants, and routes to the specific change skills. Read this and TOOLKIT.md first; the per-change skills assume it.
+description: "Entry point and shared rules for structural changes to the live Matrx database. Use before any DDL: dropping, merging, or renaming a table, changing a function, RPC, trigger, or policy, hunting straggler tables, or starting a graveyard, schema move, or canonicalization (it routes to those skills)."
 ---
 
 # DB Change — the transition SOP (read first)

@@ -1,6 +1,6 @@
 ---
 name: component-consolidation
-description: Safely consolidate duplicate or redundant components by auditing for unique logic before deletion, updating all consumers, and cleaning up exports/indexes. Use when asked to remove a component in favor of another, eliminate duplicates, reduce two versions of something to one, or clean up redundant UI components.
+description: "Safe removal of a duplicate component in favor of the one being kept. Use when asked to remove a component in favor of another, eliminate duplicates, reduce two versions of something to one, or clean up redundant UI components."
 ---
 
 # Component Consolidation

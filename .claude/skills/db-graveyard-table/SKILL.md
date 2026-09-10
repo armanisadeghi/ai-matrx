@@ -1,6 +1,6 @@
 ---
 name: db-graveyard-table
-description: Retire a live table during the 2026 Matrx DB transition by moving it to the graveyard schema (reversible, zero data loss) and clearing every reference across both repos. Use whenever the task is "graveyard <table>", "retire <table>", "this table is dead / no longer used", or taking a table offline without dropping it. Covers the reference-discovery queries (inbound FKs, RPCs, views, app code in matrx-frontend + aidream), the SET SCHEMA graveyard move, registry de-registration, and the cross-repo cleanup. Read db-change/SKILL.md + db-change/TOOLKIT.md first. NOT for relocating a still-used table (use db-move-table-schema) or a hard DROP (gated, later).
+description: "Retiring a dead table by moving it to the graveyard schema and clearing every reference in both repos. Use when asked to graveyard or retire a table, when a table is no longer used, or to take a table offline without dropping it. NOT for relocating a still-used table (use db-move-table-schema)."
 ---
 
 # Graveyard a table

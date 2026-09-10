@@ -1,6 +1,6 @@
 ---
 name: token-broker-client
-description: Consume scoped short-lived credentials from the aidream token broker in matrx-frontend. Use whenever a task needs temporary privileged reach from the browser — a provider realtime session (OpenAI realtime voice), direct provider API calls (Anthropic messages), or ANY capability that would otherwise require a provider API key client-side. Triggers on "API key in the browser", "realtime session token", "ephemeral token", "call <provider> directly", "broker", "brokered credential", "mint a token", lib/api/broker/**, or any temptation to put a provider secret in NEXT_PUBLIC_* env. Read BEFORE wiring any provider connection from client code.
+description: "Brokered short-lived provider credentials client in matrx-frontend (`lib/api/broker/`). Use when browser code needs a provider realtime session, a direct provider call, an ephemeral token, or a provider API key in the browser or `NEXT_PUBLIC_*`. NOT for adding a new audience server-side (use token-broker)."
 ---
 
 # token-broker-client — consume brokered credentials

@@ -1,6 +1,6 @@
 ---
 name: no-emojis-in-ui
-description: Detect, triage, and safely remove user-visible emoji and Unicode icon glyphs from matrx-frontend UI by using Lucide icons or deleting redundant decoration. Use for Pattern Patrol P6, any UI edit that encounters emoji in TSX, or a request to enforce the repo's Lucide-only enterprise UI doctrine.
+description: "Emoji and Unicode-glyph removal for Lucide-only UI (Pattern Patrol P6). Use when running a P6 patrol, a UI edit meets an emoji or icon glyph in TSX, or asked to enforce Lucide-only icons."
 ---
 
 # no-emojis-in-ui

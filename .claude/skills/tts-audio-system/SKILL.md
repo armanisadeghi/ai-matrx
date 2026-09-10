@@ -1,14 +1,6 @@
 ---
 name: tts-audio-system
-description: >-
-  The TTS / STT / audio-playback system: the ONE `speak()` entry point, the
-  app-wide playback queue + session registry, the iOS/WebKit output-unlock
-  primitive, the tiered listening config (voice/speed/language, system → org
-  → user), the Listen panel (summarize-for-listening), Cartesia streaming,
-  catalog speech, Whisper transcription, and the speaker UI components. Use
-  when working on ANY audio feature — TTS, read-aloud, voice playback, the
-  Listen actions, transcription, mic capture, SpeakerButton, audio API routes
-  — or any file in features/audio/, features/tts/, hooks/tts/, app/api/audio/.
+description: "The TTS/STT/audio-playback system behind the one `speak()` entry point. Use when working on read-aloud, the Listen panel, voice/speed settings, transcription, mic capture, SpeakerButton, iOS playing silence, audio API routes, or files in features/audio/, features/tts/, hooks/tts/, app/api/audio/."
 ---
 
 # TTS / Audio System

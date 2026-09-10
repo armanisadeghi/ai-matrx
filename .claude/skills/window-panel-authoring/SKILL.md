@@ -1,6 +1,6 @@
 ---
 name: window-panel-authoring
-description: Create, modify, or audit floating window panels in the matrx-admin window-panels system. Covers the full 5-step registration flow (registry → component → OverlayController → SidebarWindowToggle → optional URL hydrator), the local-first workspace persistence contract, onCollectData patterns, ephemeral vs persisted windows, sidebar/footer layout rules, and the multi-window pattern. Use when creating a new window panel, editing an existing window component, adding persistence to a window, wiring a window into the Tools grid, or debugging why a window fails to restore after page reload.
+description: "Recipe for creating or changing a floating window panel. Use when adding a window, editing a window component, adding persistence, onCollectData, or ephemeral mode, wiring the Tools grid, or a window fails to restore after reload. NOT for WindowPanel drag/resize/tray internals (use window-panels)."
 ---
 
 # Window Panel Authoring

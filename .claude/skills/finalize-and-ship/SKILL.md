@@ -1,6 +1,6 @@
 ---
 name: finalize-and-ship
-description: The end-of-task routine — run every health check, fix what's broken, then commit and push. Use whenever you finish a unit of work and the user says to commit/push it, "ship it", "get it ready", "do this" (with no push instruction), or asks you to wrap up and hand work back. Covers type sync, migrations, doctrine/docs checks, the commit/push contract, and stop-and-ask triggers.
+description: "End-of-task routine: health checks, fixes, then commit and push. Use when finishing a unit of work, or when the user says 'commit and push', 'ship it', 'get it ready', 'wrap up', or just 'do this' with no push instruction."
 ---
 
 # finalize-and-ship

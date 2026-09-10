@@ -1,20 +1,11 @@
 ---
 name: context-menu-v3
-description: >-
-  Wire the universal v3 right-click context menu (`EditableContextMenu` /
-  `NonEditableContextMenu`) onto a surface, or fix a surface's wiring. Use
-  whenever a task says "add a right-click menu to <surface>", "wire <surface>
-  to the context menu", "the menu is fake / can't copy / has no Export on
-  <surface>", "Download as Markdown is missing", or collapses a leftover
-  bespoke per-surface menu. Covers the wrapper choice, the value props,
-  `contentSource` + `entity` to unlock Copy-as/Export/Convert/Attach/Share,
-  and the no-fake-menu verification. NOT for editing the v3 internals —
-  that's `features/context-menu-v3/FEATURE.md`.
+description: "The universal v3 right-click menu (EditableContextMenu / NonEditableContextMenu). Use when adding a right-click menu to a surface, fixing a fake menu with no Copy or Export, a missing Download as Markdown, or a bespoke per-surface menu. NOT for an assigned rollout shard (use context-menu-rollout)."
 ---
 
 # context-menu-v3 — wire the universal menu onto a surface
 
-The deep contract is **[`features/context-menu-v3/FEATURE.md`](../../../features/context-menu-v3/FEATURE.md)** — read it once. This skill is the rollout recipe. The proven reference is **`/demos/context-menu/canonical`** (every panel is a real v3 wiring; copy the one that matches your surface). The v2 menu (`UnifiedAgentContextMenu`) was deleted 2026-07-19 — every surface renders v3.
+The deep contract is **[`features/context-menu-v3/FEATURE.md`](../../../features/context-menu-v3/FEATURE.md)** — read it once. This skill is the rollout recipe; editing the v3 internals is that FEATURE.md's job, and a worker assigned a shard from `pnpm check:context-menu` follows the `context-menu-rollout` skill on top of this one. The proven reference is **`/demos/context-menu/canonical`** (every panel is a real v3 wiring; copy the one that matches your surface). The v2 menu (`UnifiedAgentContextMenu`) was deleted 2026-07-19 — every surface renders v3.
 
 ## Pick the wrapper
 

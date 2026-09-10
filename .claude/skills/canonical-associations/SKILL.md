@@ -1,6 +1,6 @@
 ---
 name: canonical-associations
-description: The repeatable recipe for canonicalizing entity-to-entity relationships onto the ONE association system (platform.associations) and for canonicalizing Supabase table references post-2026-reorg. Use whenever a task touches a bespoke M2M junction table, an associate_*/get_*_associations/attach_*/tag_* RPC, FK-tag duplication (project_id/task_id columns used as "tagging"), a "list/attach/count things related to X" UI, or a bare .from("<moved-table>") that should be schema-qualified. Triggers on "associate", "attach", "link", "tag", "related to", "M2M", "junction table", "resources for this org/scope/project", "PGRST205 / 42703 table-not-found", or "canonicalize table ref". Holds the load-bearing boundary (associations vs iam.permissions/iam.memberships), the three recipes (replace-an-M2M, put-a-card-on-a-container, canonicalize-a-table-ref), the entity-token + registry rules, and the campaign backlog.
+description: "The one association system (platform.associations) and schema-qualified table refs. Use when touching an M2M junction table, an associate_*/attach_*/tag_* RPC, FK columns used as tags, a 'things attached to X' list or card, or a PGRST205 / 42703 table-not-found on a bare .from()."
 ---
 
 # Canonical Associations — the campaign playbook
@@ -17,6 +17,15 @@ description: The repeatable recipe for canonicalizing entity-to-entity relations
 
 
 There is **ONE** way to relate two entities (content↔content, content↔container) in this app: an edge in **`platform.associations`**, written ONLY through `associationsService` (`features/scopes/service/associationsService.ts`), which is the sole caller of the `assoc_*` RPCs. Every bespoke M2M junction table, `associate_*`/`get_*_associations` RPC, and FK-tag column used as a relationship is **debt to migrate onto this edge**. This skill is the exact recipe a subagent follows, one file at a time.
+
+## Which recipe — each run uses one
+
+The rules below (field realities, tombstones, the boundary, the token rule, edge direction) apply to every run. Then read ONLY the recipe your task needs:
+
+- **Replacing a bespoke M2M junction, an `associate_*`/`get_*_associations` RPC, or an FK-tag column** → read [recipe-a-replace-m2m.md](recipe-a-replace-m2m.md) (Recipe A FE repoint + Recipe A-DB junction collapse — they ship in ONE change).
+- **Putting association cards, a picker, or a name dropdown on a container page, or adding a new card kind** → read [recipe-b-container-cards.md](recipe-b-container-cards.md).
+- **A bare `.from("<moved-table>")`, PGRST205, or 42703** → read [recipe-c-table-refs.md](recipe-c-table-refs.md).
+- **Running a whole flip** (DB collapse + FE repoint) → the **Campaign workflow** below, plus the recipe files it names.
 
 ## ⚡ Field realities — "make this table associable everywhere" (verified 2026-07-05)
 
@@ -52,24 +61,9 @@ Every `sourceType`/`targetType` MUST be a **canonical `EntityTypeToken`** — ge
 - A token that's just a wrong name (`agent_app`→`app`, `user_file`→`file`, `notes`→`note`) → repoint the callsite to the canonical token. Never add a compatibility map.
 - Ids are **row UUIDs**, never display strings. (The original bug: an agent passed a cute string as an id.)
 
----
-
-## Recipe A — Replace a bespoke M2M / association RPC with `associationsService`
+## Edge direction and one canonical path — every edge write
 
 **Direction is canonical and fixed: little points to big — the smaller thing is the source, the bigger thing it points to is the target.** `task → organization`, `file → scope`, `note → project`, `project → war_room` (a war room is bigger than a project — many threads make a war room). (Same direction as scope-tagging; a container's attached resources are its INCOMING edges.) The registry `platform.association_types` is the single truth of direction per pair; `trg_associations_auto_orient` **REJECTS** a wrong-way write of a registered pair with an error naming the canonical direction, and `/administration/relationships` flags reversed edges. **The size hierarchy is a product fact — if a pair's direction seems wrong, ASK; never flip the registry or edges on your own judgment.** Registering a NEW pair: insert it in `/administration/relationships` (or `admin_upsert_relationship_rule`) with `container_side='none'` — whether it conveys access is a human decision made there.
-
-1. **Identify the edge.** What two entities does the junction/RPC relate, and which is the container? Map both to canonical tokens.
-2. **Replace writes:**
-   - attach → `associationsService.add({ sourceType, sourceId, targetType, targetId, orgId?, label?, role? })`
-   - detach → `associationsService.remove({ sourceType, sourceId, targetType, targetId, role? })`
-   - "make the set exactly these" → `associationsService.setTargets({ sourceType, sourceId, targetType, targetIds, orgId? })`
-   - entity deleted → `associationsService.removeForEntity(type, id)` (purges both directions)
-3. **Replace reads:**
-   - one entity's edges (both directions) → `associationsService.listForEntity(type, id)`
-   - many containers at once → `associationsService.listForTargets(targetType, targetIds)`
-   - many sources at once (e.g. scope tags of every visible row) → `associationsService.listForSources(sourceType, sourceIds, targetType?)`
-4. **Prefer the hooks** in React: `useAssociations({ type, id })` (entity-centric) or `useContainerLinks({ containerType, containerId, orgId })` (container-centric: `countFor` / `attachedIdsFor` / `linksFor` / `totalCount` / `attach` / `detach`). Never call the service or `assoc_*` RPC directly from a component, and never dispatch `appContextSlice` from association code (durable relationships are not the user's active working context — see `features/scopes/FEATURE.md`).
-5. **Retire the old path:** delete the bespoke RPC caller. On the DB side, collapse + graveyard the junction via **Recipe A-DB** below (during the 2026 downtime the DB collapse ships in the SAME change as this FE repoint — no soak, no compat shim). Add a `dead-relations.json` entry the moment you stop reading a table.
 
 > A relationship has **exactly one** canonical path. If two surfaces reach the same edge two ways (one via associations, one via a junction), that's the bug — collapse to associations.
 
@@ -77,58 +71,21 @@ Every `sourceType`/`targetType` MUST be a **canonical `EntityTypeToken`** — ge
 
 ---
 
+## Recipe A — Replace a bespoke M2M / association RPC with `associationsService`
+
+**Replacing a junction / association RPC → read [recipe-a-replace-m2m.md](recipe-a-replace-m2m.md)** — the write/read/hook swaps and retiring the old path.
+
 ## Recipe A-DB — collapse the junction in the DB (2026 downtime SOP)
 
-Take the old shape DOWN and bring the new one UP in ONE migration — no FE-soak, no passthrough view (that's what downtime is for). The FE repoint (Recipe A) ships in the same change.
-
-**The audit toolkit tells you exactly what to touch** — all re-runnable; `SELECT audit.refresh()` rebuilds every snapshot:
-- `iam.verify_canonical(schema,table,token)` → every failing conformance check; `iam.canonical_certify_ok(schema,table,token)` → the boolean "done" gate (zero FAIL/WARN + no broken dependents).
-- `audit.m2m_candidates` → **genuine junctions ONLY** (gated on `audit.is_m2m_shape`: a table is a junction iff a unique/PK key IS its entity-FK pair ± ordering; an entity that merely has 2 FKs never appears). A shape-true-but-semantically-not-a-link table (config entity / grant / KG edge) → `SELECT meta.exempt('m2m_candidate', schema, table, reason)`. **Every check consults `meta.audit_exemption` — one `meta.exempt(check,schema,table,reason)` call kills a false positive forever; never hard-code an exception into a function.**
-- `audit.table_impact(schema,table)` → every dependent **Postgres fn** + the exact columns each touches + `currently_broken`. Run BEFORE editing. **It does NOT see the frontend** — `grep -rn '"<table>"' features/ lib/ app/` for `.from()`/embeds separately (that is step 2/3 of Recipe A, and it is what actually breaks the app).
-
-**The migration — atomic, idempotent, count-verified:**
-1. Both endpoint tokens registered + active in `platform.entity_types`. Missing → register + `pnpm tsx scripts/generate-entity-types.ts`.
-2. `INSERT INTO platform.associations (source_type,source_id,target_type,target_id,organization_id,role,position,metadata,created_at) SELECT …` — org from the source (or target) entity; `role`/`position` per the edge; `metadata` = edge props + `legacy_table` + `legacy_id` (composite PK → `jsonb_build_object(...)`). `ON CONFLICT ON CONSTRAINT associations_unique DO NOTHING`.
-3. **Count-verify or ROLLBACK:** `IF (SELECT count(*) FROM <junction>) <> (SELECT count(*) FROM platform.associations WHERE metadata->>'legacy_table'='<junction>') THEN RAISE EXCEPTION …`. Wrap the whole block in `IF to_regclass('<schema>.<junction>') IS NOT NULL THEN … END IF` (idempotent — a re-run after graveyard is a no-op).
-4. **Repoint every fn from `table_impact`** in the SAME migration: `CREATE OR REPLACE` each, swapping `FROM <junction>` for `JOIN platform.associations a ON a.source_id=… AND a.source_type='<src>' AND a.target_type='<tgt>' AND a.role='<role>'` (position → `a.position`, edge props → `a.metadata->>'…'`). While in a fn, fix any pre-existing break it carries (e.g. an unqualified type that needs `SET search_path TO 'public'`).
-5. De-register (only if the junction itself was registered): `DELETE FROM platform.entity_relationships WHERE child_type='<token>'`; `DELETE FROM platform.entity_types WHERE token='<token>'`.
-6. Retire, never DROP: `ALTER TABLE <schema>.<junction> SET SCHEMA graveyard`; `INSERT INTO platform.deprecated_relations(old_ref,new_ref,reason,archived_as)`.
-7. `SELECT audit.refresh()` → confirm the junction left `m2m_candidates` and no fn landed in `audit.broken_functions`; `iam.canonical_certify_ok(...)` where applicable.
-8. Apply via Supabase MCP `apply_migration`; ledger the file (`public._schema_migrations`, checksum = SHA-256 of bytes). Then `pnpm db-types` + aidream `python db/generate.py`.
-
-**Then the FE (Recipe A) in the same change.** Before calling it done, run an **adversarial sweep** (see the campaign workflow) — a fresh agent greps BOTH repos for any surviving old-shape usage (`.from("<junction>")`, the old RPC, the old column, the PostgREST embed). Old stuff must ERROR, never pass through.
-
----
+**Collapsing the junction in the DB → read [recipe-a-replace-m2m.md](recipe-a-replace-m2m.md)** — the audit toolkit and the atomic, count-verified migration.
 
 ## Recipe B — Put an association surface on a container (the card system)
 
-The container page shows one card per attachable entity kind, fully registry-driven. Adding a card is **one overlay line**, no per-page logic.
-
-1. **Mount the provider** once on the container page:
-   ```tsx
-   <PrimaryEntityProvider value={{ type: "organization", id: orgId, orgId, label: orgName }}>
-     <AssociationCardGrid />          {/* every listable token */}
-     {/* or scope it: <AssociationCardGrid tokens={["task", "file", "note"]} /> */}
-   </PrimaryEntityProvider>
-   ```
-   `type` must be an `AssociationTargetType` (org / scope / scope_type / project / task / …). For a single kind, use `<AssociationCard token="task" />`.
-2. **Need a NEW kind of card?** Add ONE line to `ENTITY_OVERLAY` in `features/scopes/registry/entityRegistry.ts`: `token: { Icon, labelPlural, titleColumn }`. Owner/org columns are conventions (`created_by` / `organization_id`) — only override if the table truly diverges. The token must be a canonical `EntityTypeToken`. That's the whole change; the card, count, and picker light up.
-3. **Resolve metadata** anywhere via `getEntityInfo(token)` (schema/table/title/icon/owner/org) — never hardcode a table name, icon, or label in a component, and never read the deprecated `features/organizations/resource-catalogue.ts` for display (that file survives only for the `iam.permissions` sharing surface).
-
-The candidate reader (`associationCandidates.ts`) lists the user's own attachable rows (`created_by = me`) with loud RLS-only fallback on a missing-column error — extend it only via the registry.
-
-**The third face — the name dropdown.** `AssociationEntitySelect` (`features/scopes/components/associations/`) is the canonical compact control for "which entity of token X is this panel bound to": name display + inline rename + always-visible switcher + unlink + "+ New" create-and-attach, adapter-driven (default `useAssociationEntitySelectAdapter`; bespoke reference = war-room `useThreadEntitySelect.ts`). Generic row create/rename lives in `service/entityRows.ts` (registry titleColumn + conventions). **Invoke the `association-entity-select` skill** before building any switcher/rename/add-new control for a container's entities.
-
----
+**Container card / picker / name-dropdown work → read [recipe-b-container-cards.md](recipe-b-container-cards.md)** — provider mount, the one overlay line, `getEntityInfo`, the third face.
 
 ## Recipe C — Canonicalize a table reference (kills PGRST205 / 42703)
 
-The 2026 reorg moved tables out of `public` into domain schemas. A bare `supabase.from("tasks")` now resolves to `public.tasks` → **PGRST205** (or a wrong-column **42703**).
-
-1. **Find the canonical home.** Resolve the schema via the entity registry (`getEntityInfo(token).schema`/`.table`) or, for sharing-domain reads, the shareable registry (`getShareableResource(type).schemaName`/`.physicalTable`). Confirm live with a Supabase MCP `execute_sql` against `information_schema` if unsure — never guess a schema.
-2. **Qualify the read/write:** `supabase.schema("workspace").from("tasks")`, `supabase.schema("files").from("files")`, etc. (Reads/writes go DIRECT to Postgres — never route a plain DB op through Python or a Next.js API route.)
-3. **Register the move** in `scripts/dead-relations.json` (+ run the guard) so the old bare name lights up red until every callsite is repointed.
-4. **Verify:** `pnpm check:schema` (live-schema diff: `direct-from-schema` + `dead-relations`) and `pnpm check:dead-relations` (fast offline subset, on every commit). `:strict` variants exit non-zero for CI.
+**PGRST205 / 42703 / bare moved-table ref → read [recipe-c-table-refs.md](recipe-c-table-refs.md)** — find the canonical home, qualify, register in `dead-relations.json`, verify.
 
 ---
 
@@ -145,3 +102,5 @@ The 2026 reorg moved tables out of `public` into domain schemas. A bare `supabas
 ## Backlog
 
 The prioritized, file-anchored campaign backlog lives in **[`WORK-QUEUE.md`](./WORK-QUEUE.md)** next to this skill. Start there; keep it current as items land.
+
+The 2026-06-29 facts-only migration snapshot (triage verdicts, the `bundle_member` finding) lives in **[`STATUS.md`](./STATUS.md)**.

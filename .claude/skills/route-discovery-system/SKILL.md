@@ -1,6 +1,6 @@
 ---
 name: route-discovery-system
-description: Auto-discovers Next.js App Router pages from the filesystem and renders navigable index pages with switchable display variants. Use when creating index/listing pages, adding new route directories, converting hard-coded route configs to auto-discovery, or adding new display variants for route listings.
+description: "Filesystem auto-discovery of App Router pages into navigable index pages. Use when creating an index/listing page, adding route directories, converting hard-coded route configs to auto-discovery, or adding a route-listing display variant."
 ---
 
 # Route Discovery System

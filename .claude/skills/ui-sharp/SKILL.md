@@ -1,14 +1,6 @@
 ---
 name: ui-sharp
-description: >-
-  Build or redesign a UI for the AI Matrx app with a lean, sharp, inviting result —
-  the everyday default for "make this page good / cleaner / nicer." Trust-your-taste
-  posture: keep the good bones, cut the clutter, elevate, and stop — no over-engineering,
-  no reinventing the paradigm. The user looks at it and instantly thinks "I could do
-  this." Trigger this whenever you want a fast confident refresh of a page, panel, list,
-  form, or dashboard and you want the agent to use its judgment rather than ask for a
-  spec. One of the ui-* family (ui-sharp / ui-reimagine / ui-refine / ui-dense, orchestrated
-  by ui-bakeoff) — this is the lean, inviting one.
+description: "Lean, sharp UI posture — the everyday default redesign. Use when asked to make a page, panel, list, form, or dashboard good, cleaner, or nicer, or for a fast confident refresh where the agent uses its judgment instead of asking for a spec."
 ---
 
 # ui-sharp — the lean, inviting redesign

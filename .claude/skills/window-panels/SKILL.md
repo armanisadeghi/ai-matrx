@@ -1,13 +1,13 @@
 ---
 name: window-panels
-description: Use for tasks scoped to the WindowPanel COMPONENT primitive itself — drag, resize, minimize/maximize, the tray dock (WindowTray / WindowTraySync), the runtime Window Manager registry (`windowManagerSlice`), URL persistence of window state, and the local-first workspace persistence (IndexedDB/localStorage via `features/window-panels/persistence/`). Triggers on `features/window-panels/WindowPanel.tsx`, `WindowTray*.tsx`, `WindowPersistenceManager.tsx`, `lib/redux/slices/windowManagerSlice.ts`, or any task adding a `<WindowPanel>` directly on a page outside the overlay system. For OPENING / ADDING / RENDERING / DEBUGGING dialogs, sheets, modals, or windows-as-overlays — use the `overlay-system` skill instead. The two systems were merged in April 2026 (causing a class of silent-render bugs) and split back apart in May 2026; keep them separate.
+description: "The WindowPanel component and Window Manager. Use when a window won't drag/resize, the tray is missing, window state doesn't persist, rendering `<WindowPanel>` on a page, or editing WindowPanel.tsx, WindowTray*.tsx, or windowManagerSlice.ts. NOT for opening/registering overlays (use overlay-system)."
 ---
 
 # Window Panels — the WindowPanel component + Window Manager
 
 This skill covers the **WindowPanel component primitive** and the runtime **Window Manager** (`windowManagerSlice` + `WindowTray`). For deep reference, see [`features/window-panels/FEATURE.md`](../../../features/window-panels/FEATURE.md).
 
-**Opening / adding / registering / closing an overlay is NOT this skill.** That moved to a separate system — read the [`overlay-system`](../overlay-system/SKILL.md) skill first for anything about `openOverlay`, openers, the `OverlayController`, or `lazyOverlay`. This skill is what the WindowPanel *is*, once something renders it.
+**Opening / adding / registering / closing an overlay is NOT this skill.** That moved to a separate system (the two were merged in April 2026, causing a class of silent-render bugs, and split back apart in May 2026 — keep them separate) — read the [`overlay-system`](../overlay-system/SKILL.md) skill first for anything about `openOverlay`, openers, the `OverlayController`, or `lazyOverlay`. This skill is what the WindowPanel *is*, once something renders it.
 
 If your task is "the window won't drag", "the tray isn't showing", "window state doesn't persist", "I want to render a `<WindowPanel>` directly on a page", "fix Window Manager focus / minimize-all", or "build a window component to spec" → this skill. If it's "open / dispatch / register an overlay" → overlay-system.
 

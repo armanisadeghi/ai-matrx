@@ -1,11 +1,11 @@
 ---
 name: efficient-tap-button-migration
-description: Migrates legacy custom buttons (raw <button>, IconButton, className-styled <Bug/>/<Plus/> etc.) to the project's TapButton system using the production-ready efficiency pattern — pre-composed tap buttons with proper spacing (no padding/margin/gap overrides anywhere), heavy decoration split via next/dynamic with cheap selector gating, types imported from canonical owners (never duplicated, never re-declared), and canonical overlay-action calls (openOverlay({ overlayId })) instead of typed convenience wrappers. Use when replacing any custom icon button with a TapButton; when migrating header/toolbar/footer icons; when adding lazy-loaded "feature highlight" decorations to a button; or when the user mentions tap targets, tap buttons, BugTapButton, PlusTapButton, "efficiency update", "efficiency refactor", "lazy split", or asks to make a small UI component production-ready.
+description: "Migrating custom icon buttons to TapButtons. Use when replacing a raw <button>, IconButton, or className-styled icon; migrating header, toolbar, or footer icons; lazy-splitting a button's highlight decoration; or on 'tap targets', 'efficiency update', 'lazy split', or making a small component production-ready."
 ---
 
 # Efficient TapButton Migration Pattern
 
-The single source of truth for migrating any small icon button to the project's tap-target system. Reference implementation: `features/feedback/FeedbackButton.tsx` + `features/feedback/FeedbackHighlight.tsx`. Read both before applying this skill to a new component.
+The single source of truth for migrating any small icon button to the project's tap-target system — and what an "efficiency update", "efficiency refactor", or "lazy split" of a small UI component means here: the production-ready pattern below. Reference implementation: `features/feedback/FeedbackButton.tsx` + `features/feedback/FeedbackHighlight.tsx`. Read both before applying this skill to a new component.
 
 The pattern has four pillars. All four must hold for the migration to be considered complete.
 

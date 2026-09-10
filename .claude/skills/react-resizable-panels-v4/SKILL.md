@@ -1,6 +1,6 @@
 ---
 name: react-resizable-panels-v4
-description: Single source of truth for `react-resizable-panels` v4 in this Next.js 16 SSR-heavy codebase. Use whenever you import from `react-resizable-panels`, edit `components/ui/resizable*`, work on `features/code/layout/`, build a split-pane layout, sidebar, code-editor shell, multi-pane app, or anything mentioning "resizable", "panel group", "split", "sidebar", or "drag handle". Covers the v3→v4 rename trap, the official Next.js cookie SSR pattern, programmatic show/hide that snaps back to prior size, and what NOT to add (no `useState` for sizes, no extra refs, no useEffects to read sizes).
+description: "react-resizable-panels v4 rules for this SSR codebase. Use when importing react-resizable-panels (PanelGroup and PanelResizeHandle are v3 names), editing components/ui/resizable* or features/code/layout/, building a split-pane, sidebar, or drag-handle layout, or persisting or toggling panel sizes."
 ---
 
 # react-resizable-panels v4 — the only thing you need to read
@@ -85,7 +85,7 @@ In v3, `defaultSize={30}` meant 30%. **In v4, it means 30 pixels.** Use strings 
 - **Looking up a prop, imperative method, hook, exported type, or styling a custom `<Separator>`** → read [api-reference.md](api-reference.md) (§1 + §10).
 - **A button/toolbar/header toggle that collapses or expands a panel, or any cross-portal toggle** → read [collapse-and-toggle.md](collapse-and-toggle.md) (§4 + `<PanelControlProvider>` / `setLayout` pivot trap).
 - **Panels that mount/unmount (not just collapse), with or without SSR persistence** → read [conditional-panels.md](conditional-panels.md) (§5 + the hydration-safe two-cookie shape).
-- **Building a VSCode-style nested shell or an Apple Mail / Notes multi-sidebar layout** → read [layout-recipes.md](layout-recipes.md) (§6 + §7).
+- **Nesting a `<Group>` inside a `<Panel>` (any orientation), an immovable fixed rail, or building a VSCode-style / Apple Mail / Notes layout** → read [layout-recipes.md](layout-recipes.md) (§6 + §7 + the rules for nesting).
 - **Composing the page body under the shell header: top spacing per panel, `<PageHeader>` content** → read [page-shell-chrome.md](page-shell-chrome.md).
 
 ---
@@ -233,7 +233,7 @@ The library remembers pre-collapse size itself (`panel.collapse()` / `panel.expa
 
 Worked shells plus the rules for nesting Groups.
 
-**Building either layout → read [layout-recipes.md](layout-recipes.md).**
+**Nesting a Group inside a Panel, a fixed rail, or building either layout → read [layout-recipes.md](layout-recipes.md).**
 
 ---
 
