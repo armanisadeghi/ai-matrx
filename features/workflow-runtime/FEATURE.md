@@ -162,6 +162,8 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-09-09 — **Picker values commit after their Radix layer closes.** Production verification caught a synchronous picker update orphaning `pointer-events:none` on the document body. `SelectInput` now waits for the shared measured close boundary, preventing the dead-page interaction class instead of relying on the recovery watchdog.
+
 - 2026-09-09 — **Served picker variants keep the input's legal options.** `componentForInputOptions` joins the registered presentation with each served field's closed option set across run forms, triggers, interrupts, bake-offs, and masterworks. Generic `dropdown` variants no longer degrade to a textarea, and the async registry paint no longer flashes a false unregistered-variant warning.
 
 - 2026-09-08 — **A workflow can be PICKED like an agent (`listings/`).** The mandate

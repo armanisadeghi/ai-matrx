@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { calcCols } from "./useContainerColumns";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { afterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
 
 /** Overrides base SelectTrigger nowrap/line-clamp so long values wrap in-panel. */
 const dropdownTriggerClassName = (compact: boolean) =>
@@ -72,11 +73,18 @@ export function SelectInput({
   );
 
   const handleSelectChange = (newValue: string) => {
-    if (newValue === "Other") {
-      onChange(customText ? `Other: ${customText}` : "Other: ");
-    } else {
-      onChange(newValue);
-    }
+    const nextValue =
+      newValue === "Other"
+        ? customText
+          ? `Other: ${customText}`
+          : "Other: "
+        : newValue;
+
+    // Radix fires onValueChange while its modal Select layer still owns the
+    // body lock. A synchronous parent update can replace this control before
+    // Radix finishes closing, orphaning pointer-events:none on <body>. Commit
+    // only after the shared, measured layer-close boundary.
+    void afterCurrentLayerCloses().then(() => onChange(nextValue));
   };
 
   const handleCustomTextChange = (text: string) => {
