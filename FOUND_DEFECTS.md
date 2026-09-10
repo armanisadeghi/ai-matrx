@@ -47,10 +47,21 @@ file by hand is the only recovery, and it must be redone after every sync.
 problem — it hits every cross-repo feature the moment the backend half merges first, which
 is the normal order.
 
+**`--fast` silently means `--local`, and the local dev server is usually the STALEST
+source of all.** `scripts/sync-types.mjs` line 37: `const useLocal = fastMode || args.includes('--local')`,
+so `pnpm sync-types --fast` syncs from `http://localhost:8000` — a long-lived dev server that
+booted days ago — while printing "Backend: http://localhost:8000" in a banner nobody reads as a
+warning. On 2026-09-09 that wiped the two L7 routes back out MINUTES AFTER they went live on
+production. aidream's own generator screams about exactly this hazard (`generate_types.py`
+prints a 7-line banner when a schema comes from a running server); this script does not.
+Sync from the deployed backend explicitly instead:
+`node ../aidream/scripts/sync-types.mjs --url https://server.app.matrxserver.com --out types/python-generated`.
+
 **Second-order damage — the parking reflex.** The dropped types read as "this UI has no
 contract", and the lane was then deleted a SECOND time on that reading
-(`aa877c239f` — "park reference UI until live contract", same file set as `4ac345621a`;
-restored again). Parking is the wrong remedy twice over: the contract exists in aidream
+(`4ac345621a`, `aa877c239f` "park reference UI until live contract", and `2f12a4b67e`
+"keep undeployed reference contract off main" — the same file set three times; restored each
+time, finally in `ca65dc5e2d` and then once more after the endpoints went live). Parking is the wrong remedy twice over: the contract exists in aidream
 `main` (`ea79e334f`) and is checked into this repo from aidream's own working-tree
 `openapi.json`, so `pnpm type-check` is green with the lane present; and the surfaces
 degrade HONESTLY without the endpoint — "The reference report failed. This list is not
@@ -2905,6 +2916,22 @@ test has to drive the store rather than a captured `onEvent` callback. Not done 
 is a test-architecture decision, and doing it inside a repoint would hide whether the repoint or the
 rewrite moved the result. Only the stale `getMasterworkRunFields` mock key was updated (that export
 is gone).
+
+**REPAIRED 2026-09-09.** The suite now renders under a real store + `Provider` and folds a real
+`run_errored` event through the real `workflowRuns` reducer; only TRANSPORT (the adapter thunk) is
+stubbed. Rewriting it exposed a live product defect it had stopped guarding: the box asked the
+generated `TERMINAL_RUN_STATUSES`, which excludes `errored`, so an errored run never settled —
+`onRunFinished` never fired and no failure was explained. Fixed with `runIsOver` in
+`features/workflow-runtime/types.ts`, proven failing-then-passing.
+
+## Every run-watching surface hand-rolls "is this run over?" — 2026-09-09
+
+`runIsOver` (added above) is the single expression, but at least a dozen surfaces still carry their
+own `TERMINAL_RUN_STATUSES.has(s) || s === "errored"` (or a private `TERMINAL` set): `RunHero`,
+`RunActivityFeed`, `ReadoutView`, `RunFailureCard`, `useFloatingWorkflowRun`, `FloatingRunBody`,
+`ProgressRailReadout` and the workflow-runtime bake-off pages. Each copy is a place the next
+status the engine adds gets missed. Not swept here (a five-agent test-repair session owned only
+this suite's files) — the sweep is mechanical: import `runIsOver` and delete the local set.
 
 ## Fixed in passing: the trigger surface was unreachable on every cold load — 2026-08-28
 
