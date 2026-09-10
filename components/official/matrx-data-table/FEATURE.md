@@ -99,7 +99,7 @@ tables (AI Models, relationships, …) can cut over to one contract.
 - **Row click → `SidePanelSurface` by default, or `WindowPanel` when `window.openOnRowClick` is set.** The window-first mode turns the trailing action and the window header into explicit “Open in side panel” doors. Desktop side panels use `MatrxDynamicPanelHost`; mobile uses Drawer. Never a blocking `Sheet` / split-pane.
 - **Panel icon → `WindowPanel`** with View / Edit sidebar tabs when an edit body exists (`renderEdit` or `detail.render`). `window.onOpen` hydrates edit state without opening the side panel. `detail.render`, every window renderer, and `rowActions` receive record controls (`openDetail`, `closeDetail`, `openWindow`, `closeWindow`) so one record body can close or switch its canonical presentation without reaching into table state. `rowActions` receive the visible row with pending cell edits merged; after an action persists that row, call `discardPendingEdits()` so Save cannot replay the draft as a second write. The table retains the opened row snapshot even when a controlled refetch or sort moves it off the current page.
 - **The TABLE owns the detail scroll — a custom body must never re-own it.** `SidePanelSurface` and `DataRowWindow` hand children a bounded cell, and every custom `detail.render` / `viewContent` / `editContent` is now wrapped in a scrolling container by the primitive. Write detail bodies as plain content (`space-y-3 p-3`); do **not** add an `h-full … overflow-y-auto` root. Custom bodies used to have to know this and mostly didn't, so their content silently cut off at the fold with no scrollbar across ~16 surfaces (fixed at this layer 2026-08-12).
-- **UUID cells** always: short prefix (8), full on hover, always-visible copy. FK columns use `cellKind: "fk"` + `fk.onOpen` → WindowPanel of the target (or `"forbidden"`).
+- **UUID cells** always: short prefix (8), no ellipsis/tail, full on hover, always-visible copy. The ID and controls use `data-matrx-cell-control` to stay together on one line. FK columns use `cellKind: "fk"` + `fk.onOpen` → WindowPanel of the target (or `"forbidden"`).
 - **Copy** uses `CopyButtons` + `buildAgentPayload` (row + this view). Domain-specific
   row actions such as paste-ready repair briefs belong in `copy.rowAiVariants`,
   which feeds the same table-owned Copy-for-AI menu across cards, rows, side panels,
@@ -288,6 +288,8 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-09-09 — UUID cells show only an eight-character prefix beside copy and opt into the shared non-wrapping control boundary.
 
 - 2026-09-08 — Added the explicit `data-matrx-cell-control` escape hatch for
   compact interactive chrome. Cell data still wraps aggressively, while marked

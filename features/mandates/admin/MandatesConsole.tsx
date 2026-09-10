@@ -910,7 +910,8 @@ export function MandatesConsole() {
         cell: (r) => (
           <div className="flex min-w-0 flex-col items-start gap-0.5">
             <span
-              className="block max-w-full truncate font-mono text-xs !whitespace-nowrap"
+              className="block max-w-full truncate font-mono text-xs"
+              style={{ whiteSpace: "nowrap" }}
               title={`Full mandate key: ${r.mandateKey}`}
             >
               {r.mandateName}
