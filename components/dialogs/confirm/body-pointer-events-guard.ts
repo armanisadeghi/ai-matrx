@@ -89,6 +89,36 @@ export function hasOpenLayer(doc: Document = document): boolean {
   return false;
 }
 
+/**
+ * Radix Presence keeps a closing layer mounted until its exit animation ends,
+ * and DismissableLayer deliberately retains the body's pointer lock for that
+ * same lifetime. A `data-state="closed"` listbox is therefore not necessarily
+ * an orphan: while its Web Animation is still running, it remains the owner of
+ * the lock and must be allowed to finish its own cleanup.
+ *
+ * This is deliberately animation-state based rather than another fixed delay.
+ * The design-system motion durations are host-configurable tokens, so a timer
+ * that happens to exceed today's 150ms Select exit would regress as soon as a
+ * host legitimately retimed that animation.
+ */
+export function hasClosingLayerAnimation(doc: Document = document): boolean {
+  for (const el of Array.from(doc.querySelectorAll(OPEN_LAYER_SELECTOR))) {
+    if (el.getAttribute("data-state") !== "closed") continue;
+    if (el.getAttribute("aria-hidden") === "true") continue;
+    if (typeof el.getAnimations !== "function") continue;
+    if (
+      el
+        .getAnimations()
+        .some(
+          (animation) => animation.pending || animation.playState === "running",
+        )
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** How many times this session had to repair the body. Read by the scream. */
 let repairs = 0;
 
@@ -101,8 +131,10 @@ export const ORPHANED_BODY_LOCK_GRACE_MS = 50;
 
 export function createBodyPointerEventsRepairScheduler(
   repair: () => boolean = () => restoreBodyPointerEventsIfOrphaned(),
-  setTimer: (callback: () => void, delay: number) => number = (callback, delay) =>
-    window.setTimeout(callback, delay),
+  setTimer: (callback: () => void, delay: number) => number = (
+    callback,
+    delay,
+  ) => window.setTimeout(callback, delay),
   clearTimer: (timer: number) => void = (timer) => window.clearTimeout(timer),
 ): { schedule: () => void; cancel: () => void } {
   let queued: number | null = null;
@@ -137,6 +169,7 @@ export function restoreBodyPointerEventsIfOrphaned(
   if (!body) return false;
   if (body.style.pointerEvents !== "none") return false;
   if (hasOpenLayer(doc)) return false;
+  if (hasClosingLayerAnimation(doc)) return false;
 
   body.style.removeProperty("pointer-events");
   repairs += 1;
@@ -170,7 +203,9 @@ export function restoreBodyPointerEventsIfOrphaned(
       "[modal-layers] document.body was left pointer-events:none with no modal layer open — every control on the page was dead. Restored. Cause is two overlapping Radix layers (typically a Select whose selection synchronously opens a Dialog); the durable fix is to let the first layer finish closing before opening the second.",
     );
   } else {
-    console.warn(`[modal-layers] repaired an orphaned body lock (#${repairs}).`);
+    console.warn(
+      `[modal-layers] repaired an orphaned body lock (#${repairs}).`,
+    );
   }
   return true;
 }
@@ -229,6 +264,12 @@ export function useBodyPointerEventsGuard(): void {
     // the tree; a pointerdown that lands on nothing is the other symptom, and
     // it costs nothing to re-check then.
     document.addEventListener("pointerdown", schedule, true);
+    // If Radix's own cleanup fails after a legitimate exit animation, check
+    // immediately after that ownership window ends instead of waiting for the
+    // low-rate sweep. During the animation, `hasClosingLayerAnimation` keeps
+    // the guard out of Radix's way.
+    document.addEventListener("animationend", schedule, true);
+    document.addEventListener("animationcancel", schedule, true);
     // Timers are throttled hard while a tab is hidden, so the moment it comes
     // back is exactly when a lock may have been sitting unrepaired: check then,
     // before the person's first click lands on a dead page.
@@ -237,6 +278,8 @@ export function useBodyPointerEventsGuard(): void {
       observer.disconnect();
       clearInterval(sweep);
       document.removeEventListener("pointerdown", schedule, true);
+      document.removeEventListener("animationend", schedule, true);
+      document.removeEventListener("animationcancel", schedule, true);
       document.removeEventListener("visibilitychange", schedule);
       repairScheduler.cancel();
     };

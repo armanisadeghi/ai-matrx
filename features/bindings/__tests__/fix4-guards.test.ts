@@ -12,6 +12,7 @@ import {
   __resetBodyPointerEventsRepairs,
   bodyPointerEventsRepairCount,
   createBodyPointerEventsRepairScheduler,
+  hasClosingLayerAnimation,
   ORPHANED_BODY_LOCK_GRACE_MS,
   restoreBodyPointerEventsIfOrphaned,
 } from "@/components/dialogs/confirm/body-pointer-events-guard";
@@ -118,9 +119,9 @@ describe("V2 G5 — the run's own reason survives to the screen", () => {
   });
 
   test("a rejectWithValue payload is a plain STRING and is the reason verbatim", () => {
-    expect(extractErrorMessage("mandate_unfulfilled: no rung answers this job")).toBe(
-      "mandate_unfulfilled: no rung answers this job",
-    );
+    expect(
+      extractErrorMessage("mandate_unfulfilled: no rung answers this job"),
+    ).toBe("mandate_unfulfilled: no rung answers this job");
   });
 
   test("a FastAPI body's `detail` is read, string or object", () => {
@@ -197,6 +198,35 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
     expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(false);
   });
 
+  test("a Select exit animation owns the lock until it finishes", () => {
+    document.body.style.pointerEvents = "none";
+    const listbox = document.createElement("div");
+    listbox.setAttribute("role", "listbox");
+    listbox.setAttribute("data-state", "closed");
+
+    let playState: AnimationPlayState = "running";
+    Object.defineProperty(listbox, "getAnimations", {
+      configurable: true,
+      value: () => [{ playState }] as Animation[],
+    });
+    document.body.appendChild(listbox);
+
+    // The old guard called this an orphan after 50ms even though Radix was
+    // still running the package's 150ms Select exit and still owned the lock.
+    expect(hasClosingLayerAnimation(document)).toBe(true);
+    expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(false);
+    expect(document.body.style.pointerEvents).toBe("none");
+    expect(console.warn).not.toHaveBeenCalled();
+
+    // Once the animation is no longer active, the same DOM/body state is a
+    // real orphan and the guard must recover it loudly.
+    playState = "finished";
+    expect(hasClosingLayerAnimation(document)).toBe(false);
+    expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(true);
+    expect(document.body.style.pointerEvents).toBe("");
+    expect(console.warn).toHaveBeenCalledTimes(1);
+  });
+
   test("not locked: nothing to do", () => {
     expect(restoreBodyPointerEventsIfOrphaned(document)).toBe(false);
   });
@@ -245,7 +275,10 @@ describe("V1 R2-1 — an orphaned body lock is repaired, an open one is not", ()
 describe("V1 R2-1 producer — a selection closes before its confirm opens", () => {
   test("the shared confirm boundary owns the handoff for every caller", () => {
     const source = fs.readFileSync(
-      path.join(process.cwd(), "components/dialogs/confirm/ConfirmDialogHost.tsx"),
+      path.join(
+        process.cwd(),
+        "components/dialogs/confirm/ConfirmDialogHost.tsx",
+      ),
       "utf8",
     );
     const confirmBody = source.slice(
@@ -434,7 +467,7 @@ describe("R2-1 — THE WALKER'S 8-PROBE PROTOCOL (guard repaired exactly once pe
       '<span data-radix-focus-guard tabindex="0"></span>',
       '<div role="dialog" data-state="closed"></div>',
       '<div role="listbox" aria-hidden="true"></div>',
-      '<div data-radix-popper-content-wrapper></div>',
+      "<div data-radix-popper-content-wrapper></div>",
     ];
     let repaired = 0;
     for (let probe = 0; probe < 8; probe += 1) {

@@ -18,25 +18,25 @@ Arman's sentence is the spine:
 
 ## The anatomy
 
-| File | What it is |
-|---|---|
-| `OneBindingWorkspace.tsx` | The shell. Owns the draft (rung, holder, consumption map, refusals), resolves the offer, runs the agent pre-flight, hosts settings, saves and removes. Every refusal is adjacent to the control it refuses. |
-| `HolderAssignment.tsx` | **THE ONE HOLDER CHOOSER.** Icon-led Agent/Workflow buttons; **Assigned Agent/Workflow** groups the record picker and version dropdown on one row. Version has an accessible label without a separate visible label; no-holder and latest-only workflow states remain disabled and explicit. Latest stores `default_holder_version_id = NULL`. Every host reuses this component. |
-| `ScopeHolderBar.tsx` | RUNG · HOLDER · JOB, where a rung is genuinely a choice. The rung is `ShortcutScopePicker`; the holder cell IS `HolderAssignment`. Under `perspective="system"` (the admin route) it renders the three controls alone, plus the door's verdict — no rung cell (one rung), no job cell (the page's heading is the job). |
-| `OfferedInventoryColumn.tsx` | The offered reference for untabbed hosts; Definition owns this inventory in the tabbed workspace. |
-| `HolderInputsColumn.tsx` | The consuming reference for untabbed hosts; matching rows own these facts in tabbed workspaces. |
-| `BindingMiddle.tsx` | The match. `SurfaceVariableBinding` rendered **VERBATIM**, plus the many-to-one strip, the absence answer and the per-row problems a job binding needs and a surface binding does not. |
-| `AutoRunBar.tsx` | Run Instantly is **Unavailable** at the top of Holder until mandate-wide pause/resume is enforced across execution callers. Disabled control exposes the reason on hover/focus/tap; no editable switch, inferred effective value, or mapping-eligibility metadata. Stored `auto_run` is preserved. |
-| `consumption-writer.ts` | 🚨 **THE ONE WRITER.** Nothing else builds a `ConsumptionEntry` or mutates a `ConsumptionMap` — the manual row, the many-to-one strip and the AI map's accept all go through it. |
-| `offered-adapter.ts` | `OfferedValue` → `SurfaceValue`, so the shared picker reads a mandate's inventory. |
-| `useHolderInputs.ts` | `buildBindingTargets` for an agent, `useServedRunForm` for a workflow — one hook, no holder-type branch upstream. |
-| _(the two pickers)_ | Not in this feature: `AgentListDropdown` (`features/agents/components/agent-listings/`) and `WorkflowListDropdown` (`features/workflow-runtime/listings/`). Both are self-contained — trigger names the record, and the panel carries search, scope tabs, filters, the detail card, the sneak peek, favorite, copy and the doors. **Never wrap either in a name/id/link cluster.** |
-| `described-offer.ts` | What a job offers when no code declared it (D18.1). ONE derivation, shared by both modes. |
-| `words.ts` | The four sources' names and the fill-down limits sentence — one vocabulary, so no two controls name one thing differently. |
-| `BindingOptionsDrawer.tsx` | One persistent treatment draft for Display Options and Permissions; no model, menu or input-seed editor. Untabbed hosts keep the accordion. |
-| `treatment-shape.ts` | 🚨 **THE ONE CODEC** for `mandate.treatment.config` — a job's presentation. |
-| `treatment-writer.ts` | 🚨 **THE ONE WRITER** for that row, as `consumption-writer` is for the map. |
-| `batch/` | **Batch mode** — the same middle transposed. See below. |
+| File                         | What it is                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OneBindingWorkspace.tsx`    | The shell. Owns the draft (rung, holder, consumption map, refusals), resolves the offer, runs the agent pre-flight, hosts settings, saves and removes. Every refusal is adjacent to the control it refuses.                                                                                                                                                                        |
+| `HolderAssignment.tsx`       | **THE ONE HOLDER CHOOSER.** Icon-led Agent/Workflow buttons; **Assigned Agent/Workflow** groups the record picker and version dropdown on one row. Version has an accessible label without a separate visible label; no-holder and latest-only workflow states remain disabled and explicit. Latest stores `default_holder_version_id = NULL`. Every host reuses this component.   |
+| `ScopeHolderBar.tsx`         | RUNG · HOLDER · JOB, where a rung is genuinely a choice. The rung is `ShortcutScopePicker`; the holder cell IS `HolderAssignment`. Under `perspective="system"` (the admin route) it renders the three controls alone, plus the door's verdict — no rung cell (one rung), no job cell (the page's heading is the job).                                                             |
+| `OfferedInventoryColumn.tsx` | The offered reference for untabbed hosts; Definition owns this inventory in the tabbed workspace.                                                                                                                                                                                                                                                                                  |
+| `HolderInputsColumn.tsx`     | The consuming reference for untabbed hosts; matching rows own these facts in tabbed workspaces.                                                                                                                                                                                                                                                                                    |
+| `BindingMiddle.tsx`          | The match. `SurfaceVariableBinding` rendered **VERBATIM**, plus the many-to-one strip, the absence answer and the per-row problems a job binding needs and a surface binding does not.                                                                                                                                                                                             |
+| `AutoRunBar.tsx`             | Run Instantly is **Unavailable** at the top of Holder until mandate-wide pause/resume is enforced across execution callers. Disabled control exposes the reason on hover/focus/tap; no editable switch, inferred effective value, or mapping-eligibility metadata. Stored `auto_run` is preserved.                                                                                 |
+| `consumption-writer.ts`      | 🚨 **THE ONE WRITER.** Nothing else builds a `ConsumptionEntry` or mutates a `ConsumptionMap` — the manual row, the many-to-one strip and the AI map's accept all go through it.                                                                                                                                                                                                   |
+| `offered-adapter.ts`         | `OfferedValue` → `SurfaceValue`, so the shared picker reads a mandate's inventory.                                                                                                                                                                                                                                                                                                 |
+| `useHolderInputs.ts`         | `buildBindingTargets` for an agent, `useServedRunForm` for a workflow — one hook, no holder-type branch upstream.                                                                                                                                                                                                                                                                  |
+| _(the two pickers)_          | Not in this feature: `AgentListDropdown` (`features/agents/components/agent-listings/`) and `WorkflowListDropdown` (`features/workflow-runtime/listings/`). Both are self-contained — trigger names the record, and the panel carries search, scope tabs, filters, the detail card, the sneak peek, favorite, copy and the doors. **Never wrap either in a name/id/link cluster.** |
+| `described-offer.ts`         | What a job offers when no code declared it (D18.1). ONE derivation, shared by both modes.                                                                                                                                                                                                                                                                                          |
+| `words.ts`                   | The four sources' names and the fill-down limits sentence — one vocabulary, so no two controls name one thing differently.                                                                                                                                                                                                                                                         |
+| `BindingOptionsDrawer.tsx`   | One persistent treatment draft for Display Options and Permissions; no model, menu or input-seed editor. Untabbed hosts keep the accordion.                                                                                                                                                                                                                                        |
+| `treatment-shape.ts`         | 🚨 **THE ONE CODEC** for `mandate.treatment.config` — a job's presentation.                                                                                                                                                                                                                                                                                                        |
+| `treatment-writer.ts`        | 🚨 **THE ONE WRITER** for that row, as `consumption-writer` is for the map.                                                                                                                                                                                                                                                                                                        |
+| `batch/`                     | **Batch mode** — the same middle transposed. See below.                                                                                                                                                                                                                                                                                                                            |
 
 ## Batch mode — the same screen, many places
 
@@ -44,16 +44,16 @@ Arman's sentence is the spine:
 is the whole difference: **one rung and one holder apply to every row**. Places
 (jobs) are rows, the holder's inputs are columns.
 
-| File | What it is |
-|---|---|
-| `batch/ModeToggle.tsx` | The two-word toggle and the sentence that says what carries over. |
-| `batch/BatchMode.tsx` | The orchestrator: which places, the cascade, the fill-down, the requirement gate, Apply. |
-| `batch/PlacesSelector.tsx` | Which jobs are in the batch, each priced before it is picked, each saying whether this rung already answers it. |
-| `batch/InputCascade.tsx` | P17.1 — every input is `Keep each place's own \| Set for all places \| Per place`. Per place is the default. |
-| `batch/PlacesBatchGrid.tsx` | The grid. Health dot, ADD/UPD badge and fill-down come from `agent-shortcuts/.../BatchGridParts` — shared with the shortcut grid, never copied. |
+| File                         | What it is                                                                                                                                                                   |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `batch/ModeToggle.tsx`       | The two-word toggle and the sentence that says what carries over.                                                                                                            |
+| `batch/BatchMode.tsx`        | The orchestrator: which places, the cascade, the fill-down, the requirement gate, Apply.                                                                                     |
+| `batch/PlacesSelector.tsx`   | Which jobs are in the batch, each priced before it is picked, each saying whether this rung already answers it.                                                              |
+| `batch/InputCascade.tsx`     | P17.1 — every input is `Keep each place's own \| Set for all places \| Per place`. Per place is the default.                                                                 |
+| `batch/PlacesBatchGrid.tsx`  | The grid. Health dot, ADD/UPD badge and fill-down come from `agent-shortcuts/.../BatchGridParts` — shared with the shortcut grid, never copied.                              |
 | `batch/PlaceBindingCell.tsx` | One cell: `InlineBindingEditor` (the shortcut grid's own) in this domain's words, with **Advanced opening `BindingMiddleRow` — map mode's full card**, many-to-one included. |
-| `batch/batch-model.ts` | Pure: row health, the copied-mapping rule over a whole map, and the Apply refusal's words. |
-| `batch/usePlaceOffers.ts` | Each place's offer, read lazily per row through the two paths the single-place screen already has. |
+| `batch/batch-model.ts`       | Pure: row health, the copied-mapping rule over a whole map, and the Apply refusal's words.                                                                                   |
+| `batch/usePlaceOffers.ts`    | Each place's offer, read lazily per row through the two paths the single-place screen already has.                                                                           |
 
 Four rules batch mode keeps, each proven in `__tests__/batch-model.test.ts`:
 
@@ -78,8 +78,8 @@ Four rules batch mode keeps, each proven in `__tests__/batch-model.test.ts`:
    shortcut cell calls). An extra source of a many-to-one target is never
    re-bound by name; it is kept or dropped, because re-binding it would join one
    value to itself.
-3. **Apply is refused in words, with the count, ON THE PAGE** — *"1 required
-   input is still unmapped. Fix the red cells first."* The shortcut grid used to
+3. **Apply is refused in words, with the count, ON THE PAGE** — _"1 required
+   input is still unmapped. Fix the red cells first."_ The shortcut grid used to
    answer the same refusal with a `toast.error` fired from inside its click
    handler; that defect is fixed at its class rather than merely avoided here.
    `ApplyRefusal` in `agent-shortcuts/.../BatchGridParts` is now the ONE
@@ -97,11 +97,11 @@ Four rules batch mode keeps, each proven in `__tests__/batch-model.test.ts`:
 One component, one section, both routes — the host supplies identity and authority, never a
 different UI (`MandateWorkspace.tsx` § "Who fulfils this job"):
 
-| Host | Route | Rungs |
-|---|---|---|
-| User workspace | `/mandates/[key]` | user · org (the rung control offers both) |
-| Admin | `/administration/mandates/[key]` | system · org · user (`allowGlobal`; the server's super-admin gate is the authority) |
-| Window panel | `MandateWindow` | same section, same component |
+| Host           | Route                            | Rungs                                                                               |
+| -------------- | -------------------------------- | ----------------------------------------------------------------------------------- |
+| User workspace | `/mandates/[key]`                | user · org (the rung control offers both)                                           |
+| Admin          | `/administration/mandates/[key]` | system · org · user (`allowGlobal`; the server's super-admin gate is the authority) |
+| Window panel   | `MandateWindow`                  | same section, same component                                                        |
 
 The middle's header carries the two tabs the surface bind panel carries: **AI map**
 (`BindingSuggestionsTab`, the same component and the same
@@ -132,18 +132,22 @@ Tabbed mandate workspaces show Scope, Feature, and Enabled only inside Definitio
    calls `afterCurrentLayerCloses`, so every Select/Menu caller waits for the current body
    lock to remain released for two consecutive paints before AlertDialog opens. Neither a
    caller opt-in, fixed delay, nor the first unlocked paint is treated as proof of close.
+8. **A closing animation still owns its body lock.** The shared orphan-lock guard distinguishes
+   a closed Radix layer whose Web Animation is still running from a true orphan. It waits for
+   the animation's real state rather than guessing from a fixed duration, then rechecks on
+   `animationend`/`animationcancel` so a failed cleanup still recovers loudly.
 
 ## The four sources, all four real
 
 A holder input is fed by exactly one of four things, and the shared row offers all
 four by name:
 
-| The pick | What is stored |
-|---|---|
-| Holder Default | **Nothing.** Absence from the map IS the answer — a job binding has no auto-name-match pass to suppress, so a suppression marker would be a stored fact with no reader. |
-| Offered Value | `offered_value` — with `deliver`, the absence answer (`when_absent`) when the value is not guaranteed, and its place in the join order. |
-| Direct Value | `direct_value` — a literal written on the binding. |
-| Prompt User | `prompt_user` — the question the run form will ask. The mandate's input surface serves that target as a REAL named field (`origin: "binding_prompt"`), so the ask happens and the answer arrives under the holder input's own name. |
+| The pick       | What is stored                                                                                                                                                                                                                      |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Holder Default | **Nothing.** Absence from the map IS the answer — a job binding has no auto-name-match pass to suppress, so a suppression marker would be a stored fact with no reader.                                                             |
+| Offered Value  | `offered_value` — with `deliver`, the absence answer (`when_absent`) when the value is not guaranteed, and its place in the join order.                                                                                             |
+| Direct Value   | `direct_value` — a literal written on the binding.                                                                                                                                                                                  |
+| Prompt User    | `prompt_user` — the question the run form will ask. The mandate's input surface serves that target as a REAL named field (`origin: "binding_prompt"`), so the ask happens and the answer arrives under the holder input's own name. |
 
 Until 2026-08-31 the server accepted `offered_value` alone, and this feature answered
 the other two with `refusalForMapping` — a stand-in that screamed in domain words
@@ -178,16 +182,16 @@ verbatim — a `logger.warning` is a scream only the server hears.
 
 `BindingOptionsDrawer.section` selects Display Options or Permissions without unmounting the shared treatment draft. It lives above the binding identity key; changing/saving a binding cannot discard it. Treatment preferences belong to the mandate, not the selected user/org binding. Existing-row access is checked with the registered `mandate_treatment` token; absent-row creation remains database-authorized and explicitly labeled. `WidgetPicker`, `SettingsSection` and `AdvancedSection` are the canonical shortcut components; their shared `ShortcutFieldRow`/`ShortcutToggleRow` put the control before inline Source/State metadata, with explanation in `FieldHelp`. Narrow layouts stack identical content. False, default and inactive values remain explicit; dependent gate controls remain visible and disabled when inapplicable.
 
-| UI owner | Stored field | Consumer |
-|---|---|---|
-| Holder / Run instantly | `mandate.binding.auto_run` | Binding eligibility + server resolution + launch |
-| Display / Result display | `treatment.config.display_mode` | `ResolvedMandate.presentation` → `launchAgentExecution` display selection |
-| Display / Chat and variable panel | `allow_chat`, `variables.show_panel`, `variables.panel_style` | Instance UI state; Hide and panel style share one selector |
-| Display / Definition, reasoning, tools | `reveal.*` | Instance UI visibility; showing reasoning does not change model reasoning effort |
-| Display / Confirmation | `gate.enabled`, `gate.message`, `gate.bypass_seconds` | Launch gate; caller values take precedence |
-| Display / Density and enable | `response_density`, treatment `is_enabled` | Instance density; disabled treatment omitted by resolvers |
-| Permissions / Write access | `treatment.config.write_policies` | Surface write-policy merge where a registered surface declares targets |
-| Admin Permissions / Automatic context | `mandate.definition.auto_context_disabled` | Existing context gate; holder refusal cannot be reopened here |
+| UI owner                               | Stored field                                                  | Consumer                                                                         |
+| -------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Holder / Run instantly                 | `mandate.binding.auto_run`                                    | Binding eligibility + server resolution + launch                                 |
+| Display / Result display               | `treatment.config.display_mode`                               | `ResolvedMandate.presentation` → `launchAgentExecution` display selection        |
+| Display / Chat and variable panel      | `allow_chat`, `variables.show_panel`, `variables.panel_style` | Instance UI state; Hide and panel style share one selector                       |
+| Display / Definition, reasoning, tools | `reveal.*`                                                    | Instance UI visibility; showing reasoning does not change model reasoning effort |
+| Display / Confirmation                 | `gate.enabled`, `gate.message`, `gate.bypass_seconds`         | Launch gate; caller values take precedence                                       |
+| Display / Density and enable           | `response_density`, treatment `is_enabled`                    | Instance density; disabled treatment omitted by resolvers                        |
+| Permissions / Write access             | `treatment.config.write_policies`                             | Surface write-policy merge where a registered surface declares targets           |
+| Admin Permissions / Automatic context  | `mandate.definition.auto_context_disabled`                    | Existing context gate; holder refusal cannot be reopened here                    |
 
 **No duplicate or unconsumed controls.** The mandate drawer omits shortcut menu category, icon, keyboard shortcut and sort order, plus treatment default user input, default variables, context overrides, JSON extraction and model overrides. Their stored values remain unchanged. Mapping stays in Holder, specification stays in Definition, and model parameters stay in Overrides. These omissions do not change the shortcut editor.
 
@@ -233,7 +237,7 @@ product question, not a bug to fix quietly.
 An offered value carries one STATIC `example` — declared with the provision, or typed
 beside a described input at creation. It is an illustration shown at the moment of
 choice (P5), rendered on the offered rail and under the chosen value in the middle as
-*"Looks like: …"*. Nothing reads it at run time on either side of the wire, so it can
+_"Looks like: …"_. Nothing reads it at run time on either side of the wire, so it can
 never become an answer, and absent means the declaration gave none — never invent one.
 
 ## Change Log
@@ -254,46 +258,46 @@ never become an answer, and absent means the declaration gave none — never inv
 
 - 2026-09-08 — Added sectioned binding/treatment presentation for the shared mandate tabs, preserving existing save boundaries. Name-match display no longer invents an unsaved mandate mapping. Preliminary declaration checks are separate from mapping and full validation. Canonical overrides load the exact selected version and rebase retained edits when the holder changes; failed loads cannot initialize a blank default.
 
-- 2026-09-08 — **THE PICKER IS THE WHOLE CONTROL, AND WORKFLOWS GET A REAL ONE.** Arman, on the live HOLDER section of `/administration/mandates/research_client.output_slides`: *"The agent dropdown is written to be a self-reliant and inclusive system that doesn't require all of this extra trash around it! … Allow it to work naturally to show the selected agent and all links and information come up within it so there is no need for anything else."* Three deletions and one build. (1) `HolderAssignment` had overridden the dropdown's trigger label with **"Change agent"** and then rebuilt the identity it had just thrown away — an `EntityRef` repeating the name, a raw uuid in `<code>`, and a lone **"Open it"** link (FIX-R13/B's `AssignedAgentDoor`). All three are gone: the trigger now carries the agent's NAME, and the name, the id, the peek, favorite, open-in-chat and open-in-new-tab were already inside the dropdown's detail card. (2) `WorkflowHolderPicker.tsx` — an always-expanded inline list with no search, no scopes, no filters, no detail, no peek and no doors — is **deleted**, replaced by the new `WorkflowListDropdown`, built to full parity with the agent picker (see `features/workflow-runtime/listings/`) on the canonical `wfx_list_scoped` RPC that already powers `/workflows/all`. Its host passes the mandate's output kind for the ONE informational line the picker cannot know to say; the picker still narrows nothing, because the server's bind gate also accepts a workflow whose computed deliverables produce the kind. (3) `AgentListDropdown` no longer answers **"Agents"** when an agent IS assigned but its name has not resolved — it says which state it is in. Class fix taken with it: the fixed 528px panel could not fit above a mid-page trigger (measured `top: -76` at 1280x900, losing the search box); `LIST_MAX_HEIGHT` now clamps to `--radix-popper-available-height`, the fix the MODEL picker got alone on 2026-08-31, and the guard covering all three pickers lives at `features/agents/components/agent-listings/__tests__/pickers-stay-in-viewport.test.ts`. Guards updated: `__tests__/holder-block-affordances.test.tsx` (section 2 now pins the opposite reading — no id, no second name, no separate door) and `features/mandates/workspace/__tests__/holder-assignment.test.tsx`.
+- 2026-09-08 — **THE PICKER IS THE WHOLE CONTROL, AND WORKFLOWS GET A REAL ONE.** Arman, on the live HOLDER section of `/administration/mandates/research_client.output_slides`: _"The agent dropdown is written to be a self-reliant and inclusive system that doesn't require all of this extra trash around it! … Allow it to work naturally to show the selected agent and all links and information come up within it so there is no need for anything else."_ Three deletions and one build. (1) `HolderAssignment` had overridden the dropdown's trigger label with **"Change agent"** and then rebuilt the identity it had just thrown away — an `EntityRef` repeating the name, a raw uuid in `<code>`, and a lone **"Open it"** link (FIX-R13/B's `AssignedAgentDoor`). All three are gone: the trigger now carries the agent's NAME, and the name, the id, the peek, favorite, open-in-chat and open-in-new-tab were already inside the dropdown's detail card. (2) `WorkflowHolderPicker.tsx` — an always-expanded inline list with no search, no scopes, no filters, no detail, no peek and no doors — is **deleted**, replaced by the new `WorkflowListDropdown`, built to full parity with the agent picker (see `features/workflow-runtime/listings/`) on the canonical `wfx_list_scoped` RPC that already powers `/workflows/all`. Its host passes the mandate's output kind for the ONE informational line the picker cannot know to say; the picker still narrows nothing, because the server's bind gate also accepts a workflow whose computed deliverables produce the kind. (3) `AgentListDropdown` no longer answers **"Agents"** when an agent IS assigned but its name has not resolved — it says which state it is in. Class fix taken with it: the fixed 528px panel could not fit above a mid-page trigger (measured `top: -76` at 1280x900, losing the search box); `LIST_MAX_HEIGHT` now clamps to `--radix-popper-available-height`, the fix the MODEL picker got alone on 2026-08-31, and the guard covering all three pickers lives at `features/agents/components/agent-listings/__tests__/pickers-stay-in-viewport.test.ts`. Guards updated: `__tests__/holder-block-affordances.test.tsx` (section 2 now pins the opposite reading — no id, no second name, no separate door) and `features/mandates/workspace/__tests__/holder-assignment.test.tsx`.
 
-- 2026-09-08 — **A RUNG DESCRIBED IS A RUNG ANSWERED, AND AN EMPTY CELL NAMES ITS RUNG** (one-resolution FIX-R6/F3, from a Sonnet walk of production v0.4.1722). A walker set an org-homed job's bottom-rung holder, watched *"Fulfilled by"* name the new holder, hard-reloaded, and read *"No holder yet — pick an agent or a workflow to start mapping, or come back when the intelligence exists."* inside the HOLDER cell, directly beside a block headed **THE JOB'S OWN DEFAULT** — and reported the save as lost. Nothing was lost: the cell was answering about the USER rung, which is empty and correctly so. Two sentences were lying by omission and both are fixed as one class. (1) The empty-holder sentence had NO SUBJECT; it now reads *"Nothing is set at &lt;this rung&gt; yet…"* and adds either *"That is only about this rung: whatever a rung below it names is still what runs."* or, at the bottom rung, *"This is the bottom rung, so while it is empty the job has no holder of its own at all."* (2) The dashed *"The job's own default"* block said what that rung COVERS and offered a button to go set it, and never said WHO HOLDS IT TODAY — so the one fact the reader wanted was on no screen they were standing on. `ScopeHolderBar` gained `defaultHolderNow`, fed by `OneBindingWorkspace` from the SAME `defaultHolderDraftOf` accessor that seeds the draft at that rung, so the sentence and the editor cannot disagree: *"Held by &lt;name&gt; today."* / *"Nobody holds it — this job has no default of its own."* / *"Reading who holds it…"*, and an unresolvable holder is stated as unresolvable rather than printed as an id. Same walk-driven class, one cell over: three buttons `.toLowerCase()`d a rung label that carries an ORGANIZATION'S NAME (*"Set default for write target sandbox"*); labels that can carry a name are no longer lowercased anywhere on this bar. Guard: `__tests__/default-holder-is-stated.test.tsx`, RED 6/6 against `0d57acc92e` (the received strings carry the walker's exact sentence), GREEN 6/6.
+- 2026-09-08 — **A RUNG DESCRIBED IS A RUNG ANSWERED, AND AN EMPTY CELL NAMES ITS RUNG** (one-resolution FIX-R6/F3, from a Sonnet walk of production v0.4.1722). A walker set an org-homed job's bottom-rung holder, watched _"Fulfilled by"_ name the new holder, hard-reloaded, and read _"No holder yet — pick an agent or a workflow to start mapping, or come back when the intelligence exists."_ inside the HOLDER cell, directly beside a block headed **THE JOB'S OWN DEFAULT** — and reported the save as lost. Nothing was lost: the cell was answering about the USER rung, which is empty and correctly so. Two sentences were lying by omission and both are fixed as one class. (1) The empty-holder sentence had NO SUBJECT; it now reads _"Nothing is set at &lt;this rung&gt; yet…"_ and adds either _"That is only about this rung: whatever a rung below it names is still what runs."_ or, at the bottom rung, _"This is the bottom rung, so while it is empty the job has no holder of its own at all."_ (2) The dashed _"The job's own default"_ block said what that rung COVERS and offered a button to go set it, and never said WHO HOLDS IT TODAY — so the one fact the reader wanted was on no screen they were standing on. `ScopeHolderBar` gained `defaultHolderNow`, fed by `OneBindingWorkspace` from the SAME `defaultHolderDraftOf` accessor that seeds the draft at that rung, so the sentence and the editor cannot disagree: _"Held by &lt;name&gt; today."_ / _"Nobody holds it — this job has no default of its own."_ / _"Reading who holds it…"_, and an unresolvable holder is stated as unresolvable rather than printed as an id. Same walk-driven class, one cell over: three buttons `.toLowerCase()`d a rung label that carries an ORGANIZATION'S NAME (_"Set default for write target sandbox"_); labels that can carry a name are no longer lowercased anywhere on this bar. Guard: `__tests__/default-holder-is-stated.test.tsx`, RED 6/6 against `0d57acc92e` (the received strings carry the walker's exact sentence), GREEN 6/6.
 
-- 2026-09-08 — **A HOST MAY PIN THE RUNGS IT MANAGES** (`fixedRung`, one-resolution FIX-R4). P13 made the rung a control inside the flow, and that is right for every host whose question really is *"which rung am I setting"*. It is wrong for a host that IS one rung: `/administration/mandates/[key]` is the platform's own page, and it rendered a rung selector defaulting to **User** with *"This applies everywhere you run"* beside it. `fixedRung` takes one rung or a FIXED SET; the bar then STATES the rung (and offers its sibling by name) instead of opening a scope select, and drops the ladder line, the "not offered here" note and the bottom-rung box, all of which are about rungs the host does not manage. The admin route pins `["system", "global"]` — the job's own default holder and the platform-wide binding above it, the two rungs that decide for everybody — ordered so the one that answers TODAY is where the page opens. Nothing changes for an unpinned host. Alongside it, `system-rung.ts` carries the ONE rule for *"a personal agent may not be the system answer"*, used by the bar's alert AND by `saveRefusal`, which now **hard-refuses** that write (Save disabled, reason + remedy adjacent) — before this the picker was restricted and the save was not, so an agent drafted earlier or handed back by `GlobalBindAgentGuard` could still be written as the answer every user on the platform gets. 🔶 **Declared deviation:** the brief's wording for the pinned bar was *"System — decides for every user"*; FIX-R3 landed the mandate's own default as a fourth rung labelled *"System default"* in the same files, so the platform-wide binding is titled **"System-wide binding — decides for every user"** — the collision FIX-R3 reported is closed here rather than left for a reader to trip over. Guards: `features/mandates/admin/__tests__/system-rung-holder-refusal.test.tsx` (RED: the scope picker rendered on the pinned host; the shipped `saveRefusal` had no branch for a non-system holder).
+- 2026-09-08 — **A HOST MAY PIN THE RUNGS IT MANAGES** (`fixedRung`, one-resolution FIX-R4). P13 made the rung a control inside the flow, and that is right for every host whose question really is _"which rung am I setting"_. It is wrong for a host that IS one rung: `/administration/mandates/[key]` is the platform's own page, and it rendered a rung selector defaulting to **User** with _"This applies everywhere you run"_ beside it. `fixedRung` takes one rung or a FIXED SET; the bar then STATES the rung (and offers its sibling by name) instead of opening a scope select, and drops the ladder line, the "not offered here" note and the bottom-rung box, all of which are about rungs the host does not manage. The admin route pins `["system", "global"]` — the job's own default holder and the platform-wide binding above it, the two rungs that decide for everybody — ordered so the one that answers TODAY is where the page opens. Nothing changes for an unpinned host. Alongside it, `system-rung.ts` carries the ONE rule for _"a personal agent may not be the system answer"_, used by the bar's alert AND by `saveRefusal`, which now **hard-refuses** that write (Save disabled, reason + remedy adjacent) — before this the picker was restricted and the save was not, so an agent drafted earlier or handed back by `GlobalBindAgentGuard` could still be written as the answer every user on the platform gets. 🔶 **Declared deviation:** the brief's wording for the pinned bar was _"System — decides for every user"_; FIX-R3 landed the mandate's own default as a fourth rung labelled _"System default"_ in the same files, so the platform-wide binding is titled **"System-wide binding — decides for every user"** — the collision FIX-R3 reported is closed here rather than left for a reader to trip over. Guards: `features/mandates/admin/__tests__/system-rung-holder-refusal.test.tsx` (RED: the scope picker rendered on the pinned host; the shipped `saveRefusal` had no branch for a non-system holder).
 
 - 2026-09-08 — **The BOTTOM RUNG can be set, and the screen names who may set it
   (FIX-R3/W3).** A fresh Sonnet walk of v0.4.1718 found a mandate's own default holder —
   `mandate.definition.default_holder_*`, which `mandate._rungs` returns as the `system`
   rung and whose principal is the mandate's HOME organization (FIX-R1) — could not be set
-  from this UI at all, while `ScopeHolderBar` told every reader it *"is a super-admin
-  decision, so it is not offered here"*: true for a system-homed mandate, and a LIE for an
+  from this UI at all, while `ScopeHolderBar` told every reader it _"is a super-admin
+  decision, so it is not offered here"_: true for a system-homed mandate, and a LIE for an
   org-homed one, whose bottom rung belongs to that organization's own administrators.
   · `default-holder-rung.ts` (new) is the one predicate + the words for either answer —
-    super admin, or an owner/admin of the HOME organization (never the caller's active
-    workspace), mirroring `put_mandate_default_holder`'s own gate.
+  super admin, or an owner/admin of the HOME organization (never the caller's active
+  workspace), mirroring `put_mandate_default_holder`'s own gate.
   · `putMandateDefaultHolder` (`features/mandates/overrides.ts`) is the ONE client seam,
-    through `PUT /mandates/{mandate_key}/default-holder`, reusing `bindGateMessage` so the
-    door's four refusals (403 platform-admin, 403 org-admin, 409 containment, 422
-    contract) reach the screen as the sentences the server authored. No path writes
-    `default_holder_*` directly from here. The route is not in the generated API types yet,
-    so the path is `as keyof paths` and the response is narrowed at the seam
-    (`parseDefaultHolderResult`) — both become plain reads after the next regeneration.
+  through `PUT /mandates/{mandate_key}/default-holder`, reusing `bindGateMessage` so the
+  door's four refusals (403 platform-admin, 403 org-admin, 409 containment, 422
+  contract) reach the screen as the sentences the server authored. No path writes
+  `default_holder_*` directly from here. The route is not in the generated API types yet,
+  so the path is `as keyof paths` and the response is narrowed at the seam
+  (`parseDefaultHolderResult`) — both become plain reads after the next regeneration.
   · `ScopeHolderBar` gained `defaultHolderOffer` and a `WorkspaceRung` type: the rung is
-    offered as a fourth choice to whoever may set it, and to everyone else the cell prints
-    who may decide **and what this reader can still do**. The blanket sentence is gone.
+  offered as a fourth choice to whoever may set it, and to everyone else the cell prints
+  who may decide **and what this reader can still do**. The blanket sentence is gone.
   · The rung is **holder-only**: the definition has no `consumption_map`, no
-    `config_overrides` and no `auto_run`, so the whole map/settings/auto-run half is ABSENT
-    there behind one honest sentence — never a control that appears to save what the door
-    never receives. Batch mode is absent for the same reason.
+  `config_overrides` and no `auto_run`, so the whole map/settings/auto-run half is ABSENT
+  there behind one honest sentence — never a control that appears to save what the door
+  never receives. Batch mode is absent for the same reason.
   · Holder rule by HOME: system-homed reuses the platform-wide law (system agents only,
-    hard refusal on a personal agent, plus `GlobalBindAgentGuard`); org-homed restricts to
-    shared + system agents and lets the server's 409 containment sentence through verbatim.
+  hard refusal on a personal agent, plus `GlobalBindAgentGuard`); org-homed restricts to
+  shared + system agents and lets the server's 409 containment sentence through verbatim.
   · Guard: `__tests__/default-holder-rung.test.ts` — the copy census, the whole authority
-    matrix through the real predicate, holder-only body, and refusal passthrough.
+  matrix through the real predicate, holder-only body, and refusal passthrough.
   · 🔶 **Naming collision, reported not resolved:** the frozen ladder is `system` · `global`
-    · `org` · `user`, and `global` is never relabelled `system` — but `system-rung.ts`
-    titles the **global** binding rung "System — decides for every user". Nothing here
-    renames it (that lane is live in these files); this rung's constants are
-    `DEFAULT_HOLDER_*` and its copy leads with "default".
+  · `org` · `user`, and `global` is never relabelled `system` — but `system-rung.ts`
+  titles the **global** binding rung "System — decides for every user". Nothing here
+  renames it (that lane is live in these files); this rung's constants are
+  `DEFAULT_HOLDER_*` and its copy leads with "default".
 
 - 2026-08-31 — **Modal ownership is enforced at the shared boundary.** `confirm()` waits
   for `afterCurrentLayerCloses()` before every AlertDialog open; the forcing guard rejects
@@ -305,6 +309,13 @@ never become an answer, and absent means the declaration gave none — never inv
   now waits until `document.body` is no longer pointer-locked before opening the AlertDialog;
   `fix4-guards.test.ts` forces a multi-frame close to prevent another timing-based regression.
 
+- 2026-09-09 — **The orphan-lock guard no longer fights a healthy Select exit.** The package's
+  Select exit lasts 150ms and Radix intentionally retains `pointer-events:none` until Presence
+  unmounts it, while the guard's 50ms quiet window previously repaired and warned on every
+  ordinary choice. The guard now trusts an explicitly closed layer only while `getAnimations()`
+  reports an active exit, and rechecks as soon as that animation ends or is cancelled; a finished
+  layer with the same lock is still repaired and reported.
+
 - 2026-08-31 — **The rung picker closes before its dirty-draft confirm opens.** Both mandate
   routes mount `OneBindingWorkspace`; deferring that shared handoff by one animation frame ends
   the overlapping Radix body-lock class at its producer. The global orphan-lock guard remains a
@@ -315,7 +326,7 @@ never become an answer, and absent means the declaration gave none — never inv
   `putMandateBinding` returned `Promise<void>` and threw the body away. It now
   returns a `BindingWriteReport` (`features/mandates/overrides.ts`, with the
   defensive `parseBindingWriteReport` — an older server that says nothing reads
-  as *nothing*, never as an empty sentence). **`notes`** — every refusal,
+  as _nothing_, never as an empty sentence). **`notes`** — every refusal,
   downgrade and reshape the write performed, the auto-run promise refused down
   to `false` being the loud one — is rendered VERBATIM in the `AutoRunBar`
   (`serverNotes`) and carried into the save confirmation, which becomes a
