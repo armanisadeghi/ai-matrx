@@ -2,7 +2,7 @@
 name: context-docs
 type: Skill
 title: "context-docs — agent-facing docs that stay true and land every rule"
-description: "House rules for editing agent-facing docs: CLAUDE.md, AGENTS.md, FEATURE.md, PRINCIPLES.md, FOUND_DEFECTS.md, SKILL.md. Use when adding, moving, trimming, or compressing a rule, pointer, invariant, or defect entry in one, in any repo or the workspace root."
+description: "House rules for editing agent-facing docs: CLAUDE.md, AGENTS.md, FEATURE.md, a feature README.md, PRINCIPLES.md, FOUND_DEFECTS.md, SKILL.md. Use when adding, moving, trimming, or compressing a rule, pointer, invariant, or defect entry in one, in any repo or the workspace root."
 tags: [meta, docs-system, skills, agents]
 timestamp: 2026-09-10T00:00:00Z
 ---
@@ -19,13 +19,51 @@ Agents read these docs **before** they touch code, and `CLAUDE.md` loads on **ev
 word is a tax paid for the life of the repo. Docs rot when they sit far from the code and nobody
 updates them. The goal: every rule landed, every claim true, far fewer words.
 
-## Step 1 — load the owning repo's mechanics
+## Step 1 — the owning repo's mechanics are part of the edit
 
-- **Read `.claude/context-docs.md` in the repo that owns the doc** before the first edit — its doc
-  homes, its checks, its defect-ledger prefix. Docs in several repos → each follows its own repo's file.
-- **No such file** (common-docs, any other repo, the workspace root) → the nearest `CLAUDE.md` holds
-  the mechanics. common-docs: `index.md` + `log.md` + `python3 meta/scripts/okf_lint.py` after every `.md` change.
-- **Editing a `SKILL.md`** → also read the `skill-authoring` skill.
+Find the repo that owns the doc and follow its block: doc homes, required checks, defect-ledger prefix.
+Docs in several repos → each doc follows its own repo's block.
+
+### aidream
+
+- **`FEATURE.md` beside its code** — `aidream/services/user_secrets/FEATURE.md`, `packages/*/**/FEATURE.md`.
+- **Package `CLAUDE.md` = how to DEVELOP that package.** How to *use* it from aidream is consumer-side →
+  a `FEATURE.md` or a skill (`db-manager-pattern`, `matrx-persistence`), **never inside the package** —
+  "how to use matrx-orm" written inside matrx-orm is the wrong home.
+- **`docs/<subsystem>/` — plans, designs, large builds, deep references. NOT ongoing rules.** Most legacy
+  `docs/` text is stale rollout-era fiction — verify before adopting.
+- **`python3 scripts/check_doc_links.py`** after any move, rename, new pointer, or demotion. Editing a
+  package `CLAUDE.md`, `PRINCIPLES.md`, `FOUND_DEFECTS.md`, or a repo-local skill → add **`--all`**, or
+  that file is not scanned. Paths inside backticks are never checked — grep for those.
+- **`python3 scripts/check_docs_guards.py`** (release-blocking) after adding or retitling a `.md` or writing
+  a common-docs pointer — it fails on a confident title (source of truth, canonical, SSOT, official
+  truth/rules), a new root-level `.md`, or a common-docs pointer in a stale layout or spelling. It scans
+  git-tracked `.md` only: run it after `git add`.
+- Demotion exemplars: `aidream/services/user_secrets/FEATURE.md`, `aidream/api/FEATURE.md`,
+  `packages/matrx-ai/matrx_ai/agents/FEATURE.md`.
+- **`FOUND_DEFECTS.md` entry header is `### AD<n> — …`.** Bare `D<n>` means matrx-frontend's ledger, never this one.
+
+### matrx-frontend
+
+- **`FEATURE.md` beside its feature** — `features/<name>/FEATURE.md` (template `features/_FEATURE_TEMPLATE.md`).
+  A feature `README.md` follows the same rules.
+- **`pnpm check:doc-claims`** whenever you change a claim `CLAUDE.md` makes, or a config setting it
+  describes — doc and config land in the same commit. A new load-bearing claim (a flag, a version, a
+  route group, a script) → register it in `scripts/check-doc-claims.ts`, or it rots unseen. CI runs it `--strict`.
+- **`pnpm check:docs-guards`** after adding or retitling a `.md` or writing a common-docs pointer — same
+  three failures as aidream's twin (confident title, new root-level `.md`, stale common-docs pointer),
+  git-tracked `.md` only: run it after `git add`.
+- **No pointer-link script here** — after a move or rename, `grep -rn "<old path>"` across `CLAUDE.md`,
+  `features/`, `docs/`, and `.claude/skills/`.
+- **`FOUND_DEFECTS.md` entry ID is `D<n>`**; `AD<n>` is aidream's ledger. Claiming an ID off the END of
+  the file instead of the highest number produced four live collisions here (D193/D194/D195/D219).
+
+### Anywhere else
+
+common-docs, any other repo, the workspace root → the nearest `CLAUDE.md` holds the mechanics.
+common-docs: `index.md` + `log.md` + `python3 meta/scripts/okf_lint.py` after every `.md` change.
+
+**Editing a `SKILL.md`** → also read the `skill-authoring` skill.
 
 ## Rule 0 — every edit is a full-document review
 
@@ -50,9 +88,10 @@ An edit that ignores the rest of the document is a regression *even if its own c
 
 ## Router, not encyclopedia
 
-- **Root `CLAUDE.md` is a router:** the load-bearing invariant + a one-line pointer; the detail lives
-  in the area's `FEATURE.md` or skill. Budget: repo `CLAUDE.md` ≤200 lines, workspace root ≤100 —
-  over budget is fixed by relocating, not by tightening prose (`common-docs/policies/claude-md-charter.md`).
+- **Root `CLAUDE.md` is a router:** the load-bearing invariant + a one-line pointer — the *targeted
+  direct message* here; the *detail* in the `FEATURE.md` or skill. Budget: repo `CLAUDE.md` ≤200 lines,
+  workspace root ≤100 — over budget is fixed by relocating, not by tightening prose
+  (`common-docs/policies/claude-md-charter.md`).
 - **"Before you do X, read Y" is the highest-value line.** For any area with real depth, point instead of inlining:
   > **Invoke the `protected-resources` skill** before touching `admin.admins`…
   > Read `features/scopes/FEATURE.md` before any scope/context code.
@@ -68,7 +107,7 @@ An edit that ignores the rest of the document is a regression *even if its own c
 
 ## Demoting a fat section
 
-Copy a live exemplar (the repo file names them):
+Copy a live exemplar (aidream's are named in Step 1) or `features/_FEATURE_TEMPLATE.md` (matrx-frontend):
 
 1. **Find the code it describes** — the `FEATURE.md` goes in *that* directory (packages too). No single
    obvious directory (genuinely repo-level wiring)? **Compress in place instead** — not everything becomes a `FEATURE.md`.
@@ -116,14 +155,15 @@ Compression ≠ deletion.
 
 ## Before you save — checklist
 
-- [ ] Repo mechanics file read (Step 1); every check it names for this change run and clean.
+- [ ] **Step 1 block for the owning repo followed; every check it names for this change run and clean.**
 - [ ] Whole doc read; the change sits in its right home (`CLAUDE.md` invariant vs `FEATURE.md` detail vs skill).
 - [ ] Claims verified against live code — no stale-doc copy-paste.
 - [ ] No new duplication or contradiction; merged where it overlapped.
 - [ ] Every prior rule still present — paths, names, pointers intact; every pointer resolves.
 - [ ] Rule-not-prose: bolded signal, present tense, no hedging.
 - [ ] Depth pushed to a pointer if the section was bloating; word count rose only as much as the new rule needs.
-- [ ] Touched code in this change? Its `FEATURE.md` + dated Change Log line updated too.
+- [ ] Touched code in this change? Its `FEATURE.md` updated too.
+- [ ] Any `FEATURE.md` edit: its Change Log got a dated one-line entry.
 - [ ] `SKILL.md`: the `skill-authoring` skill's description rules, size ceiling, and prove-it run are satisfied.
 - [ ] `FOUND_DEFECTS.md`: ID = ledger max + 1 with this repo's prefix, under `## OPEN`, nothing renumbered.
 
