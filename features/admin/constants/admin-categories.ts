@@ -821,6 +821,18 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        // The reported side of the SAME fleet — where every mandate is
+        // declared and called, per repository, plus the conversion list.
+        // A repository nobody finished scanning reads "unverified" here;
+        // this board never says "unused".
+        title: "Mandate references",
+        description:
+          "Per repository: the last complete scan or unverified, open findings with location and remedy, and the conversion list (work still running outside a mandate).",
+        iconName: "Plug",
+        link: "/administration/mandates/references",
+        isNew: true,
+      },
+      {
         title: "Lookups",
         description:
           "CRUD for tool-registry lookup tables: ui.ui_client, ui.ui_surface (basic), tool.executor. Foundation tables every other registry feature reads.",
