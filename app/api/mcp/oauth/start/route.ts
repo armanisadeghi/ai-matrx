@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import {
   discoverOAuthEndpoints,
   registerDynamicClient,
+  resolveRegisteredTokenEndpointAuthMethod,
   selectDcrTokenEndpointAuthMethod,
 } from "@/features/agents/services/mcp-oauth/discovery";
 import {
@@ -239,14 +240,11 @@ export async function GET(req: NextRequest) {
         );
         clientId = reg.client_id;
         clientSecret = reg.client_secret;
-        if (
-          !authServer.token_endpoint_auth_methods_supported?.length &&
-          !clientSecret
-        ) {
-          // Metadata-free providers historically returned a public client even
-          // though AI Matrx proposed client_secret_basic during registration.
-          tokenEndpointAuthMethod = "none";
-        }
+        tokenEndpointAuthMethod = resolveRegisteredTokenEndpointAuthMethod(
+          tokenEndpointAuthMethod,
+          reg,
+          authServer.token_endpoint_auth_methods_supported,
+        );
         console.log(`[MCP OAuth] DCR succeeded, got client_id: ${clientId}`);
       } catch (dcrErr) {
         console.warn(

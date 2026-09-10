@@ -261,8 +261,51 @@ export async function discoverOAuthEndpoints(
 export interface DynamicClientRegistrationResult {
   client_id: string;
   client_secret?: string;
+  token_endpoint_auth_method?: string;
   client_id_issued_at?: number;
   client_secret_expires_at?: number;
+}
+
+export function resolveRegisteredTokenEndpointAuthMethod(
+  requestedMethod: DcrTokenEndpointAuthMethod,
+  registration: DynamicClientRegistrationResult,
+  advertisedMethods?: string[],
+): DcrTokenEndpointAuthMethod {
+  const returnedMethod = registration.token_endpoint_auth_method;
+
+  if (returnedMethod) {
+    if (
+      returnedMethod !== "client_secret_basic" &&
+      returnedMethod !== "client_secret_post" &&
+      returnedMethod !== "none"
+    ) {
+      throw new Error(
+        `Dynamic client registration returned unsupported token endpoint authentication method ${returnedMethod}.`,
+      );
+    }
+    if (
+      advertisedMethods?.length &&
+      !advertisedMethods.includes(returnedMethod)
+    ) {
+      throw new Error(
+        `Dynamic client registration returned ${returnedMethod}, which was not advertised by the authorization server.`,
+      );
+    }
+    if (returnedMethod !== "none" && !registration.client_secret) {
+      throw new Error(
+        `Dynamic client registration returned ${returnedMethod} without a client secret.`,
+      );
+    }
+    return returnedMethod;
+  }
+
+  if (requestedMethod !== "none" && !registration.client_secret) {
+    throw new Error(
+      `Dynamic client registration returned neither a client secret nor an explicit public-client method for requested ${requestedMethod}.`,
+    );
+  }
+
+  return requestedMethod;
 }
 
 export async function registerDynamicClient(
