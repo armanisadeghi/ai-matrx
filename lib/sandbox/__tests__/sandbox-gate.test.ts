@@ -1,4 +1,3 @@
-/** @jest-environment node */
 /**
  * The load-bearing invariant of the sandbox pre-send gate:
  *
@@ -29,7 +28,6 @@ import {
   getConversationSandboxBinding,
   getSurfaceSeedRef,
   getEffectiveSandboxRef,
-  resolveSandboxRefDetails,
   getActiveSandboxBinding,
   type SandboxBindingPayload,
 } from "../active-binding";
@@ -295,38 +293,6 @@ describe("ensureSandboxOrDecide — who gets gated", () => {
   });
 });
 
-describe("resolveSandboxRefDetails — expected stale bindings are not errors", () => {
-  const originalFetch = global.fetch;
-
-  afterEach(() => {
-    global.fetch = originalFetch;
-    jest.restoreAllMocks();
-  });
-
-  const respondWith = (status: number) =>
-    jest
-      .fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>()
-      .mockResolvedValue(new Response(null, { status }));
-
-  it("warns and returns null when the bound sandbox row is gone", async () => {
-    global.fetch = respondWith(404);
-    const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
-    const error = jest.spyOn(console, "error").mockImplementation(() => undefined);
-
-    await expect(resolveSandboxRefDetails("gone-box-404")).resolves.toBeNull();
-
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("stale binding"));
-    expect(error).not.toHaveBeenCalled();
-  });
-
-  it("keeps unexpected sandbox-detail failures on the error channel", async () => {
-    global.fetch = respondWith(500);
-    const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
-    const error = jest.spyOn(console, "error").mockImplementation(() => undefined);
-
-    await expect(resolveSandboxRefDetails("broken-box-500")).resolves.toBeNull();
-
-    expect(error).toHaveBeenCalledWith(expect.stringContaining("HTTP 500"));
-    expect(warn).not.toHaveBeenCalled();
-  });
-});
+// resolveSandboxRefDetails (stale 404 → warn, other failures → error) lives in
+// ./sandbox-ref-details.test.ts: it needs a real fetch `Response`, which only
+// the node environment provides, and the real store above needs jsdom.
