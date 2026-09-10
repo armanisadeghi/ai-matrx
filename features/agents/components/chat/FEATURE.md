@@ -6,7 +6,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-09-09`
+**Last updated:** `2026-09-10`
 
 > **This is the authoritative doc for the LIVE chat route.** The chat route lives at `app/(a)/chat/**` and is built on the `features/agents/` execution-system — **not** on the unbuilt `ConversationShell` in `features/conversation/`. If you were sent here by `features/conversation/FEATURE.md` or `phase-07-chat-route.md`, this file supersedes their description of how the route behaves.
 
@@ -221,6 +221,7 @@ Wire types are hand-mirrored in `runtime-reconnect/types.ts` (the generated Open
 - **Never send while the mic is recording or finishing transcription.** Mid-voice submit drops the trailing audio and leaves the recorder running. `SmartAgentInput*` + `NewChatLandingInput` disable the send button and Enter while `isRecording || isTranscribing` (`AgentMicrophoneButton.onRecordingStateChange` → `voiceBusy`). Stop recording first; send re-enables when the final transcript lands.
 - **Local file feedback precedes network work.** Paste and drag/drop both route through `useUploadAgentResources`: every file inserts a pending resource synchronously, images use a bounded local object-URL preview with a visible loader, and successful uploads hand off to the canonical `useAttachResource` mapping. Drag handling lives on the shared `SmartInputFileDropTarget` used by the standard stacked/single-row inputs, `/chat/new`, and the compact assistant; do not add a textarea-only drop path.
 - **Pending attachments block every submit path.** A staged upload is not request content yet: until its resource reaches `ready`, it has no durable `file_id` and `selectResourcePayloads` correctly excludes it. Every composer disables button/Enter submission through `selectAllResourcesResolved`, and `smartExecute` repeats the guard structurally for non-UI callers. Never weaken this into “send the text now and attach later”; that produces a permanently text-only model turn.
+- **Conversation input-capability overrides reconcile after every durable turn.** `persistInputCapabilities` performs the immediate versioned metadata merge when a Chat Options switch changes; `executeInstance` repeats that merge after the stream and server commit barrier close. This second write is required on turn one because the backend may have read the conversation metadata before the browser's immediate save and later persist its own `last_request_context` snapshot. Both writers preserve sibling keys; removing the post-turn reconciliation can make a saved override disappear on reload.
 - **Attachable lists are multi-select surfaces.** `ResourcePickerMenu` keeps list drill-ins open by default; the canonical Files picker attaches each file immediately when checked and detaches it through `useDetachResource` when unchecked—there is no staged `Add (N)`/Clear state to lose on dismiss. Tasks, Context Values, Google files, notes, workbooks, documents, tables, and conversation references attach repeatedly without reopening the menu. Scalar settings pass `selectionMode="single"`; direct-entry URL/YouTube forms remain one-and-done.
 - **Typed `user_input` is never a submit prerequisite.** Idle agent execution
   may be driven by variables, context, tools, attachments, or the agent
@@ -287,6 +288,7 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 
 ## Change log
 
+- `2026-09-10` — codex: **conversation input-capability overrides survive the first server turn.** Switch changes still persist immediately through the versioned metadata merge, and `executeInstance` now reconciles the browser-owned `input_capabilities` block again after the stream's server commit barrier. This closes the cross-writer race where a stale first-turn `last_request_context` metadata snapshot replaced a just-saved YouTube/image/file override; server-owned sibling keys remain intact.
 - `2026-09-09` — codex: **user bubbles now render pristine human input.** The
   shared content selectors prefer `chat.message.user_content` for user rows
   while retaining full `content` for model replay; `ChatRoomClient` also

@@ -122,6 +122,7 @@ import {
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
+import { persistInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
 
 /**
  * Build the three REQUIRED lifecycle fields for a first-turn request.
@@ -1084,7 +1085,7 @@ export const executeInstance = createAsyncThunk<
       const RUN_IN_FLIGHT_DEADLINE = Date.now() + 120_000;
       for (;;) {
         try {
-          return await runAiStream({
+          const result = await runAiStream({
             requestId,
             conversationId,
             url,
@@ -1101,6 +1102,18 @@ export const executeInstance = createAsyncThunk<
             clearInputOnError: !retry,
             userMessageClientTempId,
           });
+
+          // First-turn execution and conversation-only UI settings write the
+          // same metadata column from opposite sides of the request. The
+          // server's final request-context snapshot can legitimately land
+          // after a pre-turn capability save, so reconcile the browser-owned
+          // block once the stream (and its server commit barrier) has closed.
+          // The persistence thunk performs an optimistic versioned merge and
+          // preserves every server-owned sibling key.
+          if (!isEphemeral) {
+            await dispatch(persistInputCapabilities({ conversationId }));
+          }
+          return result;
         } catch (streamError) {
           if (
             streamError instanceof RunInFlightError &&
