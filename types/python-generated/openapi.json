@@ -19372,6 +19372,48 @@
         }
       }
     },
+    "/openrouter/public/auto-router": {
+      "get": {
+        "tags": [
+          "OpenRouter Public Integrations"
+        ],
+        "summary": "Public Auto Router",
+        "operationId": "public_auto_router_openrouter_public_auto_router_get",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenRouterModelMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/audienceful/public/status": {
       "get": {
         "tags": [
@@ -65552,13 +65594,14 @@
             }
           },
           {
-            "name": "include_archived",
+            "name": "archived",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Include Archived"
+              "type": "string",
+              "pattern": "^(active|archived|all)$",
+              "default": "active",
+              "title": "Archived"
             }
           },
           {
@@ -181112,6 +181155,87 @@
         "title": "OpenProjectRootResult",
         "description": "Safe bounded projection of OpenProject's public community API root."
       },
+      "OpenRouterModelMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "openrouter_public_model_metadata",
+            "title": "Kind",
+            "default": "openrouter_public_model_metadata"
+          },
+          "provider": {
+            "type": "string",
+            "const": "openrouter",
+            "title": "Provider",
+            "default": "openrouter"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "model_id": {
+            "type": "string",
+            "const": "openrouter/auto",
+            "title": "Model Id",
+            "default": "openrouter/auto"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "context_length": {
+            "type": "integer",
+            "title": "Context Length"
+          },
+          "input_modalities": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "text",
+                "image",
+                "audio",
+                "file",
+                "video"
+              ]
+            },
+            "type": "array",
+            "title": "Input Modalities"
+          },
+          "output_modalities": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "text",
+                "image",
+                "audio"
+              ]
+            },
+            "type": "array",
+            "title": "Output Modalities"
+          },
+          "supports_tools": {
+            "type": "boolean",
+            "title": "Supports Tools"
+          },
+          "supports_structured_outputs": {
+            "type": "boolean",
+            "title": "Supports Structured Outputs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "context_length",
+          "input_modalities",
+          "output_modalities",
+          "supports_tools",
+          "supports_structured_outputs"
+        ],
+        "title": "OpenRouterModelMetadata"
+      },
       "OpenRuntimeResponse": {
         "properties": {},
         "additionalProperties": true,
@@ -190563,6 +190687,53 @@
         "title": "PlanAiRunSummary",
         "description": "One recorded run as the site's history list needs it."
       },
+      "PlanAnchorState": {
+        "properties": {
+          "definition_id": {
+            "type": "string",
+            "title": "Definition Id"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "definition_updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Updated At"
+          },
+          "definition_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "definition_id",
+          "node_id"
+        ],
+        "title": "PlanAnchorState",
+        "description": "The draft's post-stitch state for ONE plan anchor — what the caller\nthat TRIGGERED the stitch needs in order to stay in sync.\n\n``sync_anchor_config`` writes the workflow draft row on the requester's\nbehalf, which moves the row's optimistic-concurrency token\n(``updated_at``). A client holding the older token then saved and was told\n\"someone else edited this workflow\" — about a change its OWN request\ncaused (live 2026-09-08, workflow 66665c85). The side effect is correct;\nwhat was missing was the receipt. Every plan mutation now answers with\nthis, so the caller adopts the server-owned config AND the fresh token\ninstead of discovering both by failing a save."
+      },
       "PlanAssistRequest": {
         "properties": {
           "organization_id": {
@@ -191267,6 +191438,16 @@
               }
             ],
             "title": "Updated At"
+          },
+          "anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanAnchorState"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -191309,6 +191490,16 @@
             "type": "boolean",
             "title": "Is Stand In",
             "default": false
+          },
+          "anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanAnchorState"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

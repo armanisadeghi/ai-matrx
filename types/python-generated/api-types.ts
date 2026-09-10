@@ -8249,6 +8249,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/openrouter/public/auto-router": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Auto Router */
+        get: operations["public_auto_router_openrouter_public_auto_router_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/audienceful/public/status": {
         parameters: {
             query?: never;
@@ -80648,6 +80665,45 @@ export interface components {
             /** Work Packages Available */
             work_packages_available: boolean;
         };
+        /** OpenRouterModelMetadata */
+        OpenRouterModelMetadata: {
+            /**
+             * Kind
+             * @default openrouter_public_model_metadata
+             * @constant
+             */
+            __kind?: "openrouter_public_model_metadata";
+            /**
+             * Provider
+             * @default openrouter
+             * @constant
+             */
+            provider?: "openrouter";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Model Id
+             * @default openrouter/auto
+             * @constant
+             */
+            model_id?: "openrouter/auto";
+            /** Name */
+            name: string;
+            /** Context Length */
+            context_length: number;
+            /** Input Modalities */
+            input_modalities: ("text" | "image" | "audio" | "file" | "video")[];
+            /** Output Modalities */
+            output_modalities: ("text" | "image" | "audio")[];
+            /** Supports Tools */
+            supports_tools: boolean;
+            /** Supports Structured Outputs */
+            supports_structured_outputs: boolean;
+        };
         /** OpenRuntimeResponse */
         OpenRuntimeResponse: {
             [key: string]: unknown;
@@ -84857,6 +84913,34 @@ export interface components {
              */
             error?: string;
         };
+        /**
+         * PlanAnchorState
+         * @description The draft's post-stitch state for ONE plan anchor — what the caller
+         *     that TRIGGERED the stitch needs in order to stay in sync.
+         *
+         *     ``sync_anchor_config`` writes the workflow draft row on the requester's
+         *     behalf, which moves the row's optimistic-concurrency token
+         *     (``updated_at``). A client holding the older token then saved and was told
+         *     "someone else edited this workflow" — about a change its OWN request
+         *     caused (live 2026-09-08, workflow 66665c85). The side effect is correct;
+         *     what was missing was the receipt. Every plan mutation now answers with
+         *     this, so the caller adopts the server-owned config AND the fresh token
+         *     instead of discovering both by failing a save.
+         */
+        PlanAnchorState: {
+            /** Definition Id */
+            definition_id: string;
+            /** Node Id */
+            node_id: string;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** Definition Updated At */
+            definition_updated_at?: string | null;
+            /** Definition Version */
+            definition_version?: number | null;
+        };
         /** PlanAssistRequest */
         PlanAssistRequest: {
             /**
@@ -85217,6 +85301,7 @@ export interface components {
             created_at?: string | null;
             /** Updated At */
             updated_at?: string | null;
+            anchor?: components["schemas"]["PlanAnchorState"] | null;
         };
         /** PlanSampleRecord */
         PlanSampleRecord: {
@@ -85242,6 +85327,7 @@ export interface components {
              * @default false
              */
             is_stand_in?: boolean;
+            anchor?: components["schemas"]["PlanAnchorState"] | null;
         };
         /**
          * PlanableServiceStatus
@@ -128877,6 +128963,37 @@ export interface operations {
             };
         };
     };
+    public_auto_router_openrouter_public_auto_router_get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenRouterModelMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_status_audienceful_public_status_get: {
         parameters: {
             query?: never;
@@ -162605,7 +162722,7 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
-                include_archived?: boolean;
+                archived?: string;
                 project_id?: string | null;
             };
             header?: never;
