@@ -29,6 +29,19 @@
  *      column (so the rows reaching the UI are knowingly mixed) in a file that
  *      offers no archive control at all. That is "archived and active mixed,
  *      unlabelled" — the other half of the census's failure modes.
+ *   3. ARCHIVE-BLIND READER OF AN ENTITY THIS REPO ALREADY TREATS LAWFULLY —
+ *      a list read that neither filters the archive column nor projects it, of
+ *      an entity whose lists elsewhere in this repo DO carry the control. The
+ *      class is settled for that entity, so a reader that cannot even tell an
+ *      archived row from a live one is a regression, and nothing downstream
+ *      could offer the control on its behalf. This is the shape row F9 shipped
+ *      (`features/pdf/scanner/processing.ts` listed `processed_documents`
+ *      filtering `deleted_at` alone, while the PDF Studio sidebar and the
+ *      extractor history — the same entity — had already been fixed). The
+ *      precedent set is DERIVED from the tree, never hand-listed: it grows as
+ *      the campaign closes entities, and it is why this rule reports a handful
+ *      of true findings instead of a hundred reads of entities nobody has
+ *      ruled on yet.
  *
  * WHAT IT DELIBERATELY DOES NOT FAIL ON
  *
@@ -62,7 +75,13 @@
  *
  * The archivable-entity set is DERIVED from `types/database.types.ts`, never
  * hand-listed — a new table with an archive column is covered the day
- * `pnpm db-types` runs, with nobody remembering to update this file.
+ * `pnpm db-types` runs, with nobody remembering to update this file. It is
+ * keyed by SCHEMA and table, because four different schemas own a table called
+ * `definition` and only two of them carry an archive column: a scan that keyed
+ * on the bare name called every `tool.definition` and `app.definition` read a
+ * finding. A chain that names no schema resolves by unique table name, and
+ * stays conservative (treated as the archivable entity) when the name is
+ * ambiguous.
  *
  * Run: pnpm check:archived-items-law
  * Prove the detector: pnpm check:archived-items-law:self-test
@@ -146,6 +165,53 @@ function stripComments(text: string): string {
  * 100k-line file. A regex over the whole blob would happily match an Insert or
  * an unrelated nested type.
  */
+export type ArchivableEntities = Map<string, Set<string>>;
+
+/**
+ * `table → the schemas that own an archivable table of that name`.
+ *
+ * Schema matters: `agent.definition` and `workflow.definition` carry
+ * `is_archived`; `tool.definition` and `app.definition` do not. Keying on the
+ * bare name reported every tool-registry read in the repo as a violation.
+ */
+export function archivableEntities(dbTypesText: string): ArchivableEntities {
+  const entities: ArchivableEntities = new Map();
+  let currentSchema: string | null = null;
+  let currentTable: string | null = null;
+  let inRow = false;
+
+  for (const line of dbTypesText.split("\n")) {
+    const schemaMatch = /^ {2}(\w+): \{$/.exec(line);
+    if (schemaMatch?.[1]) {
+      currentSchema = schemaMatch[1];
+      continue;
+    }
+    const tableMatch = /^ {6}(\w+): \{$/.exec(line);
+    if (tableMatch?.[1]) {
+      currentTable = tableMatch[1];
+      inRow = false;
+      continue;
+    }
+    if (currentTable && /^ {8}Row: \{$/.test(line)) {
+      inRow = true;
+      continue;
+    }
+    if (inRow && /^ {8}\}/.test(line)) {
+      inRow = false;
+      continue;
+    }
+    if (inRow && currentTable && currentSchema) {
+      const column = /^ {10}(\w+)[?]?:/.exec(line)?.[1];
+      if (column && (ARCHIVE_COLUMNS as readonly string[]).includes(column)) {
+        const schemas = entities.get(currentTable) ?? new Set<string>();
+        schemas.add(currentSchema);
+        entities.set(currentTable, schemas);
+      }
+    }
+  }
+  return entities;
+}
+
 export function archivableTables(dbTypesText: string): Set<string> {
   const tables = new Set<string>();
   let currentTable: string | null = null;
@@ -212,10 +278,58 @@ function chainWindow(code: string, fromIndex: number): string {
   return code.slice(lineStart, end);
 }
 
+/** A chain carrying one of these is a list, not a lookup of one known row. */
+const LIST_SHAPED = /\.(?:order|limit|range)\s*\(/;
+
+/** `.select("*")` hands EVERY column, archive column included, to the caller. */
+const SELECT_STAR = /\.select\s*\(\s*['"`]\s*\*/;
+
+/**
+ * The schema a `.from(table)` at `fromIndex` reads, when the statement names
+ * one (`.schema("agent").from("definition")`). `null` when it does not — helper
+ * wrappers such as `docprocDb(supabase)` bind the schema elsewhere.
+ */
+function schemaFor(code: string, fromIndex: number): string | null {
+  const start =
+    Math.max(
+      code.lastIndexOf(";", fromIndex),
+      code.lastIndexOf("{", fromIndex),
+      code.lastIndexOf("}", fromIndex),
+    ) + 1;
+  const segment = code.slice(start, fromIndex);
+  const names = [...segment.matchAll(/\.schema\s*\(\s*['"`](\w+)['"`]\s*\)/g)];
+  return names.length > 0 ? (names[names.length - 1]?.[1] ?? null) : null;
+}
+
+/**
+ * `schema.table` when this read is of an archivable entity, `null` when it is
+ * not. An unnamed schema resolves by unique table name; an ambiguous one stays
+ * conservative (`?.table`) rather than letting a real finding through.
+ */
+export function entityKeyFor(
+  code: string,
+  fromIndex: number,
+  table: string,
+  entities: ArchivableEntities,
+): string | null {
+  const schemas = entities.get(table);
+  if (!schemas) return null;
+  const named = schemaFor(code, fromIndex);
+  if (named) return schemas.has(named) ? `${named}.${table}` : null;
+  const only = schemas.size === 1 ? [...schemas][0] : null;
+  return only ? `${only}.${table}` : `?.${table}`;
+}
+
 export function scanFile(
   file: string,
   raw: string,
-  tables: ReadonlySet<string>,
+  entities: ArchivableEntities,
+  /**
+   * Entities (`schema.table`) whose lists ALREADY carry an archive control
+   * somewhere in this repo — the settled classes rule 3 protects. Omitted (the
+   * self-test's default) means "no precedent", so rule 3 stays quiet.
+   */
+  lawfulEntities: ReadonlySet<string> = new Set(),
 ): Finding[] {
   const code = stripComments(raw);
   const findings: Finding[] = [];
@@ -225,7 +339,9 @@ export function scanFile(
   let match: RegExpExecArray | null;
   while ((match = fromPattern.exec(code)) !== null) {
     const table = match[1];
-    if (!table || !tables.has(table)) continue;
+    if (!table) continue;
+    const entity = entityKeyFor(code, match.index, table, entities);
+    if (!entity) continue;
 
     const window = chainWindow(code, match.index);
     if (anyMatch(window, WRITE_SIGNALS)) continue;
@@ -263,10 +379,12 @@ export function scanFile(
     // either. A rule that fires on every layered service is a rule agents
     // delete instead of obey.
     const rendersRows = file.endsWith(".tsx") && /\.map\s*\(/.test(code);
-    const selectsArchiveColumn = ARCHIVE_COLUMNS.some((column) =>
-      new RegExp(`\\.select\\s*\\([\\s\\S]{0,600}?\\b${column}\\b`).test(window),
-    );
-    if (!predicate && !fileHasControl && rendersRows && selectsArchiveColumn) {
+    const projectsArchiveColumn =
+      SELECT_STAR.test(window) ||
+      ARCHIVE_COLUMNS.some((column) =>
+        new RegExp(`\\.select\\s*\\([\\s\\S]{0,600}?\\b${column}\\b`).test(window),
+      );
+    if (!predicate && !fileHasControl && rendersRows && projectsArchiveColumn) {
       findings.push({
         file,
         line,
@@ -275,10 +393,63 @@ export function scanFile(
           `list read of \`${table}\` selects its archive column, renders the rows, and ` +
           "offers no archive control — archived and active render mixed and unlabelled",
       });
+      continue;
+    }
+
+    // RULE 3 — THE ARCHIVE-BLIND READER OF A SETTLED CLASS. This list read
+    // neither filters the archive column nor projects it, so nothing it hands
+    // downstream can tell an archived row from a live one — and the entity is
+    // one whose lists elsewhere in this repo already carry the control. The
+    // class is settled; this reader is the regression. (Row F9, 2026-09-09:
+    // `fetchRecentScans` listed `processed_documents` filtering `deleted_at`
+    // alone, months after the PDF Studio sidebar over the same entity was
+    // fixed.) An entity nobody has ruled on yet is NOT reported here — this
+    // guard states what it has proven, never what it suspects.
+    if (
+      !predicate &&
+      !fileHasControl &&
+      !projectsArchiveColumn &&
+      LIST_SHAPED.test(window) &&
+      lawfulEntities.has(entity)
+    ) {
+      findings.push({
+        file,
+        line,
+        table,
+        reason:
+          `list read of \`${entity}\` neither filters nor selects the archive column, so ` +
+          "archived rows render indistinguishable from live ones — and this repo already " +
+          "gives that entity's lists an archive control elsewhere",
+      });
     }
   }
 
   return findings;
+}
+
+/**
+ * The entities whose lists this repo ALREADY treats lawfully: an entity read in
+ * a file that carries an archive control. Derived from the tree on every run,
+ * so closing a class automatically widens rule 3's cover to the rest of it.
+ */
+export function lawfulEntitiesIn(
+  files: readonly { file: string; raw: string }[],
+  entities: ArchivableEntities,
+): Set<string> {
+  const lawful = new Set<string>();
+  for (const { raw } of files) {
+    const code = stripComments(raw);
+    if (!anyMatch(code, CONTROL_SIGNALS)) continue;
+    const fromPattern = /\.from\s*\(\s*['"`]([A-Za-z0-9_]+)['"`]\s*\)/g;
+    let match: RegExpExecArray | null;
+    while ((match = fromPattern.exec(code)) !== null) {
+      const table = match[1];
+      if (!table) continue;
+      const entity = entityKeyFor(code, match.index, table, entities);
+      if (entity) lawful.add(entity);
+    }
+  }
+  return lawful;
 }
 
 function sourceFiles(): string[] {
@@ -297,7 +468,17 @@ function sourceFiles(): string[] {
 
 // ── Self-test ──────────────────────────────────────────────────────────────
 
-const SELF_TEST_TABLES = new Set(["template", "canvas_items", "employees"]);
+const SELF_TEST_TABLES: ArchivableEntities = new Map([
+  ["template", new Set(["agent"])],
+  ["canvas_items", new Set(["platform"])],
+  ["employees", new Set(["hr"])],
+  // Two schemas own a `definition`; only one of them archives. The scan must
+  // tell them apart (`tool.definition` is not our business).
+  ["definition", new Set(["agent"])],
+]);
+
+/** The settled classes rule 3 protects, for the self-test. */
+const SELF_TEST_LAWFUL = new Set(["platform.canvas_items"]);
 
 /** RED — exactly the shape `/agents/templates` shipped before 2026-09-09. */
 const RED_HARDCODED = `
@@ -380,6 +561,53 @@ const GREEN_OTHER_TABLE = `
 const { data } = await supabase.from("widgets").select("*").eq("is_archived", false);
 `;
 
+/** RED — row F9's exact shape: a list read of a SETTLED entity that neither
+ *  filters nor projects the archive column, so archived rows arrive unmarked. */
+const RED_ARCHIVE_BLIND = `
+export interface RecentRow { id: string; name: string }
+export async function fetchRecent(limit = 12): Promise<RecentRow[]> {
+  const { data } = await db
+    .from("canvas_items")
+    .select("id, name, created_at, metadata")
+    .is("deleted_at", null)
+    .eq("owner_id", uid)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((row) => ({ id: row.id, name: row.name }));
+}
+`;
+
+/** GREEN — the same blind shape over an entity NOBODY has ruled on yet. Rule 3
+ *  reports settled classes only; it never guesses at the rest. */
+const GREEN_ARCHIVE_BLIND_UNSETTLED = `
+const { data } = await db
+  .from("template")
+  .select("id, name")
+  .order("created_at", { ascending: false })
+  .limit(10);
+`;
+
+/** GREEN — `select("*")` hands the archive column to the caller, so the reader
+ *  is not blind (the transcript-studio service shape). */
+const GREEN_SELECT_STAR = `
+const { data } = await db
+  .from("canvas_items")
+  .select("*")
+  .eq("user_id", userId)
+  .order("created_at", { ascending: false });
+`;
+
+/** GREEN — a different schema's table of the same name has no archive column,
+ *  and calling every tool-registry read a violation is how a guard gets
+ *  deleted. */
+const GREEN_OTHER_SCHEMA = `
+const { data } = await client
+  .schema("tool")
+  .from("definition")
+  .select("id, name, category")
+  .order("name", { ascending: true });
+`;
+
 /** RED — a comment mentioning a control must not whitelist a hard predicate. */
 const RED_COMMENT_ONLY_CONTROL = `
 // TODO: add a showArchived toggle here one day
@@ -392,7 +620,7 @@ const { data } = await supabase
 function selfTest(): void {
   const failures: string[] = [];
   const scan = (source: string, file = "self-test.ts") =>
-    scanFile(file, source, SELF_TEST_TABLES);
+    scanFile(file, source, SELF_TEST_TABLES, SELF_TEST_LAWFUL);
 
   const expectRed = (name: string, source: string, file?: string) => {
     if (scan(source, file).length === 0) {
@@ -414,6 +642,10 @@ function selfTest(): void {
   expectRed("HARDCODED", RED_HARDCODED);
   expectRed("COLUMN-NO-CONTROL", RED_COLUMN_NO_CONTROL, "self-test.tsx");
   expectRed("COMMENT-ONLY-CONTROL", RED_COMMENT_ONLY_CONTROL);
+  expectRed("ARCHIVE-BLIND", RED_ARCHIVE_BLIND);
+  expectGreen("ARCHIVE-BLIND-UNSETTLED", GREEN_ARCHIVE_BLIND_UNSETTLED);
+  expectGreen("SELECT-STAR", GREEN_SELECT_STAR);
+  expectGreen("OTHER-SCHEMA", GREEN_OTHER_SCHEMA);
   expectGreen("CONTROLLED", GREEN_CONTROLLED);
   expectGreen("DISCLOSURE", GREEN_DISCLOSURE, "self-test.tsx");
   expectGreen("SERVICE-LAYER", GREEN_SERVICE_LAYER);
@@ -423,7 +655,21 @@ function selfTest(): void {
   expectGreen("OTHER-TABLE", GREEN_OTHER_TABLE);
 
   // The entity set must actually come from the generated types.
-  const derived = archivableTables(readFileSync(DB_TYPES, "utf8"));
+  const dbTypes = readFileSync(DB_TYPES, "utf8");
+  const derivedEntities = archivableEntities(dbTypes);
+  if (derivedEntities.get("definition")?.has("tool")) {
+    failures.push(
+      "DERIVATION: `tool.definition` has no archive column but was derived as " +
+        "archivable — the schema keying is broken and every tool read is a false positive.",
+    );
+  }
+  if (!derivedEntities.get("definition")?.has("agent")) {
+    failures.push(
+      "DERIVATION: `agent.definition` carries `is_archived` but was not derived — " +
+        "the schema keying would silently exempt the whole agent catalogue.",
+    );
+  }
+  const derived = archivableTables(dbTypes);
   for (const table of ["template", "canvas_items", "processed_documents"]) {
     if (!derived.has(table)) {
       failures.push(
@@ -451,7 +697,9 @@ function selfTest(): void {
   console.log(
     `✅ self-test: RED on a hardcoded \`.eq("is_archived", false)\` list read, RED on a\n` +
       "   list that selects the archive column with no control, RED when the only\n" +
-      "   'control' is a comment; GREEN on an option-driven predicate, a disclosure-backed\n" +
+      "   'control' is a comment, RED on an archive-blind list read of a settled entity;\n" +
+      "   GREEN on an option-driven predicate, a blind read of an unsettled entity, a\n" +
+      "   `select(\"*\")` hand-off, another schema's same-named table, a disclosure-backed\n" +
       "   client split, a single-record read, a write, a reasoned exemption, and a table\n" +
       `   with no archive column. Entity set derived from types/database.types.ts (${derived.size} tables).`,
   );
@@ -463,18 +711,23 @@ function main(): void {
     return;
   }
 
-  const tables = archivableTables(readFileSync(DB_TYPES, "utf8"));
+  const entities = archivableEntities(readFileSync(DB_TYPES, "utf8"));
+  const files = sourceFiles().map((file) => ({
+    file,
+    raw: readFileSync(path.join(ROOT, file), "utf8"),
+  }));
+  // Pass 1 derives the settled classes; pass 2 judges every read against them.
+  const lawful = lawfulEntitiesIn(files, entities);
   const findings: Finding[] = [];
-
-  for (const file of sourceFiles()) {
-    const raw = readFileSync(path.join(ROOT, file), "utf8");
-    findings.push(...scanFile(file, raw, tables));
+  for (const { file, raw } of files) {
+    findings.push(...scanFile(file, raw, entities, lawful));
   }
 
   if (findings.length === 0) {
     console.log(
-      `✅ THE ARCHIVED-ITEMS LAW holds: every list read over the ${tables.size} archivable ` +
-        "tables carries an archive control.",
+      `✅ THE ARCHIVED-ITEMS LAW holds: every list read over the ${entities.size} archivable ` +
+        `tables carries an archive control (${lawful.size} entities have a settled ` +
+        "class rule 3 protects).",
     );
     return;
   }
