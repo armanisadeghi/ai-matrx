@@ -122,7 +122,8 @@ Two halves of the fix live outside this surface, and both are in the shared
 - `pnpm review-queue:sweep` — the operational entry point for a review pass.
   Lists `submitted` rows older than N hours grouped by lane and repository, each
   with its direct URL, flags rows the recurring worker can never pick up, and
-  prints the claim SQL. It is a REPORT: it changes no row.
+  points to the shared skill for claim and repair execution. Age order never
+  authorizes ownership; the CLI emits no alternate claim SQL. It changes no row.
 - The three communication rules — THE DIRECT-LINK RULE (every ask carries
   `…/agent-review/<id>`), THE OWNED-REVIEW RULE (the filing session dispatches an
   independent reviewer and only tells Arman after promotion), and THE LANE TAG
@@ -133,6 +134,8 @@ A recurring `agent-review-sweep` schedule is PROPOSED, not created, in
 no-unapproved-schedules law.
 
 ## Change log
+
+- 2026-09-09 — Removed the sweep CLI's divergent row-by-id claim SQL after live output recommended an `awaiting_review` row; it now routes execution to the canonical atomic claim and same-run repair/verification protocol.
 
 - 2026-09-09 — Aligned recurring review with authorized sign-in recovery before claim and bounded repair of malformed routing; the shared skill owns the execution protocol.
 
