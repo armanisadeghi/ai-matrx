@@ -238,13 +238,14 @@ export async function GET(req: NextRequest) {
             tokenEndpointAuthMethod,
           },
         );
-        clientId = reg.client_id;
-        clientSecret = reg.client_secret;
-        tokenEndpointAuthMethod = resolveRegisteredTokenEndpointAuthMethod(
+        const registeredAuthMethod = resolveRegisteredTokenEndpointAuthMethod(
           tokenEndpointAuthMethod,
           reg,
           authServer.token_endpoint_auth_methods_supported,
         );
+        clientId = reg.client_id;
+        clientSecret = reg.client_secret;
+        tokenEndpointAuthMethod = registeredAuthMethod;
         console.log(`[MCP OAuth] DCR succeeded, got client_id: ${clientId}`);
       } catch (dcrErr) {
         console.warn(

@@ -10,7 +10,11 @@
  * Third-party URLs must keep their UrlChip — that IS the useful rendering.
  */
 
-import { detectResultShape, coerceMediaRef } from "../shape";
+import {
+  detectResultShape,
+  coerceMediaRef,
+  mediaElementHintForKey,
+} from "../shape";
 import { RESULT_MEDIA_DEMO_REF } from "../demo-fixtures";
 
 const USER_ID = "4cf62e4e-2679-484f-b652-034e697418df";
@@ -160,4 +164,22 @@ describe("URLs that are NOT ours keep their link rendering", () => {
   test("a plain string is still a scalar", () => {
     expect(detectResultShape("Image generated successfully.").kind).toBe("scalar");
   });
+});
+
+describe("media URL field hints", () => {
+  test.each([
+    ["audio_url", "audio"],
+    ["audioUrl", "audio"],
+    ["official_video_url", "video"],
+    ["thumbnail_url", "img"],
+  ] as const)("%s carries a %s render hint", (key, element) => {
+    expect(mediaElementHintForKey(key)).toBe(element);
+  });
+
+  test.each(["audio_summary", "video_status", "source_url", "audio_file_id"])(
+    "%s is not treated as a media URL",
+    (key) => {
+      expect(mediaElementHintForKey(key)).toBeUndefined();
+    },
+  );
 });

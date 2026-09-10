@@ -11,9 +11,12 @@ import { ExternalLink } from "lucide-react";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import type { MediaRef } from "@/features/files/types";
 import { cn } from "@/lib/utils";
+import type { ResultMediaElement } from "./shape";
 
 export interface ResultMediaProps {
     mediaRef: MediaRef;
+    /** Trusted field-name hint used only when the ref has no MIME/extension. */
+    elementTypeHint?: ResultMediaElement;
     alt?: string;
     density?: "inline" | "full";
     className?: string;
@@ -21,7 +24,7 @@ export interface ResultMediaProps {
 
 interface InlineResultMediaProps {
     source: MediaRef;
-    as?: "img" | "video" | "audio";
+    as?: ResultMediaElement;
     size: "fill" | "xl";
     alt: string;
 }
@@ -42,7 +45,7 @@ function InlineResultMedia({ source, as, size, alt }: InlineResultMediaProps) {
  * an unknown ref to `img` overrides that later metadata and makes every owned
  * audio/video result fail as a broken image.
  */
-function pickElement(ref: MediaRef): "img" | "video" | "audio" | undefined {
+function pickElement(ref: MediaRef): ResultMediaElement | undefined {
     const mime = ref.mime_type?.toLowerCase() ?? "";
     if (mime.startsWith("video/")) return "video";
     if (mime.startsWith("audio/")) return "audio";
@@ -54,8 +57,14 @@ function pickElement(ref: MediaRef): "img" | "video" | "audio" | undefined {
     return undefined;
 }
 
-export const ResultMedia: React.FC<ResultMediaProps> = ({ mediaRef, alt, density = "inline", className }) => {
-    const as = pickElement(mediaRef);
+export const ResultMedia: React.FC<ResultMediaProps> = ({
+    mediaRef,
+    elementTypeHint,
+    alt,
+    density = "inline",
+    className,
+}) => {
+    const as = pickElement(mediaRef) ?? elementTypeHint;
     const size = density === "full" ? "fill" : "xl";
     const viewerHref = mediaRef.file_id ? `/files/f/${encodeURIComponent(mediaRef.file_id)}` : null;
 

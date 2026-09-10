@@ -95,4 +95,20 @@ describe("ResultMedia open action", () => {
       container.querySelector('[data-testid="inline-media"]')?.getAttribute("data-as"),
     ).toBe(element);
   });
+
+  test("canonical MIME wins when a field-name hint disagrees", () => {
+    act(() => {
+      root.render(
+        <ResultMedia
+          mediaRef={{ file_id: FILE_ID, mime_type: "video/mp4" }}
+          elementTypeHint="audio"
+          alt="Generated media"
+        />,
+      );
+    });
+
+    expect(
+      container.querySelector('[data-testid="inline-media"]')?.getAttribute("data-as"),
+    ).toBe("video");
+  });
 });

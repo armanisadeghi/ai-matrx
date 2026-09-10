@@ -23,7 +23,13 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { detectResultShape, humanizeEnumValue, humanizeKey, looksLikeUuid } from "./shape";
+import {
+  detectResultShape,
+  humanizeEnumValue,
+  humanizeKey,
+  looksLikeUuid,
+  mediaElementHintForKey,
+} from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
 import { ShortId } from "./ShortId";
 
@@ -122,6 +128,7 @@ function renderFieldValue(
       density={density}
       depth={depth + 1}
       embedMedia={embedMedia}
+      mediaElementHint={mediaElementHintForKey(key)}
     />
   );
 }

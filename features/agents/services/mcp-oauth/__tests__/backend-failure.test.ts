@@ -117,6 +117,24 @@ describe("persistMcpOAuthTokens", () => {
 });
 
 describe("MCP DCR persistence boundary", () => {
+  it("validates a DCR response before adopting its client identity", () => {
+    const startRoute = readFileSync(
+      join(process.cwd(), "app/api/mcp/oauth/start/route.ts"),
+      "utf8",
+    );
+
+    const resolution = startRoute.indexOf(
+      "const registeredAuthMethod = resolveRegisteredTokenEndpointAuthMethod",
+    );
+    const adoption = startRoute.indexOf("clientId = reg.client_id", resolution);
+
+    expect(resolution).toBeGreaterThan(-1);
+    expect(adoption).toBeGreaterThan(resolution);
+    expect(startRoute).toContain(
+      "tokenEndpointAuthMethod = registeredAuthMethod",
+    );
+  });
+
   it("keeps dynamic client credentials in the attempt cookie instead of caching half globally", () => {
     const startRoute = readFileSync(
       join(process.cwd(), "app/api/mcp/oauth/start/route.ts"),

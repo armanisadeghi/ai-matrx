@@ -19,7 +19,12 @@ import React from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TableColumn } from "./shape";
-import { humanizeEnumValue, isPlainObject } from "./shape";
+import {
+    detectResultShape,
+    humanizeEnumValue,
+    isPlainObject,
+    mediaElementHintForKey,
+} from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
 import {
   MOBILE_TABLE,
@@ -154,9 +159,32 @@ function isShortScalarList(
 }
 
 /** Render a single cell — scalar inline, structure collapsed behind a toggle. */
-const Cell: React.FC<{ value: unknown; depth: number; embedMedia: boolean }> = ({ value, depth, embedMedia }) => {
+const Cell: React.FC<{ fieldKey: string; value: unknown; depth: number; embedMedia: boolean }> = ({
+    fieldKey,
+    value,
+    depth,
+    embedMedia,
+}) => {
+    const mediaElementHint = mediaElementHintForKey(fieldKey);
     if (value === null || value === undefined) {
         return <span className="italic text-muted-foreground">—</span>;
+    }
+    // A signed owned-file URL is often longer than LONG_CELL_CHARS. Recognize
+    // media before the generic long-text clamp so table cells receive the same
+    // durable renderer and field-name type hint as key/value results.
+    if (
+        typeof value === "string" &&
+        detectResultShape(value, { embedMedia }).kind === "media"
+    ) {
+        return (
+            <ResultValue
+                value={value}
+                density="inline"
+                depth={depth + 1}
+                embedMedia={embedMedia}
+                mediaElementHint={mediaElementHint}
+            />
+        );
     }
     if (typeof value === "string" && value.length > LONG_CELL_CHARS) {
         return <LongTextCell value={value} />;
@@ -172,7 +200,15 @@ const Cell: React.FC<{ value: unknown; depth: number; embedMedia: boolean }> = (
         }
     }
     if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-        return <ResultValue value={value} density="inline" depth={depth + 1} embedMedia={embedMedia} />;
+        return (
+            <ResultValue
+                value={value}
+                density="inline"
+                depth={depth + 1}
+                embedMedia={embedMedia}
+                mediaElementHint={mediaElementHint}
+            />
+        );
     }
     // A SHORT list of short scalars is the cell — tags, labels, aliases. It
     // reads as chips; collapsing it to "[1 item]" made the reader click to
@@ -331,7 +367,12 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                                                 colIdx === 0 && MOBILE_TABLE_FROZEN_CELL,
                                             )}
                                         >
-                                            <Cell value={row[col.key]} depth={depth} embedMedia={embedMedia} />
+                                            <Cell
+                                                fieldKey={col.key}
+                                                value={row[col.key]}
+                                                depth={depth}
+                                                embedMedia={embedMedia}
+                                            />
                                         </td>
                                     ))}
                                 </tr>
