@@ -20,7 +20,7 @@
 // saveRules) — never a second write path.
 
 import { useCallback, useEffect, useState } from "react";
-import { Keyboard, Plus, Sparkles, Wand2 } from "lucide-react";
+import { Keyboard, Plus, BrainCircuit, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -276,7 +276,7 @@ export function AddRulePanel({
           className="h-7"
           onClick={() => setMode("ai")}
         >
-          <Sparkles className="h-3.5 w-3.5" />
+          <BrainCircuit className="h-3.5 w-3.5" />
           With AI
         </Button>
         <Button
@@ -326,7 +326,7 @@ export function AddRulePanel({
                     onClick={() => void draftWithAi()}
                     disabled={draftRun.isRunning || !describe.trim()}
                   >
-                    <Wand2 className="h-4 w-4" />
+                    <Zap className="h-4 w-4" />
                     {draftRun.isRunning ? "Drafting…" : "Draft the rule"}
                   </Button>
                 </div>
@@ -403,7 +403,7 @@ export function AddRulePanel({
                         onClick={() => void improveDraft()}
                         disabled={draftRun.isRunning || !refineInput.trim()}
                       >
-                        <Wand2 className="h-4 w-4" />
+                        <Zap className="h-4 w-4" />
                         {draftRun.isRunning ? "Rewriting…" : "Rewrite it"}
                       </Button>
                     </div>

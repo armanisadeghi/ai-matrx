@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MessageSquare, Import, Sparkles, Wand2, Repeat } from "lucide-react";
+import { ArrowLeft, MessageSquare, Import, BrainCircuit, Zap, Repeat } from "lucide-react";
 
 export const metadata = {
     title: "Agent Studio — coming soon",
@@ -54,7 +54,7 @@ export default function AgentStudioComingSoonPage() {
                                 Agent Studio
                             </h1>
                             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-                                <Sparkles className="h-3 w-3" />
+                                <BrainCircuit className="h-3 w-3" />
                                 Coming soon
                             </span>
                         </div>
@@ -68,7 +68,7 @@ export default function AgentStudioComingSoonPage() {
                 <div className="rounded-xl border border-border/50 bg-gradient-to-br from-primary/5 to-purple-500/10 p-5 sm:p-6 mb-6">
                     <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 p-2.5 rounded-lg bg-background/90 backdrop-blur-sm shadow-sm">
-                            <Wand2 className="h-5 w-5 text-primary" />
+                            <Zap className="h-5 w-5 text-primary" />
                         </div>
                         <div className="min-w-0">
                             <h2 className="text-base font-semibold text-foreground mb-1.5">

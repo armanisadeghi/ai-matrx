@@ -9,11 +9,11 @@
  * nothing.
  *
  * Icons are Lucide (repo law: Lucide only, no emojis anywhere a user can see) —
- * the harvest's "🤖 / 🔀" shorthand renders as Bot / Workflow.
+ * the harvest's "🤖 / 🔀" shorthand renders as BrainCircuit / Workflow.
  */
 
 import type { MouseEvent, ReactNode } from "react";
-import { Bot, CircleAlert, CircleCheck, TriangleAlert, Workflow } from "lucide-react";
+import { BrainCircuit, CircleAlert, CircleCheck, TriangleAlert, Workflow } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -162,8 +162,8 @@ export function HolderChip({
       </span>
     );
   }
-  const Icon: Record<HolderType, typeof Bot> = { agent: Bot, workflow: Workflow };
-  const HolderIcon = at.holder_type ? Icon[at.holder_type] : Bot;
+  const Icon: Record<HolderType, typeof BrainCircuit> = { agent: BrainCircuit, workflow: Workflow };
+  const HolderIcon = at.holder_type ? Icon[at.holder_type] : BrainCircuit;
   const Tag = interactive ? "button" : "span";
   return (
     <Tag

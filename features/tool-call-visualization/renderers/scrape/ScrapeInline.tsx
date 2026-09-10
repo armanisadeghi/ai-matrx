@@ -38,7 +38,7 @@ import {
     Loader2,
     FileText,
     BookOpenCheck,
-    Sparkles,
+    BrainCircuit,
     ArrowRight,
     ScanText,
 } from "lucide-react";
@@ -222,7 +222,7 @@ const ReadPageCard: React.FC<{
                 {/* AI review line — ONLY when present. */}
                 {page.aiReview && (
                     <div className="flex items-start gap-1.5 rounded-md border border-primary/15 bg-primary/5 px-2 py-1.5">
-                        <Sparkles className="mt-0.5 h-3 w-3 flex-shrink-0 text-primary" />
+                        <BrainCircuit className="mt-0.5 h-3 w-3 flex-shrink-0 text-primary" />
                         <span className="text-xs leading-relaxed text-foreground/85">
                             {page.aiReview}
                         </span>

@@ -30,8 +30,8 @@ import {
   ExternalLink,
   Loader2,
   ShieldAlert,
-  Sparkles,
-  Wand2,
+  BrainCircuit,
+  Zap,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -215,7 +215,7 @@ export function FindingFixCard({
     // Apply button — the one control the whole feature exists for.
     <section className="shrink-0 rounded-lg border border-border bg-card">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <Wand2 className="h-3.5 w-3.5 shrink-0 text-primary" />
+        <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />
         <h2 className="text-xs font-semibold text-foreground">Fix this page</h2>
         {reviewable ? (
           <Badge variant="outline" className="h-5 text-[10px]">
@@ -302,7 +302,7 @@ export function FindingFixCard({
                   className="h-7 gap-1.5"
                   onClick={() => void fixer.run(false)}
                 >
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <BrainCircuit className="h-3.5 w-3.5" />
                   Ask the fixer to write a better one
                 </Button>
               ) : null}
@@ -340,7 +340,7 @@ export function FindingFixCard({
                 className="h-7 gap-1.5"
                 onClick={() => void fixer.run(fixer.state.status === "done")}
               >
-                <Sparkles className="h-3.5 w-3.5" />
+                <BrainCircuit className="h-3.5 w-3.5" />
                 {fixer.state.status === "done"
                   ? "Try again"
                   : "Write the fix for me"}

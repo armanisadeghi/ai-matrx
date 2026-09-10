@@ -68,10 +68,8 @@ export function FlashcardItemWindow({
     isOpen && isMobileView && Boolean(front),
   );
 
-  if (!isOpen) return null;
-
-  const displayTitle = title ?? `Flashcard ${index + 1}`;
-  const mobileCards = toFlashcardMobileCards([{ front, back }]);
+  // Hooks stay above the early return — RULES OF HOOKS. The menu section is a
+  // pure derivation of the props, so building it here is behaviour-identical.
   const cardRow = { front, back, index };
   const flashcardSection = useFlashcardMenuSection({
     getRow: () => cardRow,
@@ -82,6 +80,10 @@ export function FlashcardItemWindow({
     },
   });
 
+  if (!isOpen) return null;
+
+  const displayTitle = title ?? `Flashcard ${index + 1}`;
+  const mobileCards = toFlashcardMobileCards([{ front, back }]);
   if (isMobileView && front) {
     return <FlashcardMobileView cards={mobileCards} onClose={exitMobileView} />;
   }

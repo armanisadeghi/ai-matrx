@@ -25,7 +25,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BookText,
-  Bot,
+  BrainCircuit,
   Building2,
   Loader2,
   User,
@@ -196,7 +196,7 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
               <SettingsSection
                 title="Agent roles"
                 description="Which agent fills each position this surface plugs agents into. The strongest tier wins: platform default → org → you."
-                icon={Bot}
+                icon={BrainCircuit}
               >
                 <div className="flex flex-col gap-3">
                   {Object.values(roles)
@@ -386,7 +386,7 @@ function RoleRow({
                 {busy ? (
                   <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
                 ) : (
-                  <Bot className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <BrainCircuit className="h-3.5 w-3.5 shrink-0 text-primary" />
                 )}
                 <span className="truncate text-xs text-foreground">
                   {effective

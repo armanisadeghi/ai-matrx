@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Sparkles, Check, Network } from "lucide-react";
+import { Loader2, BrainCircuit, Check, Network } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -295,7 +295,7 @@ export function CrossCuttingTagsPanel({
             {generating ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <BrainCircuit className="h-3.5 w-3.5 text-primary" />
             )}
             {generating
               ? "Discovering…"

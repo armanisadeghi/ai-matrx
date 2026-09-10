@@ -40,7 +40,7 @@ import React, {
   useState,
 } from "react";
 import type { editor as MonacoEditorNs } from "monaco-editor";
-import { Bot, History } from "lucide-react";
+import { BrainCircuit, History } from "lucide-react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   SurfaceRuntimeProvider,
@@ -771,13 +771,13 @@ export function SmartCodeEditor({
           desktop={desktopEditor}
           main={codeColumn}
           mainClassName="overflow-hidden"
-          menuIcon={Bot}
+          menuIcon={BrainCircuit}
           menuLabel="IDE panels"
           panels={[
             {
               id: "agent",
               label: "Agent",
-              icon: Bot,
+              icon: BrainCircuit,
               content: agentColumn,
             },
             {

@@ -17,7 +17,7 @@ import {
     Globe,
     ExternalLink,
     FileText,
-    Sparkles,
+    BrainCircuit,
     BookOpenText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -153,7 +153,7 @@ export const ScrapeOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
 
                             {current.aiReview && (
                                 <div className="mb-4 flex items-start gap-2 rounded-md border border-primary/15 bg-primary/5 p-3">
-                                    <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                                    <BrainCircuit className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
                                     <div className="text-sm leading-relaxed text-foreground/90">
                                         {current.aiReview}
                                     </div>

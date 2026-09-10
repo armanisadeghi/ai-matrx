@@ -102,6 +102,38 @@ export function FlashcardStudyWindow({
     showMobileStudy || (isOpen && completed && isMobile && !mobileDismissed),
   );
 
+  // Hooks stay above the early returns — RULES OF HOOKS. `current` and the
+  // menu section are cheap, pure derivations of `study`, so computing them
+  // here (instead of after the returns) is behaviour-identical.
+  const current = study.cards[study.currentIndex];
+  const openItemWindow = useOpenFlashcardItemWindow();
+  const cardRow = current
+    ? {
+        front: current.front,
+        back: current.back,
+        index: study.currentIndex,
+        setId: study.set?.id ?? null,
+        setTitle: study.set?.name ?? null,
+      }
+    : null;
+  const flashcardSection = useFlashcardMenuSection({
+    getRow: () => cardRow,
+    actions: {
+      onFlip: () => study.flip(),
+      onOpenItem: (row) =>
+        openItemWindow({
+          front: row.front,
+          back: row.back,
+          index: row.index,
+          title: row.setTitle ?? undefined,
+          lastResult: current ? study.resultsByCard[current.id] ?? null : null,
+        }),
+    },
+    unavailable: {
+      "flashcard-study-set": "Already studying this set",
+    },
+  });
+
   if (!isOpen) return null;
 
   if (showMobileStudy) {
@@ -149,35 +181,6 @@ export function FlashcardStudyWindow({
   const { width, height } = computeViewportSize();
   const displayTitle =
     title ?? study.set?.name ?? (setId ? "Study" : "Flashcard Study");
-  const current = study.cards[study.currentIndex];
-
-  const openItemWindow = useOpenFlashcardItemWindow();
-  const cardRow = current
-    ? {
-        front: current.front,
-        back: current.back,
-        index: study.currentIndex,
-        setId: study.set?.id ?? null,
-        setTitle: study.set?.name ?? null,
-      }
-    : null;
-  const flashcardSection = useFlashcardMenuSection({
-    getRow: () => cardRow,
-    actions: {
-      onFlip: () => study.flip(),
-      onOpenItem: (row) =>
-        openItemWindow({
-          front: row.front,
-          back: row.back,
-          index: row.index,
-          title: row.setTitle ?? undefined,
-          lastResult: current ? study.resultsByCard[current.id] ?? null : null,
-        }),
-    },
-    unavailable: {
-      "flashcard-study-set": "Already studying this set",
-    },
-  });
 
   const body = (() => {
     if (study.loading) {

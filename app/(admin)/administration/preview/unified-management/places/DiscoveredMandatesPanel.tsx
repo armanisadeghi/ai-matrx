@@ -18,7 +18,7 @@
 
 import { useState } from "react";
 import {
-  Bot,
+  BrainCircuit,
   CheckCircle2,
   ChevronDown,
   EyeOff,
@@ -41,7 +41,7 @@ import {
 } from "./mock-data";
 
 function HolderChip({ mandate }: { mandate: DiscoveredMandate }) {
-  const Icon = mandate.holder.type === "workflow" ? GitBranch : Bot;
+  const Icon = mandate.holder.type === "workflow" ? GitBranch : BrainCircuit;
   return (
     <Badge variant="outline" className="gap-1 text-[10px]">
       <Icon className="h-3 w-3" />

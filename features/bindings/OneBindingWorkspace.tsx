@@ -317,6 +317,10 @@ function OneMandateBindingWorkspace({
   // markers and their remaining rows would vanish at the moment they most want
   // to see them.
   const [mode, setMode] = useState<BindingMode>("map");
+  // Treatment state belongs to the mandate, not the selected binding revision.
+  const [jobSurfaceName, setJobSurfaceName] = useState<string | null>(null);
+  const [proposedPolicies, setProposedPolicies] =
+    useState<WritePolicyMap | null>(null);
   // A batch that wrote rows leaves the single-place view stale. Refreshing
   // immediately would remount the draft UNDER the grid the person is still
   // reading, so the refresh waits for them to leave batch mode — and it is
@@ -361,61 +365,95 @@ function OneMandateBindingWorkspace({
   const bindingIdentity = `${data.mandate.id}:${rung}:${organizationId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}`;
 
   return (
-    <BindingDraft
-      key={bindingIdentity}
-      data={data}
-      binding={binding}
-      rung={rung}
-      organizationId={organizationId}
-      allowGlobal={allowGlobal}
-      fixedRung={fixedRung}
-      perspective={perspective}
-      healthNote={healthNote}
-      activeSection={activeSection}
-      mode={mode}
-      onModeChange={(next) => {
-        setMode(next);
-        if (next === "map" && batchWrote) {
-          setBatchWrote(false);
-          onChanged();
+    <>
+      <BindingDraft
+        key={bindingIdentity}
+        jobSurfaceName={jobSurfaceName}
+        onProposedPolicies={setProposedPolicies}
+        data={data}
+        binding={binding}
+        rung={rung}
+        organizationId={organizationId}
+        allowGlobal={allowGlobal}
+        fixedRung={fixedRung}
+        perspective={perspective}
+        healthNote={healthNote}
+        activeSection={activeSection}
+        mode={mode}
+        onModeChange={(next) => {
+          setMode(next);
+          if (next === "map" && batchWrote) {
+            setBatchWrote(false);
+            onChanged();
+          }
+        }}
+        onBatchWrote={() => setBatchWrote(true)}
+        writeReport={writeReport}
+        writtenSignature={writtenSignature}
+        onWrote={(report, signature) => {
+          setWriteReport(report);
+          setWrittenSignature(signature);
+        }}
+        onDraftMoved={() => {
+          setWriteReport(null);
+          setWrittenSignature(null);
+        }}
+        onRungChange={(nextRung, nextOrgId) => {
+          // A pinned host may move only WITHIN the rungs it manages. The bar
+          // offers nothing else, so this is a belt: no path may quietly relocate
+          // the answer this host exists to manage.
+          if (pinned && !pinned.includes(nextRung)) return;
+          setWriteReport(null);
+          setWrittenSignature(null);
+          setRung(nextRung);
+          setOrganizationId(
+            nextRung === "org"
+              ? (nextOrgId ?? organizations[0]?.id ?? null)
+              : null,
+          );
+          // The bottom rung is not a binding, so leaving batch mode with it is
+          // not a preference to preserve: batch WRITES bindings, and standing on
+          // this rung there would be a grid that can save nothing.
+          if (nextRung === DEFAULT_HOLDER_RUNG) setMode("map");
+        }}
+        onChanged={onChanged}
+      />
+      <div
+        className={
+          activeSection === "holder" || activeSection === "overrides"
+            ? "hidden"
+            : "mt-3"
         }
-      }}
-      onBatchWrote={() => setBatchWrote(true)}
-      writeReport={writeReport}
-      writtenSignature={writtenSignature}
-      onWrote={(report, signature) => {
-        setWriteReport(report);
-        setWrittenSignature(signature);
-      }}
-      onDraftMoved={() => {
-        setWriteReport(null);
-        setWrittenSignature(null);
-      }}
-      onRungChange={(nextRung, nextOrgId) => {
-        // A pinned host may move only WITHIN the rungs it manages. The bar
-        // offers nothing else, so this is a belt: no path may quietly relocate
-        // the answer this host exists to manage.
-        if (pinned && !pinned.includes(nextRung)) return;
-        setWriteReport(null);
-        setWrittenSignature(null);
-        setRung(nextRung);
-        setOrganizationId(
-          nextRung === "org"
-            ? (nextOrgId ?? organizations[0]?.id ?? null)
-            : null,
-        );
-        // The bottom rung is not a binding, so leaving batch mode with it is
-        // not a preference to preserve: batch WRITES bindings, and standing on
-        // this rung there would be a grid that can save nothing.
-        if (nextRung === DEFAULT_HOLDER_RUNG) setMode("map");
-      }}
-      onChanged={onChanged}
-    />
+      >
+        <BindingOptionsDrawer
+          section={activeSection === "holder" ? "display" : activeSection}
+          owner={{
+            mandateId: data.mandate.id,
+            organizationId: data.mandate.organization_id,
+            label: data.mandate.label?.trim() || "Display name unavailable",
+            visibility: data.mandate.visibility,
+          }}
+          autoRun={parseBindingWave1(binding).autoRun === true}
+          onSurfaceRead={setJobSurfaceName}
+          proposedWritePolicies={proposedPolicies}
+          onProposalsTaken={() => setProposedPolicies(null)}
+          organizationName={
+            data.mandate.organization_id === SYSTEM_ORGANIZATION_ID
+              ? "System"
+              : (organizations.find(
+                  (o) => o.id === data.mandate.organization_id,
+                )?.name ?? null)
+          }
+        />
+      </div>
+    </>
   );
 }
 
 function BindingDraft({
   data,
+  jobSurfaceName,
+  onProposedPolicies,
   binding,
   rung,
   organizationId,
@@ -434,6 +472,8 @@ function BindingDraft({
   onRungChange,
   onChanged,
 }: {
+  jobSurfaceName: string | null;
+  onProposedPolicies: (policies: WritePolicyMap) => void;
   activeSection?: BindingWorkspaceSection;
   data: MandateWorkspaceData;
   binding: MandateBindingRowDb | null;
@@ -566,13 +606,6 @@ function BindingDraft({
   // F1 — the system rung's awareness gate, mounted between save() and the
   // write exactly as the surface bind panel mounts it.
   const [globalGuardOpen, setGlobalGuardOpen] = useState(false);
-  // F4 — the job's own surface, reported UPWARD by the OPTIONS drawer that
-  // already reads it, so there is exactly one read of the treatment row.
-  const [jobSurfaceName, setJobSurfaceName] = useState<string | null>(null);
-  // F4 — write policies the AI map proposed, handed DOWN to the same editor
-  // the manual path uses. They are never saved from here.
-  const [proposedPolicies, setProposedPolicies] =
-    useState<WritePolicyMap | null>(null);
 
   const storedOverrides = useMemo(
     () =>
@@ -1959,7 +1992,7 @@ function BindingDraft({
                             // store nobody names is the silent half of the same
                             // defect.
                             const policyCount = Object.keys(policies).length;
-                            if (policyCount > 0) setProposedPolicies(policies);
+                            if (policyCount > 0) onProposedPolicies(policies);
                             toast.success(
                               policyCount > 0
                                 ? `Filled in below — change any line before you save. ${policyCount} write-access ${policyCount === 1 ? "proposal is" : "proposals are"} in OPTIONS › Write access, and save there separately.`
@@ -2242,50 +2275,6 @@ function BindingDraft({
                 />
               ) : null}
             </div>
-            {/* OPTIONS (P16) — the folded stack over the shortcut editor's own
-          sections. Last on the page and folded shut, because the match is what
-          you came here to do and depth beyond it is progressive. It is offered
-          only once a holder is chosen: presentation is how a RUNNING job shows
-          itself, and there is nothing to present until something runs it. */}
-            {holderChosen ? (
-              <div
-                className={
-                  activeSection === "holder" || activeSection === "overrides"
-                    ? "hidden"
-                    : undefined
-                }
-              >
-                <BindingOptionsDrawer
-                  section={
-                    activeSection === "holder" ? "display" : activeSection
-                  }
-                  owner={{
-                    mandateId: data.mandate.id,
-                    organizationId: data.mandate.organization_id,
-                    label: data.mandate.label ?? data.mandate.mandate_key,
-                    visibility: data.mandate.visibility,
-                  }}
-                  autoRun={autoRun === true}
-                  // F4 — ONE read of the treatment row, and it lives here. The
-                  // drawer reports the surface it read; the workspace hands the AI
-                  // map its real write targets and hands accepted proposals back
-                  // into this same editor.
-                  onSurfaceRead={setJobSurfaceName}
-                  proposedWritePolicies={proposedPolicies}
-                  onProposalsTaken={() => setProposedPolicies(null)}
-                  organizationName={
-                    data.mandate.organization_id === SYSTEM_ORGANIZATION_ID
-                      ? "System"
-                      : (organizations.find(
-                          (o) => o.id === data.mandate.organization_id,
-                        )?.name ?? null)
-                  }
-                  disabled={disabled}
-                />
-              </div>
-            ) : activeSection && activeSection !== "holder" ? (
-              <PropertyRow label="Holder" value="Not selected" />
-            ) : null}
           </>
         )}
 

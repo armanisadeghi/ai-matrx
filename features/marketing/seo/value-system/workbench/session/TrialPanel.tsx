@@ -42,7 +42,7 @@ import {
   Pencil,
   Play,
   ShieldCheck,
-  Wand2,
+  Zap,
 } from "lucide-react";
 
 import { cn } from "@/styles/themes/utils";
@@ -640,7 +640,7 @@ export function TrialPanel({
               {finish.isPending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <Wand2 className="h-3.5 w-3.5" />
+                <Zap className="h-3.5 w-3.5" />
               )}
               Save these {verdicts.length} and improve my rules
             </Button>

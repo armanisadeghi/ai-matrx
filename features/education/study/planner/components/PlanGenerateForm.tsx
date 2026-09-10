@@ -9,7 +9,7 @@
 // React Compiler is on: no manual memo.
 
 import { useEffect, useState } from "react";
-import { CalendarClock, Loader2, Sparkles } from "lucide-react";
+import { CalendarClock, Loader2, BrainCircuit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Slider } from "@/components/ui/slider";
@@ -223,7 +223,7 @@ export function PlanGenerateForm({
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="mb-4 flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-primary" />
+        <BrainCircuit className="h-5 w-5 text-primary" />
         <h2 className="text-sm font-semibold text-foreground">
           Generate your study plan
         </h2>

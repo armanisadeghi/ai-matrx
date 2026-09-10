@@ -8,7 +8,7 @@
 // grid — user data tables, an imported CSV preview, a scraped record set — gets
 // the same control surface by handing it a report.
 
-import { Eraser, RotateCcw, Sparkles } from "lucide-react";
+import { Eraser, RotateCcw, BrainCircuit } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { VALUE_CLEANUP_OPERATION_META } from "@/lib/content-cleanup/value-operations";
@@ -77,7 +77,7 @@ export function CellCleanupOptionsPopover({
           </div>
         ) : willChange ? (
           <div className="flex items-start gap-2 rounded-md border border-primary/40 bg-primary/5 px-2.5 py-1.5 text-xs text-foreground">
-            <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+            <BrainCircuit className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
             <span>
               {cellsChanged} cell{cellsChanged !== 1 ? "s" : ""} across{" "}
               {rowsChanged} row{rowsChanged !== 1 ? "s" : ""} would change. Only

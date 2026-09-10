@@ -23,7 +23,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LiveGenerationPreview } from "./LiveGenerationPreview";
 import { toast } from "@/lib/toast";
-import { Layers, Sparkles, ArrowLeft, Loader2 } from "lucide-react";
+import { Layers, BrainCircuit, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -391,7 +391,7 @@ export function CreateFromTopic() {
                   {busy ? (
                     <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                   ) : (
-                    <Sparkles className="mr-1.5 h-4 w-4" />
+                    <BrainCircuit className="mr-1.5 h-4 w-4" />
                   )}
                   {isNavigating ? "Opening…" : "Generate"}
                 </Button>

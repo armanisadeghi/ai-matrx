@@ -36,7 +36,7 @@ import {
   Layers,
   Loader2,
   MoreVertical,
-  Sparkles,
+  BrainCircuit,
   X,
   Plus,
 } from "lucide-react";
@@ -312,7 +312,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
                   aiCleanRunning ? (
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
                   ) : (
-                    <Sparkles className="h-4 w-4" />
+                    <BrainCircuit className="h-4 w-4" />
                   )
                 }
                 ariaLabel="AI Clean"

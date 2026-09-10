@@ -9,7 +9,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { ExternalLink, FolderPlus, Search, Sparkles } from "lucide-react";
+import { ExternalLink, FolderPlus, Search, BrainCircuit } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -303,7 +303,7 @@ export function ResearchMediaView({
                       title="Use as a creative brief in Generate"
                       onClick={() => onUseAsBrief(row)}
                     >
-                      <Sparkles className="h-3 w-3" />
+                      <BrainCircuit className="h-3 w-3" />
                     </Button>
                     {own ? (
                       <Button

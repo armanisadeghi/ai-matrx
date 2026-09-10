@@ -24,11 +24,18 @@ interface QuickDataWindowProps {
 
 export default function QuickDataWindow({
   isOpen,
-  onClose,
-  selectedTable,
+  ...rest
 }: QuickDataWindowProps) {
   if (!isOpen) return null;
+  // The body is a separate component so its hooks are unconditional: they
+  // mount with the open window and unmount with it, exactly as before.
+  return <QuickDataWindowBody {...rest} />;
+}
 
+function QuickDataWindowBody({
+  onClose,
+  selectedTable,
+}: Omit<QuickDataWindowProps, "isOpen">) {
   // Best-effort row: `QuickDataSheet` owns its live table-picker selection
   // internally (no `onSelectionChange` out today), so this reflects the
   // window's OPEN-time table, not a later in-window re-pick. Good enough for

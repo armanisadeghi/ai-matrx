@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { History, Sparkles } from "lucide-react";
+import { History, BrainCircuit } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system";
@@ -50,7 +50,7 @@ export function AssistProducerControl() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-base font-semibold">
-            <Sparkles className="h-4 w-4 text-primary" />
+            <BrainCircuit className="h-4 w-4 text-primary" />
             Assist producer controls
           </h2>
           <p className="mt-1 max-w-3xl text-xs text-muted-foreground">

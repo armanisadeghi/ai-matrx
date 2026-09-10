@@ -19,7 +19,7 @@ import {
   ArrowLeft,
   Trash2,
   Save,
-  Sparkles,
+  BrainCircuit,
   Loader2,
   Lock,
   type LucideIcon,
@@ -316,7 +316,7 @@ function ItemEditor({
             {deepening ? (
               <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Sparkles className="mr-1 h-3.5 w-3.5" />
+              <BrainCircuit className="mr-1 h-3.5 w-3.5" />
             )}
             Make deeper
           </Button>

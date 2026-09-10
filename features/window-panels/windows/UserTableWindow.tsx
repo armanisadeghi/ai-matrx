@@ -31,14 +31,18 @@ export interface UserTableWindowProps {
   tableId?: string;
 }
 
-export function UserTableWindow({
-  isOpen,
+export function UserTableWindow({ isOpen, ...rest }: UserTableWindowProps) {
+  if (!isOpen) return null;
+  // Body split out so its hooks are unconditional: they mount with the open
+  // window and unmount with it, exactly as before.
+  return <UserTableWindowBody {...rest} />;
+}
+
+function UserTableWindowBody({
   onClose,
   title = "Table",
   tableId,
-}: UserTableWindowProps) {
-  if (!isOpen) return null;
-
+}: Omit<UserTableWindowProps, "isOpen">) {
   // Size to the viewport so the window is "nice and big but always fits".
   const { width, height } = computeViewportSize();
 

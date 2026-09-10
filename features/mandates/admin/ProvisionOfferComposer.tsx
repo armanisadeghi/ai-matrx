@@ -21,7 +21,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { CircleAlert, Loader2, Wand2 } from "lucide-react";
+import { CircleAlert, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Textarea } from "@/components/ui/textarea";
@@ -276,7 +276,7 @@ function ScaffoldForm({
         </p>
       )}
       <Button size="sm" className="h-7 gap-1 text-xs" onClick={apply}>
-        <Wand2 className="h-3 w-3" /> Use these values
+        <Zap className="h-3 w-3" /> Use these values
       </Button>
     </div>
   );

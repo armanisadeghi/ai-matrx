@@ -20,7 +20,7 @@
  * settings in the header Agents panel.
  */
 import { useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, BrainCircuit } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
@@ -110,7 +110,7 @@ export function SurfaceRoleAgentButton({
       {launching ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
       ) : (
-        <Sparkles className="h-3.5 w-3.5" aria-hidden />
+        <BrainCircuit className="h-3.5 w-3.5" aria-hidden />
       )}
       {label ?? role.role.label}
     </Button>

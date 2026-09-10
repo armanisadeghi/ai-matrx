@@ -32,7 +32,7 @@ import {
   Package,
   Paperclip,
   Settings2,
-  Wand2,
+  Zap,
   Wrench,
 } from "lucide-react";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -88,7 +88,7 @@ export function ConfidenceBadge({
       {linked ? (
         <Link2 className="h-3 w-3" aria-hidden />
       ) : (
-        <Wand2 className="h-3 w-3" aria-hidden />
+        <Zap className="h-3 w-3" aria-hidden />
       )}
       {linked ? "linked" : "inferred"}
     </span>

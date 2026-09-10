@@ -8,7 +8,7 @@
 
 "use client";
 
-import { Search, Star, Sparkles, X } from "lucide-react";
+import { Search, Star, BrainCircuit, X } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import {
   Select,
@@ -225,7 +225,7 @@ export function SuggestionsFilterBar({
         <ToggleChip
           active={!!query.unseenOnly}
           onClick={() => patchQuery({ unseenOnly: !query.unseenOnly })}
-          icon={<Sparkles className="h-3 w-3" />}
+          icon={<BrainCircuit className="h-3 w-3" />}
           label="Unseen"
         />
 

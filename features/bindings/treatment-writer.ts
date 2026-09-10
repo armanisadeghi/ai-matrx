@@ -33,6 +33,8 @@
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { invalidateMandateCache } from "@/features/mandates/service";
 import { createClient } from "@/utils/supabase/client";
+import { getResourceAccess } from "@/utils/permissions/access";
+import type { ResourceAccess } from "@/utils/permissions/access-core";
 import { isJsonObject } from "@/types/json";
 import {
   mandateTreatments,
@@ -55,6 +57,8 @@ export interface StoredPresentation {
   presentation: BindingPresentation;
   /** True when the row exists and is switched off. */
   disabled: boolean;
+  /** Exact treatment-row capability; creation is authorized separately by RLS. */
+  access: ResourceAccess | null;
 }
 
 /** The mandate a presentation belongs to. */
@@ -94,6 +98,7 @@ export async function readPresentation(
       version: null,
       presentation: defaultPresentation(),
       disabled: false,
+      access: null,
     };
   }
   return {
@@ -103,6 +108,7 @@ export async function readPresentation(
       isJsonObject(data.config) ? data.config : null,
     ),
     disabled: data.is_enabled === false,
+    access: await getResourceAccess("mandate_treatment", data.id),
   };
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Loader2, Wand2 } from "lucide-react";
+import { Loader2, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DEFAULT_DATABASE_SCHEMA } from "@/features/administration/database-hub/database-tools";
@@ -125,7 +125,7 @@ export function SchemaTableTokenFields({
             {autofilling ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Wand2 className="h-3.5 w-3.5" />
+              <Zap className="h-3.5 w-3.5" />
             )}
           </Button>
         ) : null}

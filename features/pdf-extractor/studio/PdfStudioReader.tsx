@@ -42,7 +42,7 @@ import {
   EyeOff,
   AlertTriangle,
   Zap,
-  Sparkles,
+  BrainCircuit,
   Upload,
   Crop,
   Download,
@@ -1528,7 +1528,7 @@ function BlankPagesBanner({
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-3 h-3" />
+                    <BrainCircuit className="w-3 h-3" />
                     {docHasAggregate ? "Run AI Clean again" : "Run AI Clean"}
                   </>
                 )}

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { HelpCircle, ChevronDown, ChevronUp, Copy, Check, Bot } from "lucide-react";
+import { HelpCircle, ChevronDown, ChevronUp, Copy, Check, BrainCircuit } from "lucide-react";
 
 export interface UnknownDataEventBlockProps {
   dataType: string;
@@ -90,7 +90,7 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
             {aiCopied ? (
               <Check className="w-3.5 h-3.5 text-success" />
             ) : (
-              <Bot className="w-3.5 h-3.5" />
+              <BrainCircuit className="w-3.5 h-3.5" />
             )}
             <span>Copy for AI</span>
           </button>

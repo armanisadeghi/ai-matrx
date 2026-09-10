@@ -23,7 +23,7 @@ import {
   RefreshCw,
   ChevronRight,
   ExternalLink,
-  Sparkles,
+  BrainCircuit,
   Brain,
   FileText,
   Lightbulb,
@@ -270,7 +270,7 @@ function KpiTiles({
       <KpiTile
         label="Live NER coverage"
         value={nerValue}
-        icon={<Sparkles className="h-3.5 w-3.5" />}
+        icon={<BrainCircuit className="h-3.5 w-3.5" />}
         loading={loading}
         hint={nerHint}
       />

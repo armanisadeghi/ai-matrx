@@ -11,7 +11,7 @@
 // window-panels bundle-leak guard. See features/window-panels/FEATURE.md →
 // "Bundle invariant".
 
-import { Bot } from "lucide-react";
+import { BrainCircuit } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import RoomAgentPanel from "./RoomAgentPanel";
 
@@ -32,7 +32,7 @@ export default function RoomAgentWindow({
       title="Room Agent"
       titleNode={
         <span className="flex items-center gap-1.5 min-w-0">
-          <Bot className="size-3.5 shrink-0 text-primary" />
+          <BrainCircuit className="size-3.5 shrink-0 text-primary" />
           <span className="truncate">Room Agent</span>
         </span>
       }

@@ -8,7 +8,7 @@ import {
   FileSpreadsheet,
   Loader2,
   Plus,
-  Sparkles,
+  BrainCircuit,
   Trash,
   Upload,
 } from "lucide-react";
@@ -394,7 +394,7 @@ export default function WorkbooksLandingPage() {
                 solid pill overflowed past the avatar at 375px. */}
             <div className="hidden sm:flex items-center gap-0.5">
               <TapTargetButton
-                icon={<Sparkles className="h-4 w-4" />}
+                icon={<BrainCircuit className="h-4 w-4" />}
                 ariaLabel="Smart import"
                 tooltip="Auto-detect whether your file is a typed dataset or a workbook"
                 disabled={importing || creating || smartCommitting}
@@ -470,7 +470,7 @@ export default function WorkbooksLandingPage() {
               smartFileInputRef.current?.click();
             }}
           >
-            <Sparkles className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <BrainCircuit className="h-4 w-4 shrink-0 text-muted-foreground" />
             <div className="text-left">
               <div className="text-[15px]">Smart import</div>
               <div className="text-xs text-muted-foreground">

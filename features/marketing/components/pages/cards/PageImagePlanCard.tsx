@@ -21,7 +21,7 @@ import {
   ImagePlus,
   ListTodo,
   Loader2,
-  Sparkles,
+  BrainCircuit,
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -420,7 +420,7 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
                           {generating ? (
                             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                           ) : (
-                            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                            <BrainCircuit className="mr-1.5 h-3.5 w-3.5" />
                           )}
                           {entry.file_id ? "Regenerate" : "Generate"}
                         </Button>

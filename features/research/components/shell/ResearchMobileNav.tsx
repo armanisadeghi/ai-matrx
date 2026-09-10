@@ -16,7 +16,7 @@ import {
   Brain,
   ListChecks,
   ListTree,
-  Sparkles,
+  BrainCircuit,
   Video,
   GraduationCap,
   type LucideIcon,
@@ -39,7 +39,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Brain,
   ListChecks,
   ListTree,
-  Sparkles,
+  BrainCircuit,
   Video,
   GraduationCap,
 };

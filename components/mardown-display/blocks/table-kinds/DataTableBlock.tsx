@@ -86,7 +86,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   Braces,
-  Bot,
+  BrainCircuit,
   Copy,
   Download,
   Loader2,
@@ -422,7 +422,7 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
             aria-label="Copy for AI"
             className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            <Bot className="h-3.5 w-3.5" />
+            <BrainCircuit className="h-3.5 w-3.5" />
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

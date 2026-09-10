@@ -25,7 +25,7 @@
  * decorative, only smaller.
  */
 
-import { ArrowDownRight, ArrowUpRight, Minus, Sparkle } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus, BrainCircuit } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Skeleton } from "@ai-matrx/design-system";
 import { formatCount } from "@/features/marketing/search-console/types";
@@ -54,7 +54,7 @@ function DeltaBadge({ delta, label }: { delta: Delta; label: string }) {
       : delta.dir === "down"
         ? ArrowDownRight
         : delta.dir === "new"
-          ? Sparkle
+          ? BrainCircuit
           : Minus;
   return (
     <span

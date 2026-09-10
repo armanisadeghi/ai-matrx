@@ -18,7 +18,7 @@ import {
   HeartHandshake,
   Loader2,
   RefreshCw,
-  Sparkles,
+  BrainCircuit,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -346,7 +346,7 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
               </h2>
               {plan.plan.generated_by === "ai" ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
-                  <Sparkles className="h-3 w-3" />
+                  <BrainCircuit className="h-3 w-3" />
                   AI plan
                 </span>
               ) : (
@@ -386,7 +386,7 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
               className="gap-1.5 text-muted-foreground"
               onClick={() => setForceForm(true)}
             >
-              <Sparkles className="h-3.5 w-3.5" />
+              <BrainCircuit className="h-3.5 w-3.5" />
               New
             </Button>
             <Button

@@ -35,7 +35,7 @@ import {
   buildRagViewerContextData,
   type RagViewerActivePage,
 } from "@/features/rag/agent-context/buildRagViewerContextData";
-import { BookMarked, GitFork, Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { BookMarked, GitFork, Loader2, AlertCircle, BrainCircuit } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -261,7 +261,7 @@ export function LibraryPreviewPage({
               ? [
                   {
                     label: "Knowledge Assets",
-                    icon: Sparkles,
+                    icon: BrainCircuit,
                     onPress: () => setAssetsOpen(true),
                   },
                   {

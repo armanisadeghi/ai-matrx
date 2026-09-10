@@ -11,7 +11,7 @@ import {
   Layers,
   Lock,
   PlayCircle,
-  Sparkles,
+  BrainCircuit,
 } from "lucide-react";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { EDU_ORIGIN } from "../../constants";
@@ -54,7 +54,7 @@ function SectionHeading({
 
 /** A featured free tool — instantly usable, drives signups. */
 function FreeToolCard({ item }: { item: FeaturedResource }) {
-  const meta = RESOURCE_META[item.resourceType] ?? { label: "Resource", icon: Sparkles };
+  const meta = RESOURCE_META[item.resourceType] ?? { label: "Resource", icon: BrainCircuit };
   const Icon = meta.icon;
   const cardCount = item.extra?.cardCount;
   return (
@@ -215,7 +215,7 @@ export function CreatorLandingPage({ page }: { page: CreatorPublicPage }) {
           </p>
         ) : null}
         <p className="mt-6 inline-flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-          <Sparkles className="h-4 w-4 text-primary" />
+          <BrainCircuit className="h-4 w-4 text-primary" />
           Free tools are instantly usable — no account needed. Sign up to save your progress.
         </p>
       </header>

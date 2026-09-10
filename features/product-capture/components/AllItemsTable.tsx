@@ -280,6 +280,34 @@ export function AllItemsTable() {
     },
   ];
 
+  // Hoisted above the mobile early return — RULES OF HOOKS. The menu section
+  // is a pure derivation of state already computed above; the desktop branch
+  // consumes exactly the same value it did before.
+  const captureItemMenuSection = useCaptureItemMenuSection({
+    getRow: (): CaptureItemMenuRow | null =>
+      clickedRow
+        ? { id: clickedRow.id, code: clickedRow.code, status: clickedRow.status }
+        : null,
+    actions: {
+      openView: (row) => {
+        const full = rows?.find((r) => r.id === row.id);
+        if (full) openView(full);
+      },
+      openCapture: (row) => {
+        const full = rows?.find((r) => r.id === row.id);
+        if (full) openCapture(full);
+      },
+      markReady: (row) => {
+        const full = rows?.find((r) => r.id === row.id);
+        if (full) void markReady(full);
+      },
+      requestDelete: (row) => {
+        const full = rows?.find((r) => r.id === row.id);
+        if (full) setConfirmDelete(full);
+      },
+    },
+  });
+
   // Mobile: a swipeable card list on the shared gesture row (tap → view,
   // swipe RIGHT → capture, swipe LEFT → delete, long-press → all actions —
   // the iOS-native shape of the same list). Desktop keeps the canonical
@@ -375,30 +403,6 @@ export function AllItemsTable() {
     );
   }
 
-  const captureItemMenuSection = useCaptureItemMenuSection({
-    getRow: (): CaptureItemMenuRow | null =>
-      clickedRow
-        ? { id: clickedRow.id, code: clickedRow.code, status: clickedRow.status }
-        : null,
-    actions: {
-      openView: (row) => {
-        const full = rows?.find((r) => r.id === row.id);
-        if (full) openView(full);
-      },
-      openCapture: (row) => {
-        const full = rows?.find((r) => r.id === row.id);
-        if (full) openCapture(full);
-      },
-      markReady: (row) => {
-        const full = rows?.find((r) => r.id === row.id);
-        if (full) void markReady(full);
-      },
-      requestDelete: (row) => {
-        const full = rows?.find((r) => r.id === row.id);
-        if (full) setConfirmDelete(full);
-      },
-    },
-  });
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

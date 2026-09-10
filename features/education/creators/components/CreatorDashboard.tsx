@@ -20,7 +20,7 @@ import {
   Loader2,
   Plus,
   Save,
-  Sparkles,
+  BrainCircuit,
   Trash2,
   X,
   Video,
@@ -206,7 +206,7 @@ function FeaturedRow({
   isFirst: boolean;
   isLast: boolean;
 }) {
-  let icon = <Sparkles className="h-4 w-4 text-primary" />;
+  let icon = <BrainCircuit className="h-4 w-4 text-primary" />;
   let title = "";
   let sub = "";
   if (item.kind === "youtube") {

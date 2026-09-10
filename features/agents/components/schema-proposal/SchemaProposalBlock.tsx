@@ -17,7 +17,7 @@
 
 import React, { lazy, Suspense, useMemo, useState } from "react";
 import nextDynamic from "next/dynamic";
-import { ChevronDown, ChevronRight, FileJson, Shapes, Wand2 } from "lucide-react";
+import { ChevronDown, ChevronRight, FileJson, Shapes, Zap } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -138,7 +138,7 @@ const SchemaProposalBlock: React.FC<SchemaProposalBlockProps> = ({
             Create a Shape
           </Button>
           <Button size="sm" onClick={() => setDialogOpen(true)}>
-            <Wand2 className="mr-1.5 h-3.5 w-3.5" />
+            <Zap className="mr-1.5 h-3.5 w-3.5" />
             Apply to an agent
           </Button>
         </div>

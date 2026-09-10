@@ -18,7 +18,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@/lib/toast";
 import {
   ArrowLeft,
-  Sparkles,
+  BrainCircuit,
   Layers,
   FileSearch,
   Type,
@@ -760,7 +760,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
                 onClick={() => void handleGenerate()}
                 disabled={!canGenerate || entitlement.isChecking}
               >
-                <Sparkles className="mr-1.5 h-4 w-4" />
+                <BrainCircuit className="mr-1.5 h-4 w-4" />
                 Generate
               </Button>
             </div>

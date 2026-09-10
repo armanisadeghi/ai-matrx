@@ -13,7 +13,7 @@ import {
   MessageCircle,
   Scale,
   ShieldCheck,
-  Sparkles,
+  BrainCircuit,
   Users,
 } from "lucide-react";
 import {
@@ -43,7 +43,7 @@ const CAPABILITIES: ModuleCapability[] = [
       "Your judgment lives in one place you can read and edit forever. Every change is tracked, every version is kept, and every verdict cites the exact rule behind it.",
   },
   {
-    icon: Sparkles,
+    icon: BrainCircuit,
     title: "Built into a working system",
     description:
       "One click builds a Masterwork from your Rulebook — a system that does the work the way you would, checked against your rules on every run.",

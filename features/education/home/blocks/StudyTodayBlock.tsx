@@ -14,7 +14,7 @@
 // list, and a to-do list is the thing students already have and already ignore.
 
 import Link from "next/link";
-import { ArrowRight, ChevronRight, Coffee, Flame, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronRight, Coffee, Flame, BrainCircuit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { InstallStudyAppButton } from "../../components/InstallStudyAppButton";
@@ -28,7 +28,7 @@ export function StudyTodayBlock({ snapshot }: { snapshot: EducationSnapshot }) {
     <section className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-4 shadow-sm sm:p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
+          <BrainCircuit className="h-5 w-5 text-primary" />
           <h2 className="text-base font-semibold text-foreground">
             Study today
           </h2>

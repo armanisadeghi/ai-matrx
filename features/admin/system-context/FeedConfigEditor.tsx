@@ -11,7 +11,7 @@
 // intended workflow: establish the resource, then build how we feed it.
 
 import {
-  Bot,
+  BrainCircuit,
   Code2,
   Database,
   ExternalLink,
@@ -71,7 +71,7 @@ export const FEED_TYPE_OPTIONS: FeedTypeOption[] = [
     description:
       "Run an agent (optionally with a JSON output schema) to produce the value. Can be scheduled.",
     live: false,
-    icon: Bot,
+    icon: BrainCircuit,
   },
   {
     value: "api",

@@ -52,7 +52,7 @@
 // test rather than a walk.
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Workflow } from "lucide-react";
+import { BrainCircuit, Workflow } from "lucide-react";
 import {
   CONFIGURATION_CHOICE_SIZE,
   PropertyRow,
@@ -205,7 +205,7 @@ export function HolderAssignment({
               )}
             >
               {kind === "agent" ? (
-                <Bot className="h-4 w-4" aria-hidden />
+                <BrainCircuit className="h-4 w-4" aria-hidden />
               ) : (
                 <Workflow className="h-4 w-4" aria-hidden />
               )}

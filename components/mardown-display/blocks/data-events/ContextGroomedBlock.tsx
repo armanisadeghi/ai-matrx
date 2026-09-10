@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Sparkles } from "lucide-react";
+import { BrainCircuit } from "lucide-react";
 
 /**
  * ContextGroomedBlock — the subtle "context compacted" indicator for a
@@ -27,7 +27,7 @@ const ContextGroomedBlock: React.FC<ContextGroomedBlockProps> = ({
   const retained = retainedKeys.length;
   return (
     <div className="my-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-      <Sparkles className="h-3 w-3 shrink-0" />
+      <BrainCircuit className="h-3 w-3 shrink-0" />
       <span>
         Context compacted
         {stubbed > 0

@@ -16,7 +16,7 @@ import {
   ArrowRight,
   FilePlus2,
   LibraryBig,
-  Sparkles,
+  BrainCircuit,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ const DOORS = [
   },
   {
     href: "/education/tutor",
-    icon: Sparkles,
+    icon: BrainCircuit,
     title: "Just ask a question",
     body: "Stuck on one thing right now? The tutor explains it, then builds you practice.",
     tile: "bg-sky-500/10 text-sky-600 dark:text-sky-400",

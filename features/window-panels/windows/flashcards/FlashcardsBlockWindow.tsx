@@ -92,14 +92,8 @@ export function FlashcardsBlockWindow({
     isOpen && isMobileView && set.flashcards.length > 0,
   );
 
-  if (!isOpen) return null;
-
-  const { width, height } = computeViewportSize();
-  const hasContent = Boolean(
-    content || serverData || set.flashcards.length > 0,
-  );
-  const displayTitle = `${title}${set.completeCount > 0 ? ` (${set.completeCount})` : ""}`;
-
+  // Hooks stay above the early return — RULES OF HOOKS. The menu section is a
+  // pure derivation of state already computed above.
   const flashcardSection = useFlashcardMenuSection({
     getRow: () => clickedCard,
     actions: {
@@ -116,6 +110,15 @@ export function FlashcardsBlockWindow({
       "flashcard-study-set": "This set has no separate study session",
     },
   });
+
+  if (!isOpen) return null;
+
+  const { width, height } = computeViewportSize();
+  const hasContent = Boolean(
+    content || serverData || set.flashcards.length > 0,
+  );
+  const displayTitle = `${title}${set.completeCount > 0 ? ` (${set.completeCount})` : ""}`;
+
   const resolveCardContext = (target: HTMLElement | null) => {
     const idx = resolveFlashcardGridIndex(gridRef.current, target);
     const card = idx != null ? set.flashcards[idx] : null;

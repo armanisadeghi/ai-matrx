@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PencilLine, RotateCcw, Wand2 } from "lucide-react";
+import { PencilLine, RotateCcw, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -446,7 +446,7 @@ function RuleEditorForm({
                   disabled={saving || cleanupRun.isRunning}
                   title="Dictate what should change and the AI rewrites the rule for your approval."
                 >
-                  <Wand2 className="h-4 w-4" />
+                  <Zap className="h-4 w-4" />
                   Have the AI apply my notes instead
                 </Button>
               ) : null}

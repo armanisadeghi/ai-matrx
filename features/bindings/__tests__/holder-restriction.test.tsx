@@ -40,12 +40,11 @@ jest.mock("@ai-matrx/agents/catalog/react", () => ({
   // agents-hub surface manifest reads at module scope. Replacing the whole
   // entry with one stub component used to blow up an unrelated import chain.
   ...jest.requireActual("@ai-matrx/agents/catalog/react"),
-    AgentListDropdown: (props: DropdownProps) => {
-      lastDropdownProps = props;
-      return <div data-testid="agent-picker" />;
-    },
-  }),
-);
+  AgentListDropdown: (props: DropdownProps) => {
+    lastDropdownProps = props;
+    return <div data-testid="agent-picker" />;
+  },
+}));
 
 jest.mock("@/lib/redux/hooks", () => ({
   // A FAITHFUL dispatch double: the real one returns a thunk promise with
@@ -119,7 +118,11 @@ function renderAt(rung: BindingRung): { text: string; root: Root } {
       />,
     );
   });
-  return { text: container.textContent ?? "", root };
+  const help = container.querySelector<HTMLButtonElement>(
+    '[aria-label="Help: Eligible holders"]',
+  );
+  if (help) act(() => help.click());
+  return { text: document.body.textContent ?? "", root };
 }
 
 afterEach(() => {

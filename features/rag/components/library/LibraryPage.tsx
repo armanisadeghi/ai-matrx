@@ -51,8 +51,7 @@ import {
   Layers,
   RefreshCw,
   Search,
-  Sparkles,
-  Wand2,
+  BrainCircuit,
   Zap,
   AlertTriangle,
   Trash2,
@@ -1107,7 +1106,7 @@ function DocRow({
               onClick={onRunPipeline}
               className="h-7 px-2 text-[11px]"
             >
-              <Sparkles className="h-3.5 w-3.5 mr-1" />
+              <BrainCircuit className="h-3.5 w-3.5 mr-1" />
               Process
             </Button>
           ) : doc.embeddingsOai < doc.chunks ? (
@@ -1118,7 +1117,7 @@ function DocRow({
               onClick={onRunPipeline}
               className="h-7 px-2 text-[11px] bg-amber-500 hover:bg-amber-500/90 text-white"
             >
-              <Wand2 className="h-3.5 w-3.5 mr-1" />
+              <Zap className="h-3.5 w-3.5 mr-1" />
               Finish
             </Button>
           ) : null}
@@ -1167,12 +1166,12 @@ function DocRow({
               </DropdownMenuLabel>
               {doc.chunks === 0 ? (
                 <DropdownMenuItem onSelect={onRunPipeline}>
-                  <Sparkles className="h-3.5 w-3.5 mr-2 text-primary" />
+                  <BrainCircuit className="h-3.5 w-3.5 mr-2 text-primary" />
                   Process Document
                 </DropdownMenuItem>
               ) : doc.embeddingsOai < doc.chunks ? (
                 <DropdownMenuItem onSelect={onRunPipeline}>
-                  <Wand2 className="h-3.5 w-3.5 mr-2 text-amber-500" />
+                  <Zap className="h-3.5 w-3.5 mr-2 text-amber-500" />
                   Finish processing ({doc.chunks - doc.embeddingsOai} left)
                 </DropdownMenuItem>
               ) : (

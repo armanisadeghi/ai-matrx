@@ -29,7 +29,7 @@ import {
   RotateCcw,
   Plus,
   CheckCircle2,
-  Sparkles,
+  BrainCircuit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -175,7 +175,7 @@ export function RunViewA() {
           {state.title ? (
             <div className="rounded-2xl border border-border bg-card p-5 shadow-sm duration-500 animate-in fade-in slide-in-from-bottom-2">
               <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                <Sparkles className="h-3 w-3 text-primary" />
+                <BrainCircuit className="h-3 w-3 text-primary" />
                 Episode
               </p>
               <h2 className="text-lg font-bold leading-snug text-foreground">

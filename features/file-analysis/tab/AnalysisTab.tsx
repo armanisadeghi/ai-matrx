@@ -34,7 +34,7 @@ import {
   Loader2,
   RefreshCw,
   Shield,
-  Sparkles,
+  BrainCircuit,
   Zap,
   Table2,
   Tag
@@ -541,7 +541,7 @@ function SectionTabs({
     { id: "outline", label: "Outline", icon: ListTree, badge: counts.outline_count || undefined },
     { id: "text", label: "Text", icon: FileText, badge: counts.chars_total ? `${Math.round(counts.chars_total / 1000)}K` : undefined },
     { id: "pii", label: "PII", icon: Shield, badge: counts.pii_medium || undefined },
-    { id: "entities", label: "Entities", icon: Sparkles },
+    { id: "entities", label: "Entities", icon: BrainCircuit },
     { id: "tables", label: "Tables", icon: Table2, badge: counts.tables_count || undefined },
     { id: "images", label: "Images", icon: ImageIcon, badge: counts.images_count || undefined },
     { id: "regions", label: "Regions", icon: Layers, badge: counts.regions_medium || undefined },

@@ -24,7 +24,7 @@ import {
   Users,
   Workflow,
   SlidersHorizontal,
-  Sparkles,
+  BrainCircuit,
   FlaskConical,
   ArrowRight,
   Library,
@@ -136,7 +136,7 @@ export function ComposerForm({ onGenerate }: { onGenerate: () => void }) {
         {/* The composer for the selected source. */}
         <div className="p-3">
           <p className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <BrainCircuit className="h-3.5 w-3.5 text-primary" />
             {activeSource.helper}
           </p>
           {activeSource.control === "urls" ? (
@@ -494,7 +494,7 @@ export function ComposerForm({ onGenerate }: { onGenerate: () => void }) {
           disabled={!canGenerate}
           className="gap-2 shadow-md"
         >
-          <Sparkles className="h-4.5 w-4.5" />
+          <BrainCircuit className="h-4.5 w-4.5" />
           Generate episode
           <ArrowRight className="h-4 w-4" />
         </Button>

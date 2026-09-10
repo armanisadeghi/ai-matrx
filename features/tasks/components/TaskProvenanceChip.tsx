@@ -15,15 +15,15 @@
 
 import React from "react";
 import Link from "next/link";
-import { Bot, ClipboardCheck, Cog, Link as LinkIcon } from "lucide-react";
+import { BrainCircuit, ClipboardCheck, Cog, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import type { TaskOrigin } from "../constants/status";
 
 const ORIGIN_META: Record<
   Exclude<TaskOrigin, "user">,
-  { label: string; icon: typeof Bot }
+  { label: string; icon: typeof BrainCircuit }
 > = {
-  agent: { label: "Agent", icon: Bot },
+  agent: { label: "Agent", icon: BrainCircuit },
   system: { label: "System", icon: Cog },
 };
 
@@ -32,7 +32,7 @@ const ORIGIN_META: Record<
  * value. Purely cosmetic: an unmapped source type falls back to the origin
  * icon, so a new producer needs no entry here to get a working badge.
  */
-const SOURCE_TYPE_ICON: Record<string, typeof Bot> = {
+const SOURCE_TYPE_ICON: Record<string, typeof BrainCircuit> = {
   hr_workflow_step: ClipboardCheck,
 };
 

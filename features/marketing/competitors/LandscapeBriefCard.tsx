@@ -22,7 +22,7 @@
 
 import { useEffect, useState } from "react";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
-import { Check, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Check, Loader2, RefreshCw, BrainCircuit } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -203,7 +203,7 @@ export function LandscapeBriefCard({
             ) : brief ? (
               <RefreshCw className="size-3.5" />
             ) : (
-              <Sparkles className="size-3.5" />
+              <BrainCircuit className="size-3.5" />
             )}
             {brief ? "Redo" : "Work it out"}
           </Button>

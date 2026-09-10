@@ -14,7 +14,7 @@ import {
   BookOpen,
   ListChecks,
   Loader2,
-  Sparkles,
+  BrainCircuit,
   ExternalLink,
   Eye,
   EyeOff,
@@ -159,7 +159,7 @@ export function EpisodeContentStudio({ episodeId }: { episodeId: string }) {
                   ) : article ? (
                     <RefreshCw className="h-3.5 w-3.5" />
                   ) : (
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <BrainCircuit className="h-3.5 w-3.5" />
                   )}
                   {isBusy ? "Writing…" : article ? "Regenerate" : "Generate"}
                 </Button>

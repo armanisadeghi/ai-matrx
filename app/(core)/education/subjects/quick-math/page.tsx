@@ -4,7 +4,7 @@
 // Service + components (features/math/*) are unchanged — only the route moved.
 import { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, ChevronRight, GraduationCap, Sparkles } from "lucide-react";
+import { BookOpen, ChevronRight, GraduationCap, BrainCircuit } from "lucide-react";
 import { getAllMathProblems } from "@/features/math/service";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,7 +48,7 @@ export default async function QuickMathPage() {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Preview-content note — this is stock content in a temporary slot. */}
         <div className="mb-6 flex items-center gap-2 rounded-lg border border-border bg-card/60 px-3 py-2 text-xs text-muted-foreground">
-          <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+          <BrainCircuit className="h-3.5 w-3.5 text-primary shrink-0" />
           Preview lessons. The full Mathematics experience is coming to{" "}
           <Link href="/education/subjects/math" className="text-primary hover:underline">
             /education/subjects/math

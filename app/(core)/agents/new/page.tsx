@@ -8,13 +8,13 @@ import {
   Wrench,
   Upload,
   LayoutPanelTop,
-  Sparkles
+  BrainCircuit
 } from "lucide-react";
 
 const CREATION_OPTIONS = [
   {
     href: "/agents/new/studio",
-    icon: Sparkles,
+    icon: BrainCircuit,
     iconClass: "text-amber-600 dark:text-amber-400",
     title: "Agent Studio",
     description:

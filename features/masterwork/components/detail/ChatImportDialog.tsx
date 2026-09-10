@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, FileUp, Sparkles, X } from "lucide-react";
+import { ExternalLink, FileUp, BrainCircuit, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -536,7 +536,7 @@ export function ChatImportDialog({
 
             {tab !== "matrx" ? (
               <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 p-2">
-                <Sparkles className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <BrainCircuit className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <Input
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}

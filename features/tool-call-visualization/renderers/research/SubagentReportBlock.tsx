@@ -35,7 +35,7 @@ import {
     ChevronRight,
     Maximize2,
     Minimize2,
-    Sparkles,
+    BrainCircuit,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -88,7 +88,7 @@ export const SubagentReportBlock: React.FC<SubagentReportBlockProps> = ({
                     ) : (
                         <ChevronDown className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                     )}
-                    <Sparkles className="h-4 w-4 flex-shrink-0 text-primary" />
+                    <BrainCircuit className="h-4 w-4 flex-shrink-0 text-primary" />
                     <div className="min-w-0">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-foreground">

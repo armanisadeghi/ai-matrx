@@ -19,7 +19,7 @@ import {
   Brain,
   ListChecks,
   ListTree,
-  Sparkles,
+  BrainCircuit,
   Info,
   ChevronDown,
   PanelLeftClose,
@@ -51,7 +51,7 @@ const ICON_MAP: Record<string, typeof LayoutDashboard> = {
   Brain,
   ListChecks,
   ListTree,
-  Sparkles,
+  BrainCircuit,
   Video,
   GraduationCap,
 };

@@ -7,7 +7,7 @@
  * Lucide only (no emoji) per the UI standards.
  */
 import {
-  Bot,
+  BrainCircuit,
   Boxes,
   Braces,
   Building2,
@@ -34,8 +34,8 @@ import {
 const RESOURCE_ICONS: Record<string, LucideIcon> = {
   note: Notebook,
   note_folder: Folder,
-  agent: Bot,
-  agent_card: Bot,
+  agent: BrainCircuit,
+  agent_card: BrainCircuit,
   app: Boxes,
   conversation: MessageSquare,
   dm_conversation: MessageSquare,

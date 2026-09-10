@@ -33,7 +33,7 @@ import {
   FileText,
   MessageSquare,
   Mail,
-  Sparkles,
+  BrainCircuit,
 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -665,7 +665,7 @@ function formatBytes(n: number): string {
 export const FALLBACK_CONFIG: ItemTypeConfig = {
   type: "file" /* placeholder; not used for routing */,
   label: "Item",
-  icon: Sparkles,
+  icon: BrainCircuit,
   accent: {
     text: "text-zinc-500 dark:text-zinc-400",
     bg: "bg-zinc-500/10",

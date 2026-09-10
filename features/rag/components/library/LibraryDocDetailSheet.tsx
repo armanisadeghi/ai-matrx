@@ -45,8 +45,8 @@ import {
   Trash2,
   Pencil,
   RefreshCw,
-  Sparkles,
-  Wand2,
+  BrainCircuit,
+  Zap,
   Binary,
   GitCompareArrows,
 } from "lucide-react";
@@ -527,7 +527,7 @@ export function LibraryDocDetailSheet({
                     disabled={reprocessing}
                     className="bg-primary text-primary-foreground hover:bg-primary/90"
                   >
-                    <Sparkles
+                    <BrainCircuit
                       className={
                         "h-3.5 w-3.5 mr-1 " +
                         (reprocessing ? "animate-spin" : "")
@@ -543,7 +543,7 @@ export function LibraryDocDetailSheet({
                     className="bg-amber-500 text-white hover:bg-amber-500/90"
                     title={`${doc.embeddingsOai} of ${doc.chunks} ${RAG_VOCAB.segmentsShort.toLowerCase()} have embeddings — run the pipeline to finish.`}
                   >
-                    <Wand2
+                    <Zap
                       className={
                         "h-3.5 w-3.5 mr-1 " +
                         (reprocessing ? "animate-spin" : "")
