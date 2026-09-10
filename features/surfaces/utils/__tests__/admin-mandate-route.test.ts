@@ -23,10 +23,5 @@ describe("admin mandate route → surface", () => {
     expect(surfaceFromPathname("/administration/mandates/advanced")).toBe(
       "matrx-admin/mandates",
     );
-    // The fleet reference board (campaign L7) is a list over every repo, not
-    // one job's workspace — it must NOT read as a mandate key.
-    expect(surfaceFromPathname("/administration/mandates/references")).toBe(
-      "matrx-admin/mandates",
-    );
   });
 });

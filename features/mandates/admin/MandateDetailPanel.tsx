@@ -67,7 +67,6 @@ import {
   isFloatingMandate,
 } from "@/lib/supabase/mandateStorage";
 import { MandateTestBench } from "./MandateTestBench";
-import { MandateSourceUsage } from "./MandateSourceUsage";
 import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
 import { MandateContextGate } from "./MandateContextGate";
 import { MandateUserTextLine } from "../components/MandateUserTextLine";
@@ -1173,15 +1172,8 @@ function FactsPanel({
     const truth = row.codeTruth;
     const declarationFound = truth?.resolution === "code_declaration_found";
     if (sourceOnly) {
-      // 🚨 THE ROWS COME FROM `mandate.reference` NOW (campaign L7,
-      // common-docs/projects/mandate-declaration-reporting DESIGN §4.6). The
-      // SHAPE is unchanged — Defined in / Used by, one copyable location per
-      // row — but code-truth's `call_sites` were import-time discovery inside
-      // ONE process, so a call in matrx-frontend, matrx-extend or matrx-local
-      // could never appear there at all. The old declaration string survives
-      // as a LABELLED fallback for the declaration half only, used exactly
-      // when no scanner has reported a declaration for this key yet.
       const source = truth?.source;
+      const sites = declarationFound ? truth.call_sites : undefined;
       const registryPath = row.mandate.code_path?.trim();
       const declaration = source
         ? [
@@ -1190,18 +1182,48 @@ function FactsPanel({
             source.class_name,
           ]
             .filter(Boolean)
-            .join(" \u2192 ")
+            .join(" → ")
         : registryPath && registryPath !== "unknown"
           ? registryPath
           : null;
       return (
-        <MandateSourceUsage
-          mandateKey={row.mandateKey}
-          fallback={{
-            declaration,
-            importFailed: Boolean(truth?.import_error),
-          }}
-        />
+        <div className="min-w-0 space-y-4">
+          <div
+            role="status"
+            className="flex items-start gap-2 rounded-md border border-warning p-3 text-sm"
+          >
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+            <div>
+              <strong>In development — incomplete data.</strong> Locations may
+              be missing or inaccurate. No discovered calls does not mean unused.
+            </div>
+          </div>
+          <section className="space-y-2" aria-label="Defined in">
+            <h3 className="text-sm font-semibold">Defined in</h3>
+            <div className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm">
+              <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                {declaration ?? (truth?.import_error ? "Discovery failed" : "Location not recorded")}
+              </span>
+              {declaration ? <CopyButton content={declaration} label="Copy declaration location" size="sm" /> : null}
+            </div>
+          </section>
+          <section className="space-y-2" aria-label="Used by">
+            <h3 className="text-sm font-semibold">Used by</h3>
+            <div className="divide-y divide-border rounded-md border border-border text-sm">
+              {sites?.length ? sites.map((site, index) => {
+                const location = `${site.source_file}${site.line ? `:${site.line}` : ""}`;
+                return (
+                  <div key={`${location}:${index}`} className="flex items-center gap-3 px-3 py-2">
+                    <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{location}</span>
+                    <CopyButton content={location} label="Copy usage location" size="sm" />
+                  </div>
+                );
+              }) : (
+                <div className="px-3 py-2">{sites ? "None discovered in partial scan" : "Discovery unavailable"}</div>
+              )}
+            </div>
+          </section>
+        </div>
       );
     }
     const columns = [
