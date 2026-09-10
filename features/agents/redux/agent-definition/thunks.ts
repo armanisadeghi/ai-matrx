@@ -1332,6 +1332,10 @@ export const fetchLinkedCounterpart = createAsyncThunk<
     if (srcRow) source = toLinkedRef(srcRow, uid);
   }
 
+  // archived-items-law-exempt: linked-reference GRAPH edges, not a browsable
+  // list — a derived copy that has been archived is not a live link back to
+  // this agent, and offering to "reveal" dead edges would misdescribe the
+  // relationship. Recorded in ../common-docs/projects/archived-items-law/STATUS.md (F7).
   const { data: derivedRows, error: derErr } = await supabase
     .schema("agent")
     .from("definition")

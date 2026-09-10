@@ -34,7 +34,7 @@ const SELECT_COLS = "id, name, description, category, version, updated_at";
 
 /** Projection for the OWNED half (the catalog view — richer, no `version`). */
 const CATALOG_COLS =
-  "id, name, description, category, step_count, updated_at";
+  "id, name, description, category, step_count, updated_at, is_archived";
 
 const fetchOwned = async (orgId: string) => {
   const { data, error } = await supabase
@@ -42,7 +42,11 @@ const fetchOwned = async (orgId: string) => {
     .from("v_definition_catalog")
     .select(CATALOG_COLS)
     .eq("organization_id", orgId)
-    .eq("is_archived", false)
+    // THE ARCHIVED-ITEMS LAW (../../../../../common-docs/policies/archived-items.md):
+    // archived workflows are hidden by default and one click away, so the read
+    // carries them and `OrgResourceList` puts them behind the "Archived (N)"
+    // disclosure. The hardcoded `.eq("is_archived", false)` that used to sit
+    // here made them unreachable from this page.
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -67,6 +71,7 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => {
         : null,
       row.version ? `v${row.version}` : null,
     ].filter((v): v is string => Boolean(v)),
+    archived: Boolean(row.is_archived),
     source,
   };
 };

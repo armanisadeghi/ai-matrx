@@ -77,6 +77,10 @@ export interface WorkflowChoice {
   version: number;
 }
 
+// archived-items-law-exempt: comparison BASELINE search — the two sides of a
+// diff are live definitions; an archived one is not a baseline anybody is
+// comparing against. Recorded in
+// ../common-docs/projects/archived-items-law/STATUS.md (F7).
 export async function searchWorkflows(query: string): Promise<WorkflowChoice[]> {
   let q = supabase
     .schema("workflow")

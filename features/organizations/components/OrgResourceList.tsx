@@ -29,6 +29,7 @@
 import React from "react";
 import Link from "next/link";
 import { Eye, Loader2 } from "lucide-react";
+import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { Card } from "@/components/ui/card";
@@ -48,6 +49,14 @@ export interface ResourceCardData {
   updatedAt?: string | null;
   tags?: string[];
   source: "owned" | "shared";
+  /**
+   * THE ARCHIVED-ITEMS LAW (../../../common-docs/policies/archived-items.md):
+   * a `mapRow` sets this from the resource's own archive column and the grid
+   * puts those cards behind an "Archived (N)" disclosure, closed by default. A
+   * resource type with no archive concept simply never sets it, and the
+   * disclosure renders nothing.
+   */
+  archived?: boolean;
 }
 
 export interface OrgResourceListProps {
@@ -92,6 +101,7 @@ export function OrgResourceList({
     setPeekId(null);
   }, [orgId, resourceType]);
   const [items, setItems] = React.useState<ResourceCardData[]>([]);
+  const [showArchived, setShowArchived] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -190,9 +200,10 @@ export function OrgResourceList({
   const CARD_CLASS =
     "text-left p-4 rounded-lg border bg-card transition-all flex flex-col gap-2 min-h-[6rem]";
 
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {items.map((item) => {
+  const activeItems = items.filter((item) => !item.archived);
+  const archivedItems = items.filter((item) => item.archived);
+
+  const renderCard = (item: ResourceCardData) => {
         const doors = resolveEntityDoors(resourceType, item.id);
         const href = getHref?.(item.id) ?? doors.href;
 
@@ -277,7 +288,22 @@ export function OrgResourceList({
             {peekControl}
           </div>
         );
-      })}
+  };
+
+  return (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {activeItems.map(renderCard)}
+      </div>
+      <ArchivedDisclosure
+        count={archivedItems.length}
+        open={showArchived}
+        onOpenChange={setShowArchived}
+        className="mt-4"
+        contentClassName="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+      >
+        {archivedItems.map(renderCard)}
+      </ArchivedDisclosure>
       {peekId && (
         <ResourcePeekHost
           kind={resolveEntityDoors(resourceType, peekId).peekKind}
@@ -285,6 +311,6 @@ export function OrgResourceList({
           onClose={() => setPeekId(null)}
         />
       )}
-    </div>
+    </>
   );
 }

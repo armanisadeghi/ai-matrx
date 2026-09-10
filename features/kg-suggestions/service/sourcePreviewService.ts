@@ -318,6 +318,10 @@ async function resolveTitlesForKind(
     case "cld_file": {
       // Prefer each source's ROOT ingested doc (clean filename). One query for
       // the whole page; pick the best row per source_id client-side.
+      // archived-items-law-exempt: title RESOLVER for ids the caller already
+      // holds — it renders no list of its own, so there is no surface to put a
+      // control on. Recorded in
+      // ../common-docs/projects/archived-items-law/STATUS.md (F7).
       const { data } = await (supabase as any)
         .schema("docproc").from("processed_documents")
         .select("source_id, name, parent_processed_id, updated_at")
