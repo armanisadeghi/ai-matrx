@@ -562,6 +562,25 @@ export function TryItNowPanel({
                   }}
                 />
               </ConfigurationTable>
+              {/* 🚨 A QUESTION THIS JOB ASKS YOU NEVER GETS SILENTLY ANSWERED
+                  (walk, 2026-08-31; moved here 2026-09-09 when the workspace's
+                  own run panel was deleted by `816ea88701`'s tab refactor and
+                  this became the only run form in the product). A
+                  `binding_prompt` source served as an OPTIONAL field was left
+                  blank and the run went ahead on the agent's own default — the
+                  person was asked nothing, told nothing, and got a value they
+                  never chose. It is not made required: the binding's author
+                  said optional and that stands. The consequence of leaving it
+                  blank is stated BEFORE the run instead of discovered after
+                  it. Guard: `features/mandates/__tests__/invoke-supplied-values.test.ts`. */}
+              {field.origin === "binding_prompt" &&
+              field.sourcing === "optional" &&
+              !field.pinned ? (
+                <p className="text-xs leading-snug text-warning">
+                  This job asks you for this. Leave it blank and the run uses
+                  the holder&rsquo;s own default instead of an answer from you.
+                </p>
+              ) : null}
               {field.pinned ? (
                 <PropertyRow
                   label="Value"

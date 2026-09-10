@@ -33,6 +33,7 @@
 import {
   createAgentCatalog,
   getRegisteredAgentCatalog,
+  type AgentArchFilter,
   type AgentCatalog,
   type AgentCatalogClient,
 } from "@ai-matrx/agents/catalog";
@@ -61,10 +62,38 @@ export class AgentCatalogNotReadyError extends Error {
 }
 
 /**
+ * THE ARCHIVED-ITEMS LAW's knob, in the package's words.
+ *
+ * The user preference (`userPreferences.lists.archivedDefault`) has two
+ * states because that is all a person is offered — "hide archived" and "show
+ * all". The package's control has three (`active` | `both` | `archived`),
+ * because a list can also be narrowed to the archive alone from the control
+ * itself. `"all"` is the package's `"both"`; there is no preference value that
+ * maps to `"archived"`, and a person still reaches it in one click.
+ *
+ * Exported so the mapping is a tested fact rather than an inline expression:
+ * an illegal value makes `createAgentCatalog` throw (a silently-ignored
+ * setting is a knob that lies about being a knob).
+ */
+export function toCatalogArchiveFilter(
+  archivedDefault: "active" | "all",
+): AgentArchFilter {
+  return archivedDefault === "all" ? "both" : "active";
+}
+
+/**
  * THE catalog. Created on first use and shared across loader graphs by the
  * package's own `globalThis` registry.
+ *
+ * `archiveFilter` seeds THE ARCHIVED-ITEMS LAW's default for every consumer
+ * the catalog will ever register. It is honoured ONCE, at creation: the user
+ * preference rehydrates after first paint, so `AgentCatalogHost` owns the
+ * late-knob reconciliation for consumers that registered before the knob
+ * landed (and for every later change of it).
  */
-export function getAgentCatalog(): AgentCatalog {
+export function getAgentCatalog(options?: {
+  archiveFilter?: AgentArchFilter;
+}): AgentCatalog {
   const existing = getRegisteredAgentCatalog();
   if (existing) return existing;
 
@@ -72,6 +101,9 @@ export function getAgentCatalog(): AgentCatalog {
   if (!store) throw new AgentCatalogNotReadyError();
 
   return createAgentCatalog({
+    ...(options?.archiveFilter
+      ? { defaults: { archiveFilter: options.archiveFilter } }
+      : {}),
     // supabase-js satisfies the package's structural client as-is; the cast
     // narrows this app's generated `Database` generics onto the package's
     // deliberately generic seam (it types over `unknown` on purpose).

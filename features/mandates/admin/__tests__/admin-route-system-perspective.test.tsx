@@ -102,9 +102,6 @@ jest.mock(
 jest.mock("../../workspace/MandateCoverageAlert", () => ({
   MandateCoverageAlert: () => null,
 }));
-jest.mock("../../workspace/RunThisJobSection", () => ({
-  RunThisJobSection: () => <div />,
-}));
 jest.mock("../../components/MandateNotesPanel", () => ({
   MandateNotesPanel: () => <div />,
 }));

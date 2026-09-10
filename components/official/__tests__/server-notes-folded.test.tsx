@@ -27,8 +27,8 @@
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { join, relative } from "node:path";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -126,11 +126,36 @@ describe("the admin mandate host is the one that folds it", () => {
     expect(block.slice(0, 200)).toContain("folded");
   });
 
-  it("the workspace run panel still passes its host's decision through", () => {
-    const source = readFileSync(
-      join(REPO_ROOT, "features/mandates/workspace/RunThisJobSection.tsx"),
-      "utf8",
+  /**
+   * The orphaned twin — `features/mandates/workspace/RunThisJobSection.tsx`,
+   * which took the fold decision as a `foldSurfaceNotes` prop — was deleted on
+   * 2026-09-09: nothing had mounted it since `816ea88701`. There is ONE run
+   * form now, guarded above. This assertion guards that there is not a second
+   * one again, because a second run panel is how the fold ruling drifted in
+   * the first place.
+   */
+  it("there is exactly one mandate run form, and it is the one above", () => {
+    const runForms = MANDATE_TREES.flatMap((tree) =>
+      walkFiles(join(REPO_ROOT, tree)).filter((file) =>
+        readFileSync(file, "utf8").includes("runMandateAdHocTest(dispatch"),
+      ),
     );
-    expect(source).toContain("folded={foldSurfaceNotes}");
+    expect(runForms.map((f) => relative(REPO_ROOT, f))).toEqual([
+      "features/mandates/admin/TryItNowPanel.tsx",
+    ]);
   });
 });
+
+const MANDATE_TREES = ["features/mandates", "features/bindings"] as const;
+
+function walkFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      return entry.name === "__tests__" ? [] : walkFiles(full);
+    }
+    return entry.name.endsWith(".tsx") || entry.name.endsWith(".ts")
+      ? [full]
+      : [];
+  });
+}

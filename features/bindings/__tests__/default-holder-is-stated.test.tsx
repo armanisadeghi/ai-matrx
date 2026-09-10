@@ -138,7 +138,22 @@ describe("standing on a rung ABOVE the job's own default", () => {
     expect(edit).toBeDefined();
     act(() => edit!.click());
     expect(onRungChange).toHaveBeenCalledWith("system", null);
-    expect(text).not.toContain("zzz.walk_r6");
+    /**
+     * 🚨 THIS LINE USED TO READ `expect(text).not.toContain("zzz.walk_r6")`,
+     * and it was WRONG — overturned 2026-09-09. `96e45f3aa2` deleted the bar's
+     * JOB cell and added that assertion in the same commit, pinning a deletion
+     * rather than a rule: the bar went on ACCEPTING `job.label`,
+     * `job.offeredCount` and `job.offerSourceLine` and rendering none of them,
+     * which is the fourth law's silent failure at the component boundary. The
+     * job is named on the bar again (see
+     * `scope-holder-bar-renders-every-job-prop.test.tsx`), so what survives
+     * here is the rule that was actually worth guarding — the G2 class: the
+     * KEY never appears without the human LABEL beside it. An identifier
+     * standing in for a name is the defect; an identifier beside its name is
+     * the record.
+     */
+    expect(text).toContain("zzz.walk_r6");
+    expect(text.indexOf("ZZZ WALKR6")).toBeLessThan(text.indexOf("zzz.walk_r6"));
   });
 
   it("says nobody holds it when nobody does — and does not call that unread", () => {

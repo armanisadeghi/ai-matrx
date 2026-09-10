@@ -185,9 +185,16 @@ describe("a binding's question is never silently answered — on the run form to
     expect(plan.skipped).toHaveLength(0);
   });
 
+  // The run form USED to be `workspace/RunThisJobSection.tsx`. `816ea88701`
+  // ("refactor(mandates): separate configuration concerns into tabs") moved
+  // every admin concern into tabs and stopped mounting it; the run affordance
+  // is the super-admin **Test** tab now (`MandateWorkspace` `adminContent` →
+  // `MandateDetailView section="test"` → `MandateTestBench` → `TryItNowPanel`),
+  // and the orphan was deleted 2026-09-09. The guard follows the form to its
+  // live host rather than pinning a file nothing mounts.
   test("the run form's own copy states the consequence of leaving it blank", () => {
     const source = readFileSync(
-      join(__dirname, "../workspace/RunThisJobSection.tsx"),
+      join(__dirname, "../admin/TryItNowPanel.tsx"),
       "utf8",
     );
     expect(source).toContain('field.origin === "binding_prompt"');

@@ -85,22 +85,45 @@ export interface RecentScanRow {
   /** Backing cloud file (source_kind='cld_file') — drives the card thumbnail
    *  via the canonical `<MediaThumbnail>`; null for legacy/unlinked docs. */
   fileId: string | null;
+  /** THE ARCHIVED-ITEMS LAW: the row says what it is, so the surface can hide
+   *  it by default and reveal it in one click. */
+  isArchived: boolean;
 }
 
-export async function fetchRecentScans(limit = 12): Promise<RecentScanRow[]> {
+/**
+ * Active scans and archived scans, split at the read.
+ *
+ * 🚨 THE ARCHIVED-ITEMS LAW (../../../common-docs/policies/archived-items.md,
+ * Arman 2026-09-09). This read used to filter `deleted_at` ALONE, so archived
+ * scans sat in "Recent scans" indistinguishable from live ones — the "shows
+ * archived, unmarked" half of the law's failure modes. It now carries
+ * `archived_at` and splits, exactly like the PDF Studio sidebar
+ * (`features/pdf-extractor/studio/hooks/usePdfStudioDocs.ts`): ONE read, the
+ * archive column projected, the surface hiding `archived` behind the shared
+ * `<ArchivedDisclosure>` — one click, never a second pattern.
+ */
+export interface RecentScans {
+  active: RecentScanRow[];
+  archived: RecentScanRow[];
+}
+
+export async function fetchRecentScans(limit = 12): Promise<RecentScans> {
   // "Recent scans" means MY scans — the org-member RLS policy would
   // otherwise surface teammates' org-stamped scans in the personal list.
   const { data: sessionData } = await supabase.auth.getSession();
   const uid = sessionData.session?.user.id;
-  if (!uid) return [];
+  if (!uid) return { active: [], archived: [] };
 
   const { data, error } = await docprocDb(supabase)
     .from("processed_documents")
     // clean_content_completed_at is the cheap presence marker — never pull
     // the (potentially huge) clean_content body for a list view.
     .select(
-      "id, name, created_at, metadata, clean_content_completed_at, source_kind, source_id",
+      "id, name, created_at, metadata, clean_content_completed_at, source_kind, source_id, archived_at",
     )
+    // Soft-deleted (trashed) scans stay out of view — that is deletion, not
+    // archiving, and the law does not reveal it (db-rules §6d). Archived scans
+    // DO come back, marked, for the disclosure to reveal.
     .is("deleted_at", null)
     .eq("owner_id", uid)
     .eq("metadata->>via", "/pdf/from-images")
@@ -110,7 +133,7 @@ export async function fetchRecentScans(limit = 12): Promise<RecentScanRow[]> {
     console.error("[scanner] recent-scans read failed", error);
     throw error;
   }
-  return (data ?? []).map((row) => {
+  const rows: RecentScanRow[] = (data ?? []).map((row) => {
     const meta = (row.metadata ?? {}) as { item_count?: number };
     return {
       docId: row.id,
@@ -119,8 +142,13 @@ export async function fetchRecentScans(limit = 12): Promise<RecentScanRow[]> {
       itemCount: typeof meta.item_count === "number" ? meta.item_count : null,
       cleanReady: Boolean(row.clean_content_completed_at),
       fileId: row.source_kind === "cld_file" ? row.source_id : null,
+      isArchived: row.archived_at !== null,
     };
   });
+  return {
+    active: rows.filter((row) => !row.isArchived),
+    archived: rows.filter((row) => row.isArchived),
+  };
 }
 
 /** First page's raw text — the "here's what OCR read" peek. */

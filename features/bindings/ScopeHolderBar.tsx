@@ -2,8 +2,10 @@
 
 // features/bindings/ScopeHolderBar.tsx
 //
-// Scope and holder controls for every binding host. Mandate specification
-// belongs in Definition; this bar does not repeat its identity or input inventory.
+// Scope and holder controls for every binding host, plus the one row that names
+// the JOB they are about. Mandate specification belongs in Definition; this bar
+// does not repeat its input inventory — only which job, what it offers, and
+// where that offer comes from, because a holder is chosen against those facts.
 //
 // UI-STANDARD P13: scope is ONE DESCRIBED CONTROL INSIDE THE FLOW, not a
 // property of which URL family you happened to open. Before this, `/mandates/…`
@@ -484,6 +486,50 @@ export function ScopeHolderBar({
   return (
     <section className="min-w-0 space-y-4 rounded-xl border border-border bg-card p-3">
       <div>
+        {/* 🚨 THE JOB IS NAMED WHERE ITS HOLDER IS CHOSEN — ONE ROW, THREE
+            FACTS (restored 2026-09-09).
+
+            `96e45f3aa2` ("wip: integrate concurrent frontend repairs") replaced
+            the three-cell bar with these property rows and deleted the JOB cell
+            wholesale. `coverageLine` came back the same day because a guard
+            named it; `label`, `offeredCount` and `offerSourceLine` did not,
+            because nothing asserted them — so the bar went on ACCEPTING three
+            props and rendering none of them. A prop a component takes and
+            throws away is the fourth law's silent failure at the component
+            boundary: the caller has every reason to believe the reader saw it.
+
+            Restored in this surface's density rather than as the old cell: one
+            row carries the job's name and key, its offer count rides the row's
+            source slot, and the sentence saying WHERE that offer comes from is
+            the row's second line — visible text, never a hover.
+            `scope-holder-bar-renders-every-job-prop.test.tsx` now fails on any
+            `job` field this bar accepts and does not render. */}
+        <PropertyRow
+          label="Job"
+          value={
+            <div className="min-w-0 space-y-0.5">
+              <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                <span className="break-words font-medium text-foreground">
+                  {job.label}
+                </span>
+                <code className="break-all font-mono text-[11px] text-muted-foreground">
+                  {job.mandateKey}
+                </code>
+              </span>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {job.offerSourceLine}
+              </p>
+            </div>
+          }
+          source={
+            job.offeredCount === null ? (
+              /* Never a premature 0 — an unread offer says it is unread. */
+              <StatusToken status="unknown" label="Reading what it offers" />
+            ) : (
+              `Offers ${job.offeredCount}`
+            )
+          }
+        />
         <PropertyRow
           label="Scope"
           source={

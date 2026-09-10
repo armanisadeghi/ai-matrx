@@ -45,7 +45,13 @@ import { UploadContextPrompt } from "@/features/scopes/components/context-assign
 
 import { MediaThumbnail } from "@ai-matrx/media/react";
 
-import { fetchRecentScans, type RecentScanRow } from "../../processing";
+import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
+
+import {
+  fetchRecentScans,
+  type RecentScanRow,
+  type RecentScans,
+} from "../../processing";
 import type { Quad, ScanItem, ScanRotation } from "../../types";
 import { useScanSession } from "../../useScanSession";
 import { ScannerSurfaceRuntime } from "../../ScannerSurfaceRuntime";
@@ -60,6 +66,108 @@ type DesktopView = "home" | "review";
 /** Per-file size cap (the design's "up to 50 MB each"). */
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
+/**
+ * ONE recent-scan row, rendered on the rail. Extracted so the active list and
+ * THE ARCHIVED-ITEMS LAW's disclosure render the same row — an archived scan
+ * that looked different from a live one would be a second pattern.
+ */
+function ScanRailRow({
+  row,
+  onOpen,
+}: {
+  row: RecentScanRow;
+  onOpen: (docId: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(row.docId)}
+      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-accent/60"
+    >
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destructive/10">
+        <FileText className="h-4 w-4 text-destructive" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-semibold leading-tight">
+          {row.name}
+        </p>
+        <p className="truncate font-mono text-[10px] text-muted-foreground">
+          {new Date(row.createdAt).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          })}
+          {row.itemCount ? ` \u00b7 ${row.itemCount} items` : ""}
+          {row.isArchived ? " \u00b7 archived" : ""}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+/** ONE recent-scan card, rendered on the home grid (see `ScanRailRow`). */
+function ScanCard({
+  row,
+  onOpen,
+}: {
+  row: RecentScanRow;
+  onOpen: (docId: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(row.docId)}
+      className="overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition-colors hover:border-primary/40"
+    >
+      <div className="relative flex h-24 items-center justify-center border-b border-border bg-muted/40">
+        {row.fileId ? (
+          // Real page-1 thumbnail via the canonical component (self-resolves
+          // the thumbnail_url variant from the asset endpoint; falls back to a
+          // file icon).
+          <MediaThumbnail
+            mediaRef={{ file_id: row.fileId, mime_type: "application/pdf" }}
+            fileName={row.name}
+            mimeType="application/pdf"
+            className="h-full w-full"
+            rounded="rounded-none"
+            iconSize={28}
+          />
+        ) : (
+          <div className="flex h-16 w-12 flex-col gap-1 rounded-sm border border-border bg-background p-2 shadow-md">
+            <div className="h-1 w-3/5 rounded-full bg-muted-foreground/40" />
+            <div className="h-0.5 w-full rounded-full bg-muted-foreground/20" />
+            <div className="h-0.5 w-4/5 rounded-full bg-muted-foreground/20" />
+            <div className="h-0.5 w-11/12 rounded-full bg-muted-foreground/20" />
+            <div className="h-0.5 w-3/5 rounded-full bg-muted-foreground/20" />
+          </div>
+        )}
+        {row.isArchived ? (
+          // A screen never lies: a revealed archived card SAYS it is archived.
+          <span className="absolute left-2 top-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+            Archived
+          </span>
+        ) : null}
+        {row.cleanReady && (
+          <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+            <Check className="h-2.5 w-2.5" />
+            Indexed
+          </span>
+        )}
+      </div>
+      <div className="px-3.5 py-3">
+        <p className="truncate text-sm font-semibold">{row.name}</p>
+        <p className="mt-0.5 font-mono text-[10.5px] text-muted-foreground">
+          {new Date(row.createdAt).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+          {row.itemCount ? ` \u00b7 ${row.itemCount} items` : ""}
+        </p>
+      </div>
+    </button>
+  );
+}
+
 export default function ScannerDesktop() {
   const router = useRouter();
   const session = useScanSession();
@@ -70,8 +178,14 @@ export default function ScannerDesktop() {
   const [cropItem, setCropItem] = useState<ScanItem | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [recent, setRecent] = useState<RecentScanRow[] | null>(null);
+  const [recent, setRecent] = useState<RecentScans | null>(null);
   const [showAllRecent, setShowAllRecent] = useState(false);
+  // THE ARCHIVED-ITEMS LAW: archived scans are hidden by default on BOTH
+  // recent-scan surfaces and are exactly one click away on each. The two
+  // disclosures keep their own state — they are two surfaces on one screen,
+  // and one click must not silently open the other.
+  const [railArchivedOpen, setRailArchivedOpen] = useState(false);
+  const [homeArchivedOpen, setHomeArchivedOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,7 +204,7 @@ export default function ScannerDesktop() {
         if (!cancelled) setRecent(rows);
       })
       .catch(() => {
-        if (!cancelled) setRecent([]);
+        if (!cancelled) setRecent({ active: [], archived: [] });
       });
     return () => {
       cancelled = true;
@@ -260,35 +374,30 @@ export default function ScannerDesktop() {
                 <div className="flex justify-center py-6">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />
                 </div>
-              ) : recent.length === 0 ? (
+              ) : recent.active.length === 0 && recent.archived.length === 0 ? (
                 <p className="px-2 py-4 text-xs text-muted-foreground/70">
                   Scans you save land here.
                 </p>
               ) : (
-                recent.map((r) => (
-                  <button
-                    key={r.docId}
-                    type="button"
-                    onClick={() => openDoc(r.docId)}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-accent/60"
+                <>
+                  {recent.active.map((r) => (
+                    <ScanRailRow key={r.docId} row={r} onOpen={openDoc} />
+                  ))}
+                  {/* THE ARCHIVED-ITEMS LAW: archived scans used to render
+                      here indistinguishable from live ones. They are hidden by
+                      default now and one click away, through the shared
+                      primitive every other list uses. */}
+                  <ArchivedDisclosure
+                    count={recent.archived.length}
+                    open={railArchivedOpen}
+                    onOpenChange={setRailArchivedOpen}
+                    contentClassName="space-y-0.5"
                   >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destructive/10">
-                      <FileText className="h-4 w-4 text-destructive" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-semibold leading-tight">
-                        {r.name}
-                      </p>
-                      <p className="truncate font-mono text-[10px] text-muted-foreground">
-                        {new Date(r.createdAt).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                        {r.itemCount ? ` · ${r.itemCount} items` : ""}
-                      </p>
-                    </div>
-                  </button>
-                ))
+                    {recent.archived.map((r) => (
+                      <ScanRailRow key={r.docId} row={r} onOpen={openDoc} />
+                    ))}
+                  </ArchivedDisclosure>
+                </>
               )}
             </div>
 
@@ -420,85 +529,45 @@ export default function ScannerDesktop() {
                 </div>
 
                 {/* Recent scans */}
-                {recent && recent.length > 0 && (
-                  <>
-                    <div className="mb-3.5 flex items-baseline justify-between">
-                      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                        Recent scans
-                      </p>
-                      {recent.length > 6 && (
-                        <button
-                          type="button"
-                          onClick={() => setShowAllRecent((v) => !v)}
-                          className="text-[13px] font-semibold text-primary hover:underline"
-                        >
-                          {showAllRecent ? "Show less" : "View all"}
-                        </button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      {recent
-                        .slice(0, showAllRecent ? recent.length : 6)
-                        .map((r) => (
+                {recent &&
+                  (recent.active.length > 0 || recent.archived.length > 0) && (
+                    <>
+                      <div className="mb-3.5 flex items-baseline justify-between">
+                        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                          Recent scans
+                        </p>
+                        {recent.active.length > 6 && (
                           <button
-                            key={r.docId}
                             type="button"
-                            onClick={() => openDoc(r.docId)}
-                            className="overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition-colors hover:border-primary/40"
+                            onClick={() => setShowAllRecent((v) => !v)}
+                            className="text-[13px] font-semibold text-primary hover:underline"
                           >
-                            <div className="relative flex h-24 items-center justify-center border-b border-border bg-muted/40">
-                              {r.fileId ? (
-                                // Real page-1 thumbnail via the canonical component
-                                // (self-resolves the thumbnail_url variant from the
-                                // asset endpoint; falls back to a file icon).
-                                <MediaThumbnail
-                                  mediaRef={{
-                                    file_id: r.fileId,
-                                    mime_type: "application/pdf",
-                                  }}
-                                  fileName={r.name}
-                                  mimeType="application/pdf"
-                                  className="h-full w-full"
-                                  rounded="rounded-none"
-                                  iconSize={28}
-                                />
-                              ) : (
-                                <div className="flex h-16 w-12 flex-col gap-1 rounded-sm border border-border bg-background p-2 shadow-md">
-                                  <div className="h-1 w-3/5 rounded-full bg-muted-foreground/40" />
-                                  <div className="h-0.5 w-full rounded-full bg-muted-foreground/20" />
-                                  <div className="h-0.5 w-4/5 rounded-full bg-muted-foreground/20" />
-                                  <div className="h-0.5 w-11/12 rounded-full bg-muted-foreground/20" />
-                                  <div className="h-0.5 w-3/5 rounded-full bg-muted-foreground/20" />
-                                </div>
-                              )}
-                              {r.cleanReady && (
-                                <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                  <Check className="h-2.5 w-2.5" />
-                                  Indexed
-                                </span>
-                              )}
-                            </div>
-                            <div className="px-3.5 py-3">
-                              <p className="truncate text-sm font-semibold">
-                                {r.name}
-                              </p>
-                              <p className="mt-0.5 font-mono text-[10.5px] text-muted-foreground">
-                                {new Date(r.createdAt).toLocaleDateString(
-                                  undefined,
-                                  {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  },
-                                )}
-                                {r.itemCount ? ` · ${r.itemCount} items` : ""}
-                              </p>
-                            </div>
+                            {showAllRecent ? "Show less" : "View all"}
                           </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        {recent.active
+                          .slice(0, showAllRecent ? recent.active.length : 6)
+                          .map((r) => (
+                            <ScanCard key={r.docId} row={r} onOpen={openDoc} />
+                          ))}
+                      </div>
+                      {/* THE ARCHIVED-ITEMS LAW: same primitive, same one
+                          click, on the grid as on the rail. */}
+                      <ArchivedDisclosure
+                        count={recent.archived.length}
+                        open={homeArchivedOpen}
+                        onOpenChange={setHomeArchivedOpen}
+                        className="mt-3"
+                        contentClassName="grid grid-cols-3 gap-4"
+                      >
+                        {recent.archived.map((r) => (
+                          <ScanCard key={r.docId} row={r} onOpen={openDoc} />
                         ))}
-                    </div>
-                  </>
-                )}
+                      </ArchivedDisclosure>
+                    </>
+                  )}
               </div>
             ) : (
               <DesktopReview
