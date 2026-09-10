@@ -121,6 +121,8 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
+- 2026-09-09 — Shared property rows center labels/help against controls; shortcut configuration controls use the 34px source-picker height; display tiles reserve equal label space so icons align across wrapped names.
+
 - 2026-09-09 — Display preferences identify Default launch scope and unverified feature support; mandate gate controls are unavailable. Test and note metadata use shared tables; saved-case inputs remain visible with display names; Diagnostics preserves unknown evidence and excludes provision-neutral drift from validation; empty required-context policies no longer claim Required. Runtime gaps are tracked in the shared register above.
 
 - 2026-09-08 — **`/administration/mandates/[mandateKey]` is the `matrx-admin/mandate-workspace` surface.** `AdminMandateWorkspacePage` mounts `<SurfaceRuntimeProvider>` (identity + merged descendant contributions); the goal editor publishes `mandate_goal` / `mandate_goal_grounding` / `mandate_output_kind` / `mandate_goal_draft` and owns the one write target `mandate_goal_draft` (draft, ask). *Refine with AI* opens the agent run window on `mandate.goal_writer` with this surface adopted, so the writer's `agent_mandate_specification` renders as itself and its charge lands in the editor via *Use as goal* (kind component) or the writer's own `apply_surface_write` call. Details + rationale: `../FEATURE.md` Change Log, same date. Known: `check:agent-disclosure` still lists this route file because its `params: Promise<{ mandateKey: string }>` matches the guard's `mandateKey:` run-signal — a false positive shared with the `(core)` route, not a missing disclosure (the manifest declares the `goal_writer` role).

@@ -249,20 +249,20 @@ export function PropertyRow({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col gap-1 border-b border-border py-2 text-sm last:border-b-0 sm:flex-row sm:gap-4",
+        "flex min-w-0 flex-col gap-1 border-b border-border py-2 text-sm last:border-b-0 sm:flex-row sm:items-center sm:gap-4",
         className,
       )}
     >
-      <div className="flex min-w-0 shrink-0 items-start gap-1 font-semibold text-foreground sm:w-44">
+      <div className="flex min-w-0 shrink-0 items-center gap-1 font-semibold text-foreground sm:w-44">
         <span className="break-words">{label}:</span>
         {help != null ? <FieldHelp label={label}>{help}</FieldHelp> : null}
       </div>
-      <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-6 gap-y-1 font-normal">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-1 font-normal">
         <div className="min-w-0 flex-1 break-words text-foreground">
           {value}
         </div>
         {source != null || state != null ? (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground">
             {source != null ? (
               <span>
                 <span className="font-semibold">Source:</span> {source}
