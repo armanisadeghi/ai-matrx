@@ -28,7 +28,10 @@ This is the ONE surface lifecycle skill. It owns the manifest contract, layered 
 - **Overlay/window panel surface** → read [`references/overlay-surfaces.md`](./references/overlay-surfaces.md).
 - **Surface declares `writeTargets`** → read [`references/write-targets.md`](./references/write-targets.md).
 - **Adding/removing/changing values on an existing manifest, or deleting a manifest** → read [`references/update-or-remove.md`](./references/update-or-remove.md).
+- **Adding live scope or a canonical v3 menu to UI that already exists — including a page or window being registered as a surface for the first time — or completing/repairing any existing surface** → read [`references/runtime-rollout.md`](./references/runtime-rollout.md) (its menu contract and live completion gate: canonical submenu label, no `INERT MENU` / `VALUE MAPPING GAP`, real `extraSections` handlers, focused `--surface` sync).
 - **Looking up where a type, helper, service, route, or check lives** → read [`references/file-map.md`](./references/file-map.md).
+
+This list names every reference file; a run that reaches none of these branches needs only this file.
 
 Adding a surface is **code-first, DB-mirror**. Code is the single source of truth — the DB is a synced reflection. Get the manifest right and everything downstream (binding UIs, chrome labels, drift report, RLS-gated agent + tool bindings, the runtime resolver) just works.
 
