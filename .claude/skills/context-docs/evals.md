@@ -36,6 +36,15 @@ the synced canonical; the companions were deleted.
 | aidream | Collapse the duplicated handoff link in `.claude/skills/error-capture/SKILL.md` | `check_doc_links.py --all` for a repo-local skill | Invoked `aidream:context-docs`, ran `--all` (exit 0). **Pass.** |
 | matrx-frontend | Retitle the H1 of `docs/official/browser-testing.md` | `pnpm check:docs-guards` after a retitle | Invoked `context-docs`, ran `check:docs-guards` (exit 0). **Pass.** |
 
+### Independent audit (zero authorship)
+
+- Round 1 audit: REOPEN — one weakened rule (Change Log required on any `FEATURE.md` edit), one false
+  exemplar pointer, the sandbox gap, imprecise docs-guards wording, aidream's `check_docs_guards.py`
+  missing, feature `README.md` trigger lost. All fixed.
+- Scoped re-verify: every finding ADDRESSED, no rule weakened or dropped; REOPEN on one new false claim
+  ("release-blocking" — `release.sh` only warns since 2026-08-18; the claim was copied from the script's
+  own stale docstring). Fixed in the skill and at the source (docstring + `release.sh` comment).
+
 ### Trigger check (description rewritten)
 
 | Prompt | Expected | Fired |

@@ -35,7 +35,7 @@ Docs in several repos → each doc follows its own repo's block.
 - **`python3 scripts/check_doc_links.py`** after any move, rename, new pointer, or demotion. Editing a
   package `CLAUDE.md`, `PRINCIPLES.md`, `FOUND_DEFECTS.md`, or a repo-local skill → add **`--all`**, or
   that file is not scanned. Paths inside backticks are never checked — grep for those.
-- **`python3 scripts/check_docs_guards.py`** (release-blocking) after adding or retitling a `.md` or writing
+- **`python3 scripts/check_docs_guards.py`** (exits 1 on a violation; `release.sh` only warns, so run it yourself) after adding or retitling a `.md` or writing
   a common-docs pointer — it fails on a confident title (source of truth, canonical, SSOT, official
   truth/rules), a new root-level `.md`, or a common-docs pointer in a stale layout or spelling. It scans
   git-tracked `.md` only: run it after `git add`.
@@ -50,9 +50,9 @@ Docs in several repos → each doc follows its own repo's block.
 - **`pnpm check:doc-claims`** whenever you change a claim `CLAUDE.md` makes, or a config setting it
   describes — doc and config land in the same commit. A new load-bearing claim (a flag, a version, a
   route group, a script) → register it in `scripts/check-doc-claims.ts`, or it rots unseen. CI runs it `--strict`.
-- **`pnpm check:docs-guards`** after adding or retitling a `.md` or writing a common-docs pointer — same
-  three failures as aidream's twin (confident title, new root-level `.md`, stale common-docs pointer),
-  git-tracked `.md` only: run it after `git add`.
+- **`pnpm check:docs-guards`** after adding or retitling a `.md` or writing a common-docs pointer — the same
+  three checks as aidream's twin (confident title, new root-level `.md`, stale common-docs pointer), except
+  code spans in a title are ignored here; git-tracked `.md` only: run it after `git add`.
 - **No pointer-link script here** — after a move or rename, `grep -rn "<old path>"` across `CLAUDE.md`,
   `features/`, `docs/`, and `.claude/skills/`.
 - **`FOUND_DEFECTS.md` entry ID is `D<n>`**; `AD<n>` is aidream's ledger. Claiming an ID off the END of
