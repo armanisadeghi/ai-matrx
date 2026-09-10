@@ -243,6 +243,11 @@ if $STRICT; then
         # advisory carve-out. `pnpm check:kind-marker-law --list` explains every
         # lawful door.
         "The __kind marker law (no stripping)|pnpm check:kind-marker-law"
+        # Menu-section naming law (2026-09-10): a `use*MenuSection` that calls no
+        # React hook lies to the hook linter and forces callers into hook
+        # position; a `build*MenuSection` that calls one escapes it. Zero
+        # violations at introduction (9 builders renamed), so a finding is new.
+        "Menu-section naming law (use* = hooks, build* = pure)|pnpm check:menu-naming"
         # autoRun is a UI control; a mode that paints no interface has nothing
         # for it to control, so `autoRun: false` there deletes the run instead
         # of deferring it. Zero violations at introduction (2026-08-25) and one
@@ -487,6 +492,11 @@ else
         # advisory carve-out. `pnpm check:kind-marker-law --list` explains every
         # lawful door.
         "The __kind marker law (no stripping)|pnpm check:kind-marker-law"
+        # Menu-section naming law (2026-09-10): a `use*MenuSection` that calls no
+        # React hook lies to the hook linter and forces callers into hook
+        # position; a `build*MenuSection` that calls one escapes it. Zero
+        # violations at introduction (9 builders renamed), so a finding is new.
+        "Menu-section naming law (use* = hooks, build* = pure)|pnpm check:menu-naming"
         # autoRun is a UI control; a mode that paints no interface has nothing
         # for it to control, so `autoRun: false` there deletes the run instead
         # of deferring it. Zero violations at introduction (2026-08-25) and one
