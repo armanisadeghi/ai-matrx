@@ -11,6 +11,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 
 import {
   deleteAuthenticator,
@@ -21,11 +26,14 @@ import type { AuthenticatorEntry } from "../authenticator-types";
 import { updateVaultItem } from "../vault-service";
 
 export function useAuthenticator() {
+  const organizationId = useAppSelector(selectOrganizationId);
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const [entries, setEntries] = useState<AuthenticatorEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
+  const refreshSequence = useRef(0);
 
   useEffect(() => {
     mounted.current = true;
@@ -35,21 +43,30 @@ export function useAuthenticator() {
   }, []);
 
   const refresh = useCallback(async () => {
+    const sequence = ++refreshSequence.current;
+    if (!orgBootstrapResolved || !organizationId) {
+      setEntries([]);
+      setError(null);
+      setLoading(!orgBootstrapResolved);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const list = await fetchAuthenticators();
-      if (!mounted.current) return;
+      if (!mounted.current || sequence !== refreshSequence.current) return;
       setEntries(list);
     } catch (err) {
-      if (!mounted.current) return;
+      if (!mounted.current || sequence !== refreshSequence.current) return;
       setError(
         err instanceof Error ? err.message : "Failed to load authenticators",
       );
     } finally {
-      if (mounted.current) setLoading(false);
+      if (mounted.current && sequence === refreshSequence.current) {
+        setLoading(false);
+      }
     }
-  }, []);
+  }, [orgBootstrapResolved, organizationId]);
 
   useEffect(() => {
     // The route's initial external fetch owns the loading state it updates.
@@ -93,5 +110,13 @@ export function useAuthenticator() {
       ),
   };
 
-  return { entries, loading, busy, error, refresh, actions };
+  return {
+    entries,
+    loading,
+    busy,
+    error,
+    organizationRequired: orgBootstrapResolved && !organizationId,
+    refresh,
+    actions,
+  };
 }
