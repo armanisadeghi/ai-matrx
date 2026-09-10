@@ -76,7 +76,10 @@ Every round ends with:
 2. **Recompute the frontier:** prune branches the answer killed (say which queued questions died);
    unblock children; a partial answer gets a follow-up next round — never smoothed over.
 3. **Skipped** = the recommendation ships, recorded as "default, not ruled". **"Defer"** = a dated
-   explicit deferral. **"I need to see it first"** = deferral + the URL he needs.
+   explicit deferral. **"I need to see it first"** = deferral + the URL he needs. **"I don't know" /
+   "we have options"** = the question failed him: research, then bring it back next round with
+   better facts, best practice, and a rec — never picked silently, never re-asked as-is
+   ([decisions-must-be-complete](/policies/decisions-must-be-complete.md)).
 
 ## 5. Done
 
