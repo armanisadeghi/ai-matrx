@@ -184,6 +184,9 @@ fixes need current verification; they are not new work by this patrol.
   Resolve the current release task with `list_threads` and verify its returned title
   and project before sending; historical task IDs are leads, never routing proof.
   Continue the verification when it lands. Deployment lag is engineering work.
+  For shared-package changes, verify the published artifact contains the fix and
+  consuming dependency floors select it. A host image that copies workspace source
+  can be correct while the published package is stale; track both acceptance gates.
 - An independent reviewer verifies against the original failure and real surface
   or runtime. A healthy page is not proof of subscription delivery; an in-process
   test is not provider acceptance. Fix rejected evidence or code and verify again.
@@ -266,6 +269,9 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 - Required published shared-package and consumer-floor proof after a
+  containing host image still referenced an older published package artifact.
 
 - 2026-09-10 — Added interrupted-run reconciliation after completed runtime
   evidence outlived the prior ownership lease and stale checkpoint prose.
