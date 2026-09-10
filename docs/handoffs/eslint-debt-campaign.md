@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-11
+updated: 2026-09-10
 repos: [matrx-frontend]
 ---
 
@@ -105,51 +105,15 @@ Four `features/files/**` findings cleared via a three-file scoped override for
 the mounts the ban's own config comment NAMES as correct (`app/Providers.tsx`,
 `app/DeferredSingletonCore.tsx`, the blob-cache admin page).
 
-**What is left, and why it is not a mechanical fix (24 of the 26):** every
-remaining finding is an outside consumer of `features/files/api/*` (plus one
-`upload/tusUpload` pair and one `virtual-sources/path`) reaching for a real
-domain function — `getAssetForFile`, `addAssetVariants`, `uploadAsset`,
-`previewAssetMultipart`, `compressPdfMultipart`, `materializeAssetResult`,
-`downloadFile`, `listFiles`, `uploadFileWithProgress`, `selectPdfPages`,
-`resolveCanonicalProcessedDocumentId`, `clearFileDocumentCache`,
-`restoreFileDirect`, `normalizeFileResourceId`, `listStoredTusUploads`,
-`isSyntheticId`. **There is no sanctioned public door for any of them.**
-`features/files/FEATURE.md` invariant 17 says the barrel is gone and must not
-come back (ESLint bans `@/features/files` exactly), so re-creating
-`features/files/index.ts` is not the fix — it would re-ban itself and
-re-collapse the chunk graph the deletion bought. The ban's own message
-("use direct module paths or `@/lib/python-client` for HTTP helpers") is stale
-against what `api/` holds today: it was written when `api/` was a shelf of HTTP
-shims, not domain operations. Closing this needs ONE ruling from the files
-feature's owner, and it is one of two:
-
-  a. **Promote the operations.** Give each of these a public home under
-     `features/files/hooks/**` or `features/files/handler/**` and redirect the
-     24 call sites. Largest change, and the one that makes the invariant true.
-  b. **Narrow the ban.** `api/` today is a public operations layer; keep
-     `api/direct.ts` (raw Supabase writes) ring-fenced and let the rest out,
-     with the config comment rewritten to say what changed.
-
-Do NOT split the difference per call site — that is how a ban becomes noise.
-The two remaining non-files findings are `createSlice` in
-`features/agents/components/chat/chat-{incognito,route}.slice.ts`, which sit
-outside the widened `features/**/redux/**` allowlist; they belong to whoever
-owns that allowlist.
-
-**5 — `react-hooks/set-state-in-effect` (1,107).** Biggest number, lowest
-urgency per finding: all 61 self-feeding effects already converge behind a
-guard, so there is no live freeze loop. Treat as quality debt — derive during
-render, or move the write into the handler that caused it. **Never "fix" one by
-adding another effect.** Do this last, and in small verified batches.
-
-**6 — the long tail** (`immutability` 122, `purity` 97, `error-boundaries` 42,
-`preserve-manual-memoization` 38, `use-memo` 25, `globals` 1).
-
-**Not worth doing:** the 4 `style` findings.
-
-**Keep the snapshot honest.** After any batch: `pnpm check:lint-debt:write` and
-commit `report.json` + `history.json`. The page shows the scan's age and screams
-past 7 days; a stale snapshot means stale line numbers on every link.
+**Resolved 2026-09-10:** the `features/files/api/*` ban contradicted its own
+comment ("import directly from the owning module") — it was written when `api/`
+held HTTP shims, and `api/<module>` are now the owning modules. The group now
+bans only the bare `@/features/files/api` directory path (no barrel, invariant
+17 intact); the 24 consumers are green. `createSlice` allowlist widened to
+`features/**/redux/**` (any depth) and the two chat slices moved into
+`features/agents/redux/chat/`. `no-restricted-syntax` is at 0. Items 1–2 above
+(user-visible refs bugs, static-components) are in flight; item 3 (~586 refs,
+benign today) is the standing backlog.
 
 ## Done
 
