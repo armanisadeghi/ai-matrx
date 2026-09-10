@@ -99,6 +99,18 @@
  *     `app/(core)/organizations/[orgId]/agent-apps/page.tsx:16` — which reads
  *     `app.definition`, a table with NO archive column — became a false
  *     positive. Ambiguous keys now neither set nor answer to rule 3.
+ *   • A SCHEMA APPLIED INSIDE A HELPER (recorded by an independent review and
+ *     closed the same day). `schemaFor` only ever saw a `.schema("x")` written
+ *     in the statement itself, so every read through the ten-strong
+ *     `utils/supabase/*Db.ts` family (`appDb`, `docprocDb`, `iamDb`, `ragDb`,
+ *     `pdfDb`, `codeDb`, `webDb`, `contextDb`, `schedulerDb`, `workspaceDb`)
+ *     resolved to `?.table` — and an ambiguous key can neither settle a class
+ *     nor answer to rule 3. The day one of those schemas gained an archivable
+ *     table, every read of it would have been PERMANENTLY invisible while the
+ *     run stayed green. `schemaHelpers` derives `helper → schema` from the tree
+ *     on every run and `helperSchemaFor` resolves both shapes the tree writes
+ *     (applied inline, and bound to a name first). Measured after: the same 0
+ *     findings and the same 4 settled entities, with 10 helpers resolved.
  *
  * ESCAPE HATCH: an internal reader that genuinely must not offer a control
  * (a machine path, a lineage walk, a health probe) declares it at the query:
@@ -344,19 +356,96 @@ function schemaFor(code: string, fromIndex: number): string | null {
 }
 
 /**
+ * The `utils/supabase/*Db.ts` family — `export function docprocDb(client) {
+ * return client.schema("docproc"); }` — as `helperName → schema`.
+ *
+ * 🚨 THE LIMIT THIS CLOSES (recorded by an independent review, 2026-09-10,
+ * closed the same day). `schemaFor` only sees a `.schema("x")` written in the
+ * statement itself, so every read through one of these helpers resolved to the
+ * ambiguous `?.table` — and an ambiguous key can neither settle a class nor
+ * answer to rule 3. Ten such helpers exist (`appDb`, `docprocDb`, `iamDb`,
+ * `ragDb`, `pdfDb`, `codeDb`, `webDb`, `contextDb`, `schedulerDb`,
+ * `workspaceDb`), so the day any of their schemas gains an archivable table,
+ * every read of it would have been PERMANENTLY invisible to the guard while the
+ * run stayed green. The map is DERIVED from the tree on every run, exactly like
+ * the precedent set, so a new helper needs no edit here.
+ */
+export function schemaHelpers(
+  files: readonly { file: string; raw: string }[],
+): Map<string, string> {
+  const helpers = new Map<string, string>();
+  const pattern =
+    /export\s+function\s+([A-Za-z_$][\w$]*)[\s\S]{0,300}?return\s+[A-Za-z_$][\w$]*\s*\.schema\s*\(\s*['"`](\w+)['"`]\s*\)/g;
+  for (const { file, raw } of files) {
+    if (!/^utils\/supabase\//.test(file)) continue;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(raw)) !== null) {
+      if (match[1] && match[2]) helpers.set(match[1], match[2]);
+    }
+  }
+  return helpers;
+}
+
+/**
+ * The schema a helper binds to THIS `.from(...)`, in the two shapes the tree
+ * actually writes: applied inline (`docprocDb(supabase).from("x")`) and bound
+ * to a name first (`const db = docprocDb(supabase); … db.from("x")`).
+ */
+function helperSchemaFor(
+  code: string,
+  fromIndex: number,
+  helpers: ReadonlyMap<string, string>,
+): string | null {
+  if (helpers.size === 0) return null;
+
+  // Inline: the helper call is in the same statement, before `.from(`.
+  const start =
+    Math.max(
+      code.lastIndexOf(";", fromIndex),
+      code.lastIndexOf("{", fromIndex),
+      code.lastIndexOf("}", fromIndex),
+    ) + 1;
+  const segment = code.slice(start, fromIndex);
+  const calls = [...segment.matchAll(/([A-Za-z_$][\w$]*)\s*\(/g)];
+  for (let i = calls.length - 1; i >= 0; i -= 1) {
+    const name = calls[i]?.[1];
+    const schema = name ? helpers.get(name) : undefined;
+    if (schema) return schema;
+  }
+
+  // Bound to a name: resolve the receiver (`db` in `db.from(`) to its
+  // declaration anywhere in the file. Bounded and exact — one hop, never a
+  // chain, so it cannot invent a schema for an alias of an alias.
+  // `fromIndex` points AT the `.` of `.from(`, so the receiver is the last
+  // identifier BEFORE it — `db` in `await db\n  .from("x")`. (Requiring a
+  // trailing dot here matched nothing and left this whole branch dead.)
+  const receiver = /([A-Za-z_$][\w$]*)\s*$/.exec(
+    code.slice(Math.max(0, fromIndex - 80), fromIndex),
+  )?.[1];
+  if (!receiver) return null;
+  const declaration = new RegExp(
+    `\\b(?:const|let|var)\\s+${receiver}\\s*(?::[^=;]+)?=\\s*(?:await\\s+)?([A-Za-z_$][\\w$]*)\\s*\\(`,
+  ).exec(code);
+  const bound = declaration?.[1];
+  return bound ? (helpers.get(bound) ?? null) : null;
+}
+
+/**
  * `schema.table` when this read is of an archivable entity, `null` when it is
- * not. An unnamed schema resolves by unique table name; an ambiguous one stays
- * conservative (`?.table`) rather than letting a real finding through.
+ * not. An unnamed schema resolves by a helper's binding, then by unique table
+ * name; a genuinely ambiguous one stays conservative (`?.table`) rather than
+ * letting a real finding through.
  */
 export function entityKeyFor(
   code: string,
   fromIndex: number,
   table: string,
   entities: ArchivableEntities,
+  helpers: ReadonlyMap<string, string> = new Map(),
 ): string | null {
   const schemas = entities.get(table);
   if (!schemas) return null;
-  const named = schemaFor(code, fromIndex);
+  const named = schemaFor(code, fromIndex) ?? helperSchemaFor(code, fromIndex, helpers);
   if (named) return schemas.has(named) ? `${named}.${table}` : null;
   const only = schemas.size === 1 ? [...schemas][0] : null;
   return only ? `${only}.${table}` : `?.${table}`;
@@ -423,6 +512,13 @@ export function scanFile(
    * self-test's default) means "no precedent", so rule 3 stays quiet.
    */
   lawfulEntities: ReadonlySet<string> = new Set(),
+  /**
+   * `helperName → schema` for the `utils/supabase/*Db.ts` family, so a read
+   * through one of them resolves to a real entity instead of the ambiguous
+   * `?.table` (see `schemaHelpers`). Defaults to none, which is the old
+   * behaviour and what the self-test's hand-written fixtures expect.
+   */
+  helpers: ReadonlyMap<string, string> = new Map(),
 ): Finding[] {
   const code = stripComments(raw);
   const findings: Finding[] = [];
@@ -433,7 +529,7 @@ export function scanFile(
   while ((match = fromPattern.exec(code)) !== null) {
     const table = match[1];
     if (!table) continue;
-    const entity = entityKeyFor(code, match.index, table, entities);
+    const entity = entityKeyFor(code, match.index, table, entities, helpers);
     if (!entity) continue;
 
     const window = chainWindow(code, match.index);
@@ -561,6 +657,7 @@ export function scanFile(
 export function lawfulEntitiesIn(
   files: readonly { file: string; raw: string }[],
   entities: ArchivableEntities,
+  helpers: ReadonlyMap<string, string> = new Map(),
 ): Set<string> {
   const lawful = new Set<string>();
   for (const { raw } of files) {
@@ -571,7 +668,7 @@ export function lawfulEntitiesIn(
     while ((match = fromPattern.exec(code)) !== null) {
       const table = match[1];
       if (!table) continue;
-      const entity = entityKeyFor(code, match.index, table, entities);
+      const entity = entityKeyFor(code, match.index, table, entities, helpers);
       // An ambiguous `?.table` read cannot settle a class: nobody can say
       // which schema's entity it proved.
       if (entity && !entity.startsWith("?.")) lawful.add(entity);
@@ -808,10 +905,77 @@ export async function fetchOwned(orgId: string) {
 }
 `;
 
+/**
+ * The `utils/supabase/*Db.ts` family the real tree ships, as the scanner's
+ * derivation would see it. `schemaHelpers` must find BOTH — a generic
+ * signature is what a naive `<...>` pattern chokes on.
+ */
+const HELPER_SOURCE = `
+import type { SupabaseClient } from "@supabase/supabase-js";
+/** A supabase client scoped to the \`agent\` schema. */
+export function agentDb<C extends SupabaseClient<Database>>(client: C) {
+  return client.schema("agent");
+}
+export function toolDb<C extends SupabaseClient<Database>>(client: C) {
+  return client.schema("tool");
+}
+`;
+
+/**
+ * RED ONLY ONCE HELPERS RESOLVE — an archive-blind list read of a SETTLED
+ * entity, reached through a schema-binding helper instead of an inline
+ * `.schema()`. Before 2026-09-10 this keyed to `?.definition` and rule 3 could
+ * not see it at all, which is the limit an independent review recorded.
+ */
+const RED_HELPER_BOUND_BLIND = `
+const db = agentDb(supabase);
+export async function listAgents() {
+  const { data } = await db
+    .from("definition")
+    .select("id, name")
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false });
+  return data;
+}
+`;
+
+/** The same shape applied inline rather than bound to a name. */
+const RED_HELPER_INLINE_BLIND = `
+export async function listAgentsInline() {
+  const { data } = await agentDb(supabase)
+    .from("definition")
+    .select("id, name")
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false });
+  return data;
+}
+`;
+
+/**
+ * GREEN — the SAME shape through a helper that binds a schema whose
+ * `definition` has no archive column. Resolving helpers must not turn every
+ * `tool.definition` read into a finding; that is the false-positive class the
+ * ambiguous `?.` key was protecting against, and it must stay closed.
+ */
+const GREEN_HELPER_OTHER_SCHEMA = `
+const db = toolDb(supabase);
+export async function listTools() {
+  const { data } = await db
+    .from("definition")
+    .select("id, name")
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false });
+  return data;
+}
+`;
+
 function selfTest(): void {
   const failures: string[] = [];
+  const helpers = schemaHelpers([
+    { file: "utils/supabase/selfTestDb.ts", raw: HELPER_SOURCE },
+  ]);
   const scan = (source: string, file = "self-test.ts") =>
-    scanFile(file, source, SELF_TEST_TABLES, SELF_TEST_LAWFUL);
+    scanFile(file, source, SELF_TEST_TABLES, SELF_TEST_LAWFUL, helpers);
 
   const expectRed = (name: string, source: string, file?: string) => {
     if (scan(source, file).length === 0) {
@@ -835,6 +999,17 @@ function selfTest(): void {
   expectRed("COMMENT-ONLY-CONTROL", RED_COMMENT_ONLY_CONTROL);
   expectRed("ARCHIVE-BLIND", RED_ARCHIVE_BLIND);
   expectRed("BLIND-BESIDE-LAWFUL", RED_BLIND_BESIDE_LAWFUL);
+  expectRed("HELPER-BOUND-BLIND", RED_HELPER_BOUND_BLIND);
+  expectRed("HELPER-INLINE-BLIND", RED_HELPER_INLINE_BLIND);
+  expectGreen("HELPER-OTHER-SCHEMA", GREEN_HELPER_OTHER_SCHEMA);
+  if (helpers.get("agentDb") !== "agent" || helpers.get("toolDb") !== "tool") {
+    failures.push(
+      "HELPER-DERIVATION: `schemaHelpers` did not resolve a generic " +
+        "`export function xDb<C extends …>(client) { return client.schema(\"x\"); }` — " +
+        "every read through the utils/supabase/*Db family would silently key to `?.table` " +
+        "and rule 3 would be blind to it while the run stayed green.",
+    );
+  }
   expectGreen("SELECT-CONSTANT", GREEN_SELECT_CONSTANT);
   expectGreen("AMBIGUOUS-SCHEMA-BLIND", GREEN_AMBIGUOUS_SCHEMA_BLIND);
   expectGreen("ARCHIVE-BLIND-UNSETTLED", GREEN_ARCHIVE_BLIND_UNSETTLED);
@@ -892,11 +1067,14 @@ function selfTest(): void {
     `✅ self-test: RED on a hardcoded \`.eq("is_archived", false)\` list read, RED on a\n` +
       "   list that selects the archive column with no control, RED when the only\n" +
       "   'control' is a comment, RED on an archive-blind list read of a settled entity,\n" +
-      "   RED on a blind read sitting beside a lawful one in the same file;\n" +
+      "   RED on a blind read sitting beside a lawful one in the same file, RED on a\n" +
+      "   blind read of a settled entity reached through a schema-binding helper, both\n" +
+      "   bound to a name and applied inline;\n" +
       "   GREEN on an option-driven predicate, a blind read of an unsettled entity, a\n" +
       "   `select(\"*\")` hand-off, a named select-constant that carries the archive\n" +
       "   column, a schema-less read of an ambiguous table name, another schema's\n" +
-      "   same-named table, a disclosure-backed\n" +
+      "   same-named table, a helper-bound read of ANOTHER schema's same-named\n" +
+      "   table, a disclosure-backed\n" +
       "   client split, a single-record read, a write, a reasoned exemption, and a table\n" +
       `   with no archive column. Entity set derived from types/database.types.ts (${derived.size} tables).`,
   );
@@ -913,18 +1091,22 @@ function main(): void {
     file,
     raw: readFileSync(path.join(ROOT, file), "utf8"),
   }));
+  // Pass 0 derives the schema-binding helpers, so a read through `docprocDb(…)`
+  // resolves to a real entity instead of the ambiguous `?.table` that can
+  // neither settle a class nor answer to rule 3 (see `schemaHelpers`).
+  const helpers = schemaHelpers(files);
   // Pass 1 derives the settled classes; pass 2 judges every read against them.
-  const lawful = lawfulEntitiesIn(files, entities);
+  const lawful = lawfulEntitiesIn(files, entities, helpers);
   const findings: Finding[] = [];
   for (const { file, raw } of files) {
-    findings.push(...scanFile(file, raw, entities, lawful));
+    findings.push(...scanFile(file, raw, entities, lawful, helpers));
   }
 
   if (findings.length === 0) {
     console.log(
       `✅ THE ARCHIVED-ITEMS LAW holds: every list read over the ${entities.size} archivable ` +
         `tables carries an archive control (${lawful.size} entities have a settled ` +
-        "class rule 3 protects).",
+        `class rule 3 protects; ${helpers.size} schema-binding helpers resolved).`,
     );
     return;
   }
