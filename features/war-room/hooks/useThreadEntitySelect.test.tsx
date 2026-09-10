@@ -203,7 +203,11 @@ async function rename(
 }
 
 beforeEach(() => {
-  jest.mocked(useEntityTitles).mockReturnValue({});
+  jest.mocked(useEntityTitles).mockReturnValue({
+    titleFor: ({ label }) => label ?? "Untitled",
+    isUnresolved: () => false,
+    loading: false,
+  });
   jest.spyOn(console, "error").mockImplementation(() => {});
 });
 
@@ -221,6 +225,8 @@ describe("War Room Notes name dropdown", () => {
     const [loaded, fetched, edgeOnly, unnamed] = [freshId(), freshId(), freshId(), freshId()];
     const store = makeTestStore();
     store.dispatch(upsertNoteFromServer({ note: noteRow(loaded, "Loaded note"), fetchStatus: "full" }));
+    // A title fetched before this row was renamed elsewhere: the loaded row must win.
+    primeEntityTitle("note", loaded, "Stale cached title");
     primeEntityTitle("note", fetched, "Canonical note");
     store.dispatch(
       assignmentsLoadedForContainer({
@@ -377,6 +383,8 @@ describe("War Room Audio name dropdown", () => {
     const [loaded, fetched, edgeOnly, unnamed] = [freshId(), freshId(), freshId(), freshId()];
     const store = makeTestStore();
     store.dispatch(sessionUpserted(studioSession(loaded, "Loaded recording")));
+    // A title fetched before this session was renamed elsewhere: the loaded session must win.
+    primeEntityTitle("studio_session", loaded, "Stale cached recording");
     primeEntityTitle("studio_session", fetched, "Canonical recording");
     store.dispatch(
       assignmentsLoadedForContainer({
