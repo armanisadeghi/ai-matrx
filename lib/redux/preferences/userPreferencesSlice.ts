@@ -1529,6 +1529,11 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "scratchpad",
   "siteWorkbench",
   "listViews",
+  // THE ARCHIVED-ITEMS LAW's knob. A module missing from this list is written
+  // to Redux and persisted NOWHERE — the choice survives until the next page
+  // load and then silently reverts, which is exactly what happened to `lists`
+  // in browser verification on 2026-09-09.
+  "lists",
   "assists",
 ] as const;
 

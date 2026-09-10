@@ -45,6 +45,35 @@ state, and a pasted link reproduces the list exactly.
 - Typing in search commits with `replace`, so one search is one history entry,
   not forty.
 
+## The archive axis is a LAW, and its default is a knob
+
+THE ARCHIVED-ITEMS LAW (`../../../common-docs/policies/archived-items.md`,
+Arman 2026-09-09): every list over an entity that can be archived carries an
+archive control, the default HIDES archived rows, and revealing them is one or
+two clicks. This shell's Archived radio (Active only / Archived only / Active +
+archived, in the Filters & Sort panel, a real server-side RPC parameter) is one
+of exactly TWO allowed implementations platform-wide. The other is
+`components/official/ArchivedDisclosure` — an "Archived (N)" disclosure for card
+lists that are not entity-list shaped. There is never a third.
+
+The INITIAL value of the axis is a user knob, not code taste (law §6):
+`userPreferences.lists.archivedDefault` (`"active"` platform default, Settings →
+General → Lists) seeds `defaultQuery.archived`. Two consequences worth knowing:
+
+- **A non-URL surface holds its query in `useState(defaults)`, seeded once, and
+  preferences are a warm cache that rehydrates AFTER that.** So an UNTOUCHED
+  archive axis follows the knob whenever it lands; the first time the user picks
+  a value on the surface, their choice owns the axis for the session (and
+  "Clear filters" hands it back to the knob). Wired without that, the setting
+  said one thing and every non-URL list did another — found in browser
+  verification, not by a test.
+- **A shared link that carries no `archived` param reproduces the RECIPIENT's
+  default**, because the URL omits a value equal to the default — the same way
+  `defaultFilters` already behaves. A list the sender deliberately switched
+  carries the param and travels exactly.
+
+Guard: `pnpm check:archived-items-law` (+ `:self-test`), in CI.
+
 ## Honest defaults (`config.defaultFilters`)
 
 A corpus is not always the list. `/work/conversations` holds ~4,613

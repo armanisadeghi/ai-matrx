@@ -158,7 +158,23 @@ export function useEntityList<TRow>({
     ...(defaultFilters ? { filters: defaultFilters } : {}),
     ...(defaultScope ? { scope: defaultScope } : {}),
   };
-  const [query, setQuery] = useQueryState(urlState, defaultQuery);
+  const [rawQuery, setQuery] = useQueryState(urlState, defaultQuery);
+
+  // 🚨 THE LATE-KNOB PROBLEM. A surface without `urlState` holds its query in
+  // `useState(defaults)`, which is seeded ONCE — on the very first render, and
+  // the preferences slice is a warm cache that rehydrates AFTER that. Wired
+  // naively, the archive knob was written, persisted, and then ignored by
+  // every non-URL list, which is worse than not having it: the setting says
+  // one thing and the screen does another. So an UNTOUCHED archive axis
+  // follows the knob whenever it lands; the moment the user picks a value on
+  // the surface, their choice owns the axis for the rest of the session.
+  // URL-backed surfaces need none of this — they re-parse against live
+  // defaults on every render.
+  const archivedTouched = useRef(false);
+  const query: EntityListQuery =
+    urlState || archivedTouched.current
+      ? rawQuery
+      : { ...rawQuery, archived: defaultQuery.archived };
   // Seeded from the query, not from "" — a URL-backed surface opened at
   // `?q=seo` must not fire one throwaway unfiltered fetch before the debounce
   // catches up.
@@ -335,6 +351,9 @@ export function useEntityList<TRow>({
   // commit function and every later change would write against a stale URL.
   // The React Compiler owns memoization (CLAUDE.md core invariant).
   const patchQuery = (patch: Partial<EntityListQuery>) => {
+    // The surface's archive control patches this axis (EntityFilterPanel's
+    // Archived radio). Once the user has chosen, the knob stops seeding it.
+    if (patch.archived !== undefined) archivedTouched.current = true;
     setQuery((prev) => ({
       ...prev,
       ...patch,
@@ -353,13 +372,17 @@ export function useEntityList<TRow>({
   // `defaultFilters`, "Clear filters" meaning "now show me the 4,613 internal
   // machine runs too" would be a trap; the explicit door to those is its own
   // control.
-  const resetFilters = () =>
+  // "Clear filters" hands the archive axis back to the user's knob, not to a
+  // hardcoded "active" — the knob IS their default.
+  const resetFilters = () => {
+    archivedTouched.current = false;
     setQuery((prev) => ({
       ...prev,
       archived: defaultQuery.archived,
       filters: defaultQuery.filters,
       page: 1,
     }));
+  };
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), []);
 
   const removeRow = useCallback((id: string) => {
