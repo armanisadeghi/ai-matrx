@@ -40,8 +40,10 @@ import { isOrganizationSelectionCancelled } from "@/lib/organization/organizatio
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectIsSuperAdmin,
+  selectUserEmail,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
+import { canUseGoogleOAuthInternalTest } from "@/features/marketing/google/internal-test-reviewer";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectOrganizationIds } from "@/features/scopes/redux/selectors/tree";
 import { cn } from "@/lib/utils";
@@ -92,7 +94,8 @@ export function ReadOnlySweepWorkspace({
   reviewMode?: boolean;
 }) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
-  if (!isSuperAdmin) {
+  const userEmail = useAppSelector(selectUserEmail);
+  if (!canUseGoogleOAuthInternalTest(isSuperAdmin, userEmail)) {
     return (
       <main className="flex min-h-full items-center justify-center bg-background p-6">
         <Card className="max-w-xl">

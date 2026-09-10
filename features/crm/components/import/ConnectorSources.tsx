@@ -19,7 +19,10 @@ import { CloudDownload, Loader2, RefreshCcw, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectIsSuperAdmin,
+  selectUserEmail,
+} from "@/lib/redux/selectors/userSelectors";
 import { GOOGLE_CONTACTS_IMPORT_SCOPES } from "@/lib/googleScopes";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
@@ -44,6 +47,7 @@ interface ConnectorSourcesProps {
 
 export function ConnectorSources({ orgId, kind, onLoaded }: ConnectorSourcesProps) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const userEmail = useAppSelector(selectUserEmail);
   const [connectors, setConnectors] = useState<ImportConnector[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [fetching, setFetching] = useState<string | null>(null);
@@ -196,7 +200,7 @@ export function ConnectorSources({ orgId, kind, onLoaded }: ConnectorSourcesProp
                           </>
                         )}
                       </>
-                    ) : canRequestGoogleContactsScope(isSuperAdmin) ? (
+                    ) : canRequestGoogleContactsScope(isSuperAdmin, userEmail) ? (
                       <GoogleAuthorizeContactsButton
                         label={`Authorize contacts on ${connection.accountEmail ?? "this account"}`}
                         onAuthorized={reload}
@@ -211,7 +215,7 @@ export function ConnectorSources({ orgId, kind, onLoaded }: ConnectorSourcesProp
                 );
               })}
               {connector.connections.length === 0 &&
-                (canRequestGoogleContactsScope(isSuperAdmin) ? (
+                (canRequestGoogleContactsScope(isSuperAdmin, userEmail) ? (
                   <GoogleAuthorizeContactsButton
                     label="Connect a Google account"
                     onAuthorized={reload}
@@ -261,7 +265,7 @@ function GoogleAuthorizeContactsButtonBody({
       const code = await google.requestAuthorizationCode([
         ...GOOGLE_CONTACTS_IMPORT_SCOPES,
       ]);
-      await connectGoogle(code, { type: "user" });
+      await connectGoogle(code, { type: "user" }, "contacts_import");
       toast.success("Google Contacts access granted.");
       await onAuthorized();
     } catch (e) {

@@ -28,7 +28,8 @@ import {
 export type GoogleConnectionPurpose =
   | "general"
   | "google_ads_isolated"
-  | "read_only_sweep";
+  | "read_only_sweep"
+  | "contacts_import";
 
 /**
  * A connection/resource can disappear between the RLS-scoped inventory read

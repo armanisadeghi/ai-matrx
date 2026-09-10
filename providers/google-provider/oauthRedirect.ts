@@ -7,7 +7,10 @@ export type GoogleRedirectOwner =
   { type: "user" } | { type: "organization"; organizationId: string };
 
 export type GoogleRedirectConnectionPurpose =
-  "general" | "google_ads_isolated" | "read_only_sweep";
+  | "general"
+  | "google_ads_isolated"
+  | "read_only_sweep"
+  | "contacts_import";
 
 export interface GoogleOAuthRedirectPending {
   state: string;
@@ -87,7 +90,8 @@ export function consumeGoogleOAuthRedirectPending(
       !value.organizationContextId ||
       (value.connectionPurpose !== "general" &&
         value.connectionPurpose !== "google_ads_isolated" &&
-        value.connectionPurpose !== "read_only_sweep") ||
+        value.connectionPurpose !== "read_only_sweep" &&
+        value.connectionPurpose !== "contacts_import") ||
       !value.owner ||
       (value.owner.type !== "user" && value.owner.type !== "organization")
     ) {

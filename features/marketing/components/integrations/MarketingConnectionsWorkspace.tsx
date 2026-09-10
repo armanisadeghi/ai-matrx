@@ -62,8 +62,12 @@ import {
   useGoogleAPI,
 } from "@/providers/google-provider/GoogleApiProvider";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectIsSuperAdmin,
+  selectUserEmail,
+} from "@/lib/redux/selectors/userSelectors";
 import { GOOGLE_YOUTUBE_SCOPES } from "@/lib/googleScopes";
+import { canUseGoogleOAuthInternalTest } from "@/features/marketing/google/internal-test-reviewer";
 import {
   GOOGLE_YOUTUBE_CAMPAIGN_PAUSE_REASON,
   assertGoogleYouTubeCampaignActive,
@@ -91,6 +95,11 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
   const youtubePreview = useYouTubeChannelPreview();
   const google = useGoogleAPI();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const userEmail = useAppSelector(selectUserEmail);
+  const canUseReadOnlyReview = canUseGoogleOAuthInternalTest(
+    isSuperAdmin,
+    userEmail,
+  );
   const [siteId, setSiteId] = useState("");
   const [connectingOwner, setConnectingOwner] = useState<
     "user" | "organization" | null
@@ -350,6 +359,11 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
               </div>
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
                 <CopyButtons size="icon" {...connectionsCopy} />
+                {canUseReadOnlyReview ? (
+                  <Button asChild size="sm" variant="outline" className="h-7 gap-1 text-xs">
+                    <Link href="/google-read-only-review">Google read-only review</Link>
+                  </Button>
+                ) : null}
                 <Button
                   size="sm"
                   variant="outline"

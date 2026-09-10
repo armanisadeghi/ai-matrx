@@ -13,6 +13,7 @@
  * Advancing the phase is an explicit reviewed release after Google approves
  * the scope (`common-docs/projects/google-oauth-verification/PLAN.md`).
  */
+import { canUseGoogleOAuthInternalTest } from "@/features/marketing/google/internal-test-reviewer";
 
 export type GoogleContactsCampaignPhase = "internal_test" | "approved";
 
@@ -23,6 +24,12 @@ export const GOOGLE_CONTACTS_CAMPAIGN_PAUSE_REASON =
   "Google is still reviewing AI Matrx's contacts permission. Until it is approved, connecting Google Contacts is limited to internal test accounts — your CSV/vCard export imports the same contacts today.";
 
 /** May THIS user run the authorize step for the unapproved scope? */
-export function canRequestGoogleContactsScope(isSuperAdmin: boolean): boolean {
-  return GOOGLE_CONTACTS_CAMPAIGN_PHASE === "approved" || isSuperAdmin;
+export function canRequestGoogleContactsScope(
+  isSuperAdmin: boolean,
+  email: string | null,
+): boolean {
+  return (
+    GOOGLE_CONTACTS_CAMPAIGN_PHASE === "approved" ||
+    canUseGoogleOAuthInternalTest(isSuperAdmin, email)
+  );
 }
