@@ -1757,6 +1757,39 @@ export default [
     },
   },
   {
+    // ─── The Files feature's three sanctioned OUTSIDE entry points ──────
+    //
+    // `windowPanelsImportRestriction` ring-fences features/files/providers,
+    // /cache and /upload against outside consumers. These three files are the
+    // sites those bans NAME as correct, so the ban has nothing left to protect
+    // here — it was only ever reporting the mounts it points people at:
+    //
+    //   app/Providers.tsx           — the ONE global <CloudFilesRealtimeProvider>
+    //                                 mount (the `providers` ban's own message
+    //                                 says the mount lives here) plus the
+    //                                 app-shell singleton <UploadGuardHost>,
+    //                                 whose dynamic wrapper IS the sanctioned
+    //                                 boundary (.claude/skills/code-splitting).
+    //   app/DeferredSingletonCore   — registers the blob-cache Service Worker
+    //                                 once for the app; there is no hook form
+    //                                 of a one-shot SW registration.
+    //   the blob-cache admin page   — renders cache/admin/BlobCacheInspector,
+    //                                 the inspector built for that route.
+    //
+    // Scoped to these three files ONLY. Every other importer of
+    // features/files/{api,cache,providers,upload,services,virtual-sources}
+    // stays banned. The sonner chokepoint is unaffected — its
+    // `no-restricted-syntax` twin still runs here.
+    files: [
+      "app/Providers.tsx",
+      "app/DeferredSingletonCore.tsx",
+      "app/(admin)/administration/utilities/blob-cache/page.tsx",
+    ],
+    rules: {
+      "no-restricted-imports": "off",
+    },
+  },
+  {
     // Media durability fence (see CLAUDE.md "Media durability" +
     // FOUND_DEFECTS.md D1). Podcast surfaces render OUR OWN media (covers,
     // clip video, audio) which is persisted from a stream and can arrive as

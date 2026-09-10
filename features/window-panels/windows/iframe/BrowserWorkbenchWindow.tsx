@@ -13,7 +13,7 @@ import {
   SITE_WORKBENCH_DEFAULT_URL,
   SITE_WORKBENCH_USER_BOOKMARKS_MAX,
   type SiteWorkbenchBookmark,
-} from "@/features/window-panels/windows/iframe/site-workbench-bookmarks";
+} from "@/features/settings/site-workbench-bookmarks";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import type { SiteWorkbenchUserBookmark } from "@/lib/redux/preferences/userPreferencesSlice";
 import { Button } from "@/components/ui/button";

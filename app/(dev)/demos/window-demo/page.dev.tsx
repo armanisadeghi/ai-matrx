@@ -1,17 +1,27 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { NotesWindow } from "@/features/window-panels/windows/notes/NotesWindow";
+// The real Notes window is opened through the sanctioned openers layer, never
+// imported here: a direct import of the component would pull it (and its whole
+// window-panels chunk graph) into this route's bundle, which is exactly what
+// the `features/window-panels/windows/**` import ban exists to prevent.
+// OverlayController owns the only import of the component itself.
+import {
+  useOpenNotesWindow,
+  type NotesWindowHandle,
+} from "@/features/overlays/openers/notesWindow";
 import { Plus, Trash2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { DEMO_WINDOWS } from "./demo-windows";
 
-const NOTES_WINDOW_ID = "window-notes";
+const NOTES_INSTANCE_ID = "window-demo-notes";
 
 export default function WindowDemoPage() {
   const [openWindows, setOpenWindows] = useState<Set<string>>(
-    () => new Set(["window-0", "window-1", NOTES_WINDOW_ID]),
+    () => new Set(["window-0", "window-1"]),
   );
 
   const openWindow = useCallback((id: string) => {
@@ -26,7 +36,24 @@ export default function WindowDemoPage() {
     });
   }, []);
 
-  const notesOpen = openWindows.has(NOTES_WINDOW_ID);
+  // The overlay store is the ONE truth for whether the Notes window is up, so
+  // closing it from its own title bar keeps this toggle honest.
+  const openNotesWindow = useOpenNotesWindow();
+  const notesHandleRef = useRef<NotesWindowHandle | null>(null);
+  const notesOpen = useAppSelector((state) =>
+    selectIsOverlayOpen(state, "notesWindow", NOTES_INSTANCE_ID),
+  );
+  const toggleNotes = useCallback(() => {
+    if (notesOpen) {
+      notesHandleRef.current?.close();
+      notesHandleRef.current = null;
+      return;
+    }
+    notesHandleRef.current = openNotesWindow({
+      instanceId: NOTES_INSTANCE_ID,
+      title: "Notes",
+    });
+  }, [notesOpen, openNotesWindow]);
 
   return (
     <div className="h-full flex flex-col bg-textured overflow-hidden">
@@ -44,11 +71,7 @@ export default function WindowDemoPage() {
             type="button"
             size="xs"
             variant={notesOpen ? "default" : "outline"}
-            onClick={() =>
-              notesOpen
-                ? closeWindow(NOTES_WINDOW_ID)
-                : openWindow(NOTES_WINDOW_ID)
-            }
+            onClick={toggleNotes}
           >
             <span className="text-amber-500">
               <FileText className="h-4 w-4" />
@@ -98,16 +121,7 @@ export default function WindowDemoPage() {
         </div>
       </div>
 
-      {/* ── Notes Window (real, self-contained) ────────────────────────────── */}
-      {notesOpen && (
-        <NotesWindow
-          id={NOTES_WINDOW_ID}
-          width={520}
-          height={400}
-          initialRect={{ x: 560, y: 60 }}
-          onClose={() => closeWindow(NOTES_WINDOW_ID)}
-        />
-      )}
+      {/* The real Notes window renders from OverlayController, opened above. */}
 
       {/* ── Demo Windows (placeholder bodies) ─────────────────────────────── */}
       {DEMO_WINDOWS.map((def, i) => {

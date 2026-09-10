@@ -36,6 +36,13 @@ export function AgentCatalogHost({ children }: { children: ReactNode }) {
   const catalog = useMemo(() => getAgentCatalog(), []);
   const navigate = useCallback((href: string) => router.push(href), [router]);
 
+  // TODO(archived-items-law A2, blocked on @ai-matrx/agents 0.9.2):
+  // pass `defaults={{ archiveFilter }}` here, read from
+  // `selectArchivedDefault` (lib/redux/preferences/userPreferenceSelectors),
+  // so the agent picker starts from the SAME user knob every entity-list
+  // surface already honours. 0.9.1 is the latest published version and does
+  // not expose the prop yet (lane A1 ships it). Register row:
+  // ../common-docs/projects/archived-items-law/STATUS.md → A2.
   return (
     <AgentCatalogProvider
       catalog={catalog}

@@ -16,7 +16,7 @@ import {
 import {
   SYSTEM_SITE_WORKBENCH_BOOKMARKS,
   SITE_WORKBENCH_USER_BOOKMARKS_MAX,
-} from "@/features/window-panels/windows/iframe/site-workbench-bookmarks";
+} from "@/features/settings/site-workbench-bookmarks";
 import type { SiteWorkbenchUserBookmark } from "@/lib/redux/preferences/userPreferencesSlice";
 import { useSetting } from "../hooks/useSetting";
 
