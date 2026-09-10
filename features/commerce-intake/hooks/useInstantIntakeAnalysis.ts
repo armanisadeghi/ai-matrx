@@ -72,10 +72,11 @@ import {
   saveInstantResult,
   saveInstantRunPointer,
 } from "../service";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** The one mandate key of this lane — resolved in the DB, rebindable there. */
 export const INTAKE_INSTANT_ANALYSIS_MANDATE_KEY =
-  "commerce_intake.instant_analysis";
+  MANDATE_KEYS.commerce_intake__instant_analysis;
 
 /** Durable producer attribution, narrowed through the platform's own guard —
  *  a key drifting off the `mandate:<feature>.<key>` pattern fails at module

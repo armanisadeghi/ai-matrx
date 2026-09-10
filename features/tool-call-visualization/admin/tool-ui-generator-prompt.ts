@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 /**
  * The Tool UI Component Generator's CONNECTION — nothing more.
  *
@@ -27,4 +29,4 @@
  * `useToolComponentAgent` via `launchMandate`. Never put an agent UUID here.
  */
 export const TOOL_UI_COMPONENT_GENERATOR_MANDATE_KEY =
-  "tool_viz.component_generator";
+  MANDATE_KEYS.tool_viz__component_generator;

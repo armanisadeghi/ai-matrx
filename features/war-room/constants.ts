@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 // features/war-room/constants.ts
 
 /** studio_sessions.source value for transcript sessions owned by a War Room thread. */
@@ -36,9 +38,9 @@ export const UNASSIGNED_SECTION_LABEL = "Unassigned threads";
 //      affordance that would MINT a conversation is disabled and the message
 //      surfaces (reportWarRoomError); existing conversations are unaffected
 //      because they never needed the mandate.
-export const WAR_ROOM_THREAD_AGENT_MANDATE = "war_room.thread";
-export const WAR_ROOM_ROOM_AGENT_MANDATE = "war_room.room";
-export const WAR_ROOM_MASTER_AGENT_MANDATE = "war_room.master";
+export const WAR_ROOM_THREAD_AGENT_MANDATE = MANDATE_KEYS.war_room__thread;
+export const WAR_ROOM_ROOM_AGENT_MANDATE = MANDATE_KEYS.war_room__room;
+export const WAR_ROOM_MASTER_AGENT_MANDATE = MANDATE_KEYS.war_room__master;
 
 // ── Gallery layout tuning (consumed by the generic gallery engine) ───
 export const GALLERY_GAP_PX = 12;

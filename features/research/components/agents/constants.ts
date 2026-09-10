@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META } from "../../admin/types";
 import type { AgentConfigKey } from "../../admin/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * The system agents that drive the research pipeline, one AGENT MANDATE per
@@ -28,16 +29,16 @@ import type { AgentConfigKey } from "../../admin/types";
  * pre-topic (no `rs_topic.agent_config` entry) and surfaced read-only.
  */
 export const ROLE_MANDATE_KEYS: Record<AgentConfigKey, string> = {
-  page_summary_agent_id: "research.structured_page_summary",
-  keyword_synthesis_agent_id: "research.keyword_synthesis",
-  research_report_agent_id: "research.report",
-  updater_agent_id: "research.report_updater",
-  consolidation_agent_id: "research.tag_consolidation",
-  auto_tagger_agent_id: "research.auto_tagger",
-  document_assembly_agent_id: "research.document_assembly",
+  page_summary_agent_id: MANDATE_KEYS.research__structured_page_summary,
+  keyword_synthesis_agent_id: MANDATE_KEYS.research__keyword_synthesis,
+  research_report_agent_id: MANDATE_KEYS.research__report,
+  updater_agent_id: MANDATE_KEYS.research__report_updater,
+  consolidation_agent_id: MANDATE_KEYS.research__tag_consolidation,
+  auto_tagger_agent_id: MANDATE_KEYS.research__auto_tagger,
+  document_assembly_agent_id: MANDATE_KEYS.research__document_assembly,
 };
 
-export const SUGGEST_MANDATE_KEY = "research.suggest_setup";
+export const SUGGEST_MANDATE_KEY = MANDATE_KEYS.research__suggest_setup;
 
 export interface AgentRoleDefinition {
   /** JSONB key in `rs_topic.agent_config`. `null` for system-only roles. */

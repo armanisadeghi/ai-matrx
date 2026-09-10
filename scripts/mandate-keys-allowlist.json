@@ -1,0 +1,37 @@
+[
+  {
+    "file": "features/surfaces/manifests/assistant-message.manifest.ts",
+    "key": "ambient.spoken_summary",
+    "reason": "LIVE in mandate.definition (created 2026-08-27, enabled) but no aidream code declares it — aidream/services/mandates/service.py names it as one of the db_only rows the purpose guard measures. THE ONE GENERATOR emits from declared_mandates(), so no vocabulary member can exist until the declaration does. Verified live 2026-09-10, project brsgrqvjdzwihsvnfqkf."
+  },
+  {
+    "file": "features/product-capture/hooks/useInstantAnalysis.ts",
+    "key": "product_capture.instant_analysis",
+    "reason": "LIVE in mandate.definition (created 2026-08-29, enabled), undeclared in aidream code. The declared sibling is commerce_intake.instant_analysis (aidream/services/commerce_intake/mandates.py), which the commerce FEATURE.md explicitly records as leaving 'the frontend's row unchanged'. Verified live 2026-09-10."
+  },
+  {
+    "file": "features/marketing/seo/value-system/workbench/session/trial.ts",
+    "key": "seo.session_stamp_proposer",
+    "reason": "LIVE in mandate.definition (created 2026-08-24, enabled), undeclared in aidream code. Verified live 2026-09-10."
+  },
+  {
+    "file": "features/marketing/seo/value-system/workbench/session/trial.ts",
+    "key": "seo.session_rule_writer",
+    "reason": "LIVE in mandate.definition (created 2026-08-24, enabled), undeclared in aidream code. Verified live 2026-09-10."
+  },
+  {
+    "file": "features/mandates/authoring/constants.ts",
+    "key": "mandate.goal_writer",
+    "reason": "origin='user' — Arman created this mandate himself in the console on 2026-08-31 (live, bound, fully mapped). A user-created row can never appear in a generated union built from code declarations."
+  },
+  {
+    "file": "features/surfaces/manifests/mandate-workspace.manifest.ts",
+    "key": "mandate.goal_writer",
+    "reason": "Same origin='user' mandate as features/mandates/authoring/constants.ts, named here so the surface manifest declares the same job."
+  },
+  {
+    "file": "features/mandates/authoring/constants.ts",
+    "key": "mandates.kind_converter",
+    "reason": "DELIBERATELY UNASSIGNED — no mandate.definition row exists (verified live 2026-09-10; only a soft-deleted 'mandates.goal_writer' shares the plural prefix). This is the documented honest-refusal posture: the affordance renders disabled naming the missing key until someone creates it, and features/mandates/authoring/AutomationButton.test.tsx pins that behaviour with the case 'a key with no row at all'. Not a dead reference to delete — the refusal is the feature."
+  }
+]

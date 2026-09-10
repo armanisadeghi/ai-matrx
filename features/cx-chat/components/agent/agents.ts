@@ -1,11 +1,12 @@
 import type { WelcomeAgent } from "@/features/cx-chat/components/ChatWelcomeServer";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * The default cx-chat agent is a MANDATE — resolved at request time via
  * `resolveMandateServer` (system default → the user's own binding). The
  * demo root page resolves it.
  */
-export const CX_DEFAULT_MANDATE_KEY = "chat.cx_default";
+export const CX_DEFAULT_MANDATE_KEY = MANDATE_KEYS.chat__cx_default;
 
 /**
  * SEED MIRROR of the `chat.cx_default` mandate's system default — kept only

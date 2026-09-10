@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 // features/education/notes/mandates.ts
 //
 // Mandate key owned by Smart Notes (P4). This is a MANDATE KEY, not an agent
@@ -13,7 +15,7 @@ export const NOTES_MANDATES = {
    * Grounded study-NOTES generator (comprehensive, organized — not a summary);
    * same TrustEnvelope contract as the summary/deck/mindmap converter lanes.
    */
-  studyNotes: "education.notes_generate",
+  studyNotes: MANDATE_KEYS.education__notes_generate,
 } as const;
 
 export type NotesMandateKey = keyof typeof NOTES_MANDATES;

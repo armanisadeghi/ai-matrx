@@ -34,13 +34,14 @@ import { coerceDetails } from "@/features/flashcards/data/enhanceCard";
 import type { CardWithDetails } from "@/features/flashcards/data/types";
 import { readAudioFileId } from "../spoken-front/generateSpokenFront.thunk";
 import type { FlashcardsTtsRenderOffer } from "@/types/python-generated/provision-offers";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Mandate key for the helper-audio TTS lane — resolves live to the DB-bound
  *  TTS agent; swap the voice at /mandates, no deploy. The variables it
  *  sends are the `flashcards.tts_render` offer (the generated offers file has
  *  no per-voice entry for helper_tts / spoken_front_tts — both mandates share
  *  that one shape). */
-export const HELPER_TTS_MANDATE = "flashcards.helper_tts";
+export const HELPER_TTS_MANDATE = MANDATE_KEYS.flashcards__helper_tts;
 
 // The helper is EXPLANATION, not gameplay: calm, warm, unhurried — the exact
 // opposite register of the spoken-front quiz host. One consistent voice (no

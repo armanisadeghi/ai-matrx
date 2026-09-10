@@ -28,6 +28,7 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -645,7 +646,7 @@ Hard rules: node_route, node_depth, node_pillar_label, and node_cluster_label ar
       // SAVES): this one is neighbour-aware and STAGES into the panel draft
       // for review, which is the behaviour Deepen does not offer. The DB
       // decides the Holder (re-pointed from a pinned id 2026-08-23).
-      mandateKey: "content_plan.brief_writer",
+      mandateKey: MANDATE_KEYS.content_plan__brief_writer,
       defaultAgentId: null,
       sortOrder: 100,
     },

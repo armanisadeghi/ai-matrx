@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 /**
  * Chat new-page configuration — the agents wired to the landing surface.
  *
@@ -29,7 +31,7 @@ export interface ChatQuickAction {
  * is a rebind in the admin mandate console (or a per-user binding on
  * `/mandates`), never a code change.
  */
-export const DEFAULT_NEW_CHAT_MANDATE_KEY = "chat.default_new_chat";
+export const DEFAULT_NEW_CHAT_MANDATE_KEY = MANDATE_KEYS.chat__default_new_chat;
 
 /**
  * SEED MIRROR of the mandate's system default — the id the mandate row was seeded
@@ -46,23 +48,23 @@ export const DEFAULT_NEW_CHAT_AGENT_ID = "6b6b4e45-4699-4860-8dea-d8a60e07d69a";
  */
 export const PRIMARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
   {
-    mandateKey: "chat.quick_showcase",
+    mandateKey: MANDATE_KEYS.chat__quick_showcase,
     label: "Show off what you can do",
   },
   {
-    mandateKey: "chat.quick_fair_news",
+    mandateKey: MANDATE_KEYS.chat__quick_fair_news,
     label: "I want fair news",
   },
   {
-    mandateKey: "chat.quick_writing_partner",
+    mandateKey: MANDATE_KEYS.chat__quick_writing_partner,
     label: "Help me write something",
   },
   {
-    mandateKey: "chat.quick_flashcards",
+    mandateKey: MANDATE_KEYS.chat__quick_flashcards,
     label: "Make me flashcards",
   },
   {
-    mandateKey: "chat.quick_org_chart",
+    mandateKey: MANDATE_KEYS.chat__quick_org_chart,
     label: "Make an Org Chart",
   },
 ];
@@ -72,19 +74,19 @@ export const PRIMARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
  */
 export const SECONDARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
   {
-    mandateKey: "chat.quick_image",
+    mandateKey: MANDATE_KEYS.chat__quick_image,
     label: "Create an Image",
   },
   {
-    mandateKey: "chat.quick_research",
+    mandateKey: MANDATE_KEYS.chat__quick_research,
     label: "Conduct Research",
   },
   {
-    mandateKey: "chat.quick_audio_plan",
+    mandateKey: MANDATE_KEYS.chat__quick_audio_plan,
     label: "Audio to Structured Plan",
   },
   {
-    mandateKey: "chat.cx_default",
+    mandateKey: MANDATE_KEYS.chat__cx_default,
     label: "Customize Chat",
   },
 ];

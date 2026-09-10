@@ -21,10 +21,11 @@ import {
   type PublisherApiAccess,
   type PublisherTier,
 } from "@/features/marketing/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Mandate keys — which agent runs is DB-bound, never coded here. */
-export const ENDOWMENT_ANALYSIS_MANDATE = "marketing.endowment_analysis";
-export const ENDOWMENT_PORTFOLIO_MANDATE = "marketing.endowment_portfolio";
+export const ENDOWMENT_ANALYSIS_MANDATE = MANDATE_KEYS.marketing__endowment_analysis;
+export const ENDOWMENT_PORTFOLIO_MANDATE = MANDATE_KEYS.marketing__endowment_portfolio;
 
 export const ENDOWMENTS = [
   "data",

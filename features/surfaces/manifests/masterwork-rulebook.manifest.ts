@@ -12,6 +12,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export const MASTERWORK_RULEBOOK_SURFACE_NAME =
   "matrx-user/masterwork-rulebook";
@@ -420,7 +421,7 @@ Never approve, reject, retire, activate, build, or release on the user's behalf.
       kind: "single",
       // The advisor job IS the Final Checkup's auditor — one Mandate, never a
       // second agent for the same judgment (bound 2026-08-19; was an empty role).
-      mandateKey: "masterwork.checkup_auditor",
+      mandateKey: MANDATE_KEYS.masterwork__checkup_auditor,
       defaultAgentId: null,
       allowCustom: true,
       autoRun: "never",
@@ -433,7 +434,7 @@ Never approve, reject, retire, activate, build, or release on the user's behalf.
         "Turns the Expert's intent and evidence into precise proposed rules and stages them through the Rule draft write target for human review.",
       kind: "single",
       // The improver's draft-new shape is exactly this job (bound 2026-08-19).
-      mandateKey: "masterwork.rule_improver",
+      mandateKey: MANDATE_KEYS.masterwork__rule_improver,
       defaultAgentId: null,
       allowCustom: true,
       autoRun: "never",
@@ -450,7 +451,7 @@ Never approve, reject, retire, activate, build, or release on the user's behalf.
         "Conducts the guided interview that draws the Expert's method out of them in conversation and drafts rules from it (the Scout).",
       kind: "single",
       defaultAgentId: null,
-      mandateKey: "masterwork.scout",
+      mandateKey: MANDATE_KEYS.masterwork__scout,
       allowCustom: true,
       autoRun: "never",
       sortOrder: 300,
@@ -465,7 +466,7 @@ Never approve, reject, retire, activate, build, or release on the user's behalf.
         "The one system that turns what the Expert already has into a working Masterwork: reads what is attached, learns what the platform can really do, pokes holes in the method input by input, turns anything unresolved into a real Plan step, and authors the workflow — or refuses and says what is missing.",
       kind: "single",
       defaultAgentId: null,
-      mandateKey: "masterwork.conductor",
+      mandateKey: MANDATE_KEYS.masterwork__conductor,
       allowCustom: true,
       autoRun: "never",
       sortOrder: 310,
@@ -481,7 +482,7 @@ Never approve, reject, retire, activate, build, or release on the user's behalf.
         "Rewrites a rejected or weak rule from the Expert's review feedback and stages the improved version for approval.",
       kind: "single",
       defaultAgentId: null,
-      mandateKey: "masterwork.rule_improver",
+      mandateKey: MANDATE_KEYS.masterwork__rule_improver,
       allowCustom: true,
       autoRun: "never",
       sortOrder: 400,
@@ -493,7 +494,7 @@ Never approve, reject, retire, activate, build, or release on the user's behalf.
         "Checks work against the Rulebook's approved rules — every verdict cites the exact rule it applied.",
       kind: "single",
       defaultAgentId: null,
-      mandateKey: "masterwork.checkup_auditor",
+      mandateKey: MANDATE_KEYS.masterwork__checkup_auditor,
       allowCustom: true,
       autoRun: "never",
       sortOrder: 500,
@@ -505,7 +506,7 @@ Never approve, reject, retire, activate, build, or release on the user's behalf.
         "Cleans raw captured expertise (dictations, dumps, transcripts) into reviewable source material before distillation.",
       kind: "single",
       defaultAgentId: null,
-      mandateKey: "masterwork.corpus_cleaner",
+      mandateKey: MANDATE_KEYS.masterwork__corpus_cleaner,
       allowCustom: true,
       autoRun: "never",
       sortOrder: 600,

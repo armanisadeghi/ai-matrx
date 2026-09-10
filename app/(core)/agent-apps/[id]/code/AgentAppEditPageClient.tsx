@@ -11,6 +11,7 @@ import { agaAppsAdapter } from "@/features/code/library-sources/adapters/aga-app
 import "@/features/agent-apps/code-preview/registerAgentAppRenderPreview";
 import type { AgentApp } from "@/features/agent-apps/types";
 import { useMandate } from "@/features/mandates/useMandate";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 interface AgentAppEditPageClientProps {
   app: AgentApp;
@@ -68,4 +69,4 @@ export function AgentAppEditPageClient({ app }: AgentAppEditPageClientProps) {
 /** Coding agent specialised for prompt-app / agent-app development. The
  *  chat panel boots with this agent on the agent-app editor unless the
  *  user already has `?agentId=` pinned in the URL. */
-const PROMPT_APP_DEV_MANDATE = "agent_apps.prompt_app_dev";
+const PROMPT_APP_DEV_MANDATE = MANDATE_KEYS.agent_apps__prompt_app_dev;

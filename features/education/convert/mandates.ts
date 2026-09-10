@@ -11,6 +11,7 @@
 // here.
 
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export const CONVERT_MANDATES = {
   /**
@@ -19,7 +20,7 @@ export const CONVERT_MANDATES = {
    * Grounded study-summary generator (same TrustEnvelope contract as the
    * flashcard/mindmap generators).
    */
-  summarize: "education.summarize",
+  summarize: MANDATE_KEYS.education__summarize,
   /**
    * source_content, document_id, count, difficulty → grounded flashcard deck.
    * The converter's former duplicate deck agent collapsed into the canonical

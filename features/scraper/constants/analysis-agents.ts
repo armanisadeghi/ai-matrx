@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 /**
  * One-shot analysis MANDATES mounted on full-scrape result tabs.
  *
@@ -11,8 +13,8 @@
  * never silently runs a hardcoded id.
  */
 export const SCRAPER_ANALYSIS_MANDATES = {
-  factChecker: "scraper.fact_check",
-  keywordAnalysis: "scraper.keyword_analysis",
+  factChecker: MANDATE_KEYS.scraper__fact_check,
+  keywordAnalysis: MANDATE_KEYS.scraper__keyword_analysis,
 } as const;
 
 /** The `scraper.page_analysis` provision's offered value carrying the page text. */

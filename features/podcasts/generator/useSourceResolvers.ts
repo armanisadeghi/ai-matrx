@@ -33,6 +33,7 @@ import {
   DEFAULT_YOUTUBE_TIMESTAMP_INSTRUCTION,
   MIN_SCRAPE_CHARS,
 } from "./constants";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export interface UseSourceResolvers {
   /** Scrape a URL, then run the Web Content Extractor agent. Returns cleaned text. */
@@ -63,8 +64,8 @@ export interface UseSourceResolvers {
 // DB-managed mandates (declared in aidream client mandates; rebind from
 // /administration/mandates). Passed as `mandateKey` so resolution —
 // binding `config_overrides` included — happens inside the canonical launcher.
-const WEB_EXTRACTOR_MANDATE_KEY = "podcast_client.web_content_extractor";
-const YOUTUBE_RESEARCH_MANDATE_KEY = "podcast_client.youtube_research";
+const WEB_EXTRACTOR_MANDATE_KEY = MANDATE_KEYS.podcast_client__web_content_extractor;
+const YOUTUBE_RESEARCH_MANDATE_KEY = MANDATE_KEYS.podcast_client__youtube_research;
 
 export function useSourceResolvers(): UseSourceResolvers {
   const { scrapeUrl } = useScraperApi();

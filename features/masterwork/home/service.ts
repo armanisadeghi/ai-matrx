@@ -13,6 +13,7 @@ import type {
   RulebookRule,
   RulebookSource,
 } from "../types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * Reads for the Masterwork HOME (the authed landing at /masterwork) — a
@@ -216,11 +217,11 @@ async function fetchRecentRuns(
 // and each bound agent's definition row. NEVER fabricate review activity.
 
 export const MASTERWORK_MANDATE_KEYS = [
-  "masterwork.scout",
-  "masterwork.source_distiller",
-  "masterwork.exemplar_distiller",
-  "masterwork.rulebook_auditor",
-  "masterwork.audition_judge",
+  MANDATE_KEYS.masterwork__scout,
+  MANDATE_KEYS.masterwork__source_distiller,
+  MANDATE_KEYS.masterwork__exemplar_distiller,
+  MANDATE_KEYS.masterwork__rulebook_auditor,
+  MANDATE_KEYS.masterwork__audition_judge,
 ] as const;
 
 export type MasterworkMandateKey = (typeof MASTERWORK_MANDATE_KEYS)[number];

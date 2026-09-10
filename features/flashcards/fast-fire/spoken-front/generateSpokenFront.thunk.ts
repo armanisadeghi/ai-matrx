@@ -24,11 +24,12 @@ import { selectLatestRequestId } from "@/features/agents/redux/execution-system/
 import { fcService } from "@/features/flashcards/data/fcService";
 import { pickSpokenFrontVariables } from "./variations";
 import type { FlashcardsTtsRenderOffer } from "@/types/python-generated/provision-offers";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Mandate key for the spoken-front TTS lane — resolves live to the DB-bound
  *  TTS agent. Its variables are the `flashcards.tts_render` offer shape (the
  *  generated offers file carries no per-voice entry; see helper-audio). */
-export const SPOKEN_FRONT_TTS_MANDATE = "flashcards.spoken_front_tts";
+export const SPOKEN_FRONT_TTS_MANDATE = MANDATE_KEYS.flashcards__spoken_front_tts;
 
 /**
  * Read-only: how many of a set's cards already have a CACHED spoken front (a

@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 /**
  * Shapes studio constants — the user-facing Shape System surface.
  *
@@ -20,7 +22,7 @@ export const SHAPES_FEATURE_LABEL = "Shapes";
  * kind_creator builtin (master 4f4ffd49-…, K2 lane 2026-07-18); rebind in the
  * admin mandate console, never in code.
  */
-export const KIND_CREATOR_MANDATE_KEY = "content_ir.kind_creator";
+export const KIND_CREATOR_MANDATE_KEY = MANDATE_KEYS.content_ir__kind_creator;
 
 /**
  * The studio's own surface, and the agent ROLES declared on it

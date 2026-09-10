@@ -48,6 +48,7 @@ import { RULEBOOK_DOCUMENT_VARIABLE } from "@/features/masterwork/agent-context/
 import { useRulebookDocument } from "@/features/masterwork/agent-context/useRulebookDocument";
 import { InterviewChooser } from "@/features/masterwork/record/InterviewChooser";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const SOURCE_FEATURE = "masterwork" as const;
 /**
@@ -56,7 +57,7 @@ const SOURCE_FEATURE = "masterwork" as const;
  * /administration/mandates). No hardcoded agent id, no silent fallback —
  * if the Mandate can't resolve, the panel says so and refuses.
  */
-const SCOUT_MANDATE_KEY = "masterwork.scout";
+const SCOUT_MANDATE_KEY = MANDATE_KEYS.masterwork__scout;
 /** How often (ms) to check whether the Scout landed new draft rules. */
 const RULEBOOK_WATCH_INTERVAL_MS = 5000;
 
@@ -627,7 +628,7 @@ export function ScoutInterviewPanel({
         <span className="inline-flex min-w-0 items-center gap-2">
           <MessagesSquare className="h-4 w-4 text-primary" aria-hidden />
           <span className="truncate">Interview</span>
-          <AgentCredit mandate="masterwork.scout" agent="masterwork_scout" />
+          <AgentCredit mandate={MANDATE_KEYS.masterwork__scout} agent="masterwork_scout" />
         </span>
       }
       headerActions={

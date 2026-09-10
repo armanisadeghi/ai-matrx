@@ -56,6 +56,7 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -780,7 +781,7 @@ Detection rows (which XML tag or fence language maps to this kind) are deliberat
         "Creates a new Shape from a description or sample data, and edits an existing one — its schema, samples, component, teaching block, and activation state.",
       kind: "single",
       defaultAgentId: null,
-      mandateKey: "content_ir.kind_creator",
+      mandateKey: MANDATE_KEYS.content_ir__kind_creator,
       allowCustom: false,
       autoRun: "never",
       sortOrder: 100,
@@ -792,7 +793,7 @@ Detection rows (which XML tag or fence language maps to this kind) are deliberat
         "Builds and improves the React component that draws this Shape's instances, so they render purpose-built instead of through the generic viewer.",
       kind: "single",
       defaultAgentId: null,
-      mandateKey: "content_ir.component_artisan",
+      mandateKey: MANDATE_KEYS.content_ir__component_artisan,
       allowCustom: false,
       autoRun: "never",
       sortOrder: 200,

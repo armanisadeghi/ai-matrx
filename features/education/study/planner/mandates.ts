@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 // features/education/study/planner/mandates.ts
 //
 // Mandate keys for the P5 Study Intelligence AI lanes. These are MANDATE KEYS,
@@ -14,7 +16,7 @@ export const STUDY_MANDATES = {
    * Output: { overall_rationale, days:[{day_date,is_rest_day,rationale,blocks:[…]}] }
    * — the registered `study_plan` kind (nests study_plan_day / study_plan_block).
    */
-  planner: "education.plan_generate",
+  planner: MANDATE_KEYS.education__plan_generate,
   /**
    * Study Analytics Narrator — headline + grounded insights + prioritized recs.
    * Variables: item_label, accuracy_pct, mastered_count, learning_count,
@@ -23,7 +25,7 @@ export const STUDY_MANDATES = {
    * Output: { headline, insights:[{title,detail,severity}], recommendations:[…] }
    * — the registered `study_analytics_narrative` kind (nests analytics_insight).
    */
-  narrator: "education.analytics_narrate",
+  narrator: MANDATE_KEYS.education__analytics_narrate,
 } as const;
 
 export type StudyMandateKey = keyof typeof STUDY_MANDATES;

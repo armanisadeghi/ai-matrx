@@ -41,8 +41,9 @@ import {
   type EpisodeTitleOptionValue,
 } from "@/features/content-ir/kinds/episode-title-options";
 import type { PcEpisodeWithShow } from "@/features/podcasts/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-const TITLE_OPTIMIZER_MANDATE_KEY = "podcast.title_optimizer";
+const TITLE_OPTIMIZER_MANDATE_KEY = MANDATE_KEYS.podcast__title_optimizer;
 
 /** One ranked option, in the kind bridge's shape (nullable subtitle/rationale
  *  — never coerced to `""`). Parsed by the ONE canonical reader,

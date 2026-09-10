@@ -6,13 +6,14 @@
  */
 
 import type { SourceFeature } from "@/features/agents/types/instance.types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * The project-creation agent is a MANDATE — `projects.creation_guide` —
  * resolved by ProjectCreatePanel via `useMandate` (system default → the
  * user's own binding).
  */
-export const PROJECT_CREATE_MANDATE_KEY = "projects.creation_guide";
+export const PROJECT_CREATE_MANDATE_KEY = MANDATE_KEYS.projects__creation_guide;
 
 /**
  * SEED MIRROR of the mandate's system default — kept only so

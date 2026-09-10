@@ -40,8 +40,9 @@ import {
 import { VoiceMicButton } from "@/features/voice-agent/components/VoiceMicButton";
 import { VoiceStatusPill } from "@/features/voice-agent/components/VoiceStatusPill";
 import { VoiceTranscriptStream } from "@/features/voice-agent/components/VoiceTranscriptStream";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-export const EDUCATION_VOICE_TUTOR_MANDATE = "education.voice_tutor";
+export const EDUCATION_VOICE_TUTOR_MANDATE = MANDATE_KEYS.education__voice_tutor;
 
 /** The DB surface tool-resolution runs against (the study deck's surface). */
 const FLASHCARDS_SURFACE = "matrx-user/education-flashcards";

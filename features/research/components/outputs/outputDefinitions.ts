@@ -31,6 +31,7 @@
  */
 
 import type { OutputKind } from "./outputs";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** The bundle every publishing output uses — the report, and nothing else. */
 export const REPORT_ONLY_BUNDLE_SLUG = "research-report-only";
@@ -64,7 +65,7 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     label: "Brand profile",
     description:
       "The brand plus its key people, partners and reputation signals — from authority-ranked pages, the full search footprint and the analyses.",
-    mandateKey: "research_client.output_brand_profile",
+    mandateKey: MANDATE_KEYS.research_client__output_brand_profile,
     bundleSlug: "research-brand-profile",
     outputKind: "brand_profile",
   },
@@ -73,7 +74,7 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     label: "Reputation review — business",
     description:
       "How a business reads to someone searching it: positive and negative signals with attribution, review themes, and legitimate remediation.",
-    mandateKey: "research_client.output_reputation_business",
+    mandateKey: MANDATE_KEYS.research_client__output_reputation_business,
     bundleSlug: "research-reputation-business",
     outputKind: "reputation_business",
   },
@@ -82,7 +83,7 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     label: "Reputation review — personal",
     description:
       "An individual's public professional record: credential verification, independent vs self-published signals, same-name confusion checks.",
-    mandateKey: "research_client.output_reputation_personal",
+    mandateKey: MANDATE_KEYS.research_client__output_reputation_personal,
     bundleSlug: "research-reputation-personal",
     outputKind: "reputation_personal",
   },
@@ -91,7 +92,7 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     label: "Gap analysis",
     description:
       "What this research is MISSING — unsearched keywords, thin single-source claims, absent viewpoints, and what to research next.",
-    mandateKey: "research_client.output_gap_analysis",
+    mandateKey: MANDATE_KEYS.research_client__output_gap_analysis,
     bundleSlug: "research-gap-analysis",
     outputKind: "gap_analysis",
   },
@@ -100,7 +101,7 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     label: "Literature & evidence review",
     description:
       "Findings by theme with strength-of-support ratings, contested evidence, and a critique of the corpus itself.",
-    mandateKey: "research_client.output_literature_review",
+    mandateKey: MANDATE_KEYS.research_client__output_literature_review,
     bundleSlug: "research-literature-review",
     outputKind: "literature_review",
   },
@@ -109,7 +110,7 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     label: "Competitive landscape",
     description:
       "Per-competitor profiles, a comparison table, positioning clusters and whitespace — grouped by the entity each source is about.",
-    mandateKey: "research_client.output_competitive_landscape",
+    mandateKey: MANDATE_KEYS.research_client__output_competitive_landscape,
     bundleSlug: "research-competitive-landscape",
     outputKind: "competitive_landscape",
   },

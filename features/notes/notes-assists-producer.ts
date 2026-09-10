@@ -21,6 +21,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { filterUndecidedKeys } from "@/features/assists/service";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import { assistPriority } from "@/features/assists/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const SOURCE_KEY = "notes.unorganized";
 
@@ -30,7 +31,7 @@ export const NOTES_ASSIST_SURFACE = "matrx-user/notes";
 /** Agent-mandate the launch action resolves at click time (agent.mandate,
  * seeded by migrations/agent_slots_assist_producers_seed.sql — swappable from
  * the admin mandates console, no deploy). */
-export const NOTES_ORGANIZER_MANDATE = "notes.organizer";
+export const NOTES_ORGANIZER_MANDATE = MANDATE_KEYS.notes__organizer;
 
 // Conservative threshold — a couple of loose notes is normal; a pileup is
 // the signal ("loud, never nagging").

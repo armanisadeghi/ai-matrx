@@ -334,6 +334,12 @@ if $STRICT; then
         # HARDCODED AGENT IDS — the same law spelled as a raw UUID (ROLLOUT.md
         # row X4). Baseline ratchet: exits 1 only on a NEW site; advisory here.
         "Hardcoded agent ids (raw agent UUIDs in code)|pnpm check:hardcoded-agents"
+        # HAND-TYPED MANDATE KEYS — the same law spelled as a string literal.
+        # @ai-matrx/agents 0.10.0 publishes the key set; a literal is a mirror of
+        # it, and a rename or retirement on the server becomes a 404 nobody sees.
+        # No baseline: the tree was brought to zero on adoption (2026-09-10, 200
+        # literals across 76 files), so any finding is NEW.
+        "Hand-typed mandate keys (vocabulary not adopted)|pnpm check:mandate-keys"
         # THE DISCLOSURE LAW (Arman, 2026-08-25) — a surface that RUNS an agent
         # registers its fixed jobs in the top Agents menu. Advisory: backlog is 40
         # surfaces deep and a release must not stall on someone else's page.
@@ -587,6 +593,12 @@ else
         # HARDCODED AGENT IDS — the same law spelled as a raw UUID (ROLLOUT.md
         # row X4). Baseline ratchet: exits 1 only on a NEW site; advisory here.
         "Hardcoded agent ids (raw agent UUIDs in code)|pnpm check:hardcoded-agents"
+        # HAND-TYPED MANDATE KEYS — the same law spelled as a string literal.
+        # @ai-matrx/agents 0.10.0 publishes the key set; a literal is a mirror of
+        # it, and a rename or retirement on the server becomes a 404 nobody sees.
+        # No baseline: the tree was brought to zero on adoption (2026-09-10, 200
+        # literals across 76 files), so any finding is NEW.
+        "Hand-typed mandate keys (vocabulary not adopted)|pnpm check:mandate-keys"
         # THE DISCLOSURE LAW (Arman, 2026-08-25) — a surface that RUNS an agent
         # registers its fixed jobs in the top Agents menu. Advisory: backlog is 40
         # surfaces deep and a release must not stall on someone else's page.

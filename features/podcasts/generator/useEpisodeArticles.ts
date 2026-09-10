@@ -34,11 +34,12 @@ import type {
   PcArticleKind,
   PcEpisodeWithShow,
 } from "@/features/podcasts/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 // DB-managed mandates (declared in aidream client_slots.py; rebind from
 // /administration/mandates — never a hardcoded agent id here).
-const BLOG_WRITER_MANDATE_KEY = "podcast_client.blog_writer";
-const SHOW_NOTES_MANDATE_KEY = "podcast_client.show_notes";
+const BLOG_WRITER_MANDATE_KEY = MANDATE_KEYS.podcast_client__blog_writer;
+const SHOW_NOTES_MANDATE_KEY = MANDATE_KEYS.podcast_client__show_notes;
 
 /** Build the episode_metadata JSON the agents consume from the episode + show.
  *  Shared with useEpisodeTitleOptions so every post-episode agent reads the

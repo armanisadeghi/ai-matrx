@@ -35,6 +35,7 @@ import {
   type AutonomyMode,
   type SettingsScope,
 } from "./data";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const MODES: Array<{ value: AutonomyMode; label: string; hint: string }> = [
   {
@@ -69,11 +70,14 @@ const MODES: Array<{ value: AutonomyMode; label: string; hint: string }> = [
  * database and is resolved below; agent ids and names never live here.
  */
 const CAPABILITY_MANDATES: Readonly<Record<string, readonly string[]>> = {
-  keyword_classifier: ["seo.keyword_classifier"],
-  topic_assigner: ["seo.topic_assigner"],
+  keyword_classifier: [MANDATE_KEYS.seo__keyword_classifier],
+  topic_assigner: [MANDATE_KEYS.seo__topic_assigner],
 };
 
-const MANDATE_KEYS = ["seo.keyword_classifier", "seo.topic_assigner"] as const;
+const AUTONOMY_MANDATE_KEYS = [
+  MANDATE_KEYS.seo__keyword_classifier,
+  MANDATE_KEYS.seo__topic_assigner,
+] as const;
 
 const UNASSIGNED_EXPLANATION: Readonly<Record<string, string>> = {
   place_detection: "Deterministic · no mandate or agent",
@@ -95,8 +99,8 @@ export function AutonomyModesEditor({
     queryFn: ({ signal }) => getAutonomyModes(scope, id, signal),
   });
   const assignments = useQuery({
-    queryKey: ["agent", "mandate-assignments", ...MANDATE_KEYS],
-    queryFn: () => fetchMandateAssignments(MANDATE_KEYS),
+    queryKey: ["agent", "mandate-assignments", ...AUTONOMY_MANDATE_KEYS],
+    queryFn: () => fetchMandateAssignments(AUTONOMY_MANDATE_KEYS),
     staleTime: 5 * 60 * 1000,
   });
 

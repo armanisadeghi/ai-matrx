@@ -24,6 +24,7 @@ import type { paths } from "@/types/python-generated/api-types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import type { Rulebook } from "../../types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * "Everything you've published" — the `body_of_work` Distillation Approach.
@@ -538,7 +539,7 @@ export function BodyOfWorkDialog({
           <DialogTitle className="flex items-center gap-2">
             Everything you&apos;ve published
             <AgentCredit
-              mandate="masterwork.exemplar_distiller"
+              mandate={MANDATE_KEYS.masterwork__exemplar_distiller}
               agent="masterwork_exemplar_distiller"
             />
             {/* THE DOOR LAW — this working mode has its own URL. */}

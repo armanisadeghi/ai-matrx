@@ -16,11 +16,12 @@
 import { AlertTriangle } from "lucide-react";
 import { VoiceAgentSurface } from "@/features/voice-agent/components/VoiceAgentSurface";
 import { resolveMandateServer } from "@/features/mandates/service.server";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export default async function VoiceIntroPage() {
   let agentId: string;
   try {
-    agentId = (await resolveMandateServer("voice.intro")).agentId;
+    agentId = (await resolveMandateServer(MANDATE_KEYS.voice__intro)).agentId;
   } catch (error) {
     console.error(
       "[chat/voice] the voice.intro mandate did not resolve:",

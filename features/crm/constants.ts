@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 /**
  * CRM constants shared across the feature.
  *
@@ -22,4 +24,4 @@
  *
  * Declared server-side in aidream `services/mandates/client_mandates.py`.
  */
-export const CRM_SAVE_CONTACT_AGENT_MANDATE = "crm.save_contact";
+export const CRM_SAVE_CONTACT_AGENT_MANDATE = MANDATE_KEYS.crm__save_contact;

@@ -1,5 +1,6 @@
 import type { RulebookDraftSnapshot } from "./rulebookSurfaceScope";
 import type { RulebookRule, RulebookSections, RuleSeverity } from "../types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * The Improve verb — the third core review verb (Approve / Reject / Improve;
@@ -20,7 +21,7 @@ import type { RulebookRule, RulebookSections, RuleSeverity } from "../types";
  * This module is the validation/merge half for every consumer.
  */
 
-export const MASTERWORK_RULE_IMPROVER_MANDATE = "masterwork.rule_improver";
+export const MASTERWORK_RULE_IMPROVER_MANDATE = MANDATE_KEYS.masterwork__rule_improver;
 
 export interface RuleImproveResult {
   name: string;

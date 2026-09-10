@@ -38,6 +38,7 @@ import { RuleDecisionActions } from "../../review/RuleDecisionActions";
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import type { RulebookRule, RulebookSections } from "../../types";
 import { SEVERITY_LABELS } from "../../types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export interface ImproveRuleDialogProps {
   open: boolean;
@@ -233,7 +234,7 @@ export function ImproveRuleDialog({
             <Zap className="h-4 w-4 text-primary" />
             {review ? "Review the rewrite" : "Improve this rule"}
             <AgentCredit
-              mandate="masterwork.rule_improver"
+              mandate={MANDATE_KEYS.masterwork__rule_improver}
               agent="Masterwork Rule Improver"
             />
           </DialogTitle>

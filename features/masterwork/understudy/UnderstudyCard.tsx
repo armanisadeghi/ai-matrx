@@ -20,6 +20,7 @@ import type { Masterwork } from "../types";
 import { AgentCredit } from "../components/AgentCredit";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { refreshUnderstudy } from "./refresh";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export function UnderstudyCard({
   rulebookId,
@@ -110,7 +111,7 @@ export function UnderstudyCard({
         </span>
         <h3 className="text-sm font-semibold text-foreground">Understudy</h3>
         <AgentCredit
-          mandate="masterwork.understudy"
+          mandate={MANDATE_KEYS.masterwork__understudy}
           agent="Masterwork Understudy (generic)"
         />
       </div>

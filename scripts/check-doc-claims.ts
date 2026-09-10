@@ -471,6 +471,8 @@ const claims: Claim[] = [
         "hr:mock-walk",
         "hr:exports-cases",
         "check:legacy-shim-containment",
+        "check:mandate-keys",
+        "check:mandate-keys:self-test",
         "check:organization-context",
         "pnpm type-check",
         "test:content-ir",

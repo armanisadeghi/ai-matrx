@@ -17,6 +17,7 @@ import {
   runHeadlessAgent,
   waitForAnswerText,
 } from "@/features/marketing/lib/generate-page-image";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * The Mandate that decides WHICH agent writes video metadata (system default:
@@ -27,7 +28,7 @@ import {
  * `config_overrides`). The agent answers inside `<video_metadata>…</video_metadata>`;
  * that contract is the AGENT's, declared in the DB — this note mirrors it.
  */
-export const VIDEO_METADATA_MANDATE_KEY = "marketing.video_metadata";
+export const VIDEO_METADATA_MANDATE_KEY = MANDATE_KEYS.marketing__video_metadata;
 
 export interface VideoMetadataResult {
   title: string;

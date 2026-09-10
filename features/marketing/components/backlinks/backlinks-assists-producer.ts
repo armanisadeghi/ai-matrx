@@ -34,13 +34,14 @@ import {
 } from "@/features/marketing/components/backlinks/lib/extras";
 import { providerExtras } from "@/features/marketing/components/backlinks/lib/enrichment";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const SOURCE_PREFIX = "seo.backlink_assist";
 export const BACKLINKS_ASSIST_SURFACE = "matrx-user/marketing-backlinks";
 
 /** Floating client-run mandate, seeded by
  * `migrations/agent_slots_backlink_assistant_seed.sql`. */
-export const BACKLINK_ASSISTANT_MANDATE = "seo.backlink_work_planner";
+export const BACKLINK_ASSISTANT_MANDATE = MANDATE_KEYS.seo__backlink_work_planner;
 
 const EXPIRES_MS = 14 * 24 * 60 * 60 * 1000;
 const RISK_REVIEW_MIN = 3;

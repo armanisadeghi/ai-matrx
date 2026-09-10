@@ -3,6 +3,7 @@
 // Frozen constants for the xAI Realtime voice agent.
 
 import type { RealtimeToolSet, VoiceId } from "./types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export const XAI_REALTIME_URL =
   "wss://api.x.ai/v1/realtime?model=grok-voice-latest";
@@ -143,7 +144,7 @@ export const PERSISTENCE_REGION = "us-east-1";
  * 🚨 A raw agent UUID lived here until 2026-08-16. Never reintroduce one — the
  * mandate is the only sanctioned way to name an agent from this repo.
  */
-export const VOICE_INTRO_MANDATE_KEY = "voice.intro";
+export const VOICE_INTRO_MANDATE_KEY = MANDATE_KEYS.voice__intro;
 
 /**
  * The mandate for the Scribe Live Assistant — the studio's Live tab. Its agent
@@ -153,4 +154,4 @@ export const VOICE_INTRO_MANDATE_KEY = "voice.intro";
  * `useXaiVoiceSession` receive the RESOLVED id so the backend classifies those
  * tools for the voice session.
  */
-export const SCRIBE_LIVE_MANDATE_KEY = "transcript_studio.scribe_live";
+export const SCRIBE_LIVE_MANDATE_KEY = MANDATE_KEYS.transcript_studio__scribe_live;

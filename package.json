@@ -125,6 +125,8 @@
     "check:hardcoded-prompts:write": "tsx scripts/check-hardcoded-prompts.ts --write",
     "check:hardcoded-agents": "tsx scripts/check-hardcoded-agents.ts",
     "check:hardcoded-agents:write": "tsx scripts/check-hardcoded-agents.ts --write",
+    "check:mandate-keys": "tsx scripts/check-mandate-keys.ts",
+    "check:mandate-keys:self-test": "jest scripts/__tests__/check-mandate-keys.test.ts",
     "check:collection-validator": "tsx scripts/check-collection-validator.ts",
     "check:collection-ordering": "tsx scripts/check-collection-ordering.ts",
     "check:archetype-expansion": "tsx scripts/check-archetype-expansion.ts",

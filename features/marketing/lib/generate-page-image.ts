@@ -52,6 +52,7 @@ import {
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { resolveMandate } from "@/features/mandates/service";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * WHO runs each step is a MANDATE (`agent.mandate`), never an agent id in this
@@ -65,11 +66,11 @@ import { resolveMandate } from "@/features/mandates/service";
 
 /** Prompt engineering step — provision offers `intent_or_content`, `style`;
  *  the agent answers with the prompt wrapped in `<image_prompt>…</image_prompt>`. */
-export const IMAGE_PROMPT_MANDATE_KEY = "marketing.image_prompt";
+export const IMAGE_PROMPT_MANDATE_KEY = MANDATE_KEYS.marketing__image_prompt;
 
 /** Render step — provision offers `image_description`; the agent returns the
  *  rendered image as an `image_output` block. */
-export const PAGE_IMAGE_MANDATE_KEY = "marketing.page_image";
+export const PAGE_IMAGE_MANDATE_KEY = MANDATE_KEYS.marketing__page_image;
 
 /**
  * The premium single-run job: prompt-engineers AND renders in one run —
@@ -79,7 +80,7 @@ export const PAGE_IMAGE_MANDATE_KEY = "marketing.page_image";
  * `step: "mandate"` outcome naming this key — it never silently falls back
  * to the two-step pipeline.
  */
-export const PAGE_IMAGE_ALL_IN_ONE_MANDATE_KEY = "marketing.page_image_all_in_one";
+export const PAGE_IMAGE_ALL_IN_ONE_MANDATE_KEY = MANDATE_KEYS.marketing__page_image_all_in_one;
 
 // The REAL RequestStatus terminal values (features/agents/types/request.types
 // RequestStatus). The old set carried "completed"/"failed" — statuses that do

@@ -1,4 +1,5 @@
 import type { Database } from "@/types/database.types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 type SmsAssistantProgramRpcRow =
   Database["communication"]["Functions"]["get_my_sms_assistant_program"]["Returns"][number];
@@ -40,7 +41,7 @@ export interface UpdateSmsAssistantProgram {
 export const SMS_ASSISTANT_TEST_BODY =
   "AI Matrx: Your text assistant is connected. Reply with a harmless question to test your saved agent. Reply STOP to opt out or HELP for help.";
 export const SMS_ASSISTANT_OWNER_BETA_PROGRAM = "ai_matrx_owner_beta";
-export const SMS_ASSISTANT_OWNER_BETA_MANDATE = "sms.owner_beta";
+export const SMS_ASSISTANT_OWNER_BETA_MANDATE = MANDATE_KEYS.sms__owner_beta;
 
 const BLOCKED_REASON_LABELS: Record<string, string> = {
   destination_not_ready: "The approved sender is not ready.",

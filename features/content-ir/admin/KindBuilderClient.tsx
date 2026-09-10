@@ -30,13 +30,14 @@ import {
   createAdminKindRegistryScope,
 } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 import { pushAppHref } from "@/lib/deployment/navigate";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * The admin one-shot kind builder (agent.definition 'kind_architect', builtin).
  * Distinct from the user creator (`shapeCreatorAgentId`): no interview, no
  * confirmation gate, activates the kind, and builds to the alive-component bar.
  */
-const KIND_ARCHITECT_MANDATE = "content_ir.kind_architect";
+const KIND_ARCHITECT_MANDATE = MANDATE_KEYS.content_ir__kind_architect;
 
 export default function KindBuilderClient() {
   // Which agent builds a kind is a MANDATE, not a hardcoded id — swappable from

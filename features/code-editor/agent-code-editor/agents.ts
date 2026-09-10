@@ -20,21 +20,22 @@
  * its key here.
  */
 import type { CodeEditorAgentConfig } from "./types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export const GENERIC_CODE_EDITOR_AGENT: CodeEditorAgentConfig = {
-  mandateKey: "code_editor.code_edit",
+  mandateKey: MANDATE_KEYS.code_editor__code_edit,
   name: "Code Editor",
   codeVariableKey: "current_code",
 };
 
 export const PROMPT_APP_UI_EDITOR_AGENT: CodeEditorAgentConfig = {
-  mandateKey: "code_editor.prompt_app_ui_edit",
+  mandateKey: MANDATE_KEYS.code_editor__prompt_app_ui_edit,
   name: "Prompt App Code Editor",
   codeVariableKey: "current_code",
 };
 
 export const DYNAMIC_CONTEXT_CODE_EDITOR_AGENT: CodeEditorAgentConfig = {
-  mandateKey: "code_editor.dynamic_context_edit",
+  mandateKey: MANDATE_KEYS.code_editor__dynamic_context_edit,
   name: "Code Editor (Dynamic Context)",
   codeVariableKey: "dynamic_context",
 };

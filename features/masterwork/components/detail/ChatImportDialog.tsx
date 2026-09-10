@@ -33,6 +33,7 @@ import {
   parseIngestSummary,
   type IngestSummary,
 } from "./IngestSourceDialog";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * "Import your AI chats" — the chat-import Distillation Approach.
@@ -787,7 +788,7 @@ export function ChatImportDialog({
           <DialogTitle className="flex items-center gap-2">
             Import your AI chats
             <AgentCredit
-              mandate="masterwork.transcript_distiller"
+              mandate={MANDATE_KEYS.masterwork__transcript_distiller}
               agent="masterwork_transcript_distiller"
             />
             {/* THE DOOR LAW — this working mode has its own URL. */}

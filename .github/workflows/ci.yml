@@ -101,6 +101,24 @@ jobs:
         # "control" is a comment — and asserts all three are reported, while a
         # service layer, a single-record read and a reasoned exemption are not.
         run: pnpm check:archived-items-law:self-test
+      - name: NO HAND-TYPED MANDATE KEYS — the vocabulary is the authority
+        # @ai-matrx/agents 0.10.0 publishes the declared mandate key set,
+        # emitted by THE ONE GENERATOR from aidream's own declared_mandates().
+        # A hand-typed literal is a mirror of that set: a typo, a rename or a
+        # retirement on the server becomes a 404 nobody sees, and the release
+        # report cannot resolve this repo's references against the key set it
+        # shipped. Adopted 2026-09-10 (200 literals across 76 files -> 0), so
+        # there is no baseline and any finding is NEW. Pure static scan over
+        # tracked .ts/.tsx.
+        run: pnpm check:mandate-keys
+      - name: the mandate-key guard can still fail (self-test)
+        # A guard you cannot demonstrate failing is not a guard. The self-test
+        # plants a hand-typed key in each position the guard claims to cover —
+        # constant, property, record value, JSX attribute, entry-point argument
+        # — and asserts each is reported, while the MANDATE_KEYS member, an
+        # identically-spelled entitlement meter id (the namespaces overlap) and
+        # a mandate-named holder carrying a label or a UUID are not.
+        run: pnpm check:mandate-keys:self-test
       - name: THE RENDER MATRIX — every recognition path x every shape archetype
         # The witness for the 2026-08-28 outage, in which one gate in one
         # package cost ~221 live kinds their component while every unit test

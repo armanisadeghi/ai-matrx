@@ -16,6 +16,7 @@
  */
 
 import type { paths } from "@/types/python-generated/api-types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * HOW a pass is started. Two shapes, because the engines genuinely differ:
@@ -93,7 +94,7 @@ export const TOPIC_PLACEMENT_ENGINE: ConsoleEngine = {
   autonomyCapability: "topic_assigner",
   agents: [
     {
-      mandateKey: "seo.topic_assigner",
+      mandateKey: MANDATE_KEYS.seo__topic_assigner,
       does: "places keywords onto the Offering tree",
     },
   ],
