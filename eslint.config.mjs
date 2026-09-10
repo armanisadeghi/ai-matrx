@@ -6,8 +6,19 @@
 // guard around `features/window-panels/windows/**` is preserved to keep the
 // window-panels bundle-splitting contract intact (see .claude/skills/window-panels/SKILL.md).
 
+import { createRequire } from "node:module";
+
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import noBarrelFiles from "eslint-plugin-no-barrel-files";
+import tseslint from "typescript-eslint";
+
+// eslint-plugin-react's `version: "detect"` (what eslint-config-next sets) calls
+// the `context.getFilename()` method that ESLint 10 removed, which made EVERY
+// lint run crash with `contextOrFilename.getFilename is not a function`. The
+// plugin's own documented alternative is to state the version instead of
+// detecting it, so we read it off the installed React package — no pin, it
+// drifts with `react: latest` exactly like the detect path did.
+const reactVersion = createRequire(import.meta.url)("react/package.json").version;
 
 const windowPanelsImportRestriction = {
   patterns: [
@@ -1479,6 +1490,29 @@ export default [
   // The twin of the `.next*` excludes in tsconfig.json / tsconfig.typecheck.json.
   { ignores: [".next*/**"] },
   ...nextCoreWebVitals,
+  {
+    // MUST stay directly after nextCoreWebVitals — it overrides that config's
+    // `react.version: "detect"`. See the note beside `reactVersion` above.
+    settings: { react: { version: "detect" } },
+  },
+  {
+    // eslint-config-next's `next/base` block parses plain JS with Next's
+    // bundled @babel/eslint-parser, whose vendored eslint-scope predates
+    // ESLint 10 — every .js/.mjs/.cjs file died with
+    // `scopeManager.addGlobals is not a function`. Next's own `next/typescript`
+    // block already swaps in the typescript-eslint parser for .ts/.tsx, so this
+    // does the same for the rest of the tree. Nothing here is compiled by
+    // Babel (SWC/Turbopack only), so the Babel parser bought us nothing.
+    // Remove this block if/when eslint-config-next stops shipping that parser.
+    files: ["**/*.{js,jsx,mjs,cjs}"],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        sourceType: "module",
+        ecmaFeatures: { jsx: true },
+      },
+    },
+  },
   {
     plugins: {
       "no-barrel-files": noBarrelFiles,

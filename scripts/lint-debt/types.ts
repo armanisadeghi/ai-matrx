@@ -113,6 +113,10 @@ export const RULE_CLASS: Record<string, LintDebtClass> = {
   // Hooks called conditionally / in loops desynchronise the hook list — React
   // throws "rendered fewer hooks than expected" the moment the branch flips.
   "react-hooks/rules-of-hooks": "bug",
+  // A banned lucide icon is type-valid but has no runtime export: the import
+  // resolves to undefined and React throws on render, 500ing the page rather
+  // than degrading. Surfaced when ESLint 10 was unblocked (2026-09-09).
+  "matrx/no-banned-lucide-icons": "bug",
 
   // ── correctness: real hazard classes ────────────────────────────────────
   // The cascading-render class. setState inside an effect that runs on data it
