@@ -24,14 +24,11 @@ loses every route and schema that exists in aidream `main` but has not reached
 `server.app.matrxserver.com` yet. The deploy train runs every ~20–30 min, so there is a
 routine window in which a merged endpoint's types vanish from this repo.
 
-That is not a cosmetic gap — it is a **work-destroying** one. Within one hour on 2026-09-09
-it caused, twice, the types for `GET /mandates/{key}/references` and
-`GET /mandates/references/board` to be dropped, and once caused another session to conclude
-the frontend lane was broken and delete it outright
-(`4ac345621a` — "park undeployed mandate contract" removed the board page,
-`features/mandates/admin/{references.ts,MandateSourceUsage.tsx,MandateReferenceBoardView.tsx}`,
-their tests, the admin catalog + nav entries and the route→surface ruling; restored in
-`6ca42ec722`).
+That is not a cosmetic gap — it is a **work-destroying** one. On 2026-09-09 it repeatedly
+dropped the types for `GET /mandates/{key}/references` and `GET /mandates/references/board`,
+and THREE separate sessions read the missing types as "this UI has no contract" and deleted
+the whole frontend lane — the third time hours before a release, so `v0.4.1806` shipped
+without it. See the parking-reflex table below for the three reverts and their restores.
 
 **Where:** `scripts/sync-types.mjs` (step 2 delegates to `../aidream/scripts/sync-types.mjs
 --url <live>`), which OVERWRITES `types/python-generated/openapi.json` wholesale.
@@ -57,18 +54,60 @@ prints a 7-line banner when a schema comes from a running server); this script d
 Sync from the deployed backend explicitly instead:
 `node ../aidream/scripts/sync-types.mjs --url https://server.app.matrxserver.com --out types/python-generated`.
 
-**Second-order damage — the parking reflex.** The dropped types read as "this UI has no
-contract", and the lane was then deleted a SECOND time on that reading
-(`4ac345621a`, `aa877c239f` "park reference UI until live contract", and `2f12a4b67e`
-"keep undeployed reference contract off main" — the same file set three times; restored each
-time, finally in `ca65dc5e2d` and then once more after the endpoints went live). Parking is the wrong remedy twice over: the contract exists in aidream
-`main` (`ea79e334f`) and is checked into this repo from aidream's own working-tree
-`openapi.json`, so `pnpm type-check` is green with the lane present; and the surfaces
-degrade HONESTLY without the endpoint — "The reference report failed. This list is not
-empty — it is unknown." plus the verbatim error — which is exactly what a screen is
-supposed to do while the deploy train catches up. **Do not delete a lane because its
-backend half has not shipped yet;** re-add the paths from
-`../aidream/aidream/api/generated/openapi.json` and let the honest failure state do its job.
+**Second-order damage — the parking reflex, three times.** The dropped types read as "this
+UI has no contract", and the L7 lane was deleted on that reading three separate times — the
+SAME file set each time (`app/(admin)/administration/mandates/references/page.tsx`,
+`features/mandates/admin/{references.ts,MandateSourceUsage.tsx,MandateReferenceBoardView.tsx}`
+and their tests, the admin-catalog + admin-nav entries, the `route-to-surface.ts` ruling and
+the `features/mandates/FEATURE.md` Change Log line):
+
+| # | Revert | Restore |
+|---|---|---|
+| 1 | `4ac345621a` "park undeployed mandate contract" | `6ca42ec722` |
+| 2 | `aa877c239f` "park reference UI until live contract" | `ca65dc5e2d` |
+| 3 | `2f12a4b67e` "keep undeployed reference contract off main" | **none — released without the lane** |
+
+The third one is the expensive one: the very next commit was `3066659c91`
+`release-all: v0.4.1806`, so **v0.4.1806 shipped to production with the L7 UI absent**, and
+V-L7 (`../common-docs/projects/mandate-declaration-reporting/verdicts/V-L7.md`) failed the
+lane for exactly that. It was restored on 2026-09-09 once the backend went live, after
+`https://server.app.matrxserver.com/health/version` reported `1814438171` — a descendant of
+aidream `ea79e334f`, which carries both routes.
+
+Parking is the wrong remedy twice over: the contract exists in aidream `main` (`ea79e334f`)
+and can be checked into this repo from aidream's own working-tree `openapi.json`, so
+`pnpm type-check` is green with the lane present; and the surfaces degrade HONESTLY without
+the endpoint — "The reference report failed. This list is not empty — it is unknown." plus
+the verbatim error — which is exactly what a screen is supposed to do while the deploy train
+catches up. **Do not delete a lane because its backend half has not shipped yet;** re-add the
+paths from `../aidream/aidream/api/generated/openapi.json` and let the honest failure state
+do its job.
+
+**Class fix adopted by the campaign (ordering, not hand-patching).** A frontend consumer of a
+NEW aidream endpoint is pushed only after `https://server.app.matrxserver.com/health/version`
+reports a SHA that has the endpoint's aidream commit as an ancestor:
+
+```
+curl -s https://server.app.matrxserver.com/health/version          # → {"git_sha": "<live>"}
+git -C ../aidream merge-base --is-ancestor <endpoint-commit> <live> && echo LIVE
+```
+
+Only then is `pnpm sync-types` (against the live backend, never `--fast`) able to produce the
+types the consumer imports, and only then does the window that caused all three reverts close.
+Hand-patching `types/python-generated` from aidream's working tree is a bridge, not the fix —
+the next sync erases it.
+
+**Still open — the guard that would have stopped all three.** `scripts/sync-types.mjs` should
+WARN LOUDLY when it is about to DROP a path or schema that committed code in this repo still
+imports, instead of silently replacing the file. Sketch: before overwriting
+`types/python-generated/`, diff the old vs new `openapi.json` for removed
+`components.schemas.*` keys and removed paths; for each removal, `grep` the tracked source
+(`git grep -l 'schemas"\]\["<Name>"\]'` / the route literal) and, if anything still
+references it, print a banner naming the type, the files that import it, and the one-line
+recovery — and exit non-zero under a `--strict` flag. That turns a silent deletion into a
+sentence a session cannot misread as "this UI has no contract". Not implemented here: it is a
+real change to a shared generator script and belongs to whoever owns `sync-types.mjs`, not to
+a restore commit.
 
 ### D301 — the route-manifest chain is broken at both links, and the half that has a guard runs nowhere
 
