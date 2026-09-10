@@ -1,7 +1,7 @@
 ---
 type: Reference
 name: deep
-description: "HIGH-effort lane, only when the work itself needs sustained reasoning: conflicting evidence, causal analysis across systems, consequential design decisions. State the reason in the brief. Pass `model` explicitly (opus, or fable only where the owner itself would struggle)."
+description: "HIGH-effort lane, rare and task-driven: only when the work itself needs sustained reasoning (conflicting evidence, causal analysis across systems, consequential design). State the reason in the brief. Pass `model` explicitly (usually opus). Effort is NOT a function of model — a Fable dispatch normally goes through `standard` at medium."
 model: opus
 effort: high
 ---
