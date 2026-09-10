@@ -26,6 +26,7 @@ An edit that ignores the rest of the document is a regression *even if its own c
 - **Present tense, absolute.** Cut "currently", "in the future", "we should probably", "it's recommended." Rules are not opinions.
 - **Concrete anchors beat description.** Name the file, function, table, or skill. `selectIsSuperAdmin` > "the admin-check helper."
 - **One line of failure earns the rule.** "A signed URL expires days later" justifies the rule better than a paragraph of theory. No stories, no history, no journey.
+- **Every sentence must change behavior.** A line the agent already obeys by default is a no-op — delete the whole sentence. Never restate what one command or one file read reveals (`package.json`, `--help`, config); write only what looking cannot find: the convention, the reason, the gotcha.
 
 ## "Before you do X, read Y" — the highest-value line
 
@@ -53,6 +54,7 @@ Compression ≠ deletion.
 - [ ] Depth pushed to a pointer if the section was bloating.
 - [ ] Word count rose only as much as the new rule genuinely needs.
 - [ ] If this is a `FEATURE.md`, the Change Log got a dated one-line entry.
+- [ ] If this is a `SKILL.md`: the `skill-authoring` skill's description rules, size ceiling, and prove-it run are satisfied.
 - [ ] If this is `FOUND_DEFECTS.md`: the new entry's ID is the ledger MAXIMUM + 1 (`D<n>` here, `AD<n>` in aidream), it sits under `## OPEN`, and no existing ID was renumbered. Body: `../common-docs/policies/defect-ownership.md` § Entry IDs.
 
 ## Anti-patterns

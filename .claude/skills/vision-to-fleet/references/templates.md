@@ -111,7 +111,9 @@ lines; longer means the project is two projects.
                               owner is how work falls through
 ## Deliverables / Definition of done   ← numbered, each independently verifiable
 ## Surfaces touched         ← routes, features/ dirs, DB areas, cross-repo (aidream) pieces
-## Dependencies & contracts ← consumes (with day-1 stub note) / publishes / coordinates-with
+## Dependencies & contracts ← consumes (with day-1 stub note) / publishes / coordinates-with —
+                              each with the exact typed signature copied from the contracts
+                              table, never prose
 ## Build guidance           ← which repo skills to invoke, the pattern-reference implementation
                               to copy, the 2–3 gotchas that would otherwise cost the agent a day
 ## Verification             ← how it's proven live (no mocks), ending with "hand Arman exact

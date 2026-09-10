@@ -29,7 +29,7 @@ Read the **"Interview first"** section of all four posture skills:
 - `.claude/skills/ui-refine/SKILL.md`
 - `.claude/skills/ui-dense/SKILL.md`
 
-Take the **union** of their questions, dedupe the overlap (persona / primary job / reference recur across all four), and ask the user the combined short list — **in plain conversation, never a multiple-choice UI.** Always include the two universal ones:
+Take the **union** of their questions, dedupe the overlap (persona / primary job / reference recur across all four), and ask the user the combined short list — **in plain conversation, never a multiple-choice UI.** [CONFLICT pending owner ruling — see common-docs /operations/conflicts.md § Interview delivery: structured picker vs plain chat] Always include the two universal ones:
 - Who is this for and what's the one job they came to do?
 - What in the current version already works and must NOT be regressed?
 

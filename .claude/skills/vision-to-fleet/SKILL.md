@@ -48,9 +48,10 @@ Research mechanics: [references/research-playbook.md](references/research-playbo
    evidence genuinely cuts both ways.
 3. **Decisions are Arman's; asking is your job; burying is a failure.** Product-semantics calls
    (what's free, what a hierarchy means, what enters the vision) go to him DIRECTLY in your
-   reply — AskUserQuestion with clear options, or crisp prose. Never leave a decision as a
-   "flag" inside a document he'd have to dig for. Batch questions; make each answerable in
-   seconds by someone juggling ten projects.
+   reply — AskUserQuestion with clear options, or crisp prose
+   [CONFLICT pending owner ruling — see common-docs /operations/conflicts.md § Interview delivery: structured picker vs plain chat].
+   Never leave a decision as a "flag" inside a document he'd have to dig for. Ask via the
+   `grilling` skill.
 4. **Every doc is versioned truth.** Each artifact gets a status date, a changelog, and — when
    superseded — a loud pointer to what replaced it. When a decision lands, write it back into
    the doc that raised it (see the education master plan §8: flags become DECISIONS RECORDED).
@@ -181,10 +182,25 @@ work** — a full subsystem or vertical slice, never a task list; prefer **fewer
 projects (merge anything knockable-out-quickly into a neighbor); **maximize parallelism** by
 pushing every cross-dependency into a Phase-5 contract. Small tasks → one agent overseeing a
 group; large tasks → one agent each. Work already owned by a live agent goes in an **F-addendum**
-to that agent, with hand-offs in/out stated explicitly.
+to that agent, with hand-offs in/out stated explicitly. **Split test:** split two pieces into
+separate projects only where a reviewer could reject one while approving the other; fold setup,
+config, scaffolding, and docs into the project whose deliverable needs them.
+
+A wide refactor (one mechanical change across many callers) is sequenced expand → migrate in
+batches → **contract**. The contract project is mandatory, blocked by every migrate batch, and in
+the same wave; never "later".
 
 Every brief must pass the blind-handoff test: *could a strong agent with only this brief + the
 repo ship the right thing?* If any section makes you think "they'll figure it out," it fails.
+The test is **run by a fresh reviewer per brief plus one cross-brief contracts reviewer via
+`plan-attack`**, never by the brief's author, before remaining flags go to Arman. A brief
+**fails automatically** if it contains TBD/TODO, "handle edge cases", "add appropriate error
+handling", "similar to P<n>", or a name or type defined in no brief or contract.
+
+Before assignment, write the collision table into the master plan: one row per pair of briefs that
+share a file, table, or interface (what one produces vs. what the other consumes → the Phase-5
+contract that settles it), and one row per brief checking it agrees with itself (tests it demands
+vs. code it specifies). "No conflicts" without the rows is not a scan you ran.
 
 Map **convergence points** (integration milestones with their own DoD), **fan-out** (what each
 convergence unlocks), and **waves** ordered by vision impact. Then surface every remaining flag
