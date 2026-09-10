@@ -175,7 +175,7 @@ select count(*) from <schema>.<table>;   -- expect their visible rows, not 0
 ```
 
 ## Step 8 — Cross-repo finalize + document
-db-change SOP: `pnpm db-types` → update all usages (new columns, `.schema()` if needed, RPC names) → `pnpm sync-types` (fix TS); `python db/generate.py` → update usages + `package_integration.py` → `python db/detect_applied.py` → `python run.py` clean boot. Ledger the migration. Update the feature's `FEATURE.md` + `docs/db_rebuild/CHANGEOVER_PROGRESS.md`. Commit + push `main` on both repos.
+db-change SOP: `pnpm db-types` → update all usages (new columns, `.schema()` if needed, RPC names) → `pnpm sync-types` (fix TS); `python db/generate.py` → update usages + `package_integration.py` → `python db/detect_applied.py` → `python run.py` clean boot. Ledger the migration. Update the feature's `FEATURE.md` + add a line to the Done log in `../common-docs/operations/db-changeover-board.md`. Commit + push `main` on both repos.
 
 ## NEVER
 - `apply_rls` before org is backfilled (0 nulls) or before `entity_types` (+ composition edge for components) exists.
