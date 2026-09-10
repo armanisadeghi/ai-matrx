@@ -2,7 +2,8 @@
 name: low-hanging-fruit
 type: Skill
 title: "low-hanging-fruit — find the almost-done and CLOSE it"
-description: "The recurring hunt for features, projects, and concepts so close to completion that finishing them beats everything else — verify closeness against code, close them out fully (shipped, verified, docs deleted, rows removed), and end the never-ending development state. Use with /low-hanging-fruit; schedule per Arman's approval."
+description: "Closure run that finds almost-done features, projects, and handoffs and closes them out totally. Use when invoked as /low-hanging-fruit or by its scheduled task."
+disable-model-invocation: true
 tags: [meta, closure, maintenance, docs-system]
 timestamp: 2026-08-20T00:00:00Z
 ---

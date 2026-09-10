@@ -2,7 +2,7 @@
 name: dedupe-and-verify
 type: Skill
 title: "dedupe-and-verify — one truth per subject, facts confirmed, misalignment surfaced"
-description: "The targeted deduplication-and-fact-confirmation pass: find duplicate docs on a subject, collapse them to one truth, verify every load-bearing claim against live code/DB, and route genuine vision misalignment to Arman for feedback. Lighter and any-scope, where doc-convergence is the full cluster ceremony. Use with /dedupe-and-verify <subject>, or when any task surfaces disagreeing documents."
+description: "The targeted pass that collapses duplicate or disagreeing docs on one subject into one truth verified against live code and DB. Use when a task surfaces disagreeing or duplicate docs, on /dedupe-and-verify <subject>, or for the daily node-review rotation. NOT for a feature-cluster ceremony (use doc-convergence)."
 tags: [meta, docs-system, dedupe, verification]
 timestamp: 2026-08-20T00:00:00Z
 ---

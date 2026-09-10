@@ -2,7 +2,7 @@
 name: new-package
 type: Skill
 title: "new-package — create or majorly grow an @ai-matrx package, the right way"
-description: "The runbook Arman triggers to create a new @ai-matrx npm package, extract existing code into one, or run a major growth wave on a shipped one (/new-package <name or capability>). Loads the full law stack (all-inclusive, latest, same-session, C1–C31), runs the census + design-doc + Arman approval sequence, then build → gates → release → C9 adoption in order. NOT for a routine fix inside an existing package (that is THE SAME-SESSION LAW) and NOT for Python matrx-* packages (that is aidream's PACKAGE_DOCTRINE Gate)."
+description: "Runbook for creating or majorly growing an @ai-matrx TypeScript npm package. Use when invoked as /new-package <name or capability>, or for a new @ai-matrx/* package, extracting code into one, or a major growth wave. NOT for a routine fix inside an existing package (THE SAME-SESSION LAW)."
 tags: [packages, typescript, npm, extraction, runbook, architecture]
 timestamp: 2026-08-30
 ---

@@ -2,7 +2,7 @@
 name: feature-deep-dive
 type: Skill
 title: "feature-deep-dive — exhaustive audit, target vision, approved plan, complete build"
-description: "Exhaustive feature audit → target vision → approved plan → complete build. Use whenever the user wants to deeply understand, audit, overhaul, take over, unify, or finish an ENTIRE feature — requests like 'deep dive on X', 'audit the X feature', 'figure out everything X does and make it what it should be', 'take over X and finish it', 'bring X up to best practices' — or any time a whole feature should be brought to its ideal state rather than patched. Maps every entry point, flow, endpoint, state store, and side effect (including scattered fragments, prototypes, and unfinished intentions), recovers the original intended vision, sets an enterprise-grade bar, produces a prioritized gap-closing plan for approval, then implements and tests it to 100% completion. NOT for quick bug fixes, single-file edits, diff/PR reviews, or one small addition to an otherwise-untouched feature."
+description: "Doctrine for auditing an ENTIRE feature and building it to its ideal state. Use on 'deep dive on X', 'audit the X feature', 'take over X and finish it', 'bring X up to best practices', or when a whole feature needs overhauling, unifying, or finishing, not patching. NOT for one small addition (use build-sub-feature)."
 tags: [execution, features, audit, planning, doctrine]
 timestamp: 2026-09-10T00:00:00Z
 ---
@@ -20,6 +20,8 @@ Fully understand a feature, define what it should ideally become, get that plan 
 Primary focus: frontend + backend. The database matters insofar as code reads and writes it — verify the code's assumptions about the schema are actually true.
 
 **Out of scope, entirely:** authentication, authorization, and access scoping. A single application-layer model already handles this; never investigate, analyze, test, or report on it.
+
+**Not this skill:** quick bug fixes, single-file edits, diff/PR reviews, or one small addition to an otherwise-untouched feature (that is `build-sub-feature`).
 
 ## Method: small, specialized subagents
 

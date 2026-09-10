@@ -2,7 +2,7 @@
 name: task-hygiene
 type: Skill
 title: "task-hygiene — cleanup and triage of the repo task system"
-description: "Cleanup and triage of the repo task system — FOUND_DEFECTS.md, CURRENT_ERRORS.md, .matrx/AGENT_TASKS.md, .matrx/ARMAN_TASKS.md. Run the full sequence or one named step (e.g. \"/task-hygiene 3\" or \"/task-hygiene errors\"). Use when asked to clean up tasks/defects/errors, triage an error dump, promote found defects to tasks, prep/rank/ask Arman tasks, or bootstrap this task system in a repo that lacks it."
+description: "Cleanup and triage of the task ledgers FOUND_DEFECTS.md, CURRENT_ERRORS.md, .matrx/AGENT_TASKS.md, .matrx/ARMAN_TASKS.md. Use when invoked as /task-hygiene <step>, cleaning up tasks, defects, or errors, triaging an error dump, promoting defects, prepping Arman's asks, or bootstrapping these files."
 tags: [tasks, defects, errors, triage, hygiene, ledgers]
 timestamp: 2026-09-10T00:00:00Z
 ---

@@ -2,7 +2,7 @@
 name: doc-convergence
 type: Skill
 title: doc-convergence — converge a feature cluster's docs into one verified set
-description: Converge one feature cluster's sprawling documentation into a single verified, build-ready set. Use whenever Arman names features or topics — not necessarily documents — and wants their docs merged, verified, and condensed. Triggers on "/doc-convergence <topics>", "converge the X docs", "consolidate everything about X", "merge the X and Y documentation", "where are we really on X". First step is always a scope confirmation with Arman (he often does not know all the documents); then an autonomous census + code-verification + convergence; then a turnover with a URL tour of the built features and a batched interview that empties the question ledger. NOT for grooming a single handoff (handoffs skill) or the periodic rot sweep (handoff-cleanup).
+description: "The ceremony that converges one feature cluster's sprawling docs into one verified, build-ready set. Use when Arman names features or topics whose docs need merging, verifying, and condensing: 'converge the X docs', 'consolidate everything about X', 'where are we really on X'. NOT for one handoff or the rot sweep (use handoffs / handoff-cleanup)."
 ---
 
 <!-- SYNCED COPY — do not edit here.

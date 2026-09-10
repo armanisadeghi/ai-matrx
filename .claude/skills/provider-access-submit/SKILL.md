@@ -1,6 +1,6 @@
 ---
 name: provider-access-submit
-description: "Execute a scouted third-party provider access campaign end to end under Arman's standing free/reversible setup authorization: account or app registration, exact scopes, reviewer assets, secure credential storage, receipt capture, canonical connection, real verification, and task/CRM updates."
+description: "End-to-end execution of a scouted third-party provider access campaign. Use when a Provider Access Launch task is ready_to_submit or scouted easy_execute and needs account or app registration, scopes, reviewer assets, Vault credential custody, the canonical connection, and real verification."
 ---
 
 <!-- SYNCED COPY — do not edit here.

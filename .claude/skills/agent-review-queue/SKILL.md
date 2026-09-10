@@ -3,7 +3,7 @@ name: agent-review-queue
 timestamp: 2026-09-10T00:00:00Z
 type: Skill
 title: agent-review-queue — get your work seen, get feedback back
-description: Register anything you built that Arman must go see/test in the UI, read feedback, and route repair work by primary lane, required tools, ownership, and verification state. Use at the END of any task that produced something reviewable, at the START of a task to check prior feedback, and when coordinating or claiming review repairs. Every row is classified from the registry tables (platform.taxonomy_node + platform.repo) — domain_id and repo_slug are REQUIRED and free-text classification is banned. One table (agent.review_queue), written via the Supabase MCP; the human side is /administration/users/agent-review. Cross-repo — aidream/matrx-extend agents use the same table with their own source value.
+description: "The agent.review_queue register for work Arman must see or test in the UI. Use at the end of any task that produced something reviewable, at the start of a task to check prior feedback, and when reviewing, claiming, routing, or repairing a queue row."
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -14,7 +14,7 @@ description: Register anything you built that Arman must go see/test in the UI, 
 
 # Agent Review Queue — get your work seen, get feedback back
 
-**The failure this kills:** agents build things, mention them mid-message, Arman misses it, and finished features rot undiscovered for weeks. The queue at `/administration/users/agent-review` is the ONE place he checks. If you built something he must look at and you didn't register it, assume it will never be seen.
+**The failure this kills:** agents build things, mention them mid-message, Arman misses it, and finished features rot undiscovered for weeks. The queue at `/administration/users/agent-review` is the ONE place he checks. If you built something he must look at and you didn't register it, assume it will never be seen. It is one table for every repo: aidream, matrx-extend, and every other repo's agents register here too.
 
 ## Which part you need
 

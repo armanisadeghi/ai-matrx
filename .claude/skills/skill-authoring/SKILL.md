@@ -45,6 +45,10 @@ Rules:
 - **Slash-only skill** (reached by `/name` and by nothing else) → `disable-model-invocation: true`.
   First `grep -r "<name>"` across all skills and agent definitions — no other skill or subagent can
   reach it afterwards.
+- **The lint enforces it:** `python3 common-docs/meta/scripts/skill_descriptions.py lint`
+  (`--repo <dir>`, `--workspace`) fails a description over 500 chars unless allowlisted and over
+  1,024 always; `skill-description-allowlist.txt` only shrinks. Wired into `okf_lint.py`, aidream
+  `scripts/check_skill_descriptions.py`, and matrx-frontend `pnpm check:skill-descriptions`.
 - **A trigger that keeps missing** in a footgun area → run the `skill-creator` plugin's description
   optimization loop (should-fire + near-miss queries), never lengthen by hand.
 
@@ -107,7 +111,8 @@ description rewrite. Exempt: typo, path, and pointer fixes.
 
 ## Before you save — checklist
 
-- [ ] Description follows §1: noun phrase + `Use when`, ≤300 chars (500 hard), no procedure, no dates.
+- [ ] Description follows §1: noun phrase + `Use when`, ≤300 chars (500 hard), no procedure, no dates;
+  `skill_descriptions.py lint` passes.
 - [ ] Slash-only? `disable-model-invocation: true` after the cross-skill grep.
 - [ ] Body ≤500 lines; branch-only material disclosed one level deep with when-to-read pointers.
 - [ ] Guidance form matches the observed failure (§3).

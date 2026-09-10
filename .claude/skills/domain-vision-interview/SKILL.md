@@ -2,7 +2,7 @@
 name: domain-vision-interview
 type: Skill
 title: "domain-vision-interview — extract the minimal vision and the final vision"
-description: "The quick big-picture interview that extracts from Arman, per Domain (or major Feature), the MINIMAL vision (what must exist before we can go live) and the FINAL vision (the ultimate goal), captured verbatim into the node's VISION.md so gap analysis has both bars. Use with /domain-vision-interview <domain>, when a registry domain is ratified without a vision, or when a node shows VISION MISSING. Ruled by Arman 2026-08-20."
+description: "The quick interview that captures a Domain's or major Feature's minimal (go-live) and final vision verbatim into its VISION.md. Use when a node shows VISION MISSING, a registry domain is ratified without a vision, gap analysis lacks a go-live bar, or on /domain-vision-interview <domain>."
 tags: [meta, vision, interview, registry, docs-system]
 timestamp: 2026-09-10T00:00:00Z
 ---

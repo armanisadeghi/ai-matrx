@@ -1,6 +1,6 @@
 ---
 name: campaign-pattern
-description: "The Campaign Pattern — how a vision becomes a finished, verified, deployed system with near-zero owner involvement. READ BEFORE launching or coordinating any large build, module, campaign, or multi-agent project: the owner's five launch moves, the coordinator's operating system (externalize everything, independent verification, fix-the-class, nothing-silent), and the copy-paste launch protocol. Distilled from the HR-domain build (2026-08-25 → 08-30)."
+description: "The doctrine for turning a vision into a finished, verified, deployed system with near-zero owner involvement. Use before launching, coordinating, or working any large build, module, campaign, or multi-agent project, or when writing its launch prompt."
 ---
 
 <!-- SYNCED COPY — do not edit here.

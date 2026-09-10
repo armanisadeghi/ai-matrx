@@ -1,6 +1,6 @@
 ---
 name: data-to-kinds
-description: The end-to-end pipeline that turns ANY structured data source — an API, a provider payload, a scraper/crawl result, a computed result, any aspect of our system — into registered platform kinds with @kind pydantic models, generated TypeScript types, canonical kind components, a live demo against the real server, a verification pass, and cutover of the nodes/tools that emit it — through staged human approval with Arman. Use when asked to "create kinds for X", "distill X into kinds", "put X through the data-to-kinds process", "point yourself at API X", or when you are Stage A/B/V/D/C of a running data-to-kinds run. NOT for consuming kinds that already exist (aidream workflow-io-kinds / matrx-frontend Shape System docs).
+description: "The staged pipeline that turns any API, provider payload, scrape, or computed result into registered, rendered platform kinds. Use on 'create kinds for X', 'distill X into kinds', 'point yourself at API X', or as a stage (A/B/V/D/C) of a running data-to-kinds run. NOT for consuming existing kinds (use workflow-io-kinds / shape-system)."
 ---
 
 <!-- SYNCED COPY — do not edit here.

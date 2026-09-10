@@ -364,7 +364,7 @@ TO authenticated;
 
 ### 4.2 UI screens
 
-Follow the SSR-first architecture standard (see `nextjs-ssr-architecture` skill): Server Components by default; fixed-dimension shells with dimension-matched skeletons inside granular `<Suspense>` boundaries; interactivity isolated into thin `'use client'` islands; never mark the whole page `'use client'`; if any of this data needs Redux, hydrate once via a null-rendering hydrator with a `useRef` guard. Strict TypeScript throughout — type the RPC payloads.
+Follow the SSR-first architecture standard (see `ssr-zero-layout-shift` skill): Server Components by default; fixed-dimension shells with dimension-matched skeletons inside granular `<Suspense>` boundaries; interactivity isolated into thin `'use client'` islands; never mark the whole page `'use client'`; if any of this data needs Redux, hydrate once via a null-rendering hydrator with a `useRef` guard. Strict TypeScript throughout — type the RPC payloads.
 
 **Screen 1 — Registry table (the main view).**
 Data from `admin_relationship_rules()`, fetched server-side. One row per rule showing: the relationship rendered in **plain language** (see below), edge count, status badges (`Conveys access` / `Known only`, `Active` / `Inactive`), `conveys_max`, closure row count for conveying rules. Sort conveying rules first, then by edge count. Filters: conveying / known-only / inactive; free-text over type names. Row click → editor drawer.

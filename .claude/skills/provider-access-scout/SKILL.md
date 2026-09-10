@@ -1,6 +1,6 @@
 ---
 name: provider-access-scout
-description: "Produce decision-ready scouting records for user-connected OAuth, API, API-key, remote MCP, integration-marketplace, and partner-access campaigns. Use for assigned Provider Access Launch tasks when the easiest official route, minimum scopes, cost, account needs, evidence, approval path, implementation consumer, and an easy-connection verdict must be established before execution. Excludes client Local Listings distribution."
+description: "Decision-ready scouting record for a user-connected provider access campaign. Use when an assigned Provider Access Launch task needs its easiest official route, minimum scopes, cost, account needs, approval path, implementation consumer, and easy-execute verdict established before submission."
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -13,6 +13,11 @@ description: "Produce decision-ready scouting records for user-connected OAuth, 
 
 Scout five assigned campaigns by default. Finish each record independently so a submission agent can
 continue without rereading the entire web or repeating portal discovery.
+
+**Keep Local Listings separate.** Campaigns cover user-connected OAuth, API, API-key, remote MCP,
+integration-marketplace, and partner access. Client Local Listings distribution (listing claims,
+location publishers, data aggregators) is out of scope — it belongs to
+`common-docs/systems/marketing/local-listings/PLAN.md`.
 
 ## Before research
 

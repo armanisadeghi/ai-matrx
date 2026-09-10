@@ -1,6 +1,6 @@
 ---
 name: provider-access-expand
-description: "Expand the AI Matrx product-integration access queue for a named capability, provider family, MCP/plugin catalog, or competitive gap. Use when asked to find more user-connected OAuth, API, API-key, remote MCP, integration-marketplace, or partner-access campaigns and add them without duplicating existing tasks, integrations, MCP servers, provider parties, or detailed approval dossiers. Excludes client Local Listings distribution."
+description: "Discovery batch that grows the Provider Access Launch queue. Use when asked to find more user-connected OAuth, API-key, remote MCP, marketplace, or partner-access campaigns for a capability, provider family, MCP/plugin catalog, or competitive gap. NOT for client Local Listings distribution."
 ---
 
 <!-- SYNCED COPY — do not edit here.

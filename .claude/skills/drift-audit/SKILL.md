@@ -2,7 +2,7 @@
 name: drift-audit
 type: Skill
 title: "drift-audit — refresh the canonical-DB conformance numbers, then act"
-description: "Re-measure the canonical data model's live conformance state (registration, base columns, RLS authority, grants, guards, versioning, reachability), diff it against the last recorded state, update the standing report, and IMMEDIATELY act: fire focused-session chips for everything fixable, and put only genuine judgment calls on Arman's decision list. Use with /drift-audit, or whenever Arman asks 'where are we at' on DB drift/conformance, wants the drift numbers updated, or re-issues a drift-audit brief. NOT a rulebook (that is systems/platform/db-rules/FEATURE.md) and NOT the per-table fix recipe (db-canonicalize-table)."
+description: "The re-measure and standing report of the canonical data model's live DB conformance. Use when asked 'where are we at' on DB drift or conformance, to update the drift numbers, when a drift-audit brief is re-issued, or on /drift-audit. NOT the per-table fix recipe (use db-canonicalize-table)."
 tags: [db, canonical-model, audit, conformance, chips]
 timestamp: 2026-08-21T00:00:00Z
 ---

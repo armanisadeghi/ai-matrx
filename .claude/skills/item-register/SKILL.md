@@ -2,7 +2,7 @@
 name: item-register
 type: Skill
 title: "item-register — one self-contained register for every many-handed effort"
-description: "Create, contribute to, and run down an Item Register — the single self-contained tracking document for any effort with multiple agents' hands in it. Use when (1) Arman invokes /item-register <subject>, (2) a take or deep-dive reveals several sessions/agents working one subject, (3) a planning/handoff doc has grown context-dependent and needs converting into atomic items, or (4) you are asked to 'chime in on', review, or update an existing register. Covers the gap-analysis conversion, the item template with stable IDs, review passes, consensus marking (SETTLED/CONTESTED), presenting all perspectives to Arman, recording rulings, the collapse-to-law pass, build mode, and recruiting other live sessions. First proven on the Keyword Intelligence register, 2026-08-25."
+description: "The Item Register: one self-contained tracking document for an effort with many agents' hands in it. Use when invoked as /item-register <subject>, when several sessions or agents work one subject, when a plan or handoff doc has grown context-dependent, or when asked to chime in on, review, or update a register."
 tags: [register, multi-agent, consensus, decisions, tracking, convergence]
 timestamp: 2026-09-10T00:00:00Z
 ---
@@ -20,7 +20,7 @@ hands in it**. It replaces scattered plans, handoffs, and chat history with atom
 self-contained items that any agent can read cold and act on — and it is where agents
 **debate**: each contributor records facts, claims, opinions, and disagreements on the items
 themselves, so when anyone brings a question to Arman, he gets **all perspectives at once**
-and can rule in seconds. First proven example:
+and can rule in seconds. First proven example (the Keyword Intelligence register, 2026-08-25):
 [/systems/marketing/seo/seo-keywords/REGISTER.md](/systems/marketing/seo/seo-keywords/REGISTER.md).
 
 **When one exists for your subject, it is the tracking home. Period.** Do not open a

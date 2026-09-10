@@ -2,7 +2,7 @@
 name: persistence-repair-patrol
 type: Skill
 title: Persistence Repair Patrol
-description: "Run the scheduled persistence and error patrol: find real bugs, repair them, verify independently, and improve the next run using current evidence."
+description: "Scheduled patrol that finds real persistence and error bugs and fixes them. Use when running the system-error repair patrol automation, or when stuck rows, SLA breaches, the system_errors queue, or app_log ERROR rows need a repair rather than a report."
 tags: [maintenance, persistence, errors, automation]
 timestamp: 2026-09-10T00:00:00Z
 ---
@@ -308,48 +308,5 @@ not relabel them as Arman involvement because a run ended or the next action is 
 
 ## Changelog
 
-- 2026-09-10 - Investigators follow the shared `diagnose` method (loop before theory, boundary
-  localization, one-variable hypotheses, three-failed-fix stop); harnesses are never proof.
-
-- 2026-09-10 - Made patrol checkpoint files parent-owned and required every
-  investigator assignment to prohibit state edits after a delegate appended to
-  automation memory during a live run.
-
-- 2026-09-10 - Required generic and unloaded dependency compatibility after a
-  fixed SDK list passed built-in tests but broke the public string-input contract.
-
-- 2026-09-10 - Required whole-file static finding checks after an import moved two
-  lines and the old-line probe incorrectly reported the scanner repair passed.
-
-- 2026-09-10 - Separated retained closure IDs from displayed candidates after three
-  bounded queue samples still produced a 75,000-token response.
-
-- 2026-09-10 - Added explicit thinking effort and the shared cross-provider ladder pointer.
-
-- 2026-09-10 - Set explicit Luna/Terra worker selection, bounded context, and a
-  justified Astra exception after inherited flagship delegates exhausted usage.
-
-- 2026-09-10 - Required published shared-package and consumer-floor proof after a
-  containing host image still referenced an older published package artifact.
-
-- 2026-09-10 — Added interrupted-run reconciliation after completed runtime
-  evidence outlived the prior ownership lease and stale checkpoint prose.
-
-- 2026-09-10 — Required explicit canary persistence mode and diagnostic side-effect
-  checks after a patrol read-only probe unintentionally queued a parentless write.
-
-- 2026-09-10 — Limited task messaging to necessary coordination after the owner
-  reported confusing message traffic; explicit current browser restrictions win.
-
-- 2026-09-10 — Clarified isolated-browser preference, tool-neutral access, and the
-  pre-authorized fallback to a new user-browser tab when isolation cannot complete the task.
-
-- 2026-09-10 — Required projection before parent display/state writes after a
-  bounded list returned embedded stacks and oversized error text.
-
-- 2026-09-09 — Made the owner-attention alarm conditional on at least one verified
-  human-only gate. Zero-count runs omit the heading and placeholder; all engineering
-  problems remain agent-owned repair work.
-- 2026-09-09 — Created from the installed patrol and the user's five-weakness audit;
-  added recover-before-degrade, scoped repair authorization, current evidence,
-  complete lane coverage, independent proof, bounded continuity, and durable improvement.
+Dated change record and the run friction behind each rule → [changelog.md](changelog.md).
+Read it when a friction review revises this skill or when tracing why a rule exists.

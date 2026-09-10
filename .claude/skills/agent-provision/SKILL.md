@@ -1,6 +1,6 @@
 ---
 name: agent-provision
-description: Design the PROVISION for a call site — the exhaustive menu of values that place in the code can realistically produce, shaped so any candidate agent can be swapped in and actually do the job better. Covers the answerability test (can this question be answered at all with what we send?), condensation and scale tiers, the full-value output rule, and ground-truth verification that catches fabrication. Use BEFORE creating or fixing any mandate/agent that reasons about anything larger than its own input, and whenever an agent's output "looks right" but nobody checked whether it COULD have been right. NOT a substitute for create-agent — that builds the agent; this decides what exists for it to consume.
+description: "The provision for a call site: the exhaustive menu of values that place in the code can realistically produce. Use before creating or fixing a mandate or agent that reasons about more than its own input, or when an agent's output 'looks right' but nobody checked it could be. NOT for building the agent (use create-agent)."
 ---
 
 <!-- SYNCED COPY — do not edit here.

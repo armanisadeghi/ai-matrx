@@ -1,6 +1,6 @@
 ---
 name: safe-cutover
-description: "Prove a cutover cannot break anything BEFORE it ships — enumerate every trigger path, close every gap, derive tests from live reality, stage on a branch, report a plain safe-or-not verdict. Use whenever replacing a live implementation with a canonical one: repointing nodes/tools/services to a new contract, superseding a schema, retiring a legacy renderer or parallel system, or any 'the new way replaces the old way' change on code that already has callers. NOT for greenfield work or additive changes nothing consumes yet."
+description: "Pre-ship safety proof for replacing a live implementation with a canonical one. Use when repointing nodes, tools, or services to a new contract, superseding a schema, retiring a legacy or parallel system, or any 'new way replaces the old way' change. NOT for greenfield or unconsumed additive work."
 ---
 
 <!-- SYNCED COPY — do not edit here.

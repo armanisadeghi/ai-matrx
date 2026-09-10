@@ -1,6 +1,7 @@
 ---
 name: message-actions-overlay-system
 description: "Retired pointer for chat message-action docs. Use when something references message-actions-overlay-system; read the overlay-system skill's 'Message actions (chat)' section instead."
+disable-model-invocation: true
 ---
 
 # message-actions-overlay-system — merged

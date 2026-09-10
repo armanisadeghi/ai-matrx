@@ -2,7 +2,7 @@
 name: build-sub-feature
 type: Skill
 title: "build-sub-feature — add a capability INTO a live feature, to a world-class bar"
-description: "Implement a sub-feature — a new capability added INTO a live, existing feature — to a world-class bar. Use whenever the user asks to add, extend, or wire a capability into something that already exists: 'add X to Y', 'extend Y to support X', 'build a new option / button / setting / endpoint / tool for Y', or hands over a sub-feature spec to implement. Runs a fast interview first (basics before code; the user can walk away during exploration), then builds to non-negotiable acceptance criteria: reuse canonical code instead of forking variants, bring the whole stack along (a needed backend contract is part of the work, not a follow-up ticket), propagate shared logic to every surface (web, desktop, Chrome extension, mobile, admin), annihilate anything replaced (no shims, fallbacks, or dead code), and emulate the best systems that already solve this. NOT for whole-feature audits or overhauls (use feature-deep-dive), greenfield standalone features, pure bug fixes, or trivial copy/style tweaks."
+description: "Doctrine for adding a capability INTO a live, existing feature to a world-class bar. Use on 'add X to Y', 'extend Y to support X', a new option, button, setting, endpoint, or tool for Y, or a sub-feature spec to implement. NOT for whole-feature audits or overhauls (use feature-deep-dive)."
 tags: [execution, features, implementation, doctrine]
 timestamp: 2026-09-10T00:00:00Z
 ---
@@ -18,6 +18,8 @@ timestamp: 2026-09-10T00:00:00Z
 You're implementing a new sub-feature — an addition to something that already exists in the platform. The spec comes from the user (interview below); the standards are non-negotiable acceptance criteria. Implement to them, and loop until the result actually satisfies them. You're done when it's real, complete, verified, and indistinguishable from work shipped by the best engineering organization on earth — not before.
 
 This isn't greenfield. It's an addition to something live, so the surrounding system is your first concern, not an afterthought. Build so the whole ecosystem is better for this — not just the one spot it lands in.
+
+**Not this skill:** whole-feature audits or overhauls (`feature-deep-dive`), greenfield standalone features, pure bug fixes, or trivial copy/style tweaks.
 
 > 🚨 **UNRESOLVED CONFLICT — `CFL-003`. Do not build against this section until Arman rules.**
 > **This document says:** ask interview questions in plain chat text, never through a structured question picker, because a picker blocks free-form replies.

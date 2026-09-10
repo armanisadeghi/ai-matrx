@@ -2,7 +2,7 @@
 name: cross-repo-docs
 type: Skill
 title: cross-repo-docs — the one-truth/pointers/zero-mirrors system
-description: The system for documentation that spans multiple AI Matrx repos — one canonical doc in the common-docs repo, pointer lines everywhere else, zero mirrors. Use whenever (1) you're documenting, auditing, or building a feature that touches 2+ repos (aidream, matrx-frontend, my-matrx, matrx-extend, matrx-local, ...), (2) you're about to create or edit anything under /Users/armanisadeghi/code/common-docs/, (3) you find the same feature documented in more than one repo (drift/duplication — this skill is the fix), or (4) you're deciding WHERE a new doc should live. NOT for single-repo docs — those follow that repo's own FEATURE.md/context-docs system.
+description: "The one-canonical-doc, pointer-lines, zero-mirrors system for docs spanning AI Matrx repos. Use when documenting or building a feature that touches 2+ repos, editing anything in common-docs/, finding one feature documented in several repos, or deciding where a doc lives. NOT for single-repo docs (use context-docs)."
 tags: [meta, docs-system, okf]
 timestamp: 2026-07-10T00:00:00Z
 ---

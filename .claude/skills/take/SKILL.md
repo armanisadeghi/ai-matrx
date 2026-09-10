@@ -2,7 +2,7 @@
 name: take
 type: Skill
 title: "take — staff yourself on a name and drive it to done"
-description: "Arman passes ONE name (/take <name>) — a Domain, Feature, Sub-feature, Program, or Tail from the unassigned-handoffs register, or any registry node — and the agent does the rest: claims the row, gathers the node's whole truth, then builds under his standing doctrine (bias to action, vision is the definition of done, build on what exists, integrate both directions, catch up then expand, never lose work, groom don't grow). Converted 2026-08-21 from his Feature Task Assignment prompt; his rules are quoted, not paraphrased."
+description: "Staffing run that claims one named piece of work and drives it to done. Use when invoked as /take <name> with a Domain, Feature, Sub-feature, Program, or Tail from the unassigned-handoffs register, or any Feature Registry node."
 tags: [staffing, execution, handoffs, registry, doctrine]
 timestamp: 2026-09-10T00:00:00Z
 ---

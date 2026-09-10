@@ -1,6 +1,7 @@
 ---
 name: nextjs-ssr-architecture
 description: "Retired pointer for Next.js SSR doctrine. Use when something references nextjs-ssr-architecture; read the ssr-zero-layout-shift skill instead."
+disable-model-invocation: true
 ---
 
 # nextjs-ssr-architecture — merged

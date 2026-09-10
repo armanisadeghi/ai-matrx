@@ -10,7 +10,7 @@ description: "Redux state for agent execution and firing agent shortcuts. Use wh
 Architecture, execution flow, design rules, and the where-does-state-belong table below apply to every run. Branch material lives beside this file:
 
 - **Adding a field, action, or selector to a slice** → read [extending-slices.md](extending-slices.md) (the 5-step process + worked example).
-- **Firing / engaging / triggering a shortcut from product code** (button, context menu, mounted component, programmatic) → read [triggering-shortcuts.md](triggering-shortcuts.md) before writing the call site.
+- **Firing / engaging / triggering a shortcut from product code** (button, context menu, mounted component, programmatic — including `createInstanceFromShortcut`) → read [triggering-shortcuts.md](triggering-shortcuts.md) before writing the call site.
 - **Reading or changing `instanceUIState` fields or actions** → read [instance-ui-state-reference.md](instance-ui-state-reference.md).
 
 ## Architecture

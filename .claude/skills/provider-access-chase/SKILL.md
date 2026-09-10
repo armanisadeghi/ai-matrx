@@ -1,6 +1,6 @@
 ---
 name: provider-access-chase
-description: "Monitor and advance pending third-party provider access campaigns by checking only due email threads, developer portals, support cases, and review deadlines; recording changes in Tasks and CRM; preparing the next response; and setting the next follow-up clock. Use for the recurring 30-minute Provider Access Launch dispatcher or a manual status sweep."
+description: "Follow-up sweep for pending third-party provider access campaigns. Use when the recurring 30-minute Provider Access Launch dispatcher wakes, or for a manual status check of due email threads, developer portals, support cases, or review deadlines."
 ---
 
 <!-- SYNCED COPY — do not edit here.

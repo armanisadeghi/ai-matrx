@@ -1,6 +1,6 @@
 ---
 name: create-agent
-description: Create a hyper-specialized, production-grade AI Matrx platform agent through the hosted AI Dream MCP (agent_author / agent_catalog / agent_run), usually paired with a registered content-IR kind for its output. Use whenever anyone asks to create, build, author, or configure a platform agent; needs an agent that produces a specific deliverable; wants a structured/kind-emitting agent; or asks to improve, rename, or re-instruct an existing agent. NOT for Claude Code subagents, .claude/agents files, or aidream's in-process code-runner lane (that lane is aidream's matrx-agents skill).
+description: "The recipe for production-grade AI Matrx platform agents built through the AI Dream MCP. Use when asked to create, build, configure, improve, rename, or re-instruct a platform agent, or when a deliverable or kind needs an agent to emit it. NOT for aidream's in-process code-runner lane (use matrx-agents)."
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -30,6 +30,8 @@ with near-perfect reliability. **Nothing more, nothing less.**
 - An agent is a versioned DB row (`agent.definition`); every edit auto-creates an
   immutable version. The MCP (`agent_catalog` / `agent_author` / `agent_run`) is your
   interface — never a raw insert, never SQL.
+- **Not this skill:** Claude Code subagents and `.claude/agents` files, or aidream's
+  in-process code-runner lane (that lane is aidream's `matrx-agents` skill).
 
 **The gold standard to study before you build anything:** `agent_catalog get_agent` on
 `80e453a0-68e0-4750-868d-3198d3a33639` ("Keyword Analysis Master"). A builder-made family

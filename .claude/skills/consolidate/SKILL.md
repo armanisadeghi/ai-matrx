@@ -2,7 +2,7 @@
 name: consolidate
 type: Skill
 title: "consolidate — pull one node's meaning out of every repo and delete the source"
-description: "Take ONE registry node (Domain, Feature, or Sub-feature) and end its documentation sprawl: census every repo, extract everything that carries MEANING into the node's doc kit in common-docs, and DELETE it from the repos it came from — proven by a re-grep, not asserted. Repo docs survive only as capped landmine files (imperative code-safety rules + one pointer). Use with /consolidate <node>, and ALWAYS before /take on a node that has never been consolidated. NOT the topic-cluster ceremony with an Arman interview (doc-convergence) and NOT the disagreement sweep (dedupe-and-verify)."
+description: "Node-level doc consolidation: one registry node's meaning moved from every repo into common-docs, with the repo sources deleted. Use on /consolidate <node>, before /take on a never-consolidated node, or when a node's docs sprawl across repos. NOT for disagreeing docs on one subject (use dedupe-and-verify)."
 tags: [meta, docs-system, centralization, migration, deletion]
 timestamp: 2026-08-25T00:00:00Z
 ---
@@ -26,6 +26,10 @@ behind is.**
 You are a documentation agent. **You do not write or fix product code this session.** A code
 defect you notice goes on the node's HANDOFF follow-ups or becomes a `feedback` item — never
 fixed inline, never silently dropped.
+
+**When:** `/consolidate <node>`, and ALWAYS before `/take` on a node that has never been
+consolidated. **Not this skill:** the topic-cluster ceremony that ends in an Arman interview
+(`doc-convergence`), or the sweep of disagreeing docs on one subject (`dedupe-and-verify`).
 
 ## Required reading — before touching anything
 

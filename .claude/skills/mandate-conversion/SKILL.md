@@ -1,6 +1,6 @@
 ---
 name: mandate-conversion
-description: Convert an existing mandate to a real output contract (a registered kind, or honest text) WITHOUT losing a single field anyone downstream reads. The no-loss protocol — before/after payload capture, the consumer census, the kind-narrowing trap, batch discipline, and an evidence-only report format. Use whenever you are changing what an existing agent/mandate emits or how it is typed — the kind-backfill batches, output_kind declarations, provision reconciliation, or any make-this-contract-honest sweep. NOT for creating a new agent (create-agent) or designing what a call site offers (agent-provision).
+description: "No-loss protocol for changing an existing mandate's output contract. Use when changing what an agent or mandate emits or how it is typed: binding a kind, declaring output_kind, kind-backfill batches, or provision reconciliation. NOT for creating a new agent (use create-agent)."
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -25,6 +25,11 @@ the work at all, because a broken thing that still returns 200 gets discovered b
 `file:line`. Prose is a rejected report — the same rule
 [agent-provision](/skills/agent-provision/SKILL.md) applies to Briefs, for the same reason:
 reflection has no failure state, so it always succeeds.
+
+**Sibling skills.** Creating a new agent → [create-agent](/skills/create-agent/SKILL.md).
+Designing what a call site offers (the Brief, answerability) →
+[agent-provision](/skills/agent-provision/SKILL.md). This skill owns changing an existing
+contract — a registered kind or honest text — without losing a field anyone downstream reads.
 
 ## 🚨 THE KIND-NARROWING TRAP — the thing that already bit us
 
