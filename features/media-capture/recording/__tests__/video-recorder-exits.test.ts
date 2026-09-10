@@ -1,11 +1,24 @@
 /**
- * Exit-path tests for the recording orchestrator: the shared mic must be
- * released EXACTLY ONCE (and only the CLONE stopped) on every exit —
- * stop, cancel, captureLock takeover, camera track-end, and start failure.
+ * Exit-path tests for the recording orchestrator (`video-recorder.ts`).
+ *
+ * SUT: `startVideoRecording` / `startAudioRecording` over the REAL controller,
+ * chunk journal (fake-indexeddb) and capture lock. Doubled (external): the
+ * shared mic singleton from `@ai-matrx/browser-audio` (acquire/release counts
+ * ARE the refcount contract), the camera-stream-manager pin seam (pin on start,
+ * unpin exactly once on exit IS the contract), and the browser's MediaRecorder
+ * and MediaStream (jsdom has neither).
+ *
+ * Invariant: the shared mic is released EXACTLY ONCE and only the CLONE is
+ * stopped on every exit — stop, cancel, captureLock takeover, camera/mic
+ * track-end, and start failure.
  */
 
 import "fake-indexeddb/auto";
-import { claimCapture, releaseCapture } from "@/features/audio/captureLock";
+import {
+  claimCapture,
+  getActiveCaptureId,
+  releaseCapture,
+} from "@/features/audio/captureLock";
 import {
   acquireMicStream,
   releaseMicStream,
@@ -17,6 +30,11 @@ import {
   unpin,
   type CameraLease,
 } from "@/features/media-capture/runtime/camera-stream-manager";
+import {
+  FakeMediaStream,
+  FakeMediaStreamTrack,
+  installFakeMediaStreamGlobal,
+} from "@/features/media-capture/runtime/__tests__/fake-media-stream";
 import { __resetJournalDb, listRecoverable } from "@/features/media-capture/recording/chunk-journal";
 import {
   startAudioRecording,
@@ -46,51 +64,14 @@ jest.mock("@/features/media-capture/runtime/camera-stream-manager", () => ({
   subscribeCameraStream: jest.fn(() => () => undefined),
 }));
 
-const mockedAcquireMic = acquireMicStream as jest.MockedFunction<
-  typeof acquireMicStream
->;
-const mockedReleaseMic = releaseMicStream as jest.MockedFunction<
-  typeof releaseMicStream
->;
-const mockedSubCamera = subscribeCameraInterruption as jest.MockedFunction<
-  typeof subscribeCameraInterruption
->;
+const mockedAcquireMic = jest.mocked(acquireMicStream);
+const mockedReleaseMic = jest.mocked(releaseMicStream);
+const mockedSubMic = jest.mocked(subscribeMicInterruption);
+const mockedSubCamera = jest.mocked(subscribeCameraInterruption);
+const mockedPin = jest.mocked(pinForRecording);
+const mockedUnpin = jest.mocked(unpin);
 
-// ── DOM stand-ins ────────────────────────────────────────────────────────────
-
-interface FakeTrack {
-  kind: string;
-  readyState: string;
-  stop: jest.Mock;
-  clone: jest.Mock;
-}
-
-function makeTrack(kind: string): FakeTrack {
-  const track: FakeTrack = {
-    kind,
-    readyState: "live",
-    stop: jest.fn(),
-    clone: jest.fn(),
-  };
-  track.clone.mockImplementation(() => makeTrack(kind));
-  return track;
-}
-
-class FakeMediaStream {
-  tracks: FakeTrack[];
-  constructor(tracks: FakeTrack[] = []) {
-    this.tracks = tracks;
-  }
-  getTracks(): FakeTrack[] {
-    return this.tracks;
-  }
-  getVideoTracks(): FakeTrack[] {
-    return this.tracks.filter((t) => t.kind === "video");
-  }
-  getAudioTracks(): FakeTrack[] {
-    return this.tracks.filter((t) => t.kind === "audio");
-  }
-}
+// ── Browser stand-ins ────────────────────────────────────────────────────────
 
 const recorders: FakeGlobalRecorder[] = [];
 
@@ -104,7 +85,7 @@ class FakeGlobalRecorder {
   onstop: (() => void) | null = null;
   onerror: ((event: Event) => void) | null = null;
 
-  constructor(_stream: unknown, options?: { mimeType?: string }) {
+  constructor(_stream: MediaStream, options?: { mimeType?: string }) {
     this.mimeType = options?.mimeType ?? "video/webm";
     recorders.push(this);
   }
@@ -128,14 +109,14 @@ class FakeGlobalRecorder {
   }
 }
 
-function makeLease(videoTrack: FakeTrack): CameraLease {
+function makeLease(tracks: FakeMediaStreamTrack[]): CameraLease {
   return {
     id: "lease-1",
-    stream: new FakeMediaStream([videoTrack]) as unknown as MediaStream,
+    stream: new FakeMediaStream(tracks),
     getTrackSummary: () => null,
     on: () => () => undefined,
     release: () => undefined,
-  } as unknown as CameraLease;
+  } satisfies CameraLease;
 }
 
 function flush(): Promise<void> {
@@ -143,31 +124,33 @@ function flush(): Promise<void> {
 }
 
 describe("video-recorder exit paths — mic release exactly once", () => {
-  let micTrack: FakeTrack;
-  let micStream: FakeMediaStream;
+  let micTrack: FakeMediaStreamTrack;
 
   beforeEach(async () => {
     await __resetJournalDb();
     recorders.length = 0;
     jest.clearAllMocks();
     releaseCapture("media-capture-recording");
-    micTrack = makeTrack("audio");
-    micStream = new FakeMediaStream([micTrack]);
-    mockedAcquireMic.mockResolvedValue(micStream as unknown as MediaStream);
-    (globalThis as { MediaStream?: unknown }).MediaStream = FakeMediaStream;
-    (globalThis as { MediaRecorder?: unknown }).MediaRecorder =
-      FakeGlobalRecorder;
+    micTrack = new FakeMediaStreamTrack("audio");
+    mockedAcquireMic.mockResolvedValue(new FakeMediaStream([micTrack]));
+    installFakeMediaStreamGlobal();
+    Object.defineProperty(globalThis, "MediaRecorder", {
+      configurable: true,
+      writable: true,
+      value: FakeGlobalRecorder,
+    });
   });
 
   test("graceful stop: clone stopped, shared track untouched, releaseMicStream once, unpinned", async () => {
-    const videoTrack = makeTrack("video");
+    const videoTrack = new FakeMediaStreamTrack("video");
     const handle = await startVideoRecording({
-      lease: makeLease(videoTrack),
+      lease: makeLease([videoTrack]),
       withMic: true,
     });
-    expect(pinForRecording).toHaveBeenCalledWith("lease-1", "Camera recording");
+    expect(mockedPin).toHaveBeenCalledWith("lease-1", "Camera recording");
     expect(mockedAcquireMic).toHaveBeenCalledTimes(1);
-    const clone = micTrack.clone.mock.results[0].value as FakeTrack;
+    expect(micTrack.clones).toHaveLength(1);
+    const [clone] = micTrack.clones;
 
     recorders[0].emit(64);
     const result = await handle.stop();
@@ -177,16 +160,44 @@ describe("video-recorder exit paths — mic release exactly once", () => {
     expect(result.hasAudio).toBe(true);
     expect(result.partial).toBe(false);
     expect(result.blob.size).toBe(64);
-    expect(clone.stop).toHaveBeenCalledTimes(1);
-    expect(micTrack.stop).not.toHaveBeenCalled();
-    expect(videoTrack.stop).not.toHaveBeenCalled();
+    expect(clone.stopCount).toBe(1);
+    expect(micTrack.stopCount).toBe(0);
+    expect(videoTrack.stopCount).toBe(0);
     expect(mockedReleaseMic).toHaveBeenCalledTimes(1);
-    expect(unpin).toHaveBeenCalledTimes(1);
+    expect(mockedUnpin).toHaveBeenCalledTimes(1);
+  });
+
+  test("graceful stop releases the app-wide capture lock it claimed", async () => {
+    const handle = await startVideoRecording({
+      lease: makeLease([new FakeMediaStreamTrack("video")]),
+      withMic: true,
+    });
+    expect(getActiveCaptureId()).toBe("media-capture-recording");
+
+    recorders[0].emit(64);
+    await handle.stop();
+
+    expect(getActiveCaptureId()).toBeNull();
+  });
+
+  test("video without mic never touches the shared mic and delivers a video-only result", async () => {
+    const handle = await startVideoRecording({
+      lease: makeLease([new FakeMediaStreamTrack("video")]),
+      withMic: false,
+    });
+    recorders[0].emit(48);
+    const result = await handle.stop();
+
+    expect(result.hasAudio).toBe(false);
+    expect(result.blob.size).toBe(48);
+    expect(mockedAcquireMic).not.toHaveBeenCalled();
+    expect(mockedReleaseMic).not.toHaveBeenCalled();
+    expect(mockedUnpin).toHaveBeenCalledTimes(1);
   });
 
   test("cancel: discard — journal dropped, nothing delivered, releaseMicStream once", async () => {
     const handle = await startVideoRecording({
-      lease: makeLease(makeTrack("video")),
+      lease: makeLease([new FakeMediaStreamTrack("video")]),
       withMic: true,
     });
     recorders[0].emit(64);
@@ -194,13 +205,13 @@ describe("video-recorder exit paths — mic release exactly once", () => {
 
     expect(await handle.done).toBeNull();
     expect(mockedReleaseMic).toHaveBeenCalledTimes(1);
-    expect(unpin).toHaveBeenCalledTimes(1);
+    expect(mockedUnpin).toHaveBeenCalledTimes(1);
     expect(await listRecoverable()).toHaveLength(0);
   });
 
   test("captureLock takeover: discard — no partial blob, releaseMicStream once", async () => {
     const handle = await startVideoRecording({
-      lease: makeLease(makeTrack("video")),
+      lease: makeLease([new FakeMediaStreamTrack("video")]),
       withMic: true,
     });
     recorders[0].emit(64);
@@ -216,44 +227,98 @@ describe("video-recorder exit paths — mic release exactly once", () => {
   });
 
   test("camera track end: stop-and-preserve — partial result, releaseMicStream once", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
     const handle = await startVideoRecording({
-      lease: makeLease(makeTrack("video")),
+      lease: makeLease([new FakeMediaStreamTrack("video")]),
       withMic: true,
     });
     recorders[0].emit(64);
 
-    const cameraListener = mockedSubCamera.mock.calls[0][0];
+    expect(mockedSubCamera).toHaveBeenCalledTimes(1);
+    const [cameraListener] = mockedSubCamera.mock.calls[0];
     cameraListener("ended");
 
     const result = await handle.done;
-    expect(result).not.toBeNull();
-    expect(result!.partial).toBe(true); // environment stop → LOUD partial
+    expect(result).toMatchObject({ partial: true }); // environment stop → LOUD partial
     expect(handle.endReason()).toBe("environment");
     expect(mockedReleaseMic).toHaveBeenCalledTimes(1);
+    consoleError.mockRestore();
+  });
+
+  test("a camera mute is transient: the take keeps recording until permission is revoked, then it is preserved", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    const handle = await startVideoRecording({
+      lease: makeLease([new FakeMediaStreamTrack("video")]),
+      withMic: true,
+    });
+    recorders[0].emit(64);
+    expect(mockedSubCamera).toHaveBeenCalledTimes(1);
+    const [cameraListener] = mockedSubCamera.mock.calls[0];
+
+    cameraListener("muted");
+    cameraListener("unmuted");
+    expect(handle.getState()).toBe("recording");
+    expect(handle.endReason()).toBeNull();
+
+    cameraListener("permission-revoked");
+    const result = await handle.done;
+    expect(result).toMatchObject({ partial: true });
+    expect(handle.endReason()).toBe("environment");
+    consoleError.mockRestore();
+  });
+
+  test("a mic track ending mid-take stops the recording and preserves it, releasing the mic once", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    const handle = await startVideoRecording({
+      lease: makeLease([new FakeMediaStreamTrack("video")]),
+      withMic: true,
+    });
+    recorders[0].emit(64);
+
+    expect(mockedSubMic).toHaveBeenCalledTimes(1);
+    const [micListener] = mockedSubMic.mock.calls[0];
+    micListener("ended");
+
+    const result = await handle.done;
+    expect(result).toMatchObject({ partial: true, hasAudio: true });
+    expect(handle.endReason()).toBe("environment");
+    expect(mockedReleaseMic).toHaveBeenCalledTimes(1);
+    consoleError.mockRestore();
   });
 
   test("start failure (mic stream has no audio track): releaseMicStream exactly once, pin released", async () => {
-    mockedAcquireMic.mockResolvedValue(
-      new FakeMediaStream([]) as unknown as MediaStream,
-    );
+    mockedAcquireMic.mockResolvedValue(new FakeMediaStream([]));
     await expect(
-      startVideoRecording({ lease: makeLease(makeTrack("video")), withMic: true }),
+      startVideoRecording({
+        lease: makeLease([new FakeMediaStreamTrack("video")]),
+        withMic: true,
+      }),
     ).rejects.toThrow(/no audio track/);
     expect(mockedReleaseMic).toHaveBeenCalledTimes(1);
-    expect(unpin).toHaveBeenCalledTimes(1);
+    expect(mockedUnpin).toHaveBeenCalledTimes(1);
+  });
+
+  test("start failure (lease has no live video track): refused, mic never acquired, pin released", async () => {
+    await expect(
+      startVideoRecording({ lease: makeLease([]), withMic: true }),
+    ).rejects.toThrow(/no live video track/);
+    expect(mockedPin).toHaveBeenCalledTimes(1);
+    expect(mockedUnpin).toHaveBeenCalledTimes(1);
+    expect(mockedAcquireMic).not.toHaveBeenCalled();
   });
 
   test("audio-only mode: same discipline — clone stopped, releaseMicStream once", async () => {
     const handle = await startAudioRecording({});
-    const clone = micTrack.clone.mock.results[0].value as FakeTrack;
+    expect(micTrack.clones).toHaveLength(1);
+    const [clone] = micTrack.clones;
     recorders[0].emit(32);
     const result = await handle.stop();
     await flush();
 
     expect(result.hasAudio).toBe(true);
-    expect(clone.stop).toHaveBeenCalledTimes(1);
-    expect(micTrack.stop).not.toHaveBeenCalled();
+    expect(clone.stopCount).toBe(1);
+    expect(micTrack.stopCount).toBe(0);
     expect(mockedReleaseMic).toHaveBeenCalledTimes(1);
-    expect(pinForRecording).not.toHaveBeenCalled();
+    expect(mockedPin).not.toHaveBeenCalled();
   });
 });

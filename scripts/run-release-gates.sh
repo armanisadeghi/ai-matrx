@@ -304,6 +304,11 @@ if $STRICT; then
         # a symlink into common-docs), and the sibling bundle may not be checked
         # out here. It screams; it never blocks a release.
         "Cross-repo skills in sync with common-docs|pnpm exec tsx scripts/check-shared-skills.ts"
+        # SKILL DESCRIPTIONS: a local SKILL.md description over 500 chars (not
+        # allowlisted) or over 1,024 falls out of the budget-capped skill listing
+        # and never auto-triggers. Fails strict on a real violation; skips loudly
+        # when the sibling common-docs bundle is not checked out.
+        "Skill descriptions fit the listing budget|pnpm exec tsx scripts/check-skill-descriptions.ts"
         # ACCESS ERRORS stays ADVISORY in both modes, same reasoning as the Door
         # Law above: the primitive (features/access-gate) shipped 2026-08-11 with
         # a known ~540-surface conversion backlog behind it. Hard-failing would
@@ -578,6 +583,7 @@ else
         # a symlink into common-docs), and the sibling bundle may not be checked
         # out here. It screams; it never blocks a release.
         "Cross-repo skills in sync with common-docs|pnpm exec tsx scripts/check-shared-skills.ts"
+        "Skill descriptions fit the listing budget|pnpm exec tsx scripts/check-skill-descriptions.ts"
         # Every surface still guessing why a read failed — see the strict list
         # above for why this is advisory. Fix = <AccessGate/>.
         "Access errors (surfaces that guess why a read failed)|pnpm exec tsx scripts/access-errors/check-access-errors.ts"

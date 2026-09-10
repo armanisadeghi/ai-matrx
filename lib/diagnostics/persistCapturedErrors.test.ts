@@ -58,8 +58,71 @@ describe("captured error persistence settlement", () => {
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(rpc).toHaveBeenCalledWith(
       "log_client_error",
-      expect.objectContaining({ p_message: "real failure" }),
+      expect.objectContaining({
+        p_source: "runtime-exception",
+        p_message: "real failure",
+      }),
     );
+  });
+
+  // Break caught: dropping the per-session dedupe. Every new capture triggers
+  // another flush while earlier entries are still in the store; each entry
+  // must reach system_error exactly once.
+  it("persists each captured entry once even as later captures trigger more flushes", async () => {
+    captureError({ source: "runtime-exception", message: "first failure" });
+    await jest.advanceTimersByTimeAsync(1_500);
+    captureError({ source: "runtime-exception", message: "second failure" });
+    await jest.advanceTimersByTimeAsync(1_500);
+
+    expect(rpc.mock.calls.map(([, args]) => args.p_message)).toEqual([
+      "first failure",
+      "second failure",
+    ]);
+  });
+
+  // Break caught: the production-only gate. A dev/local build must never write
+  // into the production error queue.
+  it("never persists from a non-production build", async () => {
+    Object.defineProperty(process.env, "NODE_ENV", {
+      configurable: true,
+      value: "development",
+    });
+    try {
+      captureError({ source: "runtime-exception", message: "local failure" });
+      await jest.advanceTimersByTimeAsync(1_500);
+      expect(rpc).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(process.env, "NODE_ENV", {
+        configurable: true,
+        value: "production",
+      });
+    }
+  });
+
+  // Break caught: persisting the failure of log_client_error itself, which
+  // re-captures and loops forever. The control proves the filter is that one
+  // relation, not a blanket drop of RPC failures.
+  it("never persists its own log_client_error failure, while other RPC failures still land", async () => {
+    captureError({
+      source: "runtime-exception",
+      relation: "log_client_error",
+      operation: "rpc",
+      status: 500,
+      message: "log_client_error write refused",
+    });
+    captureError({
+      source: "runtime-exception",
+      relation: "mbr_for_user",
+      operation: "rpc",
+      status: 500,
+      message: "mbr_for_user write refused",
+    });
+
+    await jest.advanceTimersByTimeAsync(1_500);
+
+    expect(rpc.mock.calls.map(([, args]) => args.p_message)).toEqual([
+      "mbr_for_user write refused",
+    ]);
   });
 
   it("persists the captured document identity even if scripts change before flush", async () => {
@@ -204,6 +267,22 @@ describe("early-user persistence policy", () => {
         now,
       }),
     ).toBe(true);
+  });
+
+  // Breaks caught: treating an unknown account age, or a clock-skewed future
+  // createdAt, as "early" — both would flood system_error with every tier.
+  it.each([
+    ["an unknown account age", null],
+    ["a createdAt in the future", new Date(now + 60 * 60 * 1000).toISOString()],
+  ])("keeps non-red tiers local for %s", (_label, createdAt) => {
+    expect(
+      shouldPersistCapturedTier({
+        tier: "orange",
+        isGuest: false,
+        createdAt,
+        now,
+      }),
+    ).toBe(false);
   });
 
   it("returns established accounts to red-only persistence", () => {

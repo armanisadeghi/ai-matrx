@@ -70,6 +70,8 @@
     "check:surface-interactive-roots": "tsx scripts/check-surface-interactive-roots.ts",
     "check:source-attribution": "tsx scripts/check-source-attribution.ts",
     "check:docs-guards": "tsx scripts/check-docs-guards.ts",
+    "check:skill-descriptions": "tsx scripts/check-skill-descriptions.ts",
+    "check:skill-descriptions:self-test": "tsx scripts/check-skill-descriptions.ts --self-test",
     "check:doctrine": "tsx scripts/check-doctrine.ts",
     "check:doctrine:staged": "tsx scripts/check-doctrine.ts --staged",
     "check:doctrine:strict": "tsx scripts/check-doctrine.ts --strict",

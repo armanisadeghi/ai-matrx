@@ -59,14 +59,23 @@ describe("python-client getJson transient recovery", () => {
     expect(captureMock).not.toHaveBeenCalled();
   });
 
-  it("captures only the final failure after the bounded retry", async () => {
+  // Break caught: a second retry. The third fetch WOULD succeed, so only a
+  // client that stops after one retry surfaces the transport failure.
+  it("never makes a third attempt — surfaces and captures the second transport failure", async () => {
     const fetchMock = jest.fn<
       ReturnType<typeof fetch>,
       Parameters<typeof fetch>
     >();
-    global.fetch = fetchMock.mockRejectedValue(
-      new TypeError("Failed to fetch"),
-    );
+    fetchMock
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    global.fetch = fetchMock;
 
     await expect(
       getJson("/files/test/asset", {
@@ -75,8 +84,61 @@ describe("python-client getJson transient recovery", () => {
       }),
     ).rejects.toThrow("Failed to fetch");
 
-    expect(global.fetch).toHaveBeenCalledTimes(2);
     expect(captureMock).toHaveBeenCalledTimes(1);
+  });
+
+  // Break caught: retrying every rejection. Only a browser transport
+  // rejection (TypeError) is transient; the next fetch would succeed, so a
+  // client that retries anything else resolves instead of failing fast.
+  it("fails fast on a non-transport rejection even when a retry would succeed", async () => {
+    const fetchMock = jest.fn<
+      ReturnType<typeof fetch>,
+      Parameters<typeof fetch>
+    >();
+    fetchMock
+      .mockRejectedValueOnce(new RangeError("invalid header value"))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    global.fetch = fetchMock;
+
+    await expect(
+      getJson("/files/test/asset", {
+        baseUrlOverride: "https://files.example.test",
+        organizationId: TEST_ORG_ID,
+      }),
+    ).rejects.toThrow("invalid header value");
+  });
+
+  // Break caught: retrying after the CALLER aborted. The caller asked to stop;
+  // a retry that would succeed must not resurrect the request.
+  it("does not retry once the caller has aborted, even when a retry would succeed", async () => {
+    const fetchMock = jest.fn<
+      ReturnType<typeof fetch>,
+      Parameters<typeof fetch>
+    >();
+    fetchMock
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    global.fetch = fetchMock;
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      getJson("/files/test/asset", {
+        baseUrlOverride: "https://files.example.test",
+        organizationId: TEST_ORG_ID,
+        signal: controller.signal,
+      }),
+    ).rejects.toThrow("Failed to fetch");
   });
 });
 

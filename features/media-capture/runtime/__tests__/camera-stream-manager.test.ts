@@ -1,98 +1,97 @@
 /**
  * camera-stream-manager unit tests (jsdom).
  *
- * The device manager is mocked at the module seam (noteCameraPermissionOutcome
- * / registerCameraPermissionAcquirer spies); getUserMedia is a jest.fn minting
- * fake tracks/streams. The manager holds module-level singleton state, so each
- * test gets a fresh module via jest.resetModules() + dynamic import.
+ * SUT: the manager module — lease ref-counting, compatibility policy,
+ * reacquire-or-busy, pin, lifecycle, track health, permission reporting.
+ * Doubled (external): `getUserMedia` (browser), the device manager's
+ * permission-report seam, and the mic singleton's adopt seam. Nothing the
+ * manager owns is stubbed. The manager holds module-level singleton state, so
+ * each test gets a fresh module via jest.resetModules() + dynamic import.
  */
 
-const noteCameraPermissionOutcome = jest.fn();
-const noteMicPermissionOutcome = jest.fn();
-const registerCameraPermissionAcquirer = jest.fn();
+import type { MediaDevicesSnapshot } from "@/features/media-devices/deviceManager";
+
+import {
+  FakeMediaStream,
+  FakeMediaStreamTrack,
+  installFakeMediaStreamGlobal,
+} from "./fake-media-stream";
+
+const noteCameraPermissionOutcome = jest.fn((granted: boolean): void => {
+  void granted;
+});
+const noteMicPermissionOutcome = jest.fn((granted: boolean): void => {
+  void granted;
+});
+const registerCameraPermissionAcquirer = jest.fn(
+  (acquirer: () => Promise<void>): void => {
+    void acquirer;
+  },
+);
 /** The mic permission state the mocked device manager reports. */
-let micPermissionState = "prompt";
+let micPermissionState: MediaDevicesSnapshot["permissionState"] = "prompt";
 
 jest.mock("@/features/media-devices/deviceManager", () => ({
-  noteCameraPermissionOutcome: (...args: unknown[]) =>
-    noteCameraPermissionOutcome(...args),
-  noteMicPermissionOutcome: (...args: unknown[]) =>
-    noteMicPermissionOutcome(...args),
-  registerCameraPermissionAcquirer: (...args: unknown[]) =>
-    registerCameraPermissionAcquirer(...args),
-  getMediaDevicesSnapshot: () => ({
-    permissionState: micPermissionState,
-    cameraPermissionState: "unknown",
-    inputs: [],
-    outputs: [],
-    cameras: [],
-  }),
+  noteCameraPermissionOutcome: (granted: boolean) =>
+    noteCameraPermissionOutcome(granted),
+  noteMicPermissionOutcome: (granted: boolean) =>
+    noteMicPermissionOutcome(granted),
+  registerCameraPermissionAcquirer: (acquirer: () => Promise<void>) =>
+    registerCameraPermissionAcquirer(acquirer),
+  getMediaDevicesSnapshot: () =>
+    ({
+      permissionState: micPermissionState,
+      cameraPermissionState: "unknown",
+      inputs: [],
+      outputs: [],
+      cameras: [],
+    }) satisfies MediaDevicesSnapshot,
 }));
 
-const adoptWarmMicStream = jest.fn();
-const buildWarmMicConstraints = jest.fn(() => ({ echoCancellation: true }));
+const adoptWarmMicStream = jest.fn((stream: MediaStream): void => {
+  void stream;
+});
 
 jest.mock("@ai-matrx/browser-audio/core", () => ({
   ...jest.requireActual("@ai-matrx/browser-audio/core"),
-  adoptWarmMicStream: (...args: unknown[]) => adoptWarmMicStream(...args),
-  buildWarmMicConstraints: () => buildWarmMicConstraints(),
+  adoptWarmMicStream: (stream: MediaStream) => adoptWarmMicStream(stream),
+  buildWarmMicConstraints: () => ({ echoCancellation: true }),
 }));
 
 // ─── Fakes ───────────────────────────────────────────────────────────────────
 
-interface FakeTrack {
-  kind: "video" | "audio";
-  readyState: "live" | "ended";
-  stop: jest.Mock;
-  getSettings: () => MediaTrackSettings;
-  getCapabilities: () => MediaTrackCapabilities;
-  onended: (() => void) | null;
-  onmute: (() => void) | null;
-  onunmute: (() => void) | null;
+function makeVideoTrack(): FakeMediaStreamTrack {
+  return new FakeMediaStreamTrack("video", {
+    settings: { width: 1280, height: 720, frameRate: 30, facingMode: "user" },
+    capabilities: {
+      width: { max: 3840 },
+      height: { max: 2160 },
+      frameRate: { max: 60 },
+    },
+  });
 }
 
-function makeTrack(kind: "video" | "audio" = "video"): FakeTrack {
-  const track: FakeTrack = {
-    kind,
-    readyState: "live",
-    stop: jest.fn(() => {
-      track.readyState = "ended";
-    }),
-    getSettings: () =>
-      ({ width: 1280, height: 720, frameRate: 30, facingMode: "user" }) as MediaTrackSettings,
-    getCapabilities: () =>
-      ({
-        width: { max: 3840 },
-        height: { max: 2160 },
-        frameRate: { max: 60 },
-      }) as MediaTrackCapabilities,
-    onended: null,
-    onmute: null,
-    onunmute: null,
-  };
+/** Every stream getUserMedia handed out, in order. */
+let minted: FakeMediaStream[] = [];
+
+function mint(tracks: FakeMediaStreamTrack[]): FakeMediaStream {
+  const stream = new FakeMediaStream(tracks);
+  minted.push(stream);
+  return stream;
+}
+
+function videoTrackOf(stream: FakeMediaStream): FakeMediaStreamTrack {
+  const [track] = stream.getVideoTracks();
+  if (!track) throw new Error("fake stream has no video track");
   return track;
 }
 
-class FakeStream {
-  tracks: FakeTrack[];
-  constructor(tracks: FakeTrack[]) {
-    this.tracks = tracks;
-  }
-  getTracks(): FakeTrack[] {
-    return this.tracks;
-  }
-  getVideoTracks(): FakeTrack[] {
-    return this.tracks.filter((t) => t.kind === "video");
-  }
-  getAudioTracks(): FakeTrack[] {
-    return this.tracks.filter((t) => t.kind === "audio");
-  }
-  removeTrack(track: FakeTrack): void {
-    this.tracks = this.tracks.filter((t) => t !== track);
-  }
-}
-
-const getUserMedia = jest.fn();
+const getUserMedia = jest.fn(
+  async (req: MediaStreamConstraints): Promise<MediaStream> =>
+    req.audio
+      ? mint([makeVideoTrack(), new FakeMediaStreamTrack("audio")])
+      : mint([makeVideoTrack()]),
+);
 
 type Manager = typeof import("../camera-stream-manager");
 
@@ -103,19 +102,19 @@ async function loadManager(): Promise<Manager> {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  minted = [];
   micPermissionState = "prompt";
   getUserMedia.mockImplementation(async (req: MediaStreamConstraints) =>
-    req && typeof req === "object" && req.audio
-      ? new FakeStream([makeTrack("video"), makeTrack("audio")])
-      : new FakeStream([makeTrack("video")]),
+    req.audio
+      ? mint([makeVideoTrack(), new FakeMediaStreamTrack("audio")])
+      : mint([makeVideoTrack()]),
   );
   Object.defineProperty(navigator, "mediaDevices", {
     configurable: true,
     value: { getUserMedia },
   });
-  // The combined path wraps split-off audio tracks in `new MediaStream(...)`;
-  // jsdom has none, so the fake stands in.
-  (globalThis as { MediaStream?: unknown }).MediaStream = FakeStream;
+  // The combined path wraps split-off audio tracks in `new MediaStream(...)`.
+  installFakeMediaStreamGlobal();
 });
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -136,8 +135,9 @@ describe("camera-stream-manager", () => {
   test("incompatible acquire (no pin) reacquires and fires 'reconfigured' with the new stream", async () => {
     const mgr = await loadManager();
     const a = await mgr.acquireCameraLease({ profile: "720p", facingMode: "user" });
-    const firstStream = a.stream as unknown as FakeStream;
-    const reconfigured = jest.fn();
+    const reconfigured = jest.fn((stream: MediaStream): void => {
+      void stream;
+    });
     a.on("reconfigured", reconfigured);
 
     const b = await mgr.acquireCameraLease({
@@ -145,14 +145,41 @@ describe("camera-stream-manager", () => {
       facingMode: "environment",
     });
     expect(getUserMedia).toHaveBeenCalledTimes(2);
-    // Old tracks are stopped; existing leaseholder got the NEW stream.
-    expect(firstStream.tracks[0].stop).toHaveBeenCalled();
+    // Old tracks are stopped exactly once; existing leaseholder got the NEW stream.
+    expect(videoTrackOf(minted[0]).stopCount).toBe(1);
     expect(reconfigured).toHaveBeenCalledTimes(1);
-    expect(reconfigured).toHaveBeenCalledWith(b.stream);
-    expect(a.stream).toBe(b.stream);
+    expect(reconfigured).toHaveBeenCalledWith(minted[1]);
+    expect(b.stream).toBe(minted[1]);
+    expect(a.stream).toBe(minted[1]);
     a.release();
     b.release();
   });
+
+  // Each spec field alone must make a request incompatible — dropping any one
+  // comparison would hand a lease a stream that does not match what it asked for.
+  test.each([
+    ["profile", { profile: "1080p", facingMode: "user", deviceId: "cam-1" }],
+    ["facingMode", { profile: "720p", facingMode: "environment", deviceId: "cam-1" }],
+    ["deviceId", { profile: "720p", facingMode: "user", deviceId: "cam-2" }],
+  ] as const)(
+    "a request differing only in %s reacquires at the requested spec",
+    async (_field, next) => {
+      const mgr = await loadManager();
+      const a = await mgr.acquireCameraLease({
+        profile: "720p",
+        facingMode: "user",
+        deviceId: "cam-1",
+      });
+      const b = await mgr.acquireCameraLease(next);
+
+      expect(getUserMedia).toHaveBeenCalledTimes(2);
+      expect(videoTrackOf(minted[0]).stopCount).toBe(1);
+      expect(mgr.getCameraStreamState().activeSpec).toEqual(next);
+      expect(a.stream).toBe(minted[1]);
+      a.release();
+      b.release();
+    },
+  );
 
   test("pinned recording rejects incompatible acquire with CameraBusyError carrying the owner", async () => {
     const mgr = await loadManager();
@@ -164,6 +191,7 @@ describe("camera-stream-manager", () => {
     ).rejects.toMatchObject({ name: "CameraBusyError", pinOwner: "Video recording" });
     // Live stream untouched, no second gUM.
     expect(getUserMedia).toHaveBeenCalledTimes(1);
+    expect(videoTrackOf(minted[0]).stopCount).toBe(0);
 
     // Compatible acquire still allowed while pinned.
     const b = await mgr.acquireCameraLease({ profile: "1080p", facingMode: "user" });
@@ -174,19 +202,35 @@ describe("camera-stream-manager", () => {
     b.release();
   });
 
+  test("a second recording cannot steal the pin: it is refused naming the current owner", async () => {
+    const mgr = await loadManager();
+    const a = await mgr.acquireCameraLease({ profile: "720p" });
+    const b = await mgr.acquireCameraLease({ profile: "720p" });
+    mgr.pinForRecording(a.id, "Recording A");
+
+    expect(() => mgr.pinForRecording(b.id, "Recording B")).toThrow(
+      expect.objectContaining({ name: "CameraBusyError", pinOwner: "Recording A" }),
+    );
+    expect(mgr.getCameraStreamState().pinnedBy).toBe("Recording A");
+    expect(() => mgr.pinForRecording("cam-lease-unknown", "Ghost")).toThrow(
+      /unknown or released lease/,
+    );
+    a.release();
+    b.release();
+  });
+
   test("releasing a pinned lease unpins; last release stops tracks immediately (no keepalive)", async () => {
     const mgr = await loadManager();
     const a = await mgr.acquireCameraLease({ profile: "720p" });
     const b = await mgr.acquireCameraLease({ profile: "720p" });
-    const stream = a.stream as unknown as FakeStream;
     mgr.pinForRecording(b.id, "rec");
 
     b.release();
     expect(mgr.cameraStreamDebug().pinnedBy).toBeNull();
-    expect(stream.tracks[0].stop).not.toHaveBeenCalled(); // a still holds
+    expect(videoTrackOf(minted[0]).stopCount).toBe(0); // a still holds
 
     a.release();
-    expect(stream.tracks[0].stop).toHaveBeenCalled();
+    expect(videoTrackOf(minted[0]).stopCount).toBe(1);
     const dbg = mgr.cameraStreamDebug();
     expect(dbg.state).toBe("idle");
     expect(dbg.leaseCount).toBe(0);
@@ -194,16 +238,49 @@ describe("camera-stream-manager", () => {
     expect(mgr.getCameraStreamState().activeSpec).toBeNull();
   });
 
+  test("concurrent compatible first acquires share one getUserMedia call and leave no live stream after release", async () => {
+    const mgr = await loadManager();
+    const [a, b] = await Promise.all([
+      mgr.acquireCameraLease({ profile: "720p", facingMode: "user" }),
+      mgr.acquireCameraLease({ profile: "720p", facingMode: "user" }),
+    ]);
+
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    expect(a.stream).toBe(b.stream);
+    a.release();
+    b.release();
+    // The camera light is off: no stream the manager ever minted is still live.
+    expect(minted.filter((s) => s.active)).toHaveLength(0);
+  });
+
+  test("an incompatible acquire racing an in-flight one ends with exactly one live stream that both leases hold", async () => {
+    const mgr = await loadManager();
+    const [a, b] = await Promise.all([
+      mgr.acquireCameraLease({ profile: "720p", facingMode: "user" }),
+      mgr.acquireCameraLease({ profile: "1080p", facingMode: "environment" }),
+    ]);
+
+    const live = minted.filter((s) => s.active);
+    expect(live).toHaveLength(1);
+    expect(a.stream).toBe(live[0]);
+    expect(b.stream).toBe(live[0]);
+    expect(mgr.getCameraStreamState().activeSpec).toEqual({
+      profile: "1080p",
+      facingMode: "environment",
+    });
+    a.release();
+    b.release();
+    expect(minted.filter((s) => s.active)).toHaveLength(0);
+  });
+
   test("track 'ended' emits interruption and cleans up state", async () => {
     const mgr = await loadManager();
     const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
     const a = await mgr.acquireCameraLease({ profile: "720p" });
-    const stream = a.stream as unknown as FakeStream;
     const interruptions: string[] = [];
     mgr.subscribeCameraInterruption((r) => interruptions.push(r));
 
-    stream.tracks[0].readyState = "ended";
-    stream.tracks[0].onended?.();
+    videoTrackOf(minted[0]).fireEnded();
 
     expect(interruptions).toEqual(["ended"]);
     expect(mgr.cameraStreamDebug().state).toBe("error");
@@ -218,16 +295,49 @@ describe("camera-stream-manager", () => {
     const mgr = await loadManager();
     const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {});
     const a = await mgr.acquireCameraLease({ profile: "720p" });
-    const stream = a.stream as unknown as FakeStream;
     const interruptions: string[] = [];
     mgr.subscribeCameraInterruption((r) => interruptions.push(r));
 
-    stream.tracks[0].onmute?.();
-    stream.tracks[0].onunmute?.();
+    videoTrackOf(minted[0]).fireMute();
+    videoTrackOf(minted[0]).fireUnmute();
     expect(interruptions).toEqual(["muted", "unmuted"]);
     expect(mgr.cameraStreamDebug().live).toBe(true);
     a.release();
     consoleWarn.mockRestore();
+  });
+
+  test("permission revocation stops the camera now and announces it", async () => {
+    const mgr = await loadManager();
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    await mgr.acquireCameraLease({ profile: "720p" });
+    const interruptions: string[] = [];
+    mgr.subscribeCameraInterruption((r) => interruptions.push(r));
+
+    mgr.notifyCameraPermissionRevoked();
+
+    expect(videoTrackOf(minted[0]).stopCount).toBe(1);
+    expect(interruptions).toEqual(["permission-revoked"]);
+    expect(mgr.cameraStreamDebug()).toMatchObject({
+      state: "idle",
+      leaseCount: 0,
+      live: false,
+    });
+    consoleError.mockRestore();
+  });
+
+  test("pagehide with a leaked lease screams and hard-stops the camera", async () => {
+    const mgr = await loadManager();
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    await mgr.acquireCameraLease({ profile: "720p" }); // never released
+
+    window.dispatchEvent(new Event("pagehide"));
+
+    expect(videoTrackOf(minted[0]).stopCount).toBe(1);
+    expect(mgr.cameraStreamDebug()).toMatchObject({ leaseCount: 0, live: false });
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining("1 unreleased camera lease"),
+    );
+    consoleError.mockRestore();
   });
 
   test("permission outcomes are reported to the device manager", async () => {
@@ -249,19 +359,30 @@ describe("camera-stream-manager", () => {
     expect(noteCameraPermissionOutcome).not.toHaveBeenCalled();
   });
 
+  test("a SecurityError rejection is reported as a camera denial", async () => {
+    const mgr = await loadManager();
+    const insecure = Object.assign(new Error("insecure"), { name: "SecurityError" });
+    getUserMedia.mockRejectedValueOnce(insecure);
+
+    await expect(mgr.acquireCameraLease({ profile: "720p" })).rejects.toBe(insecure);
+    expect(noteCameraPermissionOutcome).toHaveBeenCalledTimes(1);
+    expect(noteCameraPermissionOutcome).toHaveBeenCalledWith(false);
+  });
+
   test("installCameraPermissionAcquirer registers an acquire+release acquirer (explicit, not import side effect)", async () => {
     const mgr = await loadManager();
     expect(registerCameraPermissionAcquirer).not.toHaveBeenCalled(); // no import side effect
     mgr.installCameraPermissionAcquirer();
     expect(registerCameraPermissionAcquirer).toHaveBeenCalledTimes(1);
 
-    const acquirer = registerCameraPermissionAcquirer.mock.calls[0][0] as () => Promise<void>;
+    const [acquirer] = registerCameraPermissionAcquirer.mock.calls[0];
     await acquirer();
     expect(getUserMedia).toHaveBeenCalledTimes(1);
     expect(noteCameraPermissionOutcome).toHaveBeenCalledWith(true);
     // Released immediately → camera off.
     expect(mgr.cameraStreamDebug().leaseCount).toBe(0);
     expect(mgr.cameraStreamDebug().live).toBe(false);
+    expect(videoTrackOf(minted[0]).stopCount).toBe(1);
   });
 
   test("snapshots are referentially stable between mutations", async () => {
@@ -285,19 +406,36 @@ describe("camera-stream-manager", () => {
       facingMode: "environment",
     }));
     const a = await mgr.acquireCameraLease({ profile: "1080p" });
-    const constraints = getUserMedia.mock.calls[0][0].video as MediaTrackConstraints;
-    expect(constraints.deviceId).toEqual({ ideal: "pref-cam" });
-    expect(constraints.facingMode).toEqual({ ideal: "environment" });
+    expect(getUserMedia.mock.calls[0][0].video).toMatchObject({
+      deviceId: { ideal: "pref-cam" },
+      facingMode: { ideal: "environment" },
+    });
     expect(mgr.getCameraStreamState().activeSpec).toEqual({
       profile: "1080p",
       deviceId: "pref-cam",
       facingMode: "environment",
     });
-    // Explicit spec fields beat the preference.
-    const b = await mgr.acquireCameraLease({ profile: "1080p", facingMode: "user" });
-    expect(getUserMedia).toHaveBeenCalledTimes(2); // incompatible → reacquire
     a.release();
-    b.release();
+  });
+
+  // The 2026-08-30 real-phone bug: a persisted back-camera deviceId rode along
+  // with an explicit "facingMode: user" flip and silently kept the back camera.
+  test("an explicit facingMode never carries the preferred deviceId", async () => {
+    const mgr = await loadManager();
+    mgr.setPreferredCameraResolver(() => ({
+      deviceId: "back-cam",
+      facingMode: "environment",
+    }));
+    const a = await mgr.acquireCameraLease({ profile: "720p", facingMode: "user" });
+
+    const video = getUserMedia.mock.calls[0][0].video;
+    expect(video).toMatchObject({ facingMode: { ideal: "user" } });
+    expect(video).not.toHaveProperty("deviceId");
+    expect(mgr.getCameraStreamState().activeSpec).toEqual({
+      profile: "720p",
+      facingMode: "user",
+    });
+    a.release();
   });
 
   test("getTrackSummary exposes requested/capability/effective settings", async () => {
@@ -333,17 +471,17 @@ describe("camera-stream-manager", () => {
       { combineMicPrompt: true },
     );
     expect(getUserMedia).toHaveBeenCalledTimes(1);
-    const req = getUserMedia.mock.calls[0][0] as MediaStreamConstraints;
-    expect(req.video).toBeTruthy();
+    const req = getUserMedia.mock.calls[0][0];
+    expect(req.video).toMatchObject({ width: { ideal: 1280 } });
     expect(req.audio).toEqual({ echoCancellation: true }); // buildWarmMicConstraints()
     expect(noteCameraPermissionOutcome).toHaveBeenCalledWith(true);
     expect(noteMicPermissionOutcome).toHaveBeenCalledWith(true);
     // Audio split off into the mic singleton; the camera stream keeps video only.
     expect(adoptWarmMicStream).toHaveBeenCalledTimes(1);
-    const adopted = adoptWarmMicStream.mock.calls[0][0] as FakeStream;
+    const [adopted] = adoptWarmMicStream.mock.calls[0];
     expect(adopted.getAudioTracks()).toHaveLength(1);
-    expect((a.stream as unknown as FakeStream).getAudioTracks()).toHaveLength(0);
-    expect((a.stream as unknown as FakeStream).getVideoTracks()).toHaveLength(1);
+    expect(a.stream.getAudioTracks()).toHaveLength(0);
+    expect(a.stream.getVideoTracks()).toHaveLength(1);
     a.release();
   });
 
@@ -354,25 +492,18 @@ describe("camera-stream-manager", () => {
       { profile: "720p" },
       { combineMicPrompt: true },
     );
-    expect(
-      (getUserMedia.mock.calls[0][0] as MediaStreamConstraints).audio,
-    ).toBeUndefined();
+    expect(getUserMedia.mock.calls[0][0].audio).toBeUndefined();
     expect(adoptWarmMicStream).not.toHaveBeenCalled();
     a.release();
 
     jest.clearAllMocks();
-    getUserMedia.mockImplementation(
-      async () => new FakeStream([makeTrack("video")]),
-    );
     micPermissionState = "denied";
     mgr = await loadManager();
     a = await mgr.acquireCameraLease(
       { profile: "720p" },
       { combineMicPrompt: true },
     );
-    expect(
-      (getUserMedia.mock.calls[0][0] as MediaStreamConstraints).audio,
-    ).toBeUndefined();
+    expect(getUserMedia.mock.calls[0][0].audio).toBeUndefined();
     a.release();
   });
 
@@ -384,15 +515,13 @@ describe("camera-stream-manager", () => {
     });
     getUserMedia
       .mockRejectedValueOnce(denied) // the combined call
-      .mockImplementationOnce(async () => new FakeStream([makeTrack("video")]));
+      .mockImplementationOnce(async () => mint([makeVideoTrack()]));
     const a = await mgr.acquireCameraLease(
       { profile: "720p" },
       { combineMicPrompt: true },
     );
     expect(getUserMedia).toHaveBeenCalledTimes(2);
-    expect(
-      (getUserMedia.mock.calls[1][0] as MediaStreamConstraints).audio,
-    ).toBeUndefined();
+    expect(getUserMedia.mock.calls[1][0].audio).toBeUndefined();
     expect(noteCameraPermissionOutcome).toHaveBeenCalledWith(true);
     expect(noteMicPermissionOutcome).toHaveBeenCalledWith(false);
     a.release();
