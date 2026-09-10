@@ -52,7 +52,7 @@ The reviewer answers these; everything else is pre-decided.
 <what this change deliberately does NOT do, so nobody assumes it did — list the litter/columns/tables left for later and why.>
 
 ## 10. Cross-repo finalize + docs
-`pnpm db-types` (+ schema added if new) → repoint FE → `pnpm sync-types`. `python db/generate.py` (+ `matrx_orm.yaml` + `package_integration.py`) → `detect_applied.py` → `run.py`. Update matrx-extend/-local if referenced. Commit + push `main` both repos. Update `FEATURE.md` + `CHANGEOVER_PROGRESS.md`.
+`pnpm db-types` (+ schema added if new) → repoint FE → `pnpm sync-types`. `python db/generate.py` (+ `matrx_orm.yaml` + `package_integration.py`) → `detect_applied.py` → `run.py`. Update matrx-extend/-local if referenced. Commit + push `main` both repos. Update `FEATURE.md` + one Done-log line on `common-docs/operations/db-changeover-board.md`.
 
 ---
 **Reply `go` to execute, or tell me what to change.**

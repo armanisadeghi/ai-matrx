@@ -13,7 +13,7 @@
 - §8 Cross-repo apply order
 - §9 Clean cut — no silent shim (tripwire + RED guard)
 
-> The shared reference for every `db-*` change skill. **Everything here was read live from the database** (`pg_get_functiondef`, `information_schema`) on 2026-06-27, not from design docs. Where a design doc (`docs/db_rebuild/db-core-standards-and-automation.md`) and the live DB disagree, **this file states what the DB actually does.** Re-verify a signature with `execute_sql` before betting a migration on it.
+> The shared reference for every `db-*` change skill. **Everything here was read live from the database** (`pg_get_functiondef`, `information_schema`) on 2026-06-27, not from design docs. The rules (what a canonical table IS) live in [`db-rules/FEATURE.md`](../../../../common-docs/systems/platform/db-rules/FEATURE.md); this file is the mechanics. **Where either disagrees with the live DB, the DB wins** — re-verify a signature with `execute_sql` before betting a migration on it.
 
 ---
 
