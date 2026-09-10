@@ -18,7 +18,7 @@ One RLS-backed permissions system that makes any resource type shareable with us
 
 **Components** (`features/sharing/components/`)
 
-- `ShareButton.tsx` — self-contained button that opens `ShareModal`; shows public status only when requested
+- `ShareButton.tsx` — self-contained button that mounts `ShareModal` only while open; closed buttons do not resolve modal ownership. Shows public status only when requested
 - `ShareModal.tsx` — three-tab dialog (Users / Organizations / Public), the only UI surface owners need
 - `ShareLinkPanel.tsx` — "Anyone with the link" no-login token links (mint / copy / revoke / view-count), rendered in the Public tab
 - `DuplicateToEditButton.tsx` — canonical **"Make a copy & use it"** for a view-only sharee / public / anon viewer; forks the resource into the caller's account (signed-out → sign-up → finish). Shared by `/s/[token]`, `/p/e`, and in-app view surfaces
@@ -370,6 +370,8 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 ---
 
 ## Change log
+
+- `2026-09-10` — `ShareButton` mounts its dialog on demand, avoiding closed-dialog ownership queries on list and responsive toolbar consumers.
 
 - 2026-08-24 — Replaced the share dialog's ad hoc contact selector with the canonical `UserSearchField`. The advanced window can search, sort, and filter the caller's existing permitted contacts; the exact-email fallback remains, and no admin-directory access was added.
 - 2026-08-15 — **Canonical share links now have a real organization edge.** `platform.share_links.organization_id` was created as a bare UUID even though it stores `iam.organizations.id`. That made it the lone organization-scoped table missed by the FK-discovered guest→OAuth personal-workspace merge: two links moved to the permanent creator but retained the restored guest workspace id. `share_links_organization_fk_guest_repair.sql` re-homes every historical audited match and adds `share_links_organization_id_fkey`; future guest transfers now discover this table automatically.

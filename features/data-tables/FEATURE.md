@@ -346,6 +346,8 @@ parent-token rule for viewer reads and editor appends. Sharing integrates with t
 
 ## Invariants & gotchas
 
+- **Dataset sharing uses `ShareButton` with `resourceType="dataset"`.** The desktop toolbar, mobile actions, and Table Settings footer open the universal Users / Organizations / Public dialog. Settings never writes table-level `is_public`; visibility belongs to the sharing system. The padding-free settings dialog resets footer side margins and gives tab content a shrinking scroll area so status and actions remain visible.
+
 - 🚨 **THE METADATA/ROWS SPLIT — never call `get_user_table_complete` for metadata.** That RPC
   returns EVERY row of the dataset with **no LIMIT anywhere**, and derives `row_count` from
   `jsonb_array_length(data)`. Reach for it ONLY when the caller consumes every row (a full-table
@@ -721,6 +723,8 @@ blob must not also discard the column layout someone arranged. Bump
 older shapes.
 
 ## Change log
+
+- `2026-09-10` — Fixed the clipped Table Settings footer and exposed universal dataset sharing from settings, desktop toolbar, and mobile actions; removed the separate table-public checkbox and write path.
 
 - `2026-08-29` — **Table detail uses one compact mobile control row and content-driven columns.**
   Search and one overflow target now occupy the only persistent chrome row; sort defaults,

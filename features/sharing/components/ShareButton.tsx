@@ -97,17 +97,17 @@ export function ShareButton({
       )}
 
       {isModalOpen && (
-      <ShareModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          void refresh();
-        }}
-        resourceType={resourceType}
-        resourceId={resourceId}
-        resourceName={resourceName}
-        isOwner={isOwner}
-      />
+        <ShareModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            void refresh();
+          }}
+          resourceType={resourceType}
+          resourceId={resourceId}
+          resourceName={resourceName}
+          isOwner={isOwner}
+        />
       )}
     </>
   );
