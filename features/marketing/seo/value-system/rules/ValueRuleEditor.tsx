@@ -30,7 +30,12 @@
  */
 
 import { useEffect, useState } from "react";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Loader2, ListChecks, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
@@ -67,9 +72,7 @@ import {
 } from "@/features/marketing/search-console/data-class-rules";
 import type { BandMeta } from "../lib";
 import { ProvenanceStrip } from "../ProvenanceStrip";
-import type { ValueRule,
-  EditorProvenance,
-} from "../types";
+import type { ValueRule, EditorProvenance } from "../types";
 import { ImpactPanel } from "./ImpactPanel";
 import {
   listFacetDimensions,
@@ -107,7 +110,8 @@ function ruleToForm(rule: ValueRule): ValueRuleFormState {
     matchKind: rule.match_kind ?? "word",
     matchFacet: rule.match_facet ?? "",
     matchFacetValue: rule.match_facet_value ?? "",
-    multiplier: rule.value_multiplier === null ? "" : String(rule.value_multiplier),
+    multiplier:
+      rule.value_multiplier === null ? "" : String(rule.value_multiplier),
     notes: rule.notes ?? "",
   };
 }
@@ -123,10 +127,14 @@ function Field({
 }) {
   return (
     <label className="block space-y-1">
-      <span className="block text-[11px] font-medium text-foreground">{label}</span>
+      <span className="block text-[11px] font-medium text-foreground">
+        {label}
+      </span>
       {children}
       {hint ? (
-        <span className="block text-[10px] leading-4 text-muted-foreground">{hint}</span>
+        <span className="block text-[10px] leading-4 text-muted-foreground">
+          {hint}
+        </span>
       ) : null}
     </label>
   );
@@ -135,7 +143,8 @@ function Field({
 /** Everything wrong with the draft, in the order a person would fix it. */
 function draftIssues(form: ValueRuleFormState): string[] {
   const issues: string[] = [];
-  if (!form.name.trim()) issues.push("Give the rule a name you will recognize later.");
+  if (!form.name.trim())
+    issues.push("Give the rule a name you will recognize later.");
   const multiplier = Number(form.multiplier.trim());
   if (!form.multiplier.trim() || !Number.isFinite(multiplier)) {
     issues.push("Enter a multiplier.");
@@ -147,14 +156,16 @@ function draftIssues(form: ValueRuleFormState): string[] {
     issues.push("A multiplier cannot be more than 100.");
   }
   if (form.mode === "phrase") {
-    if (!form.pattern.trim()) issues.push("Type the phrase this rule looks for.");
+    if (!form.pattern.trim())
+      issues.push("Type the phrase this rule looks for.");
     else if (isUnsafePattern(form.pattern.trim()))
       issues.push(
         "The phrase can only use letters, numbers, spaces and ' - . / & _ — it becomes a whole-word search.",
       );
   } else {
     if (!form.matchFacet) issues.push("Choose which fact this rule reads.");
-    else if (!form.matchFacetValue) issues.push("Choose which value of that fact fires the rule.");
+    else if (!form.matchFacetValue)
+      issues.push("Choose which value of that fact fires the rule.");
   }
   return issues;
 }
@@ -191,7 +202,9 @@ export function ValueRuleEditor({
 
   const { quickAdd } = useQuickAdd(siteId);
   // P23 — what was typed into the dimension picker when it matched nothing.
-  const [newDimensionDraft, setNewDimensionDraft] = useState<string | null>(null);
+  const [newDimensionDraft, setNewDimensionDraft] = useState<string | null>(
+    null,
+  );
 
   const dimensions = useQuery({
     queryKey: facetDimensionsQueryKey(siteId),
@@ -199,15 +212,18 @@ export function ValueRuleEditor({
     staleTime: 5 * 60_000,
   });
 
-  const selectedDimension: FacetDimension | undefined = (dimensions.data ?? []).find(
-    (dimension) => dimension.slug === form.matchFacet,
-  );
+  const selectedDimension: FacetDimension | undefined = (
+    dimensions.data ?? []
+  ).find((dimension) => dimension.slug === form.matchFacet);
 
   // Clearing a stale value when the dimension changes is state, not render.
   useEffect(() => {
     if (!selectedDimension) return;
     if (!form.matchFacetValue) return;
-    if (selectedDimension.facet_values.some((v) => v.key === form.matchFacetValue)) return;
+    if (
+      selectedDimension.facet_values.some((v) => v.key === form.matchFacetValue)
+    )
+      return;
     setForm((prev) => ({ ...prev, matchFacetValue: "" }));
   }, [selectedDimension, form.matchFacetValue]);
 
@@ -243,10 +259,14 @@ export function ValueRuleEditor({
           start: window.start,
           end: window.end,
           multiplier,
-          pattern: debounced.mode === "phrase" ? debounced.pattern.trim().toLowerCase() : null,
+          pattern:
+            debounced.mode === "phrase"
+              ? debounced.pattern.trim().toLowerCase()
+              : null,
           matchKind: debounced.mode === "phrase" ? debounced.matchKind : null,
           matchFacet: debounced.mode === "fact" ? debounced.matchFacet : null,
-          matchFacetValue: debounced.mode === "fact" ? debounced.matchFacetValue : null,
+          matchFacetValue:
+            debounced.mode === "fact" ? debounced.matchFacetValue : null,
           ruleId: rule?.id ?? null,
         },
         signal,
@@ -280,7 +300,9 @@ export function ValueRuleEditor({
       toast.success(
         rule ? "Rule updated" : "Rule saved",
         moved > 0
-          ? { description: `${moved} keyword${moved === 1 ? "" : "s"} changed band.` }
+          ? {
+              description: `${moved} keyword${moved === 1 ? "" : "s"} changed band.`,
+            }
           : undefined,
       );
       invalidate();
@@ -327,10 +349,10 @@ export function ValueRuleEditor({
             {rule ? "Edit value rule" : "New value rule"}
           </DialogTitle>
           <DialogDescription className="text-xs">
-            A rule says what a word or a detected fact is worth to{" "}
-            <em>this</em> business. “Free” might be worthless to you and
-            everything to somebody else — that judgement is yours, and it is why
-            nothing here is a platform default.
+            A rule says what a word or a detected fact is worth to <em>this</em>{" "}
+            business. “Free” might be worthless to you and everything to
+            somebody else — that judgement is yours, and it is why nothing here
+            is a platform default.
           </DialogDescription>
         </DialogHeader>
 
@@ -338,10 +360,13 @@ export function ValueRuleEditor({
           <ProvenanceStrip provenance={provenance} onReverted={onClose} />
         ) : null}
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 overflow-hidden md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 overflow-y-auto md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] md:overflow-hidden">
           {/* ── The rule ── */}
-          <div className="min-h-0 space-y-3 overflow-y-auto overscroll-contain border-border p-4 scrollbar-thin md:border-r">
-            <Field label="Name" hint="What you will call this rule in the ledger.">
+          <div className="min-h-0 space-y-3 overflow-visible border-border p-4 md:overflow-y-auto md:overscroll-contain md:border-r md:scrollbar-thin">
+            <Field
+              label="Name"
+              hint="What you will call this rule in the ledger."
+            >
               <Input
                 value={form.name}
                 onChange={(e) => set("name", e.target.value)}
@@ -367,7 +392,9 @@ export function ValueRuleEditor({
                         : "text-muted-foreground hover:bg-accent hover:text-foreground",
                     )}
                   >
-                    {mode === "phrase" ? "A word in the search" : "A detected fact"}
+                    {mode === "phrase"
+                      ? "A word in the search"
+                      : "A detected fact"}
                   </button>
                 ))}
               </div>
@@ -381,13 +408,20 @@ export function ValueRuleEditor({
             {form.mode === "phrase" ? (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
                 <Field label="How it matches">
-                  <Select value={form.matchKind} onValueChange={(v) => set("matchKind", v)}>
+                  <Select
+                    value={form.matchKind}
+                    onValueChange={(v) => set("matchKind", v)}
+                  >
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {MATCH_KINDS.map((kind) => (
-                        <SelectItem key={kind.key} value={kind.key} className="text-xs">
+                        <SelectItem
+                          key={kind.key}
+                          value={kind.key}
+                          className="text-xs"
+                        >
                           {kind.label}
                         </SelectItem>
                       ))}
@@ -396,7 +430,10 @@ export function ValueRuleEditor({
                 </Field>
                 <Field
                   label="Phrase"
-                  hint={MATCH_KINDS.find((k) => k.key === form.matchKind)?.hint || undefined}
+                  hint={
+                    MATCH_KINDS.find((k) => k.key === form.matchKind)?.hint ||
+                    undefined
+                  }
                 >
                   <Input
                     value={form.pattern}
@@ -419,8 +456,8 @@ export function ValueRuleEditor({
               />
             ) : (dimensions.data ?? []).length === 0 ? (
               <p className="rounded-md border border-dashed border-border bg-muted/30 px-2.5 py-2 text-[11px] text-muted-foreground">
-                No dimensions are registered yet, so there is no fact to match on.
-                Use a word rule instead.
+                No dimensions are registered yet, so there is no fact to match
+                on. Use a word rule instead.
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -430,13 +467,19 @@ export function ValueRuleEditor({
                   <CreatablePicker
                     value={form.matchFacet || null}
                     onSelect={(v) =>
-                      setForm((p) => ({ ...p, matchFacet: v, matchFacetValue: "" }))
+                      setForm((p) => ({
+                        ...p,
+                        matchFacet: v,
+                        matchFacetValue: "",
+                      }))
                     }
                     placeholder="Choose a dimension"
                     noun="dimension"
                     ariaLabel="Fact dimension"
                     loading={dimensions.isPending}
-                    onCreateRequiresMore={(typed) => setNewDimensionDraft(typed)}
+                    onCreateRequiresMore={(typed) =>
+                      setNewDimensionDraft(typed)
+                    }
                     options={(dimensions.data ?? []).map((dimension) => ({
                       value: dimension.slug,
                       label: dimension.label,
@@ -459,14 +502,16 @@ export function ValueRuleEditor({
                     placeholder="Choose a value"
                     noun="value"
                     ariaLabel="Fact value"
-                    options={(selectedDimension?.facet_values ?? []).map((value) => ({
-                      value: value.key,
-                      label: value.label,
-                      hint:
-                        value.keyword_count > 0
-                          ? `${value.keyword_count.toLocaleString()} kw`
-                          : undefined,
-                    }))}
+                    options={(selectedDimension?.facet_values ?? []).map(
+                      (value) => ({
+                        value: value.key,
+                        label: value.label,
+                        hint:
+                          value.keyword_count > 0
+                            ? `${value.keyword_count.toLocaleString()} kw`
+                            : undefined,
+                      }),
+                    )}
                     lockedNote={
                       selectedDimension && selectedDimension.scope !== "site"
                         ? `“${selectedDimension.label}” is a shared dimension every business uses, so its choices are platform-governed.`
@@ -507,7 +552,9 @@ export function ValueRuleEditor({
                 className={cn(
                   "h-8 w-28 text-sm tabular-nums",
                   Number(form.multiplier) > 1 && "text-success",
-                  Number(form.multiplier) > 0 && Number(form.multiplier) < 1 && "text-warning",
+                  Number(form.multiplier) > 0 &&
+                    Number(form.multiplier) < 1 &&
+                    "text-warning",
                 )}
               />
             </Field>
@@ -528,7 +575,10 @@ export function ValueRuleEditor({
             {issues.length > 0 ? (
               <ul className="space-y-1 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2">
                 {issues.map((issue) => (
-                  <li key={issue} className="text-[11px] leading-4 text-warning">
+                  <li
+                    key={issue}
+                    className="text-[11px] leading-4 text-warning"
+                  >
                     {issue}
                   </li>
                 ))}
@@ -537,7 +587,7 @@ export function ValueRuleEditor({
           </div>
 
           {/* ── What it does ── */}
-          <div className="min-h-0 space-y-2 overflow-y-auto overscroll-contain bg-muted/20 p-4 scrollbar-thin">
+          <div className="min-h-0 space-y-2 overflow-visible bg-muted/20 p-4 md:overflow-y-auto md:overscroll-contain md:scrollbar-thin">
             <p className="text-xs font-semibold text-foreground">
               What this does to your keywords
             </p>
@@ -575,7 +625,13 @@ export function ValueRuleEditor({
             ) : null}
           </div>
           <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={busy}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              disabled={busy}
+            >
               Cancel
             </Button>
             <Button

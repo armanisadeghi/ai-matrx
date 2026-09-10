@@ -28,7 +28,12 @@
  */
 
 import { useState } from "react";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Loader2, Layers2, Plus, Trash2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
@@ -152,10 +157,14 @@ function Field({
 }) {
   return (
     <label className="block space-y-1">
-      <span className="block text-[11px] font-medium text-foreground">{label}</span>
+      <span className="block text-[11px] font-medium text-foreground">
+        {label}
+      </span>
       {children}
       {hint ? (
-        <span className="block text-[10px] leading-4 text-muted-foreground">{hint}</span>
+        <span className="block text-[10px] leading-4 text-muted-foreground">
+          {hint}
+        </span>
       ) : null}
     </label>
   );
@@ -207,7 +216,9 @@ export function ValueComboEditor({
   );
   const { quickAdd } = useQuickAdd(siteId);
   // P23 — what was typed into the dimension picker when it matched nothing.
-  const [newDimensionDraft, setNewDimensionDraft] = useState<string | null>(null);
+  const [newDimensionDraft, setNewDimensionDraft] = useState<string | null>(
+    null,
+  );
   const [pickDimension, setPickDimension] = useState("");
   const [pickValue, setPickValue] = useState("");
   const set = <K extends keyof ValueComboFormState>(
@@ -221,16 +232,21 @@ export function ValueComboEditor({
     staleTime: 5 * 60_000,
   });
 
-  const selectedDimension: FacetDimension | undefined = (dimensions.data ?? []).find(
-    (dimension) => dimension.slug === pickDimension,
-  );
+  const selectedDimension: FacetDimension | undefined = (
+    dimensions.data ?? []
+  ).find((dimension) => dimension.slug === pickDimension);
   const picked = resolvePicked(form.valueIds, dimensions.data ?? []);
 
   const addValue = () => {
-    const value = selectedDimension?.facet_values.find((v) => v.key === pickValue);
+    const value = selectedDimension?.facet_values.find(
+      (v) => v.key === pickValue,
+    );
     if (!value) return;
     if (form.valueIds.includes(value.value_id)) return;
-    setForm((prev) => ({ ...prev, valueIds: [...prev.valueIds, value.value_id] }));
+    setForm((prev) => ({
+      ...prev,
+      valueIds: [...prev.valueIds, value.value_id],
+    }));
     setPickValue("");
   };
 
@@ -358,9 +374,9 @@ export function ValueComboEditor({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 overflow-hidden md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 overflow-y-auto md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] md:overflow-hidden">
           {/* ── The combination ── */}
-          <div className="min-h-0 space-y-3 overflow-y-auto overscroll-contain border-border p-4 scrollbar-thin md:border-r">
+          <div className="min-h-0 space-y-3 overflow-visible border-border p-4 md:overflow-y-auto md:overscroll-contain md:border-r md:scrollbar-thin">
             <div className="space-y-1.5">
               <span className="block text-[11px] font-medium text-foreground">
                 All of these at once
@@ -444,7 +460,9 @@ export function ValueComboEditor({
                     noun="dimension"
                     ariaLabel="Combination dimension"
                     loading={dimensions.isPending}
-                    onCreateRequiresMore={(typed) => setNewDimensionDraft(typed)}
+                    onCreateRequiresMore={(typed) =>
+                      setNewDimensionDraft(typed)
+                    }
                     options={(dimensions.data ?? []).map((dimension) => ({
                       value: dimension.slug,
                       label: dimension.label,
@@ -468,7 +486,9 @@ export function ValueComboEditor({
                     noun="value"
                     ariaLabel="Combination value"
                     options={(selectedDimension?.facet_values ?? [])
-                      .filter((value) => !form.valueIds.includes(value.value_id))
+                      .filter(
+                        (value) => !form.valueIds.includes(value.value_id),
+                      )
                       .map((value) => ({
                         value: value.key,
                         label: value.label,
@@ -560,7 +580,9 @@ export function ValueComboEditor({
                   placeholder={form.effect === "scale" ? "0.3" : "10"}
                   className={cn(
                     "h-8 w-28 text-sm tabular-nums",
-                    form.effect === "scale" && Number(form.amount) > 1 && "text-success",
+                    form.effect === "scale" &&
+                      Number(form.amount) > 1 &&
+                      "text-success",
                     form.effect === "scale" &&
                       Number(form.amount) > 0 &&
                       Number(form.amount) < 1 &&
@@ -598,7 +620,10 @@ export function ValueComboEditor({
             {issues.length > 0 ? (
               <ul className="space-y-1 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2">
                 {issues.map((issue) => (
-                  <li key={issue} className="text-[11px] leading-4 text-warning">
+                  <li
+                    key={issue}
+                    className="text-[11px] leading-4 text-warning"
+                  >
                     {issue}
                   </li>
                 ))}
@@ -607,7 +632,7 @@ export function ValueComboEditor({
           </div>
 
           {/* ── What it does ── */}
-          <div className="min-h-0 space-y-2 overflow-y-auto overscroll-contain bg-muted/20 p-4 scrollbar-thin">
+          <div className="min-h-0 space-y-2 overflow-visible bg-muted/20 p-4 md:overflow-y-auto md:overscroll-contain md:scrollbar-thin">
             <p className="text-xs font-semibold text-foreground">
               What this does to your keywords
             </p>
@@ -646,7 +671,13 @@ export function ValueComboEditor({
             ) : null}
           </div>
           <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={busy}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              disabled={busy}
+            >
               Cancel
             </Button>
             <Button

@@ -26,7 +26,8 @@ export function ProvenanceStrip({
   onReverted: () => void;
 }) {
   const [busy, setBusy] = useState(false);
-  const changed = provenance.state === "changed" || provenance.state === "archived";
+  const changed =
+    provenance.state === "changed" || provenance.state === "archived";
 
   const revert = async () => {
     const ok = await confirm({
@@ -48,7 +49,7 @@ export function ProvenanceStrip({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/30 px-4 py-2">
+    <div className="flex flex-col items-stretch gap-2 border-b border-border bg-muted/30 px-4 py-2 sm:flex-row sm:items-center">
       <SourceChip
         state={
           provenance.state === "as_adopted"
@@ -61,17 +62,19 @@ export function ProvenanceStrip({
         }
         packName={provenance.packName}
       />
-      <p className="min-w-0 flex-1 text-[11px] leading-4 text-muted-foreground">
+      <p className="w-full min-w-0 text-[11px] leading-4 text-muted-foreground sm:flex-1">
         {changed ? (
           <>
-            <span className="text-foreground">Pack says</span> {provenance.packSummary}{" "}
+            <span className="text-foreground">Pack says</span>{" "}
+            {provenance.packSummary}{" "}
             <span className="text-muted-foreground">·</span>{" "}
-            <span className="text-foreground">you set</span> {provenance.siteSummary}
+            <span className="text-foreground">you set</span>{" "}
+            {provenance.siteSummary}
           </>
         ) : (
           <>
-            Still exactly what the pack proposes — edit anything and it becomes yours; the
-            platform never re-applies the pack over your changes.
+            Still exactly what the pack proposes — edit anything and it becomes
+            yours; the platform never re-applies the pack over your changes.
           </>
         )}
       </p>

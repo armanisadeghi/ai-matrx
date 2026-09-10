@@ -33,7 +33,12 @@
  */
 
 import { useEffect, useState } from "react";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Loader2, MapPinned, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
@@ -63,9 +68,7 @@ import { InlineQueryError } from "@/features/marketing/components/shared/Marketi
 import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import { useMarketingSiteOptional } from "@/features/marketing/components/site/MarketingSiteContext";
 import { getValueVocabulary } from "../data";
-import type { SiteGeoArea,
-  EditorProvenance,
-} from "../types";
+import type { SiteGeoArea, EditorProvenance } from "../types";
 import type { BandMeta } from "../lib";
 import { ProvenanceStrip } from "../ProvenanceStrip";
 import { ImpactPanel } from "./ImpactPanel";
@@ -121,10 +124,14 @@ function Field({
 }) {
   return (
     <label className="block space-y-1">
-      <span className="block text-[11px] font-medium text-foreground">{label}</span>
+      <span className="block text-[11px] font-medium text-foreground">
+        {label}
+      </span>
       {children}
       {hint ? (
-        <span className="block text-[10px] leading-4 text-muted-foreground">{hint}</span>
+        <span className="block text-[10px] leading-4 text-muted-foreground">
+          {hint}
+        </span>
       ) : null}
     </label>
   );
@@ -132,7 +139,8 @@ function Field({
 
 function draftIssues(form: GeoAreaFormState): string[] {
   const issues: string[] = [];
-  if (!form.label.trim()) issues.push("Give the area a name, like “Primary service radius”.");
+  if (!form.label.trim())
+    issues.push("Give the area a name, like “Primary service radius”.");
   if (!form.geoBand) issues.push("Choose which band this area belongs to.");
   const tokens = parseTokens(form.tokensText);
   if (tokens.length === 0 && form.places.length === 0)
@@ -182,8 +190,10 @@ export function GeoAreaEditor({
   const [form, setForm] = useState<GeoAreaFormState>(() =>
     area ? areaToForm(area) : EMPTY,
   );
-  const set = <K extends keyof GeoAreaFormState>(key: K, value: GeoAreaFormState[K]) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
+  const set = <K extends keyof GeoAreaFormState>(
+    key: K,
+    value: GeoAreaFormState[K],
+  ) => setForm((prev) => ({ ...prev, [key]: value }));
 
   /**
    * An area edited from the ledger arrives as ids; the chips need the rows.
@@ -199,7 +209,9 @@ export function GeoAreaEditor({
 
   useEffect(() => {
     if (savedPlaces.data) {
-      setForm((prev) => (prev.places.length === 0 ? { ...prev, places: savedPlaces.data } : prev));
+      setForm((prev) =>
+        prev.places.length === 0 ? { ...prev, places: savedPlaces.data } : prev,
+      );
     }
   }, [savedPlaces.data]);
 
@@ -209,7 +221,9 @@ export function GeoAreaEditor({
     staleTime: 5 * 60_000,
   });
 
-  const selectedBand = (geoBands.data ?? []).find((band) => band.value === form.geoBand);
+  const selectedBand = (geoBands.data ?? []).find(
+    (band) => band.value === form.geoBand,
+  );
   const selectedMultiplier =
     typeof selectedBand?.config?.multiplier === "number"
       ? (selectedBand.config.multiplier as number)
@@ -337,8 +351,8 @@ export function GeoAreaEditor({
           <ProvenanceStrip provenance={provenance} onReverted={onClose} />
         ) : null}
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 overflow-hidden md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-          <div className="min-h-0 space-y-3 overflow-y-auto overscroll-contain border-border p-4 scrollbar-thin md:border-r">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 overflow-y-auto md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] md:overflow-hidden">
+          <div className="min-h-0 space-y-3 overflow-visible border-border p-4 md:overflow-y-auto md:overscroll-contain md:border-r md:scrollbar-thin">
             <Field label="Name" hint="How this area reads in the ledger.">
               <Input
                 value={form.label}
@@ -350,13 +364,20 @@ export function GeoAreaEditor({
 
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <Field label="Kind">
-                <Select value={form.areaKind} onValueChange={(v) => set("areaKind", v)}>
+                <Select
+                  value={form.areaKind}
+                  onValueChange={(v) => set("areaKind", v)}
+                >
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {AREA_KINDS.map((kind) => (
-                      <SelectItem key={kind.key} value={kind.key} className="text-xs">
+                      <SelectItem
+                        key={kind.key}
+                        value={kind.key}
+                        className="text-xs"
+                      >
                         {kind.label}
                       </SelectItem>
                     ))}
@@ -415,7 +436,9 @@ export function GeoAreaEditor({
             {brandId && organizationId ? (
               <Field
                 label={`Which location serves it${
-                  form.locationIds.length > 0 ? ` (${form.locationIds.length})` : ""
+                  form.locationIds.length > 0
+                    ? ` (${form.locationIds.length})`
+                    : ""
                 }`}
                 hint="Optional, and the strongest signal there is. Bind this area to the branch that serves it and every search it catches is attributed there — ahead of any match the system would work out on its own. Leave it empty and the detected place is matched against your locations instead."
               >
@@ -454,7 +477,10 @@ export function GeoAreaEditor({
             {issues.length > 0 ? (
               <ul className="space-y-1 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2">
                 {issues.map((issue) => (
-                  <li key={issue} className="text-[11px] leading-4 text-warning">
+                  <li
+                    key={issue}
+                    className="text-[11px] leading-4 text-warning"
+                  >
                     {issue}
                   </li>
                 ))}
@@ -462,7 +488,7 @@ export function GeoAreaEditor({
             ) : null}
           </div>
 
-          <div className="min-h-0 space-y-2 overflow-y-auto overscroll-contain bg-muted/20 p-4 scrollbar-thin">
+          <div className="min-h-0 space-y-2 overflow-visible bg-muted/20 p-4 md:overflow-y-auto md:overscroll-contain md:scrollbar-thin">
             <p className="text-xs font-semibold text-foreground">
               Which keywords this catches
             </p>
@@ -505,7 +531,13 @@ export function GeoAreaEditor({
             ) : null}
           </div>
           <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={busy}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              disabled={busy}
+            >
               Cancel
             </Button>
             <Button

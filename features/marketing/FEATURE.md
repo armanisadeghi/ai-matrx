@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-09-07
+**Last updated:** 2026-09-10
 
 Supporting-keyword chips in the Page Workspace may wrap their label and
 metadata, but keep their action buttons together and inside the phone viewport.
@@ -590,6 +590,16 @@ to_jsonb(NEW))` and dereference that composite so column drift still fails
 
 ### Keyword Value offering tree
 
+The Rulebook's rule, service-area, and combination editors share one responsive
+scroll contract. On phones, the form and live impact preview participate in one
+vertical scroll surface beneath the fixed dialog footer; nested pane scrollbars
+must not divide either editor into short viewports. At `md` and above, the
+side-by-side form and preview panes scroll independently. Pack provenance stacks
+above its explanation on phones so the explanatory copy retains the full card
+width, then returns to one row from `sm` upward. The source guard in
+`rules/responsive-editor-layout.test.ts` pins all three sibling editors and the
+shared `ProvenanceStrip` to this contract.
+
 **The current `seo.topic`-backed offering model is a known cross-tenant product
 defect and must not be extended.** A company offering belongs to `web.brand`,
 while a website exposes only offerings selected through an explicit site
@@ -668,6 +678,13 @@ judgments are removed rather than silently transplanted to a different offering.
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. Google approved GA4 and YouTube read-only access on 2026-08-25: their code-controlled campaign phases are `approved`, so normal signed-in users can authorize, bind, manually sync GA4, and read an explicitly discovered owned YouTube channel. The GA4 recurring dispatcher remains disabled pending exact name-and-interval approval. Google Ads now has a real reporting-only workspace and server path behind an `internal_test` super-admin gate; live certification remains blocked on Google's passkey requirement for revealing the existing Explorer Access developer token and on a distinct Ads test identity. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
+
+- 2026-09-10 — **Keyword Value editors use one readable phone scroll surface.**
+  Rule, service-area, and combination editors now let the form and live impact
+  preview flow through one mobile scroller while retaining independent desktop
+  panes. Pack provenance stacks before its explanation on phones instead of
+  compressing copy into a word-wide column; a shared source guard covers the
+  entire editor family.
 
 - 2026-09-09 — UUID brand/site read failures reach the canonical access gate across server shells and pages; opaque key misses remain 404.
 
