@@ -1,6 +1,6 @@
 ---
 name: window-panels
-description: "The WindowPanel component and Window Manager. Use when a window won't drag/resize, the tray is missing, window state doesn't persist, rendering `<WindowPanel>` on a page, or editing WindowPanel.tsx, WindowTray*.tsx, or windowManagerSlice.ts. NOT for opening/registering overlays (use overlay-system)."
+description: "The WindowPanel component and Window Manager. Use when a window won't drag/resize/minimize, the tray is missing, window state doesn't persist, rendering `<WindowPanel>` on a page, or editing features/window-panels/** or windowManagerSlice.ts. NOT for opening/registering overlays (use overlay-system)."
 ---
 
 # Window Panels — the WindowPanel component + Window Manager

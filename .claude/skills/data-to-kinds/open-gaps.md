@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: "data-to-kinds — Open gaps"
-description: "The SDK wishlist and the dated friction logs from every replication run, each carrying the rule it earned; read it before any stage for items naming that stage, and append new friction here. Companion to the data-to-kinds skill."
+description: "The SDK wishlist and the dated friction logs from every replication run, each carrying the rule it earned; every stage reads ALL of it before its first step (most items bind a stage without naming it), and appends new friction here. Companion to the data-to-kinds skill."
 tags: [data-to-kinds, skills, open-gaps]
 timestamp: 2026-09-10T00:00:00Z
 ---

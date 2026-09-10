@@ -1,4 +1,12 @@
+/**
+ * SUT: `uploadItemFile` / `removeItemFile` — product capture's one cloud
+ * boundary. Doubled (external): `fileHandler` (storage/network) and the
+ * `./service` DB layer. Owned and never stubbed: the refusal rules, the exact
+ * upload options + metadata, the delete-vs-unlink decision and its ordering.
+ */
+
 import { fileHandler } from "@/features/files/handler/handler";
+import type { UploadedNormalizedFile } from "@/features/files/handler/types";
 
 import {
   countFileLinks,
@@ -7,6 +15,7 @@ import {
   listItemFiles,
   unlinkFile,
 } from "./service";
+import type { CaptureFile, CaptureItem, CaptureVideoFacts } from "./types";
 import { removeItemFile, uploadItemFile } from "./uploads";
 
 jest.mock("@/features/files/handler/handler", () => ({
@@ -28,6 +37,64 @@ const mockCountFileLinks = jest.mocked(countFileLinks);
 const mockIsActiveCloudFile = jest.mocked(isActiveCloudFile);
 const mockListItemFiles = jest.mocked(listItemFiles);
 const mockUnlinkFile = jest.mocked(unlinkFile);
+
+// ── Fixtures ─────────────────────────────────────────────────────────────────
+
+const videoItem = {
+  id: "item-video",
+  organizationId: "org-video",
+  code: "SKU-VIDEO",
+  codeSource: "manual",
+  notes: "",
+  folderPath: "Product Captures/org-video/item-video",
+  status: "capturing",
+  createdAt: "2026-09-01T00:00:00.000Z",
+  version: 1,
+} satisfies CaptureItem;
+
+const WEBM = "video/webm;codecs=vp8,opus";
+
+function videoFile(): File {
+  return new File(["video"], "product-video-42.webm", { type: WEBM });
+}
+
+/** `fileId: ""` models the malformed upload the SUT must refuse: the handler's
+ *  contract promises a durable id, but an empty one is not addressable. */
+function uploadedFile(file: File, fileId: string): UploadedNormalizedFile {
+  return {
+    fileId,
+    origin: "owned",
+    capabilities: {
+      canRead: true,
+      canEdit: true,
+      canShare: true,
+      canDelete: true,
+      requiresAuth: true,
+      transportSafeForFetch: true,
+    },
+    meta: {
+      fileName: file.name,
+      mime: file.type,
+      category: "VIDEO",
+      previewKind: "video",
+      thumbnailStrategy: "video-poster",
+    },
+    lifecycle: { refreshable: true, persisted: true },
+    scope: { organizationId: "org-video" },
+    __source: { kind: "file", file },
+  } satisfies UploadedNormalizedFile;
+}
+
+function linkRow(id: string, fileId: string): CaptureFile {
+  return {
+    id,
+    itemId: "item-a",
+    fileId,
+    kind: "photo",
+    video: null,
+    createdAt: "2026-09-01T00:00:01.000Z",
+  } satisfies CaptureFile;
+}
 
 describe("removeItemFile", () => {
   beforeEach(() => {
@@ -66,14 +133,14 @@ describe("removeItemFile", () => {
     expect(mockIsActiveCloudFile).not.toHaveBeenCalled();
   });
 
-  it("deletes a sole active file before unlinking its relation", async () => {
-    const order: string[] = [];
+  it("hard-deletes a sole active file before unlinking its relation", async () => {
+    const calls: unknown[][] = [];
     mockCountFileLinks.mockResolvedValue(1);
-    mockRemove.mockImplementation(async () => {
-      order.push("file");
+    mockRemove.mockImplementation(async (...args) => {
+      calls.push(["remove", ...args]);
     });
-    mockUnlinkFile.mockImplementation(async () => {
-      order.push("link");
+    mockUnlinkFile.mockImplementation(async (...args) => {
+      calls.push(["unlink", ...args]);
     });
 
     await removeItemFile({
@@ -82,7 +149,25 @@ describe("removeItemFile", () => {
       linkId: "sole-link",
     });
 
-    expect(order).toEqual(["file", "link"]);
+    expect(mockCountFileLinks).toHaveBeenCalledWith("sole-file");
+    expect(calls).toEqual([
+      ["remove", "sole-file", { hard: true }],
+      ["unlink", "sole-link"],
+    ]);
+  });
+
+  it("resolves the relation by fileId when no linkId is supplied", async () => {
+    mockListItemFiles.mockResolvedValue([
+      linkRow("link-a", "file-a"),
+      linkRow("link-b", "file-b"),
+    ]);
+    mockCountFileLinks.mockResolvedValue(2);
+
+    await removeItemFile({ itemId: "item-a", fileId: "file-b" });
+
+    expect(mockListItemFiles).toHaveBeenCalledWith("item-a");
+    expect(mockUnlinkFile).toHaveBeenCalledTimes(1);
+    expect(mockUnlinkFile).toHaveBeenCalledWith("link-b");
   });
 
   it("idempotently unlinks a stale relation whose file is already deleted", async () => {
@@ -128,81 +213,64 @@ describe("uploadItemFile video contract", () => {
     jest.clearAllMocks();
   });
 
-  it("persists the exact normalized MIME and duration in file and link metadata", async () => {
-    const file = new File(["video"], "product-video-42.webm", {
-      type: "video/webm;codecs=vp8,opus",
-    });
-    const item = {
-      id: "item-video",
-      organizationId: "org-video",
-      code: "SKU-VIDEO",
-      codeSource: "manual" as const,
-      notes: "",
-      folderPath: "Product Captures/org-video/item-video",
-      status: "capturing" as const,
-      createdAt: "2026-09-01T00:00:00.000Z",
-      version: 1,
-    };
-    const video = {
-      mime: "video/webm;codecs=vp8,opus",
-      durationMs: 1_235,
-    };
-    mockUpload.mockResolvedValue({
-      fileId: "cloud-video",
-      origin: "owned",
-      capabilities: {
-        canRead: true,
-        canEdit: true,
-        canShare: true,
-        canDelete: true,
-        requiresAuth: true,
-        transportSafeForFetch: true,
-      },
-      meta: {
-        fileName: file.name,
-        mime: file.type,
-        category: "VIDEO",
-        previewKind: "video",
-        thumbnailStrategy: "video-poster",
-      },
-      lifecycle: { refreshable: true, persisted: true },
-      scope: { organizationId: item.organizationId },
-      __source: { kind: "file", file },
-    });
-    mockLinkFile.mockResolvedValue({
+  it("uploads org-internal into the item folder with the exact normalized facts, then links them", async () => {
+    const file = videoFile();
+    const video = { mime: WEBM, durationMs: 1_235 } satisfies CaptureVideoFacts;
+    const uploaded = uploadedFile(file, "cloud-video");
+    const link = {
       id: "link-video",
-      itemId: item.id,
+      itemId: "item-video",
       fileId: "cloud-video",
       kind: "video",
       video,
       createdAt: "2026-09-01T00:00:01.000Z",
-    });
+    } satisfies CaptureFile;
+    mockUpload.mockResolvedValue(uploaded);
+    mockLinkFile.mockResolvedValue(link);
 
-    await uploadItemFile({ item, file, kind: "video", video });
+    const result = await uploadItemFile({ item: videoItem, file, kind: "video", video });
 
+    expect(mockUpload).toHaveBeenCalledTimes(1);
     expect(mockUpload).toHaveBeenCalledWith(
       { kind: "file", file },
-      expect.objectContaining({
+      {
+        folderPath: "Product Captures/org-video/item-video",
+        visibility: "internal",
+        fileName: "product-video-42.webm",
         metadata: {
           product_capture: {
-            item_id: item.id,
-            code: item.code,
+            item_id: "item-video",
+            code: "SKU-VIDEO",
             kind: "video",
-            video: {
-              mime: video.mime,
-              duration_ms: video.durationMs,
-            },
+            video: { mime: "video/webm;codecs=vp8,opus", duration_ms: 1235 },
           },
         },
-      }),
+        inheritActiveScope: true,
+      },
     );
     expect(mockLinkFile).toHaveBeenCalledWith({
-      itemId: item.id,
-      organizationId: item.organizationId,
+      itemId: "item-video",
+      organizationId: "org-video",
       fileId: "cloud-video",
       kind: "video",
-      video,
+      video: { mime: "video/webm;codecs=vp8,opus", durationMs: 1235 },
     });
+    expect(result).toEqual({ uploaded, link });
+  });
+
+  it("refuses an upload that resolved without a fileId and never links it", async () => {
+    const file = videoFile();
+    mockUpload.mockResolvedValue(uploadedFile(file, ""));
+
+    await expect(
+      uploadItemFile({
+        item: videoItem,
+        file,
+        kind: "video",
+        video: { mime: WEBM, durationMs: 1_235 },
+      }),
+    ).rejects.toThrow(/resolved without a fileId/);
+    expect(mockLinkFile).not.toHaveBeenCalled();
   });
 
   it("rejects missing or divergent terminal facts before uploading bytes", async () => {
@@ -210,16 +278,10 @@ describe("uploadItemFile video contract", () => {
       type: "video/webm",
     });
     const item = {
-      id: "item-video",
-      organizationId: "org-video",
+      ...videoItem,
       code: null,
       codeSource: null,
-      notes: "",
-      folderPath: "Product Captures/org-video/item-video",
-      status: "capturing" as const,
-      createdAt: "2026-09-01T00:00:00.000Z",
-      version: 1,
-    };
+    } satisfies CaptureItem;
 
     await expect(uploadItemFile({ item, file, kind: "video" })).rejects.toThrow(
       /requires normalized MIME and duration/i,
@@ -236,4 +298,24 @@ describe("uploadItemFile video contract", () => {
     expect(mockUpload).not.toHaveBeenCalled();
     expect(mockLinkFile).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["a zero duration", "video", 0],
+    ["a negative duration", "video", -5],
+    ["a fractional duration", "video", 12.5],
+    ["video facts on a photo", "photo", 1_235],
+  ] as const)(
+    "refuses %s before uploading bytes",
+    async (_case, kind, durationMs) => {
+      await expect(
+        uploadItemFile({
+          item: videoItem,
+          file: videoFile(),
+          kind,
+          video: { mime: WEBM, durationMs },
+        }),
+      ).rejects.toThrow(/facts must match the file MIME and carry a positive integer duration/);
+      expect(mockUpload).not.toHaveBeenCalled();
+    },
+  );
 });

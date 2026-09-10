@@ -3,6 +3,13 @@
  * that `useContentIrRegistryVersion` (BlockRenderer) rides. A schema or
  * component landing AFTER a region finalized must produce an observable
  * version change + listener call, or the frozen envelope can never upgrade.
+ *
+ * SUTs: `kindRegistry` (local) and `ComponentRegistry` (the local adapter over
+ * `@ai-matrx/content-ir-react`'s ComponentResolver — the dedupe, miss cache
+ * and per-kind versions it owns run for real). The only doubles are the two
+ * Supabase loaders, the network boundary. Listener counts and loader call
+ * counts ARE the contract here: exactly-one notify, no spurious notify,
+ * one fetch per kind, no re-fetch storm.
  */
 
 import { ComponentRegistry } from "../registry/component-registry";
@@ -24,12 +31,8 @@ jest.mock("../registry/schema-source-kind-components", () => {
   };
 });
 
-const mockList = listKindComponentsFromTables as jest.MockedFunction<
-  typeof listKindComponentsFromTables
->;
-const mockBySlug = getKindComponentBySlug as jest.MockedFunction<
-  typeof getKindComponentBySlug
->;
+const mockList = jest.mocked(listKindComponentsFromTables);
+const mockBySlug = jest.mocked(getKindComponentBySlug);
 
 function dbRow(
   overrides: Partial<KindComponentProjection> &
@@ -50,6 +53,16 @@ function dbRow(
     id: "00000000-0000-0000-0000-000000000001",
     ...overrides,
   };
+}
+
+/**
+ * The loaders are mocked to resolve immediately, so the cold fetch is a pure
+ * promise chain; one macrotask turn drains it completely regardless of how
+ * many awaits the resolver adds (counting microtasks would couple the test to
+ * the package's internal await depth).
+ */
+async function settleColdFetches(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 describe("kindRegistry version tick", () => {
@@ -111,8 +124,7 @@ describe("componentRegistry version tick + cold single-kind fetch", () => {
 
     registry.requestComponent("wine_tasting", "web", "output");
     registry.requestComponent("wine_tasting", "web", "output"); // in-flight dedupe
-    await Promise.resolve();
-    await Promise.resolve();
+    await settleColdFetches();
 
     expect(mockBySlug).toHaveBeenCalledTimes(1);
     expect(mockBySlug).toHaveBeenCalledWith("wine_tasting", "web");
@@ -155,8 +167,7 @@ describe("componentRegistry version tick + cold single-kind fetch", () => {
 
     registry.requestComponent("lazy_body_kind", "web", "output");
     registry.requestComponent("lazy_body_kind", "web", "output");
-    await Promise.resolve();
-    await Promise.resolve();
+    await settleColdFetches();
 
     expect(mockBySlug).toHaveBeenCalledTimes(1);
     expect(registry.resolve("lazy_body_kind", "web", "output")).toMatchObject({
@@ -167,13 +178,12 @@ describe("componentRegistry version tick + cold single-kind fetch", () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it("requestComponent: a miss is remembered (no re-fetch storm for unknown kinds)", async () => {
+  it("requestComponent: a miss is remembered after the fetch settles (no re-fetch storm)", async () => {
     const registry = new ComponentRegistry(() => []);
     mockBySlug.mockResolvedValue([]);
 
     registry.requestComponent("no_such_kind", "web", "output");
-    await Promise.resolve();
-    await Promise.resolve();
+    await settleColdFetches(); // in-flight is over — only the miss cache can suppress now
     registry.requestComponent("no_such_kind", "web", "output");
 
     expect(mockBySlug).toHaveBeenCalledTimes(1);
@@ -189,8 +199,7 @@ describe("componentRegistry version tick + cold single-kind fetch", () => {
     ]);
 
     registry.requestComponent("k_roles", "web", "output");
-    await Promise.resolve();
-    await Promise.resolve();
+    await settleColdFetches();
     expect(registry.resolve("k_roles", "web", "output")).toBeNull();
     expect(registry.resolve("k_roles", "web", "input")).toMatchObject({
       componentKey: "input_comp",
@@ -204,14 +213,26 @@ describe("componentRegistry version tick + cold single-kind fetch", () => {
     expect(mockBySlug).toHaveBeenCalledTimes(1);
   });
 
+  it("an output miss does not block a fetch for the same kind's input role", async () => {
+    const registry = new ComponentRegistry(() => []);
+    mockBySlug.mockResolvedValue([]);
+
+    registry.requestComponent("k_role_miss", "web", "output");
+    await settleColdFetches();
+    // The input component may have been authored since; its request is not
+    // covered by the output role's miss.
+    registry.requestComponent("k_role_miss", "web", "input");
+
+    expect(mockBySlug).toHaveBeenCalledTimes(2);
+  });
+
   it("a wholesale refresh clears recorded misses: miss → create row → refresh → eager fetch works", async () => {
     const registry = new ComponentRegistry(() => []);
     mockBySlug.mockResolvedValue([]);
 
     // 1. Miss recorded.
     registry.requestComponent("late_created", "web", "output");
-    await Promise.resolve();
-    await Promise.resolve();
+    await settleColdFetches();
     expect(mockBySlug).toHaveBeenCalledTimes(1);
     registry.requestComponent("late_created", "web", "output");
     expect(mockBySlug).toHaveBeenCalledTimes(1); // suppressed
@@ -226,8 +247,7 @@ describe("componentRegistry version tick + cold single-kind fetch", () => {
       dbRow({ kind: "late_created", componentKey: "late_comp" }),
     ]);
     registry.requestComponent("late_created", "web", "output");
-    await Promise.resolve();
-    await Promise.resolve();
+    await settleColdFetches();
     expect(mockBySlug).toHaveBeenCalledTimes(2);
     expect(registry.resolve("late_created", "web", "output")).toMatchObject({
       componentKey: "late_comp",
@@ -258,16 +278,33 @@ describe("granular per-kind repaint versions", () => {
     unsubY();
   });
 
+  it("kindRegistry: kind X's version snapshot changes when X's schema arrives", () => {
+    // useContentIrKindVersion reads this snapshot; a listener call with an
+    // unchanged snapshot is a repaint React bails out of.
+    const before = kindRegistry.getKindVersion("gran_kind_snapshot");
+
+    kindRegistry.upsertDefinition({
+      kind: "gran_kind_snapshot",
+      schema: { kind: "gran_kind_snapshot", fields: {} },
+      schemaSource: "content_ir",
+      tier: "cold",
+    });
+
+    expect(kindRegistry.getKindVersion("gran_kind_snapshot")).toBeGreaterThan(before);
+  });
+
   it("componentRegistry: ingest bumps only the ingested kinds; replaceDbRows (epoch) reaches everyone", () => {
     const registry = new ComponentRegistry(() => []);
     const seenX = jest.fn();
     const seenY = jest.fn();
     registry.subscribeKind("gran_x", seenX);
     registry.subscribeKind("gran_y", seenY);
+    const versionXBefore = registry.getKindVersion("gran_x");
 
     registry.ingestDbRows([dbRow({ kind: "gran_x", componentKey: "cx" })]);
     expect(seenX).toHaveBeenCalledTimes(1);
     expect(seenY).not.toHaveBeenCalled();
+    expect(registry.getKindVersion("gran_x")).toBeGreaterThan(versionXBefore);
     const versionYBefore = registry.getKindVersion("gran_y");
 
     // Wholesale replace = epoch bump: every per-kind snapshot changes.

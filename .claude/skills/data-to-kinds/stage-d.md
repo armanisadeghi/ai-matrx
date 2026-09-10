@@ -31,11 +31,17 @@ timestamp: 2026-09-10T00:00:00Z
    - Worked pattern: `aidream/scripts/check_search_cutover_safety.py`. Its first measured verdict
      was **23 references · 7 safe · 13 BREAK · 3 unprovable across 3 ACTIVE workflows** — a
      cutover that every consumer-level check had called ready.
-   - Ship this as a committed guard for your family, and put the verdict in the ledger. **A
+   - Ship this as a committed guard for your family by adding a `FAMILIES` entry to the
+     parameterized `aidream/scripts/check_kind_cutover_safety.py --family <family>` (`--self-test`
+     plants a BREAK and a SAFE) — never a per-family copy of the search script (gap #52). A
+     whole-output passthrough still comes back UNPROVABLE and must be human-read; record the read
+     and its verdict in the ledger (gap #52). Put the verdict in the ledger. **A
      cutover with any BREAK or UNPROVABLE row does not ship; it becomes the fix list.**
 1. **Repoint the emitters**: the graph actions / tools / services that produced the raw
    passthrough now call the ONE engine → adapter → kind (`output_kind=<slug>`), with
-   `include_raw=` for projection 2 and the AI view made at the tool boundary (projection 3).
+   `include_raw=` for projection 2 and the AI view (projection 3) declared ON THE KIND as
+   `@kind(..., ai_view=(...))` and applied at the one prompt door `matrx_ai.config.prompt_values` —
+   never made at the tool boundary (SKILL.md Vocabulary: Arman's 2026-08-24 ruling supersedes it).
    Live nodes verify `output_kind` against the registry schema every run (`output_kind_ok`), so
    a collection-schema supersede MUST ride the same change as the repoint (the search pilot gates
    it behind `seed_search_kind_family.py --cutover`). Delete the passthrough models

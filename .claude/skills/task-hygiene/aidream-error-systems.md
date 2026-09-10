@@ -37,7 +37,7 @@ layered, and loud").
 - **Remember:** `COERCED`/`INFERRED` aren't failures — they're the harness rescuing bad calls (`ARG_RECOVERY.md`); a spike in them still signals a tool schema that fights the agents' habits.
 
 ### 2. `public.system_error` — canonical non-write failure sink
-Request crashes, stream crash/cancel, loud-recovery reports. Written only via `matrx_orm.record_error` (never raises). Review: dashboard `/persistence` → System Errors tab; REST `GET /persistence/errors`, `POST /errors/{id}/resolve` (+ batch). **Cleaned up =** resolve with a `resolution_note`; recurring kinds → FOUND_DEFECTS. Append-only, no pruner (intentional). Unification roadmap: `TASK-systemwide-error-tracking.md`.
+Request crashes, stream crash/cancel, loud-recovery reports. Written only via `matrx_orm.record_error` (never raises). Review: dashboard `/persistence` → System Errors tab; REST `GET /persistence/errors`, `POST /errors/{id}/resolve` (+ batch). **Cleaned up =** resolve with a `resolution_note`; recurring kinds → FOUND_DEFECTS. Append-only, no pruner (intentional). Unification roadmap: `aidream/docs/handoffs/systemwide-error-tracking.md`.
 
 ### 3. `public.system_write_failure` — dropped DB writes (REPLAYABLE)
 Coordinator-captured write drops (the 2026-05 data-loss fix). Review: `/persistence` → Write Failures tab; **replay** via `POST /persistence/failures/{id}/replay`, batch, or CLI `scripts/replay_write_failures.py` (dry-run by default, `--apply`). **Cleaned up =** replayed-and-recovered, or dismissed with reason. A write failure that replays cleanly but recurs = harness defect → file it. Skill: `matrx-persistence`.

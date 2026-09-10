@@ -41,9 +41,23 @@ describe("parseAgentSettings", () => {
     ["a primitive", "temperature=0.4"],
     ["a non-JSON nested value", { temperature: undefined }],
     ["a non-finite number", { temperature: Number.NaN }],
+    ["a non-plain nested object", { cached_at: new Date(0) }],
   ])("rejects %s loudly", (_label, raw) => {
     expect(parseAgentSettings(raw, context)).toEqual({});
     expect(captureError).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the agent and relation in the loud report so the row can be repaired", () => {
+    parseAgentSettings([], context);
+
+    expect(captureError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "data-shape",
+        relation: "agent.definition",
+        message: expect.stringContaining("agent-123"),
+        userMessage: expect.stringContaining("Re-save the agent"),
+      }),
+    );
   });
 });
 
@@ -103,6 +117,38 @@ describe("parseAgentContextPolicies", () => {
     expect(captureError).not.toHaveBeenCalled();
   });
 
+  it("removes nullable API defaults inside a policy source", () => {
+    expect(
+      parseAgentContextPolicies(
+        [
+          {
+            key: "project_context",
+            type: "project",
+            persist: "auto",
+            source: {
+              kind: "ctx_item",
+              id: null,
+              field: null,
+              scope_type_id: null,
+              item_key: null,
+              on_missing: null,
+              extra: null,
+            },
+          },
+        ],
+        context,
+      ),
+    ).toEqual([
+      {
+        key: "project_context",
+        type: "project",
+        persist: "auto",
+        source: { kind: "ctx_item" },
+      },
+    ]);
+    expect(captureError).not.toHaveBeenCalled();
+  });
+
   it.each([null, undefined])("normalizes %s to an empty policy list", (raw) => {
     expect(parseAgentContextPolicies(raw, context)).toEqual([]);
     expect(captureError).not.toHaveBeenCalled();
@@ -138,6 +184,14 @@ describe("parseAgentContextPolicies", () => {
     [
       "invalid source kind",
       { key: "source", type: "text", source: { kind: 3 } },
+    ],
+    [
+      "empty source kind",
+      { key: "source", type: "text", source: { kind: "" } },
+    ],
+    [
+      "invalid source field",
+      { key: "source", type: "text", source: { kind: "ctx_item", field: 7 } },
     ],
     [
       "invalid source id",

@@ -513,6 +513,154 @@ describe("POST /api/webhooks/twilio/voice", () => {
     );
   });
 
+  /** A signed POST to the consent action URL the route issued in its prompt. */
+  function consentActionRequest(input: {
+    call?: string;
+    disclosedAt?: string;
+    disclosureVersion?: string;
+  }): Request {
+    const actionUrl = new URL(WEBHOOK_URL);
+    actionUrl.searchParams.set("stage", "owner-beta-consent");
+    actionUrl.searchParams.set("call", input.call ?? "CA123");
+    actionUrl.searchParams.set(
+      "disclosed_at",
+      input.disclosedAt ?? new Date().toISOString(),
+    );
+    actionUrl.searchParams.set(
+      "disclosure_version",
+      input.disclosureVersion ?? OWNER_BETA_VOICE_DISCLOSURE_VERSION,
+    );
+    return signedRequest(
+      {
+        AccountSid: "AC123",
+        CallSid: "CA123",
+        From: "+14155550100",
+        To: "+14158059951",
+        Direction: "inbound",
+        Digits: "1",
+      },
+      undefined,
+      actionUrl.toString(),
+    );
+  }
+
+  test("rejects the caller without a consent prompt when owner-beta admission is unavailable", async () => {
+    jest
+      .mocked(authorizeVoiceOwnerBetaCall)
+      .mockRejectedValueOnce(new Error("database unavailable"));
+
+    const response = await POST(
+      signedRequest({
+        AccountSid: "AC123",
+        CallSid: "CA123",
+        From: "+14155550100",
+        To: "+14158059951",
+        Direction: "inbound",
+      }),
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain("not available for this caller");
+    expect(body).not.toContain("<Gather");
+    expect(body).not.toContain("<Record");
+    expect(resolveVoiceOwnerCallContext).not.toHaveBeenCalled();
+  });
+
+  test("refuses a keypad consent replayed onto a different call's signed action URL", async () => {
+    const response = await POST(consentActionRequest({ call: "CA999" }));
+    const body = await response.text();
+
+    expect(body).toContain("did not receive affirmative consent");
+    expect(body).not.toContain("<Record");
+    expect(claimVoiceCallConsentEvent).not.toHaveBeenCalled();
+  });
+
+  test("refuses consent given after the five-minute disclosure window", async () => {
+    const sixMinutesAgo = new Date(Date.now() - 6 * 60 * 1000).toISOString();
+
+    const response = await POST(
+      consentActionRequest({ disclosedAt: sixMinutesAgo }),
+    );
+
+    expect(await response.text()).toContain(
+      "did not receive affirmative consent",
+    );
+    expect(claimVoiceCallConsentEvent).not.toHaveBeenCalled();
+  });
+
+  test("accepts consent given inside the five-minute disclosure window", async () => {
+    const fourMinutesAgo = new Date(Date.now() - 4 * 60 * 1000).toISOString();
+
+    const response = await POST(
+      consentActionRequest({ disclosedAt: fourMinutesAgo }),
+    );
+
+    expect(await response.text()).toContain("consent was received");
+    expect(claimVoiceCallConsentEvent).toHaveBeenCalledTimes(1);
+  });
+
+  test("refuses consent against a superseded disclosure version", async () => {
+    const response = await POST(
+      consentActionRequest({ disclosureVersion: "owner-beta-2026-08-01-v1" }),
+    );
+
+    expect(await response.text()).toContain(
+      "did not receive affirmative consent",
+    );
+    expect(claimVoiceCallConsentEvent).not.toHaveBeenCalled();
+  });
+
+  test("reports the recording lifecycle gate closed when persistence is not ready", async () => {
+    jest.mocked(getVoiceRecordingPersistenceReadiness).mockResolvedValueOnce({
+      ambiguous_call_count: 0,
+      call_claim_ready: true,
+      event_idempotency_ready: true,
+      file_binding_ready: true,
+      provider_identity_unique: true,
+      provider_url_violation_count: 0,
+      ready: false,
+      recording_claim_ready: false,
+      schema_ready: true,
+    });
+
+    const body = await (await GET()).json();
+
+    expect(body.recording.readiness.gates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "lifecycle_persistence_ready",
+          passed: false,
+        }),
+      ]),
+    );
+  });
+
+  test("keeps the relay call-lifecycle gate closed while ambiguous calls exist", async () => {
+    jest.mocked(getVoiceRecordingPersistenceReadiness).mockResolvedValueOnce({
+      ambiguous_call_count: 3,
+      call_claim_ready: true,
+      event_idempotency_ready: true,
+      file_binding_ready: true,
+      provider_identity_unique: true,
+      provider_url_violation_count: 0,
+      ready: true,
+      recording_claim_ready: true,
+      schema_ready: true,
+    });
+
+    const body = await (await GET()).json();
+
+    expect(body.conversationRelay.readiness.gates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "canonical_call_lifecycle_ready",
+          passed: false,
+        }),
+      ]),
+    );
+  });
+
   test("reports recording as disabled until every ownership gate passes", async () => {
     const response = await GET();
     const body = await response.json();

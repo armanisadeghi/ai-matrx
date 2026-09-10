@@ -1,6 +1,6 @@
 ---
 name: ui-sharp
-description: "Lean, sharp UI posture — the everyday default redesign. Use when asked to make a page, panel, list, form, or dashboard good, cleaner, or nicer, or for a fast confident refresh where the agent uses its judgment instead of asking for a spec."
+description: "Lean, sharp UI posture — the everyday default for building or redesigning a UI. Use when asked to build or make a page, panel, list, form, or dashboard good, cleaner, or nicer, or for a fast confident refresh where the agent uses its judgment instead of asking for a spec."
 ---
 
 # ui-sharp — the lean, inviting redesign

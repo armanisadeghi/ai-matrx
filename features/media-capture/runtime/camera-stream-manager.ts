@@ -177,7 +177,7 @@ interface ManagerInternal {
   activeSpec: CameraLeaseSpec | null;
   /** Constraints the live stream was requested with (for summaries). */
   requestedConstraints: MediaTrackConstraints | null;
-  /** In-flight getUserMedia, coalesced for COMPATIBLE concurrent acquires. */
+  /** In-flight getUserMedia — later acquires wait on it (acquisitions are serialized). */
   inFlight: Promise<MediaStream> | null;
   leases: Map<string, LeaseInternal>;
   state: CameraStreamState;
@@ -516,6 +516,15 @@ export async function acquireCameraLease(
     options?.combineMicPrompt === true &&
     shouldCombineMicPrompt(getMediaDevicesSnapshot().permissionState);
 
+  // Acquisitions are SERIALIZED: a caller arriving while getUserMedia is in
+  // flight waits for it, then decides against the stream that actually landed
+  // — share it when compatible, reconfigure (stop + notify) when not. Deciding
+  // before it lands minted a second stream and orphaned the first, leaving the
+  // camera light on after every lease released.
+  while (m.inFlight) {
+    await m.inFlight.catch(() => undefined);
+  }
+
   // A pinned recording blocks any incompatible acquisition — typed, explained.
   if (
     m.pinnedBy !== null &&
@@ -543,9 +552,6 @@ export async function acquireCameraLease(
       notifyReconfigured(next);
     }
     // else: compatible — share the live stream as-is.
-  } else if (m.inFlight && m.activeSpec && specsCompatible(m.activeSpec, resolved)) {
-    // Coalesce onto the compatible in-flight acquisition.
-    await m.inFlight;
   } else {
     await acquireStreamForSpec(resolved, includeMic);
   }

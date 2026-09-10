@@ -15,12 +15,12 @@ timestamp: 2026-09-10T00:00:00Z
 - 2. Complete the source
 - 3. Check what already exists BEFORE proposing
 - 4. Propose shapes as markdown tables
-- 5. Iterate until Arman agrees on every table
+- 5. Record Arman's rulings — no table-approval stop
 - 6. Build the models with the SDK
 - 7. Build one translation adapter per provider
 - 8. Publish — dry-run first, then apply
 - 9. Ship the demo endpoint
-- 10. Gate: Arman approves the registered set
+- 10. No gate — update the ledger and fire Stage B
 
 0. **Map the blast radius FIRST — it gates the keep/drop tables.** You cannot ask Arman to
    approve dropping a field without knowing who reads it. Produce the full consumer set for the
@@ -62,9 +62,12 @@ timestamp: 2026-09-10T00:00:00Z
    shares a kind without losing provenance, what stays source-specific). Follow the distillation
    laws in SKILL.md. Bring him material he can rule on in one look; never JSON walls, never a question
    without its table (page/action/question).
-5. **Iterate until Arman agrees on every table.** Every keep/drop/merge/require decision is his.
-   Only then write code. Record each ruling in the ledger's decisions section; generalize any
-   standing rule into this skill.
+5. **Do NOT stop for a table approval — Stage A has no gate** (gap #14 of 2026-08-24; SKILL.md
+   pipeline table: Stage A gate "none"). The ONE approval gate is Arman's ruling on Stage B's
+   rendered demo; tables are how you show your work when he asks, not the thing he signs. Every
+   keep/drop/merge/require decision is still his — each row carries your recommendation, and he
+   confirms or corrects. Write code without waiting. Record each ruling in the ledger's decisions
+   section; generalize any standing rule into this skill.
 6. **Build the models with the SDK** in a parallel path (`aidream/services/<family>_kinds/` or
    the family's `aidream/kinds/<domain>.py` for upgrades; live nodes untouched):
    ```python
@@ -81,7 +84,8 @@ timestamp: 2026-09-10T00:00:00Z
    ```
    `KindModel` owns `__kind` entirely (declared `Literal` field, alias on both halves of the
    config); nested kinds are nested `KindModel`s; plain sub-structure that is not a kind is a
-   `BaseModel` with `extra="forbid"`. `example=` is validated at import. Every field a distillation
+   `KindSubModel` (`matrx_graph.content_ir.model`: accepts the `__kind` marker live nested `$def`s
+   declare, emits none), never a bare `BaseModel` (gap #27). `example=` is validated at import. Every field a distillation
    ADDS to an existing registered kind must be optional-with-default (the compatibility gate).
 7. **Build one translation adapter per provider** (`<provider>_adapter.py`:
    `to_kind(raw) -> (Collection, TranslationReport)`) with per-section MAPPED/DROPPED key
@@ -113,6 +117,7 @@ timestamp: 2026-09-10T00:00:00Z
    kind JSON back (`aidream/api/routers/search_kinds.py` + `services/search_kinds/service.py`:
    `POST /api/<family>-kinds/<verb>` → `create_streaming_response` → `{result, translation}`).
    Deploy (repo release flow) and verify it live with a real call.
-10. **Gate: Arman approves the registered set.** Update the ledger (Stage A DONE, slugs, endpoint,
+10. **No gate — finish and hand off** (gap #14 of 2026-08-24: Stage A does not stop to collect an
+    approval; SKILL.md pipeline table: gate none → fire B). Update the ledger (Stage A DONE, slugs, endpoint,
     fixtures, what is cutover-gated), push, and **fire the Stage B chip** with the standalone
     prompt in SKILL.md § Chip prompts. If you cannot create a chip, write the exact prompt into the ledger and say so.

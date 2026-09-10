@@ -184,7 +184,7 @@ async function setVisibilityColumn(
   const { data, error } = await scoped
     .from(entry.tableName)
     .update({ [column]: visibility })
-    .eq(entry.idColumn, resourceId)
+    .eq(entry.ownerColumn, resourceId)
     .select("id");
   if (error) {
     // A real DB refusal already carries a message written for a human — pass it

@@ -1,6 +1,6 @@
 ---
 name: type-safety
-description: "Doctrine for fixing TypeScript errors against generated types (database.types.ts, api-types.ts). Use when fixing tsc or type-check failures, working a type-errors batch, writing supabase .rpc()/.from() calls, errors mention Json/unknown/Database, or you are tempted to cast, `as any`, or suppress."
+description: "Doctrine for fixing TypeScript errors against generated types (database.types.ts, api-types.ts). Use when fixing tsc or type-check failures or a type-errors batch, writing supabase .rpc()/.from() calls or DB shape guards, errors mention Json/unknown/Database, or you are tempted to cast or suppress."
 ---
 
 # Type Safety

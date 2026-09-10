@@ -24,14 +24,14 @@ standing law here the day he says them.
 
 ## Route by stage — a run is ONE stage
 
-Read this whole file (vocabulary, pipeline, standing laws, chip prompts, runs), then ONLY your stage's file:
+Read this whole file (vocabulary, pipeline, standing laws, chip prompts, runs), then your stage's file, then ALL of open-gaps.md — nothing else:
 
 - **Stage A only → read [stage-a.md](stage-a.md).**
 - **Stage B only → read [stage-b.md](stage-b.md).**
 - **Stage V only → read [stage-v.md](stage-v.md).**
 - **Stage D only → read [stage-d.md](stage-d.md).**
 - **Stage C** — inline below, in this file.
-- **Every stage, before its first step → read the items in [open-gaps.md](open-gaps.md) that name your stage** — its friction entries carry rules that correct the stage steps. Append new friction there.
+- **Every stage (C included), before its first step → read ALL of [open-gaps.md](open-gaps.md)** — its numbered items carry rules that correct the stage steps, and most never name the stage they bind, so reading only the items that name your stage misses them. Append new friction there.
 
 ## Why (Arman, 2026-08-20/21, condensed)
 
@@ -234,24 +234,27 @@ the failure list: the replication agent appends it to [open-gaps.md](open-gaps.m
 
 ## Open gaps (SDK wishlist + replication friction logs)
 
-**Before any stage, and when you hit friction → read [open-gaps.md](open-gaps.md)** (SDK wishlist items 1–5 + every replication run's friction log, numbered items with the rule each earned). Replication agents append friction there; the SDK build consumes it.
+**Every stage, before its first step, reads ALL of [open-gaps.md](open-gaps.md)** (SDK wishlist items 1–5 + every replication run's friction log, numbered items with the rule each earned) — the same rule as § Route by stage. Hit friction (replication agents included) → append it there; the SDK build consumes it.
 
 ## Chip prompts (standalone — paste as the chip body, fill the ⟨⟩)
 
-**Stage A:** "You are STAGE A of the data-to-kinds run for ⟨family⟩. Read ONLY
-`common-docs/skills/data-to-kinds/SKILL.md` (mirrored at `.claude/skills/data-to-kinds/SKILL.md`) plus the stage file it routes you to,
-and follow them verbatim. Source: ⟨engine/client path, nodes, provider(s)⟩. Existing placeholders:
+**Stage A:** "You are STAGE A of the data-to-kinds run for ⟨family⟩. Read ONLY these three files in
+`common-docs/skills/data-to-kinds/` (mirrored at `.claude/skills/data-to-kinds/`): `SKILL.md`, `stage-a.md`,
+and ALL of `open-gaps.md`, and follow them verbatim. Source: ⟨engine/client path, nodes, provider(s)⟩. Existing placeholders:
 ⟨`aidream/kinds/<domain>.py` slugs or none⟩. Create the ledger `common-docs/operations/⟨family⟩-
-kinds-run.md` from the search pilot's layout. Work with Arman via tables; publish inactive; ship
-the demo endpoint; on his approval mark Stage A DONE and fire Stage B. Every instruction the skill
+kinds-run.md` from the search pilot's layout. Bring Arman your tables, each row with your recommendation, but do NOT
+stop for a table approval (gap #14 of 2026-08-24: the one approval gate is Stage B's rendered demo); publish inactive; ship
+the demo endpoint; mark Stage A DONE and fire Stage B. Every instruction the skill
 failed to give you goes into its `open-gaps.md` in the same session."
 
-**Stage B:** "You are STAGE B of the data-to-kinds run for ⟨family⟩. Read ONLY the skill above
-and the ledger `common-docs/operations/⟨family⟩-kinds-run.md`. Kinds: ⟨slugs⟩. Endpoint:
+**Stage B:** "You are STAGE B of the data-to-kinds run for ⟨family⟩. Read ONLY these three files in
+`common-docs/skills/data-to-kinds/` (mirrored at `.claude/skills/data-to-kinds/`): `SKILL.md`, `stage-b.md`, and ALL of
+`open-gaps.md`, plus the ledger `common-docs/operations/⟨family⟩-kinds-run.md`. Kinds: ⟨slugs⟩. Endpoint:
 ⟨POST /api/…⟩. Build per Stage B, demo at `/demos/⟨family⟩`, verify in-browser, get Arman's
 render approval, mark DONE, fire V + D."
 
-**Stage V / D / C:** same shape — name the family, the ledger, the slugs, and the stage.
+**Stage V / D / C:** same shape — name the family, the ledger, the slugs, the stage, and the files to read: `SKILL.md`,
+that stage's file (`stage-v.md` / `stage-d.md`; Stage C is inline in `SKILL.md`), and ALL of `open-gaps.md`.
 
 ## Runs
 

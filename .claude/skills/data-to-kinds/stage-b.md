@@ -15,7 +15,11 @@ timestamp: 2026-09-10T00:00:00Z
    six). Name the best-of-breed, CONSUME its utilities (search: `features/tool-call-visualization/
    renderers/search/parseSearch.ts`), and design ONE canonical component per kind. Legacy D-grade
    displays are converged at cutover (Stage D), not forked now.
-2. **Generate the types from the registry:** `pnpm shape:types <slug> [<slug>…]` →
+2. **Generate the types from the registry — AFTER the `kind_component` rows (step 9) and
+   activation (step 6) for any family kind still inactive** (gap #16 of 2026-08-24 and gap #23:
+   `pnpm shape:types` emits ACTIVE kinds only, and Stage A lands kinds inactive by design; the
+   order is rows → activate → types → components, as the SKILL.md pipeline table lists).
+   `pnpm shape:types <slug> [<slug>…]` →
    `features/content-ir/kinds/generated/<slug>.gen.ts` (self-contained, drift-checked by
    `pnpm check:kind-types`; header carries the registry version). Never hand-edit a `.gen.ts`;
    a collection whose registry row is cutover-gated has NO `.gen.ts` until cutover.
@@ -37,7 +41,10 @@ timestamp: 2026-09-10T00:00:00Z
 5. **Build the components** in `components/mardown-display/blocks/<family>/` — one per kind,
    defensive readers (a half-arrived value is a NORMAL state), the collection delegating every
    nested instance via a static sibling map with a db-override seam (pattern:
-   `search-kinds/SearchKindNested.tsx`), never a per-item `next/dynamic` re-entry, never
+   `search-kinds/SearchKindNested.tsx`) — built only when a kind's field can hold another KIND
+   (gap #44), owning only this family's slugs and delegating every foreign-family kind one-way to
+   that family's seam (gap #22; reference `blocks/rank-kinds/RankKindNested.tsx`) — never a
+   per-item `next/dynamic` re-entry, never
    reimplementing a nested kind. Register each in `BlockComponentRegistry.tsx`, the dispatch
    shape table (`block-dispatch.tsx`), the `FeSynthesizedBlockType`/`ShapeBlockType` unions, and
    the pin test `__tests__/component-registry.test.ts`.
