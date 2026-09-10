@@ -40,7 +40,7 @@ export default async function VSCodeShellPage() {
   ]);
 
   return (
-    <PanelControlProvider>
+    <PanelControlProvider initialLayouts={[rootLayout, mainLayout]}>
       <PageHeader>
         <VSCodeHeaderControls />
       </PageHeader>

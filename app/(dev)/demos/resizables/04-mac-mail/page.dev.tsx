@@ -33,7 +33,7 @@ export default async function MacMailPage() {
   const defaultLayout = await readLayoutCookie(COOKIE_NAME);
 
   return (
-    <PanelControlProvider>
+    <PanelControlProvider initialLayouts={[defaultLayout]}>
       <PageHeader>
         <MailHeaderControls />
       </PageHeader>

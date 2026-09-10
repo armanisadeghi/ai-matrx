@@ -46,7 +46,7 @@ export function SurfacesAdminShell({
   const isMobile = useIsMobile();
 
   return (
-    <PanelControlProvider>
+    <PanelControlProvider initialLayouts={[defaultLayout]}>
       <PageSpecificHeader>
         <SurfacesAgentHeaderControls
           agentId={agent.id}

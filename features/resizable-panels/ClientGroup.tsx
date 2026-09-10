@@ -23,7 +23,9 @@ type Props = Omit<GroupProps, "onLayoutChange" | "onLayoutChanged" | "groupRef">
 // Thin 'use client' wrapper around <Group>.
 // - Writes the cookie on pointer-up (onLayoutChanged, past tense).
 // - Optionally exposes its groupRef to PanelControlProvider via groupKey so
-//   cross-tree toggle buttons can call setLayout on the right group.
+//   cross-tree toggle buttons can call setLayout on the right group, and
+//   reports every SETTLED layout so the provider remembers each panel's last
+//   open size (a drag-collapse then reopens at the width before the drag).
 export function ClientGroup({ cookieName, groupKey, ...props }: Props) {
   const groupRef = useGroupRef();
   const controls = usePanelControlsOptional();
@@ -42,6 +44,9 @@ export function ClientGroup({ cookieName, groupKey, ...props }: Props) {
         document.cookie =
           `${cookieName}=${encodeURIComponent(JSON.stringify(layout))}` +
           `; path=/; max-age=31536000; SameSite=Lax`;
+        if (groupKey && controls) {
+          controls.notifyLayoutChanged(groupKey, layout);
+        }
       }}
     />
   );

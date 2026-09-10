@@ -162,7 +162,7 @@ export function AgentConnectionsRouteShell({
       getScope={getScope}
       getWriteHandlers={getWriteHandlers}
     >
-      <PanelControlProvider>
+      <PanelControlProvider initialLayouts={[defaultLayout]}>
         <PageHeader>
           <AgentConnectionsHeaderControls />
         </PageHeader>

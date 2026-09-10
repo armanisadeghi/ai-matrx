@@ -80,7 +80,7 @@ export function SettingsRouteShell({
   );
 
   return (
-    <PanelControlProvider>
+    <PanelControlProvider initialLayouts={[defaultLayout]}>
       <PageHeader>
         <SettingsHeaderControls />
       </PageHeader>

@@ -119,7 +119,7 @@ describe("collapsed flag follows the applied layout (claim B: intent vs library)
     expect(sidebarTruth()).toEqual({ label: "Show sidebar", open: false });
   }
 
-  it("never labels the sidebar open while the library holds it shut, across three clicks", () => {
+  it("reopens on every other click and its label always matches the library, across three clicks", () => {
     collapseOnWideThenShrink();
     const observed = [1, 2, 3].map(() => {
       click("sidebar");

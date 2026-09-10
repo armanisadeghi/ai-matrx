@@ -1,48 +1,45 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   Panel,
-  usePanelRef,
   type PanelProps,
   type OnPanelResize,
 } from "react-resizable-panels";
 import { usePanelControls } from "./PanelControlProvider";
 
-interface Props extends Omit<PanelProps, "panelRef" | "onResize"> {
-  /** Logical name used by usePanelControls()/header buttons. */
+interface Props
+  extends Omit<PanelProps, "panelRef" | "onResize" | "elementRef"> {
+  /** Logical name used by usePanelControls()/header buttons. MUST equal the
+   *  Panel `id` — toggle() addresses the group layout by it. */
   registerAs: string;
   /** The Group this panel belongs to — must match a ClientGroup's groupKey. */
   groupKey: string;
 }
 
-function parseDefaultSizePercent(value: PanelProps["defaultSize"]): number {
-  if (value === undefined) return 0;
-  if (typeof value === "number") return value <= 100 ? value : 0;
-  const m = /^(\d+(?:\.\d+)?)%?$/.exec(value);
-  return m ? parseFloat(m[1]) : 0;
-}
-
 // Wraps <Panel> and:
-//   1. Registers its panelRef with the PanelControlProvider under groupKey.
-//   2. Reports resize percentages so the provider can keep lastOpenSize fresh
-//      and flip the boolean intent on drag-to-collapse.
+//   1. Registers with the PanelControlProvider under groupKey: its element (to
+//      measure the group for px/rem sizes) and its RAW defaultSize/minSize —
+//      converted to % only when a toggle needs them, by the library's unit
+//      rules (a bare number is px, never percent).
+//   2. Mirrors the collapsed boolean on every onResize so header icons and
+//      hidden handles follow a drag-to-collapse.
 //
 // `children` passes through to <Panel> — server components are fine.
 export function RegisteredPanel({
   registerAs,
   groupKey,
   defaultSize,
+  minSize,
   children,
   ...rest
 }: Props) {
-  const panelRef = usePanelRef();
+  const elementRef = useRef<HTMLDivElement | null>(null);
   const { registerPanel, notifyResize } = usePanelControls();
-  const defaultSizePercent = parseDefaultSizePercent(defaultSize);
 
   useEffect(() => {
-    registerPanel(registerAs, groupKey, panelRef, defaultSizePercent);
-  }, [registerPanel, registerAs, groupKey, panelRef, defaultSizePercent]);
+    registerPanel(registerAs, groupKey, elementRef, { defaultSize, minSize });
+  }, [registerPanel, registerAs, groupKey, defaultSize, minSize]);
 
   const onResize: OnPanelResize = (next) => {
     notifyResize(registerAs, next.asPercentage);
@@ -52,7 +49,8 @@ export function RegisteredPanel({
     <Panel
       {...rest}
       defaultSize={defaultSize}
-      panelRef={panelRef}
+      minSize={minSize}
+      elementRef={elementRef}
       onResize={onResize}
     >
       {children}

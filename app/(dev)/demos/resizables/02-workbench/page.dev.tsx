@@ -38,7 +38,7 @@ export default async function WorkbenchDemoPage() {
   const defaultLayout = await readLayoutCookie(COOKIE_NAME);
 
   return (
-    <PanelControlProvider>
+    <PanelControlProvider initialLayouts={[defaultLayout]}>
       <PageHeader>
         <WorkbenchHeaderControls />
       </PageHeader>

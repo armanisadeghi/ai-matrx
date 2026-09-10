@@ -27,7 +27,7 @@ export default async function TasksPage() {
   const defaultLayout = await readLayoutCookie(COOKIE_NAME);
 
   return (
-    <PanelControlProvider>
+    <PanelControlProvider initialLayouts={[defaultLayout]}>
       <TasksListSurfaceRuntime>
         <PageHeader>
           <TasksHeaderControls />
