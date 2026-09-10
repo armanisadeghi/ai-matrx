@@ -80,6 +80,7 @@ if $STRICT; then
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
         "Archived-items law (every list has an archive control)|pnpm check:archived-items-law"
         "One agent-list read (package-owned)|pnpm check:agent-list-reads"
+        "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts --strict"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
         # CANONICAL RATCHETS — the two counts from the 2026-08-15 architecture
@@ -392,6 +393,7 @@ else
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
         "Archived-items law (every list has an archive control)|pnpm check:archived-items-law"
         "One agent-list read (package-owned)|pnpm check:agent-list-reads"
+        "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
         # Blocking in --strict (see the strict list above); loud and exit-0 here,

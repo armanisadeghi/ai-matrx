@@ -47,7 +47,7 @@ import {
   selectRunEmissions,
   selectRunStatus,
 } from "../../redux/workflow-runs.selectors";
-import { TERMINAL_RUN_STATUSES } from "../../types";
+import { runIsOver } from "../../types";
 import { RunStatusChip } from "../../run-status";
 import {
   describeWorkflowSteps,
@@ -416,7 +416,7 @@ function SharpLiveSurface({
   const status = useAppSelector(selectRunStatus(runId));
   const phases = useAppSelector(selectNodeAggregatePhases(runId));
   const emissions = useAppSelector(selectRunEmissions(runId));
-  const runOver = status !== null && TERMINAL_RUN_STATUSES.has(status);
+  const runOver = runIsOver(status);
 
   // ── THE EMISSION CONTRACT (SPEC §3), on the proving ground ──────────────
   // The declared promise reserves the slots; the live emissions settle them.

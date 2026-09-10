@@ -37,19 +37,13 @@ import {
   selectRunInterrupt,
   selectRunStatus,
 } from "../redux/workflow-runs.selectors";
+import { runIsOver } from "../types";
 import { ProgressRailReadout } from "../components/ProgressRailReadout";
 import { parseInterruptPayload } from "../interrupt/interrupt-view";
 import { currentLivenessLine } from "./run-liveness";
 
 /** Statuses where the run is parked on a person, not on the engine. */
 const WAITING_STATUSES = new Set(["interrupted", "awaiting_input", "paused"]);
-const TERMINAL_STATUSES = new Set([
-  "completed",
-  "failed",
-  "cancelled",
-  "errored",
-]);
-
 const NO_STEP_LABELS: Record<string, string> = {};
 
 export function FloatingRunBody({
@@ -70,7 +64,7 @@ export function FloatingRunBody({
   const interrupt = useAppSelector(selectRunInterrupt(runId));
 
   const waiting = interrupt !== null || (status !== null && WAITING_STATUSES.has(status));
-  const terminal = status !== null && TERMINAL_STATUSES.has(status);
+  const terminal = runIsOver(status);
   const live = !terminal && !waiting;
 
   const line = currentLivenessLine(activity, stepLabels);

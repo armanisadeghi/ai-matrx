@@ -20,6 +20,7 @@ import {
   type RunStepPresentation,
 } from "@/features/workflow-runtime/components/run/node-presentation";
 import type { NodeAggregatePhase } from "@/features/workflow-runtime/redux/workflow-runs.selectors";
+import { runIsOver, type WorkflowRunStatus } from "../../types";
 
 function ControlButton({
   label,
@@ -67,8 +68,8 @@ export function Marquee({
   onRunAgain,
 }: {
   sentence: string;
-  /** The run's raw status, or null (no run yet / still connecting). */
-  status: string | null;
+  /** The run's status, or null (no run yet / still connecting). */
+  status: WorkflowRunStatus | null;
   startedAt: string | null;
   endedAt: string | null;
   costUsd: number;
@@ -85,11 +86,7 @@ export function Marquee({
     status === "pending" ||
     status === "pausing" ||
     status === "cancelling";
-  const terminal =
-    status === "completed" ||
-    status === "failed" ||
-    status === "errored" ||
-    status === "cancelled";
+  const terminal = runIsOver(status);
 
   const askStop = () => {
     void confirm({

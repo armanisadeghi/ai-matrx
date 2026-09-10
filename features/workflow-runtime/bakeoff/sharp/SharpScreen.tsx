@@ -48,7 +48,7 @@ import {
   selectRunInterrupt,
   selectRunStatus,
 } from "../../redux/workflow-runs.selectors";
-import { TERMINAL_RUN_STATUSES } from "../../types";
+import { runIsOver } from "../../types";
 import {
   FAMILY_ICON,
   FAMILY_STYLE,
@@ -94,7 +94,7 @@ export function SharpScreen({
   const interrupt = useAppSelector(selectRunInterrupt(runId));
   const emissions = useAppSelector(selectRunEmissions(runId));
   const phases = useAppSelector(selectNodeAggregatePhases(runId));
-  const runOver = status !== null && TERMINAL_RUN_STATUSES.has(status);
+  const runOver = runIsOver(status);
 
   // Things actually in hand: deliberate emissions + settled deliverables.
   const deliveredCount =
@@ -381,7 +381,7 @@ function DeliveredShelf({
   panelEmissions: readonly RenderableEmission[];
 }) {
   const status = useAppSelector(selectRunStatus(runId));
-  const over = status !== null && TERMINAL_RUN_STATUSES.has(status);
+  const over = runIsOver(status);
 
   return (
     <DeliveredStream

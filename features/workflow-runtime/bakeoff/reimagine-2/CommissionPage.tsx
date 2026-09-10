@@ -72,7 +72,7 @@ import {
   selectRunInterrupt,
   selectRunStatus,
 } from "../../redux/workflow-runs.selectors";
-import { TERMINAL_RUN_STATUSES } from "../../types";
+import { runIsOver } from "../../types";
 import { RunErrorCard } from "../../components/readout-parts";
 import { RunStatusChip } from "../../run-status";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
@@ -182,7 +182,7 @@ export function CommissionPage({ definitionId }: { definitionId: string }) {
   const phases = useAppSelector(selectNodeAggregatePhases(runId ?? ""));
   const runStatus = useAppSelector(selectRunStatus(runId ?? ""));
   const interrupt = useAppSelector(selectRunInterrupt(runId ?? ""));
-  const terminal = runStatus !== null && TERMINAL_RUN_STATUSES.has(runStatus);
+  const terminal = runIsOver(runStatus);
 
   // ── The aimed focus ────────────────────────────────────────────────────
   const [aimedNodeId, setAimedNodeId] = useState<string | null>(null);

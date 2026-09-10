@@ -41,7 +41,7 @@ import {
 } from "../../redux/workflow-runs.selectors";
 import { InterruptCard, RunErrorCard } from "../../components/readout-parts";
 import { RunStatusChip } from "../../run-status";
-import { TERMINAL_RUN_STATUSES } from "../../types";
+import { runIsOver } from "../../types";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 import {
   deliverableSteps,
@@ -82,9 +82,7 @@ export function DenseConsole({
   const byNode = stepsByNodeId(steps);
   const deliverables = deliverableSteps(steps);
 
-  const over =
-    status !== null &&
-    (TERMINAL_RUN_STATUSES.has(status) || status === "errored");
+  const over = runIsOver(status);
   const doneCount = steps.filter(
     (s) => phases[s.nodeId] === "settled" || phases[s.nodeId] === "skipped",
   ).length;

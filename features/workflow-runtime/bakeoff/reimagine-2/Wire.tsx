@@ -34,7 +34,7 @@ import {
   selectRunStatus,
   selectRunStatusTs,
 } from "../../redux/workflow-runs.selectors";
-import { TERMINAL_RUN_STATUSES } from "../../types";
+import { runIsOver } from "../../types";
 import { activityLine } from "../../components/run/activity-copy";
 import { RunStatusChip } from "../../run-status";
 
@@ -67,7 +67,7 @@ export function Wire({
   const startedAt = useAppSelector(selectRunStartedAt(runId));
   const statusTs = useAppSelector(selectRunStatusTs(runId));
   const cost = useAppSelector(selectRunCostTotal(runId));
-  const terminal = status !== null && TERMINAL_RUN_STATUSES.has(status);
+  const terminal = runIsOver(status);
   const running = status !== null && !terminal;
 
   // Quiet-stretch detector: a running run with no new line for a while gets

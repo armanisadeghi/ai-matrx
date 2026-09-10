@@ -29,7 +29,7 @@ import {
   selectRunStatus,
   selectRunTransportMode,
 } from "../../redux/workflow-runs.selectors";
-import { TERMINAL_RUN_STATUSES } from "../../types";
+import { runIsOver } from "../../types";
 
 const TONE_ICON = {
   work: Activity,
@@ -67,7 +67,7 @@ export function SharpActivityRail({
   const activity = useAppSelector(selectRunActivity(runId));
   const transport = useAppSelector(selectRunTransportMode(runId));
   const status = useAppSelector(selectRunStatus(runId));
-  const over = status !== null && TERMINAL_RUN_STATUSES.has(status);
+  const over = runIsOver(status);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const pinnedRef = useRef(true);
 

@@ -2972,6 +2972,30 @@ own `TERMINAL_RUN_STATUSES.has(s) || s === "errored"` (or a private `TERMINAL` s
 status the engine adds gets missed. Not swept here (a five-agent test-repair session owned only
 this suite's files) — the sweep is mechanical: import `runIsOver` and delete the local set.
 
+**SWEPT + GUARDED 2026-09-09.** The census came to **17** sites, not a dozen, and grep alone was
+not the census: two of them (`RunHero`, `RunActivityFeed`) named their private set `TERMINAL`, two
+more (`useFloatingWorkflowRun`, `FloatingRunBody`) called it `TERMINAL_STATUSES`, and three
+(`Marquee`, `LiveDesk`, `refine-2/RefineRunPage`) had no set at all — a spelled-out four-way `||`
+and a privately re-declared `runIsOver`. All 17 now call the ONE predicate. `RunFailureCard` had no
+terminal logic to sweep. Two sites were changed BEYOND cosmetics because they had the live defect:
+`discovery/runs.ts` (`isTerminalStatus`, which stamps a list row's `completedAt` on the announce —
+an errored row's duration had been measuring to `now` forever) and `ReadoutView` (the reservation
+skeleton). THREE sites deliberately keep the generated set because they ask the ENGINE's question,
+not a viewer's: `run-controls.ts` (Stop/Cancel stay enabled on an errored run — pinned by
+`run-controls.test.ts`), `workflow-runs.slice.ts` (row-vs-replay reconciliation) and
+`adopt-workflow-run.thunk.ts` (transport adoption). Those three are the named allowlist in the
+guard, each with the question it asks — not a silencer list.
+
+Guard: `pnpm check:run-is-over` (`scripts/check-run-is-over.ts`), added to both release-gate lists.
+It matches on the STATUS MEMBERS, never on a name, because a name test would have caught none of
+the four renamed copies. Proven failing-then-passing twice: `--self-test` is RED on the hand-rolled
+union, on a private terminal set under any name, and on the spelled-out union, and GREEN on
+`runIsOver()`, on a comment naming the defect, on another domain's `completed/failed/cancelled`
+vocabulary, and on an allowlisted engine site; and the real pre-fix `RunHero.tsx` from `HEAD` was
+restored into the tree and the guard went RED on it (`RunHero.tsx:64`), then GREEN again on the
+swept file. `pnpm test:workflow-runtime` 374/374, `features/masterwork` 32/32, `pnpm type-check`
+clean.
+
 ## Fixed in passing: the trigger surface was unreachable on every cold load — 2026-08-28
 
 Recorded because the CLASS is the point, not this instance. `useWorkflowTriggers.refresh` called
@@ -3304,8 +3328,9 @@ came out guarding MORE than they did before. The repair splits three ways:
   which answers the ENGINE's resume question and excludes `errored`, so an errored run never
   settled: no failure explanation, screen waiting on a row poll. Root fix is the shared
   `runIsOver(status)` primitive in `features/workflow-runtime/types.ts`. Proven failing-then-
-  passing. The sibling census (~12 surfaces still hand-rolling `TERMINAL_RUN_STATUSES.has(s) ||
-  s === "errored"`) is logged separately above.
+  passing. The sibling census (17 surfaces hand-rolling `TERMINAL_RUN_STATUSES.has(s) ||
+  s === "errored"`) is logged separately above — SWEPT and GUARDED 2026-09-09
+  (`pnpm check:run-is-over`).
 - `features/bindings/__tests__/holder-block-affordances.test.tsx` — `96e45f3aa2` deleted the JOB
   cell and set `coverageLine={null}`; `jobCoverage` was computed and thrown away, so a person
   could set a holder, read a healthy verdict, and never learn a required input was unmapped and

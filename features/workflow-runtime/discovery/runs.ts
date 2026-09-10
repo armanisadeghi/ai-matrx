@@ -19,7 +19,7 @@
  */
 
 import type { WorkflowRunStatus } from "@/types/python-generated/workflow-events";
-import { TERMINAL_RUN_STATUSES } from "@/types/python-generated/workflow-events";
+import { runIsOver } from "../types";
 
 /** One row of a runs list. */
 export interface RunListRow {
@@ -119,9 +119,14 @@ export function runDurationMs(row: RunListRow, now: number = Date.now()): number
   return end - start;
 }
 
-/** True once the run is finished forever — no resume, no recovery. */
+/**
+ * True once the run is over as far as this LIST is concerned — the one viewer
+ * predicate (`runIsOver`), which counts `errored`. The generated
+ * `TERMINAL_RUN_STATUSES` excludes it, so a list asking that set left an
+ * errored row's duration measuring to `now` forever.
+ */
 export function isTerminalStatus(status: string): boolean {
-  return TERMINAL_RUN_STATUSES.has(status as WorkflowRunStatus);
+  return runIsOver(status as WorkflowRunStatus);
 }
 
 /** THE DOOR LAW: every row opens its run at the run's permalink. */

@@ -130,6 +130,20 @@ that is the exit-test surface.
    deliberately.
 14. **Transports stop at terminal.** SSE ends via the `end` frame; the poller stops on the
    terminal run event — a finished run never keeps polling.
+15. 🚨 **ONE predicate answers "is this run over?" — `runIsOver(status)` in `types.ts`.** The
+   GENERATED `TERMINAL_RUN_STATUSES` answers the ENGINE's question ("finished forever — no
+   resume, no recovery") and deliberately EXCLUDES `errored`. A watching surface asks a
+   different question, and `errored` answers it like `failed`: the engine never moves an
+   errored run again, so a viewer waiting on the generated set waits forever — clock still
+   running, no failure explained, nothing but a row-poll backstop ever settling the screen.
+   `TryMasterworkBox` shipped exactly that; the census found 17 more surfaces each carrying its
+   own `TERMINAL_RUN_STATUSES.has(s) || s === "errored"` or a private
+   `new Set(["completed","failed","cancelled","errored"])`. All swept 2026-09-09. THREE sites
+   still ask the generated set on purpose, because they ask the ENGINE's question:
+   `components/run/run-controls.ts` (Stop/Cancel stay enabled on an errored run — pinned by its
+   test), `redux/workflow-runs.slice.ts` (row-vs-replay reconciliation) and
+   `redux/adopt-workflow-run.thunk.ts` (transport adoption). Guard:
+   `pnpm check:run-is-over` (`:self-test` proves it can fail), in the release gates.
 
 ## Doctrine
 

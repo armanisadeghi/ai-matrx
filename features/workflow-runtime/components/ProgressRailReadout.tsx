@@ -27,14 +27,8 @@ import {
   selectRunNodeOrder,
   selectRunStatus,
 } from "../redux/workflow-runs.selectors";
+import { runIsOver } from "../types";
 import { PhaseIcon, PHASE_LABEL } from "./readout-parts";
-
-const TERMINAL_RUN_STATUSES = new Set([
-  "completed",
-  "failed",
-  "cancelled",
-  "errored",
-]);
 
 /** Randomized synthetic cadence — the podcast rail's proven feel. */
 const SYNTH_STEP_MIN_MS = 2200;
@@ -166,7 +160,7 @@ export function ProgressRailReadout({
     return phase === "settled" || phase === "skipped";
   }).length;
 
-  const terminal = runStatus !== null && TERMINAL_RUN_STATUSES.has(runStatus);
+  const terminal = runIsOver(runStatus);
   const rawPct = total > 0 ? Math.round((settled / total) * 100) : 0;
   // The podcast law: never show 100% while the run can still move.
   const pct = terminal ? rawPct : Math.min(99, rawPct);
