@@ -233,6 +233,7 @@ function namesFromPlan(
 export function SetupView() {
   const {
     siteId,
+    pipelineStage,
     researchTopicReturnId,
     setSiteId,
     setView,
@@ -524,11 +525,7 @@ export function SetupView() {
   // and approves the keywords/settings. Link that reviewed topic once, then
   // consume the one-shot URL handoff so reloads cannot repeat the write.
   useEffect(() => {
-    if (
-      !siteId ||
-      !researchTopicReturnId ||
-      seed?.siteId !== siteId
-    ) {
+    if (!siteId || !researchTopicReturnId || seed?.siteId !== siteId) {
       return;
     }
     if (!isUuid(researchTopicReturnId)) {
@@ -554,12 +551,7 @@ export function SetupView() {
     return () => {
       cancelled = true;
     };
-  }, [
-    clearResearchTopicReturn,
-    researchTopicReturnId,
-    seed?.siteId,
-    siteId,
-  ]);
+  }, [clearResearchTopicReturn, researchTopicReturnId, seed?.siteId, siteId]);
 
   useEffect(() => {
     if (!siteId || seed?.siteId !== siteId) return;
@@ -1836,10 +1828,9 @@ export function SetupView() {
             ? ` — ${site.root_url || site.domain}`
             : ""
         }`,
-        instructions:
-          `Research the exact company represented by this website: ${
-            site.root_url || site.domain || site.name
-          }. Keep same-named companies separate and prioritize sources the user can verify.`,
+        instructions: `Research the exact company represented by this website: ${
+          site.root_url || site.domain || site.name
+        }. Keep same-named companies separate and prioritize sources the user can verify.`,
         returnTo: marketingRoutes.contentPlanSite(site.id, "setup"),
       })
     : "/research/topics/new?mode=ai";
@@ -1882,6 +1873,26 @@ export function SetupView() {
       return result;
     },
   };
+
+  const loading = library.isLoading || nodes.isLoading;
+
+  // Site-pipeline chips are doors, not generic navigation. The URL carries
+  // the chosen stage across the route change; once Setup's live sections have
+  // mounted, focus the visible owner of that work instead of dropping the
+  // user at the research-first top of a long workspace.
+  useEffect(() => {
+    if (!pipelineStage || loading) return;
+    const frame = window.requestAnimationFrame(() => {
+      const candidates = document.querySelectorAll<HTMLElement>(
+        `[data-pipeline-stage-target~="${CSS.escape(pipelineStage)}"]`,
+      );
+      const target =
+        Array.from(candidates).find((candidate) => candidate.offsetParent) ??
+        candidates[0];
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [loading, pipelineStage]);
 
   // ── states ──────────────────────────────────────────────────────────────
   if (sites.isError) {
@@ -1933,8 +1944,6 @@ export function SetupView() {
     );
   }
 
-  const loading = library.isLoading || nodes.isLoading;
-
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/content-plan-setup"
@@ -1972,30 +1981,32 @@ export function SetupView() {
           </div>
         ) : null}
 
-        <SetupAiBar
-          selectedTopicId={researchTopicId}
-          onSelectTopic={selectTopic}
-          organizationId={site?.organization_id ?? null}
-          researchPlanHref={researchPlanHref}
-          document={researchDoc.data ?? null}
-          documentLoading={Boolean(researchTopicId) && researchDoc.isLoading}
-          onRecommendShape={() => void handleRecommendShape()}
-          shapeBusy={agents.shapeBusy}
-          onBuildWithAi={() => {
-            // Re-opening for a NEW run clears the finished/failed feed so the
-            // intake questions come back; an in-flight run keeps its live feed.
-            if (!draftingWorkOrder) {
-              setBuildLog([]);
-              setBuildFailed(false);
-            }
-            setBuildDialogOpen(true);
-          }}
-          draftBusy={draftingWorkOrder}
-          anyAgentBusy={anyAgentBusy}
-          lastRun={lastAiRun}
-          error={aiError}
-          onDismissError={() => setAiError(null)}
-        />
+        <div data-pipeline-stage-target="research">
+          <SetupAiBar
+            selectedTopicId={researchTopicId}
+            onSelectTopic={selectTopic}
+            organizationId={site?.organization_id ?? null}
+            researchPlanHref={researchPlanHref}
+            document={researchDoc.data ?? null}
+            documentLoading={Boolean(researchTopicId) && researchDoc.isLoading}
+            onRecommendShape={() => void handleRecommendShape()}
+            shapeBusy={agents.shapeBusy}
+            onBuildWithAi={() => {
+              // Re-opening for a NEW run clears the finished/failed feed so the
+              // intake questions come back; an in-flight run keeps its live feed.
+              if (!draftingWorkOrder) {
+                setBuildLog([]);
+                setBuildFailed(false);
+              }
+              setBuildDialogOpen(true);
+            }}
+            draftBusy={draftingWorkOrder}
+            anyAgentBusy={anyAgentBusy}
+            lastRun={lastAiRun}
+            error={aiError}
+            onDismissError={() => setAiError(null)}
+          />
+        </div>
 
         <RunSetWindowController
           setKey={passes.runSetKeys.keywords}
@@ -2069,264 +2080,274 @@ export function SetupView() {
         ) : null}
 
         {(() => {
-        const shapeColumn = (
-          <div className="bg-card md:row-span-2 md:min-h-0 xl:row-span-1">
-            {loading ? (
-              <ColumnSkeleton rows={4} />
-            ) : (
-              <SetupShapeColumn
-                archetypes={archetypes}
-                baseline={baseline}
-                loading={false}
-                selectedKey={selectedKey}
-                committedKey={committed?.key ?? null}
-                shadowed={library.data?.shadowed ?? []}
-                onSelect={(key) => {
-                  setPickedKey(key);
-                  setResult(null);
-                }}
-              />
-            )}
-          </div>
-        );
+          const shapeColumn = (
+            <div className="bg-card md:row-span-2 md:min-h-0 xl:row-span-1">
+              {loading ? (
+                <ColumnSkeleton rows={4} />
+              ) : (
+                <SetupShapeColumn
+                  archetypes={archetypes}
+                  baseline={baseline}
+                  loading={false}
+                  selectedKey={selectedKey}
+                  committedKey={committed?.key ?? null}
+                  shadowed={library.data?.shadowed ?? []}
+                  onSelect={(key) => {
+                    setPickedKey(key);
+                    setResult(null);
+                  }}
+                />
+              )}
+            </div>
+          );
 
-        const workOrderColumn = (
-          <div className="bg-card md:min-h-0">
-            {loading ? (
-              <ColumnSkeleton rows={6} />
-            ) : expansion.error ? (
-              <div className="p-4 text-sm text-destructive">
-                This site shape is malformed and cannot be expanded:{" "}
-                {expansion.error}
-              </div>
-            ) : expanded && readiness && preview ? (
-              <SetupWorkOrderColumn
-                expanded={expanded}
-                readiness={readiness}
-                counts={counts}
-                names={names}
-                userNamedKeys={new Set(Object.keys(userNames))}
-                dirtyKeys={dirtyKeys}
-                catalog={catalog}
-                conceptNames={conceptNames}
-                onCountChange={setCount}
-                onNamesChange={setNames}
-                onConceptNameChange={setConceptName}
-                onReset={resetOverrides}
-                aiReady={Boolean(researchReport)}
-                aiNamingKey={agents.namingFamilyKey}
-                aiBusy={anyAgentBusy}
-                onAiNames={(familyKey) => void handleNameFamily(familyKey)}
-                topics={topics}
-                onAiTopics={(familyKey) =>
-                  void handleTopicsForFamily(familyKey)
-                }
-                onClearTopics={(familyKey) => setTopics(familyKey, null)}
-                onApplyTopics={(familyKey) => void handleApplyTopics(familyKey)}
-                onPromoteTopics={(familyKey) =>
-                  void handlePromoteTopics(familyKey)
-                }
-                applyingTopicsKey={applyingTopicsKey}
-                plannedRoutes={plannedRoutes}
-                newCount={preview.counts.new}
-                pageTypeName={(slug) =>
-                  slug ? (pageTypeNameBySlug.get(slug) ?? slug) : "No page type"
-                }
-                checklistSlot={
-                  site ? (
-                    <GuidedChecklist
-                      definition={contentPlanSetupChecklist}
-                      context={{
-                        site,
-                        foundation: readiness.items.filter(
-                          (item) => item.group === "foundation",
-                        ),
-                        cms: cms.data ?? null,
-                        cmsError: cms.isError
-                          ? extractErrorMessage(cms.error)
-                          : null,
-                        cmsLoading: cms.isLoading,
-                        dispatch,
-                        onChanged: async () => {
-                          await Promise.all([
-                            queryClient.invalidateQueries({
-                              queryKey: setupKeys.cms(site.id),
-                            }),
-                            queryClient.invalidateQueries({
-                              queryKey: marketingKeys.siteOptions(),
-                            }),
-                          ]);
-                        },
-                      }}
-                      scope={{
-                        organizationId: site.organization_id,
-                        targetKey: site.id,
-                      }}
-                      // Held until the CMS read settles: checking first would
-                      // report "no website" for a site that has one, then flip
-                      // — which reads as breakage, not as loading.
-                      ready={!cms.isLoading}
-                    />
-                  ) : null
-                }
-                lintSlot={
-                  <>
-                    <PlanLintSection nodes={nodes.data ?? []} />
-                    <KeywordStrategySection
-                      strategy={keywordStrategy}
-                      busy={passes.keywordsBusy}
-                      anyBusy={anyAgentBusy}
-                      aiReady={Boolean(researchReport)}
-                      planEmpty={nodeRows.length === 0}
-                      error={keywordError}
-                      onDismissError={() => setKeywordError(null)}
-                      onRun={(tier) => void handlePlanKeywords(tier)}
-                      onApply={() => void handleApplyKeywords()}
-                      onDismiss={() => {
-                        setKeywordStrategy(null);
-                        setKeywordsAppliedAt(null);
-                        setKeywordError(null);
-                      }}
-                      applying={applyingKeywords}
-                      appliedAt={keywordsAppliedAt}
-                      estimate={passes.keywordEstimate}
-                      estimateLoading={passes.keywordEstimateLoading}
-                      estimateError={passes.keywordEstimateError}
-                    />
-                    <EntityAttachSection
-                      plan={entityPlan}
-                      busy={passes.entitiesBusy}
-                      anyBusy={anyAgentBusy}
-                      aiReady={Boolean(researchReport)}
-                      rosterEmpty={(planEntities.data ?? []).length === 0}
-                      planEmpty={nodeRows.length === 0}
-                      error={attachError}
-                      onDismissError={() => setAttachError(null)}
-                      onRun={() => void handleAttachEntities()}
-                      onApply={() => void handleApplyEntityAttachments()}
-                      onDismiss={() => {
-                        setEntityPlan(null);
-                        setEntitiesAppliedAt(null);
-                        setAttachError(null);
-                      }}
-                      applying={applyingEntities}
-                      appliedAt={entitiesAppliedAt}
-                    />
-                    <PlanReviewSection
-                      nodes={nodeRows}
-                      review={review}
-                      busy={passes.reviewBusy}
-                      anyBusy={anyAgentBusy}
-                      aiReady={Boolean(researchReport)}
-                      error={reviewError}
-                      onDismissError={() => setReviewError(null)}
-                      onRun={() => void handleReviewPlan()}
-                      onDismiss={() => {
-                        setReview(null);
-                        setAddedRoutes(new Set());
-                        setReviewError(null);
-                      }}
-                      onAddPage={(finding) =>
-                        void handleAddSuggestedPage(finding)
-                      }
-                      addingRoute={addingRoute}
-                      addedRoutes={addedRoutes}
-                    />
-                  </>
-                }
-                bridgeSlot={
-                  site ? (
-                    <SetupBridgeSection
-                      site={site}
-                      cms={cms.data ?? null}
-                      planNodeIds={nodeRows.map((node) => node.id)}
-                    />
-                  ) : null
-                }
-              />
-            ) : (
-              <EmptyState
-                title="No shape selected"
-                body="Pick a site shape on the left to see its work order."
-              />
-            )}
-          </div>
-        );
+          const workOrderColumn = (
+            <div className="bg-card md:min-h-0">
+              {loading ? (
+                <ColumnSkeleton rows={6} />
+              ) : expansion.error ? (
+                <div className="p-4 text-sm text-destructive">
+                  This site shape is malformed and cannot be expanded:{" "}
+                  {expansion.error}
+                </div>
+              ) : expanded && readiness && preview ? (
+                <SetupWorkOrderColumn
+                  expanded={expanded}
+                  readiness={readiness}
+                  counts={counts}
+                  names={names}
+                  userNamedKeys={new Set(Object.keys(userNames))}
+                  dirtyKeys={dirtyKeys}
+                  catalog={catalog}
+                  conceptNames={conceptNames}
+                  onCountChange={setCount}
+                  onNamesChange={setNames}
+                  onConceptNameChange={setConceptName}
+                  onReset={resetOverrides}
+                  aiReady={Boolean(researchReport)}
+                  aiNamingKey={agents.namingFamilyKey}
+                  aiBusy={anyAgentBusy}
+                  onAiNames={(familyKey) => void handleNameFamily(familyKey)}
+                  topics={topics}
+                  onAiTopics={(familyKey) =>
+                    void handleTopicsForFamily(familyKey)
+                  }
+                  onClearTopics={(familyKey) => setTopics(familyKey, null)}
+                  onApplyTopics={(familyKey) =>
+                    void handleApplyTopics(familyKey)
+                  }
+                  onPromoteTopics={(familyKey) =>
+                    void handlePromoteTopics(familyKey)
+                  }
+                  applyingTopicsKey={applyingTopicsKey}
+                  plannedRoutes={plannedRoutes}
+                  newCount={preview.counts.new}
+                  pageTypeName={(slug) =>
+                    slug
+                      ? (pageTypeNameBySlug.get(slug) ?? slug)
+                      : "No page type"
+                  }
+                  checklistSlot={
+                    site ? (
+                      <div data-pipeline-stage-target="design">
+                        <GuidedChecklist
+                          definition={contentPlanSetupChecklist}
+                          context={{
+                            site,
+                            foundation: readiness.items.filter(
+                              (item) => item.group === "foundation",
+                            ),
+                            cms: cms.data ?? null,
+                            cmsError: cms.isError
+                              ? extractErrorMessage(cms.error)
+                              : null,
+                            cmsLoading: cms.isLoading,
+                            dispatch,
+                            onChanged: async () => {
+                              await Promise.all([
+                                queryClient.invalidateQueries({
+                                  queryKey: setupKeys.cms(site.id),
+                                }),
+                                queryClient.invalidateQueries({
+                                  queryKey: marketingKeys.siteOptions(),
+                                }),
+                              ]);
+                            },
+                          }}
+                          scope={{
+                            organizationId: site.organization_id,
+                            targetKey: site.id,
+                          }}
+                          // Held until the CMS read settles: checking first would
+                          // report "no website" for a site that has one, then flip
+                          // — which reads as breakage, not as loading.
+                          ready={!cms.isLoading}
+                        />
+                      </div>
+                    ) : null
+                  }
+                  lintSlot={
+                    <>
+                      <PlanLintSection nodes={nodes.data ?? []} />
+                      <div data-pipeline-stage-target="seo_strategy">
+                        <KeywordStrategySection
+                          strategy={keywordStrategy}
+                          busy={passes.keywordsBusy}
+                          anyBusy={anyAgentBusy}
+                          aiReady={Boolean(researchReport)}
+                          planEmpty={nodeRows.length === 0}
+                          error={keywordError}
+                          onDismissError={() => setKeywordError(null)}
+                          onRun={(tier) => void handlePlanKeywords(tier)}
+                          onApply={() => void handleApplyKeywords()}
+                          onDismiss={() => {
+                            setKeywordStrategy(null);
+                            setKeywordsAppliedAt(null);
+                            setKeywordError(null);
+                          }}
+                          applying={applyingKeywords}
+                          appliedAt={keywordsAppliedAt}
+                          estimate={passes.keywordEstimate}
+                          estimateLoading={passes.keywordEstimateLoading}
+                          estimateError={passes.keywordEstimateError}
+                        />
+                      </div>
+                      <EntityAttachSection
+                        plan={entityPlan}
+                        busy={passes.entitiesBusy}
+                        anyBusy={anyAgentBusy}
+                        aiReady={Boolean(researchReport)}
+                        rosterEmpty={(planEntities.data ?? []).length === 0}
+                        planEmpty={nodeRows.length === 0}
+                        error={attachError}
+                        onDismissError={() => setAttachError(null)}
+                        onRun={() => void handleAttachEntities()}
+                        onApply={() => void handleApplyEntityAttachments()}
+                        onDismiss={() => {
+                          setEntityPlan(null);
+                          setEntitiesAppliedAt(null);
+                          setAttachError(null);
+                        }}
+                        applying={applyingEntities}
+                        appliedAt={entitiesAppliedAt}
+                      />
+                      <PlanReviewSection
+                        nodes={nodeRows}
+                        review={review}
+                        busy={passes.reviewBusy}
+                        anyBusy={anyAgentBusy}
+                        aiReady={Boolean(researchReport)}
+                        error={reviewError}
+                        onDismissError={() => setReviewError(null)}
+                        onRun={() => void handleReviewPlan()}
+                        onDismiss={() => {
+                          setReview(null);
+                          setAddedRoutes(new Set());
+                          setReviewError(null);
+                        }}
+                        onAddPage={(finding) =>
+                          void handleAddSuggestedPage(finding)
+                        }
+                        addingRoute={addingRoute}
+                        addedRoutes={addedRoutes}
+                      />
+                    </>
+                  }
+                  bridgeSlot={
+                    site ? (
+                      <div data-pipeline-stage-target="development draft live">
+                        <SetupBridgeSection
+                          site={site}
+                          cms={cms.data ?? null}
+                          planNodeIds={nodeRows.map((node) => node.id)}
+                        />
+                      </div>
+                    ) : null
+                  }
+                />
+              ) : (
+                <EmptyState
+                  title="No shape selected"
+                  body="Pick a site shape on the left to see its work order."
+                />
+              )}
+            </div>
+          );
 
-        const previewColumn = (
-          <div className="bg-card md:col-start-2 md:min-h-0 xl:col-start-3 xl:row-start-1">
-            {loading ? (
-              <ColumnSkeleton rows={8} />
-            ) : expanded && preview ? (
-              <SetupPreviewColumn
-                expanded={expanded}
-                preview={preview}
-                disabledReason={disabledReason}
-                committing={committing}
-                progress={progress}
-                result={result}
-                onCommit={() => void handleCommit()}
-                onOpenPlan={() => setView("tree")}
-              />
-            ) : (
-              <EmptyState
-                title="Nothing to preview"
-                body="The routes this shape creates appear here before anything is written."
-              />
-            )}
-          </div>
-        );
+          const previewColumn = (
+            <div className="bg-card md:col-start-2 md:min-h-0 xl:col-start-3 xl:row-start-1">
+              {loading ? (
+                <ColumnSkeleton rows={8} />
+              ) : expanded && preview ? (
+                <SetupPreviewColumn
+                  expanded={expanded}
+                  preview={preview}
+                  disabledReason={disabledReason}
+                  committing={committing}
+                  progress={progress}
+                  result={result}
+                  onCommit={() => void handleCommit()}
+                  onOpenPlan={() => setView("tree")}
+                />
+              ) : (
+                <EmptyState
+                  title="Nothing to preview"
+                  body="The routes this shape creates appear here before anything is written."
+                />
+              )}
+            </div>
+          );
 
-        return (
-          <MobilePanelShell
-            // The workspace header is an EntityModeHeader, which already owns
-            // a "…" for views/actions. A second identical glyph beside it
-            // tells the user nothing, so this one is named.
-            menuIcon={PanelsTopLeft}
-            menuLabel="Setup sections"
-            // Desktop is the EXISTING grid, verbatim — each column owns its
-            // own scroll. Zero change above md.
-            desktop={
-              <div
-                className={
-                  "grid min-h-0 flex-1 grid-cols-[16rem_minmax(0,1fr)] grid-rows-[minmax(0,auto)_minmax(0,1fr)] gap-px overflow-hidden bg-border " +
-                  "xl:grid-cols-[17rem_minmax(0,1fr)_25rem] xl:grid-rows-1"
-                }
-              >
-                {shapeColumn}
-                {workOrderColumn}
-                {previewColumn}
-              </div>
-            }
-            // Phone: the work order IS the workhorse, so it is the main
-            // column; the shape chooser and the preview/"Make it real" rungs
-            // become one-tap drawers. Before this, all three were stacked in
-            // one endless scroll and reviewers reported the work order, page
-            // list, lint and Make It Real as simply missing (2ca8190e).
-            main={<div className="bg-card">{workOrderColumn}</div>}
-            panels={[
-              // Drawer content renders in a PORTAL, outside the workbench
-              // root — so the touch-target floor has to ride the panel
-              // itself or it silently stops applying inside the sheet.
-              {
-                id: "shape",
-                label: "Site shape",
-                icon: LayoutTemplate,
-                content: (
-                  <div className="matrx-touch-targets">{shapeColumn}</div>
-                ),
-              },
-              {
-                id: "preview",
-                label: "Pages that will exist",
-                icon: ListChecks,
-                content: (
-                  <div className="matrx-touch-targets">{previewColumn}</div>
-                ),
-              },
-            ]}
-          />
-        );
+          return (
+            <MobilePanelShell
+              // The workspace header is an EntityModeHeader, which already owns
+              // a "…" for views/actions. A second identical glyph beside it
+              // tells the user nothing, so this one is named.
+              menuIcon={PanelsTopLeft}
+              menuLabel="Setup sections"
+              // Desktop is the EXISTING grid, verbatim — each column owns its
+              // own scroll. Zero change above md.
+              desktop={
+                <div
+                  className={
+                    "grid min-h-0 flex-1 grid-cols-[16rem_minmax(0,1fr)] grid-rows-[minmax(0,auto)_minmax(0,1fr)] gap-px overflow-hidden bg-border " +
+                    "xl:grid-cols-[17rem_minmax(0,1fr)_25rem] xl:grid-rows-1"
+                  }
+                >
+                  {shapeColumn}
+                  {workOrderColumn}
+                  {previewColumn}
+                </div>
+              }
+              // Phone: the work order IS the workhorse, so it is the main
+              // column; the shape chooser and the preview/"Make it real" rungs
+              // become one-tap drawers. Before this, all three were stacked in
+              // one endless scroll and reviewers reported the work order, page
+              // list, lint and Make It Real as simply missing (2ca8190e).
+              main={<div className="bg-card">{workOrderColumn}</div>}
+              panels={[
+                // Drawer content renders in a PORTAL, outside the workbench
+                // root — so the touch-target floor has to ride the panel
+                // itself or it silently stops applying inside the sheet.
+                {
+                  id: "shape",
+                  label: "Site shape",
+                  icon: LayoutTemplate,
+                  content: (
+                    <div className="matrx-touch-targets">{shapeColumn}</div>
+                  ),
+                },
+                {
+                  id: "preview",
+                  label: "Pages that will exist",
+                  icon: ListChecks,
+                  content: (
+                    <div className="matrx-touch-targets">{previewColumn}</div>
+                  ),
+                },
+              ]}
+            />
+          );
         })()}
       </div>
     </SurfaceRuntimeProvider>

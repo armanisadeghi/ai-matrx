@@ -65,7 +65,9 @@ export function planViewFromPath(pathname: string): PlanView | "tree" | null {
   if (!onBrandTree) return null;
   const segment = segments[5];
   if (!segment) return "tree";
-  return PLAN_VIEWS.includes(segment as PlanView) ? (segment as PlanView) : "tree";
+  return PLAN_VIEWS.includes(segment as PlanView)
+    ? (segment as PlanView)
+    : "tree";
 }
 
 export function usePlanWorkspaceParams() {
@@ -86,9 +88,12 @@ export function usePlanWorkspaceParams() {
   const queryView = searchParams.get("view");
   const view: PlanView =
     pathView ??
-    (PLAN_VIEWS.includes(queryView as PlanView) ? (queryView as PlanView) : "tree");
+    (PLAN_VIEWS.includes(queryView as PlanView)
+      ? (queryView as PlanView)
+      : "tree");
 
   const nodeId = searchParams.get("node");
+  const pipelineStage = searchParams.get("stage");
   const researchTopicReturnId = searchParams.get("researchTopic");
 
   /** This site's address for `next`, brand-scoped when we know the brand. */
@@ -123,6 +128,14 @@ export function usePlanWorkspaceParams() {
     },
     [router, siteId, viewHref],
   );
+  const setPipelineStage = useCallback(
+    (stage: string, next: PlanView) => {
+      if (!siteId) return;
+      const params = new URLSearchParams({ stage });
+      router.push(`${viewHref(next)}?${params.toString()}`, { scroll: false });
+    },
+    [router, siteId, viewHref],
+  );
 
   /**
    * The Research intake returns the approved topic in the URL. Once Setup has
@@ -146,9 +159,11 @@ export function usePlanWorkspaceParams() {
     viewHref,
     listHref,
     nodeId,
+    pipelineStage,
     researchTopicReturnId,
     setSiteId,
     setView,
+    setPipelineStage,
     clearResearchTopicReturn,
   };
 }

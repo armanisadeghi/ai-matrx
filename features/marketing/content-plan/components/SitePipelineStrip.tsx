@@ -60,6 +60,7 @@ export function SitePipelineStrip({
   error,
   onRetry,
   onSelectStage,
+  activeStageKey,
 }: {
   stages: SitePipelineStage[] | null;
   isLoading: boolean;
@@ -67,6 +68,8 @@ export function SitePipelineStrip({
   onRetry: () => void;
   /** Jump to where this stage's work happens. */
   onSelectStage?: (key: string) => void;
+  /** URL-backed destination focus after a stage chip is selected. */
+  activeStageKey?: string | null;
 }) {
   if (error) {
     return (
@@ -112,8 +115,11 @@ export function SitePipelineStrip({
                   variant="ghost"
                   size="sm"
                   onClick={() => onSelectStage?.(stage.key)}
+                  aria-pressed={activeStageKey === stage.key}
                   className={cn(
                     "h-6 shrink-0 gap-1 rounded-full px-1.5 text-[11px] font-medium",
+                    activeStageKey === stage.key &&
+                      "bg-accent text-accent-foreground ring-1 ring-border",
                     stage.state === "not_started" && "text-muted-foreground",
                     stage.state === "attention" &&
                       "text-amber-700 dark:text-amber-400",

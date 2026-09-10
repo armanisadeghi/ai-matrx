@@ -78,6 +78,7 @@ import { liveMatchesById, usePlanReality } from "../hooks/usePlanReality";
 import { useCmsPageMap } from "../hooks/useCmsPageMap";
 import { useSitePipeline } from "../hooks/useSitePipeline";
 import { SitePipelineStrip } from "./SitePipelineStrip";
+import { sitePipelineDestination } from "../lib/site-pipeline-navigation";
 import { usePlanMeasureOverlay } from "../hooks/usePlanMeasureOverlay";
 import {
   PLAN_VIEWS,
@@ -147,7 +148,8 @@ export function ContentPlanWorkbench({
   defaultLayout?: Layout;
   layoutCookieName: string;
 }) {
-  const { siteId, view, nodeId, setView } = usePlanWorkspaceParams();
+  const { siteId, view, nodeId, pipelineStage, setView, setPipelineStage } =
+    usePlanWorkspaceParams();
   const { sites, orgSites } = useContentPlanSites();
   const isMobile = useIsMobile();
 
@@ -234,15 +236,9 @@ export function ContentPlanWorkbench({
   const sitePipeline = useSitePipeline(siteId, site?.organization_id ?? null);
   const handlePipelineStage = useCallback(
     (key: string) => {
-      const target: PlanView =
-        key === "plan"
-          ? "tree"
-          : key === "content" || key === "draft"
-            ? "table"
-            : "setup";
-      setView(target);
+      setPipelineStage(key, sitePipelineDestination(key));
     },
-    [setView],
+    [setPipelineStage],
   );
 
   const statusCategories = useCategories({
@@ -847,6 +843,7 @@ export function ContentPlanWorkbench({
                 error={sitePipeline.error}
                 onRetry={() => void sitePipeline.refetch()}
                 onSelectStage={handlePipelineStage}
+                activeStageKey={pipelineStage}
               />
             }
             copySlot={

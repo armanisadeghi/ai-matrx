@@ -884,6 +884,11 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-09-10 — **Every site-pipeline chip now lands on its owning work.** The
+  chosen stage is URL-backed, remains visibly selected on Tree/Table/Map, and
+  Setup stages scroll to Research, SEO strategy, Design, or the build/publish
+  bridge instead of dropping every non-plan stage at Setup's first section.
+
 - 2026-09-10 — **The site pipeline survives cross-organization navigation and
   fails visibly.** `useSitePipeline` waits for and binds the viewed site's own
   organization on the backend request; `SitePipelineStrip` renders the shared
