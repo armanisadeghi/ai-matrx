@@ -68,8 +68,8 @@ const steps = [];
  * `advisory: true` means the step prints output but never causes the run to
  * fail (e.g. doctrine).
  */
-function step({ id, title, command, skip, advisory = false }) {
-  steps.push({ id, title, command, skip, advisory });
+function step({ id, title, command, skip, advisory = false, fatalStatuses = [] }) {
+  steps.push({ id, title, command, skip, advisory, fatalStatuses });
 }
 
 // ── Fast static checks (<2s each) ──────────────────────────────────────────

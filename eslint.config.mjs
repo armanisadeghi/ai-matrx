@@ -1493,7 +1493,7 @@ export default [
   {
     // MUST stay directly after nextCoreWebVitals — it overrides that config's
     // `react.version: "detect"`. See the note beside `reactVersion` above.
-    settings: { react: { version: "detect" } },
+    settings: { react: { version: reactVersion } },
   },
   {
     // eslint-config-next's `next/base` block parses plain JS with Next's
