@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-10T06:07:08.465Z",
-  "commit": "c303617f6a662f6ec5573c3a6c2a58a9c0061948",
+  "generatedAt": "2026-09-10T06:15:14.523Z",
+  "commit": "aa877c239fdf33f0ca3515b592e45f47479e1760",
   "totals": {
-    "errors": 2175,
-    "filesWithFindings": 1134,
-    "filesScanned": 14836,
+    "errors": 2173,
+    "filesWithFindings": 1132,
+    "filesScanned": 14837,
     "byClass": {
       "bug": 0,
       "correctness": 2146,
-      "doctrine": 27,
+      "doctrine": 25,
       "style": 2
     }
   },
@@ -65,7 +65,7 @@
     },
     {
       "rule": "no-restricted-imports",
-      "count": 26,
+      "count": 24,
       "klass": "doctrine"
     },
     {
@@ -289,7 +289,7 @@
     },
     {
       "key": "features/agents",
-      "count": 120,
+      "count": 118,
       "real": 117
     },
     {
@@ -1616,7 +1616,7 @@
       "rule": "no-restricted-imports",
       "feature": "app/(dev)",
       "route": "/demos/scopes/context-lab",
-      "message": "'@/features/files/api/files' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/files' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). Ra…"
     },
     {
       "file": "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
@@ -6062,7 +6062,7 @@
       "rule": "no-restricted-imports",
       "feature": "components/official",
       "route": null,
-      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). R…"
     },
     {
       "file": "components/official/ImageCropUploader.tsx",
@@ -6071,7 +6071,7 @@
       "rule": "no-restricted-imports",
       "feature": "components/official",
       "route": null,
-      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). R…"
     },
     {
       "file": "components/official/ImageCropUploader.tsx",
@@ -8576,24 +8576,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agents/components/chat/chat-incognito.slice.ts",
-      "line": 1,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/agents",
-      "route": null,
-      "message": "'createSlice' import from '@reduxjs/toolkit' is restricted. createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLE…"
-    },
-    {
-      "file": "features/agents/components/chat/chat-route.slice.ts",
-      "line": 1,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/agents",
-      "route": null,
-      "message": "'createSlice' import from '@reduxjs/toolkit' is restricted. createSlice / createReducer must live in lib/redux/** or features/*/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLE…"
-    },
-    {
       "file": "features/agents/components/debug/SandboxFileViewer.tsx",
       "line": 42,
       "column": 7,
@@ -9095,7 +9077,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/agents",
       "route": null,
-      "message": "'@/features/files/api/resource-family' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/resource-family' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invaria…"
     },
     {
       "file": "features/agents/components/variables-management/OptionsEditor.tsx",
@@ -9932,7 +9914,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/canvas",
       "route": null,
-      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). R…"
     },
     {
       "file": "features/cloud-browser/hooks/useWrittenProgress.ts",
@@ -12722,7 +12704,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/image-studio",
       "route": null,
-      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). R…"
     },
     {
       "file": "features/image-studio/modes/edit/EditModeShell.tsx",
@@ -12731,7 +12713,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/image-studio",
       "route": null,
-      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). R…"
     },
     {
       "file": "features/image-studio/modes/edit/EditModeShell.tsx",
@@ -14454,7 +14436,7 @@
     },
     {
       "file": "features/organizations/components/OrgResourceList.tsx",
-      "line": 92,
+      "line": 101,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/organizations",
@@ -14706,7 +14688,7 @@
     },
     {
       "file": "features/pdf-extractor/components/PdfExtractorWorkspace.tsx",
-      "line": 479,
+      "line": 481,
       "column": 8,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -14715,7 +14697,7 @@
     },
     {
       "file": "features/pdf-extractor/components/PdfExtractorWorkspace.tsx",
-      "line": 483,
+      "line": 485,
       "column": 16,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -14724,7 +14706,7 @@
     },
     {
       "file": "features/pdf-extractor/components/PdfExtractorWorkspace.tsx",
-      "line": 484,
+      "line": 486,
       "column": 16,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -14733,7 +14715,7 @@
     },
     {
       "file": "features/pdf-extractor/components/PdfExtractorWorkspace.tsx",
-      "line": 497,
+      "line": 499,
       "column": 26,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -14742,7 +14724,7 @@
     },
     {
       "file": "features/pdf-extractor/components/PdfExtractorWorkspace.tsx",
-      "line": 508,
+      "line": 510,
       "column": 14,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -14751,7 +14733,7 @@
     },
     {
       "file": "features/pdf-extractor/components/PdfExtractorWorkspace.tsx",
-      "line": 508,
+      "line": 510,
       "column": 14,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -14760,7 +14742,7 @@
     },
     {
       "file": "features/pdf-extractor/components/PdfExtractorWorkspace.tsx",
-      "line": 552,
+      "line": 554,
       "column": 18,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -14769,7 +14751,7 @@
     },
     {
       "file": "features/pdf-extractor/components/PdfExtractorWorkspace.tsx",
-      "line": 553,
+      "line": 555,
       "column": 29,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -14778,7 +14760,7 @@
     },
     {
       "file": "features/pdf-extractor/components/PdfExtractorWorkspace.tsx",
-      "line": 586,
+      "line": 588,
       "column": 24,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -14787,7 +14769,7 @@
     },
     {
       "file": "features/pdf-extractor/components/PdfExtractorWorkspace.tsx",
-      "line": 589,
+      "line": 591,
       "column": 14,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -14796,7 +14778,7 @@
     },
     {
       "file": "features/pdf-extractor/components/PdfExtractorWorkspace.tsx",
-      "line": 589,
+      "line": 591,
       "column": 14,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -14814,7 +14796,7 @@
     },
     {
       "file": "features/pdf-extractor/hooks/usePdfExtractor.ts",
-      "line": 363,
+      "line": 369,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/pdf-extractor",
@@ -14841,7 +14823,7 @@
     },
     {
       "file": "features/pdf-extractor/studio/PdfManipulationWorkbench.tsx",
-      "line": 89,
+      "line": 91,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/pdf-extractor",
@@ -14855,7 +14837,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/pdf-extractor",
       "route": null,
-      "message": "'@/features/files/api/files' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/files' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). Ra…"
     },
     {
       "file": "features/pdf-extractor/studio/PdfStudioInspector.tsx",
@@ -14886,7 +14868,7 @@
     },
     {
       "file": "features/pdf-extractor/studio/PdfStudioShell.tsx",
-      "line": 240,
+      "line": 241,
       "column": 3,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -14895,7 +14877,7 @@
     },
     {
       "file": "features/pdf-extractor/studio/PdfStudioShell.tsx",
-      "line": 377,
+      "line": 378,
       "column": 3,
       "rule": "react-hooks/refs",
       "feature": "features/pdf-extractor",
@@ -15053,7 +15035,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/pdf",
       "route": null,
-      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). R…"
     },
     {
       "file": "features/pdf/hooks/usePdfSurfaceLinks.ts",
@@ -15062,7 +15044,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/pdf",
       "route": null,
-      "message": "'@/features/files/api/document-lookup' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/document-lookup' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invaria…"
     },
     {
       "file": "features/pdf/hooks/usePdfSurfaceLinks.ts",
@@ -15449,7 +15431,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/rag",
       "route": null,
-      "message": "'@/features/files/api/document-lookup' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/document-lookup' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invaria…"
     },
     {
       "file": "features/rag/components/library-catalog/LibraryLabelChip.tsx",
@@ -15665,7 +15647,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/rag",
       "route": null,
-      "message": "'@/features/files/api/direct' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/direct' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). R…"
     },
     {
       "file": "features/rag/components/library/LibraryTrashSheet.tsx",
@@ -15764,7 +15746,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/rag",
       "route": null,
-      "message": "'@/features/files/api/document-lookup' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/document-lookup' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invaria…"
     },
     {
       "file": "features/rag/components/ProcessForRagButton.tsx",
@@ -15791,7 +15773,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/rag",
       "route": null,
-      "message": "'@/features/files/api/pdf-pages' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/pdf-pages' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17)…"
     },
     {
       "file": "features/rag/components/search/SelectedPdfPages.tsx",
@@ -15800,7 +15782,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/rag",
       "route": null,
-      "message": "'@/features/files/api/pdf-pages' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/pdf-pages' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17)…"
     },
     {
       "file": "features/rag/components/visualization/IngestFlowAnimationImpl.tsx",
@@ -15863,7 +15845,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/rag",
       "route": null,
-      "message": "'@/features/files/api/document-lookup' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/document-lookup' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invaria…"
     },
     {
       "file": "features/rag/hooks/useFileRagStatus.ts",
@@ -15881,7 +15863,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/rag",
       "route": null,
-      "message": "'@/features/files/api/document-lookup' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/document-lookup' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invaria…"
     },
     {
       "file": "features/rag/hooks/useKnowledgeAssetRunner.ts",
@@ -16079,7 +16061,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/research",
       "route": null,
-      "message": "'@/features/files/api/files' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/files' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). Ra…"
     },
     {
       "file": "features/research/components/media/MediaGallery.tsx",
@@ -16268,7 +16250,7 @@
       "rule": "no-restricted-imports",
       "feature": "features/resource-manager",
       "route": null,
-      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
+      "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). R…"
     },
     {
       "file": "features/resource-manager/resource-picker/NotesResourcePicker.tsx",
