@@ -472,7 +472,7 @@ export function useScratchpadContextSync(conversationId: string): void {
           state.instanceWorkingDocument.byKey[
             workingDocKey(scratchScopeId(id), "scratch")
           ];
-        return `${id} ${e?.title ?? ""} ${e?.content ?? ""}`;
+        return `${id}\0${e?.title ?? ""}\0${e?.content ?? ""}`;
       })
       .join(""),
   );

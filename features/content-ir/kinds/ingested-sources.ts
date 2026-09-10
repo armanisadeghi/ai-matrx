@@ -245,7 +245,7 @@ export function groupChunksBySource(
       raw.source_media_ref_id !== ""
         ? raw.source_media_ref_id
         : null;
-    const key = `${label} ${kind} ${mediaRefId ?? ""}`;
+    const key = `${label}\0${kind}\0${mediaRefId ?? ""}`;
 
     let source = byKey.get(key);
     if (!source) {

@@ -444,7 +444,7 @@ export function attributeSkillsToKinds(
   const teachings: SkillTeaching[] = [];
   const seen = new Set<string>();
   const add = (skillId: string, kind: string, syntax: "json" | "xml") => {
-    const key = `${skillId} ${kind} ${syntax}`;
+    const key = `${skillId}\0${kind}\0${syntax}`;
     if (seen.has(key)) return;
     seen.add(key);
     teachings.push({ skillId, kind, syntax });
