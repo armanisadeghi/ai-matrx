@@ -100,6 +100,11 @@ tracebacks/payloads/raw logs, diagnoses implementation code, or edits product co
 Delegated investigators load their own exact representative detail. Keep at most
 three coding investigators concurrent; reuse finished slots for independent
 verification. Only an investigator may prove that similar symptoms share a root.
+The parent alone edits this automation's `memory.md`, `current-state.json`, history,
+and run-level evidence. Every investigator assignment must explicitly prohibit
+checkpoint edits; investigators return compact evidence to the parent instead. If a
+delegate writes patrol state anyway, stop further delegate state writes and reconcile
+the exact mutation before the parent atomically publishes its checkpoint.
 
 Keep Astra as the parent when selected by the user; do not inherit it into workers.
 Explicitly use `gpt-5.6-luna` for bounded collection, routine checks, and straightforward
@@ -297,6 +302,10 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 - Made patrol checkpoint files parent-owned and required every
+  investigator assignment to prohibit state edits after a delegate appended to
+  automation memory during a live run.
 
 - 2026-09-10 - Required generic and unloaded dependency compatibility after a
   fixed SDK list passed built-in tests but broke the public string-input contract.
