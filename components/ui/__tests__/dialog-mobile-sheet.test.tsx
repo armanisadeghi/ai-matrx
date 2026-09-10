@@ -13,6 +13,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { MOTION_BOTTOM_SHEET } from "@ai-matrx/design-system";
+
 import { Dialog, DialogContent, DialogTitle } from "../dialog";
 
 (
@@ -71,7 +73,16 @@ it("renders the canonical mobile bottom sheet with the no-zoom marker", () => {
   expect(content?.className).toContain("max-w-full");
   expect(content?.className).toContain("rounded-t-2xl");
   expect(content?.className).toContain("overflow-y-auto");
-  expect(content?.className).toContain("slide-in-from-bottom");
+  /**
+   * The rise-from-the-bottom motion is the design system's own class
+   * (`matrx-motion-bottom-sheet`), NOT Tailwind's `slide-in-from-bottom`: the
+   * C26 motion-layer extraction (2026-08-30) moved every keyframe into
+   * @ai-matrx/design-system/styles.css and put `slide-in-from` on that
+   * package's FORBIDDEN_HOST_MOTION_UTILITIES list. Asserting the exported
+   * constant AND the keyframes behind it guards the actual behaviour — a sheet
+   * that enters from off the bottom edge — instead of a utility name.
+   */
+  expect(content?.className).toContain(MOTION_BOTTOM_SHEET);
 
   const packageCss = readFileSync(
     join(
@@ -90,6 +101,10 @@ it("renders the canonical mobile bottom sheet with the no-zoom marker", () => {
   expect(packageCss).toMatch(
     /\.matrx-mobile-sheet input,[\s\S]*?\.matrx-mobile-sheet textarea,[\s\S]*?\.matrx-mobile-sheet select,[\s\S]*?font-size:\s*16px/,
   );
+  expect(packageCss).toMatch(
+    /@keyframes matrx-bottom-sheet-in\s*\{[\s\S]*?transform:\s*translateY\(100%\)/,
+  );
+  expect(packageCss).toContain(`.${MOTION_BOTTOM_SHEET}[data-state="open"]`);
 
   const layout = readFileSync(
     join(__dirname, "..", "..", "..", "app", "layout.tsx"),

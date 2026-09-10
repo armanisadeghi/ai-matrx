@@ -49,6 +49,7 @@ import {
   mandateDefinitions,
   holderOfBinding,
   holderOfMandate,
+  type HolderRef,
   type MandateBindingRow,
   type MandateDefinitionRow,
   type MandateDefinitionUpdate,
@@ -1170,7 +1171,24 @@ export async function promoteMandateTestResult(
 export async function resolveMandateDefaultAgentId(
   mandate: MandateDefinitionRow,
 ): Promise<string | null> {
-  const holder = holderOfMandate(mandate);
+  return resolveHolderAgentId(holderOfMandate(mandate));
+}
+
+/**
+ * The same resolution, from a Holder the caller already has.
+ *
+ * 🚨 The test bench used to reach this by BUILDING a mandate row —
+ * `{ ...mandate, default_holder_type, default_holder_id,
+ * default_holder_version_id }` — so a binding's Holder would win over the
+ * mandate's own. Those three column names in an object literal are exactly the
+ * shape `default-holder-has-one-road` forbids in client code, and for a good
+ * reason: a composer of that payload is one `.update()` away from being the
+ * bypass the door exists to close. A Holder is what the bench actually had, so
+ * a Holder is what it passes.
+ */
+export async function resolveHolderAgentId(
+  holder: HolderRef,
+): Promise<string | null> {
   if (holder.holderId) return holder.holderId;
   if (!holder.versionId) return null;
   const supabase = createClient();

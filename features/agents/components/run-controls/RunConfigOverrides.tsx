@@ -114,6 +114,21 @@ export interface RunConfigOverridesWords {
    * agent. A mandate/job door passes the job vocabulary's own word.
    */
   modelEmptyChoiceLabel?: string;
+  /**
+   * THE BASELINE'S NOUN, in this host's vocabulary — the same O3 defect one
+   * level down. The rows called the thing a setting is inherited FROM
+   * *"Holder"*, and a cleared setting *"Holder default"*, hardcoded on every
+   * door including the shortcut editor, whose whole subject is an AGENT. The
+   * mandate-screen vocabulary sweep reads it as the job system's noun standing
+   * on an agent door, which is exactly what it is.
+   *
+   * Omitted = the agent noun, right on every door whose subject IS an agent. A
+   * mandate/job door passes the job vocabulary's own word (its runner is a
+   * HOLDER, agent or workflow).
+   */
+  baselineSourceLabel?: string;
+  /** What a cleared setting falls back to, in this host's noun. */
+  baselineDefaultLabel?: string;
 }
 
 /** The default for the picker's "no override" choice — see the field above. */
@@ -124,6 +139,8 @@ export const CONVERSATION_OVERRIDE_WORDS: RunConfigOverridesWords = {
   scopeNote:
     "Overrides apply to this conversation only. Resetting a value returns it to the agent default.",
   noModelNote: "No model resolved for this conversation yet.",
+  baselineSourceLabel: "Agent",
+  baselineDefaultLabel: "Agent default",
 };
 
 export function RunConfigOverrides({
@@ -149,6 +166,9 @@ export function RunConfigOverrides({
   overrideSource?: string;
 }) {
   const w = { ...CONVERSATION_OVERRIDE_WORDS, ...words };
+  // The host's nouns for the baseline, defaulted to the agent vocabulary.
+  const baselineSourceLabel = w.baselineSourceLabel ?? "Agent";
+  const baselineDefaultLabel = w.baselineDefaultLabel ?? "Agent default";
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const [editorTab, setEditorTab] = useState("controls");
@@ -357,10 +377,12 @@ export function RunConfigOverrides({
                       removals.includes("model") || "model" in overrides
                         ? overrideSource
                         : (inheritedSources?.model ??
-                          (base.model != null ? "Holder" : "Model default")),
+                          (base.model != null
+                            ? baselineSourceLabel
+                            : "Model default")),
                     state: removals.includes("model")
                       ? nullDefaults
-                        ? "Holder default"
+                        ? baselineDefaultLabel
                         : "Removed"
                       : "model" in overrides
                         ? "Overridden"
@@ -454,11 +476,13 @@ export function RunConfigOverrides({
                         disabled={disabled}
                         overrideSource={overrideSource}
                         removedLabel={
-                          nullDefaults ? "Holder default" : "Removed"
+                          nullDefaults ? baselineDefaultLabel : "Removed"
                         }
                         inheritedSource={
                           inheritedSources?.[row.key] ??
-                          (base[row.key] != null ? "Holder" : "Model default")
+                          (base[row.key] != null
+                            ? baselineSourceLabel
+                            : "Model default")
                         }
                         value={
                           row.key in overrides

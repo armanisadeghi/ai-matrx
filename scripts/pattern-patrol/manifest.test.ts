@@ -75,6 +75,22 @@ describe("Pattern Patrol typed manifest", () => {
 
   it("keeps every known-backlog patrol in execution mode", () => {
     for (const patrol of PATROLS) {
+      if (patrol.mode === "MAINTENANCE") {
+        // The MAINTENANCE CONTRACT allows this mode ONLY after an independent
+        // full pass proved zero actionable backlog, so the manifest has to
+        // carry that proof and the generated prompt has to repeat it. P7 was
+        // moved here by the 2026-08-30 browser-dialog pass (999eb32625); the
+        // guard now pins the condition instead of the single allowed value,
+        // because an undocumented maintenance claim is the report-only
+        // terminal state this test exists to forbid.
+        expect(patrol.maintenanceProof.length).toBeGreaterThan(0);
+        const prompt = automationUpdateSpecs().find(
+          (candidate) => candidate.id === patrol.automationId,
+        )?.prompt;
+        expect(prompt).toContain("ZERO-BACKLOG PROOF ON RECORD");
+        expect(prompt).toContain(patrol.maintenanceProof);
+        continue;
+      }
       expect(patrol.mode).toBe("ERADICATION");
     }
     for (const prompt of automationUpdateSpecs()

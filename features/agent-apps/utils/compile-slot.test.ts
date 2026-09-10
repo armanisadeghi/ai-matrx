@@ -36,7 +36,12 @@ describe("compileSlotComponent", () => {
     const markup = renderToStaticMarkup(createElement(Component, {}));
     expect(markup).toContain('data-imports-ready="true"');
     expect(markup).toContain("renderer alive");
-    expect(markup).toContain("animate-pulse");
+    // Skeleton pulses via the package-owned `.matrx-pulse` class since the C9
+    // design-system swap (2cd0ca423b): @ai-matrx/design-system ships the
+    // keyframes in its own styles.css (imported by app/layout.tsx) so a
+    // non-Tailwind consumer still animates. Tailwind's `animate-pulse` is no
+    // longer what Skeleton emits.
+    expect(markup).toContain("matrx-pulse");
   });
 
   it("removes multiline allowlisted imports before evaluating sandbox code", () => {

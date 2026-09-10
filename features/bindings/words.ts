@@ -255,6 +255,11 @@ export const JOB_OVERRIDE_WORDS = {
   // shared default says "the agent's own model", which is right on an agent
   // door and wrong here: a job's runner is its HOLDER, agent or workflow.
   modelEmptyChoiceLabel: "Use the holder's own model",
+  // The baseline's noun, same reason: a job's runner is its HOLDER. The shared
+  // panel's default says "Agent", which is right on an agent door and wrong on
+  // a job's binding, where the runner may be a workflow.
+  baselineSourceLabel: "Holder",
+  baselineDefaultLabel: "Holder default",
 };
 
 /**
@@ -272,4 +277,6 @@ export const JOB_TREATMENT_OVERRIDE_WORDS = {
   noModelNote:
     "No model chosen — this job runs on its holder's own model unless you pick one.",
   modelEmptyChoiceLabel: "Use the holder's own model",
+  baselineSourceLabel: "Holder",
+  baselineDefaultLabel: "Holder default",
 };

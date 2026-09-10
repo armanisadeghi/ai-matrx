@@ -58,6 +58,33 @@ export {
 
 import type { WorkflowRunStatus } from "@/types/python-generated/workflow-events";
 
+import { TERMINAL_RUN_STATUSES as GENERATED_TERMINAL_RUN_STATUSES } from "@/types/python-generated/workflow-events";
+
+/**
+ * IS THIS RUN OVER, as far as anything WATCHING it is concerned?
+ *
+ * The generated `TERMINAL_RUN_STATUSES` answers the ENGINE's question
+ * ("finished forever — no resume, no recovery") and deliberately excludes
+ * `errored`. A viewing surface has a different question, and `errored` answers
+ * it the same way as `failed`: verified live, a run the engine records as
+ * `errored` never moves again, so a viewer that waits for one of the three
+ * generated statuses waits forever — the clock keeps running, no failure is
+ * explained, and the only thing that ever settles the screen is a row-poll
+ * recovery backstop.
+ *
+ * Every surface that had learned this was carrying its own
+ * `TERMINAL_RUN_STATUSES.has(s) || s === "errored"` (RunHero, RunActivityFeed,
+ * ReadoutView, RunFailureCard, the bake-off pages…). This is that expression,
+ * once. Reach for it wherever a surface asks "may I stop waiting?"; keep the
+ * generated set for engine-level questions such as "can this be resumed?".
+ */
+export function runIsOver(status: WorkflowRunStatus | null): boolean {
+  return (
+    status !== null &&
+    (GENERATED_TERMINAL_RUN_STATUSES.has(status) || status === "errored")
+  );
+}
+
 /** One row from `GET /runs/{id}/events` (durable wf_node_events projection). */
 export interface RunEventRecord {
   event_type: string;

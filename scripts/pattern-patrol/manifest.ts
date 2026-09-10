@@ -6,13 +6,12 @@
 
 export type PatrolOperatingMode = "ERADICATION" | "MAINTENANCE";
 
-export interface PatrolDefinition {
+interface PatrolIdentity {
   patrolId: `P${number}`;
   slug: string;
   job: string;
   automationId: string;
   automationName: string;
-  mode: PatrolOperatingMode;
   status: "ACTIVE" | "PAUSED";
   recipePath: string;
   reportSlug: string;
@@ -20,6 +19,22 @@ export interface PatrolDefinition {
   cadence: string;
   runInstruction: string;
 }
+
+/**
+ * THE MAINTENANCE CONTRACT IS TYPED, NOT CLAIMED.
+ *
+ * A patrol runs in ERADICATION by default. MAINTENANCE is legal only after an
+ * independent full pass proved zero actionable backlog (see the contract text
+ * in `patrolPrompt`), so the manifest REQUIRES that proof in writing beside
+ * the mode — otherwise "we are in maintenance" is an unfalsifiable sentence,
+ * which is exactly the report-only terminal state the fleet forbids. The proof
+ * travels into the generated prompt so the running agent can re-measure it.
+ */
+export type PatrolDefinition = PatrolIdentity &
+  (
+    | { mode: "ERADICATION"; maintenanceProof?: undefined }
+    | { mode: "MAINTENANCE"; maintenanceProof: string }
+  );
 
 export interface AutomationUpdateSpec {
   id: string;
@@ -155,6 +170,13 @@ export const PATROLS = [
     automationId: "pattern-patrol-p7-no-browser-dialogs",
     automationName: "Pattern Patrol P7 · No browser dialogs",
     mode: "MAINTENANCE",
+    // Independent full pass 2026-08-30 (999eb32625) closed the last
+    // browser-dialog callsites and re-activated this patrol. Re-measured
+    // 2026-09-09: the only `window.confirm` / `alert` / `prompt` string left
+    // under app, features, components, lib, hooks, packages and utils is the
+    // doc comment naming the banned API in ClipboardFallbackDialog.tsx.
+    maintenanceProof:
+      "Full pass 2026-08-30 (999eb32625) reached zero browser-dialog callsites; re-measured 2026-09-09 with only a doc-comment mention left in components/dialogs/clipboard-fallback/ClipboardFallbackDialog.tsx.",
     status: "ACTIVE",
     recipePath: "CLAUDE.md",
     reportSlug: "no-browser-dialogs",
@@ -282,7 +304,11 @@ READ FIRST:
 9. ${repoRoot}/.matrx/patrol-runs/${patrol.patrolId}/latest.json and ${repoRoot}/.matrx/patrol-reports/${patrol.reportSlug}.md when present
 
 RUN CONTRACT:
-- MODE ${patrol.mode}: ${patrol.runInstruction}
+- MODE ${patrol.mode}: ${patrol.runInstruction}${
+    patrol.mode === "MAINTENANCE"
+      ? `\n- ZERO-BACKLOG PROOF ON RECORD: ${patrol.maintenanceProof} Re-measure it this run; the first verified finding flips this patrol back to ERADICATION.`
+      : ""
+  }
 - ERADICATION CONTRACT: a known actionable backlog is the work queue, not material for another report. Consume its first ready items before broad discovery. Use the executor's available parallel-agent capacity for disjoint repair units, never more than ten workers, and run additional waves when one wave does not exhaust the ready queue. Every worker implements and verifies; no worker is assigned to restate findings. The 15-file limit is per independently certified batch, not per run. Continue through multiple batches until the queue reaches verified zero or one hard blocker prevents every remaining ready item. A run with actionable backlog and no certified repair is degraded, never successful. Missing detector, recipe, test, or harness machinery is repaired in scope and then used; it is not a reason to stop at analysis.
 - MAINTENANCE CONTRACT: maintenance mode is allowed only after an independent full pass proves zero actionable backlog. Run the scoped check plus its scheduled full rotation. Zero stays a one-line result. The first verified finding switches this same run immediately to ERADICATION: repair it and every other ready item; never end by announcing that defects were found.
 - NO DETECTION-ONLY TERMINAL STATE: classify each verified item as repair-now, genuine-human-decision, or hard-blocked. Repair-now items execute now. A decision or blocker stays open, but it never prevents the patrol from taking the next independent repair-now item. Known actionable backlog may not be marked closed, clean, or complete.

@@ -410,8 +410,16 @@ export function ScopeHolderBar({
       agentTabs={restriction}
       outputKind={job.outputKind}
       holderTypeHelp={perspective === "system" ? null : restriction.sentence}
-      // Matching owns coverage; the holder picker only selects its implementation.
-      coverageLine={null}
+      /* 🚨 THE COVERAGE FACT REACHES A READER ON EVERY HOST. `96e45f3aa2`
+         ("wip: integrate concurrent frontend repairs") set this to `null` with
+         the note "Matching owns coverage" AND deleted the JOB cell that carried
+         it on the other host — so `jobCoverage` was computed in
+         `OneBindingWorkspace` and rendered nowhere, and a person could set a
+         holder, read a healthy verdict about it, and never learn that a
+         required input was unmapped and a run would refuse.
+         Inside the block on the system host (which has no JOB cell), and as its
+         own fact row below on the person host — once per page, never twice. */
+      coverageLine={perspective === "system" ? job.coverageLine : null}
       refusal={
         // Verbatim, unchanged: it is the rule Arman ruled on, and the guard
         // that pins it (`system-rung-holder-refusal.test.tsx`) reads this
@@ -608,6 +616,14 @@ export function ScopeHolderBar({
       </div>
       <div className="min-w-0 space-y-3">
         {holderControls}
+        {/* The same fact the system host prints inside the block — here it is a
+            row of its own, so `holder-coverage-line` is never on the page
+            twice. */}
+        <PropertyRow
+          label="Coverage"
+          value={job.coverageLine}
+          help="Whether what this job offers actually feeds every input the chosen holder requires."
+        />
         {(holder.kind === "agent" && !holder.agentId) ||
         (holder.kind === "workflow" && !holder.workflowId) ? (
           <PropertyRow

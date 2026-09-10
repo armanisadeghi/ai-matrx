@@ -349,7 +349,7 @@ function HolderDeclaredInputs({ mandateKey }: { mandateKey: string }) {
       <PropertyRow
         label="Declared inputs"
         value="None"
-        source="Served input surface"
+        source="The job's own answer"
       />
     );
   }

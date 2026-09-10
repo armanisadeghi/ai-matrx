@@ -65,7 +65,17 @@ const MATCHERS = ROUTES.map((route) => ({
   route,
   re: new RegExp(
     `^${route
+      // An OPTIONAL catch-all `[[...rest]]` matches ZERO segments too, and
+      // Next.js drops the separator with it: `/marketing/brands/[brandId]/
+      // [[...rest]]` serves `/marketing/brands/<id>` with no trailing slash.
+      // Consuming the preceding `/` here is what makes that true — without it
+      // the pattern demanded a slash that the real URL never has, and this
+      // guard reported `web_brand -> /marketing/brands/{id}` as a dead end
+      // while the route served it perfectly (FOUND_DEFECTS 2026-09-08 triage).
+      .replace(/\/\[\[\.\.\.[^\]]+\]\]/g, "(?:/(.*))?")
+      // A `[[...all]]` at the ROOT of the tree has no preceding segment.
       .replace(/\[\[\.\.\.[^\]]+\]\]/g, "(.*)")
+      // A REQUIRED catch-all `[...slug]` needs at least one segment.
       .replace(/\[\.\.\.[^\]]+\]/g, "(.+)")
       .replace(/\[[^\]]+\]/g, "([^/]+)")}$`,
   ),
@@ -90,6 +100,18 @@ describe("shareable_resource_registry: url_path_template points at a real route"
     // than silently greenlighting every broken template below.
     expect(matchRoute("/apps/some-id")).toBeNull();
     expect(matchRoute("/skills/some-id")).toBeNull();
+    // OPTIONAL catch-all, both arms. `[[...rest]]` matches zero segments, so
+    // the parent path must resolve WITHOUT a trailing slash — the shape that
+    // made this guard call the live `/marketing/brands/{id}` a dead end. Both
+    // arms are asserted so a regression in either direction is caught here
+    // rather than in a registry row's failure message.
+    const optionalCatchAll = ROUTES.find((r) => /\[\[\.\.\./.test(r));
+    expect(optionalCatchAll).toBeDefined();
+    const withoutTail = (optionalCatchAll as string)
+      .replace(/\/\[\[\.\.\.[^\]]+\]\]/, "")
+      .replace(/\[[^\]]+\]/g, "x");
+    expect(matchRoute(withoutTail)).toBe(optionalCatchAll);
+    expect(matchRoute(`${withoutTail}/deeper/still`)).toBe(optionalCatchAll);
   });
 
   it.each(

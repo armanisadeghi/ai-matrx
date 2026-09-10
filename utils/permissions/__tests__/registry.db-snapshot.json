@@ -72,7 +72,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Cloud Browser Profile",
-    "url_path_template": "/browser/profiles/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -116,7 +116,7 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Code Repository",
-    "url_path_template": "/rag/repositories?repo={id}",
+    "url_path_template": "/knowledge/repositories?repo={id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -198,13 +198,35 @@
     "is_active": true
   },
   {
+    "resource_type": "custom_entity_definition",
+    "table_name": "custom_entity_definition",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Custom Object",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "custom_record",
+    "table_name": "custom_record",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Custom Record",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "data_store",
     "table_name": "data_stores",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Data Store",
-    "url_path_template": "/rag/data-stores?store_id={id}",
+    "url_path_template": "/knowledge/data-stores?store_id={id}",
     "rls_uses_has_permission": false,
     "is_active": true
   },
@@ -227,6 +249,28 @@
     "is_public_column": null,
     "display_label": "Direct Conversation",
     "url_path_template": "/messages/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "esign_campaign",
+    "table_name": "campaign",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Signature campaign",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "esign_envelope",
+    "table_name": "envelope",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Signature envelope",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -336,7 +380,7 @@
     "owner_column": "user_id",
     "is_public_column": "public",
     "display_label": "Flashcard",
-    "url_path_template": "/flashcards/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": false
   },
@@ -385,13 +429,310 @@
     "is_active": true
   },
   {
+    "resource_type": "hr_ai_evidence",
+    "table_name": "ai_evidence",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "AI evidence",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_asset",
+    "table_name": "asset",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Asset",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_background_check",
+    "table_name": "background_check",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Background check",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_candidate",
+    "table_name": "candidate",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Candidate",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_checklist_template",
+    "table_name": "checklist_template",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Checklist template",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_compensation",
+    "table_name": "compensation",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Compensation",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_corrective_action",
+    "table_name": "corrective_action",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Corrective action",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_course",
+    "table_name": "course",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Course",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_emergency_contact",
+    "table_name": "emergency_contact",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Emergency contact",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_employee",
+    "table_name": "employee",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Employee",
+    "url_path_template": "/hr/people/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_employee_private",
+    "table_name": "employee_private",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Employee private details",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_employer_profile",
+    "table_name": "employer_profile",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Employer profile",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_employment",
+    "table_name": "employment",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Employment spell",
+    "url_path_template": "/hr/people/{id}/employment",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_i9",
+    "table_name": "i9",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Form I-9",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_interview",
+    "table_name": "interview",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Interview",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_leave_policy",
+    "table_name": "leave_policy",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Leave policy",
+    "url_path_template": "/hr/settings/leave-policies/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_legal_hold",
+    "table_name": "legal_hold",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Legal hold",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_offer",
+    "table_name": "offer",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Offer",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_records_request",
+    "table_name": "records_request",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Records request",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_reference_check",
+    "table_name": "reference_check",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Reference check",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_requisition",
+    "table_name": "requisition",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Requisition",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_restricted_note",
+    "table_name": "restricted_note",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Restricted note",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_separation",
+    "table_name": "separation",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Separation",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_survey",
+    "table_name": "survey",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Survey",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_tax_withholding",
+    "table_name": "tax_withholding",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Tax withholding",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_verification_letter_request",
+    "table_name": "verification_letter_request",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Verification letter request",
+    "url_path_template": "/hr",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "hr_workflow_instance",
+    "table_name": "workflow_instance",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "HR approval request",
+    "url_path_template": "/hr/tasks/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "interview_session",
     "table_name": "session",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Vision Interview",
-    "url_path_template": "/vision-interview/{id}",
+    "url_path_template": "/masterwork/vision-interview/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -465,7 +806,7 @@
     "resource_type": "pdf_redaction_audit",
     "table_name": "pdf_redaction_audits",
     "id_column": "id",
-    "owner_column": "user_id",
+    "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Redaction Audit",
     "url_path_template": "/files/{id}",
@@ -501,7 +842,7 @@
     "owner_column": "user_id",
     "is_public_column": "is_public",
     "display_label": "Prompt",
-    "url_path_template": "/ai/prompts/edit/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": false
   },
@@ -512,7 +853,7 @@
     "owner_column": "user_id",
     "is_public_column": "is_public",
     "display_label": "Action",
-    "url_path_template": "/ai/prompts/actions/{id}",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": false
   },
@@ -536,7 +877,7 @@
     "display_label": "Redaction Mapping",
     "url_path_template": "/files/{id}",
     "rls_uses_has_permission": false,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "research_template",
@@ -613,7 +954,7 @@
     "display_label": "Scope Suggestion",
     "url_path_template": "",
     "rls_uses_has_permission": false,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "scope_item_value_suggestion",
@@ -624,7 +965,7 @@
     "display_label": "Scope Item Value Suggestion",
     "url_path_template": "",
     "rls_uses_has_permission": false,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "seo_change_set",

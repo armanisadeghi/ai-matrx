@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { createAuthenticatedClient } from "@/lib/api/backend-client";
+import { BackendClient } from "@/lib/api/backend-client";
 import { AIDREAM_PRODUCTION_URL, ENDPOINTS } from "@/lib/api/endpoints";
+import { OrganizationContextError } from "@/lib/api/organization-context";
 
 const VALIDATION_TIMEOUT_MS = 5_000;
 const CONTENT_FIELDS = ["html", "css", "js"] as const;
@@ -46,6 +47,16 @@ export interface ValidateCmsContentInput {
   };
   siteId?: string | null;
   pageId?: string | null;
+  /**
+   * The organization the content belongs to — the CMS site's
+   * `organization_id`, resolved by the caller from the row it is about to
+   * write. REQUIRED (as an explicit `null` when the site has none) because
+   * every identified request to aidream carries `X-Organization-Id`: the
+   * fail-closed kernel refuses one that does not, before any networking.
+   * Never resolved here — an org is always chosen by the caller, never by a
+   * resolver underneath it.
+   */
+  organizationId: string | null;
   accessToken: string | null;
   baseUrl?: string;
 }
@@ -136,12 +147,24 @@ export async function validateContent(
       "the authenticated Supabase access token is unavailable",
     );
   }
+  if (!input.organizationId) {
+    return skippedValidation(
+      "this CMS site carries no organization, and an identified call to " +
+        "aidream must send X-Organization-Id — give the site an organization " +
+        "to have its content guarded",
+    );
+  }
 
   try {
-    const client = createAuthenticatedClient(
-      input.accessToken,
-      validationBaseUrl,
-    );
+    const client = new BackendClient({
+      baseUrl: validationBaseUrl,
+      auth: { type: "token", token: input.accessToken },
+      scope: { organization_id: input.organizationId },
+      // aidream's `CmsValidationRequest` is `extra="forbid"`: the organization
+      // travels in the header (which is what the admission gate reads) and
+      // must NOT be merged into this body.
+      sendScopeInBody: false,
+    });
     const payload: unknown = await client.postJson(
       ENDPOINTS.cms.validate,
       {
@@ -172,6 +195,19 @@ export async function validateContent(
       findings,
     };
   } catch (error) {
+    // An organization-context refusal is OUR configuration defect, not
+    // aidream being down — it never left this process. Reporting it as
+    // "unreachable" is how this guard stayed silently dead: every call threw
+    // here and every CMS write proceeded unvalidated while the log blamed the
+    // network. Name the real cause, keep the classes apart.
+    if (error instanceof OrganizationContextError) {
+      return skippedValidation(
+        "the CMS content guard was called without a usable organization " +
+          "context, so the request never left this server — this is a wiring " +
+          "defect in the calling route, not an aidream outage",
+        error,
+      );
+    }
     return skippedValidation("aidream is unreachable or timed out", error);
   }
 }

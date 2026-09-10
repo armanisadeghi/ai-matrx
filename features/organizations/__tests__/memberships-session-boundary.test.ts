@@ -81,9 +81,14 @@ describe("membership read session boundary", () => {
     });
     expect(mockRpc).toHaveBeenCalledTimes(2);
     expect(mockGetSession).toHaveBeenCalledTimes(2);
+    // The recovery SCREAMS — that is the guard. It logs the message alone:
+    // since the retry moved into @ai-matrx/data (30082c3797, C22), the
+    // package's logger omits the detail argument entirely when there is no
+    // cause (`if (d === undefined) console.error(m)`), instead of the repo
+    // copy's trailing `undefined`. Pinning that trailing argument pinned a
+    // dead implementation detail, not the announcement.
     expect(consoleError).toHaveBeenCalledWith(
       expect.stringContaining("recovery firing"),
-      undefined,
     );
   });
 

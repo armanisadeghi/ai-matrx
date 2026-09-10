@@ -28,7 +28,10 @@ import type {
   VariableCustomComponent,
   VariableDefinition,
 } from "@/features/agents/types/agent-definition.types";
-import { holderOfMandate } from "@/lib/supabase/mandateStorage";
+import {
+  holderOfMandate,
+  type HolderRef,
+} from "@/lib/supabase/mandateStorage";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -112,6 +115,7 @@ function componentForKind(kind: string): VariableCustomComponent | undefined {
  * supply rich controls only. Saving always uses the completed run's snapshot. */
 export function TryItNowPanel({
   mandate,
+  effectiveHolder,
   defaultAgentId,
   onSavedTestCase,
   allowPrincipalSelection = false,
@@ -121,6 +125,14 @@ export function TryItNowPanel({
   allowPrincipalSelection?: boolean;
   consumptionMap?: unknown;
   mandate: MandateDefinitionRow;
+  /**
+   * The Holder actually in force for this bench — a binding's Holder when one
+   * answers, otherwise the mandate's own. The bench used to express this by
+   * building a mandate row with the three `default_holder_*` columns
+   * overwritten; that literal is the write shape `default-holder-has-one-road`
+   * forbids in client code, so the Holder travels as a Holder.
+   */
+  effectiveHolder?: HolderRef;
   defaultAgentId: string | null;
   passesUserInput: boolean | undefined;
   onSavedTestCase: () => void;
@@ -134,7 +146,8 @@ export function TryItNowPanel({
   const surfaceState = useMandateInputSurface(mandate.mandate_key);
   const surface = surfaceState.status === "ready" ? surfaceState.surface : null;
   const fields = surface?.inputs ?? [];
-  const pinnedVersionId = holderOfMandate(mandate).versionId;
+  const pinnedVersionId = (effectiveHolder ?? holderOfMandate(mandate))
+    .versionId;
   const execution = useAppSelector((state) =>
     defaultAgentId ? selectAgentExecutionPayload(state, defaultAgentId) : null,
   );

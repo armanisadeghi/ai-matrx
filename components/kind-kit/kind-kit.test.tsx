@@ -15,6 +15,12 @@ import {
   useStreamingValue,
 } from "@/components/kind-kit/StreamingSkeleton";
 import { KeywordChip, TagList } from "@/components/kind-kit/TagList";
+// The pulse class is the design system's own (`matrx-pulse`), NOT Tailwind's
+// `animate-pulse` — the C26 motion-layer extraction (2026-08-30) moved the
+// keyframes into @ai-matrx/design-system/styles.css and put `animate-pulse` on
+// the package's FORBIDDEN_HOST_MOTION_UTILITIES list. Asserting the exported
+// constant keeps this guard pinned to the canon instead of a literal.
+import { MOTION_PULSE } from "@ai-matrx/design-system";
 import {
   ALLOWED_IMPORTS_CONFIG,
   buildComponentScope,
@@ -466,7 +472,7 @@ describe("kind-kit", () => {
       act(() => root.render(<StreamingSkeleton layout={layout} rows={2} />));
       expect(container.querySelector("[role='status']")).not.toBeNull();
       expect(
-        container.querySelectorAll(".animate-pulse").length,
+        container.querySelectorAll(`.${MOTION_PULSE}`).length,
       ).toBeGreaterThan(0);
     }
   });

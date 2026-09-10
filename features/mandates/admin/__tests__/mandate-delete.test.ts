@@ -90,13 +90,32 @@ describe("the delete is DISCOVERABLE, not only in a right-click menu", () => {
     "utf8",
   );
 
+  /**
+   * WHAT CHANGED, AND WHAT DID NOT (`816ea88701`, "separate configuration
+   * concerns into tabs"). That refactor moved the control into the workspace's
+   * compact admin action strip: the label shortened from "Remove this job" to
+   * a Trash icon plus "Remove", and the row variable it reads is now
+   * `mandate` rather than `row`. Both are presentation; neither touches what
+   * this describe block exists to hold — that the delete is ON the job's own
+   * page, visibly destructive, wired to the same soft delete the row menu
+   * calls, and stating its consequence outside the dialog. Those are asserted
+   * below in the shape the page has today.
+   */
   it("puts a visible Remove button on the mandate's own page", () => {
-    expect(page).toContain("Remove this job");
+    // Not hidden behind a menu, a fold, or a hover: it is rendered in the
+    // page's own admin action strip.
+    expect(page).toContain("<RemoveMandate mandate={data.mandate} />");
     expect(page).toContain('variant="destructive"');
-    expect(page).toContain("softDeleteMandate(row.id)");
+    // Named for a screen reader as well as a sighted reader, on every width —
+    // the label collapses to `sr-only` on small screens.
+    expect(page).toContain('aria-label={busy ? "Removing mandate" : "Remove mandate"}');
+    expect(page).toContain('{busy ? "Removing…" : "Remove"}');
+    expect(page).toContain("softDeleteMandate(mandate.id)");
   });
 
   it("says what it does next to the button, not only inside the dialog", () => {
+    // The two facts that make a destructive control safe to press: what else
+    // stops working, and that it is reversible.
     expect(page).toContain("Stops every rung from finding it");
     expect(page).toContain("an admin\n        can restore it");
   });

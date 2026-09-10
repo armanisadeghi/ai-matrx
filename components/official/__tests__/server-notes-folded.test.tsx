@@ -103,15 +103,30 @@ describe("a host that already states the defect folds the server's second copy",
 describe("the admin mandate host is the one that folds it", () => {
   const REPO_ROOT = join(__dirname, "..", "..", "..");
 
-  it("the workspace folds the run panel's surface notes on the system perspective only", () => {
+  /**
+   * WHERE THE HOST MOVED (816ea88701, "refactor(mandates): separate
+   * configuration concerns into tabs", 2026-09-08 — one day after the fold).
+   * The admin mandate screen became tabs, and the ad-hoc run left the always-on
+   * workspace body: it is the super-admin-only **Test** tab now
+   * (`MandateWorkspace` `adminContent` → `MandateDetailView section="test"` →
+   * `MandateTestBench` → `TryItNowPanel`). So `MandateWorkspace` no longer
+   * carries `foldSurfaceNotes={perspective === "system"}` — the perspective
+   * condition went away with the host, because the tab that runs the job is
+   * admin-only in the first place, and the panel folds the server's second
+   * telling UNCONDITIONALLY. That is the same ruling, stated once and more
+   * strongly, so this guard follows the fold to its live host rather than
+   * pinning a line the refactor deliberately deleted.
+   */
+  it("the admin run panel folds the input-declaration notes it re-states", () => {
     const source = readFileSync(
-      join(REPO_ROOT, "features/mandates/workspace/MandateWorkspace.tsx"),
+      join(REPO_ROOT, "features/mandates/admin/TryItNowPanel.tsx"),
       "utf8",
     );
-    expect(source).toContain('foldSurfaceNotes={perspective === "system"}');
+    const block = source.slice(source.indexOf('testId="test-input-surface-notes"'));
+    expect(block.slice(0, 200)).toContain("folded");
   });
 
-  it("the run panel passes it through to the block", () => {
+  it("the workspace run panel still passes its host's decision through", () => {
     const source = readFileSync(
       join(REPO_ROOT, "features/mandates/workspace/RunThisJobSection.tsx"),
       "utf8",

@@ -40,3 +40,53 @@ if (
     v: T,
   ): T => v8.deserialize(v8.serialize(v)) as T;
 }
+
+/**
+ * ── THE TOP-LAYER PSEUDO-CLASSES ARE ANSWERED HERE, NOT BY nwsapi ────────────
+ *
+ * MEASURED, not guessed: opening ONE Radix popover (`ColumnHeaderCell`'s
+ * sort/filter menu) took 12–17 SECONDS in this environment and blew every
+ * 5s test timeout. A CPU profile put ~90% of the time inside nwsapi's
+ * selector engine, and counting `Element.matches` calls showed the shape of
+ * it: 32k calls for `:modal` produced **37 MILLION** calls for `:fullscreen`.
+ *
+ * The cause is a recursion, in nwsapi 2.2.27 (jsdom 30's engine). jsdom has
+ * no native selector engine, so `Element.matches` IS nwsapi — and nwsapi's
+ * `isModal()`/`isFullscreen()` ask for the "native" state by calling
+ * `node.matches(':modal')` / `node.matches(':fullscreen')`, which re-enters
+ * nwsapi and asks again, exponentially. @floating-ui's `isTopLayer()` calls
+ * `matches(':modal')` and `matches(':popover-open')` on every element it
+ * positions, so every popper, dropdown, select, tooltip and context menu in
+ * the repo pays that cost.
+ *
+ * Answering the three top-layer pseudo-classes directly is not a stub of
+ * anything the DOM would otherwise tell us: jsdom implements NO top layer —
+ * no fullscreen element, no `showModal()` top-layer state, no popover
+ * showing state — so `false` is the honest answer for all three, and it is
+ * the same answer nwsapi is trying (and failing) to compute. Every other
+ * selector still goes to the real engine.
+ *
+ * Effect on the measured case: 12,107ms → 61ms.
+ *
+ * Guarded on `Element` existing: this setup file also runs for every
+ * `@jest-environment node` suite, where there is no DOM at all and touching
+ * `Element.prototype` throws before a single test can be collected.
+ */
+if (typeof Element !== "undefined") {
+  const TOP_LAYER_PSEUDO = /^\s*:(modal|fullscreen|popover-open)\s*$/;
+  const nativeMatches = Element.prototype.matches;
+  // `defineProperty` rather than assignment: `Element.prototype.matches` is
+  // declared as overloaded TYPE PREDICATES (`selectors: K` narrows `this`), and
+  // a plain `(selectors: string) => boolean` cannot be assigned to it without a
+  // cast. The descriptor keeps the runtime shape identical and the types honest.
+  Object.defineProperty(Element.prototype, "matches", {
+    configurable: true,
+    writable: true,
+    value: function (this: Element, selectors: string): boolean {
+      if (typeof selectors === "string" && TOP_LAYER_PSEUDO.test(selectors)) {
+        return false;
+      }
+      return nativeMatches.call(this, selectors);
+    },
+  });
+}

@@ -42,6 +42,7 @@ Migrations: `education_content_certification.sql`, `education_deck_suggestion.sq
 ## Invariants
 
 - **Created artifacts are never hidden behind a public-only query.** Every target produced by Create Kit has a row in the Mine scope and a subtype-aware door to its owning detail surface.
+- **Search uses every visible identity.** `source_title` participates in filtering and relevance scoring, so searching a kit/source name returns its generated assessments and study media even when their artifact titles differ.
 - **One canonical list shell.** The artifact Library is configured through `EntityListPage`; do not build a parallel table, scope vocabulary, or client-side complete-list query.
 - **Reuse, don't fork P7.** Viewing = `/p/e/fc_set/{id}` (P7 public viewer); copying = `DuplicateToEditButton`. The library never reimplements a viewer or a fork.
 - **Certification is admin-only, at the DB.** `content_certification` has no user write policy; only the super-admin SECURITY DEFINER RPCs + service_role write. A TS check is not the gate.
@@ -77,6 +78,7 @@ the human may make it public + curated. This path still creates an **AI-built st
 
 ## Change log
 
+- **2026-09-09** — Library search now includes the visible source/kit title in both filtering and relevance scoring; a kit search no longer drops generated audio, summaries, or memory aids whose own titles differ.
 - **2026-08-29** — `edu_library_list_scoped` gained an exact-id filter in its existing `p_filters` contract. Study-kit detail pages now reuse the library's canonical per-artifact KPI fold for only their members instead of scanning the learner's entire library or creating a second progress model.
 - **2026-08-21** — Split the user artifact Library from the community deck browser. `/education/library` now lists persisted decks, assessments, study media, and notes across Mine / Shared / Public; the public certified-deck browser moved intact to `/education/library/community`. Added subtype-aware routes so generated audio, summaries, mind maps, memory aids, quizzes, and practice tests open in their owning tools.
 - **2026-07-14** — Seeded the first curated exam libraries: 9 certified public decks (SAT/AP Bio/GRE, 128 cards) via the real generation agent, tagged `exam_slug`; `edu_public_decks` gained an `exam_slug` filter and a card-count fix (`role` not `label`); new `ExamCuratedLibrary` surfaces certified decks + guides on each exam-prep page.

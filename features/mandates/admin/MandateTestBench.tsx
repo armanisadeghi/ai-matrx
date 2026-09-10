@@ -83,7 +83,7 @@ import {
   fetchMandateExemplars,
   parseMandateTestHistory,
   promoteMandateTestResult,
-  resolveMandateDefaultAgentId,
+  resolveHolderAgentId,
   runMandateTests,
   saveMandateTestVerdictNote,
   type MandateDefinitionRow,
@@ -615,16 +615,19 @@ export function MandateTestBench({
   autoRunSignal?: number;
 }) {
   const dispatch = useAppDispatch();
+  // 🚨 A HOLDER, NOT A FABRICATED MANDATE ROW. This used to spread the mandate
+  // and overwrite `default_holder_type` / `default_holder_id` /
+  // `default_holder_version_id` from the binding, so the bench would resolve
+  // against the binding's Holder. Those three column names in an object literal
+  // are the shape `default-holder-has-one-road` forbids in client code — the
+  // composer is one `.update()` away from being the bypass the gated door
+  // (`PUT /mandates/{key}/default-holder`) exists to close. The bench only ever
+  // needed the effective HOLDER, so that is what it computes and passes down.
   const bindingHolder = globalBinding ? holderOfBinding(globalBinding) : null;
-  const configuredMandate =
+  const effectiveHolder =
     bindingHolder && (bindingHolder.holderId || bindingHolder.versionId)
-      ? {
-          ...mandate,
-          default_holder_type: bindingHolder.holderType,
-          default_holder_id: bindingHolder.holderId,
-          default_holder_version_id: bindingHolder.versionId,
-        }
-      : mandate;
+      ? bindingHolder
+      : holderOfMandate(mandate);
   const store = useAppStore();
   const [exemplars, setExemplars] = useState<MandateExemplarRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -665,8 +668,8 @@ export function MandateTestBench({
     let cancelled = false;
     void loadExemplars();
     setDefaultAgentId(null);
-    if (configuredMandate.default_holder_type === "agent") {
-      resolveMandateDefaultAgentId(configuredMandate)
+    if (effectiveHolder.holderType === "agent") {
+      resolveHolderAgentId(effectiveHolder)
         .then((id) => {
           if (!cancelled) setDefaultAgentId(id);
         })
@@ -682,9 +685,9 @@ export function MandateTestBench({
     };
   }, [
     mandate.id,
-    configuredMandate.default_holder_type,
-    configuredMandate.default_holder_id,
-    configuredMandate.default_holder_version_id,
+    effectiveHolder.holderType,
+    effectiveHolder.holderId,
+    effectiveHolder.versionId,
   ]);
 
   function updateCandidate(draftId: string, next: CandidateDraft) {
@@ -962,7 +965,8 @@ export function MandateTestBench({
   return (
     <div className="min-w-0 space-y-6">
       <TryItNowPanel
-        mandate={configuredMandate}
+        mandate={mandate}
+        effectiveHolder={effectiveHolder}
         consumptionMap={globalBinding?.consumption_map}
         defaultAgentId={defaultAgentId}
         passesUserInput={passesUserInput}

@@ -50,7 +50,7 @@ import {
   selectNodeAggregatePhases,
   selectRunStatus,
 } from "@/features/workflow-runtime/redux/workflow-runs.selectors";
-import { TERMINAL_RUN_STATUSES } from "@/features/workflow-runtime/types";
+import { runIsOver } from "@/features/workflow-runtime/types";
 import {
   InterruptCard,
   InvocationBody,
@@ -218,7 +218,11 @@ export function TryMasterworkBox({
 
   const runStatus = useAppSelector(selectRunStatus(runId ?? ""));
   const phases = useAppSelector(selectNodeAggregatePhases(runId ?? ""));
-  const terminal = runStatus !== null && TERMINAL_RUN_STATUSES.has(runStatus);
+  // `errored` is over too. The generated TERMINAL set answers the engine's
+  // question and excludes it, so asking that set directly left an errored run
+  // spinning here forever — no explanation, nothing told to the caller, until
+  // a row poll happened to notice. `runIsOver` is the watcher's question.
+  const terminal = runIsOver(runStatus);
   const running = runId !== null && !terminal;
 
   // ── The definition: the steps to show. The FIELDS are served. ───────────

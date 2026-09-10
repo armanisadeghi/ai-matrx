@@ -393,9 +393,13 @@ function RemoveMandate({
           {busy ? "Removing…" : "Remove"}
         </span>
       </Button>
+      {/* THE CONSEQUENCE, BESIDE THE BUTTON — not only inside the dialog.
+          `816ea88701` compacted this to "Stops this mandate from resolving",
+          which drops the two facts that make the control safe to press: what
+          else stops working, and that it is reversible. */}
       <FieldHelp label="Remove mandate">
-        Stops this mandate from resolving. Its record and history are retained
-        for restoration.
+        Stops every rung from finding it. Soft — the record is kept and an admin
+        can restore it.
       </FieldHelp>
     </div>
   );

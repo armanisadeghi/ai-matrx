@@ -538,8 +538,8 @@ export function BindingOptionsDrawer({
                             draft.surfaceName
                               ? getManifest(draft.surfaceName)
                                 ? "No targets declared"
-                                : "Surface unavailable"
-                              : "No surface assigned"
+                                : "This place is unavailable"
+                              : "No place assigned"
                           }
                         />
                       }

@@ -38,6 +38,8 @@ describe("dynamic React icon bundle contract", () => {
       renderToStaticMarkup(
         createElement(scope.Skeleton, { className: "h-4 w-12" }),
       ),
-    ).toContain("animate-pulse");
+      // `.matrx-pulse`, not Tailwind's `animate-pulse`: the C9 design-system
+      // swap moved Skeleton's keyframes into @ai-matrx/design-system/styles.css.
+    ).toContain("matrx-pulse");
   });
 });

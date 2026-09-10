@@ -6,9 +6,16 @@ import { MobileImageCard } from "./MobileImageCard";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@ai-matrx/design-system", () => ({
-  Skeleton: () => <div data-image-skeleton="true" />,
-}));
+/**
+ * 🚨 THE DESIGN SYSTEM IS NOT STUBBED. It used to be — `jest.mock(
+ * "@ai-matrx/design-system", () => ({ Skeleton }))` replaced the ENTIRE package
+ * with one export, and once `components/ui/card` became a thin host binding
+ * over the package's `Card`/`CardContent` (C-series card swap), that mock made
+ * both of them `undefined` and every case here died with "Element type is
+ * invalid … Check the render method of `Card`". The real package renders fine
+ * under jsdom, so the cards are exercised for real and the loading state is
+ * found by the Skeleton's own `data-slot="skeleton"` marker.
+ */
 
 jest.mock("./SelectableImageCard", () => ({
   SelectableImageCard: ({ children }: { children: React.ReactNode }) => (
@@ -62,12 +69,12 @@ describe.each([
     expect(container.querySelector("img")?.getAttribute("src")).toBe(
       "https://example.com/working.jpg",
     );
-    expect(container.querySelector("[data-image-skeleton]")).not.toBeNull();
+    expect(container.querySelector("[data-slot='skeleton']")).not.toBeNull();
 
     act(() => {
       container.querySelector("img")?.dispatchEvent(new Event("load"));
     });
-    expect(container.querySelector("[data-image-skeleton]")).toBeNull();
+    expect(container.querySelector("[data-slot='skeleton']")).toBeNull();
   });
 
   it("renders an honest unavailable state when no image URL exists", () => {

@@ -69,8 +69,12 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     `RulebookSections`, `RulebookSource`. Never rewrite an existing rule's `id` — audits cite it.
 16. **The Understudy is never releasable to Encore** and is filtered out of the built-Masterworks
     list; release is gated on a real Build. Never describe the Understudy as the finished system.
-17. **`TryMasterworkBox` consumes the execution system's canonical `TERMINAL_RUN_EVENTS`** — never
-    maintain a narrower local list (that is how a run that errored left it "Working…" forever).
+17. **`TryMasterworkBox` asks `runIsOver` (`features/workflow-runtime/types.ts`), never a narrower
+    set** — a run the engine records as `errored` is over for anything WATCHING it, but the
+    generated `TERMINAL_RUN_STATUSES` answers the engine's resume question and excludes it. Asking
+    that set directly is how a run that errored left the box "Working…" forever, with nothing told
+    to the caller until a row poll happened to notice. Guarded by `TryMasterworkBox.test.tsx`
+    (proven failing-then-passing 2026-09-09).
 
 ## Files
 
@@ -118,9 +122,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   sessionStorage (`matrx.masterwork.run.<masterworkId>`), and on mount the run row decides:
   still going → `attachWorkflowRun` (the execution system's rejoin primitive; the SSE feed
   replays the node lifecycle so the stage list rebuilds), finished → the verdict shows directly.
-  Its live-event choreography consumes the execution system's canonical `TERMINAL_RUN_EVENTS`
-  set; it must never maintain a narrower local list that misses `run_errored` and waits for the
-  row-poll recovery backstop.
+  Its terminal choreography asks `runIsOver` from `features/workflow-runtime/types.ts`; it must
+  never ask a narrower set that misses `errored` and waits for the row-poll recovery backstop.
 - `components/masterworks/AuditionDialog.tsx` — "Compare to the original" (the Audition). Opens
   prefilled with a finished run's own output when launched from the verdict, empty from the card.
   Streams `POST /masterworks/audition`; verdict event `masterwork_audition_verdict`.

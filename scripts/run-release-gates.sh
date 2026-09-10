@@ -258,6 +258,24 @@ if $STRICT; then
         "autoRun never paired with a headless mode|pnpm check:autorun-headless"
         "Agent submission never requires typed user_input|pnpm check:agent-submit-content"
         "Content IR / kinds test suite|pnpm test:content-ir"
+        # THE WHOLE JEST SUITE. `package.json`'s `"test"` script was invoked by
+        # NOTHING — not CI, not this file, not a hook. CI runs four hand-picked
+        # jest scopes (test:content-ir, test:render-matrix, test:workflow-runtime,
+        # and two named HR files), so every suite outside them could rot in
+        # silence, and 32 of them had: an accidental unscoped `pnpm test` on
+        # 2026-09-08 found 32 red suites / 56 red tests that nothing had run in
+        # months (FOUND_DEFECTS, that date). A suite nothing runs is not a test,
+        # so the ship path runs all of them. ~200s over 1,256 suites on a warm
+        # checkout — the same order as `type-check`, which is already here.
+        "Whole jest suite (every suite, not CI's four scopes)|pnpm test"
+        # THE LIVE REGISTRY vs THE COMMITTED SNAPSHOT. Same class, same day:
+        # `check:shareable-registry` existed and nothing invoked it either, so
+        # the snapshot drifted 31 rows behind the live
+        # platform.shareable_resource_registry while registry.parity.test.ts —
+        # which only ever compares the TS mirror to that snapshot — stayed
+        # green on a stale reference. That blind spot is documented in the test
+        # itself; this is the invocation that closes it.
+        "Shareable registry: live DB vs committed snapshot|pnpm check:shareable-registry"
         # Docs guards went STRICT 2026-08-15 (guards-advisory-to-strict): both
         # repos reached zero violations, so a finding here is new drift, not
         # backlog. Allowlist additions go through scripts/docs-guards/ via PR.
@@ -508,6 +526,24 @@ else
         "autoRun never paired with a headless mode|pnpm check:autorun-headless"
         "Agent submission never requires typed user_input|pnpm check:agent-submit-content"
         "Content IR / kinds test suite|pnpm test:content-ir"
+        # THE WHOLE JEST SUITE. `package.json`'s `"test"` script was invoked by
+        # NOTHING — not CI, not this file, not a hook. CI runs four hand-picked
+        # jest scopes (test:content-ir, test:render-matrix, test:workflow-runtime,
+        # and two named HR files), so every suite outside them could rot in
+        # silence, and 32 of them had: an accidental unscoped `pnpm test` on
+        # 2026-09-08 found 32 red suites / 56 red tests that nothing had run in
+        # months (FOUND_DEFECTS, that date). A suite nothing runs is not a test,
+        # so the ship path runs all of them. ~200s over 1,256 suites on a warm
+        # checkout — the same order as `type-check`, which is already here.
+        "Whole jest suite (every suite, not CI's four scopes)|pnpm test"
+        # THE LIVE REGISTRY vs THE COMMITTED SNAPSHOT. Same class, same day:
+        # `check:shareable-registry` existed and nothing invoked it either, so
+        # the snapshot drifted 31 rows behind the live
+        # platform.shareable_resource_registry while registry.parity.test.ts —
+        # which only ever compares the TS mirror to that snapshot — stayed
+        # green on a stale reference. That blind spot is documented in the test
+        # itself; this is the invocation that closes it.
+        "Shareable registry: live DB vs committed snapshot|pnpm check:shareable-registry"
         "URL identity twins (TS vs Python)|pnpm exec tsx scripts/check-url-identity.ts"
         # STRICT since 2026-08-15 (also in the strict list above): the Wave-5
         # backlog is cleared, so a failure in a --strict run hard-fails it.
