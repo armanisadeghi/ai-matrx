@@ -58,7 +58,7 @@ const FILTER_THRESHOLD = 10;
  * remains reachable through the per-row Details disclosure below.
  */
 const TECHNICAL_COLUMN_TOKEN =
-    /(^|_)(id|uuid|hash|checksum|digest|metadata|offset)(_|$)/i;
+    /(^|_)(ids?|uuids?|hash|checksum|digest|metadata|offset)(_|$)/i;
 
 function normalizeColumnKey(key: string): string {
     return key

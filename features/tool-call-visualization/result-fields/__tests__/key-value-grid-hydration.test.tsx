@@ -128,6 +128,7 @@ describe("KeyValueGrid hydration", () => {
           content_hash: "8fba6bb0d5d6b2c98c0d75d48f7ad6d9",
           source_metadata: {},
           source_offset_start: 0,
+          source_chunk_ids: ["238e9003-b39b-4db9-bb1e-a170ab769608"],
         },
       ],
       columns: [
@@ -137,6 +138,7 @@ describe("KeyValueGrid hydration", () => {
         { key: "content_hash", label: "Content hash" },
         { key: "source_metadata", label: "Source metadata" },
         { key: "source_offset_start", label: "Source offset start" },
+        { key: "source_chunk_ids", label: "Source chunk ids" },
       ],
       density: "full" as const,
     };
@@ -147,7 +149,7 @@ describe("KeyValueGrid hydration", () => {
       (header) => header.textContent,
     );
     expect(primaryHeaders).toEqual(["Kind", "Content", "Details"]);
-    expect(container.textContent).toContain("4 details");
+    expect(container.textContent).toContain("5 details");
     expect(container.textContent).not.toContain("Content hash");
     expect(container.textContent).not.toContain("Source offset start");
 
@@ -163,6 +165,7 @@ describe("KeyValueGrid hydration", () => {
     expect(container.textContent).toContain("Content hash");
     expect(container.textContent).toContain("Source metadata");
     expect(container.textContent).toContain("Source offset start");
+    expect(container.textContent).toContain("Source chunk ids");
     expect(container.textContent).toContain("8fba6bb0d5d6b2c98c0d75d48f7ad6d9");
   });
 
