@@ -111,7 +111,11 @@ hard work, or evidence that a cheaper attempt could not solve it. Generic review
 urgency, and ordinary tool failures do not qualify. Prefer keeping hard reasoning in
 the primary and execution in cheaper workers. Pass these rules to delegates; they
 return escalation evidence to the parent rather than launching costlier descendants.
-Do not silently substitute Astra when a cheaper model is unavailable.
+Do not silently substitute Astra when a cheaper model is unavailable. Explicitly set
+`reasoning_effort`: low for quick bounded work, medium for most work, high only for
+substantial reasoning with a stated reason. Model tier and effort are separate choices.
+Shared policy: [subagent model ladder](/policies/subagent-model-ladder.md); the display
+pairs Sonnet/Luna, Opus/Terra, and Fable/Astra never replace exact tool model identifiers.
 
 Keep task-to-task messages exceptional. Read current task status or saved evidence
 first; send only when a necessary action, ownership conflict, or missing evidence
@@ -281,6 +285,8 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 - Added explicit thinking effort and the shared cross-provider ladder pointer.
 
 - 2026-09-10 - Set explicit Luna/Terra worker selection, bounded context, and a
   justified Astra exception after inherited flagship delegates exhausted usage.
