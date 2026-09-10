@@ -189,7 +189,12 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
         setLayers((prev) =>
           prev.map((layer, i) =>
             i === atIndex
-              ? { ...layer, status: "error", errorStatus: status, errorDetail: detail }
+              ? {
+                  ...layer,
+                  status: "error",
+                  errorStatus: status,
+                  errorDetail: detail,
+                }
               : layer,
           ),
         );
@@ -213,7 +218,10 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
   // Picking an organization in the inline notice re-runs the blocked layer.
   useEffect(() => {
     if (!orgBlocked || !organizationId) return;
-    void loadLayer(orgBlocked.kind, orgBlocked.id, orgBlocked.index);
+    const retry = window.setTimeout(() => {
+      void loadLayer(orgBlocked.kind, orgBlocked.id, orgBlocked.index);
+    }, 0);
+    return () => window.clearTimeout(retry);
   }, [organizationId, orgBlocked, loadLayer]);
 
   // Load the turn model once the root layer names its conversation.
@@ -330,7 +338,8 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
       setFiling({
         faultUnitKind: current.unitKind,
         faultUnitId: current.unitId,
-        currentLayerAnswer: inputEntries.length > 0 ? "input_wrong" : "inputs_fine",
+        currentLayerAnswer:
+          inputEntries.length > 0 ? "input_wrong" : "inputs_fine",
         currentLayerNote: flaggedSummary,
         flaggedLabels: flagEntries.map((e) => e.label),
       });
@@ -343,7 +352,8 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
       ) {
         setLever("tools");
       } else if (keys.includes("system_prompt")) setLever("instructions");
-      else if (keys.some((k) => k.startsWith("context:"))) setLever("resources");
+      else if (keys.some((k) => k.startsWith("context:")))
+        setLever("resources");
     }
   };
 
@@ -435,7 +445,7 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
       overlayInstanceId={instanceId}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
+      <div className="matrx-touch-targets flex h-full min-h-0 flex-col overflow-hidden bg-background">
         {/* ── turn tabs + display controls ─────────────────────────────── */}
         {!receipt && (
           <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
@@ -479,7 +489,7 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
                     ? "Turn history unavailable — showing this call's recorded inputs."
                     : unitKind === "assistant_message"
                       ? "Loading turns…"
-                      : UNIT_LABELS[unitKind] ?? unitKind
+                      : (UNIT_LABELS[unitKind] ?? unitKind)
                   : "Walking one layer down"}
               </div>
             )}
@@ -524,9 +534,15 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
         {layers.length > 1 && !receipt && (
           <div className="flex flex-wrap items-center gap-1 border-b border-border px-3 py-2">
             {layers.map((layer, i) => (
-              <span key={`${layer.unitKind}-${layer.unitId}`} className="flex items-center gap-1">
+              <span
+                key={`${layer.unitKind}-${layer.unitId}`}
+                className="flex items-center gap-1"
+              >
                 {i > 0 && (
-                  <ArrowDown className="h-3 w-3 rotate-[-90deg] text-muted-foreground" aria-hidden />
+                  <ArrowDown
+                    className="h-3 w-3 rotate-[-90deg] text-muted-foreground"
+                    aria-hidden
+                  />
                 )}
                 <button
                   type="button"
@@ -579,7 +595,9 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
                   Identifiers live in Technical details at the BOTTOM. */}
               {!showTurnView && layers.length > 1 && (
                 <div className="text-xs font-medium text-muted-foreground">
-                  Looking at the {UNIT_LABELS[current.out.unit.kind] ?? current.out.unit.kind} that produced the item you marked wrong.
+                  Looking at the{" "}
+                  {UNIT_LABELS[current.out.unit.kind] ?? current.out.unit.kind}{" "}
+                  that produced the item you marked wrong.
                 </div>
               )}
               {current.out.unit.error != null && (
@@ -593,7 +611,10 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
 
               {!current.out.capturable && (
                 <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <AlertTriangle
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                    aria-hidden
+                  />
                   We don't have an exact copy of this call's full setup (the
                   system prompt won't appear below). Everything shown is still
                   real recorded data.
@@ -880,7 +901,9 @@ function FilingPanel({
       </div>
       {filing.flaggedLabels.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] text-muted-foreground">You flagged:</span>
+          <span className="text-[11px] text-muted-foreground">
+            You flagged:
+          </span>
           {filing.flaggedLabels.map((label, i) => (
             <span
               key={`${label}-${i}`}
@@ -1011,14 +1034,31 @@ function ReceiptPanel({
           </a>
         )}
         {agentId && (
-          <EntityRef token="agent" id={agentId} name={agentName ?? "Open the agent"} openInNewTab />
+          <EntityRef
+            token="agent"
+            id={agentId}
+            name={agentName ?? "Open the agent"}
+            openInNewTab
+          />
         )}
         <span className="inline-flex items-center gap-1 text-muted-foreground">
-          <span className="font-mono">finding {receipt.finding_id.slice(0, 8)}…</span>
-          <CopyButton content={receipt.finding_id} size="xs" tooltip="Copy finding id" />
+          <span className="font-mono">
+            finding {receipt.finding_id.slice(0, 8)}…
+          </span>
+          <CopyButton
+            content={receipt.finding_id}
+            size="xs"
+            tooltip="Copy finding id"
+          />
         </span>
       </div>
-      <Button type="button" variant="outline" size="sm" className="h-9" onClick={onClose}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-9"
+        onClick={onClose}
+      >
         Done
       </Button>
     </div>
