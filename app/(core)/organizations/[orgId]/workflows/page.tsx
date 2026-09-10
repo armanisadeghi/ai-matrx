@@ -30,7 +30,8 @@ import { getOrganizationBySlugOrId } from "@/features/organizations/service";
  */
 
 /** Projection for the SHARED half (hydrated from `workflow.definition`). */
-const SELECT_COLS = "id, name, description, category, version, updated_at";
+const SELECT_COLS =
+  "id, name, description, category, version, updated_at, is_archived";
 
 /** Projection for the OWNED half (the catalog view — richer, no `version`). */
 const CATALOG_COLS =

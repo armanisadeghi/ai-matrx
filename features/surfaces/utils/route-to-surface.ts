@@ -462,24 +462,14 @@ function resolveAgentsSurface(stripped: string): string | null {
  * surface from the console at `/administration/mandates` (a list over the
  * fleet). A mandate key contains dots and never a slash, so the first segment
  * after the prefix is the whole address; the two sibling routes that are NOT
- * a mandate (`new`, `advanced`, `references`) stay on the console surface. Prefix matching
+ * a mandate (`new`, `advanced`) stay on the console surface. Prefix matching
  * cannot express "children but not the parent", hence a resolver.
  */
 function resolveAdminMandateSurface(stripped: string): string | null {
   const PREFIX = "/administration/mandates/";
   if (!stripped.startsWith(PREFIX)) return null;
   const segment = stripped.slice(PREFIX.length).split("/")[0] ?? "";
-  if (
-    !segment ||
-    segment === "new" ||
-    segment === "advanced" ||
-    // The fleet reference board is a LIST over every repo, not one job's
-    // workspace (campaign L7) — it belongs on the console surface with its
-    // siblings.
-    segment === "references"
-  ) {
-    return null;
-  }
+  if (!segment || segment === "new" || segment === "advanced") return null;
   return "matrx-admin/mandate-workspace";
 }
 
