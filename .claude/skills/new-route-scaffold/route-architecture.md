@@ -1,6 +1,6 @@
 # Route Architecture Reference
 
-Full composition patterns and anti-patterns for `app/(a)/` routes.
+Full composition patterns and anti-patterns for `app/(core)/` routes.
 
 ## Contents
 
@@ -14,8 +14,10 @@ Full composition patterns and anti-patterns for `app/(a)/` routes.
 
 ## Complete File Tree (notes as reference)
 
+The tree as originally scaffolded — the pattern, not today's files. Live `/notes` renders the client `NotesView` workspace through `NotesRouteBody` (`app/(core)/notes/layout.tsx`); `features/notes/components/shell/` was deleted 2026-06-24 (`features/notes/FEATURE.md`). Still live: `features/notes/types.ts`, `features/notes/route/`, `lib/notes/data.ts`.
+
 ```
-app/(a)/notes/
+app/(core)/notes/
 ├── layout.tsx                    # Static metadata
 ├── loading.tsx                   # Full-shell skeleton
 ├── error.tsx                     # Route-level error boundary
@@ -105,7 +107,7 @@ The `[id]/layout.tsx` already provides `generateMetadata` with full favicon, OG,
 
 ## Common Anti-Patterns (from agents route audit)
 
-These were found in `app/(a)/agents` — avoid them in all new routes:
+These were found in `app/(core)/agents` — avoid them in all new routes:
 
 | Anti-pattern | Why wrong | Fix |
 |---|---|---|

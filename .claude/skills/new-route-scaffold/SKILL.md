@@ -3,9 +3,9 @@ name: new-route-scaffold
 description: "Scaffold recipe for a new authenticated route: SSR shell, DB-derived types, Redux hydration, view sub-pages. Use when creating a new route or page, adding a feature with a sidebar/main layout, adding view modes to a route, or feature types don't match database.types.ts."
 ---
 
-# New Route Scaffold — `app/(a)/`
+# New Route Scaffold — `app/(core)/`
 
-This skill captures the exact workflow used to build `app/(a)/notes`. Follow it for every new authenticated route. **Many decisions require information only Arman has — ask explicitly before assuming anything.**
+This skill captures the exact workflow used to build the original `/notes` route (now `app/(core)/notes`, since rebuilt as a client workspace — see [route-architecture.md](route-architecture.md)). Follow it for every new authenticated route. **Many decisions require information only Arman has — ask explicitly before assuming anything.**
 
 ## Companion files — read at the step that needs them
 
@@ -23,7 +23,7 @@ Never assume the following — always ask Arman:
 4. **Data fetch scope** — What fields does the list view need? What triggers a "full" fetch?
 5. **Redux slice** — Does one already exist? Should we create one or extend an existing slice?
 6. **Existing types** — Do the feature types already exist? Are they derived from the DB or hand-written (likely stale)?
-7. **Navigation entry** — Does `constants/navigation-links.tsx` already have an entry? What favicon color/letter?
+7. **Navigation entry** — Does `features/shell/constants/nav-data.ts` already have an entry? What favicon color/letter (`constants/favicon-route-data.ts`)?
 8. **Mobile behavior** — Any mobile-specific overrides beyond standard rules?
 
 **If anything is unclear, stop and ask. Do not invent layout details, field names, or group-by modes.**
@@ -72,7 +72,7 @@ Create `lib/[feature]/data.ts`. This is the **only** place server-side DB querie
 ### File map
 
 ```
-app/(a)/[feature]/
+app/(core)/[feature]/
 ├── layout.tsx          ← static metadata only
 ├── loading.tsx         ← dimension-exact skeleton of the full shell
 ├── error.tsx           ← <ErrorBoundaryView context="[Feature]" /> one-liner
@@ -190,26 +190,26 @@ All shell components are Server Components. Client Component islands are pushed 
 - Scroll regions: `overflow-y-auto` only on the inner list container
 - No inline styles unless Arman has explicitly approved (e.g., glass mode testing)
 
-See [route-architecture.md](route-architecture.md) for the full `NotesShell` and `NoteViewShell` implementations.
+See [route-architecture.md](route-architecture.md) for the `NotesShell` / `NoteViewShell` composition — the pattern to build, not importable code (notes deleted its `shell/` components 2026-06-24, `features/notes/FEATURE.md`).
 
 ---
 
 ## Phase 6: Metadata Rules
 
-From `app/(a)/_read_first_route_rules/metadata-and-seo.md`:
+From `app/(core)/_read_first_route_rules/metadata-and-seo.md` (full recipe: the `route-metadata-favicons` skill):
 
 | Location | What to use | Notes |
 |---|---|---|
 | `layout.tsx` (root) | `createRouteMetadata("/path", { title, description })` | Provides favicon + OG for entire route |
 | `[id]/layout.tsx` | `createDynamicRouteMetadata("/path", { title, description })` inside `generateMetadata` | Provides favicon + OG for item detail |
 | Sub-page `page.tsx` | `export function generateMetadata() { return { title: "View Name" }; }` | Title only — layout already covers favicon/OG |
-| New route | Add favicon entry in `constants/navigation-links.tsx` | Ask Arman for color and letter |
+| New route | Add favicon entry in `constants/favicon-route-data.ts` | Ask Arman for color and letter |
 
 ---
 
 ## Phase 7: Navigation Entry
 
-Add to `constants/navigation-links.tsx` if not already present. **Ask Arman for all values** — icon, href, section, color (Tailwind name + hex), and favicon letter. Never guess these.
+Add to `features/shell/constants/nav-data.ts` (label, href, `iconName`, section, color) if not already present; the favicon hex + letter go in `constants/favicon-route-data.ts`. **Ask Arman for all values** — icon, href, section, color (Tailwind name + hex), and favicon letter. Never guess these.
 
 ---
 
@@ -220,7 +220,7 @@ Every `loading.tsx` must satisfy:
 1. **Identical outer container** — same `h-`, `w-`, `flex` classes as the real shell
 2. **Exact fixed dimensions** — every skeleton block has explicit `h-` and `w-` (no content-derived sizing)
 3. **Mirror structure** — sidebar skeleton has toolbar row + list items; editor skeleton has title + body lines
-4. **No spinners for page content** — `<Skeleton>` only (from `@/components/ui/skeleton`)
+4. **No spinners for page content** — `<Skeleton>` only (from `@ai-matrx/design-system`)
 5. **`[id]/loading.tsx`** covers only the content area, not the full shell (the layout persists)
 
 ---
@@ -230,14 +230,14 @@ Every `loading.tsx` must satisfy:
 - [ ] DB type audit done — `_CompatCheck` added to types file
 - [ ] All factory functions updated with new fields
 - [ ] `lib/[feature]/data.ts` created with `server-only`, `cache()`, and `preloadNote`
-- [ ] `app/(a)/[feature]/layout.tsx` — static metadata only
-- [ ] `app/(a)/[feature]/loading.tsx` — exact dimension match to shell
-- [ ] `app/(a)/[feature]/error.tsx` — one-liner wrapping `<ErrorBoundaryView context="[Feature]" />`
-- [ ] `app/(a)/[feature]/page.tsx` — list seed + both hydrators + Suspense
-- [ ] `app/(a)/[feature]/[id]/layout.tsx` — parallel fetch + both hydrators + generateMetadata
-- [ ] `app/(a)/[feature]/[id]/loading.tsx` — content-area skeleton only
-- [ ] `app/(a)/[feature]/[id]/error.tsx` — one-liner wrapping `<ErrorBoundaryView context="[Feature] Detail" />`, plus `not-found.tsx`
-- [ ] `app/(a)/[feature]/[id]/page.tsx` — redirect to default view
+- [ ] `app/(core)/[feature]/layout.tsx` — static metadata only
+- [ ] `app/(core)/[feature]/loading.tsx` — exact dimension match to shell
+- [ ] `app/(core)/[feature]/error.tsx` — one-liner wrapping `<ErrorBoundaryView context="[Feature]" />`
+- [ ] `app/(core)/[feature]/page.tsx` — list seed + both hydrators + Suspense
+- [ ] `app/(core)/[feature]/[id]/layout.tsx` — parallel fetch + both hydrators + generateMetadata
+- [ ] `app/(core)/[feature]/[id]/loading.tsx` — content-area skeleton only
+- [ ] `app/(core)/[feature]/[id]/error.tsx` — one-liner wrapping `<ErrorBoundaryView context="[Feature] Detail" />`, plus `not-found.tsx`
+- [ ] `app/(core)/[feature]/[id]/page.tsx` — redirect to default view
 - [ ] All view sub-pages created (ask Arman for the list)
 - [ ] `features/[feature]/route/` — `ListHydrator` + `EntityHydrator`
 - [ ] Shell components: `Shell`, `Sidebar`, `SidebarClient`, `MainArea`, `TabBar`, `ViewShell`, `EditorPlaceholder`
@@ -257,7 +257,8 @@ These skills contain the rules this workflow is built on. When in doubt, they wi
 - **`ssr-zero-layout-shift`** — `.claude/skills/ssr-zero-layout-shift/SKILL.md` — server/client component boundaries, Suspense rules, hydration pattern, skeleton design, fixed-dimension containers, CLS prevention (absorbed `nextjs-ssr-architecture` + `nextjs-app-router-expert`)
 - **Shell header + page height** — `features/shell/components/header/variants/USAGE.md` — `<PageHeader>`, `h-full`, when `.h-page` applies
 - **`redux-selector-rules`** — `.claude/skills/redux-selector-rules/SKILL.md` — selector patterns, curried selector caching, avoiding re-render loops
-- **Route rules** — `app/(a)/_read_first_route_rules/RULES.md` — mandatory, read before every session on this route group
+- **`core-route-headers`** — `.claude/skills/core-route-headers/SKILL.md` — invoke before writing any `(core)` shell or `loading.tsx`: `<PageHeader>` chrome, `h-full overflow-hidden` body, mobile header
+- **Route rules** — `app/(core)/_read_first_route_rules/RULES.md` — mandatory, read before every session on this route group
 
 ---
 

@@ -6,6 +6,8 @@ Read only when the route's real UI isn't built yet and `page.tsx` needs a placeh
 
 When a route's real UI isn't built yet, use `ComingSoonPage` from `components/coming-soon/CominSoonTemplate.tsx`. **Always customize all four props** — the defaults are generic marketing copy that will confuse users and hurt SEO.
 
+**A placeholder page is a tracked promise — read `lib/coming-soon/FEATURE.md` first:** register it in `lib/coming-soon/registry.ts`, and a whole-page placeholder shell must be named in `PLACEHOLDER_SHELLS` (`lib/route-manifest/generate.ts`) or the server treats the route as LIVE. `ComingSoonPage` is not named there today.
+
 ```typescript
 import ComingSoonPage from "@/components/coming-soon/CominSoonTemplate";
 

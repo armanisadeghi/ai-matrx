@@ -1,6 +1,8 @@
 # New Route Scaffold — File Templates
 
-Copy-paste code templates for every scaffold file, taken from `app/(a)/notes`. The rules each file must satisfy stay in SKILL.md under the same phase and heading — read the rule there, copy the code here.
+Copy-paste code templates for every scaffold file, taken from the original `/notes` route (now `app/(core)/notes`). The rules each file must satisfy stay in SKILL.md under the same phase and heading — read the rule there, copy the code here.
+
+**Pattern, not importable code:** the `@/features/notes/components/shell/*` imports below were deleted 2026-06-24 (`features/notes/FEATURE.md`); `lib/notes/data.ts`, `features/notes/route/` and `features/notes/types.ts` are live — take current table and column names from them and `types/database.types.ts`, never from these snippets.
 
 ## Contents
 
