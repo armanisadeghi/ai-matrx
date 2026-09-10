@@ -10,6 +10,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { supabase } from "@/utils/supabase/client";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { StudyStreakRow } from "@/features/education/study/types";
@@ -27,11 +29,18 @@ export interface UseStreakResult {
 }
 
 export function useStreak(): UseStreakResult {
+  const userId = useAppSelector(selectUserId);
   const [streak, setStreak] = useState<StudyStreakRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = async (): Promise<void> => {
+    if (!userId) {
+      setStreak(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     const res = await studyService.getStreak();
     if (res.error) setError(res.error);
     setStreak(res.data);
@@ -39,6 +48,12 @@ export function useStreak(): UseStreakResult {
   };
 
   useEffect(() => {
+    if (!userId) {
+      setStreak(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     let active = true;
     void (async () => {
       const res = await studyService.getStreak();
@@ -50,7 +65,7 @@ export function useStreak(): UseStreakResult {
     return () => {
       active = false;
     };
-  }, []);
+  }, [userId]);
 
   const setRestWeekdays = async (weekdays: number[]): Promise<void> => {
     const { data, error: rpcErr } = await supabase.rpc(
@@ -81,10 +96,16 @@ export interface UseBadgesResult {
 }
 
 export function useBadges(): UseBadgesResult {
+  const userId = useAppSelector(selectUserId);
   const [rows, setRows] = useState<GameBadgeRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!userId) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
     let active = true;
     void (async () => {
       const res = await gameService.listMyBadges();
@@ -95,7 +116,7 @@ export function useBadges(): UseBadgesResult {
     return () => {
       active = false;
     };
-  }, []);
+  }, [userId]);
 
   const earned: EarnedBadge[] = rows
     .filter((r) => r.badge_key in BADGES)
@@ -125,11 +146,18 @@ export interface UseLeagueResult {
 }
 
 export function useLeague(): UseLeagueResult {
+  const userId = useAppSelector(selectUserId);
   const [membership, setMembership] = useState<LeagueMembershipRow | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeagueEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async (): Promise<void> => {
+    if (!userId) {
+      setMembership(null);
+      setLeaderboard([]);
+      setLoading(false);
+      return;
+    }
     const [mRes, lRes] = await Promise.all([
       gameService.getMyLeagueMembership(),
       gameService.getLeaderboard(),
@@ -140,6 +168,12 @@ export function useLeague(): UseLeagueResult {
   };
 
   useEffect(() => {
+    if (!userId) {
+      setMembership(null);
+      setLeaderboard([]);
+      setLoading(false);
+      return;
+    }
     let active = true;
     void (async () => {
       const [mRes, lRes] = await Promise.all([
@@ -154,7 +188,7 @@ export function useLeague(): UseLeagueResult {
     return () => {
       active = false;
     };
-  }, []);
+  }, [userId]);
 
   const setOptIn = async (
     optedIn: boolean,
