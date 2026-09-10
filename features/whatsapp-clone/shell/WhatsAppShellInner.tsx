@@ -36,7 +36,14 @@ export function WhatsAppShellInner({
 }: WhatsAppShellInnerProps) {
   const [activeRail, setActiveRail] = useState<RailKey>("chats");
   const [newChatOpen, setNewChatOpen] = useState(false);
-  const { conversations, selectedId, select } = useWhatsAppConversations();
+  const {
+    conversations,
+    selectedId,
+    select,
+    archiveFilter,
+    setArchiveFilter,
+    archivedCount,
+  } = useWhatsAppConversations();
   const { open } = useOverlayActions();
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
   const unreadChats = conversations.reduce(
@@ -76,6 +83,9 @@ export function WhatsAppShellInner({
               selectedId={selectedId}
               onSelect={select}
               onNewChat={() => setNewChatOpen(true)}
+              archiveFilter={archiveFilter}
+              onArchiveFilterChange={setArchiveFilter}
+              archivedCount={archivedCount}
             />
           </ResizablePanel>
           <PaneDivider />

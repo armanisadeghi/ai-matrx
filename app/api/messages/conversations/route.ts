@@ -4,11 +4,12 @@
  * GET /api/messages/conversations - List a page of conversations for the
  *   current user (`limit`, default 20 / max 50; keyset pagination via
  *   `before_sort_at` + `before_conversation_id`, echoed back as `nextCursor`).
- *   `include_archived=true` reveals conversations the caller has archived;
- *   the default HIDES them (THE ARCHIVED-ITEMS LAW,
- *   ../common-docs/policies/archived-items.md). Every row now also carries
- *   `IsArchived`, so a consumer can label what it renders instead of mixing
- *   archived threads in unmarked.
+ *   `archived=active|archived|all` (default `active`) is THE ARCHIVED-ITEMS
+ *   LAW's tri-state (../common-docs/policies/archived-items.md), passed
+ *   straight through to the RPC's `p_archived` (register row R1). It is a
+ *   REQUEST to the reader, never a post-read sieve, so `total`, `hasMore` and
+ *   `nextCursor` all describe the rows the caller actually asked for. Every
+ *   row also carries `IsArchived`, so a consumer can label what it renders.
  * POST /api/messages/conversations - Create new conversation or return existing
  *
  * Uses dm_ prefixed tables
@@ -91,9 +92,14 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
     const beforeSortAt = searchParams.get("before_sort_at");
     const beforeConversationId = searchParams.get("before_conversation_id");
-    // THE ARCHIVED-ITEMS LAW: default hides archived, the caller opts in.
-    const includeArchived =
-      searchParams.get("include_archived") === "true";
+    // THE ARCHIVED-ITEMS LAW's tri-state. A boolean cannot say "archived
+    // only", which is why the law names three states; an unknown value falls
+    // back to the default rather than silently widening the list.
+    const archivedParam = searchParams.get("archived");
+    const archived: "active" | "archived" | "all" =
+      archivedParam === "archived" || archivedParam === "all"
+        ? archivedParam
+        : "active";
 
     // Get conversations using the helper function — paginated at the RPC
     // level so the 500+-row unbounded read (D247) is never issued here.
@@ -104,6 +110,7 @@ export async function GET(request: NextRequest) {
         p_limit: limit,
         p_before_sort_at: beforeSortAt ?? undefined,
         p_before_conversation_id: beforeConversationId ?? undefined,
+        p_archived: archived,
       },
     );
 
@@ -115,29 +122,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const allRows = conversations ?? [];
-
-    // The archive predicate is applied HERE, after the RPC, because
-    // `get_dm_conversations_with_details` has no archive parameter yet — that
-    // is row R1 of the archived-items campaign (a
-    // `p_include_archived boolean default false` argument on the RPC). The
-    // RPC does return each participant's `is_archived` inside `participants`,
-    // so the filter is exact, not a guess. It is applied to the page the RPC
-    // returned, so a page can come back SHORT while archived rows sit inside
-    // it — `hasMore`/`nextCursor` still describe the RPC's own paging, which
-    // is what a caller must keep following. R1 removes this whole block.
-    const archiveFilteredRows = includeArchived
-      ? allRows
-      : allRows.filter((conv) => {
-          const self = parseConversationParticipants(conv.participants).find(
-            (p) => p.user_id === userId,
-          );
-          return !self?.is_archived;
-        });
-
-    const pageConversations = archiveFilteredRows;
-    const hasMore = allRows.length === limit;
-    const lastRow = allRows[allRows.length - 1];
+    // R1 landed (`get_dm_conversations_with_details(p_archived)`), so the
+    // archive predicate runs INSIDE the RPC. The interim post-RPC filter that
+    // stood here is deleted: it could return a short page while archived rows
+    // sat inside it, so the count it reported and the paging it advertised
+    // described different sets.
+    const pageConversations = conversations ?? [];
+    const hasMore = pageConversations.length === limit;
+    const lastRow = pageConversations[pageConversations.length - 1];
     const nextCursor = hasMore && lastRow
       ? {
           before_sort_at: lastRow.last_message_at ?? lastRow.conversation_updated_at,

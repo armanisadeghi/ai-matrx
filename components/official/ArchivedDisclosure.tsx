@@ -37,7 +37,14 @@
  *
  * The count is ALWAYS the true number of archived rows the surface holds. A
  * screen never lies: when there is nothing archived the control renders
- * nothing at all rather than an empty promise.
+ * nothing at all rather than an empty promise. A surface whose archive view is
+ * a SERVER request (the rows below the button are the archived page itself,
+ * not children of it) passes `keepWhileOpen` so the revealed view never loses
+ * its way back.
+ *
+ * `countLabel` exists for the one case a bare integer cannot tell the truth: a
+ * server-side count that hit its cap (render `"12+"`), or a count that has not
+ * landed yet (pass `null` and no parenthetical is printed at all).
  */
 
 import type { ReactNode } from "react";
@@ -58,6 +65,19 @@ export interface ArchivedDisclosureProps {
   children?: ReactNode;
   /** Noun for the rows, so the button reads in the surface's own words. */
   label?: string;
+  /**
+   * Override the parenthetical. A string replaces the number (`"12+"` for a
+   * capped server count); `null` prints no parenthetical at all, for a count
+   * that has not arrived yet. Omit it and the honest `count` is printed.
+   */
+  countLabel?: string | null;
+  /**
+   * Keep the control rendered while `open` even at `count === 0`. For surfaces
+   * where opening SWITCHES the list to the archive (a server-side filter)
+   * rather than nesting rows inside this component: without it the way back
+   * would vanish the moment the count read zero or had not landed.
+   */
+  keepWhileOpen?: boolean;
   className?: string;
   contentClassName?: string;
 }
@@ -68,10 +88,17 @@ export function ArchivedDisclosure({
   onOpenChange,
   children,
   label = "Archived",
+  countLabel,
+  keepWhileOpen = false,
   className,
   contentClassName,
 }: ArchivedDisclosureProps) {
-  if (count <= 0) return null;
+  // Nothing archived: an empty promise, so render nothing — unless this
+  // surface's open state IS the archive view, whose way back must never vanish.
+  if (count <= 0 && !(open && keepWhileOpen)) return null;
+
+  const parenthetical =
+    countLabel === undefined ? String(count) : countLabel;
 
   return (
     <div className={cn("min-w-0", className)}>
@@ -88,7 +115,7 @@ export function ArchivedDisclosure({
         )}
         <Archive className="h-4 w-4 shrink-0" />
         <span className="truncate">
-          {label} ({count})
+          {parenthetical === null ? label : `${label} (${parenthetical})`}
         </span>
       </button>
       {open && children ? (
