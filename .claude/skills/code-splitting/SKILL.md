@@ -7,7 +7,7 @@ description: "next/dynamic code splitting and build-graph cost; first stop for b
 
 One job: keep heavy **client** code out of the server render and out of the initial load, fetching its chunk only when actually needed. Done wrong it's pure cost (extra waterfalls, blank screens, hydration mismatches) with none of the win.
 
-**Routing:** adding, removing, or moving a dynamic import → this file, top to bottom. Build failed (OOM / SIGKILL / "Collecting page data") or build got slower → rule 3 and the anti-patterns table here, then **read [build-time-bloat.md](build-time-bloat.md)**.
+**Routing:** adding, removing, or moving a dynamic import → this file, top to bottom. **Also read [build-time-bloat.md](build-time-bloat.md) when** the build failed (OOM / SIGKILL / "Collecting page data") or build time grew (start at rule 3 and the anti-patterns table here), **or before** replacing a `dynamic()` with a static import, or statically importing a heavy client module into a Server Component, layout/provider, shell, or barrel — that exact change took the prod build 15 → 24 min, and its leak signature lives only there. The fragmentation campaign's measured incident, diagnosis order, and fix pattern: [docs/handoffs/build-graph-fragmentation-campaign.md](docs/handoffs/build-graph-fragmentation-campaign.md).
 
 ## The one mental model
 
@@ -95,8 +95,8 @@ For a set of components that **always render together** (app-shell singletons, a
 
 | Anti-pattern | Where | Why it's wrong |
 |---|---|---|
-| **Stacked `ssr:false` on one path** | [MessageItem.tsx:7](features/chat/components/response/MessageItem.tsx#L7) `dynamic(AssistantMessage)` → which renders `MarkdownStream` (itself `dynamic ssr:false`) | Two boundaries, one render path → extra waterfall. `AssistantMessage` also renders for **every** assistant message, so benefit #3 ≈ 0. Fix: import `AssistantMessage` statically; the `MarkdownStream` boundary beneath already does the heavy split. |
-| **Dynamic but unconditional** | same file — `AssistantMessage` always renders when `role !== "user"` | Chunk fetches on every chat open regardless. Split cost, no deferral. |
+| **Stacked `ssr:false` on one path** | [AssistantCardStack.tsx:37](features/agents/components/agent-widgets/chat-assistant/AssistantCardStack.tsx#L37) `dynamic(AgentAssistantMessage)` — itself inside the `lazyOverlay(AgentChatAssistant)` boundary, and rendering `MarkdownStream` (a third `ssr:false`). Same shape in the importer-less `features/cx-chat/components/messages/MessageList.tsx` and `features/cx-conversation/MessageList.tsx` | Three boundaries, one render path → extra waterfalls. `AgentAssistantMessage` also renders for **every** assistant message, so benefit #3 ≈ 0. Fix: import `AgentAssistantMessage` statically; the overlay boundary above and the `MarkdownStream` boundary beneath already do the split. Removing a `dynamic()` anywhere NOT already under such a boundary → read [build-time-bloat.md](build-time-bloat.md) first. |
+| **Dynamic but unconditional** | same file, [line 204](features/agents/components/agent-widgets/chat-assistant/AssistantCardStack.tsx#L204) — `AgentAssistantMessage` renders whenever `msg.role === "assistant"` | Chunk fetches on every assistant open regardless. Split cost, no deferral. |
 | **Mass `lazy` → `dynamic` conversion (fragmentation)** | the reverted 2026-07-27 campaign (v0.4.124–132): peek registry ×19, settings `lazyTab` ×39, artifact-renderers ×30, +67 long-tail | Each conversion added a loadable/chunk-group per consuming context; +~190 loadables OOM-killed a 30-green-streak build. Rule 3 (Fragmentation Law): consolidate to static inside ONE edge instead — measured 33% FASTER than baseline. |
 | **`dynamic({ssr:false})` in a Server Component** | guarded against in [app/Providers.tsx](app/Providers.tsx) | Build error. Push the dynamic import into a `"use client"` child. |
 | **Bare `dynamic()` for an overlay/window** | — | Bypasses `loading`/error/timeout. Use `lazyOverlay`. |
@@ -106,7 +106,7 @@ For a set of components that **always render together** (app-shell singletons, a
 
 ## Build-time bloat — the recurring leak: hunt it, then guard it
 
-**Build failed, OOM/SIGKILL, or build time grew → read [build-time-bloat.md](build-time-bloat.md)** — Step 0 (prove the regression is in the tree), the leak signature, blast-radius ranking, the hunt method, the eslint guard, and the analyzer fallback when the hunt comes back clean.
+**Build failed, OOM/SIGKILL, or build time grew — OR you are replacing a `dynamic()` with a static import, or statically importing a heavy client module into a Server Component, layout/provider, shell, or barrel → read [build-time-bloat.md](build-time-bloat.md)** — Step 0 (prove the regression is in the tree), the leak signature and its 15 → 24 min incident, blast-radius ranking, the hunt method, the eslint guard, and the analyzer fallback when the hunt comes back clean.
 
 **Measure before moving: `pnpm lab:graph`** ([scripts/build-lab/](scripts/build-lab/README.md)) computes the whole law deterministically in seconds — THE COMPILE BILL (every cluster's size × entry-context multiplicity) and every dynamic edge ranked by the D115 product. Run it before AND after any graph change; `pnpm lab:run <label>` ground-truths a ref with a full local build (peak RSS is the trustworthy metric — single-run compile time has ±1.5-2min noise, which is how five plausible "fixes" (v0.4.217-221) all shipped as regressions). Never test a build hypothesis by pushing to Vercel.
 
