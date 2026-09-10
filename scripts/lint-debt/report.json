@@ -1,26 +1,21 @@
 {
-  "generatedAt": "2026-09-10T02:10:30.044Z",
-  "commit": "92d3dd40c45bc437a494df75f23156faa484a6b3",
+  "generatedAt": "2026-09-10T05:47:47.204Z",
+  "commit": "95d39fdf31566f2ecd55d9e791d850f9a6f69dde",
   "totals": {
-    "errors": 2293,
-    "filesWithFindings": 1209,
-    "filesScanned": 14819,
+    "errors": 2196,
+    "filesWithFindings": 1154,
+    "filesScanned": 14830,
     "byClass": {
-      "bug": 2,
-      "correctness": 2145,
-      "doctrine": 141,
-      "style": 5
+      "bug": 0,
+      "correctness": 2144,
+      "doctrine": 50,
+      "style": 2
     }
   },
   "byRule": [
     {
-      "rule": "@next/next/no-html-link-for-pages",
-      "count": 2,
-      "klass": "bug"
-    },
-    {
       "rule": "react-hooks/set-state-in-effect",
-      "count": 1152,
+      "count": 1151,
       "klass": "correctness"
     },
     {
@@ -70,12 +65,7 @@
     },
     {
       "rule": "no-restricted-imports",
-      "count": 82,
-      "klass": "doctrine"
-    },
-    {
-      "rule": "no-restricted-syntax",
-      "count": 58,
+      "count": 49,
       "klass": "doctrine"
     },
     {
@@ -85,11 +75,6 @@
     },
     {
       "rule": "react/display-name",
-      "count": 3,
-      "klass": "style"
-    },
-    {
-      "rule": "react/jsx-no-comment-textnodes",
       "count": 2,
       "klass": "style"
     }
@@ -299,17 +284,17 @@
   "worstFeatures": [
     {
       "key": "components/mardown-display",
-      "count": 220,
+      "count": 185,
       "real": 183
     },
     {
       "key": "features/agents",
-      "count": 125,
+      "count": 123,
       "real": 117
     },
     {
       "key": "app/(dev)",
-      "count": 112,
+      "count": 111,
       "real": 109
     },
     {
@@ -319,12 +304,12 @@
     },
     {
       "key": "components/official",
-      "count": 68,
+      "count": 66,
       "real": 64
     },
     {
       "key": "features/marketing",
-      "count": 62,
+      "count": 56,
       "real": 56
     },
     {
@@ -334,12 +319,12 @@
     },
     {
       "key": "app/(admin)",
-      "count": 53,
+      "count": 51,
       "real": 50
     },
     {
       "key": "components/ui",
-      "count": 49,
+      "count": 47,
       "real": 47
     },
     {
@@ -408,18 +393,18 @@
       "real": 30
     },
     {
-      "key": "features/admin",
-      "count": 27,
-      "real": 27
-    },
-    {
       "key": "features/education",
       "count": 27,
       "real": 27
     },
     {
       "key": "app/(core)",
-      "count": 28,
+      "count": 26,
+      "real": 26
+    },
+    {
+      "key": "features/admin",
+      "count": 26,
       "real": 26
     },
     {
@@ -429,7 +414,7 @@
     },
     {
       "key": "features/code-editor",
-      "count": 28,
+      "count": 26,
       "real": 24
     },
     {
@@ -448,12 +433,12 @@
       "real": 23
     },
     {
-      "key": "features/workflow-runtime",
-      "count": 23,
+      "key": "features/podcasts",
+      "count": 22,
       "real": 22
     },
     {
-      "key": "features/podcasts",
+      "key": "features/workflow-runtime",
       "count": 22,
       "real": 22
     },
@@ -493,8 +478,8 @@
       "real": 19
     },
     {
-      "key": "features/organizations",
-      "count": 20,
+      "key": "components/matrx",
+      "count": 18,
       "real": 18
     }
   ],
@@ -716,15 +701,6 @@
       "message": "Error: Cannot access variable before it is declared `loadEnumUsage` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/…"
     },
     {
-      "file": "app/(admin)/administration/documentation/feature-docs/dotdirs/page.tsx",
-      "line": 35,
-      "column": 29,
-      "rule": "react/jsx-no-comment-textnodes",
-      "feature": "app/(admin)",
-      "route": "/administration/documentation/feature-docs/dotdirs",
-      "message": "Comments inside children section of tag should be placed inside braces"
-    },
-    {
       "file": "app/(admin)/administration/reporting/events/page.tsx",
       "line": 119,
       "column": 10,
@@ -768,15 +744,6 @@
       "feature": "app/(admin)",
       "route": null,
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/ui/…"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/image-asset-uploader.tsx",
-      "line": 11,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "'@/features/window-panels/windows/image/useOpenImageUploaderWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.ts…"
     },
     {
       "file": "app/(admin)/administration/ui/official-components/component-displays/inline-copy-button.tsx",
@@ -1074,24 +1041,6 @@
       "feature": "app/(core)",
       "route": "/documents",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(core)/education/game/host/page.tsx",
-      "line": 5,
-      "column": 1,
-      "rule": "no-restricted-syntax",
-      "feature": "app/(core)",
-      "route": "/education/game/host",
-      "message": "Do not statically import a heavy `*Impl` core — it bundles the whole heavy component into this chunk (a build-time leak). Import its dynamic wrapper instead: the sibling module without the `Impl` suffix, which does next/dynamic({ ssr: fals…"
-    },
-    {
-      "file": "app/(core)/education/game/join/page.tsx",
-      "line": 4,
-      "column": 1,
-      "rule": "no-restricted-syntax",
-      "feature": "app/(core)",
-      "route": "/education/game/join",
-      "message": "Do not statically import a heavy `*Impl` core — it bundles the whole heavy component into this chunk (a build-time leak). Import its dynamic wrapper instead: the sibling module without the `Impl` suffix, which does next/dynamic({ ssr: fals…"
     },
     {
       "file": "app/(core)/images/_components/ImagesSidebar.tsx",
@@ -1749,15 +1698,6 @@
       "feature": "app/(dev)",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(dev)/demos/smart-code-editor/page.dev.tsx",
-      "line": 16,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "app/(dev)",
-      "route": "/demos/smart-code-editor",
-      "message": "'@/features/window-panels/windows/smart-code-editor/useOpenSmartCodeEditorWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/Overla…"
     },
     {
       "file": "app/(dev)/demos/sync-demo/preferences/_client.tsx",
@@ -3867,48 +3807,12 @@
     },
     {
       "file": "components/mardown-display/blocks/comparison/ComparisonTableBlock.tsx",
-      "line": 42,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/comparison/ComparisonTableBlock.tsx",
-      "line": 51,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/comparison/ComparisonTableBlock.tsx",
-      "line": 158,
+      "line": 159,
       "column": 3,
       "rule": "react-hooks/refs",
       "feature": "components/mardown-display",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "components/mardown-display/blocks/comparison/parseComparisonJSON.ts",
-      "line": 9,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/comparison/parseComparisonJSON.ts",
-      "line": 18,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
     },
     {
       "file": "components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay.tsx",
@@ -3918,15 +3822,6 @@
       "feature": "components/mardown-display",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "components/mardown-display/blocks/cooking-recipes/parseRecipeMarkdown.ts",
-      "line": 9,
-      "column": 47,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
     },
     {
       "file": "components/mardown-display/blocks/csv/CsvBlock.tsx",
@@ -3939,66 +3834,12 @@
     },
     {
       "file": "components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx",
-      "line": 37,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx",
-      "line": 49,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx",
-      "line": 180,
+      "line": 181,
       "column": 3,
       "rule": "react-hooks/refs",
       "feature": "components/mardown-display",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "components/mardown-display/blocks/decision-tree/parseDecisionTreeJSON.ts",
-      "line": 9,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/decision-tree/parseDecisionTreeJSON.ts",
-      "line": 21,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/diagram/parseDiagramJSON.ts",
-      "line": 21,
-      "column": 49,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/diagram/parseDiagramJSON.ts",
-      "line": 35,
-      "column": 49,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
     },
     {
       "file": "components/mardown-display/blocks/flashcards/FlashcardMobileView.tsx",
@@ -4514,33 +4355,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "components/mardown-display/blocks/progress/parseProgressMarkdown.ts",
-      "line": 10,
-      "column": 47,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/progress/parseProgressMarkdown.ts",
-      "line": 14,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/progress/parseProgressMarkdown.ts",
-      "line": 19,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
       "file": "components/mardown-display/blocks/progress/ProgressTrackerBlock.tsx",
       "line": 177,
       "column": 3,
@@ -4658,87 +4472,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "components/mardown-display/blocks/research/parseResearchMarkdown.ts",
-      "line": 13,
-      "column": 57,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/research/parseResearchMarkdown.ts",
-      "line": 26,
-      "column": 57,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/research/parseResearchMarkdown.ts",
-      "line": 31,
-      "column": 61,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/research/parseResearchMarkdown.ts",
-      "line": 34,
-      "column": 71,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/resources/parseResourcesMarkdown.ts",
-      "line": 8,
-      "column": 51,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/resources/parseResourcesMarkdown.ts",
-      "line": 13,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/resources/parseResourcesMarkdown.ts",
-      "line": 18,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/result-kinds/result-kind-shared.tsx",
-      "line": 190,
-      "column": 42,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/result-kinds/result-kind-shared.tsx",
-      "line": 240,
-      "column": 42,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
       "file": "components/mardown-display/blocks/scraper-kinds/PageCleaningReportBlock.tsx",
       "line": 75,
       "column": 19,
@@ -4838,24 +4571,6 @@
       "message": "Compilation Skipped: Existing memoization could not be preserved React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause t…"
     },
     {
-      "file": "components/mardown-display/blocks/seo-package/SeoPackageBlock.tsx",
-      "line": 39,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "components/mardown-display/blocks/seo-package/SeoPackageBlock.tsx",
-      "line": 39,
-      "column": 10,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
       "file": "components/mardown-display/blocks/study-pack/StudyPackBlock.tsx",
       "line": 88,
       "column": 11,
@@ -4937,44 +4652,8 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "components/mardown-display/blocks/timeline/parseTimelineMarkdown.ts",
-      "line": 8,
-      "column": 53,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/timeline/parseTimelineMarkdown.ts",
-      "line": 11,
-      "column": 55,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/timeline/parseTimelineMarkdown.ts",
-      "line": 15,
-      "column": 47,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
       "file": "components/mardown-display/blocks/transcripts/AdvancedTranscriptViewer.tsx",
-      "line": 72,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/transcripts/AdvancedTranscriptViewer.tsx",
-      "line": 523,
+      "line": 524,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/mardown-display",
@@ -4983,7 +4662,7 @@
     },
     {
       "file": "components/mardown-display/blocks/transcripts/AdvancedTranscriptViewer.tsx",
-      "line": 576,
+      "line": 577,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/mardown-display",
@@ -4992,16 +4671,7 @@
     },
     {
       "file": "components/mardown-display/blocks/transcripts/TranscriptViewer.tsx",
-      "line": 30,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/transcripts/TranscriptViewer.tsx",
-      "line": 78,
+      "line": 79,
       "column": 30,
       "rule": "react-hooks/immutability",
       "feature": "components/mardown-display",
@@ -5010,7 +4680,7 @@
     },
     {
       "file": "components/mardown-display/blocks/transcripts/TranscriptViewer.tsx",
-      "line": 79,
+      "line": 80,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/mardown-display",
@@ -5019,48 +4689,12 @@
     },
     {
       "file": "components/mardown-display/blocks/transcripts/TranscriptViewer.tsx",
-      "line": 212,
+      "line": 213,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/mardown-display",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "components/mardown-display/blocks/troubleshooting/parseTroubleshootingMarkdown.ts",
-      "line": 15,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/troubleshooting/parseTroubleshootingMarkdown.ts",
-      "line": 24,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/troubleshooting/parseTroubleshootingMarkdown.ts",
-      "line": 33,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "components/mardown-display/blocks/troubleshooting/parseTroubleshootingMarkdown.ts",
-      "line": 42,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
     },
     {
       "file": "components/mardown-display/blocks/troubleshooting/TroubleshootingBlock.tsx",
@@ -5075,15 +4709,6 @@
       "file": "components/mardown-display/chat-markdown/BasicMarkdownContent.tsx",
       "line": 190,
       "column": 12,
-      "rule": "react/display-name",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "Component definition is missing display name"
-    },
-    {
-      "file": "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx",
-      "line": 783,
-      "column": 3,
       "rule": "react/display-name",
       "feature": "components/mardown-display",
       "route": null,
@@ -6468,24 +6093,6 @@
     },
     {
       "file": "components/official/icons/IconInputWithValidation.tsx",
-      "line": 19,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "components/official",
-      "route": null,
-      "message": "'@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayControlle…"
-    },
-    {
-      "file": "components/official/icons/IconInputWithValidation.tsx",
-      "line": 20,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "components/official",
-      "route": null,
-      "message": "'@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayControlle…"
-    },
-    {
-      "file": "components/official/icons/IconInputWithValidation.tsx",
       "line": 133,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -7341,25 +6948,7 @@
     },
     {
       "file": "components/ui/sonner.tsx",
-      "line": 4,
-      "column": 29,
-      "rule": "no-restricted-imports",
-      "feature": "components/ui",
-      "route": null,
-      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "components/ui/sonner.tsx",
-      "line": 4,
-      "column": 29,
-      "rule": "no-restricted-syntax",
-      "feature": "components/ui",
-      "route": null,
-      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "components/ui/sonner.tsx",
-      "line": 81,
+      "line": 82,
       "column": 9,
       "rule": "react-hooks/purity",
       "feature": "components/ui",
@@ -7896,15 +7485,6 @@
       "feature": "features/admin",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/admin/taxonomy/TaxonomyTree.tsx",
-      "line": 113,
-      "column": 13,
-      "rule": "@next/next/no-html-link-for-pages",
-      "feature": "features/admin",
-      "route": null,
-      "message": "Do not use an `<a>` element to navigate to `/administration/users/agent-review/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages"
     },
     {
       "file": "features/admin/unified-preview/jobs/JobWorkbench.tsx",
@@ -9068,15 +8648,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agents/components/builder/message-builders/AddBlockButton.tsx",
-      "line": 38,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/agents",
-      "route": null,
-      "message": "'@/features/window-panels/windows/image/useOpenImageUploaderWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.ts…"
-    },
-    {
       "file": "features/agents/components/builder/message-builders/MessageItem.tsx",
       "line": 313,
       "column": 5,
@@ -9336,15 +8907,6 @@
       "feature": "features/agents",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/agents/components/settings-management/AgentSettingsCore.tsx",
-      "line": 1892,
-      "column": 41,
-      "rule": "react/jsx-no-comment-textnodes",
-      "feature": "features/agents",
-      "route": null,
-      "message": "Comments inside children section of tag should be placed inside braces"
     },
     {
       "file": "features/agents/components/settings-management/AgentSettingsModal.tsx",
@@ -10490,51 +10052,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/canvas/maps/NewMapDialog.tsx",
-      "line": 11,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/canvas",
-      "route": null,
-      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "features/canvas/maps/NewMapDialog.tsx",
-      "line": 11,
-      "column": 10,
-      "rule": "no-restricted-syntax",
-      "feature": "features/canvas",
-      "route": null,
-      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "features/canvas/maps/useMapRowActions.tsx",
-      "line": 10,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/canvas",
-      "route": null,
-      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "features/canvas/maps/useMapRowActions.tsx",
-      "line": 10,
-      "column": 10,
-      "rule": "no-restricted-syntax",
-      "feature": "features/canvas",
-      "route": null,
-      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "features/canvas/materialization/__tests__/planMaterialization.test.ts",
-      "line": 203,
-      "column": 25,
-      "rule": "no-restricted-syntax",
-      "feature": "features/canvas",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
       "file": "features/canvas/social/ScoreSubmissionDialog.tsx",
       "line": 64,
       "column": 13,
@@ -10551,24 +10068,6 @@
       "feature": "features/canvas",
       "route": null,
       "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
-    },
-    {
-      "file": "features/change-policy/components/ChangePolicySurface.tsx",
-      "line": 17,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/change-policy",
-      "route": null,
-      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "features/change-policy/components/ChangePolicySurface.tsx",
-      "line": 17,
-      "column": 10,
-      "rule": "no-restricted-syntax",
-      "feature": "features/change-policy",
-      "route": null,
-      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
     },
     {
       "file": "features/cloud-browser/hooks/useWrittenProgress.ts",
@@ -10803,24 +10302,6 @@
       "feature": "features/code-editor",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/code-editor/components/code-block/CodeBlock.tsx",
-      "line": 24,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/code-editor",
-      "route": null,
-      "message": "'@/features/window-panels/windows/smart-code-editor/useOpenSmartCodeEditorWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/Overla…"
-    },
-    {
-      "file": "features/code-editor/components/code-block/MultiFileCodeEditor.tsx",
-      "line": 19,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/code-editor",
-      "route": null,
-      "message": "'@/features/window-panels/windows/smart-code-editor/useOpenSmartCodeEditorWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/Overla…"
     },
     {
       "file": "features/code-editor/components/code-block/SmallCodeEditorImpl.tsx",
@@ -11262,15 +10743,6 @@
       "feature": "features/content-ir",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/content-ir/studio/components/NewShapeClient.tsx",
-      "line": 608,
-      "column": 11,
-      "rule": "@next/next/no-html-link-for-pages",
-      "feature": "features/content-ir",
-      "route": null,
-      "message": "Do not use an `<a>` element to navigate to `/shapes/all/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages"
     },
     {
       "file": "features/continued-access/ContinuedAccessPortal.tsx",
@@ -11928,15 +11400,6 @@
       "feature": "features/data-tables",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/directive-catalog/__tests__/buildEnvelope.test.ts",
-      "line": 22,
-      "column": 41,
-      "rule": "no-restricted-syntax",
-      "feature": "features/directive-catalog",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
     },
     {
       "file": "features/education/assessment/components/HandwrittenWorkInput.tsx",
@@ -12729,15 +12192,6 @@
       "feature": "features/flashcards",
       "route": null,
       "message": "Error: Cannot access variable before it is declared `handleGrade` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time. /Users/armanisadeghi/code/matrx-frontend/features/flash…"
-    },
-    {
-      "file": "features/flashcards/data/__tests__/coerce-card.test.ts",
-      "line": 57,
-      "column": 37,
-      "rule": "no-restricted-syntax",
-      "feature": "features/flashcards",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
     },
     {
       "file": "features/gallery/components/GalleryFloatingWorkspace.tsx",
@@ -13731,7 +13185,7 @@
     },
     {
       "file": "features/mandates/admin/MandateDetailPanel.tsx",
-      "line": 1153,
+      "line": 1155,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/mandates",
@@ -14199,24 +13653,6 @@
     },
     {
       "file": "features/marketing/initiatives/InitiativeEditorDialog.tsx",
-      "line": 3,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "features/marketing/initiatives/InitiativeEditorDialog.tsx",
-      "line": 3,
-      "column": 10,
-      "rule": "no-restricted-syntax",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "features/marketing/initiatives/InitiativeEditorDialog.tsx",
       "line": 57,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -14241,24 +13677,6 @@
       "feature": "features/marketing",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/marketing/seo/keyword-research/components/AddKeywordsToPage.tsx",
-      "line": 17,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "features/marketing/seo/keyword-research/components/AddKeywordsToPage.tsx",
-      "line": 17,
-      "column": 10,
-      "rule": "no-restricted-syntax",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
     },
     {
       "file": "features/marketing/seo/keyword-research/useKeywordResearch.ts",
@@ -14286,24 +13704,6 @@
       "feature": "features/marketing",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/marketing/seo/serp/ApplyMetaToPage.tsx",
-      "line": 22,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "features/marketing/seo/serp/ApplyMetaToPage.tsx",
-      "line": 22,
-      "column": 10,
-      "rule": "no-restricted-syntax",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
     },
     {
       "file": "features/marketing/seo/value-system/guidelines/KwGuidelinesPanel.tsx",
@@ -14655,15 +14055,6 @@
       "feature": "features/math",
       "route": null,
       "message": "Error: Avoid constructing JSX within try/catch React does not immediately render components when JSX is rendered, so any errors from this component will not be caught by the try/catch. To catch errors in rendering a given component, wrap t…"
-    },
-    {
-      "file": "features/matrx-envelope/__tests__/side-effect-directive-card.test.tsx",
-      "line": 94,
-      "column": 43,
-      "rule": "no-restricted-syntax",
-      "feature": "features/matrx-envelope",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
     },
     {
       "file": "features/matrx-envelope/referenceResolvers.ts",
@@ -15170,24 +14561,6 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/organizations/admin/components/MemberControlsForm.tsx",
-      "line": 10,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/organizations",
-      "route": null,
-      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "features/organizations/admin/components/MemberControlsForm.tsx",
-      "line": 10,
-      "column": 10,
-      "rule": "no-restricted-syntax",
-      "feature": "features/organizations",
-      "route": null,
-      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
       "file": "features/organizations/admin/components/OrgAdminAuditTable.tsx",
       "line": 54,
       "column": 5,
@@ -15350,69 +14723,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/overlays/openers/contentEditorListWindow.tsx",
-      "line": 10,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/content-editors/useOpenContentEditorWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayCon…"
-    },
-    {
-      "file": "features/overlays/openers/contentEditorWindow.tsx",
-      "line": 12,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/content-editors/useOpenContentEditorWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayCon…"
-    },
-    {
-      "file": "features/overlays/openers/contentEditorWorkspaceWindow.tsx",
-      "line": 10,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/content-editors/useOpenContentEditorWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayCon…"
-    },
-    {
-      "file": "features/overlays/openers/contextItemsWindow.tsx",
-      "line": 14,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/context-scopes/ContextItemsWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.t…"
-    },
-    {
-      "file": "features/overlays/openers/createProjectWindow.tsx",
-      "line": 13,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/projects/useOpenCreateProjectWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController…"
-    },
-    {
-      "file": "features/overlays/openers/curatedIconPickerWindow.tsx",
-      "line": 10,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayControlle…"
-    },
-    {
-      "file": "features/overlays/openers/directiveReferencePickerWindow.tsx",
-      "line": 6,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/admin/directive-reference-picker/callbacks' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayCon…"
-    },
-    {
       "file": "features/overlays/openers/extractionCellEditorWindow.tsx",
       "line": 34,
       "column": 3,
@@ -15420,60 +14730,6 @@
       "feature": "features/overlays",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "features/overlays/openers/imageUploaderWindow.tsx",
-      "line": 17,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/image/useOpenImageUploaderWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.ts…"
-    },
-    {
-      "file": "features/overlays/openers/masterworkAddRuleWindow.tsx",
-      "line": 12,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/masterwork/callbacks' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct i…"
-    },
-    {
-      "file": "features/overlays/openers/multiFileSmartCodeEditorWindow.tsx",
-      "line": 9,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/multi-file-smart-code-editor/useOpenMultiFileSmartCodeEditorWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (feat…"
-    },
-    {
-      "file": "features/overlays/openers/scopeEditWindow.tsx",
-      "line": 14,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/context-scopes/ScopeEditWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx)…"
-    },
-    {
-      "file": "features/overlays/openers/smartCodeEditorWindow.tsx",
-      "line": 11,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/smart-code-editor/useOpenSmartCodeEditorWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/Overla…"
-    },
-    {
-      "file": "features/overlays/openers/surfaceAgentBindWindow.tsx",
-      "line": 11,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/overlays",
-      "route": null,
-      "message": "'@/features/window-panels/windows/surfaces/useOpenSurfaceAgentBindWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayControl…"
     },
     {
       "file": "features/page-extraction/components/ChunkingConfigForm.tsx",
@@ -15582,15 +14838,6 @@
       "feature": "features/page-extraction",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/page-extraction/utils/columns.ts",
-      "line": 201,
-      "column": 46,
-      "rule": "no-restricted-syntax",
-      "feature": "features/page-extraction",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
     },
     {
       "file": "features/pdf-demo/components/PdfBinaryResult.tsx",
@@ -16521,7 +15768,7 @@
     },
     {
       "file": "features/rag/components/library/LibraryPage.tsx",
-      "line": 134,
+      "line": 135,
       "column": 5,
       "rule": "react-hooks/refs",
       "feature": "features/rag",
@@ -16530,7 +15777,7 @@
     },
     {
       "file": "features/rag/components/library/LibraryPage.tsx",
-      "line": 267,
+      "line": 268,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/rag",
@@ -17160,15 +16407,6 @@
     },
     {
       "file": "features/resource-manager/resource-picker/ImageUrlResourcePicker.tsx",
-      "line": 16,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/resource-manager",
-      "route": null,
-      "message": "'@/features/window-panels/windows/image/useOpenImageUploaderWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.ts…"
-    },
-    {
-      "file": "features/resource-manager/resource-picker/ImageUrlResourcePicker.tsx",
       "line": 195,
       "column": 14,
       "rule": "react-hooks/immutability",
@@ -17207,15 +16445,6 @@
       "file": "features/review-walk/components/AttachVersionDialog.tsx",
       "line": 52,
       "column": 15,
-      "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/review-walk",
-      "route": null,
-      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/review-walk/components/ReviewWalkWindow.tsx",
-      "line": 216,
-      "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/review-walk",
       "route": null,
@@ -18122,15 +17351,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/shell/navigation/navActions.ts",
-      "line": 42,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/shell",
-      "route": null,
-      "message": "'@/features/window-panels/windows/projects/useOpenCreateProjectWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController…"
-    },
-    {
       "file": "features/skills/components/SkillCategoryTreeEditor.tsx",
       "line": 429,
       "column": 19,
@@ -18273,15 +17493,6 @@
       "feature": "features/structured-lists",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV2.tsx",
-      "line": 28,
-      "column": 1,
-      "rule": "no-restricted-imports",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "'@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayControlle…"
     },
     {
       "file": "features/structured-lists/StructuredListManagerV2.tsx",
@@ -19553,24 +18764,6 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/transcripts/browse/useTranscriptRowActions.tsx",
-      "line": 12,
-      "column": 10,
-      "rule": "no-restricted-imports",
-      "feature": "features/transcripts",
-      "route": null,
-      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
-      "file": "features/transcripts/browse/useTranscriptRowActions.tsx",
-      "line": 12,
-      "column": 10,
-      "rule": "no-restricted-syntax",
-      "feature": "features/transcripts",
-      "route": null,
-      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
-    },
-    {
       "file": "features/transcripts/components/TranscriptViewer.tsx",
       "line": 219,
       "column": 7,
@@ -20543,17 +19736,8 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/workflow-runtime/interrupt/interrupt-view.ts",
-      "line": 162,
-      "column": 55,
-      "rule": "no-restricted-syntax",
-      "feature": "features/workflow-runtime",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
       "file": "features/workflow-runtime/interrupt/InterruptQuestion.tsx",
-      "line": 331,
+      "line": 332,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/workflow-runtime",
@@ -20589,7 +19773,7 @@
     },
     {
       "file": "features/workflow-runtime/served-form/ServedInputFields.tsx",
-      "line": 93,
+      "line": 94,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/workflow-runtime",
@@ -20598,7 +19782,7 @@
     },
     {
       "file": "features/workflow-runtime/served-form/ServedInputFields.tsx",
-      "line": 136,
+      "line": 137,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/workflow-runtime",
@@ -20804,24 +19988,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "lib/api/__tests__/matrx-transport.test.ts",
-      "line": 109,
-      "column": 27,
-      "rule": "no-restricted-syntax",
-      "feature": "lib/api",
-      "route": null,
-      "message": "Direct POST to /tool_results is banned. Tool results MUST go through submitToolResult() in @/features/agents/api/submit-tool-results, which is the single funnel that fires the continuation_needed → resumeInstance handoff. Bypassing it rein…"
-    },
-    {
-      "file": "lib/api/__tests__/matrx-transport.test.ts",
-      "line": 117,
-      "column": 22,
-      "rule": "no-restricted-syntax",
-      "feature": "lib/api",
-      "route": null,
-      "message": "Direct POST to /tool_results is banned. Tool results MUST go through submitToolResult() in @/features/agents/api/submit-tool-results, which is the single funnel that fires the continuation_needed → resumeInstance handoff. Bypassing it rein…"
-    },
-    {
       "file": "lib/diagnostics/errorCaptureStore.renderSafety.test.tsx",
       "line": 36,
       "column": 5,
@@ -20912,33 +20078,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "lib/media/agent-payload.test.ts",
-      "line": 28,
-      "column": 42,
-      "rule": "no-restricted-syntax",
-      "feature": "lib/media",
-      "route": null,
-      "message": "storage_uri / file_uri (the native S3 location) is SERVER-ONLY and has been ERADICATED from the FE (2026-07-06). It exists on no backend response and its files.files column grant is REVOKEd. Identify by id/file_id; use the URL contract (ur…"
-    },
-    {
-      "file": "lib/media/agent-payload.test.ts",
-      "line": 31,
-      "column": 7,
-      "rule": "no-restricted-syntax",
-      "feature": "lib/media",
-      "route": null,
-      "message": "storage_uri / file_uri (the native S3 location) is SERVER-ONLY and has been ERADICATED from the FE (2026-07-06). It exists on no backend response and its files.files column grant is REVOKEd. Identify by id/file_id; use the URL contract (ur…"
-    },
-    {
-      "file": "lib/media/agent-payload.ts",
-      "line": 45,
-      "column": 3,
-      "rule": "no-restricted-syntax",
-      "feature": "lib/media",
-      "route": null,
-      "message": "String contains storage_uri/file_uri — the server-only S3 location, ERADICATED from the FE (2026-07-06). Never select it (use FILES_TABLE_COLUMNS from features/files/filesDb.ts), never read/write it as a key. See features/files/FEATURE.md."
-    },
-    {
       "file": "lib/output-feedback/useOutputFeedback.ts",
       "line": 113,
       "column": 3,
@@ -21009,33 +20148,6 @@
       "feature": "providers",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "scripts/check-kind-marker-law.ts",
-      "line": 152,
-      "column": 26,
-      "rule": "no-restricted-syntax",
-      "feature": "scripts",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "scripts/shape/check-kind-type-twins.ts",
-      "line": 147,
-      "column": 20,
-      "rule": "no-restricted-syntax",
-      "feature": "scripts",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "scripts/shape/check-kind-type-twins.ts",
-      "line": 218,
-      "column": 20,
-      "rule": "no-restricted-syntax",
-      "feature": "scripts",
-      "route": null,
-      "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
     },
     {
       "file": "styles/themes/StandaloneThemeSwitcher.tsx",
