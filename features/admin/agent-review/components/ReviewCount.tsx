@@ -7,6 +7,11 @@ type ReviewCountProps = {
   skeletonClassName?: string;
 };
 
+/** Keep explicit accessible names as honest as the visible count treatment. */
+export function reviewCountLabel(count: number, loading: boolean): string {
+  return loading ? "loading" : String(count);
+}
+
 /** Never present the empty initial array as an authoritative zero count. */
 export function ReviewCount({
   count,

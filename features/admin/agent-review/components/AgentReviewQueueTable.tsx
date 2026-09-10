@@ -39,7 +39,10 @@ import { matchesTableSearch } from "@/components/official/matrx-data-table/filte
 import { useShare } from "@/features/sharing/hooks/useShare";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { ReviewCount } from "@/features/admin/agent-review/components/ReviewCount";
+import {
+  ReviewCount,
+  reviewCountLabel,
+} from "@/features/admin/agent-review/components/ReviewCount";
 
 /** The row's own page — the link every agent owes Arman (see the
  *  `agent-review-queue` skill, THE DIRECT-LINK RULE). */
@@ -524,7 +527,7 @@ export default function AgentReviewQueueTable() {
                 <button
                   type="button"
                   aria-pressed={isActive}
-                  aria-label={`Filter review items by ${step.label.replace(/^\d+\.\s*/, "")} (${count})`}
+                  aria-label={`Filter review items by ${step.label.replace(/^\d+\.\s*/, "")} (${reviewCountLabel(count, loading)})`}
                   onClick={() => {
                     setView("all");
                     setStatusFilter(step.statuses);

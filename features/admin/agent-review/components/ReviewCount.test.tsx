@@ -1,5 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { ReviewCount } from "@/features/admin/agent-review/components/ReviewCount";
+import {
+  ReviewCount,
+  reviewCountLabel,
+} from "@/features/admin/agent-review/components/ReviewCount";
 
 describe("ReviewCount", () => {
   it("renders a loading treatment instead of an authoritative zero", () => {
@@ -15,5 +18,10 @@ describe("ReviewCount", () => {
     expect(
       renderToStaticMarkup(<ReviewCount count={110} loading={false} />),
     ).toBe("110");
+  });
+
+  it("keeps explicit accessible count labels honest while loading", () => {
+    expect(reviewCountLabel(0, true)).toBe("loading");
+    expect(reviewCountLabel(110, false)).toBe("110");
   });
 });

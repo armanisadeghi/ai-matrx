@@ -138,8 +138,9 @@ no-unapproved-schedules law.
 
 ## Change log
 
-- 2026-09-09 — Replaced authoritative-looking zero queue counts with the
-  official loading skeleton until the authenticated complete-list read settles.
+- 2026-09-09 — Replaced authoritative-looking visual and accessible zero queue
+  counts with the official loading treatment until the authenticated
+  complete-list read settles.
 
 - 2026-09-09 — Gated the initial queue and registry load on authenticated user
   hydration after a production first-paint race rendered every workflow count
