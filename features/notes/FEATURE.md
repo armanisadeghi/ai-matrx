@@ -147,6 +147,8 @@ instead of fanning out through both services.
 
 ## Change log
 
+- **2026-09-10** — Note deep links now distinguish an in-flight fetch from a confirmed unavailable record. Slow database responses show an honest loading state; rejected reads expose Retry/Close recovery instead of immediately claiming “Note not found.”
+
 - `2026-09-07` — **Every bespoke confirm body in notes is gone; the platform owns
   the surface.** The feature carried FOUR hand-built confirmation dialogs for four
   decisions the canonical door already answers, and two of them were literally the

@@ -155,10 +155,7 @@ const selectNoteEditorsMap = createSelector(
  *  undefined. Entries are timer-cleared by the realtime middleware. */
 export const selectNoteEditor = (noteId: string) =>
   cached(`noteEditor:${noteId}`, () =>
-    createSelector(
-      selectNoteEditorsMap,
-      (editors) => editors[noteId],
-    ),
+    createSelector(selectNoteEditorsMap, (editors) => editors[noteId]),
   );
 
 /** True when any note currently has a live non-self editor. */
@@ -179,6 +176,14 @@ export const selectNoteById = (noteId: string) =>
     createSelector(
       selectNotesMap,
       (notes): NoteRecord | undefined => notes[noteId],
+    ),
+  );
+
+export const selectNoteContentLoadStatus = (noteId: string) =>
+  cached(`noteContentLoadStatus:${noteId}`, () =>
+    createSelector(
+      selectNotesState,
+      (slice) => slice.contentLoadStatus[noteId] ?? "idle",
     ),
   );
 

@@ -32,6 +32,7 @@ import { getReduxSyncDelay } from "../redux/notes.types";
 import {
   selectInstanceOutlineOpen,
   selectNoteById,
+  selectNoteContentLoadStatus,
   selectNoteContent,
   selectNoteEditor,
   selectNoteEditorMode,
@@ -45,6 +46,7 @@ import {
 import { editorDisplayName } from "../utils/editorDisplayName";
 import {
   saveNote,
+  fetchNoteContent,
   copyNote,
   deleteNote,
   moveNoteToFolder,
@@ -132,6 +134,7 @@ export function NoteContentEditor({
 
   // ── Check if note exists in Redux ────────────────────────────────
   const noteExists = useAppSelector(selectNoteById(noteId));
+  const contentLoadStatus = useAppSelector(selectNoteContentLoadStatus(noteId));
 
   // ── Redux selectors (cached — stable references) ──────────────────
   const reduxContent = useAppSelector(selectNoteContent(noteId)) ?? "";
@@ -764,21 +767,40 @@ export function NoteContentEditor({
     [localContent, conflictRemote],
   );
 
-  // ── Guard: note deleted or not found ───────────────────────────────
+  // A deep link adds its tab before the request resolves. Treating that
+  // expected gap as a missing record made a slow/temporarily unavailable DB
+  // look like a deleted note. Only show unavailable after the request rejects.
   if (!noteExists) {
+    if (contentLoadStatus !== "error") {
+      return (
+        <div className="flex flex-1 items-center justify-center text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm" role="status">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading note…
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex-1 flex items-center justify-center text-muted-foreground">
         <div className="text-center">
-          <p className="text-sm">Note not found</p>
+          <p className="text-sm">Note unavailable</p>
           <p className="text-xs mt-1">
-            This note may have been deleted or moved.
+            It may have been deleted, moved, or temporarily unreachable.
           </p>
+          <button
+            onClick={() => dispatch(fetchNoteContent(noteId))}
+            className="mt-3 text-xs text-primary hover:text-primary/80 cursor-pointer"
+          >
+            Try again
+          </button>
           <button
             onClick={() => {
               dispatch(markTabInteraction({ instanceId }));
               dispatch(removeInstanceTab({ instanceId, noteId }));
             }}
-            className="mt-3 text-xs text-primary hover:text-primary/80 cursor-pointer"
+            className="ml-3 mt-3 text-xs text-primary hover:text-primary/80 cursor-pointer"
           >
             Close this tab
           </button>

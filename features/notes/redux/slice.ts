@@ -27,7 +27,7 @@ import {
 // circular import that a value import of `thunks.ts` would (thunks.ts imports
 // action creators from this file). Lets `addCase` below type-check against
 // the real fulfilled-action shape instead of a hand-typed string literal.
-import type { fetchAllNoteScopes } from "./thunks";
+import type { fetchAllNoteScopes, fetchNoteContent } from "./thunks";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 /**
@@ -361,9 +361,8 @@ function applyServerNoteUpsert(
     // event and remounted the heavy split editor mid-typing (2026-07
     // /notes freeze class).
     if (field === "metadata" && value && typeof value === "object") {
-      const localMode = (
-        existing.metadata as Record<string, unknown> | null
-      )?.lastEditorMode;
+      const localMode = (existing.metadata as Record<string, unknown> | null)
+        ?.lastEditorMode;
       const incoming = value as Record<string, unknown>;
       if (localMode !== undefined && incoming.lastEditorMode === undefined) {
         writeNoteField(existing, field, {
@@ -388,6 +387,7 @@ const initialState: NotesSliceState & {
 } = {
   notes: {},
   fetchedNoteIds: new Set(),
+  contentLoadStatus: {},
   listStatus: "idle",
   listError: null,
   instances: {},
@@ -506,10 +506,7 @@ const notesSlice = createSlice({
      *  whole page. Dispatching this reducer in a loop re-notified every
      *  subscriber (and re-ran every sorted list selector) once PER NOTE,
      *  which froze /notes on large collections. */
-    upsertNoteFromServer(
-      state,
-      action: PayloadAction<ServerNoteUpsert>,
-    ) {
+    upsertNoteFromServer(state, action: PayloadAction<ServerNoteUpsert>) {
       applyServerNoteUpsert(state.notes, action.payload);
     },
 
@@ -528,6 +525,7 @@ const notesSlice = createSlice({
     removeNote(state, action: PayloadAction<string>) {
       const noteId = action.payload;
       delete state.notes[noteId];
+      delete state.contentLoadStatus[noteId];
       // Legacy global tabs
       state.openTabs = state.openTabs.filter((id) => id !== noteId);
       if (state.activeNoteId === noteId) {
@@ -1200,6 +1198,27 @@ const notesSlice = createSlice({
       (state, action) => {
         state.noteScopeAssignments = action.payload;
         state.noteScopesLoaded = true;
+      },
+    );
+    builder.addMatcher(
+      (action): action is ReturnType<typeof fetchNoteContent.pending> =>
+        action.type === "notes/fetchNoteContent/pending",
+      (state, action) => {
+        state.contentLoadStatus[action.meta.arg] = "loading";
+      },
+    );
+    builder.addMatcher(
+      (action): action is ReturnType<typeof fetchNoteContent.fulfilled> =>
+        action.type === "notes/fetchNoteContent/fulfilled",
+      (state, action) => {
+        state.contentLoadStatus[action.meta.arg] = "loaded";
+      },
+    );
+    builder.addMatcher(
+      (action): action is ReturnType<typeof fetchNoteContent.rejected> =>
+        action.type === "notes/fetchNoteContent/rejected",
+      (state, action) => {
+        state.contentLoadStatus[action.meta.arg] = "error";
       },
     );
   },
