@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-09-08
+updated: 2026-09-10
 repos: [matrx-frontend]
 scope: tail
 feature: Listening & Speech
@@ -88,20 +88,13 @@ On why it matters beyond this feature:
    `system`), and hand-written policies are banned, so the fix belongs in the generator.
    **Awaiting Arman's scope call — see Decisions.**
 
-3. **Decide where this feature's `FEATURE.md` lives, then write it.** Today the feature has no
-   owning doc — it exists only as change-log entries in four unrelated FEATURE.md files, which
-   is why a fresh agent cannot find it. Recommended: a "Listening & Speech" section in
-   `features/audio/FEATURE.md` (it already owns `speak()`, the queue, the unlock primitive and
-   the tiered config) with pointers from the other three. There is no `features/tts/FEATURE.md`
-   and `features/tts/` contains no markdown at all.
-
-4. **Close out the agent-review row.** `agent.review_queue` id
+3. **Close out the agent-review row.** `agent.review_queue` id
    `b464b22c-04f5-4fc2-83cc-602a901fec6b` has sat at `submitted` since 2026-08-31 and was never
    picked up. Arman has since confirmed mobile audio works ("The audio tests passed",
    2026-09-08), which was the row's last open question — so this is a review-and-archive, not a
    repair. Invoke the `agent-review-queue` skill.
 
-5. **Consider a real form for the system default.** The admin editor is a raw JSON textarea.
+4. **Consider a real form for the system default.** The admin editor is a raw JSON textarea.
    Arman's words were "all of the system defaults should be customizable by me in a centralized
    place" — a JSON box technically satisfies it, a voice/speed/language form actually does.
    Small, and it is the same three controls the Listen panel already renders.
@@ -114,6 +107,7 @@ On why it matters beyond this feature:
 - Mandate-backed default agent so it works for every user on every surface with no personal binding — `ambient.spoken_summary`; no agent UUID in code.
 - Tiered voice/speed/language settings (system → org → user) + backfill — see `features/audio/service/listeningConfig.ts`.
 - iOS/WebKit silent-audio class fixed (gesture unlock, shared context, silent-switch session, loud block errors) — see `features/audio/unlock.ts`. **Confirmed working on device by Arman 2026-09-08.**
+- **The feature now has an owning doc (2026-09-10, low-hanging-fruit run).** `features/audio/FEATURE.md` § LISTENING & SPEECH carries the whole stack — `speak()` as the one entry point, `unlock.ts`/`primeAudioOutput()`, the system→org→user cascade and its zero-org-rows blocker, the mandate-backed default agent, reach (context menu + ⋯ menu), the panel, and how to test. Pointer lines added from `features/context-menu-v3/`, `features/window-panels/`, and `features/agents/components/chat/` FEATURE.md.
 - Docs/skill drift repaired 2026-09-08 — `tts-audio-system` skill rewritten to current reality; superseded window-panels entry corrected.
 
 ## Decisions needed

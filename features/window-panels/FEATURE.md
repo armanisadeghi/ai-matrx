@@ -6,6 +6,7 @@
 > - **The WindowPanel component itself** (drag, resize, minimize, tray) → this file's "Architecture" and below
 > - **Migration history + cutover plan** → [`docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md`](../../docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md)
 > - **Future improvements + known gaps** → [`docs/OVERLAY_WINDOW_ROADMAP.md`](../../docs/OVERLAY_WINDOW_ROADMAP.md)
+> - **The Listen panel** (`windows/listen/ListenSummaryWindow.tsx`) is one window of the Listening & Speech feature → owning doc [`features/audio/FEATURE.md`](../audio/FEATURE.md) § LISTENING & SPEECH
 >
 > **Status**: The cutover is complete. `features/overlays/OverlayController.tsx` is the renderer. `registry/windowRegistryMetadata.ts` is component-free metadata, not a render registry. `WindowPanel.tsx`, `WindowTraySync.tsx`, `WindowPersistenceManager.tsx`, and the window-manager Redux slice form the independent window-management primitive.
 

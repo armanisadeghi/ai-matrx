@@ -2,6 +2,7 @@
 
 > Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/clients/client-tool-delegation/FEATURE.md` — read it before touching this feature in ANY repo.
 > Runtime-continuity system-of-record: `/Users/armanisadeghi/code/common-docs/systems/platform/runtime-continuity/FEATURE.md`.
+> Listening & Speech (the Speak / Listen actions on assistant messages) is owned by [`features/audio/FEATURE.md`](../../../audio/FEATURE.md) § LISTENING & SPEECH.
 
 **Status:** `active`
 **Tier:** `1`
