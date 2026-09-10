@@ -21,6 +21,24 @@ import { useMatrxLocalContext } from "../_lib/MatrxLocalContext";
 // Component
 // ---------------------------------------------------------------------------
 
+/** Hoisted to module scope — an inner component type remounts its subtree every render. */
+const MsgBanner = ({
+  msg,
+}: {
+  msg: { type: "success" | "error"; text: string } | null;
+}) =>
+  msg ? (
+    <div
+      className={`text-xs px-3 py-2 rounded ${
+        msg.type === "success"
+          ? "bg-green-500/10 text-green-700 border border-green-500/30"
+          : "bg-red-500/10 text-red-700 border border-red-500/30"
+      }`}
+    >
+      {msg.text}
+    </div>
+  ) : null;
+
 export default function CloudSyncPage() {
   const local = useMatrxLocalContext();
   const { restGet, restPost, restPut, status } = local;
@@ -164,23 +182,6 @@ export default function CloudSyncPage() {
     // fetchSettings/fetchInstances are stable — intentionally omitted from deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
-
-  const MsgBanner = ({
-    msg,
-  }: {
-    msg: { type: "success" | "error"; text: string } | null;
-  }) =>
-    msg ? (
-      <div
-        className={`text-xs px-3 py-2 rounded ${
-          msg.type === "success"
-            ? "bg-green-500/10 text-green-700 border border-green-500/30"
-            : "bg-red-500/10 text-red-700 border border-red-500/30"
-        }`}
-      >
-        {msg.text}
-      </div>
-    ) : null;
 
   return (
     <LocalToolsPageShell>
