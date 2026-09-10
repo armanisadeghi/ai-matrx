@@ -1,6 +1,6 @@
 # CLAUDE.md — AI Matrx frontend
 
-## The six laws (SYNCED — canonical: common-docs/skills/campaign-pattern; edit there, never here)
+## The seven laws (SYNCED — canonical: common-docs/skills/campaign-pattern; edit there, never here)
 
 🚨 **MANDATORY: before launching, coordinating, or working any large build or campaign, READ the full doctrine — it is IN THIS REPO at `.claude/skills/campaign-pattern/SKILL.md`.**
 
@@ -10,6 +10,7 @@
 4. **Nothing fails silently.** Every stand-in announces itself with a remedy; a screen is absent or honest — never dead, disabled-looking, or lying.
 5. **Think in platform primitives.** Never scope a capability to the feature that surfaced it; build it in the shared layer so every module and client app inherits it.
 6. **Opinions become knobs.** Behavioral choices are org-configurable settings; organizations decide — never agents, never hardcoded taste.
+7. **Delegate down, never sideways.** The session that starts a task owns it end to end (plan → dispatch → check → finish) using subagents, never chips. Every dispatch names its model: `sonnet` for research, discovery, and easily-verified work; `opus` for hard code; `fable` only for work the owner itself would struggle with. A dispatch with no model is a defect. `common-docs/policies/subagent-model-ladder.md`.
 
 
 **Why you're reading this: you are doing FRONTEND/UI work.** This file carries what a frontend agent needs to not make this repo's common mistakes: the stack, the conventions, the release process, the platform laws (one line + link each), and how to FIND a feature's docs. What does NOT belong here: feature details (each feature's `FEATURE.md` beside its code is its single source of truth), rule bodies that live in canonical docs, stories, or incident narratives. Charter + size budget (≤200 lines): `../common-docs/policies/claude-md-charter.md` (`common-docs` is a sibling repo; every `../common-docs/` pointer below is relative to this repo root). Before editing this file or any `FEATURE.md`: **invoke the `context-docs` skill**.
