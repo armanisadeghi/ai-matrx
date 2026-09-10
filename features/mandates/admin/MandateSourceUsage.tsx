@@ -30,7 +30,8 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Loader2, OctagonAlert } from "lucide-react";
 
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   SINGLE_SITE_SENTENCE,
   fetchMandateReferences,
@@ -96,11 +97,15 @@ export function MandateSourceUsage({
   fallback: SourceUsageFallback;
 }) {
   const dispatch = useAppDispatch();
+  // See the same note on MandateReferenceBoardView: `callApi` needs an
+  // explicitly selected organization, and the app context hydrates async.
+  const organizationId = useAppSelector(selectOrganizationId);
   const [report, setReport] = useState<MandateReferenceReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
+    if (!organizationId) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -122,7 +127,7 @@ export function MandateSourceUsage({
     return () => {
       cancelled = true;
     };
-  }, [dispatch, mandateKey]);
+  }, [dispatch, mandateKey, organizationId]);
 
   useEffect(() => load(), [load]);
 
@@ -134,7 +139,15 @@ export function MandateSourceUsage({
 
   return (
     <div className="min-w-0 space-y-4">
-      {loading ? (
+      {!organizationId ? (
+        <div
+          role="status"
+          className="flex items-center gap-2 rounded-md border border-border p-3 text-sm text-muted-foreground"
+        >
+          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          Waiting for your organization to load.
+        </div>
+      ) : loading ? (
         <div
           role="status"
           className="flex items-center gap-2 rounded-md border border-border p-3 text-sm text-muted-foreground"

@@ -28,7 +28,8 @@ import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   fetchMandateReferenceBoard,
   formatRepoList,
@@ -67,8 +68,17 @@ function ScanLine({
   );
 }
 
+/** How many findings a repo shows before the reader asks for the rest. The
+ * cap is a DISCLOSURE, never a filter (D21): the button states the true total
+ * and the repo header already carries the full count. */
+const FINDINGS_PREVIEW = 10;
+
 function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
+  const [showAllFindings, setShowAllFindings] = useState(false);
   const findingCodes = Object.entries(repo.finding_counts);
+  const visibleFindings = showAllFindings
+    ? repo.open_findings
+    : repo.open_findings.slice(0, FINDINGS_PREVIEW);
   return (
     <div className="rounded-md border border-border">
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-3 py-2">
@@ -112,7 +122,7 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
       </div>
       {repo.open_findings.length > 0 ? (
         <div className="divide-y divide-border border-t border-border text-sm">
-          {repo.open_findings.map((finding, index) => (
+          {visibleFindings.map((finding, index) => (
             <div key={`${finding.location}:${index}`} className="px-3 py-2">
               <div className="flex items-center gap-3">
                 <AlertTriangle
@@ -136,6 +146,17 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
               </p>
             </div>
           ))}
+          {repo.open_findings.length > visibleFindings.length ? (
+            <div className="px-3 py-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAllFindings(true)}
+              >
+                Show all {repo.open_findings.length} findings
+              </Button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -144,6 +165,12 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
 
 export function MandateReferenceBoardView() {
   const dispatch = useAppDispatch();
+  // 🚨 `callApi` refuses to send without an explicitly SELECTED organization,
+  // and the app context hydrates asynchronously — firing at mount raced it and
+  // painted "Select an organization" over a session that HAS one. Waiting for
+  // the id is the honest fix; the screen says it is waiting rather than
+  // reporting a failure that is really a timing artefact.
+  const organizationId = useAppSelector(selectOrganizationId);
   const [board, setBoard] = useState<MandateReferenceBoard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -152,6 +179,7 @@ export function MandateReferenceBoardView() {
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 
   useEffect(() => {
+    if (!organizationId) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -170,7 +198,7 @@ export function MandateReferenceBoardView() {
     return () => {
       cancelled = true;
     };
-  }, [dispatch, reloads]);
+  }, [dispatch, organizationId, reloads]);
 
   return (
     <div className="min-w-0 space-y-4 p-4">
@@ -193,7 +221,16 @@ export function MandateReferenceBoardView() {
         </Button>
       </header>
 
-      {loading ? (
+      {!organizationId ? (
+        <div
+          role="status"
+          className="flex items-center gap-2 rounded-md border border-border p-3 text-sm text-muted-foreground"
+        >
+          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          Waiting for your organization to load — the board reads nothing until
+          the request can carry it.
+        </div>
+      ) : loading ? (
         <div
           role="status"
           className="flex items-center gap-2 rounded-md border border-border p-3 text-sm text-muted-foreground"
