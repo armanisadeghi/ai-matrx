@@ -21,6 +21,7 @@ import {
   DEFAULT_ENTITY_LIST_QUERY,
   EMPTY_FACETS,
   EMPTY_SCOPE_COUNTS,
+  type ArchivedProbe,
   type EntityFacets,
   type EntityFilters,
   type EntityListQuery,
@@ -91,6 +92,13 @@ export interface UseEntityListArgs<TRow> {
    * the source of truth and Back/Forward/refresh/deep-link all work.
    */
   urlState?: boolean;
+  /**
+   * Whether this surface's entity has an archive axis at all
+   * (`EntityListConfig.supportsArchived`, default TRUE). It gates THE
+   * ALL-ARCHIVED FACT: a surface with no archive axis can never have rows
+   * hidden by one, so it is never asked (`./types.ts` § ArchivedProbe).
+   */
+  supportsArchived?: boolean;
 }
 
 /**
@@ -142,6 +150,7 @@ export function useEntityList<TRow>({
   defaultFilters,
   defaultScope,
   urlState = false,
+  supportsArchived = true,
 }: UseEntityListArgs<TRow>): EntityListController<TRow> {
   // THE ARCHIVED-ITEMS LAW's knob (../common-docs/policies/archived-items.md
   // §6): the platform default hides archived rows, and a user may flip their
@@ -346,6 +355,75 @@ export function useEntityList<TRow>({
     };
   }, [facetsKey]);
 
+  // ── THE ALL-ARCHIVED FACT ────────────────────────────────────────────────
+  //
+  // 🚨 A LIST MAY NOT SAY "NONE" WHILE ITS OWN DEFAULT IS HIDING ROWS.
+  // See `./types.ts` § ArchivedProbe for the measured defect (/maps printing
+  // "No maps yet … Make one" with all 46 of the user's maps archived, two
+  // clicks from its own Archived filter).
+  //
+  // Asked ONLY when the live half came back EMPTY, so a page that has rows —
+  // which is nearly every page, nearly always — pays nothing at all. It is
+  // deliberately `fetchPage` with `pageSize: 1` rather than `fetchCounts`:
+  // `total` from the surface's OWN page reader is exactly the number of rows
+  // the door this empty state offers will reveal, under the same scope, search
+  // and filters, with no second query authority to drift from it. Every
+  // service already implements it, so no config anywhere had to change.
+  const archiveAxisIsHiding = supportsArchived && query.archived === "active";
+  const liveHalfIsEmpty =
+    !isLoading && !error && rows.length === 0 && total === 0;
+  const archivedProbeKey =
+    archiveAxisIsHiding && liveHalfIsEmpty
+      ? JSON.stringify({
+          q: { ...effectiveQuery, archived: "archived", page: 1 },
+          refreshToken,
+          service: serviceKey,
+        })
+      : null;
+  const [archivedAnswer, setArchivedAnswer] = useState<{
+    key: string;
+    total: number | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!archivedProbeKey) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const page = await service.fetchPage(
+          { ...effectiveQuery, archived: "archived", page: 1 },
+          {
+            sort: view.sort,
+            direction: view.direction,
+            favoritesFirst: view.favoritesFirst,
+            pageSize: 1,
+          },
+        );
+        if (!cancelled)
+          setArchivedAnswer({ key: archivedProbeKey, total: page.total });
+      } catch (err) {
+        // NOTHING FAILS SILENTLY, and a failed count is NOT zero: falling back
+        // to the static "none yet" copy here would restore the very lie this
+        // read exists to prevent. `total: null` makes the shell say it cannot
+        // tell and point at the control.
+        console.error(`[entity-list] archived count failed`, err);
+        if (!cancelled)
+          setArchivedAnswer({ key: archivedProbeKey, total: null });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [archivedProbeKey]);
+
+  const archivedProbe: ArchivedProbe = !archivedProbeKey
+    ? { state: "off" }
+    : archivedAnswer?.key !== archivedProbeKey
+      ? { state: "loading" }
+      : archivedAnswer.total === null
+        ? { state: "failed" }
+        : { state: "known", total: archivedAnswer.total };
+
   // Plain functions, NOT useCallback: `setQuery` is re-created per render for a
   // URL-backed surface, so an empty dep array here would freeze the very first
   // commit function and every later change would write against a stale URL.
@@ -404,6 +482,8 @@ export function useEntityList<TRow>({
     countsLoading,
     countsError,
     facets,
+    archivedProbe,
+    defaultArchived: defaultQuery.archived,
     isLoading,
     isFetching,
     error,

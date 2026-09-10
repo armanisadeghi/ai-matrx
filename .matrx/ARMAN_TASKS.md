@@ -13,7 +13,32 @@ _(none)_
 
 ## Pending Arman review
 
-_(none)_
+- **Masterwork module home — do you want it back, and where? (2026-09-10)**
+  **One decision, one sentence either way.** `features/masterwork/home/`
+  (`MasterworkHomePage.tsx`, `HowItsImprovingPanel.tsx`, `service.ts` — 1,022
+  lines) is built, compiling and archive-lawful, and **nothing renders it.**
+  - **Why nothing renders it:** your own commit `00602a2916` (2026-08-21) made
+    `/masterwork` bounce signed-in Experts to `/masterwork/all` — *"'/masterwork'
+    is the marketing page (authed bounce to /all on the canonical list
+    template)"*. That is your call and no agent may reverse it, which is why
+    this is a question and not a fix.
+  - **What is unreachable because of it:** `/masterwork/all` is a generic
+    Rulebook entity list. It has **none** of the home's review KPI strip,
+    per-Masterwork release state + quality trend, recent runs, Approach start
+    tiles, or the "How it's improving" Hindsight panel.
+  - **What already happened:** an agent DELETED the directory on 2026-09-10 for
+    being unreferenced; an independent review caught it as a breach of
+    `common-docs/policies/unfinished-work-alarm.md` § The ban (only you may name
+    something dead, in writing), and it was restored the same day. The files
+    now carry a loud do-not-delete header pointing here.
+  - **The choice:** (a) put it back at `/masterwork` for signed-in Experts —
+    the one-line revert of `00602a2916`'s bounce; (b) give it its own route and
+    a nav entry; (c) fold its five panels into `/masterwork/all`; or (d) say the
+    word and it goes for good.
+  - **Recommendation: (a).** It is the smallest change, it is what the code was
+    written for, and `/masterwork/all` stays exactly where it is for the list.
+  - Live now: `/masterwork` (the bounce) and `/masterwork/admin` (the map row
+    that records this).
 
 ## Future
 

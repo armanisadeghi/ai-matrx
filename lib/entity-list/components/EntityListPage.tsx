@@ -185,6 +185,7 @@ export function EntityListPage<TRow>({
     defaultFilters: config.defaultFilters,
     defaultScope,
     urlState: config.urlState,
+    supportsArchived: config.supportsArchived !== false,
     view: {
       sort: effectiveSort.sort,
       direction: effectiveSort.direction,
@@ -236,7 +237,8 @@ export function EntityListPage<TRow>({
   };
 
   const isNarrowed =
-    Boolean(list.query.search.trim()) || countActiveFilters(list.query) > 0;
+    Boolean(list.query.search.trim()) ||
+    countActiveFilters(list.query, list.defaultArchived) > 0;
 
   // 🚨 A FAILED READ IS NOT AN EMPTY RESULT (one-resolution R-O1). When the
   // read broke — or was REFUSED — there is no result at all, so the empty
@@ -256,34 +258,110 @@ export function EntityListPage<TRow>({
       }
     : null;
 
-  const resolvedEmptyState =
-    failureEmptyState ??
-    (isNarrowed
+  // 🚨 A LIST MAY NOT SAY "NONE" WHILE ITS OWN DEFAULT IS HIDING ROWS (row F10
+  // repair, 2026-09-10). The archive filter's default HIDES archived rows (THE
+  // ARCHIVED-ITEMS LAW §2), so "the live half is empty" and "there is nothing
+  // here" are DIFFERENT FACTS — and until this branch existed the shell printed
+  // the second knowing only the first, out of the config's STATIC `emptyState`.
+  // Measured on /maps with all 46 of a user's maps archived: *"No maps yet — …
+  // Make one"* beside a New button, two clicks from that page's own Archived
+  // filter holding all 46. Every archive-aware config inherited it, because
+  // `EntityListConfig` gave a surface no way to name an archived count at all;
+  // that is why the fix is here and not in four listConfigs.
+  //
+  // The count is the controller's (`list.archivedProbe`, asked only when the
+  // live half is empty), and the door is one click to the very rows it counted.
+  const { singular, plural } = config.entityLabel;
+  const probe = list.archivedProbe;
+  const archivedCount = probe.state === "known" ? probe.total : 0;
+  const archivedNoun = archivedCount === 1 ? singular : plural;
+
+  const clearSearchAndFilters = (
+    // Clears the SEARCH too — `resetFilters` alone leaves the search term
+    // in place, so the "way out" button would have left the user staring at
+    // the same empty result.
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={() => {
+        list.setSearch("");
+        list.resetFilters();
+      }}
+    >
+      Clear search and filters
+    </Button>
+  );
+
+  // ONE CLICK, to exactly the rows the sentence above it just counted.
+  const archivedDoor = (
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={() => list.patchQuery({ archived: "archived" })}
+    >
+      {archivedCount === 1
+        ? `Show the archived ${singular}`
+        : `Show the ${archivedCount} archived ${plural}`}
+    </Button>
+  );
+
+  const configuredEmptyAction =
+    typeof emptyAction === "function" ? emptyAction(list) : emptyAction;
+
+  const allArchivedEmptyState =
+    archivedCount > 0
       ? {
-          title: `No ${config.entityLabel.plural} match`,
-          description:
-            "Nothing matched your current search and filters. Widen them, or check a different scope.",
-          // Clears the SEARCH too — `resetFilters` alone leaves the search term
-          // in place, so the "way out" button would have left the user staring at
-          // the same empty result.
+          title: isNarrowed
+            ? `No live ${plural} match`
+            : archivedCount === 1
+              ? `The only ${singular} here is archived`
+              : `All ${archivedCount} ${plural} are archived`,
+          description: isNarrowed
+            ? `Nothing live matched your current search and filters — but ${archivedCount} archived ${archivedNoun} did. Widen them, or open the archived ${archivedNoun}.`
+            : `Nothing is missing and nothing was deleted: every ${singular} in this view has been archived. Open them to restore one, or start a new one.`,
           action: (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                list.setSearch("");
-                list.resetFilters();
-              }}
-            >
-              Clear search and filters
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {archivedDoor}
+              {isNarrowed ? clearSearchAndFilters : configuredEmptyAction}
+            </div>
           ),
         }
-      : {
-          ...config.emptyState,
-          action:
-            typeof emptyAction === "function" ? emptyAction(list) : emptyAction,
-        });
+      : null;
+
+  const resolvedEmptyState =
+    failureEmptyState ??
+    allArchivedEmptyState ??
+    // Nothing may be asserted about "none" until the archived count answers.
+    // These two branches are short-lived and rare (only an empty live half
+    // reaches them at all), and each is strictly more honest than guessing.
+    (probe.state === "loading"
+      ? {
+          title: `No live ${plural} in this view`,
+          description: `Checking whether any ${plural} here are archived…`,
+        }
+      : probe.state === "failed"
+        ? {
+            title: `No live ${plural} in this view`,
+            description: `Nothing live is listed here, and the check for archived ${plural} did not answer — so this page cannot tell you whether any exist. Open Filters & Sort → Archived to look for yourself.`,
+            action: (
+              <Button size="sm" variant="outline" onClick={list.refresh}>
+                Try again
+              </Button>
+            ),
+          }
+        : isNarrowed
+          ? {
+              title: `No ${plural} match`,
+              description:
+                "Nothing matched your current search and filters. Widen them, or check a different scope.",
+              action: clearSearchAndFilters,
+            }
+          : {
+              // Reached only when the archive axis is off for this surface, or
+              // it answered `total: 0` — i.e. live + archived really is zero.
+              ...config.emptyState,
+              action: configuredEmptyAction,
+            });
 
   const cardsView = config.views?.cards;
   const rowsView = config.views?.rows;

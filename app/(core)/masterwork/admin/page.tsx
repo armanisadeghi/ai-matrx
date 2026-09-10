@@ -33,7 +33,7 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       url: "/masterwork",
       label: "Masterwork landing",
       description:
-        "The module home. Guests get the marketing landing (ModuleLanding); signed-in Experts are redirected to /masterwork/all, the canonical entity-list Rulebook surface. (The hand-built authed home this row used to describe stopped being rendered on 2026-08-21 and was deleted on 2026-09-10 — a map that describes an unreachable screen is a map that lies.)",
+        "The module home. Guests get the marketing landing (ModuleLanding); signed-in Experts are redirected to /masterwork/all, the canonical entity-list Rulebook surface — Arman's own routing decision in commit 00602a2916 (2026-08-21). UNREACHABLE CAPABILITY, AWAITING HIS RULING: the hand-built authed home this row used to describe (features/masterwork/home/ — review KPIs, release state + quality trend, recent runs, Approach start tiles, the 'How it's improving' Hindsight panel) has been unrendered since that commit. It was deleted on 2026-09-10 and RESTORED the same day: THE UNFINISHED-WORK ALARM's ban means only Arman may name it dead. It compiles, it is archive-lawful, and nothing routes it — rung 2 of the reachability ladder. Registered in .matrx/ARMAN_TASKS.md.",
       filePath: "app/(core)/masterwork/page.tsx",
       status: "Live",
     },

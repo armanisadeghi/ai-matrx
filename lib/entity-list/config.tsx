@@ -26,6 +26,8 @@ import type {
 import type { EntityColumnSpec } from "./columns";
 import type { EntityListFailure } from "./failure";
 import type {
+  ArchivedFilter,
+  ArchivedProbe,
   EntityFacets,
   EntityFilters,
   EntityListPage as EntityListPageData,
@@ -60,6 +62,18 @@ export interface EntityListController<TRow> {
   /** The counts query's own failure, in the service's words. */
   countsError: string | null;
   facets: EntityFacets;
+  /**
+   * THE ALL-ARCHIVED FACT — how many archived rows this exact view is hiding,
+   * when the live half came back empty. A list may not print "none yet" until
+   * this says `{ state: "known", total: 0 }`. See ./types.ts § ArchivedProbe.
+   */
+  archivedProbe: ArchivedProbe;
+  /**
+   * Where this surface's archive axis STARTS — the user's knob (law §6), not
+   * the literal "active". `countActiveFilters` compares against it so an
+   * untouched page never reports a narrowing nobody applied.
+   */
+  defaultArchived: ArchivedFilter;
   isLoading: boolean;
   isFetching: boolean;
   /**
