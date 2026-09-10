@@ -82,6 +82,7 @@ import { Section } from "./Section";
 import { EffectiveConfigLayers } from "../components/EffectiveConfigLayers";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { systemRungHealth, type SystemRungHealth } from "./system-rung-health";
+import { MandateCoverageAlert } from "./MandateCoverageAlert";
 import {
   useMandateWorkspaceData,
   type MandateWorkspaceData,
@@ -567,6 +568,16 @@ function OneMandateWorkspace({
             </Link>
           ) : null}
         </header>
+        {/* 🚨 ABOVE THE TABS, ON EVERY HOST. The list already screams when a
+            Mandate has no Holder; before this the detail page did not, so an
+            admin arriving by link saw nothing wrong with a job that errors on
+            every call. One classification — the server's — see
+            ./MandateCoverageAlert.tsx. */}
+        <MandateCoverageAlert
+          className="mb-4"
+          mandateKey={data.mandate.mandate_key}
+          onAssignHolder={() => setActiveTab("holder")}
+        />
         <Tabs
           value={activeTab}
           onValueChange={(value) => {
