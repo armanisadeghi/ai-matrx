@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import {
   fetchAgentExecutionFull,
@@ -72,6 +73,8 @@ import {
   selectSettingsOverridesForApi,
 } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { buildInstanceBaseSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/base-settings";
+import { fetchMandateLadder } from "@/features/mandates/workspace/useMandateLadder";
+import { inheritedModelOverrides, MODEL_OVERRIDE_SOURCE } from "./inherited-model-overrides";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import {
@@ -507,6 +510,7 @@ function BindingDraft({
   const store = useAppStore();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const userId = useAppSelector(selectUserId);
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
   const { organizations } = useUserOrganizations();
   const organizationNames = useMemo(
     () =>
@@ -801,6 +805,11 @@ function BindingDraft({
     string | null
   >(null);
   const [settingsRetry, setSettingsRetry] = useState(0);
+  const [overrideBaseline, setOverrideBaseline] = useState<{
+    holderSettings: ReturnType<typeof buildInstanceBaseSettings>;
+    sources: Record<string, string>;
+  }>({ holderSettings: {}, sources: {} });
+  const inheritanceOrganizationId = rung === "org" ? organizationId : activeOrganizationId;
   const settingsVisible =
     settingsOpen || activeSection === "overrides" || overridesReady;
   const selectedVersionId = holder.useLatest ? null : holder.agentVersionId;
@@ -839,10 +848,23 @@ function BindingDraft({
         referenceId,
       );
       if (!payload.isReady) throw new Error("Holder defaults unavailable");
-      const baseSettings = buildInstanceBaseSettings(
+      const holderSettings = buildInstanceBaseSettings(
         payload.settings,
         payload.modelId,
       );
+      if ((rung === "org" || rung === "user") && !inheritanceOrganizationId) {
+        throw new Error("Select an organization to read inherited model settings");
+      }
+      const ladder = rung === "org" || rung === "user"
+        ? await fetchMandateLadder(data.mandate.mandate_key, inheritanceOrganizationId)
+        : [];
+      if (cancelled) return;
+      if ((rung === "org" || rung === "user") && !ladder.some((row) => row.rung === "system")) {
+        throw new Error("Inherited model settings unavailable");
+      }
+      const inherited = inheritedModelOverrides(ladder, rung);
+      const baseSettings = { ...holderSettings, ...inherited.values };
+      setOverrideBaseline({ holderSettings, sources: inherited.sources });
       if (selectInstanceOverrideState(overridesId)(store.getState())) {
         dispatch(
           updateBaseSettings({ conversationId: overridesId, baseSettings }),
@@ -884,6 +906,10 @@ function BindingDraft({
     selectedVersionId,
     overridesId,
     storedOverrides,
+    rung,
+    inheritanceOrganizationId,
+    data.mandate.mandate_key,
+    data.bindings,
     settingsRetry,
     dispatch,
     store,
@@ -2245,7 +2271,10 @@ function BindingDraft({
                           // B14 — the canonical panel, told where it is. Its
                           // default sentence ("this conversation only") is a lie
                           // on a screen that stores a binding.
-                          words={JOB_OVERRIDE_WORDS}
+                          words={{ ...JOB_OVERRIDE_WORDS, modelEmptyChoiceLabel: "Use inherited model" }}
+                          inheritedSources={overrideBaseline.sources}
+                          nullOverrideDefaults={overrideBaseline.holderSettings}
+                          overrideSource={MODEL_OVERRIDE_SOURCE[rung]}
                           structured
                           disabled={disabled}
                           onValidationChange={setOverrideValidationError}

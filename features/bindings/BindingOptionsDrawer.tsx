@@ -426,7 +426,7 @@ export function BindingOptionsDrawer({
                   label="Your access"
                   value={
                     treatmentId === null
-                      ? "Create shared preferences"
+                      ? "Checked on save"
                       : access?.exists
                         ? editable
                           ? "Edit"

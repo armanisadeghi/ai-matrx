@@ -176,7 +176,7 @@ verbatim — a `logger.warning` is a scream only the server hears.
 
 **Overrides means API model parameters only.** `RunConfigOverrides` edits the selected binding's `config_overrides`; Controls and Advanced are two input modes over the same `instanceModelOverrides` draft. Invalid JSON blocks Save. There is no treatment model editor: `treatment.config.seeds.llm_overrides` has no imperative mandate-launch consumer and must not masquerade as this binding's API overrides.
 
-`BindingOptionsDrawer.section` selects Display Options or Permissions without unmounting the shared treatment draft. `WidgetPicker`, `SettingsSection` and `AdvancedSection` are the canonical shortcut components; their shared `ShortcutFieldRow`/`ShortcutToggleRow` put the control before inline Source/State metadata, with explanation in `FieldHelp`. Narrow layouts stack identical content. False, default and inactive values remain explicit; dependent gate controls remain visible and disabled when inapplicable.
+`BindingOptionsDrawer.section` selects Display Options or Permissions without unmounting the shared treatment draft. It lives above the binding identity key; changing/saving a binding cannot discard it. Treatment preferences belong to the mandate, not the selected user/org binding. Existing-row access is checked with the registered `mandate_treatment` token; absent-row creation remains database-authorized and explicitly labeled. `WidgetPicker`, `SettingsSection` and `AdvancedSection` are the canonical shortcut components; their shared `ShortcutFieldRow`/`ShortcutToggleRow` put the control before inline Source/State metadata, with explanation in `FieldHelp`. Narrow layouts stack identical content. False, default and inactive values remain explicit; dependent gate controls remain visible and disabled when inapplicable.
 
 | UI owner | Stored field | Consumer |
 |---|---|---|
@@ -237,6 +237,8 @@ choice (P5), rendered on the offered rail and under the chosen value in the midd
 never become an answer, and absent means the declaration gave none — never invent one.
 
 ## Change Log
+
+- 2026-09-09 — All scopes use structured scope/holder controls. The shared treatment editor lives above the binding draft key and gates existing-row edits through canonical resource access. Model baselines reuse the resolution ladder for preceding enabled layers, preserving runtime null cancellation and per-field provenance; local API deltas and counts use the existing serializer.
 
 - 2026-09-09 — Disabled Run Instantly across mandate authoring until universal intervention is supported. Moved it to the top of Holder and removed Source/State/Eligibility fields; stored configuration remains unchanged.
 

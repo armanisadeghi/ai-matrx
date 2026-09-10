@@ -46,7 +46,9 @@ jest.mock("@/lib/redux/hooks", () => ({
 
 jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({
-    organizations: [{ id: "org-1", name: "Write Target Sandbox", role: "admin" }],
+    organizations: [
+      { id: "org-1", name: "Write Target Sandbox", role: "admin" },
+    ],
   }),
 }));
 
@@ -64,16 +66,21 @@ jest.mock("../../useMandate", () => ({
 const OUTPUT_SLIDES_DROPPED_REASON =
   "The system default cannot run this job: its holder does not declare the structured output this job requires.";
 let ladderRows: unknown[] = [];
+let ladderOrganizationId: string | null = null;
 jest.mock("../../workspace/useMandateLadder", () => {
   const actual = jest.requireActual("../../workspace/useMandateLadder");
   return {
     ...actual,
-    useMandateLadder: () => ({ rows: ladderRows, loading: false, error: null }),
+    useMandateLadder: (_key: string, organizationId: string | null) => {
+      ladderOrganizationId = organizationId;
+      return { rows: ladderRows, loading: false, error: null };
+    },
   };
 });
 
+const copyAndOpen = jest.fn();
 jest.mock("../../useCopyMandateAgent", () => ({
-  useCopyMandateAgent: () => ({ copying: false, copyAndOpen: () => undefined }),
+  useCopyMandateAgent: () => ({ copying: false, copyAndOpen }),
 }));
 
 // Heavy leaves. Each renders its own copy, which is swept by the mandate-screen
@@ -83,6 +90,17 @@ jest.mock("../../workspace/TriadSections", () => ({
   TriadGoalSection: () => <div />,
   TriadInputSection: () => <div />,
   TriadOutputSection: () => <div />,
+}));
+// Coverage performs its own definition/registry reads; this suite exercises
+// workspace perspective and scope decisions at the existing data-hook boundary.
+jest.mock(
+  "@/features/shell/components/header/templates/CrumbTrailHeader",
+  () => ({
+    CrumbTrailHeader: () => null,
+  }),
+);
+jest.mock("../../workspace/MandateCoverageAlert", () => ({
+  MandateCoverageAlert: () => null,
 }));
 jest.mock("../../workspace/RunThisJobSection", () => ({
   RunThisJobSection: () => <div />,
@@ -109,15 +127,29 @@ jest.mock("@/components/official/entity-ref/TextWithDoors", () => ({
  */
 type BindingProbe = {
   initialRung?: string;
+  initialOrganizationId?: string | null;
   fixedRung?: string | readonly string[];
   perspective?: string;
-  healthNote?: { sentence: string; remedy: string | null; broken: boolean } | null;
+  healthNote?: {
+    sentence: string;
+    remedy: string | null;
+    broken: boolean;
+  } | null;
 };
 let bindingProps: BindingProbe | null = null;
 jest.mock("@/features/bindings/OneBindingWorkspace", () => ({
   OneBindingWorkspace: (props: BindingProbe) => {
     bindingProps = props;
-    return <div data-testid="one-binding" />;
+    const [draft, setDraft] = React.useState("");
+    return (
+      <div data-testid="one-binding">
+        <input
+          aria-label="Binding draft probe"
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+        />
+      </div>
+    );
   },
 }));
 
@@ -237,7 +269,8 @@ function offendingSentences(text: string): string[] {
 
 async function renderWorkspace(
   host: "route" | "admin-route",
-): Promise<{ text: string; root: Root }> {
+  principal?: { kind: "org"; orgId: string },
+): Promise<{ text: string; root: Root; container: HTMLDivElement }> {
   workspaceData = OUTPUT_SLIDES;
   ladderRows = [
     {
@@ -266,17 +299,20 @@ async function renderWorkspace(
   document.body.appendChild(container);
   const root = createRoot(container);
   await act(async () => {
-    root.render(<MandateWorkspace mandateKeyOrId="x" host={host} />);
+    root.render(
+      <MandateWorkspace mandateKeyOrId="x" host={host} principal={principal} />,
+    );
   });
   // Let the holder's output-schema read settle before reading the copy.
   await act(async () => {
     await Promise.resolve();
   });
-  return { text: container.textContent ?? "", root };
+  return { text: container.textContent ?? "", root, container };
 }
 
 afterEach(() => {
   bindingProps = null;
+  copyAndOpen.mockClear();
 });
 
 describe("the admin route renders the SYSTEM's answer and only that", () => {
@@ -350,6 +386,116 @@ describe("the admin route renders the SYSTEM's answer and only that", () => {
     // The person's route pre-selects the person's rung and pins nothing.
     expect(bindingProps?.fixedRung).toBeUndefined();
     expect(bindingProps?.initialRung).toBe("user");
+    act(() => root.unmount());
+  });
+});
+
+describe("organization scope remains distinct from the viewing administrator", () => {
+  it("locks editing to the route organization", async () => {
+    const { root } = await renderWorkspace("route", {
+      kind: "org",
+      orgId: "org-2",
+    });
+    expect(bindingProps?.perspective).toBe("organization");
+    expect(bindingProps?.fixedRung).toEqual(["org"]);
+    expect(bindingProps?.initialRung).toBe("org");
+    expect(bindingProps?.initialOrganizationId).toBe("org-2");
+    expect(ladderOrganizationId).toBe("org-2");
+    act(() => root.unmount());
+  });
+
+  it("lists global and organization configuration without the viewing user's row or an effective verdict", async () => {
+    const principal = { kind: "org" as const, orgId: "org-1" };
+    const { root, container } = await renderWorkspace("route", principal);
+    const system = ladderRows[0] as Record<string, unknown>;
+    ladderRows = [
+      system,
+      {
+        ...system,
+        rung: "global",
+        binding_id: "global-row",
+        dropped_code: null,
+        dropped_reason: null,
+      },
+      {
+        ...system,
+        rung: "org",
+        binding_id: "org-row",
+        organization_id: "org-1",
+        holder_id: null,
+        holder_version_id: "version-pin",
+        version_live: true,
+        holder_live: null,
+        chose_holder: false,
+        dropped_code: null,
+        dropped_reason: null,
+      },
+      {
+        ...system,
+        rung: "user",
+        binding_id: "personal-row",
+        dropped_code: null,
+        dropped_reason: null,
+      },
+    ];
+    await act(async () =>
+      root.render(
+        <MandateWorkspace
+          mandateKeyOrId="x"
+          host="route"
+          principal={principal}
+        />,
+      ),
+    );
+    const holder = [
+      ...container.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+    ].find((tab) => tab.textContent === "Holder");
+    expect(holder).toBeDefined();
+    act(() => holder!.click());
+    const table = container.querySelector(
+      'table[aria-label="Configured holders"]',
+    );
+    expect(table).not.toBeNull();
+    expect(table?.textContent).toContain("Global binding");
+    expect(table?.textContent).toContain("Write Target Sandbox");
+    expect(table?.textContent).not.toContain("Your own binding");
+    expect(table?.textContent).toContain("Pinned holder");
+    const duplicate = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Duplicate Write Target Sandbox holder"]',
+    );
+    expect(duplicate).not.toBeNull();
+    act(() => duplicate!.click());
+    expect(copyAndOpen).toHaveBeenCalledWith({
+      defaultAgentId: null,
+      defaultAgentVersionId: "version-pin",
+    });
+    expect(container.textContent).not.toContain("Effective holder");
+    act(() => root.unmount());
+  });
+
+  it("remounts scope-local draft state when the same mandate moves to another organization", async () => {
+    const { root, container } = await renderWorkspace("route", {
+      kind: "org",
+      orgId: "org-1",
+    });
+    const previousInput = container.querySelector(
+      'input[aria-label="Binding draft probe"]',
+    );
+    expect(previousInput).not.toBeNull();
+    await act(async () =>
+      root.render(
+        <MandateWorkspace
+          mandateKeyOrId="x"
+          host="route"
+          principal={{ kind: "org", orgId: "org-2" }}
+        />,
+      ),
+    );
+    expect(
+      container.querySelector('input[aria-label="Binding draft probe"]'),
+    ).not.toBe(previousInput);
+    expect(bindingProps?.initialOrganizationId).toBe("org-2");
+    expect(ladderOrganizationId).toBe("org-2");
     act(() => root.unmount());
   });
 });

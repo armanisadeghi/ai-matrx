@@ -121,6 +121,8 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
+- 2026-09-09 — Cross-scope audit: personal and organization pages share compact holder controls and loaded-name breadcrumbs. Organization pages pin their route scope and show canonical configured layers rather than a locally guessed winner. Display/Permissions remain visible without a local holder, use treatment access, and retain drafts through binding remounts. Model editor baselines include inherited layers while Save remains local-only.
+
 - 2026-09-09 — Definition uses one ProvisionOfferList table for code provisions, draft inputs, legacy required variables and served holder inputs. Unknown metadata remains explicit; draft editing and code-owned edit restrictions are preserved. Stored required flags and explicit display labels survive normalization.
 
 - 2026-09-09 — Run once and Compare saved test cases are visually separated. Agent samples reuse the canonical manager and translate through saved Provision Mapping; the test editor follows enabled global holder assignments. Ambiguous mapping/attachments refuse atomically, unused values are reported, and async holder/sample results cannot overwrite newer selections.

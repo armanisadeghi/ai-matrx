@@ -38,7 +38,8 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, Layers, TriangleAlert } from "lucide-react";
+import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
+import { ArrowLeft, Copy, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -87,6 +88,7 @@ import { useMandate } from "../useMandate";
 import { MANDATE_WORKSPACE_SURFACE_NAME } from "@/features/surfaces/manifests/mandate-workspace.manifest";
 import type { ResolvedMandate } from "../service";
 import {
+  ladderRowChangesHolder,
   ladderRowIsBroken,
   ladderRowWords,
   useMandateLadder,
@@ -480,9 +482,37 @@ function OneMandateWorkspace({
       )}
     >
       <div className="mx-auto w-full max-w-6xl px-4 pb-12 pt-3 sm:px-6">
+        {host === "route" && !routeHeader ? (
+          <CrumbTrailHeader
+            trail={[
+              ...(principal.kind === "org"
+                ? [
+                    {
+                      label: nameOfOrg(principal.orgId) ?? "Organization",
+                      href: `/organizations/${principal.orgId}`,
+                    },
+                  ]
+                : []),
+              {
+                label: "Mandates",
+                href:
+                  principal.kind === "org"
+                    ? `/organizations/${principal.orgId}/settings/mandates`
+                    : "/mandates",
+              },
+              {
+                label: data.mandate.label?.trim() || "Display name unavailable",
+              },
+            ]}
+          />
+        ) : null}
         {routeHeader?.(data, authoring ? adminActions?.(data, refresh) : null)}
-        <header className={routeHeader ? "contents" : "mb-5 space-y-3"}>
-          {!routeHeader && (
+        <header
+          className={
+            routeHeader || host === "route" ? "contents" : "mb-5 space-y-3"
+          }
+        >
+          {!routeHeader && host !== "route" && (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
                 <h2 className="break-words text-xl font-semibold tracking-tight text-foreground">
@@ -617,6 +647,7 @@ function OneMandateWorkspace({
                       : ladder
                   }
                   agentsById={data.agentsById}
+                  allowCopy={perspective === "organization"}
                   nameOfOrg={nameOfOrg}
                   activeOrganizationId={
                     principal.kind === "org"
@@ -884,7 +915,11 @@ function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
             loading ? (
               <SuspenseLoader />
             ) : agentId ? (
-              <EntityRef token="agent" id={agentId} name={agent?.name} />
+              <EntityRef
+                token="agent"
+                id={agentId}
+                name={agent?.name ?? "Display name unavailable"}
+              />
             ) : (
               "Not available"
             )
@@ -932,6 +967,10 @@ function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
               (freshness ?? undefined)
             )
           }
+        />
+        <PropertyRow
+          label="Archived"
+          value={agent ? (agent.isArchived ? "Yes" : "No") : "Unknown"}
         />
         {drift ? <PropertyRow label="Newer version" value={drift} /> : null}
         {droppedRungs.map((dropped) => (
@@ -988,7 +1027,9 @@ function LadderSection({
   agentsById,
   nameOfOrg,
   activeOrganizationId,
+  allowCopy = false,
 }: {
+  allowCopy?: boolean;
   ladder: ReturnType<typeof useMandateLadder>;
   agentsById: Record<string, WorkspaceAgentInfo>;
   nameOfOrg: (id: string) => string | null;
@@ -1009,15 +1050,6 @@ function LadderSection({
       </p>
     );
   }
-  if (!activeOrganizationId) {
-    return (
-      <p className="flex items-start gap-1.5 px-1 text-[12px] leading-relaxed text-muted-foreground">
-        <Layers className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        No workspace is selected, so this job has no organization rung to show —
-        pick a workspace to see how it is decided for you.
-      </p>
-    );
-  }
 
   return (
     <Section title="Configured holders">
@@ -1029,6 +1061,7 @@ function LadderSection({
           <LadderRow
             key={`${row.rung}:${row.binding_id ?? "default"}`}
             row={row}
+            allowCopy={allowCopy}
             agentsById={agentsById}
             nameOfOrg={nameOfOrg}
           />
@@ -1049,7 +1082,9 @@ function LadderRow({
   row,
   agentsById,
   nameOfOrg,
+  allowCopy = false,
 }: {
+  allowCopy?: boolean;
   row: MandateLadderRow;
   agentsById: Record<string, WorkspaceAgentInfo>;
   nameOfOrg: (id: string) => string | null;
@@ -1060,6 +1095,8 @@ function LadderRow({
       ? nameOfOrg(row.organization_id)
       : null,
   );
+  const { copying, copyAndOpen } = useCopyMandateAgent();
+  const changesHolder = ladderRowChangesHolder(row);
   const broken = ladderRowIsBroken(row);
   const agent = row.holder_id ? (agentsById[row.holder_id] ?? null) : null;
 
@@ -1078,14 +1115,18 @@ function LadderRow({
             />
           ) : row.holder_type === "workflow" ? (
             "Workflow"
-          ) : row.chose_holder ? (
-            "Unavailable"
+          ) : changesHolder ? (
+            row.holder_version_id ? (
+              "Pinned holder"
+            ) : (
+              "Unavailable"
+            )
           ) : (
             "Inherited"
           ),
         version: row.holder_version_id
           ? "Pinned"
-          : row.chose_holder
+          : changesHolder
             ? "Latest"
             : "Inherited",
         status: (
@@ -1101,6 +1142,25 @@ function LadderRow({
             <FieldHelp label={`${words.title} status`}>
               {words.detail}
             </FieldHelp>
+            {allowCopy &&
+            !broken &&
+            row.holder_type !== "workflow" &&
+            (row.holder_id || row.holder_version_id) ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Duplicate ${words.title} holder`}
+                disabled={copying}
+                onClick={() =>
+                  void copyAndOpen({
+                    defaultAgentId: row.holder_id,
+                    defaultAgentVersionId: row.holder_version_id,
+                  })
+                }
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            ) : null}
           </span>
         ),
       }}

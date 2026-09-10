@@ -24,7 +24,6 @@ import { useEffect, useMemo } from "react";
 import { TriangleAlert } from "lucide-react";
 
 import {
-  FieldHelp,
   PropertyRow,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
@@ -410,6 +409,7 @@ export function ScopeHolderBar({
       mandateKey={job.mandateKey}
       agentTabs={restriction}
       outputKind={job.outputKind}
+      holderTypeHelp={perspective === "system" ? null : restriction.sentence}
       // Matching owns coverage; the holder picker only selects its implementation.
       coverageLine={null}
       refusal={
@@ -607,14 +607,6 @@ export function ScopeHolderBar({
         ) : null}
       </div>
       <div className="min-w-0 space-y-3">
-        <div className="flex items-center gap-1">
-          <h3 className="text-sm font-semibold">Holder</h3>
-          {restriction.sentence ? (
-            <FieldHelp label="Eligible holders">
-              {restriction.sentence}
-            </FieldHelp>
-          ) : null}
-        </div>
         {holderControls}
         {(holder.kind === "agent" && !holder.agentId) ||
         (holder.kind === "workflow" && !holder.workflowId) ? (

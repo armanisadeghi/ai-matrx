@@ -98,6 +98,8 @@ export interface HolderAssignmentProps {
   };
   /** The mandate's declared output kind, for the workflow picker. */
   outputKind?: string | null;
+  /** Scope-specific eligibility, attached to the type label. */
+  holderTypeHelp?: string | null;
   /**
    * A REFUSAL — the one thing a control cannot say about itself (a personal
    * agent drafted where only a system agent may hold). One sentence with its
@@ -126,9 +128,11 @@ export interface HolderAssignmentProps {
 function Row({
   label,
   control,
+  help,
   children,
 }: {
   label: string;
+  help?: string | null;
   control: "type" | "assignment" | "version";
   children: React.ReactNode;
 }) {
@@ -137,8 +141,9 @@ function Row({
       data-holder-control={control}
       className="grid items-center gap-x-3 gap-y-1.5 sm:grid-cols-[9.5rem_minmax(0,1fr)]"
     >
-      <span className="w-[9.5rem] shrink-0 text-[12px] font-medium text-foreground">
+      <span className="flex w-[9.5rem] shrink-0 items-center gap-1 text-[12px] font-medium text-foreground">
         {label}
+        {help ? <FieldHelp label="Eligible holders">{help}</FieldHelp> : null}
       </span>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
         {children}
@@ -154,6 +159,7 @@ export function HolderAssignment({
   mandateKey,
   agentTabs,
   outputKind = null,
+  holderTypeHelp = null,
   refusal = null,
   coverageLine = null,
   disabled = false,
@@ -165,7 +171,7 @@ export function HolderAssignment({
       {/* 1 — HOLDER TYPE. A switch between the only two things that can hold
           a job. Changing it clears the other kind's value rather than carrying
           a stale id under a label that no longer names it. */}
-      <Row label="Holder Type" control="type">
+      <Row label="Holder Type" control="type" help={holderTypeHelp}>
         <div
           role="radiogroup"
           aria-label="Holder Type"
