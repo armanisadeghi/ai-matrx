@@ -41,6 +41,10 @@ Study Pack v2 composers — `21bb212a-6ae8-4b4c-b507-f82efbb7f972` (notes),
 `components/mardown-display/blocks/keyword-research/KeywordResearchBlock.tsx`. Every rule
 below is visible in that one agent.
 
+**Branch files — read only when your run reaches them:**
+- Agent emits content-IR kinds → [kind-registration.md](kind-registration.md) (step 5).
+- Converting an existing blob agent → [blob-agent-conversion.md](blob-agent-conversion.md).
+
 ## The order of operations
 
 Work these steps in order. Skipping ahead (especially straight to "call create") is how
@@ -146,33 +150,8 @@ Before creating the agent, create its output kind and component so the first tes
 exercise both. A kind without a registered shape/component is useless — and so is a
 component-less `__kind` wrapper.
 
-- Via MCP: run the kind-builder agents with `agent_run` — **`kind_architect`**
-  (`9d484ce1-1e2b-4db7-8469-d3ba8550cdd8`, admin one-shot: `kind_create` composes the
-  nested child kinds from ONE `__kind`-marked sample, then component + skill + content
-  blocks + `kind_activate`). It is **variable-driven**: pass
-  `variables={"user_data_sample": <the __kind JSON sample, nested>, "task_brief": <slug,
-  label, what the component must do, which lists stream>}`. **`kind_creator`**
-  (`4f4ffd49-db15-4a2e-b9fe-341ffafc1323`) is the conversational guided loop — drive it
-  with `user_message`. Check `get_agent` before driving either; the shape can change.
-- **Two mechanics observed 2026-08-23 (flashcards wave):** (a) `agent_run` on Kind Architect
-  ALWAYS exceeds the MCP call timeout — the run keeps going server-side, so treat it as
-  fire-and-track: check `content_ir.kind_definition` (or `conversations search <slug>`) a
-  couple of minutes later instead of re-firing (a re-fire mints duplicates). (b) Kind
-  Architect writes kinds under the CALLER's org as `visibility=internal`; a **platform** kind
-  (anything a mandate declares as `output_kind`) must then be promoted to the system org
-  `39c38960-d30c-4840-b0c1-c9960de95582` + `visibility=public` — definition, components,
-  examples, edges — or learners outside your org get the generic renderer. Feedback
-  `91bd0093` asks for a `scope`/`kind_promote` fix; until then, promote by hand.
-- Component bar: dense (minimal padding, no wasted space), mobile-friendly, interactive
-  where the data invites it (drag-and-drop, sort, edit, add/remove for lists), one-click
-  copy per section plus compact whole-result copy affordances (JSON / MD / CSV / TXT /
-  XML-for-AI), and **streaming-first — a requirement, not a feature**: the value arrives
-  progressively during the LLM stream, so the component ships its own brief skeleton that
-  mimics the finished layout (never the generic fallback, never spinner-until-complete),
-  renders each list item the moment it parses, lets prose grow as it streams, and reveals
-  structured details in chunks. A component that waits for the complete object is broken
-  by definition. Expect to iterate with the builder agent several times — first output is
-  never the final component.
+**Kind-emitting agents only (step 4 chose kinds) → read [kind-registration.md](kind-registration.md)** — driving `kind_architect` / `kind_creator`, their timeout and org-promotion mechanics, and the component bar.
+
 - Never hand-insert `content_ir` rows or build a parallel registry.
 
 ### 6. Hand the structure to the trained builder
@@ -330,35 +309,7 @@ site `json.dumps`es a whole dict into — plausible at first glance, awful in pr
 Converting one is a two-sided operation (agent + call site). This recipe was proven live
 on the Masterwork Approach Selector and Coherence Partner (2026-08-22):
 
-1. **Read the call site FIRST.** The Provision declared beside the mandate already names
-   the granular offer — that IS your variable list. The census of blob sites lives at
-   `aidream/docs/mandates/INPUT_CHANNEL_VIOLATIONS.md`; update the row when you convert.
-   (The factory-generated NamedAgent family and its `internal_agents/` spec system were
-   DELETED 2026-08-25 — Ruling A executed: mandates + provisions specify agents, the live
-   DB row is the sole authority, and it is improved by test-and-tune — exactly this
-   skill's step 8 — never regenerated from stored instructions.)
-   Stop if the mandate is client-invoked from matrx-frontend and the census for
-   it hasn't run — renaming variables would break callers you cannot see from aidream.
-2. **Hunt for prompt lies while you're in there.** Blob agents routinely claim inputs
-   they never receive (the Selector's prompt promised "Audition results" no call site
-   sends) and carry enums out of sync with the code's contract. The prompt must describe
-   exactly what arrives; code contracts win on enums and keys.
-3. **Update the agent first, then the call site, in the same session.** New agent + old
-   code fails LOUD (missing required variables, retried next run); new code + old agent
-   fails QUIET (an empty `{{blob}}` and granular values reaching nothing). Loud beats
-   quiet — agent first.
-4. **Pass raw dicts and lists as separate variables at the call site** — the prompt door
-   (`prompt_safe_value`) canonicalizes them, so delete every `json.dumps`. An offered
-   value the agent doesn't consume simply stays offered; unused offers are normal.
-5. **Don't rewrite what's working.** Delivery is often the whole crime while the system
-   prompt is genuinely good (the Coherence Partner's was). Judge each part separately:
-   name, description, variables + help text, system prompt, user message, delivery.
-6. **Test with trapped scenarios, never happy paths**: a recency/ledger block it must
-   honor, a maturity gate, false candidates it must drop, settled memory it must not
-   re-raise, and a case where the honest answer is zero/empty. Tune the prompt from what
-   real runs show (a leaked id, a jargon slip), then re-run to confirm the fix.
-7. **Close the loop**: run the guards (`check_user_input_law.py`) and the owning
-   service's tests, update the register row, and commit agent + code changes together.
+**Converting an existing blob agent only → read [blob-agent-conversion.md](blob-agent-conversion.md)** — the seven-step, two-sided recipe (agent + call site).
 
 ## Anti-patterns — reject on sight
 
