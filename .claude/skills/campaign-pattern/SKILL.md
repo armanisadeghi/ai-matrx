@@ -92,11 +92,19 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    handoff — that is the FLOOR. The BAR is independent, zero-authorship verification against the
    SPEC, on the deployed surface, with real identities driving real doors: verifiers try to BREAK
    things, pair every refusal-proof with a positive control that could fail, re-run every red
-   before believing it, and state which build every verdict ran on. Expect verdicts to be
-   overturned in both directions; that is the system working. Reviewer findings are leads too:
-   reproduce each on the current build, check it against recorded rulings, then CONFIRM, REFUTE
-   with evidence, or RULE — ledgered as `Ruling: <decision> — <why> — <cost if wrong>`. Never
-   pre-judge a reviewer's brief, never discard a finding silently, never fix a settled ruling away.
+   before believing it, and state which build every verdict ran on. **A test that feeds
+   manufactured data to its own author's code proves nothing and is filed as a defect.** Expect
+   verdicts to be overturned in both directions; that is the system working. Reviewer findings are
+   leads too: reproduce each on the current build, check it against recorded rulings, then
+   CONFIRM, REFUTE with evidence, or RULE — ledgered as `Ruling: <decision> — <why> — <cost if
+   wrong>`. Never pre-judge a reviewer's brief, never discard a finding silently, never fix a
+   settled ruling away.
+   **The battery — every campaign runs all five, and the plan names them:**
+   - **Breadth sweep** — actuate EVERY control on every surface as every persona.
+   - **Adversarial depth** — real non-member and anonymous identities through the real doors.
+   - **Hostile re-verify** — every fix set re-attacked by someone who did not write the fix.
+   - **Closing verifier + production sweep** — the held targets re-proven on the deployed SHA.
+   - **The owner's own hands** — on the deployed surface; his phone catches what no agent can.
 4. **Fix the class, never the instance.** Every defect gets a root cause proven by a red-capable
    loop (`diagnose` — never a fix before the loop), a census of its siblings, and where possible
    a structural guard proven RED-THEN-GREEN at a seam that reproduces the bug — if no such seam
@@ -148,7 +156,7 @@ Each gate's exit is checkable; a campaign that skips a gate is the failure mode 
 | 5 | **Core** (serial) | The single critical-path core lands and certifies in order — never parallelized. |
 | 6 | **Fan-out** (parallel) | Lanes dispatched with exclusive file/schema ownership and frozen interfaces; shared inputs verified to exist BEFORE parallel dispatch (a bad ref fails here, not inside six agents). |
 | 7 | **First vertical (G2)** | One org runs one end-to-end path in production shape with real non-admin users — before the remaining lanes merge their surfaces. |
-| 8 | **Verification + defect rounds** | Per lane: D15 — explicit targets (a real user action on a real surface, never "tests pass") proven by a zero-authorship verifier on the deployed surface with real data; conformance gates green; a review-queue row filed; reopen-on-fail is normal. **The battery that found everything:** a breadth sweep (actuate EVERY control, every persona), an adversarial depth pass (real non-member/anon identities through real doors), a hostile re-verify of every fix set, a closing verifier over the held targets + a production sweep, and the owner's own hands on the deployed surface. Defects are fixed by class (Part 2 §4), never by instance. |
+| 8 | **Verification + defect rounds** | Per lane: D15 — explicit targets (a real user action on a real surface, never "tests pass") proven by a zero-authorship verifier on the deployed surface with real data; conformance gates green; a review-queue row filed; reopen-on-fail is normal. The five-pass battery has run and the plan names each pass: breadth sweep, adversarial depth, hostile re-verify, closing verifier + production sweep, owner's own hands (Part 2 §3). Defects are fixed by class (Part 2 §4), never by instance. |
 | 9 | **Close (G3)** | Every target Met on independent evidence and confirmed LIVE (deploy trains carried it; verify the deployed SHA, never the pushed one); the rulings list delivered to the owner; the retro banked (Part 2 §5); handoffs deleted, register and docs groomed; residual follow-ups filed where they'll be seen. |
 
 ## Part 4 — Launching one (the owner's copy-paste protocol)
