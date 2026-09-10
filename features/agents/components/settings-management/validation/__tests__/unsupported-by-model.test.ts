@@ -27,6 +27,23 @@ const emptyControls = {
 const settings = (o: Record<string, unknown>) => o as unknown as FeLlmParams;
 
 describe("unsupported-by-model rule", () => {
+  it("treats top-level routing identity copied into settings as recognized", () => {
+    const config = resolveConfig(
+      settings({ model_id: "model-x", temperature: 1 }),
+      "model-x",
+      controlsWithTemp,
+      null,
+    );
+    const result = validateConfig(config);
+
+    expect(
+      result.issues.some(
+        (issue) =>
+          issue.key === "model_id" && issue.category === "unrecognized_key",
+      ),
+    ).toBe(false);
+  });
+
   it("flags a valued LLM param the model declares no control for", () => {
     const config = resolveConfig(
       settings({ temperature: 1, reasoning_effort: "high" }),

@@ -16,13 +16,13 @@ const UI_GATE_RECOGNIZED = new Set<string>([...UI_GATE_KEYS, "multi_speaker"]);
 
 const LEGACY_REMAP_KEYS = new Set(["max_tokens", "output_format", "n"]);
 
-// Call-routing keys — server-consumed, but NOT model controls (like model_id,
-// they never appear in a model's controls schema). `offering_id` pins the call
-// to one exact ai.offering (model × endpoint × api); unset = the server picks
-// the preferred offering ("Auto"). Registered here so a pinned offering is
-// never flagged "unrecognized"; staleness across model swaps is handled by the
-// reconciliation flow (reconciliation/analyze.ts), not by key recognition.
-const ROUTING_KEYS = new Set<string>(["offering_id"]);
+// Call-routing keys — server-consumed, but NOT model controls, so they never
+// appear in a model's controls schema. `model_id` is defensively recognized
+// when stale flattened settings still carry the top-level model identity.
+// `offering_id` pins the call to one exact ai.offering (model × endpoint × api);
+// unset = the server picks the preferred offering ("Auto"). Staleness across
+// model swaps is handled by reconciliation/analyze.ts, not key recognition.
+const ROUTING_KEYS = new Set<string>(["model_id", "offering_id"]);
 
 /**
  * Builds the canonical set of keys recognized by the system.
