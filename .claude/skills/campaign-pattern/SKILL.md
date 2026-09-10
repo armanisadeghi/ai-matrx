@@ -104,6 +104,10 @@ on the wrong things"*), fired chips for parallel work — and otherwise did not 
    resumes (verify what actually landed via origin content, never memory); work products — not
    transcripts — as the liveness oracle for sub-agents; never relaunch-on-suspicion an agent
    holding real-state authority.
+8. **A delta is not a status.** Every status begins with the terminal current truth and carries
+   every unresolved provider, agent, owner, blocker, and verification action forward until it is
+   completed and verified. “No new event” describes only the latest delta; it never means “nothing
+   remains,” “no action required,” or “waiting on them” while an earlier action is still open.
 
 ## Part 3 — Launching one (the owner's copy-paste protocol)
 
@@ -120,6 +124,8 @@ on the wrong things"*), fired chips for parallel work — and otherwise did not 
    own hands when asked (the owner's phone caught defects no agent could) — and let it run.
 
 **Changelog**
+- 2026-09-10 (status integrity) — added the carry-forward rule: no-event deltas can never erase
+  unresolved actions or be reported as completion.
 - 2026-09-10 (later) — medium is the default effort for all tiers; low retired.
 - 2026-09-10 — Opus/Terra made the default worker; effort lanes (`quick`/`standard`/`deep`) named.
 - 2026-09-10 — Unified provider model tiers and explicit low/medium/high effort selection.

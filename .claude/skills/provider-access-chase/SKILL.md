@@ -12,7 +12,7 @@ description: "Monitor and advance pending third-party provider access campaigns 
 # Chase Provider Access
 
 This skill is the follow-through loop. A recurring runner may wake every 30 minutes, but it acts only
-on due campaigns and stays quiet when nothing changed.
+on due campaigns and stays quiet only when nothing changed **and nothing actionable remains**.
 
 ## Durable scheduled prompt
 
@@ -28,8 +28,11 @@ those actions directly through `$provider-access-submit`; never ask him to reply
 Arman only for approval, rejection, deadline, material scope change, or an uncovered consequential
 boundary: paid commitment, negotiated contract, regulated/compliance or legal-identity attestation,
 customer data, production DNS/traffic, external communication, public publication, destructive
-operation, or provider-enforced human ceremony. If nothing changed, report only a compact no-change
-receipt and do not notify repeatedly.
+operation, or provider-enforced human ceremony. If nothing changed and no action is open, report only
+a compact no-change receipt and do not notify repeatedly. If any earlier provider request or other
+action remains unresolved, every run must lead with `OPEN ACTION — waiting on AI Matrx:` and restate
+the exact deliverable, owner, blocker, and next move. “No new provider event” is only a delta and must
+never be translated into “no action required,” “waiting on the provider,” or completion.
 ```
 
 Use this prompt for the initial Codex scheduled task. Any later in-product scheduler must invoke a
@@ -47,6 +50,9 @@ declared Mandate by `mandate_key`; it may not take a hardcoded agent UUID or sil
    Do not write a duplicate CRM interaction or repeat an alert for the same event.
 6. Use the exact recorded email thread, portal application/case ID, or support ticket. Do not search
    a whole inbox and infer campaign state from an unrelated message.
+7. Establish the full current state before describing the newest delta. Carry every unresolved action
+   forward from the task, CRM, and last provider event until completion is verified. A newer no-change
+   check never clears an older Action Required event.
 
 ## Check order
 
@@ -88,12 +94,21 @@ The 30-minute runner is a dispatcher, not a mandate to poll every provider twice
 
 ## Output receipt
 
-Always leave a compact run receipt:
+Always leave a compact run receipt. Its first line must be the terminal current state:
+
+- unresolved provider/agent/owner action: `OPEN ACTION — waiting on <owner>: <exact action>`;
+- genuinely provider-pending with no action owed by AI Matrx or Arman: `WAITING ON PROVIDER`;
+- complete and verified: `COMPLETE`.
+
+Never emit `NO ACTION REQUIRED`, `UNCHANGED`, or a quiet/no-notify result while an unresolved action
+exists. “No new provider event” belongs only in the delta field below the current-state line.
 
 ```text
+Current state:
 Run time:
 Due campaigns checked:
 New provider events:
+Unresolved actions carried forward:
 Tasks changed:
 CRM interactions added/updated:
 Approvals verified:
