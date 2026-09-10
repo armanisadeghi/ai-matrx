@@ -2,9 +2,12 @@
 //
 // `HrShell` PLUS THE SECTION'S ROUTE-TAB BAR (SPEC-UI-IA §3, `shell` column).
 //
-// The bar is owned by the section's `layout.tsx`, exactly like
-// `app/(admin)/administration/users/UsersAdminLayoutClient.tsx` — which this is a
-// deliberate copy of, because that pattern is already right:
+// The bar is owned by the section's `layout.tsx`. HR is a core-route shell,
+// not an `/administration` section, so it intentionally does NOT use
+// `features/admin/components/AdminSectionShell.tsx` — the admin counterpart
+// for exactly this route-tab pattern (back link, tab strip, pending spinner,
+// scrolling body) on `/administration` sections. This is not a copy to keep
+// in sync with that shell; it independently follows the same proven pattern:
 //
 //   • A FLAT array of tabs. No nesting, no accordion, no second selector.
 //   • EVERY TAB IS A REAL ROUTE — deep-linkable, new-tab-able, back-button-able.

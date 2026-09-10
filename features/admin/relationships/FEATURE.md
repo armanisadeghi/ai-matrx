@@ -31,10 +31,11 @@ DB — the UI just `router.refresh()`es.
 ## Structure — one layout, one route per tab
 
 - **Layout:** `app/(admin)/administration/database/relationships/layout.tsx` →
-  `RelationshipsAdminLayoutClient.tsx` (scheduling-admin pattern: `NAV_ITEMS`,
-  `usePathname` active detection, `router.push` in `useTransition`, per-tab spinner).
-  The layout owns viewport height (`h-[calc(100dvh-2.5rem)]`); each tab page renders
-  inside `flex-1 overflow-hidden` — **never** re-subtract `100dvh` in a tab page.
+  `RelationshipsAdminLayoutClient.tsx`, which renders `AdminSectionShell`
+  (`features/admin/components/AdminSectionShell.tsx` — see its FEATURE.md
+  section) with this hub's tabs; the shell owns viewport height, active-tab
+  detection, and the pending-transition spinner. Each tab page renders inside
+  `flex-1 overflow-hidden` — **never** re-subtract `100dvh` in a tab page.
 - **The dynamic orbit route lives at `explorer/[token]`**, never at the hub root — a
   root-level `[token]` would shadow-race every static tab segment.
 - Shared presentational atoms: `components/shared.tsx` (`StatusTile`,
@@ -300,6 +301,10 @@ used by the per-row **Link policy** side panel).
 
 ## Change log
 
+- **2026-09-10** — Doc fix (DC-007): corrected the Structure section — the
+  layout renders the shared `AdminSectionShell` (introduced in commit
+  `fdf2ea1386`, replacing this hub's former inline shell code), not a
+  hand-rolled `NAV_ITEMS`/`usePathname` pattern. No code change.
 - **2026-08-12** — Made the complete Relationships hub URL-addressable. The
   canonical `useUrlState` / `useTableUrlState` primitives now drive registry
   table query state, facets, selected side-panel rows, Planner selection and
