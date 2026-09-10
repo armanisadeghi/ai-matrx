@@ -296,6 +296,8 @@ Historical planning and analysis docs from the pre-consolidation era have been a
 
 ## Change log
 
+- `2026-09-09` — codex: **File-ID-only tool-result media no longer lies about its element type.** `ResultMedia` now forces `img` / `video` / `audio` only when the result already carries a trustworthy MIME or URL-extension hint. An owned ref with only `file_id` delegates element selection to `InlineMediaRef`, which hydrates the canonical file metadata before choosing the media element; audio and video can no longer be mounted as `<img>`, retried as broken images, and surfaced as false media-durability errors. The shared result-field renderer covers generic tool results, attachment lists, agent-call media, and Cloud Browser screenshots. Guard: `result-fields/__tests__/result-media-open.test.tsx`.
+
 - `2026-09-01` — codex: **Cloud Browser screenshot results keep the canonical Files door.** The purpose-built run card now composes `ResultMedia`, so an owned screenshot renders inline and its **Open** action reaches `/files/f/{file_id}` instead of replacing that door with a lightbox-only click. Guard: `renderers/cloud-browser/CloudBrowserRunCard.test.tsx`.
 
 - `2026-08-31` — codex: **Tool-result attachment collections render and open canonically.** `detectResultShape` promotes `image_ref_list`, `media_ref_list`, and homogeneous media/file arrays into one attachment-list shape; `ResultValue` renders every attachment while retaining envelope metadata, and owned `ResultMedia` now exposes **Open** to `/files/f/{file_id}`. Guards: `shape-our-files.test.ts` and `result-media-open.test.tsx`.
