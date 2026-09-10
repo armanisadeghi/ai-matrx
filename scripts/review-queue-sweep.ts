@@ -300,10 +300,12 @@ ${C.bold}What a reviewer agent does next${C.reset}
 }
 
 main()
-  .then((code) => process.exit(code))
+  .then((code) => {
+    process.exitCode = code;
+  })
   .catch((err: unknown) => {
     console.error(
       `${C.red}review-queue:sweep crashed${C.reset} — ${String(err)}`,
     );
-    process.exit(2);
+    process.exitCode = 2;
   });
