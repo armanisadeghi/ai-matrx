@@ -379,15 +379,21 @@ The recurring worker follows this exact order:
 5. On a pass, independently record evidence and promote. On failure, retain ownership while
    fixing or coordinating a named repair worker; record the reproducible defect and repair
    evidence. Commit/push, resolve delivery failures, and dispatch an independent live reviewer.
-   Follow that reviewer through its result in this run. Only if verification cannot finish
-   after feasible recovery, return the row to `agent_changes_requested` / `ready`
-   with the exact repair and remaining verification recorded; never imply completion.
+   Follow that reviewer through its result in this run. Apply the
+   [execution completion gate](/policies/defect-ownership.md) before ending (local file:
+   `/Users/armanisadeghi/code/common-docs/policies/defect-ownership.md`): recoverable
+   obstacles and pending verification require continued work, coordination, or waiting.
+   Only a freshly verified human-only gate or an actual forced execution interruption
+   permits an unfinished exit. Record the exact remaining work and continuation ownership;
+   return the row to `agent_changes_requested` / `ready` only when no repair worker or
+   verifier is still active. Never imply completion or use the next cadence as automatic deferral.
 6. Fix observed process weaknesses, then close owned Browser/preview resources on every exit.
    Complete only the claimed window with `schedule_claim(action="complete",
    task_key="agent-review-first-pass", window_key="<same boundary>", status="completed",
    result_note="<item, fix, verification, process improvement, remaining work>")`.
    Legal terminal statuses are `completed`, `failed`, and `abandoned`; `skipped` is not one.
-   Use `failed` for an unresolved execution failure. A legitimate no-work outcome uses
+   Terminal status records an outcome; it never authorizes stopping recoverable work.
+   Use `failed` for an execution failure that remains after the completion gate. A legitimate no-work outcome uses
    `completed` with the explicit reason; it never implies an unverified row passed.
 
 One queue item is the run's review scope; its prerequisites, repairs, independent verification,
@@ -613,8 +619,8 @@ Read the repo rules, implement, test, commit, and push; use a bounded specialist
 Record the repair in the conversation and dispatch the independent live verifier in this run,
 using the conditional ownership handoff above. Follow failures back through repair and recheck.
 Release to `agent_changes_requested` / `ready` only when no active repair/verifier owns the work
-and an exact unresolved gap remains after feasible recovery; document that gap and the next
-executable step. The verifier must differ from the implementer for every promotion. Agents
+and the execution completion gate establishes a necessary unfinished exit; document the
+fresh human-only gate or forced interruption, exact remaining steps, and continuation owner. The verifier must differ from the implementer for every promotion. Agents
 repair and verify; Arman alone approves or requests the human round.
 
 ## Rules
