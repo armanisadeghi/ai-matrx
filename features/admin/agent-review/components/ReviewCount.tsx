@@ -21,10 +21,10 @@ export function ReviewCount({
   if (!loading) return count;
 
   return (
-    <span aria-label="loading" className="inline-flex align-middle">
+    <span aria-label="loading" className="inline-flex shrink-0 align-middle">
       <Skeleton
         aria-hidden="true"
-        className={cn("inline-block h-4 w-6", skeletonClassName)}
+        className={cn("inline-block h-4 w-6 shrink-0", skeletonClassName)}
       />
     </span>
   );

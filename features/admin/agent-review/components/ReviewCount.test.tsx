@@ -11,6 +11,7 @@ describe("ReviewCount", () => {
     );
 
     expect(markup).toContain('aria-label="loading"');
+    expect(markup.match(/shrink-0/g)).toHaveLength(2);
     expect(markup).not.toContain(">0<");
   });
 
