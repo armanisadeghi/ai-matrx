@@ -93,7 +93,7 @@ link is the difference between two seconds and a search that fails. This is
   your final message and name the row's URL — do not silently leave it in the pile.
 
 The backlog is worked with `pnpm review-queue:sweep` in `matrx-frontend` (submitted rows older
-than N hours, grouped by lane and repo, each with its direct URL, plus the claim SQL). The
+than N hours, grouped by lane and repo, each with its direct URL and a pointer to this claim protocol). The
 recurring `agent-review-first-pass` worker takes **one row per 30 minutes** and selects browser-required rows with a valid triage envelope and conversation. Before a
 no-work conclusion, reconcile a demonstrably malformed candidate as described below; rows
 belonging to other lanes stay in those lanes. This cadence is a floor, never your excuse.
@@ -367,7 +367,11 @@ The recurring worker follows this exact order:
    `YYYY-MM-DDTHH:30`) once. Claim `task_key="agent-review-first-pass"` with that exact
    `window_key`, an identifiable account/task label, and machine. Use a unique row owner per run:
    `agent-review-first-pass:<task id>:<window_key>` (add a run suffix for an explicit retry). `claimed=false` means stop
-   this duplicate run without completing someone else's claim. Retain the window for cleanup.
+   this duplicate scheduled invocation without completing someone else's claim. Retain the
+   window for cleanup. A duplicate does not cancel a separate explicit user assignment:
+   continue non-conflicting audit/repair work, coordinate an exact-row handoff with its owner,
+   or wait for the next real cadence window. Never invent a window or steal a claim; overlap
+   alone is not a human-only blocker.
 3. Prove the in-app Browser admin session, then atomically claim one eligible item, prioritizing
    human-requested repairs, agent-requested repairs, then submissions.
 4. Read the entire durable conversation and target repo's `CLAUDE.md`. Execute the real test
