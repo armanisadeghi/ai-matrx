@@ -51,6 +51,14 @@
  *   registry  — features/context-menu-v3/SECTIONS.md drift: a registered
  *               shared builder whose file/export vanished, or whose Consumers
  *               column no longer matches who actually imports it.
+ *   naming    — THE NAMING LAW: `use*` calls hooks, `build*` is pure. A
+ *               `use<Identity>MenuSection` that calls NO React hook is a plain
+ *               builder wearing a hook's name: it lies to the hook linter and
+ *               drags every call site into hook position (real
+ *               `rules-of-hooks` errors on code that has no hooks). The mirror
+ *               defect is a `build<Identity>MenuSection` that DOES call a hook
+ *               — a hook whose name tells the linter to stop checking it.
+ *               Renamed 2026-09-09; this guard is why it cannot come back.
  *   attribution — a `sourceFeature` value that is not in the generated
  *               SOURCE_FEATURES allow-list. That list comes from the Python
  *               server and cannot be extended here, so an invented value
@@ -93,7 +101,8 @@ type Population =
   | "bespoke"
   | "density"
   | "attribution"
-  | "registry";
+  | "registry"
+  | "naming";
 
 /** Populations a first-wave fleet is pointed at. `overlays` is tracked only. */
 const WAVE_ONE: Population[] = ["tables", "editables", "windows"];
@@ -460,6 +469,109 @@ function attributionFindings(files: Map<string, string>): Finding[] {
   return out;
 }
 
+/**
+ * THE NAMING LAW (2026-09-09) — `use*` calls hooks, `build*` is pure.
+ *
+ * Functions named `use*` are React hooks BY CONTRACT: the hook linter and
+ * every reader assume it. Three shared section builders (`useFlashcard…`,
+ * `useDatasetTable…`, `useCaptureItem…`) called no hook at all, which produced
+ * FALSE `react-hooks/rules-of-hooks` errors at call sites and forced hosts to
+ * hoist pure code above early returns for no reason. Renamed to `build*`; this
+ * guard makes the class unrepeatable in BOTH directions.
+ *
+ * Textual, like the rest of this script: brace-balanced body extraction with
+ * comments and string literals stripped before the scan, so a hook name inside
+ * a doc comment or a label never counts.
+ */
+function namingFindings(): Finding[] {
+  const out: Finding[] = [];
+  const SECTION_SCAN = [
+    "features/**/*.ts",
+    "features/**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.tsx",
+    "lib/**/*.ts",
+  ];
+  const DEF =
+    /^\s*export\s+(?:async\s+)?function\s+((use|build)[A-Za-z0-9_]*MenuSection)\b/;
+  /** A hook call: `useX(` or `useX<`, not preceded by a dot or word char. */
+  const HOOK_CALL = /(?<![A-Za-z0-9_$.])(use[A-Z][A-Za-z0-9_]*)\s*[(<]/g;
+
+  const seen = new Set<string>();
+  for (const pattern of SECTION_SCAN) {
+    for (const rel of globSync(pattern, { cwd: ROOT })) {
+      const path = rel.replace(/\\/g, "/");
+      if (seen.has(path)) continue;
+      seen.add(path);
+      if (/\.(test|spec)\.tsx?$/.test(path)) continue;
+      let src: string;
+      try {
+        src = readFileSync(join(ROOT, path), "utf8");
+      } catch {
+        continue;
+      }
+      if (!src.includes("MenuSection")) continue;
+      const lines = src.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const m = DEF.exec(lines[i]);
+        if (!m) continue;
+        const [, name, prefix] = m;
+        const body = stripNoise(extractBody(lines, i));
+        const unique = [
+          ...new Set(
+            [...body.matchAll(HOOK_CALL)]
+              .map((h) => h[1])
+              .filter((h) => h !== name),
+          ),
+        ];
+        if (prefix === "use" && unique.length === 0)
+          out.push({
+            population: "naming",
+            file: `${path}:${i + 1}`,
+            detail: `\`${name}\` calls NO React hook — a pure builder wearing \`use\`. Rename to \`${name.replace(/^use/, "build")}\` (THE NAMING LAW — SECTIONS.md).`,
+          });
+        if (prefix === "build" && unique.length > 0)
+          out.push({
+            population: "naming",
+            file: `${path}:${i + 1}`,
+            detail: `\`${name}\` calls ${unique.join(", ")} — a hook wearing \`build\`. Rename to \`${name.replace(/^build/, "use")}\` so the hook linter checks it (THE NAMING LAW — SECTIONS.md).`,
+          });
+      }
+    }
+  }
+  return out;
+}
+
+/** Lines `start`..end of the brace-balanced block opened on/after `start`. */
+function extractBody(lines: string[], start: number): string {
+  let depth = 0;
+  let opened = false;
+  for (let j = start; j < lines.length; j++) {
+    for (const ch of stripNoise(lines[j])) {
+      if (ch === "{") {
+        depth++;
+        opened = true;
+      } else if (ch === "}") depth--;
+    }
+    if (opened && depth <= 0) return lines.slice(start, j + 1).join("\n");
+  }
+  return lines.slice(start).join("\n");
+}
+
+/**
+ * Remove comments and string/template literals — braces and hook-shaped words
+ * inside prose must not count.
+ */
+function stripNoise(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/\/\/[^\n]*/g, " ")
+    .replace(/`(?:\\.|[^`\\])*`/g, '""')
+    .replace(/"(?:\\.|[^"\\])*"/g, '""')
+    .replace(/'(?:\\.|[^'\\])*'/g, '""');
+}
+
 function registryFindings(files: Map<string, string>): Finding[] {
   const out: Finding[] = [];
   const REGISTRY = "features/context-menu-v3/SECTIONS.md";
@@ -649,6 +761,7 @@ function main() {
 
   findings.push(...attributionFindings(files));
   findings.push(...registryFindings(files));
+  findings.push(...namingFindings());
 
   const selected = findings.filter(
     (f) => ONLY.length === 0 || ONLY.includes(f.population),
@@ -697,6 +810,7 @@ function report(findings: Finding[], covered: Finding[]) {
     "density",
     "attribution",
     "registry",
+    "naming",
   ];
   for (const p of order) {
     const rows = findings.filter((f) => f.population === p);
@@ -705,7 +819,10 @@ function report(findings: Finding[], covered: Finding[]) {
       ? "WAVE ONE"
       : p === "overlays" || p === "form-fields"
         ? "tracked — not wave one"
-        : p === "density" || p === "registry" || p === "attribution"
+        : p === "density" ||
+            p === "registry" ||
+            p === "attribution" ||
+            p === "naming"
           ? "LAW"
           : "collapse";
     console.log(`── ${p} (${rows.length}) — ${tag}`);

@@ -393,6 +393,7 @@ v3 is the only UNIVERSAL menu. Full-repo census 2026-08-25 (`onContextMenu=` swe
 - **Build the platform, not the artifact.** v3 is the reusable primitive; every action delegates to an existing system. Forbidden: a copy/save/share/attach/export path that only serves this menu.
 - **Loud recovery.** Both no-fake-menu guards scream when they fire — a firing means a real bug got past surface wiring.
 - **One menu.** No bespoke per-surface context menus. A surface contributes via `extraSections`, never a fork.
+- **THE NAMING LAW: `use*` calls hooks, `build*` is pure.** A shared section builder that calls at least one React hook is `use<Identity>MenuSection`; one that calls none is `build<Identity>MenuSection`. A pure builder wearing `use` lies to the hook linter and drags every call site into hook position. Enforced by `pnpm check:menu-naming` (blocking; also a `naming` population in `pnpm check:context-menu`); registry in [`SECTIONS.md`](./SECTIONS.md).
 
 ---
 

@@ -38,6 +38,7 @@ const mandate: MandateDefinitionRow = {
   pinned_context: {},
   pins: {},
   provision_key: null,
+  renamed_from_key: null,
   required_context_policies: [],
   required_output_keys: [],
   // Authored here, not copied from another mandate (aidream 0592 lineage).
