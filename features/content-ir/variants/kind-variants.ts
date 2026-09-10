@@ -445,6 +445,40 @@ export interface ResolvedVariantComponent {
   unregisteredVariant: string | null;
 }
 
+const OPTION_COMPONENT_TYPES: ReadonlySet<VariableComponentType> = new Set([
+  "radio",
+  "pill-toggle",
+  "selection-list",
+  "buttons",
+  "checkbox",
+  "select",
+]);
+
+/**
+ * Join a resolved presentation with the input's closed value contract.
+ *
+ * Kind variants choose HOW a value is collected; the served input's options
+ * say WHICH values are legal. Generic variants deliberately register with an
+ * empty option list, so dropping the per-input values turns a promised picker
+ * into VariableInputComponent's textarea fallback.
+ */
+export function componentForInputOptions(
+  resolution: ResolvedVariantComponent,
+  options: readonly string[],
+): VariableCustomComponent | null {
+  if (options.length === 0) return resolution.component;
+  if (resolution.source === "derived-default") {
+    return { type: "select", options: [...options] };
+  }
+  if (
+    resolution.component &&
+    OPTION_COMPONENT_TYPES.has(resolution.component.type)
+  ) {
+    return { ...resolution.component, options: [...options] };
+  }
+  return resolution.component;
+}
+
 /**
  * Resolve the component an input should render with.
  *

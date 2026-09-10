@@ -43,6 +43,7 @@ import { AlertTriangle, ChevronDown, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import {
+  componentForInputOptions,
   resolveVariantComponent,
   type ResolvedVariantComponent,
   type VariantResolvableKind,
@@ -318,6 +319,7 @@ export function ServedFieldControl({
     },
     input.variant,
   );
+  const component = componentForInputOptions(resolution, input.options);
 
   const readOnly = input.readOnly || input.pinned;
   const shown = readOnly && !missing(input.pinnedValue) ? input.pinnedValue : value;
@@ -336,12 +338,12 @@ export function ServedFieldControl({
             {provenanceLabel(input)}
           </p>
         </div>
-      ) : resolution.component ? (
+      ) : component ? (
         <VariableInputComponent
           value={value}
           onChange={onChange}
           variableName={input.label || input.name}
-          customComponent={resolution.component}
+          customComponent={component}
           helpText={input.help || undefined}
           hideLabel
           compact
@@ -356,7 +358,7 @@ export function ServedFieldControl({
         />
       )}
 
-      {resolution.unregisteredVariant && (
+      {kind && resolution.unregisteredVariant && (
         <p className="mt-1 flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-300">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
           <span>
