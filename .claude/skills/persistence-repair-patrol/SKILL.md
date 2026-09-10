@@ -4,7 +4,7 @@ type: Skill
 title: Persistence Repair Patrol
 description: "Run the scheduled persistence and error patrol: find real bugs, repair them, verify independently, and improve the next run using current evidence."
 tags: [maintenance, persistence, errors, automation]
-timestamp: 2026-09-09T00:00:00Z
+timestamp: 2026-09-10T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -96,6 +96,13 @@ Delegated investigators load their own exact representative detail. Keep at most
 three coding investigators concurrent; reuse finished slots for independent
 verification. Only an investigator may prove that similar symptoms share a root.
 
+Keep task-to-task messages exceptional. Read current task status or saved evidence
+first; send only when a necessary action, ownership conflict, or missing evidence
+cannot be handled without the other task. Do not wake inactive tasks for status,
+repeat unchanged updates, or send acknowledgements that need no action. Bundle the
+specific request with its exact IDs and evidence; identify the sending patrol and
+write readable sentences. Internal delegates return compact results to this parent.
+
 Project tool results before displaying or saving parent state: retain identifiers,
 class tokens/cursors, counts/times, coverage flags, and an error-summary head capped
 at 400 characters. A list row's `error_text` can contain an embedded stack or payload;
@@ -164,6 +171,8 @@ fixes need current verification; they are not new work by this patrol.
   or frontend `.env`, or the local `DEV_LOGIN_TOKEN` flow where available.
   Routine login is preauthorized; credentials never enter output.
   Close every owned tab/group before the run ends; leave pre-existing ones untouched.
+  Explicit browser restrictions in the current user's instructions override this
+  default, including any prohibition on a user-browser fallback.
 - Return exact commits, affected IDs, proof timestamp, test/canary method,
   environment/build identity, results, recurrence interval, and remaining work.
   Coordinate release with its existing owner; do not create a competing release.
@@ -244,6 +253,9 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 — Limited task messaging to necessary coordination after the owner
+  reported confusing message traffic; explicit current browser restrictions win.
 
 - 2026-09-10 — Clarified isolated-browser preference, tool-neutral access, and the
   pre-authorized fallback to a new user-browser tab when isolation cannot complete the task.
