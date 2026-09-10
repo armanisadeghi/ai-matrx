@@ -21,6 +21,13 @@ Running the same brief through four different design postures in parallel, then 
 - Subagents **cannot** stop to ask the user questions — they run autonomously to completion. The interview therefore cannot happen inside them.
 - **So you, the conductor, run the interview once, up front**, and inject the answers into all four subagents. This is the whole reason the interview lives here and not in the children.
 
+> 🚨 **UNRESOLVED CONFLICT — `CFL-003`. Do not build against this section until Arman rules.**
+> **This document says:** ask the merged interview in plain conversation, never a multiple-choice UI.
+> **common-docs `/skills/doc-convergence/SKILL.md` and this repo's `vision-to-fleet` skill say:** the structured question picker (AskUserQuestion) is an acceptable way to ask closed questions. common-docs `/skills/build-sub-feature/SKILL.md`, `/skills/grilling/SKILL.md`, and `aidream/CLAUDE.md` side with this document.
+> **Why it matters:** with a picker, Arman chooses from fixed options; in plain chat he can answer "3 yes, 4 no because…" and add context nobody asked for.
+> **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
+> Register: common-docs [`/operations/conflicts.md`](../../../../common-docs/operations/conflicts.md) · `CFL-003`
+
 ## Step 1 — Merge the interviews, ask once, in prose
 
 Read the **"Interview first"** section of all four posture skills:
@@ -29,7 +36,7 @@ Read the **"Interview first"** section of all four posture skills:
 - `.claude/skills/ui-refine/SKILL.md`
 - `.claude/skills/ui-dense/SKILL.md`
 
-Take the **union** of their questions, dedupe the overlap (persona / primary job / reference recur across all four), and ask the user the combined short list — **in plain conversation, never a multiple-choice UI.** [CONFLICT pending owner ruling — see common-docs /operations/conflicts.md § Interview delivery: structured picker vs plain chat] Always include the two universal ones:
+Take the **union** of their questions, dedupe the overlap (persona / primary job / reference recur across all four), and ask the user the combined short list — **in plain conversation, never a multiple-choice UI** (conflicted: `CFL-003`, stamp above). Always include the two universal ones:
 - Who is this for and what's the one job they came to do?
 - What in the current version already works and must NOT be regressed?
 
