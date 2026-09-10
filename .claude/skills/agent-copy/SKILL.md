@@ -77,8 +77,8 @@ this page the moment they click this?"_ — then hand the agent exactly that.
 - **Copy exists at EVERY granularity** — field/entry, item, row, list, record,
   page. Never display data the user can't copy. Dense surfaces hide the control
   until hover (`opacity-0 group-hover/x:opacity-100 focus-within:opacity-100`).
-- **Exactly two compact top-level controls:** an icon-only human Copy action,
-  followed by the canonical `CopyForAiIcon` menu ordered Copy JSON → Copy for AI → shaped AI variants →
+- **Exactly the canonical compact two-icon copy/export pair:** one icon-only human Copy control plus one icon-only CopyForAiIcon menu,
+  ordered Copy JSON → Copy for AI → shaped AI variants →
   downloads/destinations. Large or visibly labeled top-level copy buttons are
   banned. Keep JSON inside the Copy-for-AI menu; never create a third top-level
   control. Scalars skip JSON. Copy-for-AI is NEVER just JSON in an envelope.
