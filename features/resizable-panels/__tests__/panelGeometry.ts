@@ -224,6 +224,13 @@ export function dragSeparator(separator: Element, path: number[]): void {
   flushResizeObservers();
 }
 
+/** A double-click on `separator`, through the library's document-level handler. */
+export function doubleClickSeparator(separator: Element): void {
+  const x = separator.getBoundingClientRect().left;
+  act(() => pointer(separator, "dblclick", x, 0));
+  flushResizeObservers();
+}
+
 /** The size (%) the library is actually rendering for a panel. */
 export function renderedPanelPercent(root: ParentNode, panelId: string): number {
   const el = root.querySelector<HTMLElement>(`[data-panel][id="${panelId}"]`);

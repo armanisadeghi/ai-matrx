@@ -20,6 +20,7 @@ import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import type { Layout, PanelProps } from "react-resizable-panels";
 import {
+  doubleClickSeparator,
   dragSeparator,
   flushResizeObservers,
   installPanelGeometry,
@@ -228,5 +229,27 @@ describe("server paint of a cookie-collapsed panel (claim C) — hydration", () 
     errors.mockRestore();
     expect({ recoverable, hydrationErrors }).toEqual({ recoverable: [], hydrationErrors: [] });
     expect(sidebarTruth()).toEqual({ label: "Show sidebar", open: false });
+  });
+
+  // Break named: the collapsed server paint is done by handing the library a
+  // collapsed defaultSize, and that stand-in outlives hydration — the library
+  // also uses defaultSize for the separator double-click reset, which would
+  // then snap the column shut instead of back to its 16%.
+  it("resets a hydrated cookie-collapsed sidebar to its 16% defaultSize on separator double-click", () => {
+    const props = {
+      defaultLayout: COOKIE_SIDEBAR_COLLAPSED,
+      providerProps: { initialLayouts: [COOKIE_SIDEBAR_COLLAPSED] },
+    };
+    container.innerHTML = renderToString(<TasksShapedShell {...props} />);
+    act(() => {
+      root = hydrateRoot(container, <TasksShapedShell {...props} />);
+    });
+    flushResizeObservers();
+    click("sidebar");
+    dragSeparator(sidebarSeparator(), [190, 220]);
+    expect(renderedPanelPercent(container, "sidebar")).toBe(22);
+
+    doubleClickSeparator(sidebarSeparator());
+    expect(renderedPanelPercent(container, "sidebar")).toBe(16);
   });
 });

@@ -3,13 +3,23 @@
 // Moved out of app/(dev)/demos/resizables/_lib/ into features/resizable-panels/
 // so the (dev) route group can be parked. (dev)-helper-leak audit, 2026-07-28.
 
-import { useEffect } from "react";
+import { createContext, useContext, useEffect } from "react";
 import {
   Group,
   useGroupRef,
   type GroupProps,
+  type Layout,
 } from "react-resizable-panels";
 import { usePanelControlsOptional } from "./PanelControlProvider";
+
+const GroupDefaultLayoutContext = createContext<Layout | undefined>(undefined);
+
+/** The `defaultLayout` (the server-read cookie) of the nearest ClientGroup —
+ *  exactly what the library mounts the group with. RegisteredPanel reads it to
+ *  paint a saved-collapsed column collapsed on the server. */
+export function useGroupDefaultLayout(): Layout | undefined {
+  return useContext(GroupDefaultLayoutContext);
+}
 
 type Props = Omit<GroupProps, "onLayoutChange" | "onLayoutChanged" | "groupRef"> & {
   cookieName: string;
@@ -26,7 +36,9 @@ type Props = Omit<GroupProps, "onLayoutChange" | "onLayoutChanged" | "groupRef">
 //   cross-tree toggle buttons can call setLayout on the right group, and
 //   reports every SETTLED layout so the provider remembers each panel's last
 //   open size (a drag-collapse then reopens at the width before the drag).
-export function ClientGroup({ cookieName, groupKey, ...props }: Props) {
+// - Shares its defaultLayout with the RegisteredPanels inside it (see
+//   useGroupDefaultLayout).
+export function ClientGroup({ cookieName, groupKey, children, ...props }: Props) {
   const groupRef = useGroupRef();
   const controls = usePanelControlsOptional();
 
@@ -48,6 +60,10 @@ export function ClientGroup({ cookieName, groupKey, ...props }: Props) {
           controls.notifyLayoutChanged(groupKey, layout);
         }
       }}
-    />
+    >
+      <GroupDefaultLayoutContext value={props.defaultLayout}>
+        {children}
+      </GroupDefaultLayoutContext>
+    </Group>
   );
 }
