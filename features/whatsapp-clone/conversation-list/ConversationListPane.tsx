@@ -103,11 +103,19 @@ export function ConversationListPane({
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
               <span className="text-[13px] text-muted-foreground">
+                {/* THE ARCHIVED-ITEMS LAW, honesty half (row F10 class fix,
+                    2026-09-10): `conversations` is the ACTIVE half — a server
+                    round-trip, not a client sieve — so "No conversations yet."
+                    is a claim it cannot support. With every chat archived it
+                    printed that one line under this pane's own "Archived chats
+                    (N)" door. */}
                 {conversations.length > 0
                   ? "No chats match your filter."
                   : showingArchive
                     ? "No archived chats."
-                    : "No conversations yet."}
+                    : (archivedCount?.count ?? 0) > 0
+                      ? "Every chat is archived — open “Archived chats” above to read them."
+                      : "No conversations yet."}
               </span>
               {conversations.length === 0 && !showingArchive && onNewChat ? (
                 <button

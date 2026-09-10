@@ -66,12 +66,39 @@
  *
  * WHAT IT CANNOT SEE (say so, never let a green run imply more than it proves)
  *
- *   A service that ALREADY exposes an archive option which no caller ever
- *   passes reads as green here — the option exists, so the query is not
- *   hardcoded. `features/page-extraction/api/jobs.ts` shipped exactly that for
- *   months: `includeArchived` in the signature, no UI able to set it. Wiring a
- *   control to a visible affordance is proven in the browser, on the surface,
- *   not by this file.
+ *   1. A service that ALREADY exposes an archive option which no caller ever
+ *      passes reads as green here — the option exists, so the query is not
+ *      hardcoded. `features/page-extraction/api/jobs.ts` shipped exactly that
+ *      for months: `includeArchived` in the signature, no UI able to set it.
+ *      Wiring a control to a visible affordance is proven in the browser, on
+ *      the surface, not by this file.
+ *   2. AN UNORDERED MULTI-ROW READ. Rule 3 requires `.order` / `.limit` /
+ *      `.range` (`LIST_SHAPED`) to call a chain a list, so a read that returns
+ *      many rows with no ordering — `.select(...).eq("org_id", x)` — is
+ *      invisible to it. Dropping the requirement makes every `.in(...)` batch
+ *      hydration a finding, which is how a guard gets deleted. STILL OPEN,
+ *      deliberately; a browser pass is what covers it.
+ *   3. Whether a control is actually REACHABLE on screen. That is always a
+ *      browser verification.
+ *
+ * WHAT IT USED TO MISS AND NO LONGER DOES (2026-09-10, row F10 repair — each
+ * proven forcing against the previous version of this file):
+ *
+ *   • A BLIND READ BESIDE A LAWFUL ONE. `fileHasControl` whitelisted every
+ *     query in a file, so one controlled list made its archive-blind
+ *     neighbours read green — `features/masterwork/encore/service.ts:59`'s
+ *     exact shape, which is why F10's census missed it. Control is now
+ *     attributed to the DECLARATION the query is written in (`declBlock`).
+ *     PRECEDENT stays file-level on purpose; see `lawfulEntitiesIn`.
+ *   • A NAMED SELECT CONSTANT. `.select(MASTERWORK_SELECT_COLUMNS)` hands the
+ *     archive column downstream, but a scan that reads only string literals
+ *     called it archive-blind. `selectConstants` resolves the constant.
+ *   • AN AMBIGUOUS SCHEMA-LESS READ. `.from("definition")` with no `.schema()`
+ *     keys to `?.definition`; the day a control-carrying file made such a read,
+ *     `?.definition` joined the precedent set and
+ *     `app/(core)/organizations/[orgId]/agent-apps/page.tsx:16` — which reads
+ *     `app.definition`, a table with NO archive column — became a false
+ *     positive. Ambiguous keys now neither set nor answer to rule 3.
  *
  * ESCAPE HATCH: an internal reader that genuinely must not offer a control
  * (a machine path, a lineage walk, a health probe) declares it at the query:
@@ -335,6 +362,57 @@ export function entityKeyFor(
   return only ? `${only}.${table}` : `?.${table}`;
 }
 
+/**
+ * `const NAME = "id, name, is_archived";` — the string constants a `.select()`
+ * can be handed instead of a literal.
+ *
+ * Without this the guard cannot see the projection of
+ * `.select(MASTERWORK_SELECT_COLUMNS)`, so a read that DOES hand the archive
+ * column downstream looks archive-blind (LIMITS, 2026-09-10). Cheap, exact,
+ * and it removes a false-positive class rather than adding findings.
+ */
+export function selectConstants(code: string): Map<string, string> {
+  const constants = new Map<string, string>();
+  const pattern =
+    /\bconst\s+([A-Za-z_$][\w$]*)\s*(?::[^=;]+)?=\s*(['"`])([\s\S]{0,2000}?)\2\s*;/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(code)) !== null) {
+    if (match[1] && match[3] !== undefined) constants.set(match[1], match[3]);
+  }
+  return constants;
+}
+
+/** A top-level declaration — the unit a query's archive control is judged in. */
+const TOP_LEVEL_DECL =
+  /^(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function|const|let|var|class)\b/gm;
+
+/**
+ * The top-level declaration (function / component / const) a `.from(` sits in.
+ *
+ * 🚨 PER-QUERY CONTROL ATTRIBUTION (LIMITS, closed 2026-09-10). Until this
+ * existed the guard asked whether the FILE mentioned a control anywhere, so
+ * one lawful query whitelisted every other query beside it — an archive-blind
+ * list living next to a controlled one read GREEN. That is exactly how
+ * `features/masterwork/encore/service.ts:59` survived the F10 census: it sits
+ * in a file whose sibling reads were lawful. The unit is now the declaration
+ * the query is written in, which is where a service's `includeArchived`
+ * parameter and a component's `showArchived` state both live.
+ */
+export function declBlock(code: string, index: number): string {
+  TOP_LEVEL_DECL.lastIndex = 0;
+  let start = 0;
+  let end = code.length;
+  let match: RegExpExecArray | null;
+  while ((match = TOP_LEVEL_DECL.exec(code)) !== null) {
+    if (match.index <= index) start = match.index;
+    else {
+      end = match.index;
+      break;
+    }
+  }
+  return code.slice(start, end);
+}
+
 export function scanFile(
   file: string,
   raw: string,
@@ -348,7 +426,7 @@ export function scanFile(
 ): Finding[] {
   const code = stripComments(raw);
   const findings: Finding[] = [];
-  const fileHasControl = anyMatch(code, CONTROL_SIGNALS);
+  const constants = selectConstants(code);
 
   const fromPattern = /\.from\s*\(\s*['"`]([A-Za-z0-9_]+)['"`]\s*\)/g;
   let match: RegExpExecArray | null;
@@ -370,8 +448,11 @@ export function scanFile(
 
     const line = lineFor(code, match.index);
     const predicate = HARDCODED_PREDICATE.exec(window);
+    // Per-query, not per-file: the control must live in the same top-level
+    // declaration as the query it is supposed to govern.
+    const hasControl = anyMatch(declBlock(code, match.index), CONTROL_SIGNALS);
 
-    if (predicate && !fileHasControl) {
+    if (predicate && !hasControl) {
       findings.push({
         file,
         line,
@@ -394,12 +475,21 @@ export function scanFile(
     // either. A rule that fires on every layered service is a rule agents
     // delete instead of obey.
     const rendersRows = file.endsWith(".tsx") && /\.map\s*\(/.test(code);
+    const selectedConstant = /\.select\s*\(\s*([A-Za-z_$][\w$]*)\s*\)/.exec(
+      window,
+    )?.[1];
+    const constantProjection = selectedConstant
+      ? (constants.get(selectedConstant) ?? "")
+      : "";
     const projectsArchiveColumn =
       SELECT_STAR.test(window) ||
-      ARCHIVE_COLUMNS.some((column) =>
-        new RegExp(`\\.select\\s*\\([\\s\\S]{0,600}?\\b${column}\\b`).test(window),
+      ARCHIVE_COLUMNS.some(
+        (column) =>
+          new RegExp(`\\.select\\s*\\([\\s\\S]{0,600}?\\b${column}\\b`).test(
+            window,
+          ) || new RegExp(`\\b${column}\\b`).test(constantProjection),
       );
-    if (!predicate && !fileHasControl && rendersRows && projectsArchiveColumn) {
+    if (!predicate && !hasControl && rendersRows && projectsArchiveColumn) {
       findings.push({
         file,
         line,
@@ -422,9 +512,17 @@ export function scanFile(
     // guard states what it has proven, never what it suspects.
     if (
       !predicate &&
-      !fileHasControl &&
+      !hasControl &&
       !projectsArchiveColumn &&
       LIST_SHAPED.test(window) &&
+      // An AMBIGUOUS key (`?.table` — a schema-less read of a table name two
+      // schemas own) can never carry rule 3: the precedent it would be judged
+      // against was set by a DIFFERENT schema's table. Reporting it would make
+      // `app/(core)/organizations/[orgId]/agent-apps/page.tsx:16` (which reads
+      // `app.definition`, a table with no archive column at all) a false
+      // positive the day any control-carrying file makes a schema-less
+      // `definition` read. LIMITS, closed 2026-09-10.
+      !entity.startsWith("?.") &&
       lawfulEntities.has(entity)
     ) {
       findings.push({
@@ -447,6 +545,19 @@ export function scanFile(
  * a file that carries an archive control. Derived from the tree on every run,
  * so closing a class automatically widens rule 3's cover to the rest of it.
  */
+/**
+ * 🚨 PRECEDENT IS FILE-LEVEL ON PURPOSE, and judgment is not.
+ *
+ * `scanFile` attributes a control to the DECLARATION the query is written in,
+ * because that is the question "is THIS list controlled?". This function asks a
+ * different one — "has this repo ruled on this entity at all?" — and a class is
+ * settled by the campaign, not by one query's neighbourhood. Narrowing it to
+ * the declaration measurably dropped `agent.definition` out of the precedent
+ * set (its in-tree control lives in `lib/entity-list` and the package pickers,
+ * not beside a `.from("definition")` chain), which would have silently switched
+ * rule 3 off for the whole agent catalogue. Wider precedent + per-query
+ * judgment is the combination that keeps rule 3 both true and useful.
+ */
 export function lawfulEntitiesIn(
   files: readonly { file: string; raw: string }[],
   entities: ArchivableEntities,
@@ -461,7 +572,9 @@ export function lawfulEntitiesIn(
       const table = match[1];
       if (!table) continue;
       const entity = entityKeyFor(code, match.index, table, entities);
-      if (entity) lawful.add(entity);
+      // An ambiguous `?.table` read cannot settle a class: nobody can say
+      // which schema's entity it proved.
+      if (entity && !entity.startsWith("?.")) lawful.add(entity);
     }
   }
   return lawful;
@@ -487,13 +600,18 @@ const SELF_TEST_TABLES: ArchivableEntities = new Map([
   ["template", new Set(["agent"])],
   ["canvas_items", new Set(["platform"])],
   ["employees", new Set(["hr"])],
-  // Two schemas own a `definition`; only one of them archives. The scan must
-  // tell them apart (`tool.definition` is not our business).
-  ["definition", new Set(["agent"])],
+  // Several schemas own a `definition`; only some of them archive. The scan
+  // must tell them apart (`tool.definition` is not our business), and a
+  // SCHEMA-LESS read of an ambiguous name must not be judged against a
+  // precedent set by a different schema's table.
+  ["definition", new Set(["agent", "workflow"])],
 ]);
 
 /** The settled classes rule 3 protects, for the self-test. */
-const SELF_TEST_LAWFUL = new Set(["platform.canvas_items"]);
+const SELF_TEST_LAWFUL = new Set([
+  "platform.canvas_items",
+  "agent.definition",
+]);
 
 /** RED — exactly the shape `/agents/templates` shipped before 2026-09-09. */
 const RED_HARDCODED = `
@@ -632,6 +750,64 @@ const { data } = await supabase
   .eq("is_archived", false);
 `;
 
+/**
+ * RED — THE HOLE PER-QUERY ATTRIBUTION CLOSES (LIMITS, 2026-09-10). One lawful,
+ * controlled read and one archive-blind read of the same settled entity, in the
+ * same file. Under the old file-level `fileHasControl` the blind one read
+ * GREEN; this is `features/masterwork/encore/service.ts`'s shape exactly.
+ */
+const RED_BLIND_BESIDE_LAWFUL = `
+export async function listBoards(opts: { includeArchived?: boolean } = {}) {
+  let query = db.from("canvas_items").select("id, name").order("created_at");
+  if (!opts.includeArchived) query = query.eq("is_archived", false);
+  return (await query).data;
+}
+
+export async function releasedBase() {
+  const { data } = await db
+    .from("canvas_items")
+    .select("id, name")
+    .not("released_at", "is", null)
+    .order("updated_at", { ascending: false });
+  return data;
+}
+`;
+
+/**
+ * GREEN — the projection is a named constant, not a literal (LIMITS,
+ * 2026-09-10). `features/masterwork/service.ts` selects
+ * `MASTERWORK_SELECT_COLUMNS`, which names `is_archived`; a scan that only
+ * reads literals calls that hand-off archive-blind.
+ */
+const GREEN_SELECT_CONSTANT = `
+const COLUMNS = "id,name,metadata,is_archived";
+export async function listThings() {
+  const { data } = await db
+    .from("canvas_items")
+    .select(COLUMNS)
+    .order("updated_at", { ascending: false });
+  return data;
+}
+`;
+
+/**
+ * GREEN — a SCHEMA-LESS read of a table name more than one schema owns. The
+ * precedent was set by `agent.definition`; this read may be `workflow`'s, or
+ * (as at `app/(core)/organizations/[orgId]/agent-apps/page.tsx:16`) a schema
+ * whose `definition` has no archive column at all. Rule 3 states what it has
+ * proven, and it has not proven which entity this is.
+ */
+const GREEN_AMBIGUOUS_SCHEMA_BLIND = `
+export async function fetchOwned(orgId: string) {
+  const res = await appDb(supabase)
+    .from("definition")
+    .select("id, name, tagline")
+    .eq("organization_id", orgId)
+    .order("updated_at", { ascending: false });
+  return res.data;
+}
+`;
+
 function selfTest(): void {
   const failures: string[] = [];
   const scan = (source: string, file = "self-test.ts") =>
@@ -658,6 +834,9 @@ function selfTest(): void {
   expectRed("COLUMN-NO-CONTROL", RED_COLUMN_NO_CONTROL, "self-test.tsx");
   expectRed("COMMENT-ONLY-CONTROL", RED_COMMENT_ONLY_CONTROL);
   expectRed("ARCHIVE-BLIND", RED_ARCHIVE_BLIND);
+  expectRed("BLIND-BESIDE-LAWFUL", RED_BLIND_BESIDE_LAWFUL);
+  expectGreen("SELECT-CONSTANT", GREEN_SELECT_CONSTANT);
+  expectGreen("AMBIGUOUS-SCHEMA-BLIND", GREEN_AMBIGUOUS_SCHEMA_BLIND);
   expectGreen("ARCHIVE-BLIND-UNSETTLED", GREEN_ARCHIVE_BLIND_UNSETTLED);
   expectGreen("SELECT-STAR", GREEN_SELECT_STAR);
   expectGreen("OTHER-SCHEMA", GREEN_OTHER_SCHEMA);
@@ -712,9 +891,12 @@ function selfTest(): void {
   console.log(
     `✅ self-test: RED on a hardcoded \`.eq("is_archived", false)\` list read, RED on a\n` +
       "   list that selects the archive column with no control, RED when the only\n" +
-      "   'control' is a comment, RED on an archive-blind list read of a settled entity;\n" +
+      "   'control' is a comment, RED on an archive-blind list read of a settled entity,\n" +
+      "   RED on a blind read sitting beside a lawful one in the same file;\n" +
       "   GREEN on an option-driven predicate, a blind read of an unsettled entity, a\n" +
-      "   `select(\"*\")` hand-off, another schema's same-named table, a disclosure-backed\n" +
+      "   `select(\"*\")` hand-off, a named select-constant that carries the archive\n" +
+      "   column, a schema-less read of an ambiguous table name, another schema's\n" +
+      "   same-named table, a disclosure-backed\n" +
       "   client split, a single-record read, a write, a reasoned exemption, and a table\n" +
       `   with no archive column. Entity set derived from types/database.types.ts (${derived.size} tables).`,
   );

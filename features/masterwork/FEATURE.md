@@ -162,7 +162,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   surface uses. Four card surfaces gained the shared `ArchivedDisclosure` (from
   `@ai-matrx/design-system` since 2026-09-10; `components/official/ArchivedDisclosure` was
   deleted when the package took it) — the Masterworks lane,
-  the Rulebook page's Masterworks section, the browse cards (per Rulebook), and the home grid —
+  the Rulebook page's Masterworks section, the browse cards (per Rulebook), and (until it was
+  deleted the same day, below) the module home grid —
   closed by default, one click, count honest, revealed rows labelled "Archived". Every count
   (KPI strip, built count, journey facts, browse "N built", the lane's `masterwork_count`) is now
   the LIVE half. `RulebookLaneRoute` takes the read's default so the agent surface scope never
@@ -171,3 +172,26 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   run/enrollment candidates, not browsable lists (the F9 precedent). Guard
   `pnpm check:archived-items-law` now protects `workflow.definition` as a settled class (proven
   RED on the three pre-fix reads); forcing tests in `archivedItemsLaw.test.ts`.
+
+- 2026-09-10 — **A SCREEN NEVER LIES IN THE ALL-ARCHIVED STATE** (row F10's independent live
+  review, repaired the same day). Making every count the live half quietly made every CAPTION
+  dishonest: with both Hopkins Masterworks archived the Rulebook page printed "No Masterworks
+  built yet." and "115 approved rules and no Masterwork yet — the Conductor can build one" one
+  line above its own "Archived Masterworks (2)" door, telling the Expert to rebuild work they
+  already had. THE RULE, in this feature and everywhere: a "none / never / yet" caption may only
+  be said when live + archived is 0; otherwise it says how many are archived.
+  `MasterworkKpis` gained `archived`, `computeMasterworkKpis` and `journeyFactsFromRulebook` take
+  the archived half, and the sentence itself is the exported, unit-tested
+  `masterworkFreshnessLine`. `conductor_ready` keeps its key, rank and precedence (the mirror of
+  `journey.py`) and only changes words in a case the server cannot reach — `journey.py` has no
+  archive axis, so its `real_masterworks` is already the whole corpus. The browse ROWS view's
+  "not built yet" and the browse CARDS view's "Not built into a system yet." took the same fix.
+  Ten forcing tests, four of them proven RED against the pre-fix code.
+
+- 2026-09-10 — **`features/masterwork/home/` deleted** (`MasterworkHomePage`,
+  `HowItsImprovingPanel`, the home service). `/masterwork` has redirected signed-in Experts to
+  `/masterwork/all` — the canonical entity-list surface — since 2026-08-21, so nothing rendered
+  any of it; F10 had given its grid an archive control nobody could reach. A control nobody can
+  reach is not a control, and replaced code gets deleted (`no-legacy`). The `/masterwork/admin`
+  map, which still described the deleted home as the live authed landing, now describes the
+  redirect.

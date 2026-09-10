@@ -33,7 +33,7 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       url: "/masterwork",
       label: "Masterwork landing",
       description:
-        "The module home. Guests get the marketing landing (ModuleLanding); signed-in Experts get the Masterwork home — Rulebooks with review KPIs, built Masterworks with release state + quality trend, recent runs, Approach start tiles, and the 'How it's improving' Hindsight panel.",
+        "The module home. Guests get the marketing landing (ModuleLanding); signed-in Experts are redirected to /masterwork/all, the canonical entity-list Rulebook surface. (The hand-built authed home this row used to describe stopped being rendered on 2026-08-21 and was deleted on 2026-09-10 — a map that describes an unreachable screen is a map that lies.)",
       filePath: "app/(core)/masterwork/page.tsx",
       status: "Live",
     },
@@ -188,27 +188,6 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
     },
   ],
   components: [
-    {
-      name: "MasterworkHomePage",
-      filePath: "features/masterwork/home/MasterworkHomePage.tsx",
-      description:
-        "The authed landing body: Rulebook cards with review progress, Masterworks with release state + quality trend, recent runs, Approach start tiles, the improvement panel.",
-      tier: "internal",
-    },
-    {
-      name: "HowItsImprovingPanel",
-      filePath: "features/masterwork/home/HowItsImprovingPanel.tsx",
-      description:
-        "The honest Hindsight panel — renders only what a signed-in user can truly read (public mandate registry + agent revision counts); never fabricates review activity.",
-      tier: "internal",
-    },
-    {
-      name: "home service",
-      filePath: "features/masterwork/home/service.ts",
-      description:
-        "Bounded overview reads for the landing (your Rulebooks / Masterworks / runs / quality scores) + fetchImprovementRows.",
-      tier: "internal",
-    },
     {
       name: "MasterworkLanding (marketing)",
       filePath:

@@ -40,11 +40,30 @@ export interface MasterworkKpis {
   current: number;
   released: number;
   currentPct: number;
+  /**
+   * 🚨 THE ARCHIVED-ITEMS LAW, honesty half (row F10 repair, 2026-09-10).
+   *
+   * `built` is the LIVE half of the archive split, which is right for a count
+   * of working systems and WRONG as evidence that nothing was ever built. With
+   * every Masterwork archived, `built === 0` and the strip printed "No
+   * Masterworks built yet." one line above its own "Archived Masterworks (2)"
+   * door — a screen lying about the Expert's own work and telling them to
+   * rebuild it. Every caption that could claim "never built" now reads
+   * `built + archived`, never `built` alone.
+   */
+  archived: number;
 }
 
 export function computeMasterworkKpis(
   masterworks: Masterwork[],
   rulebookVersion: number,
+  /**
+   * The ARCHIVED half of the same split — the rows the surface's
+   * `ArchivedDisclosure` reveals. Counts stay live-only; only the never-built
+   * claim consults this. Defaults to none so a caller with no split (a surface
+   * that reads one half) cannot accidentally invent archived systems.
+   */
+  archivedMasterworks: readonly Masterwork[] = [],
 ): MasterworkKpis {
   const built = masterworks.filter((masterwork) => !masterwork.understudy);
   const current = built.filter(
@@ -60,6 +79,8 @@ export function computeMasterworkKpis(
     released,
     currentPct:
       built.length === 0 ? 0 : Math.round((current / built.length) * 100),
+    archived: archivedMasterworks.filter((masterwork) => !masterwork.understudy)
+      .length,
   };
 }
 
@@ -309,6 +330,28 @@ export function RulebookKpiStrip({
   );
 }
 
+/**
+ * The ONE line under the Masterwork bar.
+ *
+ * 🚨 "yet" is a claim about the Expert's WHOLE history, so it may only be made
+ * against live + archived. `built === 0` alone meant "nothing was ever built"
+ * until the archive split made `built` the live half; after it, this strip
+ * printed "No Masterworks built yet." one line above its own "Archived
+ * Masterworks (2)" door, and the Rulebook header told the Expert to rebuild
+ * work they already had (row F10 live review, 2026-09-10). Exported so the
+ * forcing test can hold every branch to that, without re-implementing it.
+ */
+export function masterworkFreshnessLine(kpis: MasterworkKpis): string {
+  const totalBuilt = kpis.built + kpis.archived;
+  if (totalBuilt === 0) return "No Masterworks built yet.";
+  if (kpis.built === 0)
+    return `All ${kpis.archived} ${kpis.archived === 1 ? "Masterwork is" : "Masterworks are"} archived.`;
+  if (kpis.current === kpis.built)
+    return "Every Masterwork is using the current rules.";
+  const stale = kpis.built - kpis.current;
+  return `${stale} ${stale === 1 ? "Masterwork needs" : "Masterworks need"} rebuilding.`;
+}
+
 export type MasterworkKpiFilter = "all" | "current" | "released";
 
 export function MasterworkKpiStrip({
@@ -321,12 +364,7 @@ export function MasterworkKpiStrip({
   activeFilter?: MasterworkKpiFilter;
 }) {
   const allCurrent = kpis.built > 0 && kpis.current === kpis.built;
-  const freshnessLine =
-    kpis.built === 0
-      ? "No Masterworks built yet."
-      : allCurrent
-        ? "Every Masterwork is using the current rules."
-        : `${kpis.built - kpis.current} ${kpis.built - kpis.current === 1 ? "Masterwork needs" : "Masterworks need"} rebuilding.`;
+  const freshnessLine = masterworkFreshnessLine(kpis);
 
   return (
     <div className="space-y-2">

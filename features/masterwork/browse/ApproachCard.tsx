@@ -15,8 +15,11 @@
 // verbatim and consumed by:
 //
 //   1. intake/NewRulebookFlow.tsx  — step 2 of the guided start (selectable)
-//   2. home/MasterworkHomePage.tsx — the "Start here" grid (links)
-//   3. browse/ApproachPickerDialog.tsx — the Rulebook page's picker (launches)
+//   2. browse/ApproachPickerDialog.tsx — the Rulebook page's picker (launches)
+//
+// (A third consumer, the authed module home's "Start here" grid, went away with
+// `features/masterwork/home/` on 2026-09-10: /masterwork has bounced signed-in
+// Experts to /masterwork/all since 2026-08-21, so nothing rendered it.)
 //
 // THE NO DEAD ENDS DOCTRINE decides interactivity, not `enabled`: a card is
 // clickable exactly when the registry gives it somewhere to go (an

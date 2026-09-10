@@ -25,6 +25,22 @@ interface Props {
    * the reveal control is one click away, at /masterwork/[id]/masterworks.
    */
   masterworksBy: Record<string, Masterwork[]>;
+  /**
+   * The ARCHIVED half of the same split. This view shows counts, not a list,
+   * so it renders no reveal control — but "not built yet" is a claim about
+   * everything the Expert ever built, and saying it of a Rulebook whose only
+   * Masterworks are archived is the row F10 lie (2026-09-10). With archived
+   * rows present the line says how many, and doors to the list that reveals
+   * them.
+   */
+  archivedBy: Record<string, Masterwork[]>;
+}
+
+/** What the line says when this Rulebook has no LIVE Masterwork. */
+export function nothingLiveLabel(archivedCount: number): string {
+  return archivedCount === 0
+    ? "not built yet"
+    : `all ${archivedCount} archived`;
 }
 
 export function MasterworkBrowseRows({
@@ -33,12 +49,14 @@ export function MasterworkBrowseRows({
   menuFor,
   hrefFor,
   masterworksBy,
+  archivedBy,
 }: Props) {
   return (
     <div className="divide-y divide-border rounded-lg border border-border bg-card">
       {rows.map((row) => {
         const href = hrefFor(row);
         const built = masterworksBy[row.id] ?? [];
+        const archived = archivedBy[row.id] ?? [];
         const released = built.filter((m) => m.released_at).length;
         return (
           <div
@@ -80,7 +98,7 @@ export function MasterworkBrowseRows({
                     {released > 0 ? ` · ${released} released` : ""}
                   </span>
                 ) : (
-                  <span>not built yet</span>
+                  <span>{nothingLiveLabel(archived.length)}</span>
                 )}
               </span>
             </div>
@@ -96,6 +114,14 @@ export function MasterworkBrowseRows({
                 <Play className="h-3 w-3" />
                 {built.length} built
                 {released > 0 ? ` · ${released} released` : ""}
+              </Link>
+            ) : archived.length > 0 ? (
+              <Link
+                href={`/masterwork/${row.id}/masterworks`}
+                className="hidden shrink-0 text-xs text-muted-foreground hover:text-foreground hover:underline sm:block"
+                title="Every Masterwork built from this Rulebook is archived — open the list to reveal them"
+              >
+                {nothingLiveLabel(archived.length)}
               </Link>
             ) : (
               <span className="hidden shrink-0 text-xs text-muted-foreground sm:block">

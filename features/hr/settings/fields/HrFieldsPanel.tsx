@@ -298,11 +298,26 @@ export function HrFieldsPanel() {
             pageSize={25}
             urlState={{ id: "hr-custom-fields" }}
             toolbar={{ search: true, searchPlaceholder: "Search custom fields" }}
-            emptyState={{
-              title: "No custom fields on HR records",
-              description:
-                "Nothing has been added beyond the built-in fields. When the platform field editor arrives, what you create with it appears here.",
-            }}
+            emptyState={
+              // THE ARCHIVED-ITEMS LAW, honesty half (row F10 class fix,
+              // 2026-09-10): the table is handed the LIVE half, so "Nothing
+              // has been added" is a claim the live half cannot support. With
+              // every definition archived it printed exactly that, one line
+              // under this section's own "Archived fields (N)" door.
+              !showArchived &&
+              liveDefinitions.length === 0 &&
+              archivedDefinitions.length > 0
+                ? {
+                    title: `All ${archivedDefinitions.length} custom ${archivedDefinitions.length === 1 ? "field is" : "fields are"} archived`,
+                    description:
+                      "Nothing is live on an HR record right now. Open “Archived fields” above to see what was defined.",
+                  }
+                : {
+                    title: "No custom fields on HR records",
+                    description:
+                      "Nothing has been added beyond the built-in fields. When the platform field editor arrives, what you create with it appears here.",
+                  }
+            }
           />
           </NonEditableContextMenu>
         </section>

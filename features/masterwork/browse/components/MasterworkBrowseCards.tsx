@@ -36,14 +36,24 @@ interface Props {
   archivedBy: Record<string, Masterwork[]>;
 }
 
-/** The Masterworks built from this Rulebook — each one named and openable. */
-function MasterworkChips({ items }: { items: Masterwork[] }) {
+/**
+ * The Masterworks built from this Rulebook — each one named and openable.
+ *
+ * `emptyLabel` exists because "Not built into a system yet." is a claim about
+ * everything the Expert ever built, and this component is handed the LIVE half
+ * of the archive split. With every Masterwork archived it printed that
+ * sentence one line above the card's own "Archived (2)" door (row F10 live
+ * review, 2026-09-10).
+ */
+function MasterworkChips({
+  items,
+  emptyLabel = "Not built into a system yet.",
+}: {
+  items: Masterwork[];
+  emptyLabel?: string;
+}) {
   if (items.length === 0) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        Not built into a system yet.
-      </p>
-    );
+    return <p className="text-xs text-muted-foreground">{emptyLabel}</p>;
   }
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -159,7 +169,14 @@ export function MasterworkBrowseCards({
                 <BrainCircuit className="h-3 w-3" />
                 Built into
               </span>
-              <MasterworkChips items={built} />
+              <MasterworkChips
+                items={built}
+                emptyLabel={
+                  archived.length > 0
+                    ? `All ${archived.length} ${archived.length === 1 ? "Masterwork is" : "Masterworks are"} archived.`
+                    : undefined
+                }
+              />
               {/* THE ARCHIVED-ITEMS LAW: one click, closed by default, honest
                   count — and nothing at all when this Rulebook has none. */}
               <ArchivedDisclosure

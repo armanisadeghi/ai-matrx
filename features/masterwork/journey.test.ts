@@ -36,6 +36,7 @@ function facts(over: Partial<JourneyFacts> = {}): JourneyFacts {
     completedCheckups: 0,
     checkupSettledAt: null,
     masterworks: [],
+    archivedMasterworks: 0,
     latestAudition: null,
     hasRunFacts: true,
     ...over,

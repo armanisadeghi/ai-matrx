@@ -1380,9 +1380,18 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const journey = useMemo(
     () =>
       rulebook
-        ? computeJourney(journeyFactsFromRulebook(rulebook, activeMasterworks))
+        ? computeJourney(
+            journeyFactsFromRulebook(
+              rulebook,
+              activeMasterworks,
+              // THE ARCHIVED-ITEMS LAW, honesty half: the journey's headline
+              // is the page's header stat, and "no Masterwork yet" may not be
+              // said from the live half alone (row F10 review, 2026-09-10).
+              archivedMasterworks,
+            ),
+          )
         : null,
-    [rulebook, activeMasterworks],
+    [rulebook, activeMasterworks, archivedMasterworks],
   );
 
   if (loading) {
@@ -1422,6 +1431,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const masterworkKpis = computeMasterworkKpis(
     activeMasterworks,
     rulebook.version,
+    // The archived half feeds ONLY the never-built claim; every tile stays the
+    // live count (THE ARCHIVED-ITEMS LAW — a screen never lies about how many
+    // working systems the Expert has, nor about how many they ever built).
+    archivedMasterworks,
   );
   // What the disclosure would reveal: the archived BUILT systems (an archived
   // Understudy is not one of the Expert's built Masterworks either way).

@@ -113,6 +113,7 @@ function MasterworkViews({
         menuFor={menuFor}
         hrefFor={hrefFor}
         masterworksBy={activeBy}
+        archivedBy={archivedBy}
       />
     );
   }

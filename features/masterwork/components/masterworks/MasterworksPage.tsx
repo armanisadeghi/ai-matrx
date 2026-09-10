@@ -187,7 +187,14 @@ export function MasterworksPage({
   const [showArchived, setShowArchived] = useState(false);
   const { active: activeMasterworks, archived: archivedMasterworks } =
     splitMasterworksByArchive(masterworks);
-  const kpis = computeMasterworkKpis(activeMasterworks, rulebook.version);
+  // The archived half feeds ONLY the strip's never-built sentence — every tile
+  // stays the live count (row F10 repair, 2026-09-10: "No Masterworks built
+  // yet." was printed with two archived Masterworks one click below).
+  const kpis = computeMasterworkKpis(
+    activeMasterworks,
+    rulebook.version,
+    archivedMasterworks,
+  );
   const matchesFilter = (masterwork: Masterwork) => {
     if (activeFilter === "current") {
       return masterwork.rulebook_version === rulebook.version;
