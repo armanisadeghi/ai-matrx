@@ -4,7 +4,7 @@ type: Skill
 title: "feature-deep-dive — exhaustive audit, target vision, approved plan, complete build"
 description: "Exhaustive feature audit → target vision → approved plan → complete build. Use whenever the user wants to deeply understand, audit, overhaul, take over, unify, or finish an ENTIRE feature — requests like 'deep dive on X', 'audit the X feature', 'figure out everything X does and make it what it should be', 'take over X and finish it', 'bring X up to best practices' — or any time a whole feature should be brought to its ideal state rather than patched. Maps every entry point, flow, endpoint, state store, and side effect (including scattered fragments, prototypes, and unfinished intentions), recovers the original intended vision, sets an enterprise-grade bar, produces a prioritized gap-closing plan for approval, then implements and tests it to 100% completion. NOT for quick bug fixes, single-file edits, diff/PR reviews, or one small addition to an otherwise-untouched feature."
 tags: [execution, features, audit, planning, doctrine]
-timestamp: 2026-08-22T00:00:00Z
+timestamp: 2026-09-10T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -77,7 +77,11 @@ Combine what exists, what was intended, and what best practices demand into one 
 
 ## Phase 5 — Ask vs. decide
 
-Once you have the basics, front-load your questions so you can then run autonomously. But filter them: do NOT bring questions that have a known best practice or a clear correct answer — decide, implement, and report that you decided. Escalate ONLY genuine gray areas: pure preference, no established best practice, or app-specific knowledge you cannot derive from the code. Make every escalated question specific and answerable, with your best-guess default offered for one-word confirmation.
+Prune and ask per the `grilling` skill. Facts and best-practice-decidable forks never reach the owner: decide them and list them as "Decided — override by number". Only genuine gray areas enter the tree — pure preference, no established best practice, or app-specific knowledge you cannot derive from the code. Ask frontier rounds until the tree is empty. The plan's **Open Questions** section holds only what remains unasked, each item with the default that ships if skipped.
+
+## Phase 5b — Attack the plan
+
+Before presenting the plan deliverable, run `plan-attack` (REGRET + BUILDABILITY in parallel) and adjudicate. OWNER-ONLY findings join Open Questions. The plan carries the one-line attack record.
 
 ## Phase 6 — Implementation
 
@@ -99,7 +103,7 @@ A complete, prioritized, exhaustive plan. Every finding appears — minor items 
 - **P2 — Improvements:** performance, UX gaps, canonicalization, feature-boundary unification, integration surfaces, surfacing underexposed capabilities, vision-gap features, risk-reducing refactors.
 - **P3 — Polish:** code quality, true dead code, docs, consistency.
 
-**Each item:** what's wrong/missing, exact file/line refs, why it matters, the fix, complexity (S/M/L), dependencies, confidence label.
+**Each item:** what's wrong/missing, exact file/line refs, why it matters, the fix (concrete: "add error handling" is not a fix), complexity (S/M/L), dependencies, confidence label.
 
 ALWAYS use this structure:
 

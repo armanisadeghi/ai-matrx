@@ -4,7 +4,7 @@ type: Skill
 title: "build-sub-feature — add a capability INTO a live feature, to a world-class bar"
 description: "Implement a sub-feature — a new capability added INTO a live, existing feature — to a world-class bar. Use whenever the user asks to add, extend, or wire a capability into something that already exists: 'add X to Y', 'extend Y to support X', 'build a new option / button / setting / endpoint / tool for Y', or hands over a sub-feature spec to implement. Runs a fast interview first (basics before code; the user can walk away during exploration), then builds to non-negotiable acceptance criteria: reuse canonical code instead of forking variants, bring the whole stack along (a needed backend contract is part of the work, not a follow-up ticket), propagate shared logic to every surface (web, desktop, Chrome extension, mobile, admin), annihilate anything replaced (no shims, fallbacks, or dead code), and emulate the best systems that already solve this. NOT for whole-feature audits or overhauls (use feature-deep-dive), greenfield standalone features, pure bug fixes, or trivial copy/style tweaks."
 tags: [execution, features, implementation, doctrine]
-timestamp: 2026-08-22T00:00:00Z
+timestamp: 2026-09-10T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -19,19 +19,28 @@ You're implementing a new sub-feature — an addition to something that already 
 
 This isn't greenfield. It's an addition to something live, so the surrounding system is your first concern, not an afterthought. Build so the whole ecosystem is better for this — not just the one spot it lands in.
 
+> 🚨 **UNRESOLVED CONFLICT — `CFL-003`. Do not build against this section until Arman rules.**
+> **This document says:** ask interview questions in plain chat text, never through a structured question picker, because a picker blocks free-form replies.
+> **[`doc-convergence`](/skills/doc-convergence/SKILL.md) and matrx-frontend's `vision-to-fleet` skill say:** the structured question picker (AskUserQuestion) is an acceptable way to ask closed questions. [`grilling`](/skills/grilling/SKILL.md), `ui-bakeoff`, and `aidream/CLAUDE.md` side with this document.
+> **Why it matters:** with a picker, Arman chooses from fixed options; in plain chat he can answer "3 yes, 4 no because…" and add context nobody asked for.
+> **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
+> Register: [`/operations/conflicts.md`](/operations/conflicts.md) · `CFL-003`
+
 ## Step 1 — Interview: nail the spec before touching code
 
 If the invocation already includes a description, treat it as the overview and interview only for the gaps. Ask in plain chat text — never a structured question picker; it blocks free-form replies.
 
-- Open with ONE quick round of basic questions BEFORE going into the codebase. The user is actively waiting during this step — ask everything together, keep it fast.
-- Attach your recommendation or the known best practice to every question that has one, stated plainly, so the user can confirm with a single word.
-- End every round with a genuinely open-ended question ("what else should I know that I didn't ask?") — strict questions limit what the user can contribute; the open one is where the unanticipated context arrives.
-- The moment you have enough to explore, SAY SO explicitly — "I have what I need; exploring the codebase now — you can step away" — then go. The user plans their time around this signal.
-- Exploration surfaces new questions. Bring them back in batches, not one at a time, and keep the interview alive until you have explored all you need and have all the answers you need.
+Interview per the `grilling` skill (prune, frontier rounds, a recommendation on every closed question, skips ship as defaults). Specific here: round 1 holds only what exploration cannot answer. Send it, and **start exploring in the same turn**; do not wait for the answers. Say "exploring now — you can step away." Questions that come out of exploration join the next round. Stop when the frontier is empty.
+
+**Ratchet:** if exploration shows this is really a whole-feature overhaul or several independent subsystems, say so in one line and switch to feature-deep-dive (or vision-to-fleet). Hidden complexity only ever moves the work to a heavier path, never a lighter one.
 
 ## Step 2 — Explore: know the ground
 
 Before designing or writing anything, establish from the actual code: what this lands inside, what consumes it, what it depends on, what already exists to reuse, and which of the world's best systems already solve this problem well. The standards below tell you what to look for; exploration is where you look.
+
+## Step 3 — Attack (when adding a contract, table, or cross-surface change)
+
+Write a ≤20-line design note in scratch and run `plan-attack` (one reviewer) on it before writing code.
 
 ## The standards — non-negotiable acceptance criteria
 

@@ -1,0 +1,117 @@
+---
+name: skill-authoring
+type: Skill
+title: "skill-authoring — skills that fire, fit, and are proven"
+description: "Rules for SKILL.md files that trigger, fit, and are proven. Use when creating a skill, rewriting a description, splitting an oversized skill, or editing one because an agent ignored, misread, or never fired it."
+tags: [meta, skills, agents, docs-system]
+timestamp: 2026-09-10T00:00:00Z
+---
+
+<!-- SYNCED COPY — do not edit here.
+     Canonical: common-docs/skills/skill-authoring/SKILL.md
+     This file is distributed to every consuming repo by
+     common-docs/meta/scripts/sync_skills.py. Edit the canonical, run the
+     sync, and commit each repo. Edits made here are overwritten and lost. -->
+
+# skill-authoring — skills that fire, fit, and are proven
+
+A skill is a **guard on agent behavior**, so fix-the-class applies: a skill you never watched
+fail-then-pass is not a guard. These rules sit on top of the target repo's `context-docs` skill
+(full-document review, voice, never lose a rule) — read that too.
+
+## 1. The description is the trigger — and the listing is capped
+
+How Claude Code loads skills (official docs, checked 2026-09-10):
+- The model sees only each skill's `name` + `description` (+ `when_to_use`) until it invokes the skill.
+  That combined text is **truncated at 1,536 chars** per skill in the listing.
+- The **whole listing is budget-capped** (the budget scales with the model's context window;
+  `SLASH_COMMAND_TOOL_CHAR_BUDGET` overrides it). Past the cap, entries arrive **name-only** — every
+  character you add can push another skill's trigger out.
+- Skills in `.claude/skills` of subdirectories below the launch dir load **lazily**, the first time a
+  file there is read or edited. That is why repo-scoped duplicates (`aidream:x`, `matrx-frontend:x`)
+  appear mid-session, each one another listing entry.
+- `disable-model-invocation: true` removes the description from context entirely: the skill becomes
+  user-invoked only (`/name`), and subagents cannot preload it either.
+
+Rules:
+- **Recipe:** `<what it is — one noun phrase>. Use when <trigger>, <trigger>, … .` Primary use case
+  first. Target **≤300 chars**, hard **500** (the docs recommend under ~200).
+- **Triggers are what the agent will actually see:** situations, symptoms, file paths/globs, error
+  strings, the user's words.
+- **Never the procedure.** No "Covers / Encodes / Enforces / pipeline", no step lists — an agent handed
+  the procedure in the description executes the summary and skips the body.
+- **No dates, rulings, approvals, or keyword dumps** — those live in the body.
+- **At most one `NOT for X (use Y)`**, only when a sibling skill is a real near-miss.
+- **Slash-only skill** (reached by `/name` and by nothing else) → `disable-model-invocation: true`.
+  First `grep -r "<name>"` across all skills and agent definitions — no other skill or subagent can
+  reach it afterwards.
+- **A trigger that keeps missing** in a footgun area → run the `skill-creator` plugin's description
+  optimization loop (should-fire + near-miss queries), never lengthen by hand.
+
+## 2. Size — the body routes over branches
+
+- **SKILL.md body ≤500 lines.** Over budget is fixed by relocating, not by squeezing prose.
+- **Branch test:** inline what every run needs; move what only some runs reach (one stage, one
+  provider, one variant, a long API reference) into a sibling file named for the branch, with a
+  pointer that says **when** to read it: `Stage V only → read stage-v.md.`
+- **One level deep.** SKILL.md → file, never file → file. A reference file over 100 lines opens with a
+  contents list.
+- **Point at `--help` or a script** instead of restating flags or deterministic steps.
+- **Splitting relocates; every rule survives.** Canonical skills' companion files ship with
+  `sync_skills.py` automatically (in common-docs they carry OKF frontmatter).
+- **Every step ends on a checkable completion criterion** — "every touched table returns
+  `canonical_certify_ok`", never "understanding reached".
+
+## 3. Match the form to the failure
+
+| Observed failure | Write | Never write |
+|---|---|---|
+| Knows the rule, skips it under pressure | Prohibition + named replacement + §4 counters | Soft advice ("prefer", "consider") |
+| Complies, but output has the wrong shape | A recipe: what the output IS, its parts, in order | A list of don'ts — they get negotiated |
+| Omits a required element | A REQUIRED slot in the template it fills | A prose reminder near the template |
+| Behavior depends on a condition | A conditional on an observable predicate | A rule plus an exemption clause |
+
+**No nuance clauses** ("unless it matters") — they reopen the negotiation. A real exception is its own
+conditional.
+
+## 4. Discipline skills — close the loopholes you saw
+
+A discipline skill guards a rule that costs the agent time and that it already knows (verify live,
+never revert a gate, never silence a type error).
+- **`## Rationalizations`** — a two-column table, `Excuse (verbatim) | Reality (one line)`. **Rows only
+  from observed transcripts or real incidents**; an imagined row is bloat.
+- **`## Red flags`** — 3–7 thoughts that precede the violation ("this case is different", "the gate is
+  blocking my release").
+- Put the about-to-violate symptom in the description: `Use when … or when tempted to …`.
+
+## 5. Prove it
+
+Required for a new skill, an edit made because an agent misbehaved, any discipline skill, and any
+description rewrite. Exempt: typo, path, and pointer fixes.
+
+1. **Scenario from reality.** Use the prompt or transcript that actually failed (incident, feedback
+   item, review-queue row). Only with no incident, synthesize one with real repo paths, ≥2 real
+   pressures (time, sunk cost, "the user said skip it", a blocking gate), and a forced choice.
+2. **RED — baseline.** Dispatch fresh subagents (lane named; `standard` unless the consuming lane is
+   known) with the scenario and **without** the new text (for an edit: the current skill). **3 reps.**
+   Record choices and rationalizations verbatim. **No failure → nothing to fix; do not write the guidance.**
+3. **GREEN.** Write the minimum that answers the recorded failures. Same scenario, lane, 3 reps,
+   **with** the skill. Pass = all 3 comply and cite the skill.
+4. **REFACTOR.** A new rationalization → a §4 row + red flag → rerun. Reps that disagree with each
+   other mean the wording is not binding — change the form (§3) before adding words.
+5. **Trigger check** (description changed): 3 should-fire and 3 near-miss prompts to fresh subagents
+   with the skill installed; record fire / no-fire.
+6. **Record the proof** in `<skill>/evals.md`: scenario, lane, date, RED result, GREEN result,
+   rationalizations harvested. It is the regression test — the next editor reruns it. The author never
+   grades a run it performed itself.
+
+## Before you save — checklist
+
+- [ ] Description follows §1: noun phrase + `Use when`, ≤300 chars (500 hard), no procedure, no dates.
+- [ ] Slash-only? `disable-model-invocation: true` after the cross-skill grep.
+- [ ] Body ≤500 lines; branch-only material disclosed one level deep with when-to-read pointers.
+- [ ] Guidance form matches the observed failure (§3).
+- [ ] Discipline skill: rationalization rows and red flags come from observed failures.
+- [ ] §5 run done (or exempt) and `evals.md` updated.
+- [ ] Target repo's `context-docs` checklist passed. Canonical skill? Edit `common-docs/skills/`, run
+  `sync_skills.py`, commit every touched repo.

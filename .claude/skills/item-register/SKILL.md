@@ -4,7 +4,7 @@ type: Skill
 title: "item-register — one self-contained register for every many-handed effort"
 description: "Create, contribute to, and run down an Item Register — the single self-contained tracking document for any effort with multiple agents' hands in it. Use when (1) Arman invokes /item-register <subject>, (2) a take or deep-dive reveals several sessions/agents working one subject, (3) a planning/handoff doc has grown context-dependent and needs converting into atomic items, or (4) you are asked to 'chime in on', review, or update an existing register. Covers the gap-analysis conversion, the item template with stable IDs, review passes, consensus marking (SETTLED/CONTESTED), presenting all perspectives to Arman, recording rulings, the collapse-to-law pass, build mode, and recruiting other live sessions. First proven on the Keyword Intelligence register, 2026-08-25."
 tags: [register, multi-agent, consensus, decisions, tracking, convergence]
-timestamp: 2026-08-24T00:00:00Z
+timestamp: 2026-09-10T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -82,6 +82,11 @@ Updates). Hard constraints, all of them:
    (`date — author — change`).
 7. **Every claim sourced or marked unsourced** — commits, migrations, tables, files, or an
    explicit "this item IS the record." Verified counts carry their verification date.
+8. **`## Not yet specified`** holds in-scope work you can see coming but cannot yet state
+   as a precise item. The test is whether you can *phrase the question* sharply now, not
+   whether you can answer it: sharp but blocked → an item; fuzzy → this section, never
+   pre-sliced into fake items. Graduate what turns sharp into items and delete it here.
+   Work ruled beyond the register's goal goes in `## Out of scope` with one line of why.
 
 Then come back to Arman with the questions the conversion surfaced — batched, using the two
 question shapes (below), never buried in the document.
@@ -136,7 +141,8 @@ Deliberation is scaffolding; once a decision is made, the history is not the del
 
 ## Build mode
 
-Once the register is converged and settled items are collapsed, it enters **build mode**:
+Once the register is converged, settled items are collapsed, **and the open items have passed
+`plan-attack`**, it enters **build mode**:
 document cleanup stops being the work. Agents grab the next open item in priority order,
 build, test, run adversarial review on their own work before calling it done, then update
 only their item and return for the next. Genuine decisions go to Arman directly — core
@@ -177,6 +183,11 @@ other contributors read only the remote.
 
 # Changelog
 
+- 2026-09-10 — Phase 1 rule 8: a `## Not yet specified` section for suspected-but-unsharp work
+  (adapted from the "fog of war" idea in Matt Pocock's wayfinder), so it is neither lost nor
+  pre-sliced into fake items.
+- 2026-09-10 — Build mode is gated on the open items passing `plan-attack` (a zero-authorship
+  hole-poking review) first.
 - 2026-08-24 — Created from Arman's three instruction prompts to the Keyword Intelligence
   register crew (gap-analysis categories; the self-contained register brief; the
   collapse-to-law instruction) plus the mechanisms that emerged in that register's three

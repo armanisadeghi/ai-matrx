@@ -181,6 +181,11 @@ and required proof. It reads detail and governing docs, fetches/checks `origin/m
 and verifies whether the issue still exists before claiming a discovery. Existing
 fixes need current verification; they are not new work by this patrol.
 
+Investigators follow the `diagnose` method: a red-capable loop against the original failure before
+any theory, the failing boundary localized, falsifiable hypotheses tested one variable at a time,
+and a stop after three failed fixes with the evidence returned to the parent. Diagnostic harnesses
+are scaffolding; they never substitute for the discriminating proof below.
+
 For static findings, re-scan the whole changed file and compare finding identity;
 an empty result at the old line number proves nothing when edits move the finding.
 Preserve documented public inputs as well as current callers: test generic and
@@ -302,6 +307,9 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 - Investigators follow the shared `diagnose` method (loop before theory, boundary
+  localization, one-variable hypotheses, three-failed-fix stop); harnesses are never proof.
 
 - 2026-09-10 - Made patrol checkpoint files parent-owned and required every
   investigator assignment to prohibit state edits after a delegate appended to

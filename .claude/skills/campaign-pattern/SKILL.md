@@ -60,7 +60,7 @@ finished. **Without this law, the other four moves produce confident garbage.**
 ### 5. Answer through a defaults-carrying interview, then get out of the way
 The final pre-build interview carried the team's recommendation on every item with the rule:
 *"anything you skip ships with the stated recommendation as the platform default."* Only the
-genuinely un-defaultable needed words (seven items). During the run, the owner answered
+genuinely un-defaultable needed words (seven items). (Mechanics: the `grilling` skill.) During the run, the owner answered
 decision batches fast and decisively, taught PRINCIPLES instead of fixes (org-scoping, knobs,
 platform primitives, package versioning), corrected focus bluntly when needed (*"you are focused
 on the wrong things"*), fired chips for parallel work — and otherwise did not interfere.
@@ -82,20 +82,31 @@ on the wrong things"*), fired chips for parallel work — and otherwise did not 
    default, high only for real reasoning, low never — on Claude the synced lanes
    `quick` (sonnet) / `standard` (opus) / `deep` (high), on Codex `reasoning_effort`. Exact harness
    identifiers, compact context, ownership retained — `policies/subagent-model-ladder.md`). Freeze contracts first so lanes can't collide; changes after the freeze are
-   amendments, never silent edits.
+   amendments, never silent edits. Briefs, report statuses, the two-verdict review, and the
+   bounded fix loop: the `subagent-dispatch` skill.
 3. **Nothing flips on the builder's word.** Independent, zero-authorship verification against
    the SPEC, on the deployed surface, with real identities driving real doors — verifiers try to
    BREAK things, pair every refusal-proof with a positive control that could fail, re-run every
    red before believing it, and state which build every verdict ran on. Expect verdicts to be
-   overturned in both directions; that is the system working.
-4. **Fix the class, never the instance.** Every defect gets a root cause, a census of its
-   siblings, and where possible a structural guard proven RED-THEN-GREEN (a guard you cannot
-   demonstrate failing is not a guard). Every stand-in screams (loud-patches law); every
+   overturned in both directions; that is the system working. Reviewer findings are leads too:
+   reproduce each on the current build, check it against recorded rulings, then CONFIRM, REFUTE
+   with evidence, or RULE — ledgered as `Ruling: <decision> — <why> — <cost if wrong>`. Never
+   pre-judge a reviewer's brief ("don't flag X"), never discard a finding silently, never fix a
+   settled ruling away.
+4. **Fix the class, never the instance.** Every defect gets a root cause proven by a red-capable
+   loop (method: the `diagnose` skill — never a fix before the loop), a census of its siblings,
+   and where possible a structural guard proven RED-THEN-GREEN at a seam that actually reproduces
+   the bug (a guard you cannot demonstrate failing is not a guard; tests and guards follow
+   `forcing-function-tests`). Every stand-in screams (loud-patches law); every
    opinion-shaped decision becomes an org knob; every capability gets built as a platform
    primitive, not a feature-local patch.
 5. **Bank lessons as laws.** Method traps (liveness oracles, session traps, seam classes) go
-   into durable memory/docs the moment they bite, so they bite once. Briefs quote the laws;
-   the culture compounds daily.
+   into durable memory/docs the moment they bite, so they bite once. At each convergence, and
+   whenever a verifier overturns a builder, run a short retro and put each lesson where it bites
+   cheapest: an automated check (best), a verifier-brief rule (the reviewer has the least
+   context pressure — standards belong there, not in the builder's brief), a navigation
+   pointer, or a skill line. Delete steering text that changed no behavior. Briefs quote the
+   laws; the culture compounds daily.
 6. **Route honestly.** Agent-doable work is never sent to the owner. What reaches him: finished
    work to see, genuine rulings packaged with context + a recommendation in plain language
    (no jargon, no doc references, no codenames), and chips he can fire with one click. Batched,
@@ -115,7 +126,7 @@ on the wrong things"*), fired chips for parallel work — and otherwise did not 
    frozen specs → parallel fan-out → independent verification). Name what "done" means using
    the Part 1 §4 language verbatim.
 2. Tell the agent to run discovery first (own-system recon + market reference + scope), then
-   bring the scope list — and order the hole-poking review on it.
+   bring the scope list — and order the hole-poking review on it (`plan-attack`).
 3. Answer the defaults-carrying interview (only un-defaultable items need words).
 4. Say the sentence that grants the chair: *"You own this end to end. Make yourself
    replaceable, keep everything in the register, and only bring me finished work and real
@@ -124,6 +135,10 @@ on the wrong things"*), fired chips for parallel work — and otherwise did not 
    own hands when asked (the owner's phone caught defects no agent could) — and let it run.
 
 **Changelog**
+- 2026-09-10 (skill-benchmark adoptions) — method skills wired into the doctrine: Part 2 §4 root
+  cause via a red-capable loop (`diagnose`) and guards at a seam that reproduces the bug
+  (`forcing-function-tests`); §2 → `subagent-dispatch`; §3 reviewer-finding adjudication; §5 retro;
+  Part 1 §5 → `grilling`; Part 3 step 2 → `plan-attack`.
 - 2026-09-10 (status integrity) — added the carry-forward rule: no-event deltas can never erase
   unresolved actions or be reported as completion.
 - 2026-09-10 (later) — medium is the default effort for all tiers; low retired.

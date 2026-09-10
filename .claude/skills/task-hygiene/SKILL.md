@@ -4,7 +4,7 @@ type: Skill
 title: "task-hygiene — cleanup and triage of the repo task system"
 description: "Cleanup and triage of the repo task system — FOUND_DEFECTS.md, CURRENT_ERRORS.md, .matrx/AGENT_TASKS.md, .matrx/ARMAN_TASKS.md. Run the full sequence or one named step (e.g. \"/task-hygiene 3\" or \"/task-hygiene errors\"). Use when asked to clean up tasks/defects/errors, triage an error dump, promote found defects to tasks, prep/rank/ask Arman tasks, or bootstrap this task system in a repo that lacks it."
 tags: [tasks, defects, errors, triage, hygiene, ledgers]
-timestamp: 2026-08-22T00:00:00Z
+timestamp: 2026-09-10T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -135,6 +135,13 @@ Find and merge, keeping the better-evidenced copy:
 Never merge away evidence — union it.
 
 ## Step 3 — Promote defects to tasks
+
+**Before promoting, run two checks and record both on the entry.** (a) *Already built?* Search
+for an existing implementation by domain concept, not the report's wording, and list where you
+looked. Found → delete the defect with a one-line pointer to the code (fixed-while-in-holding) —
+never a Rejected entry. (b) *Still real?* Reproduce it (live surface or real request). Confirmed →
+promote with the code path. Not reproducible → `needs-hw-verification` or delete with evidence;
+never promote an unverified claim.
 
 Pick the most important/urgent open defects. Present to Arman **at most 3 at a
 time**, each as: proposed task title · severity/priority · one-paragraph why ·

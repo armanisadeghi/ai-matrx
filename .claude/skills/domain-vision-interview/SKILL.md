@@ -4,7 +4,7 @@ type: Skill
 title: "domain-vision-interview — extract the minimal vision and the final vision"
 description: "The quick big-picture interview that extracts from Arman, per Domain (or major Feature), the MINIMAL vision (what must exist before we can go live) and the FINAL vision (the ultimate goal), captured verbatim into the node's VISION.md so gap analysis has both bars. Use with /domain-vision-interview <domain>, when a registry domain is ratified without a vision, or when a node shows VISION MISSING. Ruled by Arman 2026-08-20."
 tags: [meta, vision, interview, registry, docs-system]
-timestamp: 2026-08-20T00:00:00Z
+timestamp: 2026-09-10T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -35,9 +35,8 @@ an internal docs-system skill: a short conversation with Arman about one Domain.
    anchors so your questions are informed. Collect any existing verbatim Arman quotes about
    it — the interview extends his record, never re-asks what is already settled (check the
    node's DECISIONS.md and the "settled — never re-ask" tables).
-3. Prepare per the guided-sessions policy: every question answerable cold, background in 2–3
-   plain sentences, open-ended where you want his vision, closed-with-recommendation
-   otherwise. Batches of 3–4, in chat.
+3. Prepare and ask per the `grilling` skill, kept shallow on purpose. The MINIMAL bar and the
+   FINAL vision both go in round 1 (both open-ended). No spec-depth branches.
 
 ## The interview — two bars, big picture only
 
@@ -66,5 +65,7 @@ an internal docs-system skill: a short conversation with Arman about one Domain.
 
 # Changelog
 
+- 2026-09-10 — Step 3 now points to the `grilling` skill for question preparation and delivery
+  (kept shallow: both bars in round 1, no spec-depth branches).
 - 2026-08-20 — Created per Arman's ruling in the docs-system overhaul session (third
   sitting).

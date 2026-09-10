@@ -4,7 +4,7 @@ type: Skill
 title: "take — staff yourself on a name and drive it to done"
 description: "Arman passes ONE name (/take <name>) — a Domain, Feature, Sub-feature, Program, or Tail from the unassigned-handoffs register, or any registry node — and the agent does the rest: claims the row, gathers the node's whole truth, then builds under his standing doctrine (bias to action, vision is the definition of done, build on what exists, integrate both directions, catch up then expand, never lose work, groom don't grow). Converted 2026-08-21 from his Feature Task Assignment prompt; his rules are quoted, not paraphrased."
 tags: [staffing, execution, handoffs, registry, doctrine]
-timestamp: 2026-08-21T00:00:00Z
+timestamp: 2026-09-10T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -108,7 +108,7 @@ remembers nothing of this conversation and reads none of the documentation — e
    him your homework**: anything decidable from code, facts, or research is your job; he
    is only needed where vision steers. (Full doctrine:
    [`decisions-must-be-complete`](/policies/decisions-must-be-complete.md) — escalate a
-   plan, never a fork.)
+   plan, never a fork.) Interview mechanics (tree, frontier, defaults ship): the `grilling` skill.
 3. **A UI question carries a clickable route** plus the exact steps to reach the thing
    you're asking about. Server-side questions still paint the whole picture, concisely.
 4. **A UI deliverable is a URL, never a file list.** Localhost link when you need instant
@@ -153,6 +153,7 @@ remembers nothing of this conversation and reads none of the documentation — e
 
 # Changelog
 
+- 2026-09-10 — Contract rule 2 points to the `grilling` skill for interview mechanics.
 - 2026-08-25 — Register lookup now names all five staffed categories explicitly: Domain,
   Feature, Sub-feature, Program, and Tail.
 - 2026-08-24 — Item-register trigger added: a take that finds multiple sessions/agents on
