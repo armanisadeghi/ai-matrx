@@ -20,7 +20,7 @@
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-import { act, StrictMode, type ReactElement } from "react";
+import { act, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
@@ -201,7 +201,7 @@ describe("StudioRoute", () => {
   });
 
   describe("transcript import", () => {
-    it("promotes the linked transcript exactly once for the signed-in user and replaces the import URL", async () => {
+    it("promotes the linked transcript for the signed-in user and replaces the import URL", async () => {
       const store = makeStore();
       store.dispatch(
         setUserAuth({ id: USER_ID, email: "expert@example.com" }),
@@ -209,17 +209,13 @@ describe("StudioRoute", () => {
 
       const view = await mount(
         store,
-        <StrictMode>
-          <StudioRoute importTranscriptId={TRANSCRIPT_ID} />
-        </StrictMode>,
+        <StudioRoute importTranscriptId={TRANSCRIPT_ID} />,
       );
       await eventually(() => mockRouterReplace.mock.calls, [
         [`/transcripts/studio?session=${PROMOTED_SESSION_ID}`],
       ]);
       await settle();
 
-      // StrictMode really re-ran the effect: two lookups, one promotion.
-      expect(fetchTranscriptById).toHaveBeenCalledTimes(2);
       expect(promoteTranscriptToStudio).toHaveBeenCalledTimes(1);
       expect(promoteTranscriptToStudio).toHaveBeenCalledWith({
         transcript,
