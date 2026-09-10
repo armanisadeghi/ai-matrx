@@ -18,6 +18,8 @@ description: >-
 
 One job: keep heavy **client** code out of the server render and out of the initial load, fetching its chunk only when actually needed. Done wrong it's pure cost (extra waterfalls, blank screens, hydration mismatches) with none of the win.
 
+**Routing:** adding, removing, or moving a dynamic import → this file, top to bottom. Build failed (OOM / SIGKILL / "Collecting page data") or build got slower → rule 3 and the anti-patterns table here, then **read [build-time-bloat.md](build-time-bloat.md)**.
+
 ## The one mental model
 
 `dynamic(() => import(...))` does **three separable things**. Confusing them is every mistake below:
@@ -115,29 +117,9 @@ For a set of components that **always render together** (app-shell singletons, a
 
 ## Build-time bloat — the recurring leak: hunt it, then guard it
 
-> **Unexplained build-time growth is almost always THIS, not "big packages."** A heavy client module imported **statically** into a path that lands in many chunks — a Server Component, a root layout/provider, a widely-imported shared client component, or a barrel — forces that weight into every one of those chunks, and Turbopack pays to compile it everywhere. Canonical incident: `UnifiedAgentContextMenu` reverted from `dynamic({ssr:false})` to a static `import { … }` on 5 surfaces and ballooned the prod build **15 → 24 min**. Agents keep misdiagnosing this as package size; it is not. When the build grows for no obvious reason, hunt the leak FIRST.
-
-**Step 0 — prove the regression is in the TREE before hunting it in the tree.** Three checks, ~30 min total, all from your desk: (1) read the `✓ Compiled successfully in Xmin` line (not wall time) from the Vercel build logs across the bracket builds — the compile phase is where graph problems live; (2) **check the control projects**: `ai-matrx-demos` parks `(core)`+`(admin)`, so if its compile time jumped proportionally on the same commits, the cause is NOT the new feature code; (3) **A/B locally** — `git worktree` the last-good and first-bad release commits, `MATRX_PROFILE=slim pnpm run build` each, compare compile times. Incident that mandates this: 2026-08-17, main compile went 13.4→18.3 min in one day and every prior heuristic (top-level import leak, next/dynamic misuse, packages, route count) was investigated for hours — then local A/B showed **11.7 vs 11.0 min** (no regression) and demos jumped 2.5→4.1 min with zero new code in its surface: the slowdown was Vercel infra, and nothing in the tree was ever guilty. A same-machine A/B beats any amount of import reading; only when the gap REPRODUCES locally do the hunts below apply (then bisect with them).
-
-**The leak signature** — a STATIC value import (`import { X } from "…"` / `import X from "…"`; NOT `import type`, NOT `dynamic(() => import(…))`) of a heavy client-only module, in a high-blast-radius file. Strongest tell: **a `dynamic()` import of the same module already exists elsewhere** — someone bypassed the established split.
-
-**Rank a find by blast radius:** (1) a **Server Component** (no top `"use client"`) importing client-heavy code — worst, pulls it into the RSC/server graph; (2) a **root/shared shell** imported by many routes (`app/**/layout.tsx`, `app/Providers*.tsx`, `providers/**`, shell components); (3) a route `page.tsx` importing a heavy widget statically; (4) a **barrel** (`index.ts`) re-exporting a heavy module — every importer drags it.
-
-**The 2026-07 audit's headline: the big leaks are FIRST-PARTY graphs, not npm packages.** Heavy npm deps were well-contained; what multiplied across entries was our own code — an action registry's thunk import (rule 6), eager registries that statically import everything they register (surfaces manifests, content-ir `system-kinds`, tools registries, `rootReducer`), providers dragging feature graphs, and parser/util files that import React components. Hunt those with the same priority as monaco.
-
-**Hunt method (offload the sweep, verify the gold yourself):** list heavy deps (editors/monaco/codemirror/tiptap, reactflow/xyflow, recharts/d3, pdfjs, three, mermaid, syntax highlighters, livekit, emoji/color pickers) + heavy internal graphs (the context menu, code workspace, workbook, canvas/artifacts, markdown block registry, execution engine, nav/action registries, the provider stack) → ripgrep their static import sites → classify each by the blast-radius list → flag any whose module is dynamically imported elsewhere. Give an `Explore` subagent that spec and ask for a ranked `file:line` treasure map with per-leak **entry counts** (routes whose static graph reaches it — that's the multiplier); then verify the top finds yourself before fixing.
-
-**Guard it so it can't silently come back (the platform move).** Patching the 5 sites is the artifact; making the class extinct is the platform. For each heavy client component, add an eslint `no-restricted-syntax` ban on its STATIC value import that still allows `import type` + dynamic `import()`. Reference implementation: `canonicalMenuStaticImportBan` in [eslint.config.mjs](eslint.config.mjs):
-
-```
-"ImportDeclaration[importKind!='type'][source.value='@/…/Heavy'] > ImportSpecifier[importKind!='type'][imported.name='Heavy']"
-```
-
-Now there are two loud layers — the lint guard (fails at commit/CI) and this doctrine — so the day someone re-adds a static import, lint screams instead of the build silently growing 10 minutes over a month.
+**Build failed, OOM/SIGKILL, or build time grew → read [build-time-bloat.md](build-time-bloat.md)** — Step 0 (prove the regression is in the tree), the leak signature, blast-radius ranking, the hunt method, the eslint guard, and the analyzer fallback when the hunt comes back clean.
 
 **Measure before moving: `pnpm lab:graph`** ([scripts/build-lab/](scripts/build-lab/README.md)) computes the whole law deterministically in seconds — THE COMPILE BILL (every cluster's size × entry-context multiplicity) and every dynamic edge ranked by the D115 product. Run it before AND after any graph change; `pnpm lab:run <label>` ground-truths a ref with a full local build (peak RSS is the trustworthy metric — single-run compile time has ±1.5-2min noise, which is how five plausible "fixes" (v0.4.217-221) all shipped as regressions). Never test a build hypothesis by pushing to Vercel.
-
-**If the static hunt comes back clean, do NOT stop at "looks fine" or fall back to blaming "big packages."** The bloat is then bundle SIZE (more shipped per route), route-count growth, or a heavy module sitting on every route's critical path (the root layout/provider chain) — none of which grep finds. Profile it: **`pnpm analyze`** (= `ANALYZE=true pnpm build`; `@next/bundle-analyzer` is installed) emits per-route First Load JS + the largest shared chunks and the module that dominates each. Compare against a known-good baseline; if the regression window is known, **git-bisect the build time** across it. "Big packages" is the answer ONLY once the analyzer proves WHICH chunk grew and WHEN — and even then it is usually a freshly-leaked import into a shared chunk, not the package itself.
 
 ## Before you ship — checklist
 
