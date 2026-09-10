@@ -96,6 +96,12 @@ Delegated investigators load their own exact representative detail. Keep at most
 three coding investigators concurrent; reuse finished slots for independent
 verification. Only an investigator may prove that similar symptoms share a root.
 
+Project tool results before displaying or saving parent state: retain identifiers,
+class tokens/cursors, counts/times, coverage flags, and an error-summary head capped
+at 400 characters. A list row's `error_text` can contain an embedded stack or payload;
+never print the full response or retain its raw text/variants in parent memory.
+Keep bounded member IDs for closure; delegates retrieve exact detail themselves.
+
 ## Measure and select
 
 Record `run_started_at` in UTC. Keep per-lane checkpoints and coverage state;
@@ -235,6 +241,9 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 — Required projection before parent display/state writes after a
+  bounded list returned embedded stacks and oversized error text.
 
 - 2026-09-09 — Made the owner-attention alarm conditional on at least one verified
   human-only gate. Zero-count runs omit the heading and placeholder; all engineering
