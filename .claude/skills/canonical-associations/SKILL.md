@@ -23,7 +23,7 @@ There is **ONE** way to relate two entities (content↔content, content↔contai
 The rules below (field realities, tombstones, the boundary, the token rule, edge direction) apply to every run. Then read ONLY the recipe your task needs:
 
 - **Replacing a bespoke M2M junction, an `associate_*`/`get_*_associations` RPC, or an FK-tag column** → read [recipe-a-replace-m2m.md](recipe-a-replace-m2m.md) (Recipe A FE repoint + Recipe A-DB junction collapse — they ship in ONE change).
-- **Putting association cards, a picker, or a name dropdown on a container page, or adding a new card kind** → read [recipe-b-container-cards.md](recipe-b-container-cards.md).
+- **Putting association cards, a picker, or a name dropdown on a container page ("resources for this org/scope/project", "things related to X"), or adding a new card kind** → read [recipe-b-container-cards.md](recipe-b-container-cards.md).
 - **A bare `.from("<moved-table>")`, PGRST205, or 42703** → read [recipe-c-table-refs.md](recipe-c-table-refs.md).
 - **Running a whole flip** (DB collapse + FE repoint) → the **Campaign workflow** below, plus the recipe files it names.
 
@@ -103,4 +103,4 @@ Every `sourceType`/`targetType` MUST be a **canonical `EntityTypeToken`** — ge
 
 The prioritized, file-anchored campaign backlog lives in **[`WORK-QUEUE.md`](./WORK-QUEUE.md)** next to this skill. Start there; keep it current as items land.
 
-The 2026-06-29 facts-only migration snapshot (triage verdicts, the `bundle_member` finding) lives in **[`STATUS.md`](./STATUS.md)**.
+Working `tool.bundle_member` or a `research.*` junction, or re-checking a triage verdict → read **[`STATUS.md`](./STATUS.md)** (the 2026-06-29 facts-only migration snapshot: triage verdicts, the `bundle_member` finding).

@@ -23,7 +23,8 @@ two skills and the two `AiCopyMenu`s in step.
 **Branches (read only when the run needs them):**
 
 - Assigned a whole feature/module, not one page → read [module-audit.md](module-audit.md) before wiring.
-- Continuing the rollout, checking whether a surface is already wired, or paying down known raw-dump debt → read [rollout-status.md](rollout-status.md), and update it as you go.
+- Before wiring or editing any existing surface, continuing the rollout, checking whether a surface is already wired, or paying down known raw-dump debt → read [rollout-status.md](rollout-status.md), and update it as you go.
+- Wiring any surface in files, image-manager, podcasts, audio, or pdf → read [docs/handoffs/agent-copy-media-cluster.md](../../../docs/handoffs/agent-copy-media-cluster.md) first (no signed URL or storage path ever reaches a payload); research, rag, cms, or api-integrations → read [docs/handoffs/agent-copy-data-knowledge-cluster.md](../../../docs/handoffs/agent-copy-data-knowledge-cluster.md) first.
 
 ---
 
