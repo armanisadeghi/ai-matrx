@@ -99,8 +99,11 @@ Both routes are agent-aware surfaces, and they are TWO surfaces on purpose: the 
 - The admin layout and `agent.review_queue` super-admin RLS gate the review surface.
 - Messaging keeps its participant access and real-time/unread machinery; Agent Review adds no parallel permissions or message store.
 - The data path is direct `supabase-js`; no Next.js database proxy.
-- Queue and registry reads use `runWithSessionRetry`; session loss stops before
-  the three complete-list queries can reach PostgREST as `anon`.
+- Queue and registry reads wait for the Redux user identity before their first
+  request, then use `runWithSessionRetry`; session loss stops before the three
+  complete-list queries can reach PostgREST as `anon`. This matters because RLS
+  can legally return an empty list before session hydration, which is not an
+  error the retry boundary can detect.
 - `Agent Review First Pass` is the active recurring Codex reviewer: every 30 minutes, exactly one item per run. It uses only Codex's built-in Browser, recovers routine sign-in failures with the authorized admin credentials, and proves the admin session before claiming work. Canonical credential locations are documented in the shared skill; secrets never enter automation text or queue evidence.
 - Every transition to `ready_for_human` requires recorded verifier identity, verification time, and `assignment.state='awaiting_review'`. The rollout returned all 16 legacy rows missing that evidence to `submitted`, then validated the database constraint.
 - The list defaults to the human inbox (`ready_for_human`) and exposes all workflow activity only through the explicit **All activity** view.
@@ -134,6 +137,10 @@ A recurring `agent-review-sweep` schedule is PROPOSED, not created, in
 no-unapproved-schedules law.
 
 ## Change log
+
+- 2026-09-09 — Gated the initial queue and registry load on authenticated user
+  hydration after a production first-paint race rendered every workflow count
+  as zero until a manual refresh.
 
 - 2026-09-09 — Removed the sweep CLI's divergent row-by-id claim SQL after live output recommended an `awaiting_review` row; it now routes execution to the canonical atomic claim and same-run repair/verification protocol.
 
