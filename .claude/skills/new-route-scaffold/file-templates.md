@@ -19,60 +19,63 @@ Copy-paste code templates for every scaffold file, taken from the original `/not
 
 ```typescript
 // features/notes/types.ts
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 
 // ── Single source of truth aliases ──────────────────────────────────────────
-export type NoteRow    = Database["public"]["Tables"]["notes"]["Row"];
-export type NoteInsert = Database["public"]["Tables"]["notes"]["Insert"];
-export type NoteUpdate = Database["public"]["Tables"]["notes"]["Update"];
+// Schema-qualified: feature tables live in their own schema (notes → "workbench"), not "public".
+export type NoteRow    = Database["workbench"]["Tables"]["notes"]["Row"];
+export type NoteInsert = Database["workbench"]["Tables"]["notes"]["Insert"];
+export type NoteUpdate = Database["workbench"]["Tables"]["notes"]["Update"];
 
 // Also export related table rows (related tables discovered from DB relationships)
-export type NoteFolderRow  = Database["public"]["Tables"]["note_folders"]["Row"];
-export type NoteVersionRow = Database["public"]["Tables"]["note_versions"]["Row"];
+export type NoteFolderRow = Database["workbench"]["Tables"]["note_folders"]["Row"];
+// note_versions retired -> history.row_versions (use the get_note_versions RPCs) — no generated row to alias.
 
 // ── Working interface (derived from NoteRow) ─────────────────────────────────
 // Keep null fields as null — never coerce to empty strings.
 export interface Note {
     id: string;
-    user_id: string;
+    created_by: string | null;        // owner column — there is no user_id
+    updated_by: string | null;
     label: string;
     content: string | null;
     folder_name: string | null;
-    folder_id: string | null;         // FK → note_folders.id
-    organization_id: string | null;   // FK → organizations.id
-    project_id: string | null;        // FK → ctx_projects.id
-    task_id: string | null;           // FK → ctx_tasks.id
+    folder_id: string | null;         // FK → workbench.note_folders.id
+    organization_id: string;          // NOT NULL — every write passes it explicitly
+    project_id: string | null;        // platform.associations projection — never a physical FK
+    task_id: string | null;           // platform.associations projection — never a physical FK
     tags: string[] | null;
-    metadata: Record<string, unknown> | null;
-    shared_with: Record<string, unknown> | null;
-    is_deleted: boolean | null;
-    is_public: boolean;
+    metadata: Json | null;
+    visibility: Database["platform"]["Enums"]["visibility"];
     version: number;
     sync_version: number;
     content_hash: string | null;
     file_path: string | null;
     last_device_id: string | null;
     position: number | null;
+    deleted_at: string | null;        // soft delete — null = live; there is no is_deleted
     created_at: string | null;
     updated_at: string | null;
 }
 
 // ── Compile-time structural compatibility guard ──────────────────────────────
-// This produces a TypeScript error if NoteRow and Note ever diverge.
+// This produces a TypeScript error if NoteRow and Note ever diverge
+// (a field missing on either side, or a field whose type differs).
 // Zero runtime cost. Add this to EVERY feature type file.
-type _NoteCompatCheck = {
-    [K in keyof NoteRow]: NoteRow[K] extends Note[K]
-        ? Note[K] extends NoteRow[K] ? true : false
+type _AllTrue<T extends Record<PropertyKey, true>> = T;
+type _NoteCompatCheck = _AllTrue<{
+    [K in keyof NoteRow | keyof Note]: K extends keyof NoteRow & keyof Note
+        ? NoteRow[K] extends Note[K] ? Note[K] extends NoteRow[K] ? true : false : false
         : false;
-};
+}>;
 
 // ── List projection (subset fetched by the sidebar query) ───────────────────
 // Only include fields you actually SELECT in getNoteListSeed().
 export type NoteListItem = Pick<Note,
-    | "id" | "user_id" | "label" | "folder_name" | "folder_id"
+    | "id" | "created_by" | "label" | "folder_name" | "folder_id"
     | "tags" | "updated_at" | "position"
     | "organization_id" | "project_id" | "task_id"
-    | "is_public" | "version"
+    | "visibility" | "version"
 >;
 
 // ── Route-level enums (ask Arman for the exact values) ──────────────────────
@@ -94,16 +97,17 @@ import type { Note, NoteListItem } from "@/features/notes/types";
 
 // ── List seed ────────────────────────────────────────────────────────────────
 // SELECT only the fields NoteListItem needs — never SELECT *.
+// Scope is explicit: the caller's own rows (created_by), live rows only (deleted_at IS NULL).
 export const getNoteListSeed = cache(async (): Promise<NoteListItem[]> => {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
     const { data, error } = await supabase
-        .from("notes")
-        .select("id, user_id, label, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, is_public, version")
-        .eq("user_id", user.id)
-        .eq("is_deleted", false)
+        .schema("workbench").from("notes")
+        .select("id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, visibility, version")
+        .eq("created_by", user.id)
+        .is("deleted_at", null)
         .order("updated_at", { ascending: false })
         .limit(100);
 
@@ -116,7 +120,8 @@ export const getNoteListSeed = cache(async (): Promise<NoteListItem[]> => {
 export const getNote = cache(async (id: string): Promise<Note> => {
     const supabase = await createClient();
     const { data, error } = await supabase
-        .from("notes").select("*").eq("id", id).single();
+        .schema("workbench").from("notes")
+        .select("*").is("deleted_at", null).eq("id", id).single();
     if (error || !data) notFound(); // triggers not-found.tsx
     return data as Note;
 });
