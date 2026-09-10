@@ -324,7 +324,7 @@ export function TryItNowPanel({
       </div>
       <PropertyRow
         label="Test mode"
-        help="Server test executes the system default and returns diagnostics. My display preview executes your resolved holder with saved display defaults; it does not reproduce the original feature. Test inputs come from the signed-in organization, so cross-principal input compatibility has not been verified."
+        help={`${allowPrincipalSelection ? "Server test executes the selected test context" : "Server test executes the system default"} and returns diagnostics. My display preview executes your resolved holder with saved display defaults; it does not reproduce the original feature. Test inputs come from the signed-in organization, so cross-principal input compatibility has not been verified.`}
         value={
           <Select
             value={testMode}
@@ -456,7 +456,14 @@ export function TryItNowPanel({
                   enableTextStats={false}
                   autoFocus={false}
                 />
-              ) : ["text", "string", "markdown"].includes(field.kind) ? (
+              ) : ["text", "string", "markdown"].includes(field.kind) &&
+                (!definition?.customComponent ||
+                  (["textarea", "markdown"].includes(
+                    definition.customComponent.type,
+                  ) &&
+                    !definition.customComponent.structured_list &&
+                    !definition.customComponent.picklist &&
+                    !definition.customComponent.assignment)) ? (
                 <ProTextarea
                   aria-label={label}
                   value={String(currentValue(field))}
