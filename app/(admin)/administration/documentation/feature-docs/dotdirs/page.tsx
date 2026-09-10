@@ -32,6 +32,7 @@ export default function FeatureDocsDotDirsHubPage() {
             >
               <p className="font-mono text-sm font-semibold">{dir}</p>
               <p className="text-xs text-muted-foreground mt-1">
+                {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- "/**" here is a glob in prose, not a JS comment. */}
                 Browse {dir}/**/*.md
               </p>
             </AppLink>

@@ -1889,6 +1889,7 @@ export function AgentSettingsCore({
           <div className="flex flex-col h-full gap-2">
             <p className="text-[10px] text-muted-foreground flex-shrink-0">
               Edit the full JSON payload directly, then apply your changes.
+              {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- "//" is the literal JSON5 syntax being described to the user, not a JS comment. */}
               Trailing commas and <code>// comments</code> are fine.
             </p>
 

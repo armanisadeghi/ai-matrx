@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { NodeDialogState } from "./NodeDialog";
 import { STATUS_STYLES, type TaxonomyTreeNode } from "./types";
+import AppLink from "@/components/navigation/AppLink";
 
 interface TreeProps {
   nodes: TaxonomyTreeNode[];
@@ -110,13 +111,13 @@ function TreeRow({
             </span>
           )}
           {node.review_count > 0 && (
-            <a
+            <AppLink
               href="/administration/users/agent-review"
               className="text-primary hover:underline"
               title="Agent-review items classified under this node"
             >
               {node.review_count} reviews
-            </a>
+            </AppLink>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100">

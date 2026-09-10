@@ -66,6 +66,7 @@ import {
   type NewShapeAsset,
 } from "@/features/content-ir/studio/new-shape-options";
 import { cn } from "@/lib/utils";
+import AppLink from "@/components/navigation/AppLink";
 
 // The result pane is this tall from first paint, empty state included, so the
 // page geometry never changes when a run starts (see the floating-law note).
@@ -605,10 +606,10 @@ export default function NewShapeClient() {
           its mandate in the admin console.
         </p>
         <Button variant="outline" size="sm" className="mt-4 gap-1.5" asChild>
-          <a href="/shapes/all">
+          <AppLink href="/shapes/all">
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
             Back to Shapes
-          </a>
+          </AppLink>
         </Button>
       </div>
     );
