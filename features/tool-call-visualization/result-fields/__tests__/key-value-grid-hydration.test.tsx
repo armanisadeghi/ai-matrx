@@ -92,4 +92,29 @@ describe("KeyValueGrid hydration", () => {
     expect(media?.getAttribute("data-file-id")).toBe(audioFileId);
     expect(media?.getAttribute("data-as")).toBe("audio");
   });
+
+  it("renders every ID-backed item in video_urls as video", () => {
+    const videoFileIds = [
+      "ba0a1f40-c524-4c36-99f9-cb3e9d4beeeb",
+      "33e90a97-d9e8-4eb0-a7d8-0f851cfb6339",
+    ];
+    const videoUrls = videoFileIds.map(
+      (fileId) =>
+        `https://matrx-user-files.s3.amazonaws.com/user/${fileId}` +
+        "?AWSAccessKeyId=test&Signature=test&Expires=1786485620",
+    );
+
+    container.innerHTML = renderToString(
+      <KeyValueGrid value={{ video_urls: videoUrls }} density="full" />,
+    );
+
+    const media = [...container.querySelectorAll('[data-testid="inline-media"]')];
+    expect(media.map((item) => item.getAttribute("data-file-id"))).toEqual(
+      videoFileIds,
+    );
+    expect(media.map((item) => item.getAttribute("data-as"))).toEqual([
+      "video",
+      "video",
+    ]);
+  });
 });

@@ -171,6 +171,7 @@ describe("media URL field hints", () => {
     ["audio_url", "audio"],
     ["audioUrl", "audio"],
     ["official_video_url", "video"],
+    ["video_urls", "video"],
     ["thumbnail_url", "img"],
   ] as const)("%s carries a %s render hint", (key, element) => {
     expect(mediaElementHintForKey(key)).toBe(element);

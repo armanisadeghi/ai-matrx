@@ -131,7 +131,7 @@ export function mediaElementHintForKey(key: string): ResultMediaElement | undefi
         .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
         .replace(/[-\s]+/g, "_")
         .toLowerCase();
-    if (!/(^|_)(url|uri|src|href|link)(_|$)/.test(normalized)) return undefined;
+    if (!/(^|_)(urls?|uris?|srcs?|hrefs?|links?)(_|$)/.test(normalized)) return undefined;
     if (/(^|_)(audio|sound)(_|$)/.test(normalized)) return "audio";
     if (/(^|_)(video|movie)(_|$)/.test(normalized)) return "video";
     if (/(^|_)(image|photo|picture|thumbnail|poster)(_|$)/.test(normalized)) return "img";
