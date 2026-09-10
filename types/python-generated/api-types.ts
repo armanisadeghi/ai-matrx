@@ -75889,8 +75889,8 @@ export interface components {
         McpInvokeResponse: {
             /** Success */
             success: boolean;
-            /** @default null */
-            output?: components["schemas"]["JsonValue"] | null;
+            /** Output */
+            output?: string | null;
             /** Error */
             error?: string | null;
         };
