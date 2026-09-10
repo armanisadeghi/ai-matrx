@@ -18,7 +18,7 @@ The product: a Next.js no-code AI app builder. Desktop-first, mobile-responsive.
 
 ## Stack
 
-Next.js 16.2+ (App Router) · React 19.2 · TypeScript 6.0+ (strict, no `any`) · Tailwind 4.3+ (CSS-first, `@theme`) · Turbopack · pnpm 10.29+ · Redux RTK · Supabase · Stripe · Vercel. State minimums, never exact patches — `next`/`react`/`typescript` are declared `latest` and drift on every install. **Every `@ai-matrx/*` dependency is also declared `latest`; `pnpm sync-types` refreshes it from npm and release refuses stale installed versions (`pnpm check:matrx-packages`).** Mobile companion: Expo 54 / RN 0.81. Always use the latest stable release of every package — no deprecated APIs. Dependencies come from the npm registry only — never `github:`/`git:`/tarball specs (`pnpm check:registry-deps:strict`); patch by vendoring (see `hooks/usehooks/`).
+Next.js 16.2+ (App Router) · React 19.2 · TypeScript 6.0+ (strict, no `any`) · Tailwind 4.3+ (CSS-first, `@theme`) · Turbopack · pnpm 10.29+ · Redux RTK · Supabase · Stripe · Vercel. State minimums, never exact patches — `next`/`react`/`typescript` are declared `latest` and drift on every install. **Every `@ai-matrx/*` dependency is also declared `latest`; `pnpm sync-types` refreshes it from npm and release refuses stale installed versions (`pnpm check:matrx-packages`).** Always use the latest stable release of every package — no deprecated APIs. Dependencies come from the npm registry only — never `github:`/`git:`/tarball specs (`pnpm check:registry-deps:strict`); patch by vendoring (see `hooks/usehooks/`).
 
 ## Data flow — no Next.js middle tier, Python is not a DB gateway
 

@@ -51604,6 +51604,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -63808,6 +63868,71 @@
         }
       }
     },
+    "/mandates/references/board": {
+      "get": {
+        "tags": [
+          "Mandates Admin"
+        ],
+        "summary": "Get Mandate Reference Board",
+        "description": "The admin fleet board: per ACTIVE repo the scan state, the open flagged\nrows with a location and a remedy, and the conversion list (DESIGN §4.6).\n\nAn inactive `platform.repo` row never appears here (D24).",
+        "operationId": "get_mandate_reference_board_mandates_references_board_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateReferenceBoard"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/{mandate_key}/references": {
+      "get": {
+        "tags": [
+          "Mandates Admin"
+        ],
+        "summary": "Get Mandate References",
+        "description": "Defined in / Used by for one mandate key, plus every red flag (D21).\n\nNothing is dropped for being orphaned, unresolved, or broken; a row that is\nnot plainly ok carries its own sentence and remedy. `scan_completeness`\nnames the repositories nobody has finished measuring, so the tab's empty\nstate can be honest instead of saying \"unused\".",
+        "operationId": "get_mandate_references_mandates__mandate_key__references_get",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandate Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateReferenceReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mandates/{mandate_key}/exemplars/{exemplar_id}/promote": {
       "post": {
         "tags": [
@@ -69158,6 +69283,7 @@
           "Workflow Plans"
         ],
         "summary": "Get Plan",
+        "description": "The Plan Room's read. Carries the stored Steward transcript so the room\nreopens with its conversation instead of a blank pane (WF-019).",
         "operationId": "get_plan_plans__plan_id__get",
         "parameters": [
           {
@@ -86606,7 +86732,7 @@
       "AgentAssignmentRunRequest": {
         "properties": {
           "agent": {
-            "$ref": "#/components/schemas/AgentStartStrictInput",
+            "$ref": "#/components/schemas/AssignmentAgentInput",
             "description": "Saved-agent invocation template applied once to every resolved assignment."
           },
           "plan": {
@@ -87890,500 +88016,6 @@
           "is_new"
         ],
         "title": "AgentStartRequest"
-      },
-      "AgentStartStrictInput": {
-        "properties": {
-          "mandate_key": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Mandate Key",
-            "description": "Mandate key naming the JOB this step performs (e.g. 'podcast.deep_research'). The database decides which agent runs it, resolved at run time — so an org or user Binding swaps this step's agent without touching the workflow. Preferred over agent_id, and mutually exclusive with it: a step naming both is refused.",
-            "ui:widget": "mandate_agent_picker"
-          },
-          "agent_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Agent Id",
-            "description": "UUID of a specific agent (or agent version, when is_version=true). Pins this step to one agent forever — prefer mandate_key. Mutually exclusive with mandate_key: a step naming both is refused, because a Mandate exists to settle which authority picks the agent.",
-            "ui:widget": "agent_picker"
-          },
-          "is_version": {
-            "type": "boolean",
-            "title": "Is Version",
-            "description": "If true, `agent_id` is treated as a pinned version_id instead of a current-agent id.",
-            "default": false,
-            "ui:widget": "toggle"
-          },
-          "user_input": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "items": {
-                  "additionalProperties": {
-                    "$ref": "#/components/schemas/JsonValue"
-                  },
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Input",
-            "description": "User message to append before running. Accepts a string or a list of content parts.",
-            "ui:multiline_rows": 3,
-            "ui:widget": "textarea"
-          },
-          "variables": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/JsonValue"
-            },
-            "type": "object",
-            "title": "Variables",
-            "description": "Agent variable overrides for this invocation.",
-            "ui:widget": "json"
-          },
-          "variable_resource_context": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Variable Resource Context",
-            "description": "Per-request media-context presentation policy keyed by agent variable name (promote/exclude a resource's representations). Changes context presentation only, never the saved agent definition. Validated against the host's ResourceContextPolicy model per key on entry.",
-            "ui:widget": "json"
-          },
-          "config_overrides": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Config Overrides",
-            "description": "LLM parameter overrides (temperature, max_tokens, model, ...) the workflow AUTHOR set for this step. Static by nature — it is part of the saved definition. Validated against LLMParams by the host's AgentStartRequest on entry.",
-            "ui:widget": "json"
-          },
-          "runtime_config_overrides": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Runtime Config Overrides",
-            "description": "Per-RUN LLM parameter overrides, meant to arrive on an EDGE from an upstream step (e.g. a voice map computed from the run's cast). Merged on TOP of both the mandate's config and this step's authored config_overrides, key by key — this is the run-scope layer, so it never wipes the other two the way a plain edge-delivered config_overrides would (the engine's input merge is last-writer-wins per KEY of the node input, so an edge feeding config_overrides replaces the whole authored dict).",
-            "ui:widget": "json"
-          },
-          "conversation_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Conversation Id",
-            "description": "Continue an existing conversation. Leave blank for a fresh thread."
-          },
-          "is_new": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is New",
-            "description": "Explicit assertion about whether this is a new conversation. True = create new (409 if id already exists), False = continue (404 if id missing). Blank means: new when no conversation_id was given, continue when one was."
-          },
-          "prior_messages": {
-            "items": {
-              "additionalProperties": {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Prior Messages",
-            "description": "Transcript of THIS ephemeral run, owned by the caller and ordered oldest-first — appended after the agent's own definition messages and before user_input. The server still owns the agent (model, tools, system prompt); only the history comes from here. ONLY valid with store=false — a persisted conversation's history is the DB's, and the host request refuses a second, conflicting transcript. Validated against the host's ChatMessageInput model on entry.",
-            "ui:widget": "json"
-          },
-          "client": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ClientContext"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Client capability envelope: surface, active capabilities (editor-state, sandbox-fs, browser-dom, desktop-native, ...), and their typed state payloads. Gates every client-capability tool bundle and desktop-instance targeting (client.state['desktop-native'].target_instance_id).",
-            "ui:widget": "json"
-          },
-          "user": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/UserOverrides"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Per-request user-level tool inclusion/exclusion overrides (add/remove, apply_policy). Highest inclusion precedence: user.remove beats everything, user.add beats agent.forbidden.",
-            "ui:widget": "json"
-          },
-          "ide_state": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ide State",
-            "description": "IDE / editor state from the caller (vsc_* variables, active file, selection, diagnostics, workspace, git). Validated against the host's IdeState model on entry.",
-            "ui:widget": "json"
-          },
-          "sandbox": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sandbox",
-            "description": "Sandbox binding for this step (container/session identity for sandbox-delegated tool calls). Validated against the host's SandboxBindingRequest model on entry.",
-            "ui:widget": "json"
-          },
-          "context": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/JsonValue"
-            },
-            "type": "object",
-            "title": "Context",
-            "description": "Deferred context objects keyed by name (context / context_patch payloads).",
-            "ui:widget": "json"
-          },
-          "writable_variables": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Writable Variables",
-            "description": "Variables the agent is allowed to mutate at runtime via context_patch."
-          },
-          "allow_context_create": {
-            "type": "boolean",
-            "title": "Allow Context Create",
-            "description": "Permit the agent to spawn new context objects via the context tool's create action.",
-            "default": false
-          },
-          "tools": {
-            "items": {
-              "additionalProperties": {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Tools",
-            "description": "Additive ToolSpec list merged into the agent's resolved tool set. Each item is {kind: 'registered'|'inline'|'agent', ...}; validated against the host's ToolSpec union on entry.",
-            "ui:widget": "json"
-          },
-          "tools_replace": {
-            "anyOf": [
-              {
-                "items": {
-                  "additionalProperties": {
-                    "$ref": "#/components/schemas/JsonValue"
-                  },
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tools Replace",
-            "description": "When set, this list becomes the agent's ENTIRE tool set for the turn — capability defaults and the agent's own declared tools are skipped. Same ToolSpec item shape as `tools`.",
-            "ui:widget": "json"
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "Organization scope applied to every item execution."
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional project context applied to every item execution."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional task context applied to every item execution."
-          },
-          "source_app": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source App",
-            "description": "Stable application slug that initiated the agent run."
-          },
-          "source_feature": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Feature",
-            "description": "Stable feature slug within the source application."
-          },
-          "store": {
-            "type": "boolean",
-            "title": "Store",
-            "description": "Persist each item's conversation and messages when true.",
-            "default": true
-          },
-          "scope_ids": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scope Ids",
-            "description": "Active context-scope ids selected by the caller's global picker, membership-validated server-side. Threads the selected scopes' context cells to the agent even when the entity carries no scope tags of its own."
-          },
-          "context_anchor": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Context Anchor",
-            "description": "Durable resource identity ({resource_type, resource_id}) from which authoritative organization/project/task context is reloaded, overruling ambient picker values. Validated against the host's ContextAnchor model on entry.",
-            "ui:widget": "json"
-          },
-          "initiation": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "user",
-                  "auto"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Initiation",
-            "description": "How the caller initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for ordinary workflow/API-triggered steps."
-          },
-          "stream": {
-            "type": "boolean",
-            "title": "Stream",
-            "description": "Stream the agent's tokens as they are produced.",
-            "default": true
-          },
-          "debug": {
-            "type": "boolean",
-            "title": "Debug",
-            "description": "Enable verbose execution diagnostics for the agent run.",
-            "default": false
-          },
-          "block_mode": {
-            "type": "boolean",
-            "title": "Block Mode",
-            "description": "Return block-oriented output events when supported by the agent.",
-            "default": false
-          },
-          "dry_run": {
-            "type": "boolean",
-            "title": "Dry Run",
-            "description": "Run the full pre-LLM assembly (context, system-prompt render, message + tool merge) and return it as JSON instead of streaming an LLM turn. Pair with store=false for a true read-only preview — enables preview/approval/cost-estimate steps.",
-            "default": false
-          },
-          "snapshot": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Snapshot",
-            "description": "Request-snapshot capture override. Omit for the platform default (capture ON — the exact provider request/response of every persisted iteration is recorded for replay); false to opt this step out; true to force capture on plus wire-level outbound-capture debug events."
-          },
-          "memory": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Memory",
-            "description": "True = enable OM and persist on conversation; False = disable and persist; None = inherit persisted state."
-          },
-          "memory_model": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Memory Model",
-            "description": "Optional model override for observational-memory processing."
-          },
-          "memory_scope": {
-            "type": "string",
-            "title": "Memory Scope",
-            "description": "Observational-memory scope, normally the current thread.",
-            "default": "thread"
-          },
-          "cache_bypass": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cache Bypass",
-            "description": "Per-call cache invalidation flags ({conversation, agent, tools, models}). Validated against the host's CacheBypass model on entry.",
-            "ui:widget": "json"
-          },
-          "max_iterations": {
-            "type": "integer",
-            "maximum": 500,
-            "minimum": 1,
-            "title": "Max Iterations",
-            "description": "Maximum agent reasoning/tool-loop iterations.",
-            "default": 100
-          },
-          "max_retries_per_iteration": {
-            "type": "integer",
-            "maximum": 10,
-            "minimum": 0,
-            "title": "Max Retries Per Iteration",
-            "description": "Maximum provider retries allowed within one agent iteration.",
-            "default": 2
-          },
-          "skill_config": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Skill Config",
-            "description": "Per-request skill visibility override (Smart Input additive picks). Validated against the host's skill-config shape on entry.",
-            "ui:widget": "json"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "AgentStartStrictInput",
-        "description": "Workflow-side request body for the ``ai.agent.start`` action.\n\nField names are kept identical to ``aidream.api.routers.agents.AgentStartRequest``\nso the action's input form is a 1:1 mirror of the API contract. Types\nthat live in the host application (``IdeState``, ``CacheBypass``) are\naccepted as ``dict`` and validated by the host-injected request class\non the boundary.\n\nONE field is workflow-only: ``runtime_config_overrides``. It is not a\nrequest field — it is the per-run config layer an upstream step delivers\non an edge, folded into ``config_overrides`` before the host request is\nbuilt (see ``agent_start``). A workflow step's authored config is static\nby definition, so without it nothing computed during the run could ever\nreach the agent's config."
       },
       "AgentSummary": {
         "properties": {
@@ -92832,6 +92464,14 @@
               }
             ],
             "title": "Updated At"
+          },
+          "pre_existing_issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pre Existing Issues",
+            "default": []
           }
         },
         "additionalProperties": false,
@@ -94407,6 +94047,500 @@
           "file_path"
         ],
         "title": "AssetVariant"
+      },
+      "AssignmentAgentInput": {
+        "properties": {
+          "user_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Input",
+            "description": "User message to append before running. Accepts a string or a list of content parts.",
+            "ui:multiline_rows": 3,
+            "ui:widget": "textarea"
+          },
+          "variables": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Variables",
+            "description": "Agent variable overrides for this invocation.",
+            "ui:widget": "json"
+          },
+          "variable_resource_context": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variable Resource Context",
+            "description": "Per-request media-context presentation policy keyed by agent variable name (promote/exclude a resource's representations). Changes context presentation only, never the saved agent definition. Validated against the host's ResourceContextPolicy model per key on entry.",
+            "ui:widget": "json"
+          },
+          "config_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Overrides",
+            "description": "LLM parameter overrides (temperature, max_tokens, model, ...) the workflow AUTHOR set for this step. Static by nature — it is part of the saved definition. Validated against LLMParams by the host's AgentStartRequest on entry.",
+            "ui:widget": "json"
+          },
+          "runtime_config_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtime Config Overrides",
+            "description": "Per-RUN LLM parameter overrides, meant to arrive on an EDGE from an upstream step (e.g. a voice map computed from the run's cast). Merged on TOP of both the mandate's config and this step's authored config_overrides, key by key — this is the run-scope layer, so it never wipes the other two the way a plain edge-delivered config_overrides would (the engine's input merge is last-writer-wins per KEY of the node input, so an edge feeding config_overrides replaces the whole authored dict).",
+            "ui:widget": "json"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id",
+            "description": "Continue an existing conversation. Leave blank for a fresh thread."
+          },
+          "is_new": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is New",
+            "description": "Explicit assertion about whether this is a new conversation. True = create new (409 if id already exists), False = continue (404 if id missing). Blank means: new when no conversation_id was given, continue when one was."
+          },
+          "prior_messages": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Prior Messages",
+            "description": "Transcript of THIS ephemeral run, owned by the caller and ordered oldest-first — appended after the agent's own definition messages and before user_input. The server still owns the agent (model, tools, system prompt); only the history comes from here. ONLY valid with store=false — a persisted conversation's history is the DB's, and the host request refuses a second, conflicting transcript. Validated against the host's ChatMessageInput model on entry.",
+            "ui:widget": "json"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientContext"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Client capability envelope: surface, active capabilities (editor-state, sandbox-fs, browser-dom, desktop-native, ...), and their typed state payloads. Gates every client-capability tool bundle and desktop-instance targeting (client.state['desktop-native'].target_instance_id).",
+            "ui:widget": "json"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Per-request user-level tool inclusion/exclusion overrides (add/remove, apply_policy). Highest inclusion precedence: user.remove beats everything, user.add beats agent.forbidden.",
+            "ui:widget": "json"
+          },
+          "ide_state": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ide State",
+            "description": "IDE / editor state from the caller (vsc_* variables, active file, selection, diagnostics, workspace, git). Validated against the host's IdeState model on entry.",
+            "ui:widget": "json"
+          },
+          "sandbox": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sandbox",
+            "description": "Sandbox binding for this step (container/session identity for sandbox-delegated tool calls). Validated against the host's SandboxBindingRequest model on entry.",
+            "ui:widget": "json"
+          },
+          "context": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Context",
+            "description": "Deferred context objects keyed by name (context / context_patch payloads).",
+            "ui:widget": "json"
+          },
+          "writable_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Writable Variables",
+            "description": "Variables the agent is allowed to mutate at runtime via context_patch."
+          },
+          "allow_context_create": {
+            "type": "boolean",
+            "title": "Allow Context Create",
+            "description": "Permit the agent to spawn new context objects via the context tool's create action.",
+            "default": false
+          },
+          "tools": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Tools",
+            "description": "Additive ToolSpec list merged into the agent's resolved tool set. Each item is {kind: 'registered'|'inline'|'agent', ...}; validated against the host's ToolSpec union on entry.",
+            "ui:widget": "json"
+          },
+          "tools_replace": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools Replace",
+            "description": "When set, this list becomes the agent's ENTIRE tool set for the turn — capability defaults and the agent's own declared tools are skipped. Same ToolSpec item shape as `tools`.",
+            "ui:widget": "json"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization scope applied to every item execution."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional project context applied to every item execution."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional task context applied to every item execution."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the agent run."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "store": {
+            "type": "boolean",
+            "title": "Store",
+            "description": "Persist each item's conversation and messages when true.",
+            "default": true
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller's global picker, membership-validated server-side. Threads the selected scopes' context cells to the agent even when the entity carries no scope tags of its own."
+          },
+          "context_anchor": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Anchor",
+            "description": "Durable resource identity ({resource_type, resource_id}) from which authoritative organization/project/task context is reloaded, overruling ambient picker values. Validated against the host's ContextAnchor model on entry.",
+            "ui:widget": "json"
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the caller initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for ordinary workflow/API-triggered steps."
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "description": "Stream the agent's tokens as they are produced.",
+            "default": true
+          },
+          "debug": {
+            "type": "boolean",
+            "title": "Debug",
+            "description": "Enable verbose execution diagnostics for the agent run.",
+            "default": false
+          },
+          "block_mode": {
+            "type": "boolean",
+            "title": "Block Mode",
+            "description": "Return block-oriented output events when supported by the agent.",
+            "default": false
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "description": "Run the full pre-LLM assembly (context, system-prompt render, message + tool merge) and return it as JSON instead of streaming an LLM turn. Pair with store=false for a true read-only preview — enables preview/approval/cost-estimate steps.",
+            "default": false
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot",
+            "description": "Request-snapshot capture override. Omit for the platform default (capture ON — the exact provider request/response of every persisted iteration is recorded for replay); false to opt this step out; true to force capture on plus wire-level outbound-capture debug events."
+          },
+          "memory": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory",
+            "description": "True = enable OM and persist on conversation; False = disable and persist; None = inherit persisted state."
+          },
+          "memory_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Model",
+            "description": "Optional model override for observational-memory processing."
+          },
+          "memory_scope": {
+            "type": "string",
+            "title": "Memory Scope",
+            "description": "Observational-memory scope, normally the current thread.",
+            "default": "thread"
+          },
+          "cache_bypass": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Bypass",
+            "description": "Per-call cache invalidation flags ({conversation, agent, tools, models}). Validated against the host's CacheBypass model on entry.",
+            "ui:widget": "json"
+          },
+          "max_iterations": {
+            "type": "integer",
+            "maximum": 500,
+            "minimum": 1,
+            "title": "Max Iterations",
+            "description": "Maximum agent reasoning/tool-loop iterations.",
+            "default": 100
+          },
+          "max_retries_per_iteration": {
+            "type": "integer",
+            "maximum": 10,
+            "minimum": 0,
+            "title": "Max Retries Per Iteration",
+            "description": "Maximum provider retries allowed within one agent iteration.",
+            "default": 2
+          },
+          "skill_config": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill Config",
+            "description": "Per-request skill visibility override (Smart Input additive picks). Validated against the host's skill-config shape on entry.",
+            "ui:widget": "json"
+          },
+          "mandate_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mandate Key",
+            "description": "The job this step performs, named as a Mandate key (e.g. 'podcast.deep_research'). Your organization decides which agent or workflow actually does it, looked up every time the step runs — so the job can be reassigned without editing this workflow.",
+            "ui:widget": "mandate_agent_picker"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "The agent this step runs. Pick one of your saved agents — this step runs that agent, every time. (Turn on 'Pin to this version' to freeze it at one saved version instead of always using the agent's current form.)",
+            "ui:widget": "agent_picker"
+          },
+          "is_version": {
+            "type": "boolean",
+            "title": "Is Version",
+            "description": "Pin to this version: run the exact saved version named above instead of the agent's current form.",
+            "default": false,
+            "ui:widget": "toggle"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AssignmentAgentInput",
+        "description": "The per-item invocation template: an agent id, or a Mandate key.\n\nUnlike Run Agent, a coordinated batch may still name a Mandate — it is\nresolved ONCE for the whole batch, so a mid-batch rebind can never split\none batch across two doers. Exactly one selector may be set; the shared\nresolver refuses both."
       },
       "AssignmentBatchResult": {
         "properties": {
@@ -98772,6 +98906,272 @@
         ],
         "title": "BlueskyPublicPost",
         "description": "Safe projection of one public Bluesky post."
+      },
+      "BoardConversionRow": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "repo_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Slug"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location"
+          },
+          "symbol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbol"
+          },
+          "revision": {
+            "type": "string",
+            "title": "Revision"
+          },
+          "revision_kind": {
+            "type": "string",
+            "title": "Revision Kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "repo_slug",
+          "location",
+          "symbol",
+          "revision",
+          "revision_kind"
+        ],
+        "title": "BoardConversionRow"
+      },
+      "BoardFinding": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "reference_type": {
+            "type": "string",
+            "title": "Reference Type"
+          },
+          "repo_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Slug"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location"
+          },
+          "flag": {
+            "type": "string",
+            "title": "Flag"
+          },
+          "presence": {
+            "type": "string",
+            "title": "Presence"
+          },
+          "sentence": {
+            "type": "string",
+            "title": "Sentence"
+          },
+          "remedy": {
+            "type": "string",
+            "title": "Remedy"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "reference_type",
+          "repo_slug",
+          "location",
+          "flag",
+          "presence",
+          "sentence",
+          "remedy"
+        ],
+        "title": "BoardFinding",
+        "description": "A flagged reference row — a real location plus what to do about it."
+      },
+      "BoardRepo": {
+        "properties": {
+          "repo_slug": {
+            "type": "string",
+            "title": "Repo Slug"
+          },
+          "github_full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Github Full Name"
+          },
+          "scan_state": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "unverified"
+            ],
+            "title": "Scan State"
+          },
+          "last_complete_candidate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BoardScanSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_complete_deployed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BoardScanSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finding_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Finding Counts"
+          },
+          "reference_count": {
+            "type": "integer",
+            "title": "Reference Count"
+          },
+          "open_finding_count": {
+            "type": "integer",
+            "title": "Open Finding Count"
+          },
+          "conversion_count": {
+            "type": "integer",
+            "title": "Conversion Count"
+          },
+          "open_findings": {
+            "items": {
+              "$ref": "#/components/schemas/BoardFinding"
+            },
+            "type": "array",
+            "title": "Open Findings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "repo_slug",
+          "github_full_name",
+          "scan_state",
+          "last_complete_candidate",
+          "last_complete_deployed",
+          "finding_counts",
+          "reference_count",
+          "open_finding_count",
+          "conversion_count",
+          "open_findings"
+        ],
+        "title": "BoardRepo"
+      },
+      "BoardScanSummary": {
+        "properties": {
+          "revision": {
+            "type": "string",
+            "title": "Revision"
+          },
+          "revision_kind": {
+            "type": "string",
+            "title": "Revision Kind"
+          },
+          "scanner_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scanner Version"
+          },
+          "package_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Package Path"
+          },
+          "verification_status": {
+            "type": "string",
+            "title": "Verification Status"
+          },
+          "scanned_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scanned At"
+          },
+          "finding_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Finding Counts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "revision",
+          "revision_kind",
+          "scanner_version",
+          "package_path",
+          "verification_status",
+          "scanned_at",
+          "finding_counts"
+        ],
+        "title": "BoardScanSummary"
       },
       "Body_add_attachment_vault_items__item_id__attachments_post": {
         "properties": {
@@ -129736,6 +130136,61 @@
         ],
         "title": "DevCommunityArticleList",
         "description": "Bounded public-article response."
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DevtoServiceStatus": {
         "properties": {
@@ -169460,6 +169915,322 @@
         "title": "MandateOption",
         "description": "One mandate an author can point a scenario at, with what it offers."
       },
+      "MandateReferenceBoard": {
+        "properties": {
+          "repos": {
+            "items": {
+              "$ref": "#/components/schemas/BoardRepo"
+            },
+            "type": "array",
+            "title": "Repos"
+          },
+          "conversion_list": {
+            "items": {
+              "$ref": "#/components/schemas/BoardConversionRow"
+            },
+            "type": "array",
+            "title": "Conversion List"
+          },
+          "conversion_count": {
+            "type": "integer",
+            "title": "Conversion Count"
+          },
+          "conversion_counts_by_repo": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Conversion Counts By Repo"
+          },
+          "open_finding_count": {
+            "type": "integer",
+            "title": "Open Finding Count"
+          },
+          "unverified_repos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unverified Repos"
+          },
+          "source": {
+            "type": "string",
+            "const": "mandate.reference",
+            "title": "Source",
+            "default": "mandate.reference"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "repos",
+          "conversion_list",
+          "conversion_count",
+          "conversion_counts_by_repo",
+          "open_finding_count",
+          "unverified_repos"
+        ],
+        "title": "MandateReferenceBoard"
+      },
+      "MandateReferenceReport": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "defined_in": {
+            "items": {
+              "$ref": "#/components/schemas/MandateReferenceRow"
+            },
+            "type": "array",
+            "title": "Defined In"
+          },
+          "used_by": {
+            "items": {
+              "$ref": "#/components/schemas/MandateReferenceRow"
+            },
+            "type": "array",
+            "title": "Used By"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/MandateReferenceRow"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "scan_completeness": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RepoScanCompleteness"
+            },
+            "type": "object",
+            "title": "Scan Completeness"
+          },
+          "unscanned_repos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unscanned Repos"
+          },
+          "single_consumption_site_by_design": {
+            "type": "boolean",
+            "title": "Single Consumption Site By Design"
+          },
+          "source": {
+            "type": "string",
+            "const": "mandate.reference",
+            "title": "Source",
+            "default": "mandate.reference"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "defined_in",
+          "used_by",
+          "flags",
+          "scan_completeness",
+          "unscanned_repos",
+          "single_consumption_site_by_design"
+        ],
+        "title": "MandateReferenceReport"
+      },
+      "MandateReferenceRow": {
+        "properties": {
+          "identity_hash": {
+            "type": "string",
+            "title": "Identity Hash"
+          },
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "reference_type": {
+            "type": "string",
+            "title": "Reference Type"
+          },
+          "repo_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Slug"
+          },
+          "package_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Package Path"
+          },
+          "package_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Package Name"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Path"
+          },
+          "symbol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbol"
+          },
+          "occurrence_n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurrence N"
+          },
+          "line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line"
+          },
+          "revision": {
+            "type": "string",
+            "title": "Revision"
+          },
+          "revision_kind": {
+            "type": "string",
+            "title": "Revision Kind"
+          },
+          "presence": {
+            "type": "string",
+            "title": "Presence"
+          },
+          "flag": {
+            "type": "string",
+            "title": "Flag"
+          },
+          "caller_identity_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caller Identity Hash"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location"
+          },
+          "flag_sentence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flag Sentence"
+          },
+          "remedy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remedy"
+          },
+          "scan_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scan Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identity_hash",
+          "mandate_key",
+          "reference_type",
+          "repo_slug",
+          "package_path",
+          "package_name",
+          "language",
+          "file_path",
+          "symbol",
+          "occurrence_n",
+          "line",
+          "revision",
+          "revision_kind",
+          "presence",
+          "flag",
+          "caller_identity_hash",
+          "location",
+          "flag_sentence",
+          "remedy",
+          "scan_status"
+        ],
+        "title": "MandateReferenceRow",
+        "description": "One reference to a mandate key, as the tab renders it."
+      },
       "MandateResolutionResponse": {
         "properties": {
           "mandate_key": {
@@ -190037,6 +190808,13 @@
             },
             "type": "array",
             "title": "Events"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/StoredMessageRecord"
+            },
+            "type": "array",
+            "title": "Messages"
           }
         },
         "type": "object",
@@ -205452,6 +206230,62 @@
         ],
         "title": "RepoDiffReceiptOut",
         "description": "What accepting a repo-artifact finding did with its diff (D8).\n\n``filed`` carries the feedback item id; ``deduped`` means an identical open\nitem already exists (normal — the reviewer may have relayed it at creation);\n``failed`` means the accept stands but the diff was NOT filed (screamed\nserver-side)."
+      },
+      "RepoScanCompleteness": {
+        "properties": {
+          "repo_slug": {
+            "type": "string",
+            "title": "Repo Slug"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "revision_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision Kind"
+          },
+          "scanned_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scanned At"
+          },
+          "is_complete": {
+            "type": "boolean",
+            "title": "Is Complete"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "repo_slug",
+          "revision",
+          "revision_kind",
+          "scanned_at",
+          "is_complete"
+        ],
+        "title": "RepoScanCompleteness",
+        "description": "The newest COMPLETE scan for one active repository, or the absence of one."
       },
       "RepositoriesListResponse": {
         "properties": {
@@ -225506,6 +226340,35 @@
         ],
         "title": "StorageUsageResponse"
       },
+      "StoredMessageRecord": {
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "default": ""
+          },
+          "position": {
+            "type": "integer",
+            "title": "Position",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_id",
+          "role"
+        ],
+        "title": "StoredMessageRecord",
+        "description": "One normalized visible `chat.message` — the same projection every\nlauncher-named canvas chat replays from (`launcher_history`)."
+      },
       "StoredSuggestedTag": {
         "properties": {
           "name": {
@@ -238234,7 +239097,26 @@
                 "type": "null"
               }
             ],
-            "title": "Variable Definitions"
+            "title": "Variable Definitions",
+            "description": "The stored column name for the agent's variable definitions. `variables` is the caller-facing alias and folds into this."
+          },
+          "variables": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variables",
+            "description": "The agent's variable definitions — REPLACES the whole list. Named `variables` to match every other surface (the create path, the read path, `agent_run`); it is written to the `variable_definitions` column. Accepts either the compact read shape ({name, description, required, default_value}) or the stored FE shape ({name, helpText, defaultValue, required, customComponent}) — the compact keys are translated, never stored raw."
           },
           "visibility": {
             "anyOf": [

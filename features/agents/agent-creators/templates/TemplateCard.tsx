@@ -13,6 +13,8 @@ interface TemplateCardProps {
   category: string | null;
   isFeatured: boolean;
   useCount: number;
+  /** Archived templates stay usable; the badge is what stops the card lying. */
+  isArchived?: boolean;
   onUseTemplate?: (id: string) => void;
   onNavigate?: (id: string, path: string) => void;
   isNavigating?: boolean;
@@ -27,6 +29,7 @@ export function TemplateCard({
   category,
   isFeatured,
   useCount,
+  isArchived,
   onUseTemplate,
   onNavigate,
   isNavigating,
@@ -85,6 +88,11 @@ export function TemplateCard({
         )}
 
         <div className="flex items-center gap-2 flex-wrap">
+          {isArchived && (
+            <Badge variant="outline" className="text-muted-foreground border-border">
+              Archived
+            </Badge>
+          )}
           {category && (
             <Badge variant="secondary" className="bg-primary/10 text-primary">
               {category}
