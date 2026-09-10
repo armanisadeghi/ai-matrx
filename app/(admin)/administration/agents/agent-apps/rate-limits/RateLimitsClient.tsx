@@ -91,6 +91,27 @@ interface ColumnFilters {
   blocked: 'all' | 'blocked' | 'not-blocked';
 }
 
+/**
+ * Hoisted to module scope: defining it inside RateLimitsClient made it a new
+ * component type each render, remounting the whole table header.
+ */
+const SortIcon = ({
+  field,
+  sortField,
+  sortDirection,
+}: {
+  field: SortField;
+  sortField: SortField;
+  sortDirection: SortDirection;
+}) => {
+  if (sortField !== field) return null;
+  return sortDirection === 'asc' ? (
+    <ArrowUpDown className="h-3 w-3 inline ml-1" />
+  ) : (
+    <ArrowUpDown className="h-3 w-3 inline ml-1 rotate-180" />
+  );
+};
+
 export function RateLimitsClient() {
   const [rateLimits, setRateLimits] = useState<AgentAppRateLimitRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -328,15 +349,6 @@ export function RateLimitsClient() {
     return <span className="text-sm text-muted-foreground">Unknown</span>;
   };
 
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return null;
-    return sortDirection === 'asc' ? (
-      <ArrowUpDown className="h-3 w-3 inline ml-1" />
-    ) : (
-      <ArrowUpDown className="h-3 w-3 inline ml-1 rotate-180" />
-    );
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full w-full">
@@ -538,7 +550,7 @@ export function RateLimitsClient() {
                     >
                       <span className="font-semibold">App</span>
                       <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="app_name" />
+                      <SortIcon field="app_name" sortField={sortField} sortDirection={sortDirection} />
                     </div>
                     <Input
                       placeholder="Filter..."
@@ -609,7 +621,7 @@ export function RateLimitsClient() {
                     >
                       <span className="font-semibold">Executions</span>
                       <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="execution_count" />
+                      <SortIcon field="execution_count" sortField={sortField} sortDirection={sortDirection} />
                     </div>
                     <div className="h-7" />
                   </div>
@@ -624,7 +636,7 @@ export function RateLimitsClient() {
                     >
                       <span className="font-semibold">First Execution</span>
                       <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="first_execution_at" />
+                      <SortIcon field="first_execution_at" sortField={sortField} sortDirection={sortDirection} />
                     </div>
                     <div className="h-7" />
                   </div>
@@ -639,7 +651,7 @@ export function RateLimitsClient() {
                     >
                       <span className="font-semibold">Last Execution</span>
                       <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="last_execution_at" />
+                      <SortIcon field="last_execution_at" sortField={sortField} sortDirection={sortDirection} />
                     </div>
                     <div className="h-7" />
                   </div>

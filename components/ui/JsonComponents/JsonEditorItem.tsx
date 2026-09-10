@@ -7,6 +7,43 @@ import type { JsonEditorItemProps } from "./types";
 import { jsonUtils } from './newUitls';
 import type { JsonValue, JsonObject } from '@/types/json';
 
+/**
+ * Hoisted to module scope: a component defined inside another component is a
+ * brand-new type every render, so React unmounts and remounts its subtree —
+ * losing focus, scroll and child state. `readOnly` is passed as a prop.
+ */
+const IconButton = ({
+    icon: Icon,
+    onClick,
+    label,
+    readOnly = false,
+    color = "text-muted-foreground",
+    hoverColor = "hover:text-foreground",
+}: {
+    icon: React.ComponentType<{ className?: string }>;
+    onClick: () => void;
+    label: string;
+    readOnly?: boolean;
+    color?: string;
+    hoverColor?: string;
+}) => (
+    <span className="matrx-touch-targets inline-flex">
+        <button
+            onClick={onClick}
+            aria-label={label}
+            className={cn(
+                "p-0.5 rounded-sm transition-colors",
+                color,
+                hoverColor,
+                "opacity-100 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100",
+                readOnly && "hidden"
+            )}
+        >
+            <Icon className="h-3.5 w-3.5"/>
+        </button>
+    </span>
+);
+
 const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
     keyName,
     value,
@@ -86,37 +123,6 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
         onEdit(keyName, newObj);
     };
 
-    // IconButton component remains the same
-    const IconButton = ({
-        icon: Icon,
-        onClick,
-        label,
-        color = "text-muted-foreground",
-        hoverColor = "hover:text-foreground"
-    }: {
-        icon: React.ComponentType<{ className?: string }>;
-        onClick: () => void;
-        label: string;
-        color?: string;
-        hoverColor?: string;
-    }) => (
-        <span className="matrx-touch-targets inline-flex">
-            <button
-                onClick={onClick}
-                aria-label={label}
-                className={cn(
-                    "p-0.5 rounded-sm transition-colors",
-                    color,
-                    hoverColor,
-                    "opacity-100 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100",
-                    readOnly && "hidden"
-                )}
-            >
-                <Icon className="h-3.5 w-3.5"/>
-            </button>
-        </span>
-    );
-
     const renderValue = (val: JsonValue) => {
         if (typeof val === 'string') return `"${val}"`;
         if (val === null) return 'null';
@@ -163,6 +169,7 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
                             />
                         )}
                         <IconButton
+                            readOnly={readOnly}
                             icon={Save}
                             onClick={handleSave}
                             label="Save edit"
@@ -170,6 +177,7 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
                             hoverColor="hover:text-green-700 dark:hover:text-green-300"
                         />
                         <IconButton
+                            readOnly={readOnly}
                             icon={X}
                             onClick={handleCancel}
                             label="Cancel edit"
@@ -195,6 +203,7 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
                         )}
                         <div className="flex items-center gap-0.5 ml-auto">
                             <IconButton
+                                readOnly={readOnly}
                                 icon={Edit}
                                 onClick={handleEdit}
                                 label="Edit value"
@@ -202,6 +211,7 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
                                 hoverColor="hover:text-blue-700 dark:hover:text-blue-300"
                             />
                             <IconButton
+                                readOnly={readOnly}
                                 icon={Plus}
                                 onClick={() => onAdd("newKey", null, index + 1)}
                                 label="Add value"
@@ -209,6 +219,7 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
                                 hoverColor="hover:text-green-700 dark:hover:text-green-300"
                             />
                             <IconButton
+                                readOnly={readOnly}
                                 icon={Trash}
                                 onClick={onDelete}
                                 label="Delete value"

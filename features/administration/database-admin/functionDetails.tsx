@@ -24,6 +24,66 @@ interface FunctionDetailsProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * Hoisted to module scope: components declared inside another component are a
+ * fresh type each render, remounting their subtree and losing focus/scroll.
+ */
+const CodeBlock = ({
+  children,
+  label,
+  actions,
+  language = "sql",
+}: {
+  children: string;
+  label?: string;
+  actions?: ReactNode;
+  language?: string;
+}) => (
+  <div className="space-y-2 w-full">
+    {label && (
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-medium text-muted-foreground">{label}</h4>
+        {actions && (
+          <div className="opacity-70 hover:opacity-100 transition-opacity">
+            {actions}
+          </div>
+        )}
+      </div>
+    )}
+    <div className="relative group w-full">
+      <SyntaxHighlighter code={children} language={language} />
+    </div>
+  </div>
+);
+
+const DetailItem = ({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: ReactNode;
+}) => (
+  <div className="flex items-start gap-2 p-3 rounded-lg border bg-muted/5 w-full hover:bg-muted/10 transition-colors">
+    <Icon className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+    <div className="space-y-1 min-w-0 flex-1">
+      <p
+        className="text-sm font-medium text-muted-foreground"
+        id={`${label.toLowerCase()}-label`}
+      >
+        {label}
+      </p>
+      <p
+        className="text-sm break-words"
+        aria-labelledby={`${label.toLowerCase()}-label`}
+      >
+        {value}
+      </p>
+    </div>
+  </div>
+);
+
 const FunctionDetails = ({
   func,
   open,
@@ -52,63 +112,8 @@ const FunctionDetails = ({
     navigator.clipboard.writeText(text);
   };
 
-  const CodeBlock = ({
-    children,
-    label,
-    actions,
-    language = "sql",
-  }: {
-    children: string;
-    label?: string;
-    actions?: ReactNode;
-    language?: string;
-  }) => (
-    <div className="space-y-2 w-full">
-      {label && (
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-medium text-muted-foreground">{label}</h4>
-          {actions && (
-            <div className="opacity-70 hover:opacity-100 transition-opacity">
-              {actions}
-            </div>
-          )}
-        </div>
-      )}
-      <div className="relative group w-full">
-        <SyntaxHighlighter code={children} language={language} />
-      </div>
-    </div>
-  );
-
   if (!func) return null;
 
-  const DetailItem = ({
-    icon: Icon,
-    label,
-    value,
-  }: {
-    icon: ComponentType<{ className?: string }>;
-    label: string;
-    value: ReactNode;
-  }) => (
-    <div className="flex items-start gap-2 p-3 rounded-lg border bg-muted/5 w-full hover:bg-muted/10 transition-colors">
-      <Icon className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-      <div className="space-y-1 min-w-0 flex-1">
-        <p
-          className="text-sm font-medium text-muted-foreground"
-          id={`${label.toLowerCase()}-label`}
-        >
-          {label}
-        </p>
-        <p
-          className="text-sm break-words"
-          aria-labelledby={`${label.toLowerCase()}-label`}
-        >
-          {value}
-        </p>
-      </div>
-    </div>
-  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

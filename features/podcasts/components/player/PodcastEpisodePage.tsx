@@ -18,6 +18,43 @@ interface PodcastEpisodePageProps {
     articles?: PcArticle[];
 }
 
+/**
+ * Hoisted to module scope: defined inside the page these were a new component
+ * type each render, remounting the share button (and dropping its focus).
+ */
+interface ShareButtonProps {
+    copied: boolean;
+    onShare: () => void;
+}
+
+// Reusable share button for dark backgrounds (video mode)
+const ShareButtonDark = ({ copied, onShare }: ShareButtonProps) => (
+    <button
+        onClick={onShare}
+        aria-label="Share this episode"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white text-xs font-medium border border-white/20"
+    >
+        {copied
+            ? <><LinkIcon className="h-3.5 w-3.5" /><span>Copied!</span></>
+            : <><Share2 className="h-3.5 w-3.5" /><span>Share</span></>
+        }
+    </button>
+);
+
+// Reusable share button for light backgrounds (metadata / audio-only mode)
+const ShareButtonLight = ({ copied, onShare }: ShareButtonProps) => (
+    <button
+        onClick={onShare}
+        aria-label="Share this episode"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted hover:bg-accent active:scale-95 transition-all text-muted-foreground hover:text-foreground text-xs font-medium border border-border"
+    >
+        {copied
+            ? <><LinkIcon className="h-3.5 w-3.5" /><span>Copied!</span></>
+            : <><Share2 className="h-3.5 w-3.5" /><span>Share</span></>
+        }
+    </button>
+);
+
 export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePageProps) {
     const blog = articles.find((a) => a.kind === 'blog') ?? null;
     const showNotes = articles.find((a) => a.kind === 'show_notes') ?? null;
@@ -59,34 +96,6 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
             text: episode.description ?? `Listen to ${episode.title}`,
         });
     }
-
-    // Reusable share button for dark backgrounds (video mode)
-    const ShareButtonDark = () => (
-        <button
-            onClick={handleShare}
-            aria-label="Share this episode"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white text-xs font-medium border border-white/20"
-        >
-            {copied
-                ? <><LinkIcon className="h-3.5 w-3.5" /><span>Copied!</span></>
-                : <><Share2 className="h-3.5 w-3.5" /><span>Share</span></>
-            }
-        </button>
-    );
-
-    // Reusable share button for light backgrounds (metadata / audio-only mode)
-    const ShareButtonLight = () => (
-        <button
-            onClick={handleShare}
-            aria-label="Share this episode"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted hover:bg-accent active:scale-95 transition-all text-muted-foreground hover:text-foreground text-xs font-medium border border-border"
-        >
-            {copied
-                ? <><LinkIcon className="h-3.5 w-3.5" /><span>Copied!</span></>
-                : <><Share2 className="h-3.5 w-3.5" /><span>Share</span></>
-            }
-        </button>
-    );
 
     // ── Video mode ─────────────────────────────────────────────────────────
     if (effectiveMode === 'with_video') {
@@ -133,7 +142,7 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
                             )}
                         </div>
                         <div className="shrink-0 pt-1">
-                            <ShareButtonDark />
+                            <ShareButtonDark copied={copied} onShare={handleShare} />
                         </div>
                     </div>
 
@@ -221,7 +230,7 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
                                 )}
                             </div>
                             <div className="shrink-0 pt-1">
-                                <ShareButtonLight />
+                                <ShareButtonLight copied={copied} onShare={handleShare} />
                             </div>
                         </div>
 
@@ -300,7 +309,7 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
                 {episode.title && (
                     <div className="flex items-center gap-2 w-full justify-center">
                         <h1 className="min-w-0 text-foreground font-bold text-xl sm:text-2xl text-center leading-snug line-clamp-2 flex-1 break-words">{episode.title}</h1>
-                        <ShareButtonLight />
+                        <ShareButtonLight copied={copied} onShare={handleShare} />
                     </div>
                 )}
                 <div className="w-full bg-card rounded-2xl border border-border shadow-sm p-3">

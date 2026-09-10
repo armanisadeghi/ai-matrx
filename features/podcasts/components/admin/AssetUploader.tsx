@@ -65,6 +65,14 @@ interface SectionState {
 
 const ACCEPT_VIDEO = '.mp4,.mov,.webm';
 
+/** Hoisted to module scope — an inner component type remounts its subtree every render. */
+const VideoStatusIcon = ({ state }: { state: string }) => {
+    if (state === 'uploading') return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
+    if (state === 'success') return <CheckCircle2 className="h-4 w-4 text-success" />;
+    if (state === 'error') return <AlertCircle className="h-4 w-4 text-destructive" />;
+    return null;
+};
+
 export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, showVideoUpload = true, podcastId }: AssetUploaderProps) {
     const videoInputRef = useRef<HTMLInputElement>(null);
     const api = useBackendApi();
@@ -165,12 +173,6 @@ export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, sh
         if (file?.type.startsWith('video/')) uploadVideo(file);
     }, [uploadVideo]);
 
-    const VideoStatusIcon = () => {
-        if (videoSection.state === 'uploading') return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
-        if (videoSection.state === 'success') return <CheckCircle2 className="h-4 w-4 text-success" />;
-        if (videoSection.state === 'error') return <AlertCircle className="h-4 w-4 text-destructive" />;
-        return null;
-    };
 
     return (
         <div className="flex flex-col gap-4">
@@ -195,7 +197,7 @@ export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, sh
                             Background Video
                             <span className="text-xs text-muted-foreground font-normal">(for "with_video" mode)</span>
                         </p>
-                        <VideoStatusIcon />
+                        <VideoStatusIcon state={videoSection.state} />
                     </div>
 
                     <div

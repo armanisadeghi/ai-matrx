@@ -38,6 +38,7 @@ import type { DocumentRow, DocumentSource } from "@/features/data-tables/types";
 import { documentSourceLabel } from "@/features/data-tables/utils/documentsHubDisplay";
 
 type SortKey = "name" | "description" | "source" | "created" | "updated";
+type SortDir = "asc" | "desc";
 
 type UpdatedFilter =
   | "any"
@@ -262,6 +263,60 @@ function documentHref(id: string): string | undefined {
   return href;
 }
 
+/**
+ * Hoisted to module scope: a component defined inside another is a new type each
+ * render, remounting the header row and losing focus in its filter popovers.
+ */
+const ColumnHead = ({
+  k,
+  children,
+  className,
+  align = "left",
+  filter,
+  sortKey,
+  sortDir,
+  onSort,
+}: {
+  k: SortKey;
+  children: React.ReactNode;
+  className?: string;
+  align?: "left" | "right";
+  filter: React.ReactNode | null;
+  sortKey: SortKey;
+  sortDir: SortDir;
+  onSort: (key: SortKey) => void;
+}) => (
+  <TableHead className={className}>
+    <div
+      className={cn(
+        "inline-flex items-center gap-0.5",
+        align === "right" && "justify-end w-full",
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(k)}
+        className={cn(
+          "inline-flex items-center gap-1 hover:text-foreground transition-colors text-xs",
+          align === "right" && "justify-end",
+        )}
+      >
+        {children}
+        {sortKey === k ? (
+          sortDir === "asc" ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )
+        ) : (
+          <ChevronsUpDown className="h-3 w-3 opacity-40" />
+        )}
+      </button>
+      {filter}
+    </div>
+  </TableHead>
+);
+
 export function DocumentsHubTable({
   documents,
   onDelete,
@@ -271,7 +326,7 @@ export function DocumentsHubTable({
 }) {
   const router = useRouter();
   const [sortKey, setSortKey] = React.useState<SortKey>("updated");
-  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
+  const [sortDir, setSortDir] = React.useState<SortDir>("desc");
   const [columnFilters, setColumnFilters] =
     React.useState<ColumnFilters>(EMPTY_COLUMN_FILTERS);
 
@@ -359,50 +414,6 @@ export function DocumentsHubTable({
 
   const filtersActive = hasActiveColumnFilters(columnFilters);
 
-  const ColumnHead = ({
-    k,
-    children,
-    className,
-    align = "left",
-    filter,
-  }: {
-    k: SortKey;
-    children: React.ReactNode;
-    className?: string;
-    align?: "left" | "right";
-    filter: React.ReactNode | null;
-  }) => (
-    <TableHead className={className}>
-      <div
-        className={cn(
-          "inline-flex items-center gap-0.5",
-          align === "right" && "justify-end w-full",
-        )}
-      >
-        <button
-          type="button"
-          onClick={() => toggleSort(k)}
-          className={cn(
-            "inline-flex items-center gap-1 hover:text-foreground transition-colors text-xs",
-            align === "right" && "justify-end",
-          )}
-        >
-          {children}
-          {sortKey === k ? (
-            sortDir === "asc" ? (
-              <ChevronUp className="h-3 w-3" />
-            ) : (
-              <ChevronDown className="h-3 w-3" />
-            )
-          ) : (
-            <ChevronsUpDown className="h-3 w-3 opacity-40" />
-          )}
-        </button>
-        {filter}
-      </div>
-    </TableHead>
-  );
-
   return (
     <div className="rounded-lg border border-border overflow-hidden">
       {filtersActive && (
@@ -424,6 +435,9 @@ export function DocumentsHubTable({
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <ColumnHead
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
               k="name"
               filter={
                 <ColumnFilterButton
@@ -442,6 +456,9 @@ export function DocumentsHubTable({
               Name
             </ColumnHead>
             <ColumnHead
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
               k="description"
               className="min-w-[160px]"
               filter={
@@ -461,6 +478,9 @@ export function DocumentsHubTable({
               Description
             </ColumnHead>
             <ColumnHead
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
               k="source"
               className="w-36"
               filter={
@@ -480,6 +500,9 @@ export function DocumentsHubTable({
               Source
             </ColumnHead>
             <ColumnHead
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
               k="created"
               className="w-32"
               filter={
@@ -499,6 +522,9 @@ export function DocumentsHubTable({
               Created
             </ColumnHead>
             <ColumnHead
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
               k="updated"
               className="w-32"
               filter={
