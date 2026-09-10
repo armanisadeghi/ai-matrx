@@ -98,6 +98,31 @@ export function parseErrors(file, source) {
   });
 }
 
+/**
+ * A tracked `.ts`/`.tsx` file with a literal NUL byte (0x00) in its content.
+ * TypeScript's parser is happy to accept a NUL inside a string or comment —
+ * `parseErrors` reports nothing — but a NUL makes `git` classify the file as
+ * BINARY, which hides every diff of it from review forever (`git show --stat`
+ * prints "Bin" instead of the change). 9 such bytes were found in tracked
+ * source on 2026-09-10 (fixed in 68d68a7727) and would have shipped invisibly
+ * to review had this guard existed. `\0` is the correct escape — identical at
+ * runtime, but ordinary text to git and every diff tool.
+ */
+export function nulByteFinding(file, source) {
+  const idx = source.indexOf("\0");
+  if (idx === -1) return null;
+  const before = source.slice(0, idx);
+  const line = (before.match(/\n/g) ?? []).length + 1;
+  const column = idx - before.lastIndexOf("\n");
+  return {
+    code: "NUL",
+    line,
+    column,
+    message:
+      "literal NUL byte (0x00) makes git treat this file as binary; replace it with the escape \\0 (identical at runtime)",
+  };
+}
+
 /* ── the repair (`--fix`) ─────────────────────────────────────────────────── */
 
 /** The line that opens a multi-line import — the one the codemod split. */
@@ -228,6 +253,22 @@ function selfTest() {
       .length === 0,
   );
 
+  // The 2026-09-10 class: a literal NUL byte (0x00) parses fine as TS, so
+  // `parseErrors` alone is blind to it — it is `nulByteFinding` that must
+  // catch it, and its message must name both the byte and the escape.
+  const nulFixture = "export const A = 1;\n// stray byte here \0 injected\nexport const B = 2;\n";
+  const nul = nulByteFinding("planted.ts", nulFixture);
+  check("the guard REPORTS a literal NUL byte", nul !== null);
+  check("it locates the NUL on the correct line", nul !== null && nul.line === 2);
+  check(
+    "the finding names the defect and the fix (0x00 → \\0 escape)",
+    nul !== null && nul.message.includes("0x00") && nul.message.includes("\\0"),
+  );
+  check(
+    "a NUL-free file reports nothing",
+    nulByteFinding("clean.ts", "export const A = 1;\n") === null,
+  );
+
   for (const r of results) {
     console.log(`  ${r.ok ? "✓" : "✗"} ${r.name}`);
   }
@@ -260,7 +301,9 @@ function main() {
         return null; // deleted between listing and read
       }
       const errors = parseErrors(file, source);
-      return errors.length ? { file, errors } : null;
+      const nul = nulByteFinding(file, source);
+      const allErrors = nul ? [...errors, nul] : errors;
+      return allErrors.length ? { file, errors: allErrors } : null;
     })
     .filter(Boolean);
 
@@ -298,7 +341,11 @@ function main() {
   for (const { file, errors } of findings) {
     console.error(`  ${file}`);
     for (const e of errors.slice(0, 5)) {
-      console.error(`    ${file}:${e.line}:${e.column}  TS${e.code}: ${e.message}`);
+      console.error(
+        e.code === "NUL"
+          ? `    ${file}:${e.line}:${e.column} — ${e.message}`
+          : `    ${file}:${e.line}:${e.column}  TS${e.code}: ${e.message}`,
+      );
     }
     if (errors.length > 5) console.error(`    … ${errors.length - 5} more`);
   }
