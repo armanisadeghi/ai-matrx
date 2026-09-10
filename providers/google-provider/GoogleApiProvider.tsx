@@ -9,6 +9,7 @@ import React, {
   useRef,
 } from "react";
 import { GOOGLE_IDENTITY_SCOPES } from "@/lib/googleScopes";
+import { createClient } from "@/utils/supabase/client";
 import type {
   GooglePickerNamespace,
   GooglePlatformApi,
@@ -430,6 +431,11 @@ export default function GoogleAPIProvider({
     resetError();
     setAuthInProgress(true);
     try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Sign in before connecting Google.");
       const response = await fetch("/api/google/oauth/redirect-state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -461,7 +467,7 @@ export default function GoogleAPIProvider({
       }
       const pending = buildGoogleOAuthRedirectPending(
         body.state,
-        options,
+        { ...options, initiatingUserId: user.id },
         window.location.origin,
       );
       storeGoogleOAuthRedirectPending(window.sessionStorage, pending);

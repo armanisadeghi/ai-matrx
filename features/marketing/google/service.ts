@@ -254,12 +254,18 @@ export async function postGoogleBackend(
   body: Record<string, unknown>,
   fallback: string,
   organizationIdOverride?: string,
+  expectedUserId?: string,
 ): Promise<Response> {
   const supabase = createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Sign in to manage Google.");
+  if (expectedUserId && session.user.id !== expectedUserId) {
+    throw new Error(
+      "Your AI Matrx session changed while Google authorization was open. No Google access was saved; try again from the original session.",
+    );
+  }
   const response = await fetch(`${backendBase()}${path}`, {
     method: "POST",
     headers: organizationContextHeaders(
@@ -287,6 +293,7 @@ export async function connectGoogle(
   options?: {
     redirectUri?: string;
     organizationContextId?: string;
+    expectedUserId?: string;
   },
 ): Promise<GoogleConnectionResult> {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -306,6 +313,7 @@ export async function connectGoogle(
     },
     "Unable to connect Google.",
     options?.organizationContextId,
+    options?.expectedUserId,
   );
   const body = (await response.json()) as { connection_id?: unknown };
   if (typeof body.connection_id !== "string") {

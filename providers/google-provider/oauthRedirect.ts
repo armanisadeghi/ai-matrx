@@ -14,6 +14,7 @@ export type GoogleRedirectConnectionPurpose =
 
 export interface GoogleOAuthRedirectPending {
   state: string;
+  initiatingUserId: string;
   createdAt: number;
   returnTo: string;
   owner: GoogleRedirectOwner;
@@ -22,6 +23,8 @@ export interface GoogleOAuthRedirectPending {
 }
 
 export interface GoogleOAuthRedirectStartOptions {
+  /** Filled from the validated Matrx session immediately before redirect. */
+  initiatingUserId?: string;
   returnTo?: string;
   owner: GoogleRedirectOwner;
   organizationContextId: string;
@@ -49,11 +52,16 @@ export function buildGoogleOAuthRedirectPending(
   now = Date.now(),
 ): GoogleOAuthRedirectPending {
   if (!state.trim()) throw new Error("Google authorization state is missing.");
+  const initiatingUserId = options.initiatingUserId?.trim();
+  if (!initiatingUserId) {
+    throw new Error("Sign in before connecting Google.");
+  }
   if (!options.organizationContextId.trim()) {
     throw new Error("Choose an organization before connecting Google.");
   }
   return {
     state,
+    initiatingUserId,
     createdAt: now,
     returnTo: safeReturnPath(options.returnTo ?? "/", origin),
     owner: options.owner,
@@ -83,6 +91,8 @@ export function consumeGoogleOAuthRedirectPending(
     const value = JSON.parse(raw) as Partial<GoogleOAuthRedirectPending>;
     if (
       value.state !== state ||
+      typeof value.initiatingUserId !== "string" ||
+      !value.initiatingUserId ||
       typeof value.createdAt !== "number" ||
       now - value.createdAt > GOOGLE_OAUTH_REDIRECT_TTL_MS ||
       typeof value.returnTo !== "string" ||
@@ -108,6 +118,7 @@ export function consumeGoogleOAuthRedirectPending(
     }
     return {
       state,
+      initiatingUserId: value.initiatingUserId,
       createdAt: value.createdAt,
       returnTo: safeReturnPath(value.returnTo, origin),
       owner,
@@ -116,6 +127,18 @@ export function consumeGoogleOAuthRedirectPending(
     };
   } catch {
     return null;
+  }
+}
+
+/** Refuse a consent result when the Matrx session changed mid-redirect. */
+export function assertGoogleOAuthRedirectInitiator(
+  pending: GoogleOAuthRedirectPending,
+  currentUserId: string | null | undefined,
+): void {
+  if (!currentUserId || currentUserId !== pending.initiatingUserId) {
+    throw new Error(
+      "Your AI Matrx session changed while Google authorization was open. No Google access was saved; sign in as the original user and try again.",
+    );
   }
 }
 

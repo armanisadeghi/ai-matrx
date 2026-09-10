@@ -1,6 +1,7 @@
 import {
   GOOGLE_OAUTH_REDIRECT_TTL_MS,
   buildGoogleOAuthRedirectPending,
+  assertGoogleOAuthRedirectInitiator,
   consumeGoogleOAuthRedirectPending,
   returnPathWithGoogleOAuthResult,
   storeGoogleOAuthRedirectPending,
@@ -37,6 +38,7 @@ describe("Google OAuth redirect state", () => {
       "state-1",
       {
         returnTo: "/files/all?view=grid",
+        initiatingUserId: "user-1",
         owner: { type: "user" },
         organizationContextId: "org-1",
       },
@@ -59,6 +61,7 @@ describe("Google OAuth redirect state", () => {
       "state-2",
       {
         returnTo: "/files/all",
+        initiatingUserId: "user-1",
         owner: { type: "user" },
         organizationContextId: "org-1",
       },
@@ -79,12 +82,29 @@ describe("Google OAuth redirect state", () => {
         "state-3",
         {
           returnTo: "https://evil.example/files",
+          initiatingUserId: "user-1",
           owner: { type: "user" },
           organizationContextId: "org-1",
         },
         ORIGIN,
       ),
     ).toThrow("only to AI Matrx");
+  });
+
+  it("blocks a callback after the Matrx session changes but accepts its initiator", () => {
+    const pending = buildGoogleOAuthRedirectPending(
+      "state-4",
+      {
+        initiatingUserId: "reviewer-user",
+        owner: { type: "user" },
+        organizationContextId: "org-1",
+      },
+      ORIGIN,
+    );
+    expect(() => assertGoogleOAuthRedirectInitiator(pending, "admin-user")).toThrow(
+      "session changed",
+    );
+    expect(() => assertGoogleOAuthRedirectInitiator(pending, "reviewer-user")).not.toThrow();
   });
 
   it("adds a bounded callback result without changing the return origin", () => {

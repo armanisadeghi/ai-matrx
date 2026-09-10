@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { connectGoogle } from "@/features/marketing/google/service";
+import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   consumeGoogleOAuthRedirectPending,
+  assertGoogleOAuthRedirectInitiator,
   returnPathWithGoogleOAuthResult,
 } from "./oauthRedirect";
 
@@ -48,6 +50,16 @@ export function GoogleOAuthRedirectCallback({
         return;
       }
       setReturnTo(pending.returnTo);
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      try {
+        assertGoogleOAuthRedirectInitiator(pending, user?.id);
+      } catch (cause) {
+        setFailure(cause instanceof Error ? cause.message : "Google authorization could not be completed.");
+        return;
+      }
       const validation = await fetch("/api/google/oauth/redirect-state", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -76,6 +88,7 @@ export function GoogleOAuthRedirectCallback({
         await connectGoogle(code, pending.owner, pending.connectionPurpose, {
           redirectUri: window.location.origin,
           organizationContextId: pending.organizationContextId,
+          expectedUserId: pending.initiatingUserId,
         });
         window.location.replace(
           returnPathWithGoogleOAuthResult(
