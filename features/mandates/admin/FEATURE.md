@@ -121,6 +121,8 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
+- 2026-09-09 — Admin ad-hoc tests omit principal selection by default; the opt-in selector remains available to appropriate hosts. Display mode is labeled My display preview to expose viewer resolution. Text, Markdown and user-message editors share ProTextarea geometry; structured values use ProJsonTextarea. Scope mismatch remains documented and attached to Test mode help.
+
 - 2026-09-09 — Shared property rows center labels/help against controls; shortcut configuration controls use the 34px source-picker height; display tiles reserve equal label space so icons align across wrapped names.
 
 - 2026-09-09 — Display preferences identify Default launch scope and unverified feature support; mandate gate controls are unavailable. Test and note metadata use shared tables; saved-case inputs remain visible with display names; Diagnostics preserves unknown evidence and excludes provision-neutral drift from validation; empty required-context policies no longer claim Required. Runtime gaps are tracked in the shared register above.
