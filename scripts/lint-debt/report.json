@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-09-10T06:15:14.523Z",
-  "commit": "aa877c239fdf33f0ca3515b592e45f47479e1760",
+  "generatedAt": "2026-09-10T07:25:23.661Z",
+  "commit": "5768f6bda690767531acfa90dee434d74e35d444",
   "totals": {
-    "errors": 2173,
-    "filesWithFindings": 1132,
-    "filesScanned": 14837,
+    "errors": 2091,
+    "filesWithFindings": 1122,
+    "filesScanned": 14842,
     "byClass": {
       "bug": 0,
-      "correctness": 2146,
+      "correctness": 2064,
       "doctrine": 25,
       "style": 2
     }
@@ -20,12 +20,7 @@
     },
     {
       "rule": "react-hooks/refs",
-      "count": 563,
-      "klass": "correctness"
-    },
-    {
-      "rule": "react-hooks/static-components",
-      "count": 129,
+      "count": 566,
       "klass": "correctness"
     },
     {
@@ -41,6 +36,11 @@
     {
       "rule": "react-hooks/preserve-manual-memoization",
       "count": 57,
+      "klass": "correctness"
+    },
+    {
+      "rule": "react-hooks/static-components",
+      "count": 44,
       "klass": "correctness"
     },
     {
@@ -94,11 +94,6 @@
       "key": "features/scraper/parts/ScrapedResultDetailTabs.tsx",
       "count": 31,
       "real": 31
-    },
-    {
-      "key": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "count": 26,
-      "real": 26
     },
     {
       "key": "components/mardown-display/blocks/media-io/MediaAssetBlock.tsx",
@@ -236,11 +231,6 @@
       "real": 7
     },
     {
-      "key": "components/ui/JsonComponents/JsonEditor.tsx",
-      "count": 7,
-      "real": 7
-    },
-    {
       "key": "features/scopes/components/context-assignment/ContextAssignmentField.tsx",
       "count": 7,
       "real": 7
@@ -279,6 +269,16 @@
       "key": "components/official/json-explorer/RawJsonExplorer.tsx",
       "count": 6,
       "real": 6
+    },
+    {
+      "key": "components/ui/cover.tsx",
+      "count": 6,
+      "real": 6
+    },
+    {
+      "key": "features/administration/kg-cost/components/KgCostDashboard.tsx",
+      "count": 6,
+      "real": 6
     }
   ],
   "worstFeatures": [
@@ -294,13 +294,8 @@
     },
     {
       "key": "app/(dev)",
-      "count": 110,
-      "real": 109
-    },
-    {
-      "key": "components/animated",
-      "count": 73,
-      "real": 73
+      "count": 102,
+      "real": 101
     },
     {
       "key": "components/official",
@@ -318,16 +313,6 @@
       "real": 52
     },
     {
-      "key": "app/(admin)",
-      "count": 50,
-      "real": 50
-    },
-    {
-      "key": "components/ui",
-      "count": 47,
-      "real": 47
-    },
-    {
       "key": "features/hr",
       "count": 45,
       "real": 45
@@ -343,6 +328,11 @@
       "real": 43
     },
     {
+      "key": "app/(admin)",
+      "count": 42,
+      "real": 42
+    },
+    {
       "key": "app/(public)",
       "count": 40,
       "real": 40
@@ -351,6 +341,16 @@
       "key": "features/notes",
       "count": 38,
       "real": 38
+    },
+    {
+      "key": "components/ui",
+      "count": 37,
+      "real": 37
+    },
+    {
+      "key": "components/animated",
+      "count": 36,
+      "real": 36
     },
     {
       "key": "components/user-generated-table-data",
@@ -366,11 +366,6 @@
       "key": "features/scopes",
       "count": 34,
       "real": 34
-    },
-    {
-      "key": "features/administration",
-      "count": 33,
-      "real": 33
     },
     {
       "key": "features/scraper",
@@ -393,6 +388,11 @@
       "real": 30
     },
     {
+      "key": "features/administration",
+      "count": 28,
+      "real": 28
+    },
+    {
       "key": "features/education",
       "count": 27,
       "real": 27
@@ -413,11 +413,6 @@
       "real": 25
     },
     {
-      "key": "features/data-tables",
-      "count": 25,
-      "real": 25
-    },
-    {
       "key": "features/research",
       "count": 25,
       "real": 24
@@ -433,11 +428,6 @@
       "real": 23
     },
     {
-      "key": "features/podcasts",
-      "count": 22,
-      "real": 22
-    },
-    {
       "key": "features/workflow-runtime",
       "count": 22,
       "real": 22
@@ -446,6 +436,11 @@
       "key": "components/official-candidate",
       "count": 21,
       "real": 21
+    },
+    {
+      "key": "features/data-tables",
+      "count": 20,
+      "real": 20
     },
     {
       "key": "hooks",
@@ -478,9 +473,14 @@
       "real": 19
     },
     {
-      "key": "components/matrx",
+      "key": "features/organizations",
       "count": 18,
       "real": 18
+    },
+    {
+      "key": "features/code",
+      "count": 17,
+      "real": 17
     }
   ],
   "findings": [
@@ -558,48 +558,12 @@
     },
     {
       "file": "app/(admin)/administration/agents/agent-apps/rate-limits/RateLimitsClient.tsx",
-      "line": 133,
+      "line": 154,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "app/(admin)",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(admin)/administration/agents/agent-apps/rate-limits/RateLimitsClient.tsx",
-      "line": 541,
-      "column": 24,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/age…"
-    },
-    {
-      "file": "app/(admin)/administration/agents/agent-apps/rate-limits/RateLimitsClient.tsx",
-      "line": 612,
-      "column": 24,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/age…"
-    },
-    {
-      "file": "app/(admin)/administration/agents/agent-apps/rate-limits/RateLimitsClient.tsx",
-      "line": 627,
-      "column": 24,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/age…"
-    },
-    {
-      "file": "app/(admin)/administration/agents/agent-apps/rate-limits/RateLimitsClient.tsx",
-      "line": 642,
-      "column": 24,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/age…"
     },
     {
       "file": "app/(admin)/administration/agents/skills/page.tsx",
@@ -716,42 +680,6 @@
       "rule": "react-hooks/static-components",
       "feature": "app/(admin)",
       "route": "/administration/ui/official-components/[componentId]",
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/ui/…"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/icon-resolver.tsx",
-      "line": 244,
-      "column": 22,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/ui/…"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/icon-resolver.tsx",
-      "line": 245,
-      "column": 22,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/ui/…"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/icon-resolver.tsx",
-      "line": 246,
-      "column": 22,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/ui/…"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/inline-copy-button.tsx",
-      "line": 522,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(admin)",
-      "route": null,
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/ui/…"
     },
     {
@@ -1476,39 +1404,12 @@
     },
     {
       "file": "app/(dev)/demos/local-tools/cloud-sync/page.dev.tsx",
-      "line": 161,
+      "line": 179,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "app/(dev)",
       "route": "/demos/local-tools/cloud-sync",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(dev)/demos/local-tools/cloud-sync/page.dev.tsx",
-      "line": 236,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(dev)",
-      "route": "/demos/local-tools/cloud-sync",
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(dev)/demos/local-tools/cl…"
-    },
-    {
-      "file": "app/(dev)/demos/local-tools/cloud-sync/page.dev.tsx",
-      "line": 285,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(dev)",
-      "route": "/demos/local-tools/cloud-sync",
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(dev)/demos/local-tools/cl…"
-    },
-    {
-      "file": "app/(dev)/demos/local-tools/cloud-sync/page.dev.tsx",
-      "line": 323,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(dev)",
-      "route": "/demos/local-tools/cloud-sync",
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(dev)/demos/local-tools/cl…"
     },
     {
       "file": "app/(dev)/demos/local-tools/documents/page.dev.tsx",
@@ -1797,51 +1698,6 @@
       "feature": "app/(dev)",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(dev)/demos/tests/google-apis/search-console/components/DataTable.tsx",
-      "line": 173,
-      "column": 42,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(dev)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(dev)/demos/tests/google-a…"
-    },
-    {
-      "file": "app/(dev)/demos/tests/google-apis/search-console/components/DataTable.tsx",
-      "line": 182,
-      "column": 42,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(dev)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(dev)/demos/tests/google-a…"
-    },
-    {
-      "file": "app/(dev)/demos/tests/google-apis/search-console/components/DataTable.tsx",
-      "line": 191,
-      "column": 42,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(dev)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(dev)/demos/tests/google-a…"
-    },
-    {
-      "file": "app/(dev)/demos/tests/google-apis/search-console/components/DataTable.tsx",
-      "line": 200,
-      "column": 42,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(dev)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(dev)/demos/tests/google-a…"
-    },
-    {
-      "file": "app/(dev)/demos/tests/google-apis/search-console/components/DataTable.tsx",
-      "line": 209,
-      "column": 42,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(dev)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(dev)/demos/tests/google-a…"
     },
     {
       "file": "app/(dev)/demos/tests/google-apis/search-console/components/PropertySelector.tsx",
@@ -2645,15 +2501,6 @@
       "message": "Error: Cannot call impure function during render `Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rule…"
     },
     {
-      "file": "components/admin/controls/LargeIndicator.tsx",
-      "line": 503,
-      "column": 8,
-      "rule": "react-hooks/static-components",
-      "feature": "components/admin",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/admin/controls/Larg…"
-    },
-    {
       "file": "components/admin/controls/MediumIndicator.tsx",
       "line": 167,
       "column": 22,
@@ -2844,7 +2691,7 @@
     },
     {
       "file": "components/animated/demos/bento-grids/BentoGridExampleThree.tsx",
-      "line": 201,
+      "line": 206,
       "column": 39,
       "rule": "react-hooks/purity",
       "feature": "components/animated",
@@ -2853,7 +2700,7 @@
     },
     {
       "file": "components/animated/demos/bento-grids/BentoGridExampleThree.tsx",
-      "line": 247,
+      "line": 252,
       "column": 39,
       "rule": "react-hooks/purity",
       "feature": "components/animated",
@@ -2861,265 +2708,13 @@
       "message": "Error: Cannot call impure function during render `Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/r…"
     },
     {
-      "file": "components/animated/demos/bento-grids/BentoGridExampleThree.tsx",
-      "line": 259,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/BentoGridExampleThree.tsx",
-      "line": 276,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/BentoGridExampleThree.tsx",
-      "line": 289,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
       "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 292,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 293,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 294,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 295,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 296,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 297,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 298,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 299,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 300,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 301,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 302,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 303,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 304,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 306,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 307,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 310,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 370,
-      "column": 42,
+      "line": 245,
+      "column": 38,
       "rule": "react-hooks/purity",
       "feature": "components/animated",
       "route": null,
       "message": "Error: Cannot call impure function during render `Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/r…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 395,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 396,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 397,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 398,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 399,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 400,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 401,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 402,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
-    },
-    {
-      "file": "components/animated/demos/bento-grids/ThreeColumnBentoGrid.tsx",
-      "line": 403,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/demos/bent…"
     },
     {
       "file": "components/animated/demos/feature-sections/simple-feature-with-gradient.tsx",
@@ -3210,24 +2805,6 @@
       "feature": "components/animated",
       "route": null,
       "message": "Error: Cannot call impure function during render `Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/r…"
-    },
-    {
-      "file": "components/animated/feature-with-dynamic-grid/dynamic-feature-section.tsx",
-      "line": 70,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/feature-wi…"
-    },
-    {
-      "file": "components/animated/feature-with-dynamic-grid/dynamic-feature-section.tsx",
-      "line": 81,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/feature-wi…"
     },
     {
       "file": "components/animated/feature-with-dynamic-grid/dynamic-grid.tsx",
@@ -3240,34 +2817,7 @@
     },
     {
       "file": "components/animated/my-custom-demos/feature-section-animated-gradient-component.tsx",
-      "line": 76,
-      "column": 22,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/my-custom-…"
-    },
-    {
-      "file": "components/animated/my-custom-demos/feature-section-animated-gradient-component.tsx",
-      "line": 83,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/my-custom-…"
-    },
-    {
-      "file": "components/animated/my-custom-demos/feature-section-animated-gradient-component.tsx",
-      "line": 89,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/my-custom-…"
-    },
-    {
-      "file": "components/animated/my-custom-demos/feature-section-animated-gradient-component.tsx",
-      "line": 118,
+      "line": 134,
       "column": 13,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/animated",
@@ -3276,48 +2826,12 @@
     },
     {
       "file": "components/animated/my-custom-demos/feature-section-animated-gradient.tsx",
-      "line": 71,
-      "column": 18,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/my-custom-…"
-    },
-    {
-      "file": "components/animated/my-custom-demos/feature-section-animated-gradient.tsx",
-      "line": 82,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/my-custom-…"
-    },
-    {
-      "file": "components/animated/my-custom-demos/feature-section-animated-gradient.tsx",
-      "line": 109,
+      "line": 125,
       "column": 13,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/animated",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "components/animated/my-custom-demos/feature-section-gradient-server.tsx",
-      "line": 58,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/my-custom-…"
-    },
-    {
-      "file": "components/animated/my-custom-demos/feature-section-gradient-server.tsx",
-      "line": 62,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/animated",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/animated/my-custom-…"
     },
     {
       "file": "components/animated/my-custom-demos/feature-section-with-gradient.tsx",
@@ -5453,42 +4967,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "components/matrx/AnimatedRevealCard/SmallAnimatedRevealCard.tsx",
-      "line": 127,
-      "column": 10,
-      "rule": "react-hooks/static-components",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/matrx/AnimatedRevea…"
-    },
-    {
-      "file": "components/matrx/AnimatedRevealCard/SmallAnimatedRevealCard.tsx",
-      "line": 140,
-      "column": 10,
-      "rule": "react-hooks/static-components",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/matrx/AnimatedRevea…"
-    },
-    {
-      "file": "components/matrx/AnimatedRevealCard/StandardAnimatedRevealCard.tsx",
-      "line": 142,
-      "column": 10,
-      "rule": "react-hooks/static-components",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/matrx/AnimatedRevea…"
-    },
-    {
-      "file": "components/matrx/AnimatedRevealCard/StandardAnimatedRevealCard.tsx",
-      "line": 155,
-      "column": 10,
-      "rule": "react-hooks/static-components",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/matrx/AnimatedRevea…"
-    },
-    {
       "file": "components/matrx/buttons/InlineCopyButtonGoogle.tsx",
       "line": 308,
       "column": 5,
@@ -5580,30 +5058,12 @@
     },
     {
       "file": "components/message-display/MessageContentDisplay.tsx",
-      "line": 45,
+      "line": 109,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/message-display",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "components/message-display/MessageContentDisplay.tsx",
-      "line": 128,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "components/message-display",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/message-display/Mes…"
-    },
-    {
-      "file": "components/message-display/MessageContentDisplay.tsx",
-      "line": 137,
-      "column": 10,
-      "rule": "react-hooks/static-components",
-      "feature": "components/message-display",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/message-display/Mes…"
     },
     {
       "file": "components/modals/FindReplaceModal.tsx",
@@ -6705,7 +6165,7 @@
     },
     {
       "file": "components/ui/JsonComponents/JsonEditor.tsx",
-      "line": 65,
+      "line": 100,
       "column": 29,
       "rule": "react-hooks/immutability",
       "feature": "components/ui",
@@ -6714,7 +6174,7 @@
     },
     {
       "file": "components/ui/JsonComponents/JsonEditor.tsx",
-      "line": 69,
+      "line": 104,
       "column": 7,
       "rule": "react-hooks/immutability",
       "feature": "components/ui",
@@ -6723,93 +6183,12 @@
     },
     {
       "file": "components/ui/JsonComponents/JsonEditor.tsx",
-      "line": 297,
-      "column": 12,
-      "rule": "react-hooks/static-components",
-      "feature": "components/ui",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/ui/JsonComponents/J…"
-    },
-    {
-      "file": "components/ui/JsonComponents/JsonEditor.tsx",
-      "line": 304,
-      "column": 10,
-      "rule": "react-hooks/static-components",
-      "feature": "components/ui",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/ui/JsonComponents/J…"
-    },
-    {
-      "file": "components/ui/JsonComponents/JsonEditor.tsx",
-      "line": 311,
-      "column": 10,
-      "rule": "react-hooks/static-components",
-      "feature": "components/ui",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/ui/JsonComponents/J…"
-    },
-    {
-      "file": "components/ui/JsonComponents/JsonEditor.tsx",
-      "line": 317,
-      "column": 12,
-      "rule": "react-hooks/static-components",
-      "feature": "components/ui",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/ui/JsonComponents/J…"
-    },
-    {
-      "file": "components/ui/JsonComponents/JsonEditor.tsx",
-      "line": 471,
+      "line": 475,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/ui",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "components/ui/JsonComponents/JsonEditorItem.tsx",
-      "line": 165,
-      "column": 26,
-      "rule": "react-hooks/static-components",
-      "feature": "components/ui",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/ui/JsonComponents/J…"
-    },
-    {
-      "file": "components/ui/JsonComponents/JsonEditorItem.tsx",
-      "line": 172,
-      "column": 26,
-      "rule": "react-hooks/static-components",
-      "feature": "components/ui",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/ui/JsonComponents/J…"
-    },
-    {
-      "file": "components/ui/JsonComponents/JsonEditorItem.tsx",
-      "line": 197,
-      "column": 30,
-      "rule": "react-hooks/static-components",
-      "feature": "components/ui",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/ui/JsonComponents/J…"
-    },
-    {
-      "file": "components/ui/JsonComponents/JsonEditorItem.tsx",
-      "line": 204,
-      "column": 30,
-      "rule": "react-hooks/static-components",
-      "feature": "components/ui",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/ui/JsonComponents/J…"
-    },
-    {
-      "file": "components/ui/JsonComponents/JsonEditorItem.tsx",
-      "line": 211,
-      "column": 30,
-      "rule": "react-hooks/static-components",
-      "feature": "components/ui",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/ui/JsonComponents/J…"
     },
     {
       "file": "components/ui/JsonComponents/JsonViewerComponent.tsx",
@@ -6864,15 +6243,6 @@
       "feature": "components/ui",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "components/ui/notifications/NotificationDropdown.tsx",
-      "line": 144,
-      "column": 26,
-      "rule": "react-hooks/static-components",
-      "feature": "components/ui",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/ui/notifications/No…"
     },
     {
       "file": "components/ui/scroll-fade.tsx",
@@ -7596,57 +6966,12 @@
     },
     {
       "file": "features/administration/database-admin/functionDetails.tsx",
-      "line": 45,
+      "line": 105,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/administration",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/administration/database-admin/functionDetails.tsx",
-      "line": 240,
-      "column": 24,
-      "rule": "react-hooks/static-components",
-      "feature": "features/administration",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/administration/databa…"
-    },
-    {
-      "file": "features/administration/database-admin/functionDetails.tsx",
-      "line": 245,
-      "column": 24,
-      "rule": "react-hooks/static-components",
-      "feature": "features/administration",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/administration/databa…"
-    },
-    {
-      "file": "features/administration/database-admin/functionDetails.tsx",
-      "line": 252,
-      "column": 22,
-      "rule": "react-hooks/static-components",
-      "feature": "features/administration",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/administration/databa…"
-    },
-    {
-      "file": "features/administration/database-admin/functionDetails.tsx",
-      "line": 267,
-      "column": 22,
-      "rule": "react-hooks/static-components",
-      "feature": "features/administration",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/administration/databa…"
-    },
-    {
-      "file": "features/administration/database-admin/functionDetails.tsx",
-      "line": 311,
-      "column": 22,
-      "rule": "react-hooks/static-components",
-      "feature": "features/administration",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/administration/databa…"
     },
     {
       "file": "features/administration/kg-cost/components/KgCostDashboard.tsx",
@@ -11069,51 +10394,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/data-tables/components/DocumentsHubTable.tsx",
-      "line": 426,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "features/data-tables",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/data-tables/component…"
-    },
-    {
-      "file": "features/data-tables/components/DocumentsHubTable.tsx",
-      "line": 444,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "features/data-tables",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/data-tables/component…"
-    },
-    {
-      "file": "features/data-tables/components/DocumentsHubTable.tsx",
-      "line": 463,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "features/data-tables",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/data-tables/component…"
-    },
-    {
-      "file": "features/data-tables/components/DocumentsHubTable.tsx",
-      "line": 482,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "features/data-tables",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/data-tables/component…"
-    },
-    {
-      "file": "features/data-tables/components/DocumentsHubTable.tsx",
-      "line": 501,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "features/data-tables",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/data-tables/component…"
-    },
-    {
       "file": "features/data-tables/components/EditableCell.tsx",
       "line": 129,
       "column": 19,
@@ -12042,7 +11322,7 @@
     },
     {
       "file": "features/hindsight/components/EnrollDialog.tsx",
-      "line": 185,
+      "line": 191,
       "column": 15,
       "rule": "matrx/no-raw-agent-list-query",
       "feature": "features/hindsight",
@@ -13041,7 +12321,7 @@
     },
     {
       "file": "features/mandates/admin/MandateTestBench.tsx",
-      "line": 667,
+      "line": 670,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/mandates",
@@ -13050,7 +12330,7 @@
     },
     {
       "file": "features/mandates/admin/TryItNowPanel.tsx",
-      "line": 159,
+      "line": 172,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/mandates",
@@ -14139,7 +13419,7 @@
     },
     {
       "file": "features/notes/components/NoteContentEditor.tsx",
-      "line": 208,
+      "line": 211,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/notes",
@@ -14148,7 +13428,7 @@
     },
     {
       "file": "features/notes/components/NoteContentEditor.tsx",
-      "line": 278,
+      "line": 281,
       "column": 18,
       "rule": "react-hooks/refs",
       "feature": "features/notes",
@@ -14157,7 +13437,7 @@
     },
     {
       "file": "features/notes/components/NoteContentEditor.tsx",
-      "line": 279,
+      "line": 282,
       "column": 5,
       "rule": "react-hooks/refs",
       "feature": "features/notes",
@@ -14166,7 +13446,7 @@
     },
     {
       "file": "features/notes/components/NoteContentEditor.tsx",
-      "line": 280,
+      "line": 283,
       "column": 5,
       "rule": "react-hooks/refs",
       "feature": "features/notes",
@@ -14175,7 +13455,7 @@
     },
     {
       "file": "features/notes/components/NoteContentEditor.tsx",
-      "line": 677,
+      "line": 680,
       "column": 54,
       "rule": "react-hooks/refs",
       "feature": "features/notes",
@@ -14184,7 +13464,7 @@
     },
     {
       "file": "features/notes/components/NoteContentEditor.tsx",
-      "line": 1020,
+      "line": 1042,
       "column": 27,
       "rule": "react-hooks/preserve-manual-memoization",
       "feature": "features/notes",
@@ -14193,7 +13473,7 @@
     },
     {
       "file": "features/notes/components/NoteContentEditor.tsx",
-      "line": 1020,
+      "line": 1042,
       "column": 27,
       "rule": "react-hooks/preserve-manual-memoization",
       "feature": "features/notes",
@@ -14202,7 +13482,7 @@
     },
     {
       "file": "features/notes/components/NoteContentEditor.tsx",
-      "line": 1020,
+      "line": 1042,
       "column": 27,
       "rule": "react-hooks/preserve-manual-memoization",
       "feature": "features/notes",
@@ -14211,7 +13491,7 @@
     },
     {
       "file": "features/notes/components/NoteContentEditor.tsx",
-      "line": 1020,
+      "line": 1042,
       "column": 27,
       "rule": "react-hooks/preserve-manual-memoization",
       "feature": "features/notes",
@@ -14787,7 +14067,7 @@
     },
     {
       "file": "features/pdf-extractor/hooks/useDocumentLineage.ts",
-      "line": 210,
+      "line": 214,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/pdf-extractor",
@@ -15066,7 +14346,7 @@
     },
     {
       "file": "features/podcasts/components/admin/AssetUploader.tsx",
-      "line": 90,
+      "line": 98,
       "column": 9,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/podcasts",
@@ -15075,16 +14355,7 @@
     },
     {
       "file": "features/podcasts/components/admin/AssetUploader.tsx",
-      "line": 198,
-      "column": 26,
-      "rule": "react-hooks/static-components",
-      "feature": "features/podcasts",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/podcasts/components/a…"
-    },
-    {
-      "file": "features/podcasts/components/admin/AssetUploader.tsx",
-      "line": 233,
+      "line": 235,
       "column": 38,
       "rule": "react-hooks/refs",
       "feature": "features/podcasts",
@@ -15093,7 +14364,7 @@
     },
     {
       "file": "features/podcasts/components/admin/AssetUploader.tsx",
-      "line": 233,
+      "line": 235,
       "column": 38,
       "rule": "react-hooks/refs",
       "feature": "features/podcasts",
@@ -15102,7 +14373,7 @@
     },
     {
       "file": "features/podcasts/components/admin/AssetUploader.tsx",
-      "line": 236,
+      "line": 238,
       "column": 75,
       "rule": "react-hooks/refs",
       "feature": "features/podcasts",
@@ -15137,15 +14408,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/podcasts/components/admin/PodcastsTable.tsx",
-      "line": 290,
-      "column": 30,
-      "rule": "react-hooks/static-components",
-      "feature": "features/podcasts",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/podcasts/components/a…"
-    },
-    {
       "file": "features/podcasts/components/admin/ShowDetailClient.tsx",
       "line": 120,
       "column": 5,
@@ -15171,33 +14433,6 @@
       "feature": "features/podcasts",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/podcasts/components/player/PodcastEpisodePage.tsx",
-      "line": 136,
-      "column": 30,
-      "rule": "react-hooks/static-components",
-      "feature": "features/podcasts",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/podcasts/components/p…"
-    },
-    {
-      "file": "features/podcasts/components/player/PodcastEpisodePage.tsx",
-      "line": 224,
-      "column": 34,
-      "rule": "react-hooks/static-components",
-      "feature": "features/podcasts",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/podcasts/components/p…"
-    },
-    {
-      "file": "features/podcasts/components/player/PodcastEpisodePage.tsx",
-      "line": 303,
-      "column": 26,
-      "rule": "react-hooks/static-components",
-      "feature": "features/podcasts",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/podcasts/components/p…"
     },
     {
       "file": "features/podcasts/generator/useVoiceSamplePlayer.ts",
@@ -19440,7 +18675,7 @@
     },
     {
       "file": "features/workflow-runtime/bakeoff/refine-2/RefineRunPage.tsx",
-      "line": 121,
+      "line": 108,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/workflow-runtime",
@@ -19449,7 +18684,7 @@
     },
     {
       "file": "features/workflow-runtime/bakeoff/refine-2/RefineRunPage.tsx",
-      "line": 199,
+      "line": 186,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/workflow-runtime",
@@ -19800,7 +19035,7 @@
     },
     {
       "file": "lib/entity-list/__tests__/service-key-refetch.test.tsx",
-      "line": 85,
+      "line": 87,
       "column": 3,
       "rule": "react-hooks/globals",
       "feature": "lib/entity-list",
@@ -19829,6 +19064,15 @@
       "file": "lib/entity-list/components/EntityFilterPanel.tsx",
       "line": 241,
       "column": 13,
+      "rule": "react-hooks/refs",
+      "feature": "lib/entity-list",
+      "route": null,
+      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
+    },
+    {
+      "file": "lib/entity-list/useEntityList.ts",
+      "line": 175,
+      "column": 17,
       "rule": "react-hooks/refs",
       "feature": "lib/entity-list",
       "route": null,
@@ -19905,6 +19149,24 @@
       "feature": "lib/scoped-config",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
+    },
+    {
+      "file": "providers/AgentCatalogHost.tsx",
+      "line": 67,
+      "column": 44,
+      "rule": "react-hooks/refs",
+      "feature": "providers",
+      "route": null,
+      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
+    },
+    {
+      "file": "providers/AgentCatalogHost.tsx",
+      "line": 67,
+      "column": 44,
+      "rule": "react-hooks/refs",
+      "feature": "providers",
+      "route": null,
+      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
       "file": "providers/StoreProvider.tsx",

@@ -13,6 +13,12 @@ interface ComponentDisplayProps {
   component?: ComponentEntry;
 }
 
+// Resolved once at module scope — these are literal icon names, so resolving
+// them during render made them look like components defined inside a component.
+const HomeIcon = getIconComponent("Home");
+const SettingsIcon = getIconComponent("Settings");
+const ZapIcon = getIconComponent("Zap");
+
 export default function IconResolverDisplay({
   component,
 }: ComponentDisplayProps) {
@@ -235,18 +241,9 @@ const Icon = getIconComponent("Settings", "Zap");
               works with static/cached icons.
             </p>
             <div className="flex flex-wrap gap-4">
-              {(() => {
-                const HomeIcon = getIconComponent("Home");
-                const SettingsIcon = getIconComponent("Settings");
-                const ZapIcon = getIconComponent("Zap");
-                return (
-                  <>
-                    <HomeIcon className="h-6 w-6 text-blue-500" />
-                    <SettingsIcon className="h-6 w-6 text-green-500" />
-                    <ZapIcon className="h-6 w-6 text-yellow-500" />
-                  </>
-                );
-              })()}
+              <HomeIcon className="h-6 w-6 text-blue-500" />
+              <SettingsIcon className="h-6 w-6 text-green-500" />
+              <ZapIcon className="h-6 w-6 text-yellow-500" />
             </div>
           </div>
         </div>
