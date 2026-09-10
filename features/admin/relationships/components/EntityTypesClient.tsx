@@ -7,8 +7,9 @@
 // admin_entity_types_* SECURITY DEFINER RPCs; deletion is deactivate-only
 // (tokens are FK targets of platform.associations).
 //
-// After any write the registry and types/generated/entity-types.generated.ts
-// diverge until `pnpm gen:entity-types` runs — the drift banner compares the
+// After any write the registry and the installed @ai-matrx/associations
+// vocabulary diverge until the package is regenerated, patch-released and
+// updated here (`pnpm check:entity-types` shows it) — the drift banner compares the
 // active registry tokens (server prop) against the generated vocabulary and
 // stays up until they match again.
 
