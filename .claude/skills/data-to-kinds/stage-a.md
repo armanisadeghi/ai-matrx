@@ -28,8 +28,9 @@ timestamp: 2026-09-10T00:00:00Z
    enumeration, the live counts, and the reason grep alone returns a clean wrong answer are in
    [`common-docs/operations/kind-conversion-board.md`](../../operations/kind-conversion-board.md)
    § four consumer surfaces — **read it, do not improvise this step**. In short: code (all repos)
-   is one surface; the others are DB rows (`agent.mandate.output_kind`,
-   `content_ir.kind_component`, `workflow.trigger.kind`), persisted history
+   is one surface; the others are DB rows (`mandate.definition.output_kind` and
+   `mandate.provision.derived_input_kind`, joined on `provision_key` — `agent.mandate` no longer
+   exists, verified live 2026-09-10; `content_ir.kind_component`, `workflow.trigger.kind`), persisted history
    (`workflow.node_outcome`, `node_data_slot`, `hindsight.replay_step`, `kind_instance`/
    `kind_example`), and generated artifacts (`.gen.ts`, compiled mirrors, matrx-extend). **And a
    FIFTH, found 2026-08-25 after four were called complete: DATABASE FUNCTIONS AND TRIGGERS** —

@@ -20,6 +20,16 @@ timestamp: 2026-09-10T00:00:00Z
 - Friction from replication run 4 — tabular family (2026-08-25, ledger `operations/table-kinds-run.md`)
 - Friction from the first joint Stage V+D pass — rank / RAG / table (2026-08-26)
 
+**Citing an item — some numbers occur twice.** Items 14–19 appear in both the 2026-08-23 *building
+the models* section and the 2026-08-24 *the gate itself was wrong* section, and item 20 appears in
+both that 2026-08-24 gate section and the rank run 2 section. Numbers are never reassigned (ledgers
+already cite them). Cite a duplicated number with its section: `#14 of 2026-08-23` / `#14 of
+2026-08-24` (through #19), `#20 (gate)` / `#20 (rank run 2)`. Existing citations resolve as: this
+skill's `gap #14 of 2026-08-24` and `gap #16 of 2026-08-24` → the gate section;
+`operations/scraper-kinds-run.md` "Open gap 14 / 15 / 16 / 18 / 19" → the 2026-08-23 section;
+`operations/rag-kinds-run.md` "gap #20" and `operations/table-kinds-run.md` "Open-gaps #20" →
+`#20 (rank run 2)`. A new item takes the next unused number (53 at this writing), never a reused one.
+
 1. **Codegen after publish — GUARDED 2026-08-23; one gap left.**
    *Closed:* a stale `.gen.ts` can no longer merge unnoticed. `pnpm check:kind-types` is a
    matrx-frontend release gate in both lanes of `scripts/run-release-gates.sh` (blocking under
@@ -336,12 +346,28 @@ timestamp: 2026-09-10T00:00:00Z
     order silently deleted every section the engine happened not to list. The engine's order LEADS;
     anything left over follows in platform order. Losing data is never the lesser evil, and a
     partial ordering is the normal case, not the exceptional one.
+
+> 🚨 **UNRESOLVED CONFLICT — `CFL-054`. Do not build against this section until Arman rules.**
+> **This document says:** a result's second view should be what the current live path produces from the same input, shown beside the new kind on every demo, and it should go quiet once the cutover lands.
+> **[`SKILL.md`](/skills/data-to-kinds/SKILL.md) (vocabulary, "the three projections") and [`stage-d.md`](/skills/data-to-kinds/stage-d.md) (repointing the emitters) say:** the second view is the raw provider payload, returned only when a caller asks for it (`include_raw=`).
+> **Why it matters:** it decides what every demo's second tab shows and what the repointed emitters must serve — the untouched provider data for inspection, or the old output for side-by-side comparison that disappears after cutover.
+> **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
+> Register: [`/operations/conflicts.md`](/operations/conflicts.md) · `CFL-054`
+
 35. **THE SECOND PROJECTION SHOULD BE THE CURRENT BEHAVIOUR, NOT THE RAW PAYLOAD.** The skill says
     projection 2 is `include_raw`. In practice the demo panel that MOVED the argument in all three
     runs was "what the live path produces from this identical input, beside ours": 11 persisted
     rows vs 20 kind placements; 0/6 citations with a URL vs 6/6; a table with no column list vs 28
     typed columns. **Rule: every demo gets a projection-2 tab showing the CURRENT output beside the
     kind, computed from the same input — and it should go quiet when Stage D lands.**
+
+> 🚨 **UNRESOLVED CONFLICT — `CFL-053`. Do not build against this section until Arman rules.**
+> **This document says:** a demo route must never be able to spend money or write, and nobody may add a live-call mode to one.
+> **[`open-gaps.md`](/skills/data-to-kinds/open-gaps.md) (the later item in this same file, on a demo endpoint that cannot reach the family's headline kind) says:** Stage B should add an opt-in flag to the demo endpoint that makes the same real call, switched off by default when it spends money.
+> **Why it matters:** one reading forbids a demo from ever spending, even when asked; the other lets any demo spend whenever someone turns the flag on — the RAG demo's `synthesize=true` already spends model tokens that way.
+> **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
+> Register: [`/operations/conflicts.md`](/operations/conflicts.md) · `CFL-053`
+
 36. **A DEMO ROUTE MUST NOT BE ABLE TO SPEND MONEY OR WRITE.** Two of these three demos read stored
     payloads and real rows rather than firing paid provider calls or offering a write path. A demo
     that can spend is a demo that will. Say so in the service docstring so the next author does not
@@ -371,6 +397,14 @@ timestamp: 2026-09-10T00:00:00Z
     mid-stage. **Rule: quote the whole publisher output in the ledger and label the refusals as the
     gate working. A gated slug you did not intend to move MUST be refused; if it were accepted, the
     gate would be the thing that was broken.**
+
+> 🚨 **UNRESOLVED CONFLICT — `CFL-053`. Do not build against this section until Arman rules.**
+> **This document says:** when a demo endpoint cannot reach the family's headline kind, Stage B adds an opt-in flag that makes the same real call, switched off by default when it spends money.
+> **[`open-gaps.md`](/skills/data-to-kinds/open-gaps.md) (the earlier item in this same file, "a demo route must not be able to spend money or write") says:** a demo route must never be able to spend money or write, and nobody may add a live-call mode to one.
+> **Why it matters:** one reading lets any demo spend whenever someone turns the flag on — the RAG demo's `synthesize=true` already spends model tokens that way; the other forbids a demo from ever spending, even when asked.
+> **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
+> Register: [`/operations/conflicts.md`](/operations/conflicts.md) · `CFL-053`
+
 40. **THE DEMO ENDPOINT MAY NOT EXERCISE THE FAMILY'S HEADLINE, AND STAGE B IS ALLOWED TO FIX
     THAT.** Stage A ships one endpoint; a convergence family's most valuable kind is often reached
     by a DIFFERENT call (here `rag_synthesize_result.citations` — the entire point of the run —

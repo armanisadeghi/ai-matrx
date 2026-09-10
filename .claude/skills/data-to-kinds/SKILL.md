@@ -24,7 +24,7 @@ standing law here the day he says them.
 
 ## Route by stage — a run is ONE stage
 
-Read this whole file (vocabulary, pipeline, standing laws, chip prompts, runs), then your stage's file, then ALL of open-gaps.md — nothing else:
+Read, in order: this whole file (vocabulary, pipeline, standing laws, chip prompts, runs); your stage's file; ALL of open-gaps.md; **and every skill or document your stage file tells you to run or read — those pointers bind exactly like the stage steps** (Stage D: run the `safe-cutover` skill FIRST, before step 0; Stage A step 0: `operations/kind-conversion-board.md` § four consumer surfaces). This route names every companion file of this skill; it never forbids what a stage file requires:
 
 - **Stage A only → read [stage-a.md](stage-a.md).**
 - **Stage B only → read [stage-b.md](stage-b.md).**
@@ -62,6 +62,14 @@ to end — point them at an API or some aspect of our system and ensure all of t
   FE route promotes nothing. Over-engineering guard: a boring flat result whose placeholder
   shape already tells the truth is promoted `simple-is-correct` as-is — richness in the DATA
   (arrays of structures, recurring sub-objects, heterogeneous sections) earns the full treatment.
+
+> 🚨 **UNRESOLVED CONFLICT — `CFL-054`. Do not build against this section until Arman rules.**
+> **This document says:** a result's second view is the raw provider payload, returned only when a caller asks for it (`include_raw=`), off by default.
+> **[`open-gaps.md`](/skills/data-to-kinds/open-gaps.md) (the item on the second projection) says:** the second view should be what the current live path produces from the same input, shown beside the kind on every demo, going quiet once the cutover lands.
+> **Why it matters:** it decides what every demo's second tab shows and what Stage D's repointed emitters must serve — the untouched provider data for inspection, or the old output for comparison that disappears after cutover.
+> **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
+> Register: [`/operations/conflicts.md`](/operations/conflicts.md) · `CFL-054`
+
 - **The three projections of one result**: (1) the KIND — canonical, what travels/persists/
   renders; (2) the RAW payload — on demand (`include_raw=`), off by default; (3) the AI VIEW —
   **DECLARED ON THE KIND** as `@kind(..., ai_view=(...))`, naming which of its own fields a model
@@ -85,10 +93,10 @@ to end — point them at an API or some aspect of our system and ensure all of t
 
 | Stage | Repo | Produces | Gate (Arman) | Then |
 |---|---|---|---|---|
-| **A Distill** | aidream | shapes distilled → `@kind` models + adapters + tests → published (inactive) → demo endpoint → ledger | **none — do NOT stop for a table approval** (gap #14) | fire B |
+| **A Distill** | aidream | shapes distilled → `@kind` models + adapters + tests → published (inactive) → demo endpoint → ledger | **none — do NOT stop for a table approval** (gap #14 of 2026-08-24) | fire B |
 | **B Render** | matrx-frontend | `kind_component` rows → activation → `pnpm shape:types` → compiled mirrors → one canonical component per kind → live demo | **THE gate: approves the rendering on the demo** | fire V+D (or C if this is a pilot) |
 | **V Verify** | either | four legs per kind; stamps `verified` | — (report) | — |
-| **D Cutover** | aidream (+FE consumers) | emitters repointed to the family, collection schema superseded, legacy displays converged | approves cutover | — |
+| **D Cutover** | aidream (+FE consumers) | emitters repointed to the family, collection schema superseded, legacy displays converged | approves cutover on the STAGED proof — no merge, registry publish, or deploy before it ([stage-d.md](stage-d.md) step 6) | — |
 | **C Review** | common-docs (owns this skill) | skill rewrite + replication run | — | — |
 
 Every run has ONE ledger: `common-docs/operations/<family>-kinds-run.md` (type `Register`; the
@@ -118,7 +126,8 @@ is the durable completion signal the orchestrator watches; it is only true once 
 
 Review the whole run — skill-said vs happened, every missing instruction, every ruling — rewrite
 THIS skill (tight: instructions, not a memoir), fix the ledger, then **fire the replication run**
-from the queue as a Stage A chip that references ONLY this skill. The replication's friction is
+from the queue as a Stage A chip that references ONLY this skill (no outside explanation — the
+skills and documents its stage files name still bind, per § Route by stage). The replication's friction is
 the failure list: the replication agent appends it to [open-gaps.md](open-gaps.md) and its ledger links it.
 
 ---
@@ -238,23 +247,24 @@ the failure list: the replication agent appends it to [open-gaps.md](open-gaps.m
 
 ## Chip prompts (standalone — paste as the chip body, fill the ⟨⟩)
 
-**Stage A:** "You are STAGE A of the data-to-kinds run for ⟨family⟩. Read ONLY these three files in
+**Stage A:** "You are STAGE A of the data-to-kinds run for ⟨family⟩. Read these three files in
 `common-docs/skills/data-to-kinds/` (mirrored at `.claude/skills/data-to-kinds/`): `SKILL.md`, `stage-a.md`,
-and ALL of `open-gaps.md`, and follow them verbatim. Source: ⟨engine/client path, nodes, provider(s)⟩. Existing placeholders:
+and ALL of `open-gaps.md` — plus every skill or document `stage-a.md` tells you to read — and follow them verbatim. Source: ⟨engine/client path, nodes, provider(s)⟩. Existing placeholders:
 ⟨`aidream/kinds/<domain>.py` slugs or none⟩. Create the ledger `common-docs/operations/⟨family⟩-
 kinds-run.md` from the search pilot's layout. Bring Arman your tables, each row with your recommendation, but do NOT
 stop for a table approval (gap #14 of 2026-08-24: the one approval gate is Stage B's rendered demo); publish inactive; ship
 the demo endpoint; mark Stage A DONE and fire Stage B. Every instruction the skill
 failed to give you goes into its `open-gaps.md` in the same session."
 
-**Stage B:** "You are STAGE B of the data-to-kinds run for ⟨family⟩. Read ONLY these three files in
+**Stage B:** "You are STAGE B of the data-to-kinds run for ⟨family⟩. Read these three files in
 `common-docs/skills/data-to-kinds/` (mirrored at `.claude/skills/data-to-kinds/`): `SKILL.md`, `stage-b.md`, and ALL of
-`open-gaps.md`, plus the ledger `common-docs/operations/⟨family⟩-kinds-run.md`. Kinds: ⟨slugs⟩. Endpoint:
+`open-gaps.md` — plus every skill or document `stage-b.md` tells you to read — plus the ledger `common-docs/operations/⟨family⟩-kinds-run.md`. Kinds: ⟨slugs⟩. Endpoint:
 ⟨POST /api/…⟩. Build per Stage B, demo at `/demos/⟨family⟩`, verify in-browser, get Arman's
 render approval, mark DONE, fire V + D."
 
 **Stage V / D / C:** same shape — name the family, the ledger, the slugs, the stage, and the files to read: `SKILL.md`,
-that stage's file (`stage-v.md` / `stage-d.md`; Stage C is inline in `SKILL.md`), and ALL of `open-gaps.md`.
+that stage's file (`stage-v.md` / `stage-d.md`; Stage C is inline in `SKILL.md`), ALL of `open-gaps.md`, and every skill
+or document that stage's file tells you to run or read — never "only" (Stage D: the `safe-cutover` skill first).
 
 ## Runs
 
