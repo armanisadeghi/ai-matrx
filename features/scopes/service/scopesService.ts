@@ -86,7 +86,7 @@ import type {
   UpdateScopeParams,
   UpdateScopeTypeParams,
 } from "@/features/scopes/types";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 // One denormalized scope row for tags: which entity, which scope, plus the
 // scope's name and its type's singular label (sidebar grouping).

@@ -136033,8 +136033,7 @@
                 "type": "null"
               }
             ],
-            "title": "Data",
-            "description": "Base64 encoded bytes"
+            "title": "Data"
           },
           "mime_type": {
             "anyOf": [
@@ -136053,7 +136052,8 @@
         "required": [
           "type"
         ],
-        "title": "EmbeddingPart"
+        "title": "EmbeddingPart",
+        "description": "Stable public API name for the provider-owned embedding input contract."
       },
       "EmbeddingRequest": {
         "properties": {
@@ -149818,7 +149818,8 @@
             "enum": [
               "general",
               "google_ads_isolated",
-              "read_only_sweep"
+              "read_only_sweep",
+              "contacts_import"
             ],
             "title": "Connection Purpose",
             "default": "general"

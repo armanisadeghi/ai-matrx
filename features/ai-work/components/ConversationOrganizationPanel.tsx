@@ -8,7 +8,7 @@ import {
   removeAssignmentByEntity,
 } from "@/features/war-room/service/associations";
 import { roomRef } from "@/features/war-room/types";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 const ORGANIZATION_TOKENS = [
   "project",

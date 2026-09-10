@@ -7,19 +7,19 @@
 // Aligned with the data model in features/scopes/FEATURE.md.
 
 import type { Database, Json } from "@/types/database.types";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 // Re-export the GENERATED entity-token vocabulary so consumers import the
 // canonical, type-safe token set from the scopes types module (the single
 // place feature code already reaches for association/scope types). The
 // generated file is the source of truth — mirrored from `platform.entity_types`
 // via `pnpm gen:entity-types`; never hand-edit it.
-export type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+export type { EntityTypeToken } from "@ai-matrx/associations";
 export {
   ENTITY_TYPE_METADATA,
   ENTITY_TYPE_TOKENS,
   isEntityTypeToken,
-} from "@/types/generated/entity-types.generated";
+} from "@ai-matrx/associations";
 
 // ─── Database row aliases ───────────────────────────────────────────
 //

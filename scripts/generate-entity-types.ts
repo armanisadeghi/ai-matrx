@@ -4,12 +4,13 @@
  * The entity-type vocabulary SHIPS IN `@ai-matrx/associations` (generated
  * inside the package at `aidream/apps/shared/associations` from live
  * `platform.entity_types`, released as a PATCH per the package's release
- * contract). `types/generated/entity-types.generated.ts` in this repo is a
- * pure re-export of the package module.
+ * contract). This repo keeps NO local copy — every consumer imports
+ * `@ai-matrx/associations` directly (the local re-export shim was deleted
+ * 2026-09-10, DC-009).
  *
  * What this script does (both `pnpm gen:entity-types` and
- * `pnpm check:entity-types` — same gate, kept under both names so release.sh
- * and sync-types keep working unchanged):
+ * `pnpm check:entity-types` — same gate, kept under both names so sync-types
+ * keeps working unchanged; release.sh runs `check:entity-types`):
  *
  *   1. Reads the live registry (`entity_types_list()` RPC, paged).
  *   2. Diffs it against the INSTALLED package's `ENTITY_TYPE_METADATA` —
@@ -46,7 +47,6 @@ import {
 loadEnv({ path: ".env.local" });
 loadEnv({ path: ".env" });
 
-export const GENERATED_REL = "types/generated/entity-types.generated.ts";
 const ENTITY_REGISTRY_PATH = join(
   __dirname,
   "..",

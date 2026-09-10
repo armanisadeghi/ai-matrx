@@ -7,7 +7,7 @@
 // invents NO new tables and NO new scope semantics — see
 // features/scopes/FEATURE.md.
 
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 /**
  * Reserved, stable slug for the auto-seeded "Class" scope type in a student's

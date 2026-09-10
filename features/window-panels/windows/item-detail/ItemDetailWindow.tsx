@@ -58,7 +58,7 @@ import {
   getItemConfig,
 } from "@/features/item-presentation/registry";
 import type { ItemType } from "@/features/item-presentation/types";
-import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
+import { isEntityTypeToken } from "@ai-matrx/associations";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { toast } from "@/lib/toast";

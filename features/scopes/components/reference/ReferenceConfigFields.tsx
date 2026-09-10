@@ -26,7 +26,7 @@ import {
   REFERENCE_CATEGORY_DISPLAY,
   SCHEMA_DISPLAY,
   isEntityTypeToken,
-} from "@/types/generated/entity-types.generated";
+} from "@ai-matrx/associations";
 import { ReferenceValuePicker } from "@/features/scopes/components/reference/ReferenceValuePicker";
 
 export interface ReferenceConfigOrgScopeType {

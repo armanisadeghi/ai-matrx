@@ -13,7 +13,7 @@ import {
   fetchAccessSummary,
   type AccessSummary,
 } from "@/features/sharing/service/accessSummary";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 export interface UseAccessSummaryArgs {
   entityType: EntityTypeToken;

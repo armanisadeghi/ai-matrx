@@ -21,7 +21,7 @@ import { Check, ChevronsUpDown, HelpCircle } from "lucide-react";
 import {
   ENTITY_TYPE_METADATA,
   type EntityTypeToken,
-} from "@/types/generated/entity-types.generated";
+} from "@ai-matrx/associations";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

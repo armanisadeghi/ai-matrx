@@ -7,6 +7,7 @@
  */
 
 import type { ComponentType } from "react";
+import type { OverlayId } from "@/features/overlays/catalogue";
 
 // ─── Surface / presentation types ─────────────────────────────────────────────
 
@@ -90,8 +91,13 @@ export interface TrayPreviewContext {
 export interface WindowStaticMetadata {
   /** Stable kebab-case slug used for URLs, diagnostics, and migration. */
   slug: string;
-  /** Key used in overlaySlice (openOverlay / closeOverlay). */
-  overlayId: string;
+  /**
+   * Key used in overlaySlice (openOverlay / closeOverlay). Typed to the
+   * catalogue's `OverlayId` so a metadata row naming an overlay absent from
+   * `features/overlays/catalogue.ts` (a window that could never open) fails
+   * type-check instead of shipping as a silent dead window.
+   */
+  overlayId: OverlayId;
   /** Surface kind — drives renderer behavior. */
   kind: OverlayKind;
   /** Human-readable display name. */

@@ -36,7 +36,7 @@ import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 import {
   isEntityTypeToken,
   type EntityTypeToken,
-} from "@/types/generated/entity-types.generated";
+} from "@ai-matrx/associations";
 
 export interface ReferenceTypeAdderProps {
   type: string;

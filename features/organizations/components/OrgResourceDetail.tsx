@@ -52,7 +52,7 @@ import {
   resolveEntityToken,
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
-import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
+import { isEntityTypeToken } from "@ai-matrx/associations";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { OrganizationAccessGate } from "./OrganizationAccessGate";
 import {

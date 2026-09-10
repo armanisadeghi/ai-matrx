@@ -21,7 +21,7 @@ import type { SourceFeature } from "@/features/agents/types/instance.types";
 import type { Scope } from "@/features/agents/redux/shared/scope";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { ContentSource } from "@/features/rich-document/types";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 import type { ResourceType } from "@/utils/permissions/types";
 import type { SelectionRange } from "./utils/selection-tracking";
 

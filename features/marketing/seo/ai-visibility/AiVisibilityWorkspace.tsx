@@ -23,7 +23,7 @@ import {
   CONTEXT_MENU_ENTITY_KEY,
   type ResolvedContextMenuContext,
 } from "@/features/context-menu-v3/types";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

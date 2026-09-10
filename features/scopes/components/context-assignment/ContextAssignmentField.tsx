@@ -89,7 +89,7 @@ import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayNa
 import { useOpenScopeEditWindow } from "@/features/overlays/openers/scopeEditWindow";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 /** Sentinel org value: no org filter — show / span every organization.
  *  Default for assignment mode unless a `defaultOrganizationId` is passed. */

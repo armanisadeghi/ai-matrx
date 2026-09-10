@@ -59707,7 +59707,10 @@ export interface components {
              */
             status_page?: "https://status.emailoctopus.com/";
         };
-        /** EmbeddingPart */
+        /**
+         * EmbeddingPart
+         * @description Stable public API name for the provider-owned embedding input contract.
+         */
         EmbeddingPart: {
             /**
              * Type
@@ -59718,10 +59721,7 @@ export interface components {
             text?: string | null;
             /** Uri */
             uri?: string | null;
-            /**
-             * Data
-             * @description Base64 encoded bytes
-             */
+            /** Data */
             data?: string | null;
             /** Mime Type */
             mime_type?: string | null;
@@ -65848,7 +65848,7 @@ export interface components {
              * @default general
              * @enum {string}
              */
-            connection_purpose?: "general" | "google_ads_isolated" | "read_only_sweep";
+            connection_purpose?: "general" | "google_ads_isolated" | "read_only_sweep" | "contacts_import";
         };
         /** GoogleExchangeResponse */
         GoogleExchangeResponse: {

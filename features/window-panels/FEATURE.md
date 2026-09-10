@@ -369,7 +369,7 @@ Files: [`registry/windowRegistryMetadata.ts`](./registry/windowRegistryMetadata.
 interface WindowRegistryEntry {
   // Identity
   slug: string; // stable kebab-case URL/diagnostic identifier
-  overlayId: string; // camelCase, key in overlaySlice
+  overlayId: OverlayId; // key of OVERLAY_CATALOGUE (features/overlays/catalogue.ts) — an id missing there fails type-check
   kind: OverlayKind; // "window" | "widget" | "sheet" | "modal"
 
   // Rendering metadata (the component mapping lives in OverlayController)

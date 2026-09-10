@@ -5,7 +5,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { RecordReferencePicker } from "@/features/matrx-envelope/components/ReferenceTypeAdder";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { emitDirectiveReferencePickerEvent } from "./callbacks";
 

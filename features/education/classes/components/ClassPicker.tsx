@@ -17,7 +17,7 @@ import Link from "next/link";
 import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import type { EntityType } from "@/features/scopes/types";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 import { useClasses } from "../hooks/useClasses";
 
 interface ClassPickerProps {

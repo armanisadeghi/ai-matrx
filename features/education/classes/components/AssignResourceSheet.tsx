@@ -20,7 +20,7 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { UniversalAssociationPicker } from "@ai-matrx/associations/react";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 import { ASSIGNABLE_TOKENS } from "../constants";
 import type { AssignableToken } from "../types";
 import { useClassAssignments } from "../hooks/useClassAssignments";

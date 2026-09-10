@@ -69,7 +69,7 @@ import { isJsonObject } from "@/types/json";
 import { isSiteCommandMode } from "@/features/marketing/crawler/site-commands";
 import { parseLiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
 import type { Finding } from "@/features/hindsight/types";
-import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
+import { isEntityTypeToken } from "@ai-matrx/associations";
 import { UserSearchWindowDataSchema } from "@/features/user-search/types";
 
 function isMessageRole(value: unknown): value is MessageRole {

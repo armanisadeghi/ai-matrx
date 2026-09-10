@@ -18,7 +18,7 @@ import { Copy, Pencil, Plus, Power, TriangleAlert } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { createClient } from "@/utils/supabase/client";
-import { ENTITY_TYPE_TOKENS } from "@/types/generated/entity-types.generated";
+import { ENTITY_TYPE_TOKENS } from "@ai-matrx/associations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";

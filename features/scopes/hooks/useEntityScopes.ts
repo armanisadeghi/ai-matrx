@@ -19,7 +19,7 @@ import {
 import { ensureEntityScopes } from "@/features/scopes/redux/thunks/ensureEntityScopes";
 import { setEntityScopes as setEntityScopesThunk } from "@/features/scopes/redux/thunks/setEntityScopes";
 import type { EntityScopesEntry } from "@/features/scopes/types";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 export interface UseEntityScopesArgs {
   entityType: EntityTypeToken;

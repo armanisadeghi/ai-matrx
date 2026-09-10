@@ -19,7 +19,7 @@ import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 const CONSUMER_TOKENS = ["web_site", "plan_node", "web_page"] as const;
 type ConsumerToken = (typeof CONSUMER_TOKENS)[number];

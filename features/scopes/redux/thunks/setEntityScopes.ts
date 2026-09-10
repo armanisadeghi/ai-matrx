@@ -14,7 +14,7 @@ import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { entityScopesKey } from "@/features/scopes/redux/thunks/ensureEntityScopes";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 

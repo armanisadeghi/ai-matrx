@@ -57,7 +57,7 @@ import {
   type EntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
 import { cn } from "@/lib/utils";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 const DELETABLE_TOKENS = new Set<string>(["file", "udt_document", "note"]);
 

@@ -23,7 +23,7 @@ import {
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { AssociationTargetEdge } from "@/features/scopes/types";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 const AGENT_RESOURCE_ROLE = "agent_resource";
 

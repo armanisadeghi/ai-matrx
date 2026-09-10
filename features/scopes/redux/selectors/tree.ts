@@ -16,7 +16,7 @@ import type {
   TaskBucketLevel,
   TaskNode,
 } from "@/features/scopes/types";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 const empty: never[] = [];
 const EMPTY_LABEL_MAP: Record<string, string> = {};

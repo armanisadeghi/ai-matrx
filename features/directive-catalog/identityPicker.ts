@@ -8,7 +8,7 @@ import {
 import {
   isEntityTypeToken,
   type EntityTypeToken,
-} from "@/types/generated/entity-types.generated";
+} from "@ai-matrx/associations";
 
 /** Compound-reference ids whose owning record is unambiguous. */
 const FIELD_TOKEN: Readonly<Partial<Record<string, EntityTypeToken>>> = {

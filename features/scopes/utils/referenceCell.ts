@@ -25,7 +25,7 @@ import { listableTokens } from "@/features/scopes/registry/entityRegistry";
 import {
   ENTITY_TYPE_METADATA,
   isEntityTypeToken,
-} from "@/types/generated/entity-types.generated";
+} from "@ai-matrx/associations";
 import { referenceFallbackLabel } from "@/features/matrx-envelope/referenceResolvers";
 
 /**

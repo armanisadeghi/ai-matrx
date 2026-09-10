@@ -22,7 +22,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 export type AccessGranteeType = "user" | "organization";
 

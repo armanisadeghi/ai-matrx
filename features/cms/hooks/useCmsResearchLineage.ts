@@ -11,7 +11,7 @@ import {
   type ContainerLink,
 } from "@/features/scopes/hooks/useContainerLinks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 export const RESEARCH_LINEAGE_TOKENS = [
   "research_topic",

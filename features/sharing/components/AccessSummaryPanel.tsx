@@ -38,7 +38,7 @@ import {
   type SharingCopyContext,
 } from "@/features/sharing/format";
 import { cn } from "@/utils/cn";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 
 /** What the panel currently knows, for pages that mirror it in their payload. */
 export interface AccessSummaryState {

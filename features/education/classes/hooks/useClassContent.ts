@@ -10,7 +10,7 @@
 
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
-import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 import { educationEntityRoute } from "@/features/education/data/entityRoutes";
 import { ASSIGNMENT_EDGE_ROLE, CLASS_CONTENT_TOKENS } from "../constants";
 import type { ClassContentItem } from "../types";
