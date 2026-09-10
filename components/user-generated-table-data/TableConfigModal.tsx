@@ -10,6 +10,7 @@ import {
   setFieldFormat,
   setValidationMode,
 } from "@/features/data-tables/service";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { FieldFormatPicker } from "@/lib/field-formats/FieldFormatPicker";
 import { resolveFieldFormat } from "@/lib/field-formats/format";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
@@ -414,10 +415,6 @@ export default function TableConfigModal({
           tableInfo.description !== initialTableInfo.description
             ? tableInfo.description
             : undefined,
-        is_public:
-          tableInfo.is_public !== initialTableInfo.is_public
-            ? tableInfo.is_public
-            : undefined,
       };
 
       // Remove undefined values
@@ -617,7 +614,7 @@ export default function TableConfigModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[92dvh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:max-w-6xl">
+      <DialogContent className="flex max-h-[92dvh] flex-col w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:max-w-6xl">
         <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 sm:px-5">
           <DialogTitle className="flex min-w-0 items-center gap-2">
             <Settings className="h-5 w-5" />
@@ -635,16 +632,16 @@ export default function TableConfigModal({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="fields" className="min-h-0">
-          <TabsList className="mx-3 mt-2 grid w-auto grid-cols-2 sm:mx-4">
+        <Tabs defaultValue="fields" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <TabsList className="mx-3 mt-2 grid shrink-0 w-auto grid-cols-2 sm:mx-4">
             <TabsTrigger value="fields">Fields & Order</TabsTrigger>
             <TabsTrigger value="table">Table Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="fields" className="mt-0 min-h-0 overflow-hidden">
+          <TabsContent value="fields" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
             <div
               ref={scrollRef}
-              className="max-h-[62dvh] space-y-2 overflow-x-hidden overflow-y-auto px-3 py-3 scroll-smooth [scrollbar-gutter:stable] sm:px-4"
+              className="min-h-0 max-h-[62dvh] space-y-2 overflow-x-hidden overflow-y-auto px-3 py-3 scroll-smooth [scrollbar-gutter:stable] sm:px-4"
               onDragOver={(e) => {
                 // Keep auto-scroll responsive even when hovering gaps between cards.
                 if (draggedField) {
@@ -852,12 +849,12 @@ export default function TableConfigModal({
             </div>
           </TabsContent>
 
-          <TabsContent value="table" className="mt-0 min-h-0 overflow-hidden">
+          <TabsContent value="table" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
             {/* Own scroll area, same as the Fields tab: this tab's content is
                 taller than the dialog on a laptop, and the parent's
                 `overflow-hidden` clips the tail with no scrollbar — which is
                 how the Data Validation section arrived unreachable. */}
-            <div className="max-h-[62dvh] space-y-6 overflow-y-auto px-4 py-3 [scrollbar-gutter:stable]">
+            <div className="min-h-0 max-h-[62dvh] space-y-6 overflow-y-auto px-4 py-3 [scrollbar-gutter:stable]">
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="table-name">Table Name</Label>
@@ -882,33 +879,6 @@ export default function TableConfigModal({
                     placeholder="Describe what this table contains..."
                     rows={3}
                   />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Visibility Settings</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      {tableInfo.is_public ? (
-                        <Eye className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
-                      )}
-                      <div>
-                        <div className="font-medium text-sm">Public Access</div>
-                        <div className="text-xs text-muted-foreground">
-                          Anyone can view this table
-                        </div>
-                      </div>
-                    </div>
-                    <Checkbox
-                      checked={tableInfo.is_public}
-                      onCheckedChange={(checked) =>
-                        handleTableInfoChange("is_public", checked)
-                      }
-                    />
-                  </div>
                 </div>
               </div>
 
@@ -961,7 +931,7 @@ export default function TableConfigModal({
           </div>
         )}
 
-        <DialogFooter className="shrink-0 border-t px-4 py-3 sm:px-5">
+        <DialogFooter className="mx-0 shrink-0 border-t px-4 py-3 sm:px-5">
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-h-5 items-center gap-2 text-sm text-muted-foreground">
               {Object.keys(dataTypeChanges).length > 0 && (
@@ -973,7 +943,13 @@ export default function TableConfigModal({
                   ? "You have unsaved changes"
                   : "No changes made"}
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex shrink-0 justify-end gap-2">
+              <ShareButton
+                resourceType="dataset"
+                resourceId={tableId}
+                resourceName={tableInfo.table_name}
+                showStatus={false}
+              />
               <Button variant="outline" onClick={onClose} disabled={loading}>
                 <X className="h-4 w-4 mr-2" />
                 Cancel

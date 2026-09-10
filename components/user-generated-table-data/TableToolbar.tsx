@@ -6,6 +6,7 @@ import AddColumnModal from "./AddColumnModal";
 import AddRowModal from "./AddRowModal";
 import EditRowModal from "./EditRowModal";
 import DeleteRowModal from "./DeleteRowModal";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import TableConfigModal from "./TableConfigModal";
 import ExportTableModal from "./ExportTableModal";
 import TableReferenceOverlay from "./TableReferenceOverlay";
@@ -355,6 +356,15 @@ export default function TableToolbar({
             <Download className="h-3.5 w-3.5" />
           </Button>
 
+          <ShareButton
+            resourceType="dataset"
+            resourceId={tableId}
+            resourceName={tableInfo.table_name}
+            showStatus={false}
+            size="sm"
+            className="h-7"
+          />
+
           {/* Settings - only show if not read-only */}
           {!isReadOnly && (
             <Button
@@ -387,6 +397,15 @@ export default function TableToolbar({
               {mobileViewControls}
             </div>
           ) : null}
+          <ShareButton
+            resourceType="dataset"
+            resourceId={tableId}
+            resourceName={tableInfo.table_name}
+            showStatus={false}
+            size="sm"
+            className="h-11 w-full justify-start"
+          />
+
           {isReadOnly && (
             <div className="flex items-center gap-2 px-2 py-2 text-sm font-medium text-purple-600 dark:text-purple-400">
               <Eye className="h-4 w-4" />
