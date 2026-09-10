@@ -178,6 +178,11 @@ fixes need current verification; they are not new work by this patrol.
 
 For static findings, re-scan the whole changed file and compare finding identity;
 an empty result at the old line number proves nothing when edits move the finding.
+Preserve documented public inputs as well as current callers: test generic and
+unloaded dependency cases before replacing dynamic imports with a fixed list. A
+warning plus a wrong fallback is still a regression. If scanner compliance and
+compatibility cannot both be proved, undo the incompatible attempt and retain the
+finding; do not hide the import or narrow the contract just to clear the scan.
 
 - Repair the producer/worker/lifecycle or isolation boundary for the full root
   class. Census siblings. Add a meaningful guard demonstrated failing before
@@ -292,6 +297,9 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 - Required generic and unloaded dependency compatibility after a
+  fixed SDK list passed built-in tests but broke the public string-input contract.
 
 - 2026-09-10 - Required whole-file static finding checks after an import moved two
   lines and the old-line probe incorrectly reported the scanner repair passed.
