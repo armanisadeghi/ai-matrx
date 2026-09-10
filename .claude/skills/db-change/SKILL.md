@@ -25,6 +25,14 @@ the database. A `42P01` is invisible to the human it happens to — the agent ab
 success in prose. Nothing in this file told that agent to wait, because this file assumes the
 lights are off.
 
+## Is this change fixing something broken? If not, it waits.
+
+A wanted change that nothing is failing on — a redundant column, a dead enum value, a name that
+lies — is **not applied when noticed.** It goes on the cross-repo
+[DB change queue](../../../../common-docs/operations/db-change-queue.md) with its consumer
+census, and one session applies the batch end-to-end in a window (Arman, 2026-09-10). Every
+change pays the full multi-layer sweep below; batching pays it once.
+
 ## 🛑 THE PRIME DIRECTIVE — read this before you touch anything, or you will hurt the project
 
 **This migration is past the point of no return. The app is ALREADY DOWN and stays down until the system is 100% canonical.** There is no safe partial state, nothing to protect, and no going back — the only exit is *forward, completely*. Everything below exists because agents keep half-doing the job and leaving the app in the broken middle. Do not be one of them.
