@@ -78579,8 +78579,9 @@ export interface components {
         };
         /**
          * NodeAgentChatContext
-         * @description Everything the studio needs to open a Node Agent chat for one node:
-         *     the resolved mandate agent + the variables to pass on POST /agents/{id}.
+         * @description Everything the studio needs to open the Steward for one step: the
+         *     resolved mandate agent, the ONE stored conversation to continue (with its
+         *     transcript), the identity variables, and the per-turn context.
          */
         NodeAgentChatContext: {
             /** Mandate Key */
@@ -78610,11 +78611,35 @@ export interface components {
             /** Backing Agent Id */
             backing_agent_id?: string | null;
             /**
+             * Conversation Id
+             * @description The ONE stored Steward conversation for this person and this step (deterministic; the studio continues it with is_new=false when conversation_exists, else starts it).
+             */
+            conversation_id: string;
+            /**
+             * Conversation Exists
+             * @default false
+             */
+            conversation_exists?: boolean;
+            /**
+             * Messages
+             * @description The stored transcript so far, oldest first — the panel reopens with it.
+             */
+            messages?: {
+                [key: string]: unknown;
+            }[];
+            /**
              * Variables
-             * @description Pass verbatim as the agent-start `variables`: node_context (the XML bundle), workflow_id, node_id, node_label, spec_type.
+             * @description Pass as the agent-start `variables` on EVERY turn (the Mandate route re-checks the provision): workflow_id, node_id, node_label, spec_type.
              */
             variables?: {
                 [key: string]: string;
+            };
+            /**
+             * Context
+             * @description Pass as the agent-start `context` on EVERY turn: node_context (the XML envelope, rebuilt fresh each time).
+             */
+            context?: {
+                [key: string]: unknown;
             };
         };
         /**

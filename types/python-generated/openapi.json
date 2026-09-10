@@ -176896,13 +176896,38 @@
             ],
             "title": "Backing Agent Id"
           },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id",
+            "description": "The ONE stored Steward conversation for this person and this step (deterministic; the studio continues it with is_new=false when conversation_exists, else starts it)."
+          },
+          "conversation_exists": {
+            "type": "boolean",
+            "title": "Conversation Exists",
+            "default": false
+          },
+          "messages": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "The stored transcript so far, oldest first — the panel reopens with it."
+          },
           "variables": {
             "additionalProperties": {
               "type": "string"
             },
             "type": "object",
             "title": "Variables",
-            "description": "Pass verbatim as the agent-start `variables`: node_context (the XML bundle), workflow_id, node_id, node_label, spec_type."
+            "description": "Pass as the agent-start `variables` on EVERY turn (the Mandate route re-checks the provision): workflow_id, node_id, node_label, spec_type."
+          },
+          "context": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context",
+            "description": "Pass as the agent-start `context` on EVERY turn: node_context (the XML envelope, rebuilt fresh each time)."
           }
         },
         "additionalProperties": false,
@@ -176914,10 +176939,11 @@
           "is_version",
           "node_id",
           "node_label",
-          "spec_type"
+          "spec_type",
+          "conversation_id"
         ],
         "title": "NodeAgentChatContext",
-        "description": "Everything the studio needs to open a Node Agent chat for one node:\nthe resolved mandate agent + the variables to pass on POST /agents/{id}."
+        "description": "Everything the studio needs to open the Steward for one step: the\nresolved mandate agent, the ONE stored conversation to continue (with its\ntranscript), the identity variables, and the per-turn context."
       },
       "NodeBBCommunityCompatibility": {
         "properties": {
