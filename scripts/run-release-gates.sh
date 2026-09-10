@@ -247,7 +247,7 @@ if $STRICT; then
         # React hook lies to the hook linter and forces callers into hook
         # position; a `build*MenuSection` that calls one escapes it. Zero
         # violations at introduction (9 builders renamed), so a finding is new.
-        "Menu-section naming law (use* = hooks, build* = pure)|pnpm check:menu-naming"
+        "Menu-section naming law (use* = hooks, build* = pure, no bare *MenuSection)|pnpm check:menu-naming"
         # autoRun is a UI control; a mode that paints no interface has nothing
         # for it to control, so `autoRun: false` there deletes the run instead
         # of deferring it. Zero violations at introduction (2026-08-25) and one
@@ -496,7 +496,7 @@ else
         # React hook lies to the hook linter and forces callers into hook
         # position; a `build*MenuSection` that calls one escapes it. Zero
         # violations at introduction (9 builders renamed), so a finding is new.
-        "Menu-section naming law (use* = hooks, build* = pure)|pnpm check:menu-naming"
+        "Menu-section naming law (use* = hooks, build* = pure, no bare *MenuSection)|pnpm check:menu-naming"
         # autoRun is a UI control; a mode that paints no interface has nothing
         # for it to control, so `autoRun: false` there deletes the run instead
         # of deferring it. Zero violations at introduction (2026-08-25) and one
