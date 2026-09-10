@@ -61,7 +61,7 @@ If the code you are about to write only serves this single artifact and could no
 
 ---
 
-## The five frontend anti-patterns (where this almost always breaks)
+## The six frontend anti-patterns (where this almost always breaks)
 
 These are the failure modes agents repeat in this codebase. Every one is a violation of the doctrine. Each has a "look here first" anchor and a search algorithm.
 
@@ -171,6 +171,17 @@ These are the failure modes agents repeat in this codebase. Every one is a viola
 - **Large change** (a new feature, a new entity, a new cross-cutting concern): **delegate enumeration to an `Explore` subagent**. Give it the concept and ask for a structured list of every existing primitive that touches it. Read the list yourself. Decide whether to extend an existing primitive or — rarely, with explicit reasoning — to build a new one. The main agent reviews the subagent's findings before writing a single line of new code.
 
 The bigger the feature, the more time goes into the lookup. This is not a tax on velocity; it is the velocity. Every shortcut taken at lookup time is paid back tenfold in the debugging session three weeks from now.
+
+### 6. Pass-through layers
+
+**The failure.** A wrapper, hook, service, or adapter whose interface is nearly as big as what it wraps: it renames, re-exports, or forwards without hiding anything. Each one adds a file every future reader must bounce through.
+
+**The tests.**
+
+- **Deletion test:** imagine deleting it. If complexity vanishes, it was a pass-through — inline it. If the same complexity reappears across N callers, it earns its keep.
+- **One implementation = a hypothetical seam.** Do not add an interface, provider, or factory until two real implementations exist. A single-implementation seam is indirection.
+- **Depth is leverage:** the right module gives callers a lot of behavior for a small interface and concentrates change in one place.
+- **Replace, don't layer:** when you deepen a module, delete the tests and helpers that existed only to reach inside the old shallow pieces (no-legacy).
 
 ---
 
