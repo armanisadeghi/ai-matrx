@@ -101,6 +101,18 @@ Delegated investigators load their own exact representative detail. Keep at most
 three coding investigators concurrent; reuse finished slots for independent
 verification. Only an investigator may prove that similar symptoms share a root.
 
+Keep Astra as the parent when selected by the user; do not inherit it into workers.
+Explicitly use `gpt-5.6-luna` for bounded collection, routine checks, and straightforward
+edits; use `gpt-5.6-terra` for substantive repair and independent review. Spawn with
+`fork_turns="none"` and a compact, self-contained evidence packet. Check the model
+before reusing a delegate: follow-ups retain the old model. An Astra delegate requires
+a stated, concrete reason its subproblem needs reasoning comparable to the primary's
+hard work, or evidence that a cheaper attempt could not solve it. Generic review,
+urgency, and ordinary tool failures do not qualify. Prefer keeping hard reasoning in
+the primary and execution in cheaper workers. Pass these rules to delegates; they
+return escalation evidence to the parent rather than launching costlier descendants.
+Do not silently substitute Astra when a cheaper model is unavailable.
+
 Keep task-to-task messages exceptional. Read current task status or saved evidence
 first; send only when a necessary action, ownership conflict, or missing evidence
 cannot be handled without the other task. Do not wake inactive tasks for status,
@@ -269,6 +281,9 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 - Set explicit Luna/Terra worker selection, bounded context, and a
+  justified Astra exception after inherited flagship delegates exhausted usage.
 
 - 2026-09-10 - Required published shared-package and consumer-floor proof after a
   containing host image still referenced an older published package artifact.
