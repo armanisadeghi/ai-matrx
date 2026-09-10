@@ -249,11 +249,17 @@ export function EnrollDialog({
   const workflows = useQuery<PickerRow[]>({
     queryKey: ["hindsight", "picker", "workflow", search],
     queryFn: async () => {
+      // archived-items-law-exempt: enrollment candidates must be live — the
+      // identical ruling this file already carries for the agent and
+      // orchestrator pickers above (F9). An archived workflow is not an
+      // enrollable target, so archived rows are excluded rather than revealed;
+      // the browsable Masterwork/workflow lists carry the control.
       let q = supabase
         .schema("workflow")
         .from("definition")
         .select("id, name")
         .is("deleted_at", null)
+        .eq("is_archived", false)
         .order("updated_at", { ascending: false })
         .limit(50);
       if (search) q = q.ilike("name", `%${search}%`);

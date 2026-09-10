@@ -568,6 +568,15 @@ export interface MasterworkDefinitionRow {
   created_at: string;
   updated_at: string;
   visibility: string;
+  /**
+   * THE ARCHIVED-ITEMS LAW. Every Masterwork read PROJECTS the archive column
+   * rather than filtering it server-side: the whole corpus is small (one
+   * Rulebook's built systems), and the surfaces split it client-side behind
+   * `ArchivedDisclosure`, so revealing archived rows costs one click and no
+   * round trip. Never drop it from `MASTERWORK_SELECT_COLUMNS` — a reader that
+   * cannot tell an archived system from a live one is the F10 defect exactly.
+   */
+  is_archived: boolean;
 }
 
 /** The one metadata→Masterwork projection — every read path goes through it. */
@@ -599,6 +608,7 @@ export function parseMasterworkRow(row: MasterworkDefinitionRow): Masterwork {
     released_at:
       typeof meta.released_at === "string" ? meta.released_at : null,
     understudy: meta.understudy === true,
+    is_archived: row.is_archived === true,
     version: row.version,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -607,7 +617,51 @@ export function parseMasterworkRow(row: MasterworkDefinitionRow): Masterwork {
 }
 
 export const MASTERWORK_SELECT_COLUMNS =
-  "id,name,description,metadata,version,created_at,updated_at,visibility";
+  "id,name,description,metadata,version,created_at,updated_at,visibility,is_archived";
+
+/**
+ * THE ARCHIVED-ITEMS LAW, Masterwork half — the ONE split every Masterwork
+ * surface uses (`common-docs/policies/archived-items.md`, Arman 2026-09-09).
+ *
+ * The default hides archived systems; `archived` is what the surface's
+ * `ArchivedDisclosure` reveals in one click, and `archived.length` is the
+ * honest count that button shows. Counts, KPIs and headings on every surface
+ * are computed from `active` — a screen never lies about how many working
+ * systems an Expert has.
+ *
+ * There is no third pattern: table/browse surfaces built on `lib/entity-list`
+ * use its Archived radio; these card lists use `ArchivedDisclosure`.
+ */
+export function splitMasterworksByArchive(masterworks: readonly Masterwork[]): {
+  active: Masterwork[];
+  archived: Masterwork[];
+} {
+  const active: Masterwork[] = [];
+  const archived: Masterwork[] = [];
+  for (const masterwork of masterworks) {
+    (masterwork.is_archived ? archived : active).push(masterwork);
+  }
+  return { active, archived };
+}
+
+/**
+ * THE ARCHIVED-ITEMS LAW's read half, for every Masterwork list
+ * (`common-docs/policies/archived-items.md`, Arman 2026-09-09):
+ *
+ *   "everything should have an archive filter, and the default should always
+ *    hide archived, but seeing archived items should be one or two clicks
+ *    away."
+ *
+ * `includeArchived` defaults to FALSE, so a caller that says nothing gets the
+ * live systems only — the lane frame and the agent surface scope want exactly
+ * that. A surface that OWNS a control (`ArchivedDisclosure`) asks for `true`
+ * and splits the result with `splitMasterworksByArchive`, so its one click
+ * costs no second round trip.
+ */
+export interface MasterworkListOptions {
+  /** True ONLY from a surface that renders the reveal control. */
+  includeArchived?: boolean;
+}
 
 /**
  * Masterworks built from a Rulebook — workflow.definition rows whose metadata
@@ -615,14 +669,18 @@ export const MASTERWORK_SELECT_COLUMNS =
  */
 export async function listMasterworksForRulebook(
   rulebookId: string,
+  { includeArchived = false }: MasterworkListOptions = {},
 ): Promise<Masterwork[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .schema("workflow")
     .from("definition")
     .select(MASTERWORK_SELECT_COLUMNS)
     .eq("metadata->>built_from_rulebook", rulebookId)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+    .is("deleted_at", null);
+  // Archived ≠ deleted. Hidden by default, returned (and marked, via
+  // `is_archived`) the moment a surface with a control asks.
+  if (!includeArchived) query = query.eq("is_archived", false);
+  const { data, error } = await query.order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map(parseMasterworkRow);
 }
@@ -632,19 +690,27 @@ export async function listMasterworksForRulebook(
  * visible Rulebook's built systems without N round trips. Understudies are
  * excluded: they are the always-there crude twin, shown on the Rulebook page,
  * never as one of the systems the Expert deliberately built.
+ *
+ * THE ARCHIVED-ITEMS LAW: same contract as `listMasterworksForRulebook` —
+ * archived rows are hidden unless `includeArchived` asks for them, and when
+ * they come they carry `is_archived` so the surface can mark and reveal them.
  */
 export async function listMasterworksForRulebooks(
   rulebookIds: string[],
+  { includeArchived = false }: MasterworkListOptions = {},
 ): Promise<Record<string, Masterwork[]>> {
   const ids = [...new Set(rulebookIds)].filter(Boolean);
   if (ids.length === 0) return {};
-  const { data, error } = await supabase
+  let query = supabase
     .schema("workflow")
     .from("definition")
     .select(MASTERWORK_SELECT_COLUMNS)
     .in("metadata->>built_from_rulebook", ids)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+    .is("deleted_at", null);
+  if (!includeArchived) query = query.eq("is_archived", false);
+  const { data, error } = await query.order("created_at", {
+    ascending: false,
+  });
   if (error) throw error;
   const out: Record<string, Masterwork[]> = {};
   for (const row of data ?? []) {

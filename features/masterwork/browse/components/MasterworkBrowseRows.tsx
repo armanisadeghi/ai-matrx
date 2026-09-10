@@ -18,6 +18,12 @@ interface Props {
   density: "compact" | "comfortable";
   menuFor: (row: RulebookListRow) => () => ItemMenuConfig;
   hrefFor: (row: RulebookListRow) => string | undefined;
+  /**
+   * LIVE Masterworks only. THE ARCHIVED-ITEMS LAW: this view renders no
+   * Masterwork LIST — one dense line per RULEBOOK with a count — so its duty
+   * is an honest count of the live systems. The Masterwork list that carries
+   * the reveal control is one click away, at /masterwork/[id]/masterworks.
+   */
   masterworksBy: Record<string, Masterwork[]>;
 }
 

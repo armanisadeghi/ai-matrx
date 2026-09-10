@@ -332,6 +332,14 @@ export interface Masterwork {
    * rendered on the Rulebook page, not in the built-Masterworks list.
    */
   understudy: boolean;
+  /**
+   * THE ARCHIVED-ITEMS LAW (`common-docs/policies/archived-items.md`, Arman
+   * 2026-09-09). `workflow.definition.is_archived` — carried on EVERY
+   * Masterwork read so no surface downstream can mistake an archived system
+   * for a live one. Archived ≠ deleted: it stays reachable, one click away,
+   * behind the surface's `ArchivedDisclosure`.
+   */
+  is_archived: boolean;
   /** workflow.definition row version — the CAS token for release writes. */
   version: number;
   created_at: string;

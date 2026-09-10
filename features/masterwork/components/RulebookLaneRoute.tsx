@@ -126,6 +126,13 @@ export function RulebookLaneRoute({
   const canEdit =
     rulebook !== null && userId !== null && rulebook.created_by === userId;
 
+  // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md, Arman
+  // 2026-09-09). This frame renders no Masterwork list of its own — it is the
+  // lane's data provider and the agent's surface scope — so it takes the law's
+  // DEFAULT: `listMasterworksForRulebook` without `includeArchived` returns the
+  // live systems only, and an archived Masterwork is never handed to an agent
+  // as something it can run or rebuild. The archived half is read and revealed
+  // on the Masterworks lane and the Rulebook page, which carry the control.
   const buildSurfaceScope = useCallback(() => {
     if (!rulebook) {
       throw new Error("The Rulebook surface is still loading.");
@@ -155,6 +162,7 @@ export function RulebookLaneRoute({
       setMasterworks(nextMasterworks);
       return {
         rulebook_version: nextRulebook.version,
+        // Honest count: the LIVE Masterworks, which is all this read returns.
         masterwork_count: nextMasterworks.length,
       };
     },

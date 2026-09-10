@@ -6,6 +6,7 @@ import {
   MASTERWORK_SELECT_COLUMNS,
   parseMasterworkRow,
   type MasterworkDefinitionRow,
+  type MasterworkListOptions,
 } from "../service";
 import type {
   Masterwork,
@@ -105,7 +106,8 @@ export async function fetchMasterworkHome(): Promise<MasterworkHomeData> {
   const rulebookIds = rulebooks.map((r) => r.id);
   const nameById = new Map(rulebooks.map((r) => [r.id, r.name]));
   const [masterworks, runs] = await Promise.all([
-    fetchMasterworksFor(rulebookIds, nameById),
+    // The home grid carries the reveal control, so it reads BOTH halves.
+    fetchMasterworksFor(rulebookIds, nameById, { includeArchived: true }),
     fetchRecentRuns(rulebookIds, nameById),
   ]);
 
@@ -137,18 +139,31 @@ export async function fetchMasterworkHome(): Promise<MasterworkHomeData> {
   };
 }
 
+/**
+ * THE ARCHIVED-ITEMS LAW (`common-docs/policies/archived-items.md`, Arman
+ * 2026-09-09). `includeArchived` defaults to FALSE here too; the home page is
+ * one of the surfaces that OWNS a reveal control, so it asks for `true` and
+ * splits with `splitMasterworksByArchive` — its grid and every count on it are
+ * the live half, and the archived half is one click below the grid. Each row
+ * carries `is_archived` (from `MASTERWORK_SELECT_COLUMNS`), so a revealed card
+ * says what it is.
+ */
 async function fetchMasterworksFor(
   rulebookIds: string[],
   nameById: Map<string, string>,
+  { includeArchived = false }: MasterworkListOptions = {},
 ): Promise<(Masterwork & { rulebookName: string | null })[]> {
   if (rulebookIds.length === 0) return [];
-  const { data, error } = await supabase
+  let query = supabase
     .schema("workflow")
     .from("definition")
     .select(MASTERWORK_SELECT_COLUMNS)
     .in("metadata->>built_from_rulebook", rulebookIds)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
+    .is("deleted_at", null);
+  if (!includeArchived) query = query.eq("is_archived", false);
+  const { data, error } = await query.order("updated_at", {
+    ascending: false,
+  });
   if (error) throw new Error(`${error.message} (${error.code})`);
   return (data ?? []).map((row) => {
     const m = parseMasterworkRow(row as MasterworkDefinitionRow);

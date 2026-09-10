@@ -152,3 +152,20 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 - 2026-08-25 — Quick build now requires the Masterwork name before asking for its input model:
   existing work routes to the review-and-correct workflow; instructions route to new-work
   generation and require the intended deliverable.
+
+- 2026-09-10 — **THE ARCHIVED-ITEMS LAW landed on Masterworks** (row F10 of
+  `../../../common-docs/projects/archived-items-law/STATUS.md`; law at
+  `../../../common-docs/policies/archived-items.md`). All three `workflow.definition` Masterwork
+  reads were archive-blind — no predicate, no column — so an archived Masterwork rendered as a
+  live one everywhere. Now `MASTERWORK_SELECT_COLUMNS` carries `is_archived`, each read takes
+  `includeArchived` defaulting to FALSE, and `splitMasterworksByArchive` is the one split every
+  surface uses. Four card surfaces gained the shared `ArchivedDisclosure` — the Masterworks lane,
+  the Rulebook page's Masterworks section, the browse cards (per Rulebook), and the home grid —
+  closed by default, one click, count honest, revealed rows labelled "Archived". Every count
+  (KPI strip, built count, journey facts, browse "N built", the lane's `masterwork_count`) is now
+  the LIVE half. `RulebookLaneRoute` takes the read's default so the agent surface scope never
+  offers a retired system as runnable. Encore's released shelf, the Hindsight workflow picker and
+  the bakeoff picker exclude archived rows under reasoned `archived-items-law-exempt` markers —
+  run/enrollment candidates, not browsable lists (the F9 precedent). Guard
+  `pnpm check:archived-items-law` now protects `workflow.definition` as a settled class (proven
+  RED on the three pre-fix reads); forcing tests in `archivedItemsLaw.test.ts`.

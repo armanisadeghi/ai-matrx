@@ -54,11 +54,19 @@ export interface EncoreShelf {
 }
 
 function releasedBase() {
+  // archived-items-law-exempt: Encore is the Operator RUN shelf, not the
+  // Expert's browsable list of systems. Release is already a hard gate here —
+  // an unreleased Masterwork is absent with no reveal — and archiving is the
+  // Expert retiring a released system from that shelf, so archived rows are
+  // excluded rather than revealed, the same ruling F9 made for run/enrollment
+  // candidates. The browsable lists that DO carry the control are the
+  // Masterworks lane, the Rulebook page, the browse cards and the home grid.
   return supabase
     .schema("workflow")
     .from("definition")
     .select(MASTERWORK_SELECT_COLUMNS)
     .is("deleted_at", null)
+    .eq("is_archived", false)
     .not("metadata->>built_from_rulebook", "is", null)
     .not("metadata->>released_at", "is", null)
     .order("updated_at", { ascending: false });

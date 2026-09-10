@@ -13,7 +13,8 @@ import { useRulebookMasterworks } from "./useRulebookMasterworks";
 import { MasterworkBrowseCards } from "./components/MasterworkBrowseCards";
 import { MasterworkBrowseRows } from "./components/MasterworkBrowseRows";
 import type { ItemMenuConfig } from "@/components/official/item/types";
-import type { RulebookListRow } from "../types";
+import { splitMasterworksByArchive } from "../service";
+import type { Masterwork, RulebookListRow } from "../types";
 
 const RULEBOOK_SCOPES: ListScopeKind[] = ["mine", "orgs", "shared", "public"];
 
@@ -90,14 +91,39 @@ function MasterworkViews({
   variant: "cards" | "rows";
 }) {
   const masterworksBy = useRulebookMasterworks(rows.map((r) => r.id));
-  const View = variant === "cards" ? MasterworkBrowseCards : MasterworkBrowseRows;
+  // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md, Arman
+  // 2026-09-09). Split ONCE, here, so both views agree: every count and chip is
+  // the LIVE half. The CARDS view names each Masterwork, so it carries the
+  // reveal (`ArchivedDisclosure`, per Rulebook, closed by default). The ROWS
+  // view renders no Masterwork list at all — one line per RULEBOOK with a
+  // count — so its obligation is an honest count, and the list with the control
+  // is one click away at /masterwork/[id]/masterworks.
+  const activeBy: Record<string, Masterwork[]> = {};
+  const archivedBy: Record<string, Masterwork[]> = {};
+  for (const [rulebookId, built] of Object.entries(masterworksBy)) {
+    const split = splitMasterworksByArchive(built);
+    activeBy[rulebookId] = split.active;
+    archivedBy[rulebookId] = split.archived;
+  }
+  if (variant === "rows") {
+    return (
+      <MasterworkBrowseRows
+        rows={rows}
+        density={density}
+        menuFor={menuFor}
+        hrefFor={hrefFor}
+        masterworksBy={activeBy}
+      />
+    );
+  }
   return (
-    <View
+    <MasterworkBrowseCards
       rows={rows}
       density={density}
       menuFor={menuFor}
       hrefFor={hrefFor}
-      masterworksBy={masterworksBy}
+      masterworksBy={activeBy}
+      archivedBy={archivedBy}
     />
   );
 }

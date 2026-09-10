@@ -14,8 +14,10 @@
 // Modelled on AgentBrowseCards: a few NAMED actions plus the same complete "…"
 // menu the table row has. No icon quizzes.
 
+import { useState } from "react";
 import Link from "next/link";
 import { BookOpen, Hammer, Play, MoreHorizontal, BrainCircuit } from "lucide-react";
+import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +30,10 @@ interface Props {
   density: "compact" | "comfortable";
   menuFor: (row: RulebookListRow) => () => ItemMenuConfig;
   hrefFor: (row: RulebookListRow) => string | undefined;
+  /** LIVE Masterworks only (THE ARCHIVED-ITEMS LAW — the default hides). */
   masterworksBy: Record<string, Masterwork[]>;
+  /** The archived half, revealed per Rulebook by `ArchivedDisclosure`. */
+  archivedBy: Record<string, Masterwork[]>;
 }
 
 /** The Masterworks built from this Rulebook — each one named and openable. */
@@ -77,7 +82,11 @@ export function MasterworkBrowseCards({
   menuFor,
   hrefFor,
   masterworksBy,
+  archivedBy,
 }: Props) {
+  // One open disclosure at a time — the card grid stays readable, and the
+  // control is on the card whose archived systems it reveals.
+  const [openArchived, setOpenArchived] = useState<string | null>(null);
   return (
     <div
       className={cn(
@@ -90,6 +99,7 @@ export function MasterworkBrowseCards({
       {rows.map((row) => {
         const href = hrefFor(row);
         const built = masterworksBy[row.id] ?? [];
+        const archived = archivedBy[row.id] ?? [];
         const released = built.filter((m) => m.released_at).length;
         return (
           <div
@@ -150,6 +160,17 @@ export function MasterworkBrowseCards({
                 Built into
               </span>
               <MasterworkChips items={built} />
+              {/* THE ARCHIVED-ITEMS LAW: one click, closed by default, honest
+                  count — and nothing at all when this Rulebook has none. */}
+              <ArchivedDisclosure
+                count={archived.length}
+                open={openArchived === row.id}
+                onOpenChange={(open) =>
+                  setOpenArchived(open ? row.id : null)
+                }
+              >
+                <MasterworkChips items={archived} />
+              </ArchivedDisclosure>
             </div>
           </div>
         );

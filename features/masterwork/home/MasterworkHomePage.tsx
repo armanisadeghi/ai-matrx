@@ -35,8 +35,11 @@ import {
   type DistillationApproach,
 } from "../browse/approaches";
 import { ApproachCard } from "@/features/masterwork/browse/ApproachCard";
+import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
+import { splitMasterworksByArchive } from "../service";
 import {
   fetchMasterworkHome,
+  type HomeMasterwork,
   type MasterworkHomeData,
 } from "./service";
 import { HowItsImprovingPanel } from "./HowItsImprovingPanel";
@@ -122,6 +125,66 @@ function MiniProgress({ kpis }: { kpis: RulebookKpis }) {
   );
 }
 
+/**
+ * One Masterwork card on the home grid. Extracted so the ACTIVE grid and the
+ * ArchivedDisclosure render the identical card (THE ARCHIVED-ITEMS LAW — the
+ * reveal shows the real rows, never a lesser summary of them); a revealed card
+ * says "Archived" on its face so the two halves are never confused.
+ */
+function HomeMasterworkCard({ masterwork: m }: { masterwork: HomeMasterwork }) {
+  return (
+    <div className="flex flex-col rounded-lg border border-border bg-card p-4">
+      <div className="flex items-start justify-between gap-2">
+        <Link
+          href={
+            m.built_from_rulebook
+              ? `/masterwork/${m.built_from_rulebook}/masterworks`
+              : "/masterwork/all"
+          }
+          className="font-medium text-foreground hover:text-primary"
+        >
+          {m.name}
+        </Link>
+        <span
+          className={cn(
+            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+            m.is_archived
+              ? "bg-muted text-muted-foreground"
+              : m.released_at !== null
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-muted text-muted-foreground",
+          )}
+        >
+          {m.is_archived
+            ? "Archived"
+            : m.released_at !== null
+              ? "Released"
+              : "Draft"}
+        </span>
+      </div>
+      {m.rulebookName && m.built_from_rulebook ? (
+        <Link
+          href={`/masterwork/${m.built_from_rulebook}`}
+          className="mt-0.5 w-fit text-xs text-muted-foreground hover:text-foreground"
+        >
+          From {m.rulebookName}
+        </Link>
+      ) : null}
+      <div className="mt-auto flex items-center justify-between pt-3">
+        <QualityTrend latest={m.qualityLatest} previous={m.qualityPrevious} />
+        {m.released_at !== null && !m.is_archived ? (
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/masterwork/encore/${m.id}`}>
+              <Play className="mr-1 h-3.5 w-3.5" />
+              Run
+            </Link>
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function QualityTrend({
   latest,
   previous,
@@ -162,6 +225,7 @@ export function MasterworkHomePage() {
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [showArchivedMasterworks, setShowArchivedMasterworks] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,7 +270,15 @@ export function MasterworkHomePage() {
   }
 
   const hasRulebooks = home.rulebooks.length > 0;
-  const released = home.masterworks.filter((m) => m.released_at !== null);
+  // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md, Arman
+  // 2026-09-09): the grid and every count on this page are the LIVE half; the
+  // archived half is one click away, under the disclosure below the grid.
+  const { active: activeMasterworks, archived: archivedMasterworks } =
+    splitMasterworksByArchive(home.masterworks) as {
+      active: HomeMasterwork[];
+      archived: HomeMasterwork[];
+    };
+  const released = activeMasterworks.filter((m) => m.released_at !== null);
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 pb-10 sm:px-6">
@@ -325,62 +397,30 @@ export function MasterworkHomePage() {
       </section>
 
       {/* Your Masterworks */}
-      {home.masterworks.length > 0 ? (
+      {activeMasterworks.length > 0 || archivedMasterworks.length > 0 ? (
         <section className="space-y-2">
-          <SectionHeading title={`Your Masterworks (${home.masterworks.length})`} />
+          <SectionHeading
+            title={`Your Masterworks (${activeMasterworks.length})`}
+          />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {home.masterworks.map((m) => (
-              <div
-                key={m.id}
-                className="flex flex-col rounded-lg border border-border bg-card p-4"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <Link
-                    href={
-                      m.built_from_rulebook
-                        ? `/masterwork/${m.built_from_rulebook}/masterworks`
-                        : "/masterwork/all"
-                    }
-                    className="font-medium text-foreground hover:text-primary"
-                  >
-                    {m.name}
-                  </Link>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                      m.released_at !== null
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {m.released_at !== null ? "Released" : "Draft"}
-                  </span>
-                </div>
-                {m.rulebookName && m.built_from_rulebook ? (
-                  <Link
-                    href={`/masterwork/${m.built_from_rulebook}`}
-                    className="mt-0.5 w-fit text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    From {m.rulebookName}
-                  </Link>
-                ) : null}
-                <div className="mt-auto flex items-center justify-between pt-3">
-                  <QualityTrend
-                    latest={m.qualityLatest}
-                    previous={m.qualityPrevious}
-                  />
-                  {m.released_at !== null ? (
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/masterwork/encore/${m.id}`}>
-                        <Play className="mr-1 h-3.5 w-3.5" />
-                        Run
-                      </Link>
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
+            {activeMasterworks.map((m) => (
+              <HomeMasterworkCard key={m.id} masterwork={m} />
             ))}
           </div>
+          {/* THE ARCHIVED-ITEMS LAW: hidden by default, one click to reveal,
+              and the heading above counts only what is live. */}
+          <ArchivedDisclosure
+            count={archivedMasterworks.length}
+            open={showArchivedMasterworks}
+            onOpenChange={setShowArchivedMasterworks}
+            label="Archived Masterworks"
+          >
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {archivedMasterworks.map((m) => (
+                <HomeMasterworkCard key={m.id} masterwork={m} />
+              ))}
+            </div>
+          </ArchivedDisclosure>
           {released.length > 0 ? (
             <p className="text-xs text-muted-foreground">
               {released.length === 1
