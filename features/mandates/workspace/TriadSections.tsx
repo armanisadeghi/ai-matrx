@@ -688,7 +688,15 @@ export function TriadGoalSection({
               {goal || "Not specified"}
             </p>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <GroundingBadge grounding={grounding} />
+              <div className="flex items-center gap-2">
+                <GroundingBadge grounding={grounding} />
+                {data.mandate.description?.trim() &&
+                data.mandate.description.trim() !== goal?.trim() ? (
+                  <FieldHelp label="Goal context">
+                    {data.mandate.description}
+                  </FieldHelp>
+                ) : null}
+              </div>
               {authoring ? (
                 <AutomationButton
                   mandateKey={GOAL_WRITER_MANDATE_KEY}
@@ -700,12 +708,6 @@ export function TriadGoalSection({
                 />
               ) : null}
             </div>
-            {data.mandate.description?.trim() &&
-            data.mandate.description.trim() !== goal?.trim() ? (
-              <FieldHelp label="Goal context">
-                {data.mandate.description}
-              </FieldHelp>
-            ) : null}
           </>
         )}
       </div>

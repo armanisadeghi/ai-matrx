@@ -75,12 +75,20 @@ export function ProvisionOfferList({
             cells={{
               name: (
                 <span className="inline-flex items-center gap-1 font-semibold">
-                  {displayLabelForKey(value.name || "", value.label) ||
-                    "Display name missing"}
+                  {displayLabelForKey(
+                    value.name || "",
+                    value.label?.trim() === value.name
+                      ? undefined
+                      : value.label,
+                  ) || "Display name missing"}
                   <FieldHelp
                     label={
-                      displayLabelForKey(value.name || "", value.label) ||
-                      "Input"
+                      displayLabelForKey(
+                        value.name || "",
+                        value.label?.trim() === value.name
+                          ? undefined
+                          : value.label,
+                      ) || "Input"
                     }
                   >
                     {value.description || "No description provided."}
