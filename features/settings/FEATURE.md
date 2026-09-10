@@ -265,6 +265,8 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- **2026-09-09 — MCP OAuth cards gained a secure manual alternative.** Integrations keeps OAuth as the primary action but now allows provider-issued tokens plus one or more custom HTTP headers and an optional same-host HTTPS endpoint override. Inputs flow through the existing `connectServerWithCredentials` thunk to aidream's canonical `/api/mcp-connections/{server_id}/credentials` Vault boundary; secret values remain component-local, are cleared after success, and are never rendered in copy/export payloads. Shared validation rejects cross-host/non-HTTPS overrides, incomplete/invalid/duplicate headers, and empty submissions before network activity.
+
 - `2026-09-09` — **The mobile settings drawer now acknowledges its real presentation to the overlay watchdog.** `SettingsShell` reports the mounted mobile drawer as an intentional non-window surface and clears that acknowledgement on close, preventing the shared silent-render recovery from demanding desktop window geometry for a visible phone UI.
 
 - `2026-08-31` — **All seven settings write targets have a forcing handler contract.** The existing validators/dispatch resolution now live behind one exported handler factory used by the runtime provider, and a table-driven test proves exact handler-to-manifest parity, `ask` policy on every target, one accepted payload per target, and one invalid payload refused before commit per target. The integration tab remains deliberately agent-read-only for credentials and grants.
