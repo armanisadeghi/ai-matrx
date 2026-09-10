@@ -1,28 +1,18 @@
 {
-  "generatedAt": "2026-09-10T01:22:50.254Z",
-  "commit": "8fd9ef1f60f8757d81fbb025923526e23d52ef22",
+  "generatedAt": "2026-09-10T02:10:30.044Z",
+  "commit": "92d3dd40c45bc437a494df75f23156faa484a6b3",
   "totals": {
-    "errors": 2421,
-    "filesWithFindings": 1298,
-    "filesScanned": 14815,
+    "errors": 2293,
+    "filesWithFindings": 1209,
+    "filesScanned": 14819,
     "byClass": {
-      "bug": 129,
-      "correctness": 2146,
+      "bug": 2,
+      "correctness": 2145,
       "doctrine": 141,
       "style": 5
     }
   },
   "byRule": [
-    {
-      "rule": "matrx/no-banned-lucide-icons",
-      "count": 119,
-      "klass": "bug"
-    },
-    {
-      "rule": "react-hooks/rules-of-hooks",
-      "count": 8,
-      "klass": "bug"
-    },
     {
       "rule": "@next/next/no-html-link-for-pages",
       "count": 2,
@@ -30,7 +20,7 @@
     },
     {
       "rule": "react-hooks/set-state-in-effect",
-      "count": 1153,
+      "count": 1152,
       "klass": "correctness"
     },
     {
@@ -251,16 +241,6 @@
       "real": 8
     },
     {
-      "key": "features/scopes/components/context-assignment/ContextAssignmentField.tsx",
-      "count": 8,
-      "real": 8
-    },
-    {
-      "key": "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
-      "count": 8,
-      "real": 7
-    },
-    {
       "key": "components/official/ImageCropUploader.tsx",
       "count": 8,
       "real": 7
@@ -276,7 +256,7 @@
       "real": 7
     },
     {
-      "key": "features/administration/kg-cost/components/KgCostDashboard.tsx",
+      "key": "features/scopes/components/context-assignment/ContextAssignmentField.tsx",
       "count": 7,
       "real": 7
     },
@@ -284,6 +264,11 @@
       "key": "features/transcription-cleanup/hooks/useCleanupSession.ts",
       "count": 7,
       "real": 7
+    },
+    {
+      "key": "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
+      "count": 7,
+      "real": 6
     },
     {
       "key": "app/(admin)/administration/users/feedback/components/FeedbackDetailDialog.tsx",
@@ -304,23 +289,28 @@
       "key": "components/mardown-display/blocks/questionnaire/QuestionnaireRenderer.tsx",
       "count": 6,
       "real": 6
+    },
+    {
+      "key": "components/official/json-explorer/RawJsonExplorer.tsx",
+      "count": 6,
+      "real": 6
     }
   ],
   "worstFeatures": [
     {
       "key": "components/mardown-display",
-      "count": 224,
-      "real": 187
+      "count": 220,
+      "real": 183
     },
     {
       "key": "features/agents",
-      "count": 126,
-      "real": 118
+      "count": 125,
+      "real": 117
     },
     {
       "key": "app/(dev)",
-      "count": 115,
-      "real": 112
+      "count": 112,
+      "real": 109
     },
     {
       "key": "components/animated",
@@ -328,24 +318,24 @@
       "real": 73
     },
     {
-      "key": "features/marketing",
-      "count": 71,
-      "real": 65
+      "key": "components/official",
+      "count": 68,
+      "real": 64
     },
     {
-      "key": "components/official",
-      "count": 69,
-      "real": 65
+      "key": "features/marketing",
+      "count": 62,
+      "real": 56
     },
     {
       "key": "features/rag",
-      "count": 66,
-      "real": 58
+      "count": 60,
+      "real": 52
     },
     {
       "key": "app/(admin)",
-      "count": 56,
-      "real": 53
+      "count": 53,
+      "real": 50
     },
     {
       "key": "components/ui",
@@ -369,33 +359,13 @@
     },
     {
       "key": "app/(public)",
-      "count": 42,
-      "real": 42
-    },
-    {
-      "key": "features/window-panels",
       "count": 40,
       "real": 40
     },
     {
-      "key": "features/education",
-      "count": 39,
-      "real": 39
-    },
-    {
       "key": "features/notes",
-      "count": 39,
-      "real": 39
-    },
-    {
-      "key": "app/(core)",
       "count": 38,
-      "real": 36
-    },
-    {
-      "key": "features/pdf-extractor",
-      "count": 37,
-      "real": 36
+      "real": 38
     },
     {
       "key": "components/user-generated-table-data",
@@ -403,14 +373,24 @@
       "real": 36
     },
     {
-      "key": "features/administration",
+      "key": "features/pdf-extractor",
       "count": 35,
-      "real": 35
+      "real": 34
     },
     {
       "key": "features/scopes",
-      "count": 35,
-      "real": 35
+      "count": 34,
+      "real": 34
+    },
+    {
+      "key": "features/administration",
+      "count": 33,
+      "real": 33
+    },
+    {
+      "key": "features/window-panels",
+      "count": 33,
+      "real": 33
     },
     {
       "key": "features/scraper",
@@ -424,48 +404,43 @@
     },
     {
       "key": "features/crm",
-      "count": 31,
-      "real": 31
-    },
-    {
-      "key": "features/research",
-      "count": 31,
+      "count": 30,
       "real": 30
     },
     {
       "key": "features/admin",
-      "count": 30,
-      "real": 30
-    },
-    {
-      "key": "features/masterwork",
-      "count": 30,
-      "real": 30
-    },
-    {
-      "key": "features/data-tables",
       "count": 27,
       "real": 27
     },
     {
-      "key": "features/code-editor",
-      "count": 29,
+      "key": "features/education",
+      "count": 27,
+      "real": 27
+    },
+    {
+      "key": "app/(core)",
+      "count": 28,
+      "real": 26
+    },
+    {
+      "key": "features/data-tables",
+      "count": 25,
       "real": 25
     },
     {
-      "key": "features/surfaces",
+      "key": "features/code-editor",
+      "count": 28,
+      "real": 24
+    },
+    {
+      "key": "features/research",
       "count": 25,
       "real": 24
     },
     {
-      "key": "features/workflow-runtime",
+      "key": "features/masterwork",
       "count": 24,
-      "real": 23
-    },
-    {
-      "key": "features/podcasts",
-      "count": 23,
-      "real": 23
+      "real": 24
     },
     {
       "key": "features/tool-registry",
@@ -473,24 +448,29 @@
       "real": 23
     },
     {
+      "key": "features/workflow-runtime",
+      "count": 23,
+      "real": 22
+    },
+    {
+      "key": "features/podcasts",
+      "count": 22,
+      "real": 22
+    },
+    {
       "key": "components/official-candidate",
       "count": 21,
       "real": 21
     },
     {
-      "key": "features/organizations",
-      "count": 22,
-      "real": 20
-    },
-    {
-      "key": "features/tasks",
-      "count": 20,
-      "real": 20
-    },
-    {
       "key": "hooks",
       "count": 20,
       "real": 20
+    },
+    {
+      "key": "features/surfaces",
+      "count": 20,
+      "real": 19
     },
     {
       "key": "features/agent-apps",
@@ -503,9 +483,19 @@
       "real": 19
     },
     {
+      "key": "features/tasks",
+      "count": 19,
+      "real": 19
+    },
+    {
       "key": "features/transcript-studio",
       "count": 19,
       "real": 19
+    },
+    {
+      "key": "features/organizations",
+      "count": 20,
+      "real": 18
     }
   ],
   "findings": [
@@ -733,33 +723,6 @@
       "feature": "app/(admin)",
       "route": "/administration/documentation/feature-docs/dotdirs",
       "message": "Comments inside children section of tag should be placed inside braces"
-    },
-    {
-      "file": "app/(admin)/administration/preview/one-binding-ui/OneBindingUi.tsx",
-      "line": 32,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "app/(admin)/administration/preview/unified-management/places/BindingsPanel.tsx",
-      "line": 20,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "app/(admin)/administration/preview/unified-management/places/DiscoveredMandatesPanel.tsx",
-      "line": 21,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "app/(admin)/administration/reporting/events/page.tsx",
@@ -1014,33 +977,6 @@
       "message": "'@/features/files/cache/admin/BlobCacheInspector' import is restricted from being used by a pattern. features/files/cache is internal infrastructure (in-memory LRU, IndexedDB store, Service Worker registration). Use @/features/files/hooks/…"
     },
     {
-      "file": "app/(core)/agents/new/page.tsx",
-      "line": 11,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(core)",
-      "route": "/agents/new",
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "app/(core)/agents/new/studio/page.tsx",
-      "line": 4,
-      "column": 44,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(core)",
-      "route": "/agents/new/studio",
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "app/(core)/agents/new/studio/page.tsx",
-      "line": 4,
-      "column": 54,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(core)",
-      "route": "/agents/new/studio",
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "app/(core)/cms/[siteId]/collections/[collectionId]/page.tsx",
       "line": 311,
       "column": 10,
@@ -1158,15 +1094,6 @@
       "message": "Do not statically import a heavy `*Impl` core — it bundles the whole heavy component into this chunk (a build-time leak). Import its dynamic wrapper instead: the sibling module without the `Impl` suffix, which does next/dynamic({ ssr: fals…"
     },
     {
-      "file": "app/(core)/education/subjects/quick-math/page.tsx",
-      "line": 7,
-      "column": 49,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(core)",
-      "route": "/education/subjects/quick-math",
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "app/(core)/images/_components/ImagesSidebar.tsx",
       "line": 52,
       "column": 27,
@@ -1203,33 +1130,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(core)/podcast/studio/create-a/_components/CreateViewA.tsx",
-      "line": 31,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(core)",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "app/(core)/podcast/studio/create-b/_components/ComposerForm.tsx",
-      "line": 27,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(core)",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "app/(core)/podcast/studio/run-a/_components/RunViewA.tsx",
-      "line": 32,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(core)",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "app/(core)/podcast/studio/run-a/_components/useMockRun.ts",
       "line": 39,
       "column": 5,
@@ -1239,15 +1139,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(core)/podcast/studio/run-b/_components/EpisodeReveal.tsx",
-      "line": 16,
-      "column": 32,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(core)",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "app/(core)/podcast/studio/run-b/_mock/useMockRun.ts",
       "line": 40,
       "column": 5,
@@ -1255,15 +1146,6 @@
       "feature": "app/(core)",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(core)/podcast/studio/run-c/_components/StreamingResults.tsx",
-      "line": 14,
-      "column": 71,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(core)",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "app/(core)/podcast/studio/run-c/_components/StreamingResults.tsx",
@@ -1339,30 +1221,12 @@
     },
     {
       "file": "app/(core)/workbooks/page.tsx",
-      "line": 11,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(core)",
-      "route": "/workbooks",
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "app/(core)/workbooks/page.tsx",
       "line": 112,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "app/(core)",
       "route": "/workbooks",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(dev)/demos/agents/page.dev.tsx",
-      "line": 2,
-      "column": 10,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(dev)",
-      "route": "/demos/agents",
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "app/(dev)/demos/api-tests/block-processing/BlockProcessingClient.tsx",
@@ -1599,15 +1463,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(dev)/demos/json-block-detector/SchemaConvertTab.tsx",
-      "line": 4,
-      "column": 38,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(dev)",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "app/(dev)/demos/kind-streaming-options/StreamingOptionsDemo.tsx",
       "line": 261,
       "column": 7,
@@ -1813,15 +1668,6 @@
       "feature": "app/(dev)",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
-      "line": 39,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(dev)",
-      "route": "/demos/scopes/context-lab",
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
@@ -2767,24 +2613,6 @@
       "feature": "app/(public)",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(public)/pricing/compare/page.tsx",
-      "line": 10,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(public)",
-      "route": "/pricing/compare",
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "app/(public)/s/[token]/ShareLinkError.tsx",
-      "line": 2,
-      "column": 20,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "app/(public)",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "app/(transitional)/_flash-cards/ai/AiChatModal.tsx",
@@ -3750,15 +3578,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "components/content-cleanup/CellCleanupOptionsPopover.tsx",
-      "line": 11,
-      "column": 29,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "components/content-cleanup",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "components/crud/CrudTable.tsx",
       "line": 46,
       "column": 9,
@@ -4117,24 +3936,6 @@
       "feature": "components/mardown-display",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "components/mardown-display/blocks/data-events/ContextGroomedBlock.tsx",
-      "line": 3,
-      "column": 10,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "components/mardown-display/blocks/data-events/UnknownDataEventBlock.tsx",
-      "line": 3,
-      "column": 59,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx",
@@ -4695,15 +4496,6 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "components/mardown-display/blocks/mermaid/MermaidBlock.tsx",
-      "line": 26,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "components/mardown-display/blocks/plan/StructuredPlanViewer.tsx",
       "line": 54,
       "column": 5,
@@ -5071,15 +4863,6 @@
       "feature": "components/mardown-display",
       "route": null,
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/components/mardown-display/blo…"
-    },
-    {
-      "file": "components/mardown-display/blocks/table-kinds/DataTableBlock.tsx",
-      "line": 89,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "components/mardown-display/blocks/table-kinds/DataTableBlock.tsx",
@@ -7017,15 +6800,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "components/official/ProTextareaBoundAgentsMenuItems.tsx",
-      "line": 3,
-      "column": 10,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "components/official",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "components/official/PublicImageSearch.tsx",
       "line": 355,
       "column": 7,
@@ -7962,15 +7736,6 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/admin/assist-control/AssistProducerControl.tsx",
-      "line": 5,
-      "column": 19,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/admin",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/admin/hr/jurisdiction-rules/useJurisdictionRulesAdminData.ts",
       "line": 32,
       "column": 10,
@@ -8115,15 +7880,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/admin/system-context/FeedConfigEditor.tsx",
-      "line": 14,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/admin",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/admin/system-context/SystemContextConsole.tsx",
       "line": 213,
       "column": 10,
@@ -8158,15 +7914,6 @@
       "feature": "features/admin",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/admin/unified-preview/jobs/preview-ui.tsx",
-      "line": 16,
-      "column": 10,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/admin",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/admin/users/components/AnnouncementsTableClient.tsx",
@@ -8248,15 +7995,6 @@
       "feature": "features/administration",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/administration/canonicalization/components/SchemaTableTokenFields.tsx",
-      "line": 4,
-      "column": 19,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/administration",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/administration/canonicalization/components/TableImpactPanel.tsx",
@@ -8374,15 +8112,6 @@
       "feature": "features/administration",
       "route": null,
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/administration/databa…"
-    },
-    {
-      "file": "features/administration/kg-cost/components/KgCostDashboard.tsx",
-      "line": 26,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/administration",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/administration/kg-cost/components/KgCostDashboard.tsx",
@@ -9564,15 +9293,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/agents/components/schema-proposal/SchemaProposalBlock.tsx",
-      "line": 20,
-      "column": 55,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/agents",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/agents/components/settings-management/AgentSettingsCore.tsx",
       "line": 149,
       "column": 5,
@@ -10527,15 +10247,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/ai-work/analysis/ConversationAnalyzePanel.tsx",
-      "line": 24,
-      "column": 38,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/ai-work",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/ai-work/components/AiWorkConnections.tsx",
       "line": 160,
       "column": 5,
@@ -10545,15 +10256,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/ai-work/components/AiWorkHeader.tsx",
-      "line": 8,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/ai-work",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/ai-work/components/ProviderConversationTranscript.tsx",
       "line": 584,
       "column": 10,
@@ -10561,15 +10263,6 @@
       "feature": "features/ai-work",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/ai-work/conversations/components/ConversationProvenancePanel.tsx",
-      "line": 28,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/ai-work",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/ai-work/conversations/components/ConversationProvenancePanel.tsx",
@@ -10716,26 +10409,8 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/auth/components/module-landing/landings/MasterworkLanding.tsx",
-      "line": 16,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/auth",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/auth/components/module-landing/landings/SearchLanding.tsx",
-      "line": 18,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/auth",
-      "route": null,
-      "message": "'Sparkle' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/bindings/BindingOptionsDrawer.tsx",
-      "line": 181,
+      "line": 192,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/bindings",
@@ -10743,17 +10418,8 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/bindings/HolderAssignment.tsx",
-      "line": 55,
-      "column": 10,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/bindings",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/bindings/OneBindingWorkspace.tsx",
-      "line": 756,
+      "line": 793,
       "column": 27,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/bindings",
@@ -10762,7 +10428,7 @@
     },
     {
       "file": "features/bindings/OneBindingWorkspace.tsx",
-      "line": 780,
+      "line": 822,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/bindings",
@@ -11038,15 +10704,6 @@
       "feature": "features/code-editor",
       "route": null,
       "message": "'@/features/window-panels/windows/code/CodeEditorTabBar' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct …"
-    },
-    {
-      "file": "features/code-editor/agent-code-editor/components/SmartCodeEditor.tsx",
-      "line": 43,
-      "column": 10,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/code-editor",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/code-editor/agent-code-editor/components/SmartCodeEditor.tsx",
@@ -11572,15 +11229,6 @@
     },
     {
       "file": "features/content-ir/react/actions/KindRequestDialog.tsx",
-      "line": 21,
-      "column": 45,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/content-ir",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/content-ir/react/actions/KindRequestDialog.tsx",
       "line": 229,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -11650,15 +11298,6 @@
       "feature": "features/crm",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/crm/chasebox/components/ChaseboxDraftDialog.tsx",
-      "line": 37,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/crm",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/crm/chasebox/components/ChaseboxDraftDialog.tsx",
@@ -12112,15 +11751,6 @@
     },
     {
       "file": "features/data-tables/components/DocumentHistoryViewer.tsx",
-      "line": 18,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/data-tables",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/data-tables/components/DocumentHistoryViewer.tsx",
       "line": 62,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
@@ -12265,15 +11895,6 @@
     },
     {
       "file": "features/data-tables/components/WorkbookHistoryViewer.tsx",
-      "line": 22,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/data-tables",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/data-tables/components/WorkbookHistoryViewer.tsx",
       "line": 67,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
@@ -12316,24 +11937,6 @@
       "feature": "features/directive-catalog",
       "route": null,
       "message": "The \"__kind\" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @ai-matrx/content-ir — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. …"
-    },
-    {
-      "file": "features/education/assessment/components/create/AssessmentCreate.tsx",
-      "line": 21,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/education",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/education/assessment/components/edit/AssessmentEdit.tsx",
-      "line": 22,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/education",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/education/assessment/components/HandwrittenWorkInput.tsx",
@@ -12426,24 +12029,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/education/components/landing/EducationHub.tsx",
-      "line": 5,
-      "column": 33,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/education",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/education/creators/components/CreatorDashboard.tsx",
-      "line": 23,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/education",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/education/creators/components/CreatorDashboard.tsx",
       "line": 86,
       "column": 7,
@@ -12453,33 +12038,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/education/creators/components/CreatorLandingPage.tsx",
-      "line": 14,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/education",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/education/data/levels.ts",
-      "line": 22,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/education",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/education/data/study-aids.ts",
-      "line": 21,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/education",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/education/engage/realtime/useGameChannel.ts",
       "line": 136,
       "column": 26,
@@ -12487,24 +12045,6 @@
       "feature": "features/education",
       "route": null,
       "message": "Error: Cannot call impure function during render `Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rule…"
-    },
-    {
-      "file": "features/education/home/blocks/StartHereBlock.tsx",
-      "line": 19,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/education",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/education/home/blocks/StudyTodayBlock.tsx",
-      "line": 17,
-      "column": 51,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/education",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/education/library/components/OwnerSuggestionInbox.tsx",
@@ -12624,15 +12164,6 @@
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/education/study/plann…"
     },
     {
-      "file": "features/education/study/planner/components/PlanGenerateForm.tsx",
-      "line": 12,
-      "column": 34,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/education",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/education/study/planner/components/PlannerWorkspace.tsx",
       "line": 124,
       "column": 10,
@@ -12643,30 +12174,12 @@
     },
     {
       "file": "features/education/study/planner/components/StudyPlanView.tsx",
-      "line": 21,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/education",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/education/study/planner/components/StudyPlanView.tsx",
       "line": 141,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/education",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/education/tutor/components/TutorLanding.tsx",
-      "line": 11,
-      "column": 38,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/education",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/entitlements/components/PlanUsagePanel.tsx",
@@ -12724,15 +12237,6 @@
     },
     {
       "file": "features/file-analysis/content/EntitiesContent.tsx",
-      "line": 15,
-      "column": 19,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/file-analysis",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/file-analysis/content/EntitiesContent.tsx",
       "line": 47,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -12766,15 +12270,6 @@
       "feature": "features/file-analysis",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/file-analysis/tab/AnalysisTab.tsx",
-      "line": 37,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/file-analysis",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/files/cache/admin/BlobCacheInspector.tsx",
@@ -13173,15 +12668,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/flashcards/components/create/CreateFromTopic.tsx",
-      "line": 26,
-      "column": 18,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/flashcards",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/flashcards/components/editor/UnsplashPickDialog.tsx",
       "line": 86,
       "column": 5,
@@ -13189,15 +12675,6 @@
       "feature": "features/flashcards",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/flashcards/components/set-detail/EnhanceSetDialog.tsx",
-      "line": 16,
-      "column": 51,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/flashcards",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/flashcards/components/set-detail/MergeCardsDialog.tsx",
@@ -13270,15 +12747,6 @@
       "feature": "features/gallery",
       "route": null,
       "message": "'@/features/window-panels/windows/image/openImageViewer' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct …"
-    },
-    {
-      "file": "features/hindsight/components/ChangeHistoryPanel.tsx",
-      "line": 27,
-      "column": 33,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/hindsight",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/hindsight/components/EnrollDialog.tsx",
@@ -13974,33 +13442,6 @@
       "message": "'@/features/files/api/assets' import is restricted from being used by a pattern. Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.)."
     },
     {
-      "file": "features/image-studio/modes/edit/EditAiToolbar.tsx",
-      "line": 32,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/image-studio",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/image-studio/modes/edit/EditAiToolbar.tsx",
-      "line": 34,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/image-studio",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/image-studio/modes/edit/EditModeShell.tsx",
-      "line": 39,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/image-studio",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/image-studio/modes/edit/EditModeShell.tsx",
       "line": 66,
       "column": 1,
@@ -14064,15 +13505,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/item-presentation/registry.tsx",
-      "line": 36,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/item-presentation",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/kg-graph/components/KgGraphCanvas.tsx",
       "line": 151,
       "column": 5,
@@ -14125,15 +13557,6 @@
       "feature": "features/kg-suggestions",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/kg-suggestions/components/manager/SuggestionsFilterBar.tsx",
-      "line": 11,
-      "column": 24,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/kg-suggestions",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/kg-suggestions/hooks/useAutoRagPreference.ts",
@@ -14224,33 +13647,6 @@
       "feature": "features/kg-suggestions",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/knowledge/components/KnowledgePipelineDiagram.tsx",
-      "line": 13,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/knowledge",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/knowledge/components/KnowledgePipelineDiagram.tsx",
-      "line": 14,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/knowledge",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/knowledge/components/KnowledgeShowcasePage.tsx",
-      "line": 7,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/knowledge",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/legal/wc/pd-ratings/components/workspace/ClaimHeader.tsx",
@@ -14344,7 +13740,7 @@
     },
     {
       "file": "features/mandates/admin/MandatesConsole.tsx",
-      "line": 425,
+      "line": 426,
       "column": 9,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/mandates",
@@ -14353,7 +13749,7 @@
     },
     {
       "file": "features/mandates/admin/MandatesConsole.tsx",
-      "line": 552,
+      "line": 553,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/mandates",
@@ -14368,15 +13764,6 @@
       "feature": "features/mandates",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/mandates/admin/ProvisionOfferComposer.tsx",
-      "line": 24,
-      "column": 32,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/mandates",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/mandates/admin/TryItNowPanel.tsx",
@@ -14443,39 +13830,12 @@
     },
     {
       "file": "features/marketing/competitors/LandscapeBriefCard.tsx",
-      "line": 25,
-      "column": 37,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/marketing/competitors/LandscapeBriefCard.tsx",
       "line": 89,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/marketing",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/marketing/components/analysis/FindingFixCard.tsx",
-      "line": 33,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/marketing/components/analysis/FindingFixCard.tsx",
-      "line": 34,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/marketing/components/backlinks/useLinkGapProspects.ts",
@@ -14784,33 +14144,6 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/marketing/components/media/GenerateMediaView.tsx",
-      "line": 16,
-      "column": 19,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/marketing/components/media/ResearchMediaView.tsx",
-      "line": 12,
-      "column": 44,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/marketing/components/pages/cards/PageImagePlanCard.tsx",
-      "line": 24,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/marketing/components/pages/PagePickerDialog.tsx",
       "line": 79,
       "column": 5,
@@ -14946,15 +14279,6 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/marketing/seo/public-tools/StructuredDataValidatorTool.tsx",
-      "line": 4,
-      "column": 56,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/marketing/seo/run-console/RunConsole.tsx",
       "line": 660,
       "column": 7,
@@ -15054,15 +14378,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/marketing/seo/value-system/workbench/BandScoreboard.tsx",
-      "line": 28,
-      "column": 47,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "'Sparkle' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/marketing/seo/value-system/workbench/session/QuickAnswers.tsx",
       "line": 168,
       "column": 18,
@@ -15072,15 +14387,6 @@
       "message": "Compilation Skipped: Existing memoization could not be preserved React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause t…"
     },
     {
-      "file": "features/marketing/seo/value-system/workbench/session/TrialPanel.tsx",
-      "line": 45,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/masterwork/agent-context/useRulebookDocument.ts",
       "line": 45,
       "column": 7,
@@ -15088,15 +14394,6 @@
       "feature": "features/masterwork",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/masterwork/browse/components/MasterworkBrowseCards.tsx",
-      "line": 18,
-      "column": 50,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/masterwork",
-      "route": null,
-      "message": "'Sparkle' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/masterwork/browse/useRulebookMasterworks.ts",
@@ -15115,24 +14412,6 @@
       "feature": "features/masterwork",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/masterwork/components/add-rule/AddRulePanel.tsx",
-      "line": 23,
-      "column": 26,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/masterwork",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/masterwork/components/add-rule/AddRulePanel.tsx",
-      "line": 23,
-      "column": 36,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/masterwork",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/masterwork/components/detail/BodyOfWorkDialog.tsx",
@@ -15154,30 +14433,12 @@
     },
     {
       "file": "features/masterwork/components/detail/ChatImportDialog.tsx",
-      "line": 5,
-      "column": 32,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/masterwork",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/masterwork/components/detail/ChatImportDialog.tsx",
       "line": 345,
       "column": 12,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/masterwork",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/masterwork/components/detail/ImproveRuleDialog.tsx",
-      "line": 19,
-      "column": 22,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/masterwork",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/masterwork/components/detail/ImproveRuleDialog.tsx",
@@ -15223,15 +14484,6 @@
       "feature": "features/masterwork",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/masterwork/components/detail/RuleEditorDialog.tsx",
-      "line": 4,
-      "column": 33,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/masterwork",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/masterwork/components/detail/RuleFeedbackDialog.tsx",
@@ -15766,15 +15018,6 @@
     },
     {
       "file": "features/notes/components/NoteSidebar.tsx",
-      "line": 47,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/notes",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/notes/components/NoteSidebar.tsx",
       "line": 307,
       "column": 3,
       "rule": "react-hooks/refs",
@@ -16105,24 +15348,6 @@
       "feature": "features/organizations",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/organizations/peek/kinds/SkillPeek.tsx",
-      "line": 11,
-      "column": 10,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/organizations",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/organizations/resource-catalogue.ts",
-      "line": 43,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/organizations",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/overlays/openers/contentEditorListWindow.tsx",
@@ -16549,15 +15774,6 @@
     },
     {
       "file": "features/pdf-extractor/studio/PdfStudioMobile.tsx",
-      "line": 39,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/pdf-extractor",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/pdf-extractor/studio/PdfStudioMobile.tsx",
       "line": 104,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -16573,15 +15789,6 @@
       "feature": "features/pdf-extractor",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/pdf-extractor/studio/PdfStudioReader.tsx",
-      "line": 45,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/pdf-extractor",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/pdf-extractor/studio/PdfStudioShell.tsx",
@@ -16782,15 +15989,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/pdf/surfaces/registry.ts",
-      "line": 21,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/pdf",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/podcasts/components/admin/AssetUploader.tsx",
       "line": 90,
       "column": 9,
@@ -16953,15 +16151,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/podcasts/studio/components/EpisodeContentStudio.tsx",
-      "line": 17,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/podcasts",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/podcasts/studio/components/ShowManageClient.tsx",
       "line": 180,
       "column": 5,
@@ -17005,15 +16194,6 @@
       "feature": "features/pricing",
       "route": null,
       "message": "Error: Cannot call impure function during render `Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rule…"
-    },
-    {
-      "file": "features/product-capture/components/AllItemsTable.tsx",
-      "line": 378,
-      "column": 34,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/product-capture",
-      "route": null,
-      "message": "React Hook \"useCaptureItemMenuSection\" is called conditionally. React Hooks must be called in the exact same order in every component render."
     },
     {
       "file": "features/projects/components/GeneralSettings.tsx",
@@ -17296,15 +16476,6 @@
     },
     {
       "file": "features/rag/components/library/KnowledgeAssetPanel.tsx",
-      "line": 37,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/rag",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/rag/components/library/KnowledgeAssetPanel.tsx",
       "line": 1041,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -17332,24 +16503,6 @@
     },
     {
       "file": "features/rag/components/library/LibraryDocDetailSheet.tsx",
-      "line": 48,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/rag",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/rag/components/library/LibraryDocDetailSheet.tsx",
-      "line": 49,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/rag",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/rag/components/library/LibraryDocDetailSheet.tsx",
       "line": 1226,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -17368,25 +16521,7 @@
     },
     {
       "file": "features/rag/components/library/LibraryPage.tsx",
-      "line": 54,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/rag",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/rag/components/library/LibraryPage.tsx",
-      "line": 55,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/rag",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/rag/components/library/LibraryPage.tsx",
-      "line": 135,
+      "line": 134,
       "column": 5,
       "rule": "react-hooks/refs",
       "feature": "features/rag",
@@ -17395,21 +16530,12 @@
     },
     {
       "file": "features/rag/components/library/LibraryPage.tsx",
-      "line": 268,
+      "line": 267,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/rag",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/rag/components/library/LibraryPreviewPage.tsx",
-      "line": 38,
-      "column": 53,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/rag",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/rag/components/library/LibraryPreviewPage.tsx",
@@ -17925,15 +17051,6 @@
       "message": "Error: Cannot call impure function during render `Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rule…"
     },
     {
-      "file": "features/research/components/results/ResultsHeroMetrics.tsx",
-      "line": 10,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/research",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/research/components/shared/StreamDebugOverlay.tsx",
       "line": 32,
       "column": 25,
@@ -17941,24 +17058,6 @@
       "feature": "features/research",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/research/components/shell/ResearchMobileNav.tsx",
-      "line": 19,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/research",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/research/components/shell/ResearchSidebar.tsx",
-      "line": 22,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/research",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/research/components/sources/SourceDetail.tsx",
@@ -17977,24 +17076,6 @@
       "feature": "features/research",
       "route": null,
       "message": "Compilation Skipped: Existing memoization could not be preserved React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually spec…"
-    },
-    {
-      "file": "features/research/components/sources/SourceTagPicker.tsx",
-      "line": 4,
-      "column": 32,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/research",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/research/components/tags/CrossCuttingTagsPanel.tsx",
-      "line": 4,
-      "column": 19,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/research",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/research/components/tags/CrossCuttingTagsPanel.tsx",
@@ -18069,15 +17150,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/research/resources/catalog.ts",
-      "line": 32,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/research",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/resource-manager/resource-picker/FileUrlResourcePicker.tsx",
       "line": 158,
       "column": 13,
@@ -18148,15 +17220,6 @@
       "feature": "features/review-walk",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/review-walk/components/TurnDiagnosis.tsx",
-      "line": 35,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/review-walk",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/scope-system/components/OrgHomeScopeSection.tsx",
@@ -18274,15 +17337,6 @@
       "feature": "features/scopes",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "features/scopes/components/context-assignment/ContextAssignmentField.tsx",
-      "line": 54,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/scopes",
-      "route": null,
-      "message": "'Wand2' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/scopes/components/context-assignment/ContextAssignmentField.tsx",
@@ -18915,15 +17969,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/sharing/resourceIcons.ts",
-      "line": 10,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/sharing",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/shell/components/controls/SidebarAdminIndicatorToggle.tsx",
       "line": 26,
       "column": 5,
@@ -19159,15 +18204,6 @@
     },
     {
       "file": "features/structured-lists/structured-list-manager-v3.tsx",
-      "line": 73,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/structured-lists/structured-list-manager-v3.tsx",
       "line": 279,
       "column": 3,
       "rule": "react-hooks/refs",
@@ -19201,24 +18237,6 @@
       "feature": "features/structured-lists",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/structured-lists/StructuredListLanding.tsx",
-      "line": 11,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV1.tsx",
-      "line": 66,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/structured-lists/StructuredListManagerV1.tsx",
@@ -19446,51 +18464,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/surfaces/components/bind/SurfaceAgentBindPanel.tsx",
-      "line": 420,
-      "column": 24,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/surfaces",
-      "route": null,
-      "message": "React Hook \"useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "features/surfaces/components/chrome/SurfaceMandatesSection.tsx",
-      "line": 42,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/surfaces",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/surfaces/components/chrome/SurfaceRoleAgentButton.tsx",
-      "line": 23,
-      "column": 19,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/surfaces",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/surfaces/components/hub/SurfaceHubDetailPage.tsx",
-      "line": 28,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/surfaces",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/surfaces/components/hub/SurfacesHubPage.tsx",
-      "line": 18,
-      "column": 10,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/surfaces",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/surfaces/components/ManifestDriftDialog.tsx",
       "line": 81,
       "column": 10,
@@ -19624,15 +18597,6 @@
       "feature": "features/tasks",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/tasks/components/TaskProvenanceChip.tsx",
-      "line": 18,
-      "column": 10,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/tasks",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/tasks/components/TaskScopeFilter.tsx",
@@ -19795,33 +18759,6 @@
       "feature": "features/tool-call-visualization",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/tool-call-visualization/renderers/research/SubagentReportBlock.tsx",
-      "line": 38,
-      "column": 5,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/tool-call-visualization",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/tool-call-visualization/renderers/scrape/ScrapeInline.tsx",
-      "line": 41,
-      "column": 5,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/tool-call-visualization",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/tool-call-visualization/renderers/scrape/ScrapeOverlay.tsx",
-      "line": 20,
-      "column": 5,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/tool-call-visualization",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/tool-call-visualization/renderers/search/SearchInline.tsx",
@@ -21066,24 +20003,6 @@
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/war-room/components/a…"
     },
     {
-      "file": "features/war-room/components/room/RoomAgentWindow.tsx",
-      "line": 14,
-      "column": 10,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/war-room",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
-      "file": "features/war-room/components/room/RoomHeader.tsx",
-      "line": 32,
-      "column": 3,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/war-room",
-      "route": null,
-      "message": "'Bot' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
-    },
-    {
       "file": "features/war-room/components/room/RoomHeader.tsx",
       "line": 197,
       "column": 14,
@@ -21118,15 +20037,6 @@
       "feature": "features/war-room",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/war-room/components/thread/ThreadAgentTab.tsx",
-      "line": 20,
-      "column": 56,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/war-room",
-      "route": null,
-      "message": "'Sparkles' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/war-room/components/thread/ThreadProjectTaskList.tsx",
@@ -21237,15 +20147,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/window-panels/windows/agents/AgentRunWindow.tsx",
-      "line": 767,
-      "column": 5,
-      "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/window-panels",
-      "route": null,
-      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
       "file": "features/window-panels/windows/agents/AgentSettingsWindow.tsx",
       "line": 72,
       "column": 7,
@@ -21291,24 +20192,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/window-panels/windows/flashcards/FlashcardItemWindow.tsx",
-      "line": 76,
-      "column": 28,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/window-panels",
-      "route": null,
-      "message": "React Hook \"useFlashcardMenuSection\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/window-panels/windows/flashcards/FlashcardsBlockWindow.tsx",
-      "line": 103,
-      "column": 28,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/window-panels",
-      "route": null,
-      "message": "React Hook \"useFlashcardMenuSection\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
       "file": "features/window-panels/windows/flashcards/FlashcardStudyWindow.tsx",
       "line": 61,
       "column": 17,
@@ -21316,24 +20199,6 @@
       "feature": "features/window-panels",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/window-panels/windows/flashcards/FlashcardStudyWindow.tsx",
-      "line": 154,
-      "column": 26,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/window-panels",
-      "route": null,
-      "message": "React Hook \"useOpenFlashcardItemWindow\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/window-panels/windows/flashcards/FlashcardStudyWindow.tsx",
-      "line": 164,
-      "column": 28,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/window-panels",
-      "route": null,
-      "message": "React Hook \"useFlashcardMenuSection\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
     },
     {
       "file": "features/window-panels/windows/iframe/BrowserFrameWindow.tsx",
@@ -21489,15 +20354,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/window-panels/windows/QuickDataWindow.tsx",
-      "line": 39,
-      "column": 26,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/window-panels",
-      "route": null,
-      "message": "React Hook \"useDatasetTableMenuSection\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
       "file": "features/window-panels/windows/smart-code-editor/SmartCodeEditorWindow.tsx",
       "line": 139,
       "column": 33,
@@ -21532,15 +20388,6 @@
       "feature": "features/window-panels",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "features/window-panels/windows/UserTableWindow.tsx",
-      "line": 48,
-      "column": 26,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/window-panels",
-      "route": null,
-      "message": "React Hook \"useDatasetTableMenuSection\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
     },
     {
       "file": "features/workflow-comparison/components/ArmSetupCard.tsx",
@@ -21622,15 +20469,6 @@
       "feature": "features/workflow-runtime",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/workflow-runtime/bakeoff/reimagine-2/Chapters.tsx",
-      "line": 14,
-      "column": 24,
-      "rule": "matrx/no-banned-lucide-icons",
-      "feature": "features/workflow-runtime",
-      "route": null,
-      "message": "'Sparkle' from lucide-react is banned (AI-cliché icon). Pick a domain-specific Lucide icon, or use a custom icon from @/components/icons."
     },
     {
       "file": "features/workflow-runtime/bakeoff/reimagine-2/CommissionPage.tsx",

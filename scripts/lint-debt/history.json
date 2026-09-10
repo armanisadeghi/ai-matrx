@@ -46,5 +46,17 @@
       "doctrine": 141,
       "style": 5
     }
+  },
+  {
+    "generatedAt": "2026-09-10T02:10:30.044Z",
+    "commit": "92d3dd40c45bc437a494df75f23156faa484a6b3",
+    "errors": 2293,
+    "filesWithFindings": 1209,
+    "byClass": {
+      "bug": 2,
+      "correctness": 2145,
+      "doctrine": 141,
+      "style": 5
+    }
   }
 ]
