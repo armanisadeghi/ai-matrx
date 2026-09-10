@@ -42,6 +42,7 @@ const STORAGE_PATH_KEYS = new Set([
   "filepath",
   "file_path",
   "storageuri",
+  // eslint-disable-next-line no-restricted-syntax -- this IS the eradication site: the sanitizer must name the banned key in order to drop it.
   "storage_uri",
   "storagepath",
   "storage_path",

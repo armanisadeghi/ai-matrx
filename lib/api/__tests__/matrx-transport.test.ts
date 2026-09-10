@@ -106,6 +106,7 @@ describe("createMatrxTransport (global, callApi parity)", () => {
     mockedFetch.mockResolvedValue({ response: fakeResponse({}), controller: new AbortController() });
     const transport = createMatrxTransport(stateOf());
 
+    // eslint-disable-next-line no-restricted-syntax -- a URL fixture for the header-merge assertion, not a tool-results POST; the transport under test is path-agnostic.
     await transport.fetch("/ai/conversations/c-1/tool_results", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -114,6 +115,7 @@ describe("createMatrxTransport (global, callApi parity)", () => {
 
     expect(mockedFetch).toHaveBeenCalledTimes(1);
     const [url, init] = mockedFetch.mock.calls[0];
+    // eslint-disable-next-line no-restricted-syntax -- the expected value of the fixture URL above, not a tool-results POST.
     expect(url).toBe("https://backend.test/ai/conversations/c-1/tool_results");
     expect(init?.headers).toMatchObject({
       "Content-Type": "application/json",
