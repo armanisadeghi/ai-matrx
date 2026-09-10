@@ -1867,6 +1867,10 @@ export function MandateDetailView({
           <MandateTestBench
             key={row.id}
             mandate={row.mandate}
+            globalBinding={data.bindingsByMandateId[row.id]?.find(
+              (binding) =>
+                binding.principal_type === "global" && binding.is_enabled,
+            )}
             baselineLabel={baselineLabel}
             presetLatestCandidate={row.drift != null}
             autoRunSignal={benchFocus}
@@ -1947,6 +1951,10 @@ export function MandateDetailView({
           <MandateTestBench
             key={row.id}
             mandate={row.mandate}
+            globalBinding={data.bindingsByMandateId[row.id]?.find(
+              (binding) =>
+                binding.principal_type === "global" && binding.is_enabled,
+            )}
             baselineLabel={baselineLabel}
             presetLatestCandidate={row.drift != null}
             autoRunSignal={benchFocus}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, FlaskConical, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,14 @@ import {
 } from "./service";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
+import { AgentSamplesManager } from "@/features/agents/components/samples/AgentSamplesManager";
+import {
+  sampleAttachmentParts,
+  sampleInputText,
+  type AgentSampleRow,
+} from "@/features/agents/samples/service";
+import { resolveMandate } from "@/features/mandates/service";
+import { sampleInputsForMandate } from "./sample-inputs";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
 interface CompletedRun {
@@ -107,9 +115,11 @@ export function TryItNowPanel({
   defaultAgentId,
   onSavedTestCase,
   allowPrincipalSelection = false,
+  consumptionMap,
 }: {
   /** Explicitly opt in on a host that supports testing another principal. */
   allowPrincipalSelection?: boolean;
+  consumptionMap?: unknown;
   mandate: MandateDefinitionRow;
   defaultAgentId: string | null;
   passesUserInput: boolean | undefined;
@@ -134,9 +144,29 @@ export function TryItNowPanel({
   } | null>(null);
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [userInput, setUserInput] = useState("");
+  const sampleRequest = useRef(0);
+  const [sampleSource, setSampleSource] = useState<{
+    agentId: string;
+    map: unknown;
+  } | null>(null);
+  const [readingSamples, setReadingSamples] = useState(false);
+  const [sampleError, setSampleError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [completed, setCompleted] = useState<CompletedRun | null>(null);
   const [failure, setFailure] = useState<MandateRunFailure | null>(null);
+  useEffect(() => {
+    sampleRequest.current += 1;
+    setSampleSource(null);
+    setSampleError(null);
+    setReadingSamples(false);
+  }, [
+    defaultAgentId,
+    consumptionMap,
+    testContext,
+    testMode,
+    viewerOrgId,
+    mandate.id,
+  ]);
   const [saveLabel, setSaveLabel] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -204,6 +234,67 @@ export function TryItNowPanel({
       }
     }
     return variables;
+  }
+  async function openSamples() {
+    const request = ++sampleRequest.current;
+    setReadingSamples(true);
+    setSampleError(null);
+    try {
+      if (
+        testMode === "display" ||
+        (allowPrincipalSelection && testContext === "viewer")
+      ) {
+        const resolved = await resolveMandate(mandate.mandate_key);
+        if (request !== sampleRequest.current) return;
+        setSampleSource({
+          agentId: resolved.agentId,
+          map: resolved.consumptionMap,
+        });
+      } else if (defaultAgentId)
+        setSampleSource({ agentId: defaultAgentId, map: consumptionMap });
+      else throw new Error("Assign an agent before choosing its samples.");
+    } catch (error) {
+      if (request === sampleRequest.current)
+        setSampleError(describeError(error));
+    } finally {
+      if (request === sampleRequest.current) setReadingSamples(false);
+    }
+  }
+  function fillSample(sample: AgentSampleRow) {
+    try {
+      if (!sampleSource || sample.agent_id !== sampleSource.agentId)
+        throw new Error("The selected holder changed. Reopen its samples.");
+      if (sampleAttachmentParts(sample).length)
+        throw new Error(
+          "This sample contains attachments. The mandate test endpoint cannot accept those message parts yet; no inputs were changed.",
+        );
+      const { values: next, skipped } = sampleInputsForMandate(
+        sample,
+        mandate.id,
+        fields,
+        sampleSource?.map,
+      );
+      const text = sampleInputText(sample);
+      if (text && !surface?.acceptsUserInput)
+        throw new Error(
+          "This sample includes a user message that this mandate does not accept. No inputs were changed.",
+        );
+      if (!Object.keys(next).length && !(surface?.acceptsUserInput && text))
+        throw new Error(
+          "No sample values map to this mandate's editable inputs. Check Provision Mapping or use the sample preview.",
+        );
+      setValues((current) => ({ ...current, ...next }));
+      if (surface?.acceptsUserInput) setUserInput(text);
+      setSampleSource(null);
+      setSampleError(null);
+      if (skipped.length)
+        toast.info(
+          `Filled ${Object.keys(next).length} inputs. Not used: ${skipped.map((name) => displayLabelForKey(name)).join(", ")}. Review before running.`,
+        );
+      else toast.success("Sample filled. Review inputs before running.");
+    } catch (error) {
+      setSampleError(describeError(error));
+    }
   }
   async function run() {
     if (!surface) return;
@@ -308,27 +399,60 @@ export function TryItNowPanel({
   return (
     <section className="min-w-0 space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold">Test inputs</h3>
-        <span className="flex items-center gap-1 text-sm">
-          Sample data
-          <FieldHelp
-            label="Sample data"
-            triggerLabel="Sample data — unavailable"
-            unavailable
-            triggerIcon={<FlaskConical className="size-3.5 opacity-50" />}
-          >
-            Sample-data fill is not available for mandate tests. Use saved test
-            cases below, or enter values here.
-          </FieldHelp>
-        </span>
+        <h3 className="text-sm font-semibold">Run once</h3>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={readingSamples || !surface}
+          onClick={() =>
+            sampleSource ? setSampleSource(null) : void openSamples()
+          }
+        >
+          {readingSamples ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <FlaskConical className="size-3.5" />
+          )}
+          Agent samples
+        </Button>
       </div>
+      {sampleError ? (
+        <div role="alert" className="text-sm text-destructive">
+          {sampleError}
+        </div>
+      ) : null}
+      {sampleSource ? (
+        <section
+          className="space-y-3 rounded-lg border border-border p-3"
+          aria-label="Agent samples"
+        >
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold">Agent samples</h4>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSampleSource(null)}
+            >
+              Close
+            </Button>
+          </div>
+          <AgentSamplesManager
+            agentId={sampleSource.agentId}
+            onUseSample={fillSample}
+          />
+        </section>
+      ) : null}
       <PropertyRow
         label="Test mode"
         help={`${allowPrincipalSelection ? "Server test executes the selected test context" : "Server test executes the system default"} and returns diagnostics. My display preview executes your resolved holder with saved display defaults; it does not reproduce the original feature. Test inputs come from the signed-in organization, so cross-principal input compatibility has not been verified.`}
         value={
           <Select
             value={testMode}
-            onValueChange={(value: "server" | "display") => setTestMode(value)}
+            onValueChange={(value: "server" | "display") => {
+              setTestMode(value);
+              setSampleSource(null);
+              setSampleError(null);
+            }}
           >
             <SelectTrigger
               className={`${CONFIGURATION_CHOICE_SIZE} w-full max-w-72`}

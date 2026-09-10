@@ -55,6 +55,8 @@ import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
 import {
   contractOfMandate,
   holderOfMandate,
+  holderOfBinding,
+  type MandateBindingRow,
 } from "@/lib/supabase/mandateStorage";
 import { ProvisionOfferComposer } from "./ProvisionOfferComposer";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
@@ -592,12 +594,14 @@ function ReferenceRow({ exemplar }: { exemplar: MandateExemplarRow }) {
 
 export function MandateTestBench({
   mandate,
+  globalBinding,
   baselineLabel = "System default",
   presetLatestCandidate = false,
   autoRunSignal = 0,
   passesUserInput,
 }: {
   mandate: MandateDefinitionRow;
+  globalBinding?: MandateBindingRow;
   /** Code truth: some call site sends this mandate a user message, so the ad-hoc
    * runner offers one. `undefined` = code truth could not answer, which is NOT
    * the same as "no" — the runner offers the field anyway. */
@@ -611,6 +615,16 @@ export function MandateTestBench({
   autoRunSignal?: number;
 }) {
   const dispatch = useAppDispatch();
+  const bindingHolder = globalBinding ? holderOfBinding(globalBinding) : null;
+  const configuredMandate =
+    bindingHolder && (bindingHolder.holderId || bindingHolder.versionId)
+      ? {
+          ...mandate,
+          default_holder_type: bindingHolder.holderType,
+          default_holder_id: bindingHolder.holderId,
+          default_holder_version_id: bindingHolder.versionId,
+        }
+      : mandate;
   const store = useAppStore();
   const [exemplars, setExemplars] = useState<MandateExemplarRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -648,15 +662,30 @@ export function MandateTestBench({
   }
 
   useEffect(() => {
+    let cancelled = false;
     void loadExemplars();
-    resolveMandateDefaultAgentId(mandate)
-      .then(setDefaultAgentId)
-      .catch((error: unknown) =>
-        toast.error(
-          `Failed to resolve the mandate agent: ${describeError(error)}`,
-        ),
-      );
-  }, [mandate.id]);
+    setDefaultAgentId(null);
+    if (configuredMandate.default_holder_type === "agent") {
+      resolveMandateDefaultAgentId(configuredMandate)
+        .then((id) => {
+          if (!cancelled) setDefaultAgentId(id);
+        })
+        .catch((error: unknown) => {
+          if (!cancelled)
+            toast.error(
+              `Failed to resolve the mandate agent: ${describeError(error)}`,
+            );
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    mandate.id,
+    configuredMandate.default_holder_type,
+    configuredMandate.default_holder_id,
+    configuredMandate.default_holder_version_id,
+  ]);
 
   function updateCandidate(draftId: string, next: CandidateDraft) {
     setCandidates((current) =>
@@ -933,308 +962,318 @@ export function MandateTestBench({
   return (
     <div className="min-w-0 space-y-6">
       <TryItNowPanel
-        mandate={mandate}
+        mandate={configuredMandate}
+        consumptionMap={globalBinding?.consumption_map}
         defaultAgentId={defaultAgentId}
         passesUserInput={passesUserInput}
         onSavedTestCase={() => void loadExemplars()}
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <FlaskConical className="h-4 w-4 text-muted-foreground" />
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            Saved test cases
-            <FieldHelp label="Saved test comparisons">
-              Each case runs through the system default and each selected
-              comparison. Runs execute as the signed-in administrator.
-            </FieldHelp>
+      <section
+        aria-label="Saved-case comparisons"
+        className="space-y-4 border-t-2 border-border pt-6"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <FlaskConical className="h-4 w-4 text-muted-foreground" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              Compare saved test cases
+              <FieldHelp label="Saved test comparisons">
+                Each case runs through the system default and each selected
+                comparison. Runs execute as the signed-in administrator.
+              </FieldHelp>
+            </div>
           </div>
-        </div>
-        <Button
-          size="sm"
-          variant="outline"
-          className="ml-auto h-8 gap-1 text-xs"
-          onClick={() => setAdding((current) => !current)}
-        >
-          <Plus className="h-3.5 w-3.5" /> Test case
-        </Button>
-      </div>
-
-      {adding && (
-        <div className="grid gap-2 rounded-md border border-border bg-muted/20 p-2">
-          {contract.requiredVariables.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-              <span>Required variables:</span>
-              {contract.requiredVariables.map((name) => (
-                <button
-                  key={name}
-                  type="button"
-                  className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] hover:bg-accent"
-                  title={`Add ${displayLabelForKey(name)}`}
-                  onClick={() =>
-                    setNewVariables((current) => {
-                      try {
-                        const parsed: unknown = JSON.parse(current || "{}");
-                        if (!isJsonObject(parsed) || name in parsed)
-                          return current;
-                        return JSON.stringify(
-                          { ...parsed, [name]: "" },
-                          null,
-                          2,
-                        );
-                      } catch {
-                        return current;
-                      }
-                    })
-                  }
-                >
-                  {displayLabelForKey(name)}
-                </button>
-              ))}
-            </div>
-          )}
-          <Input
-            value={newLabel}
-            onChange={(event) => setNewLabel(event.target.value)}
-            aria-label="Test case name"
-            placeholder="Test case name"
-            className="h-8 text-xs"
-          />
-          {provisionKey && (
-            <div className="rounded-md border border-border">
-              <button
-                type="button"
-                className="w-full cursor-pointer px-2 py-1.5 text-left text-[11px] text-muted-foreground hover:bg-accent/40"
-                onClick={() => setOfferComposerOpen((current) => !current)}
-                aria-expanded={offerComposerOpen}
-              >
-                Provision input form
-              </button>
-              {/* Mounted only when opened — the offer-kind path dynamic-imports
-                  the heavy KindInputForm stack. */}
-              {offerComposerOpen && (
-                <div className="border-t border-border p-2">
-                  <ProvisionOfferComposer
-                    provisionKey={provisionKey}
-                    onApply={(values) => {
-                      setNewVariables(JSON.stringify(values, null, 2));
-                      toast.success(
-                        "Variables filled from the offer — review the JSON below.",
-                      );
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-          <Textarea
-            value={newVariables}
-            onChange={(event) => setNewVariables(event.target.value)}
-            aria-label="Test variables as JSON"
-            placeholder="Test variables (JSON)"
-            className="min-h-20 font-mono text-xs"
-          />
-          <ProTextarea
-            value={newUserInput}
-            onChange={(event) => setNewUserInput(event.target.value)}
-            aria-label="User message"
-            placeholder="User message (optional)"
-            className="min-h-16 text-xs"
-          />
           <Button
             size="sm"
-            className="h-7 w-fit text-xs"
-            onClick={() => void addExemplar()}
+            variant="outline"
+            className="ml-auto h-8 gap-1 text-xs"
+            onClick={() => setAdding((current) => !current)}
           >
-            Save test case
+            <Plus className="h-3.5 w-3.5" /> Add test case
           </Button>
         </div>
-      )}
 
-      <div className="space-y-2">
-        <PropertyRow
-          label="Comparison baseline"
-          value={baselineLabel}
-          source="System"
-        />
-        {candidates.map((candidate) => (
-          <CandidateEditor
-            key={candidate.draftId}
-            mandate={mandate}
-            draft={candidate}
-            defaultAgentId={defaultAgentId}
-            onChange={(next) => updateCandidate(candidate.draftId, next)}
-            onRemove={() =>
-              setCandidates((current) =>
-                current.filter((draft) => draft.draftId !== candidate.draftId),
-              )
-            }
-          />
-        ))}
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 gap-1 text-xs"
-          onClick={() =>
-            setCandidates((current) => [...current, newCandidate()])
-          }
-        >
-          <Plus className="h-3.5 w-3.5" /> Add comparison
-        </Button>
-      </div>
-
-      <Button
-        size="sm"
-        className="h-9 gap-1.5"
-        // A batch is a COMPARISON: the server requires at least one column
-        // beside the baseline. Without this the click reached the API and
-        // came back as a raw "body.candidates: List should have at least 1
-        // item" validation error.
-        disabled={running || exemplars.length === 0 || candidates.length === 0}
-        title={
-          exemplars.length === 0
-            ? "Add a test case first — there is nothing to run yet."
-            : candidates.length === 0
-              ? "Add a comparison first — a batch runs your current setup against something. Use Run test for a single run."
-              : undefined
-        }
-        onClick={() => void runAll()}
-      >
-        {running ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <FlaskConical className="h-4 w-4" />
-        )}
-        {exemplars.length > 1
-          ? `Run ${exemplars.length} test cases`
-          : "Run test case"}
-      </Button>
-
-      {loading ? (
-        <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading test cases…
-        </div>
-      ) : exemplars.length === 0 ? (
-        <div className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
-          <PropertyRow
-            label="Saved test cases"
-            value="None"
-            help="Save a successful test result, add a case manually, or use examples captured from production runs."
-          />
-        </div>
-      ) : (
-        exemplars.map((exemplar) => {
-          const currentGroup = batch?.exemplars.find(
-            (group) => group.exemplar_id === exemplar.id,
-          );
-          const history = parseMandateTestHistory(exemplar.metadata, {
-            mandateKey: mandate.mandate_key,
-            exemplarId: exemplar.id,
-          });
-          return (
-            <section
-              key={exemplar.id}
-              className="space-y-2 rounded-md border border-border p-2"
-            >
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="font-semibold">{exemplar.label}</span>
-                <span className="text-muted-foreground">
-                  Source: {displayLabelForKey(exemplar.source)}
-                </span>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="ml-auto h-7 w-7"
-                  aria-label={`Delete ${exemplar.label}`}
-                  onClick={() => void removeExemplar(exemplar.id)}
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                </Button>
+        {adding && (
+          <div className="grid gap-2 rounded-md border border-border bg-muted/20 p-2">
+            {contract.requiredVariables.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                <span>Required variables:</span>
+                {contract.requiredVariables.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] hover:bg-accent"
+                    title={`Add ${displayLabelForKey(name)}`}
+                    onClick={() =>
+                      setNewVariables((current) => {
+                        try {
+                          const parsed: unknown = JSON.parse(current || "{}");
+                          if (!isJsonObject(parsed) || name in parsed)
+                            return current;
+                          return JSON.stringify(
+                            { ...parsed, [name]: "" },
+                            null,
+                            2,
+                          );
+                        } catch {
+                          return current;
+                        }
+                      })
+                    }
+                  >
+                    {displayLabelForKey(name)}
+                  </button>
+                ))}
               </div>
-
-              <ConfigurationTable
-                label={`${exemplar.label} inputs`}
-                columns={[
-                  { key: "input", label: "Input" },
-                  { key: "value", label: "Value" },
-                ]}
-              >
-                {Object.entries(exemplar.variables ?? {}).map(
-                  ([name, value]) => (
-                    <ConfigurationTableRow
-                      key={name}
-                      columns={[
-                        { key: "input", label: "Input" },
-                        { key: "value", label: "Value" },
-                      ]}
-                      cells={{
-                        input: displayLabelForKey(name),
-                        value: (
-                          <span className="whitespace-pre-wrap break-words">
-                            {value === ""
-                              ? "Empty"
-                              : typeof value === "string"
-                                ? value
-                                : JSON.stringify(value, null, 2)}
-                          </span>
-                        ),
+            )}
+            <Input
+              value={newLabel}
+              onChange={(event) => setNewLabel(event.target.value)}
+              aria-label="Test case name"
+              placeholder="Test case name"
+              className="h-8 text-xs"
+            />
+            {provisionKey && (
+              <div className="rounded-md border border-border">
+                <button
+                  type="button"
+                  className="w-full cursor-pointer px-2 py-1.5 text-left text-[11px] text-muted-foreground hover:bg-accent/40"
+                  onClick={() => setOfferComposerOpen((current) => !current)}
+                  aria-expanded={offerComposerOpen}
+                >
+                  Provision input form
+                </button>
+                {/* Mounted only when opened — the offer-kind path dynamic-imports
+                  the heavy KindInputForm stack. */}
+                {offerComposerOpen && (
+                  <div className="border-t border-border p-2">
+                    <ProvisionOfferComposer
+                      provisionKey={provisionKey}
+                      onApply={(values) => {
+                        setNewVariables(JSON.stringify(values, null, 2));
+                        toast.success(
+                          "Variables filled from the offer — review the JSON below.",
+                        );
                       }}
                     />
-                  ),
+                  </div>
                 )}
-                <ConfigurationTableRow
+              </div>
+            )}
+            <Textarea
+              value={newVariables}
+              onChange={(event) => setNewVariables(event.target.value)}
+              aria-label="Test variables as JSON"
+              placeholder="Test variables (JSON)"
+              className="min-h-20 font-mono text-xs"
+            />
+            <ProTextarea
+              value={newUserInput}
+              onChange={(event) => setNewUserInput(event.target.value)}
+              aria-label="User message"
+              placeholder="User message (optional)"
+              className="min-h-16 text-xs"
+            />
+            <Button
+              size="sm"
+              className="h-7 w-fit text-xs"
+              onClick={() => void addExemplar()}
+            >
+              Save test case
+            </Button>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <PropertyRow
+            label="Comparison baseline"
+            value={baselineLabel}
+            source="System"
+          />
+          {candidates.map((candidate) => (
+            <CandidateEditor
+              key={candidate.draftId}
+              mandate={mandate}
+              draft={candidate}
+              defaultAgentId={defaultAgentId}
+              onChange={(next) => updateCandidate(candidate.draftId, next)}
+              onRemove={() =>
+                setCandidates((current) =>
+                  current.filter(
+                    (draft) => draft.draftId !== candidate.draftId,
+                  ),
+                )
+              }
+            />
+          ))}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 gap-1 text-xs"
+            onClick={() =>
+              setCandidates((current) => [...current, newCandidate()])
+            }
+          >
+            <Plus className="h-3.5 w-3.5" /> Add comparison
+          </Button>
+        </div>
+
+        <Button
+          size="sm"
+          className="h-9 gap-1.5"
+          // A batch is a COMPARISON: the server requires at least one column
+          // beside the baseline. Without this the click reached the API and
+          // came back as a raw "body.candidates: List should have at least 1
+          // item" validation error.
+          disabled={
+            running || exemplars.length === 0 || candidates.length === 0
+          }
+          title={
+            exemplars.length === 0
+              ? "Add a test case first — there is nothing to run yet."
+              : candidates.length === 0
+                ? "Add a comparison first — a batch runs your current setup against something. Use Run test for a single run."
+                : undefined
+          }
+          onClick={() => void runAll()}
+        >
+          {running ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FlaskConical className="h-4 w-4" />
+          )}
+          {exemplars.length > 1
+            ? `Run ${exemplars.length} test cases`
+            : "Run test case"}
+        </Button>
+
+        {loading ? (
+          <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading test cases…
+          </div>
+        ) : exemplars.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
+            <PropertyRow
+              label="Saved test cases"
+              value="None"
+              help="Save a successful test result, add a case manually, or use examples captured from production runs."
+            />
+          </div>
+        ) : (
+          exemplars.map((exemplar) => {
+            const currentGroup = batch?.exemplars.find(
+              (group) => group.exemplar_id === exemplar.id,
+            );
+            const history = parseMandateTestHistory(exemplar.metadata, {
+              mandateKey: mandate.mandate_key,
+              exemplarId: exemplar.id,
+            });
+            return (
+              <section
+                key={exemplar.id}
+                className="space-y-2 rounded-md border border-border p-2"
+              >
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-semibold">{exemplar.label}</span>
+                  <span className="text-muted-foreground">
+                    Source: {displayLabelForKey(exemplar.source)}
+                  </span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="ml-auto h-7 w-7"
+                    aria-label={`Delete ${exemplar.label}`}
+                    onClick={() => void removeExemplar(exemplar.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                </div>
+
+                <ConfigurationTable
+                  label={`${exemplar.label} inputs`}
                   columns={[
                     { key: "input", label: "Input" },
                     { key: "value", label: "Value" },
                   ]}
-                  cells={{
-                    input: "User message",
-                    value: (
-                      <span className="whitespace-pre-wrap break-words">
-                        {exemplar.user_input === ""
-                          ? "Empty"
-                          : (exemplar.user_input ?? "Not set")}
-                      </span>
-                    ),
-                  }}
-                />
-              </ConfigurationTable>
-
-              <div className="space-y-1.5">
-                <ReferenceRow exemplar={exemplar} />
-                {currentGroup?.results.map((result) => (
-                  <ResultRow
-                    key={result.id ?? result.candidate_id}
-                    result={result}
-                    onChanged={() => void loadExemplars()}
-                  />
-                ))}
-              </div>
-
-              {history.length > 0 && (
-                <details>
-                  <summary className="flex cursor-pointer items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                    <History className="h-3.5 w-3.5" /> Past runs (
-                    {history.length})
-                  </summary>
-                  <div className="mt-2 space-y-1.5">
-                    {history.map((result) => (
-                      <ResultRow
-                        key={
-                          result.id ??
-                          `${result.candidate_id}-${result.created_at ?? "unknown"}`
-                        }
-                        result={result}
-                        onChanged={() => void loadExemplars()}
+                >
+                  {Object.entries(exemplar.variables ?? {}).map(
+                    ([name, value]) => (
+                      <ConfigurationTableRow
+                        key={name}
+                        columns={[
+                          { key: "input", label: "Input" },
+                          { key: "value", label: "Value" },
+                        ]}
+                        cells={{
+                          input: displayLabelForKey(name),
+                          value: (
+                            <span className="whitespace-pre-wrap break-words">
+                              {value === ""
+                                ? "Empty"
+                                : typeof value === "string"
+                                  ? value
+                                  : JSON.stringify(value, null, 2)}
+                            </span>
+                          ),
+                        }}
                       />
-                    ))}
-                  </div>
-                </details>
-              )}
-            </section>
-          );
-        })
-      )}
+                    ),
+                  )}
+                  <ConfigurationTableRow
+                    columns={[
+                      { key: "input", label: "Input" },
+                      { key: "value", label: "Value" },
+                    ]}
+                    cells={{
+                      input: "User message",
+                      value: (
+                        <span className="whitespace-pre-wrap break-words">
+                          {exemplar.user_input === ""
+                            ? "Empty"
+                            : (exemplar.user_input ?? "Not set")}
+                        </span>
+                      ),
+                    }}
+                  />
+                </ConfigurationTable>
+
+                <div className="space-y-1.5">
+                  <ReferenceRow exemplar={exemplar} />
+                  {currentGroup?.results.map((result) => (
+                    <ResultRow
+                      key={result.id ?? result.candidate_id}
+                      result={result}
+                      onChanged={() => void loadExemplars()}
+                    />
+                  ))}
+                </div>
+
+                {history.length > 0 && (
+                  <details>
+                    <summary className="flex cursor-pointer items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                      <History className="h-3.5 w-3.5" /> Past runs (
+                      {history.length})
+                    </summary>
+                    <div className="mt-2 space-y-1.5">
+                      {history.map((result) => (
+                        <ResultRow
+                          key={
+                            result.id ??
+                            `${result.candidate_id}-${result.created_at ?? "unknown"}`
+                          }
+                          result={result}
+                          onChanged={() => void loadExemplars()}
+                        />
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </section>
+            );
+          })
+        )}
+      </section>
     </div>
   );
 }
