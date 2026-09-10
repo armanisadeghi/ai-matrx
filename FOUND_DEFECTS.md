@@ -3138,7 +3138,7 @@ export type CmsHtmlPageResultData = Pick<CmsHtmlPageResult, "page" | "pages"> & 
 
 Whoever takes it must re-check the block's null handling, not just swap the declaration.
 
-## 2026-09-08 — 24 jest suites fail on main, and CI runs none of them
+## 2026-09-08 — 24 jest suites fail on main, and CI runs none of them (3 FIXED 2026-09-09)
 
 Found by accidentally triggering an unscoped `pnpm test` while working on admin navigation.
 The full suite is **24 suites / 37 tests failing** (1196 suites / 8941 tests pass). None are
@@ -3166,13 +3166,13 @@ features/canvas/materialization/__tests__/planMaterialization.test.ts      (alre
 features/canvas/services/__tests__/canvasArtifactService.test.ts
 features/cms/accessGateTokens.test.ts
 features/dynamic-react/toolRendererScope.bundle-contract.test.ts
-features/hr/__tests__/no-hand-built-hr-urls.test.ts                        (IS a CI-blocking step)
-features/marketing/analytics/campaign-pause.test.ts
+features/hr/__tests__/no-hand-built-hr-urls.test.ts   FIXED 2026-09-09 (IS a CI-blocking step)
+features/marketing/analytics/campaign-pause.test.ts   FIXED 2026-09-09
 features/masterwork/components/masterworks/TryMasterworkBox.test.tsx
 features/organizations/__tests__/memberships-session-boundary.test.ts
 features/podcasts/studio/runs/__tests__/runsRepository.test.ts
 features/resource-manager/resource-picker/__tests__/resource-picker-menu-items.test.ts
-features/window-panels/windows/seo/KeywordWindow.test.tsx
+features/window-panels/windows/seo/KeywordWindow.test.tsx   FIXED 2026-09-09
 lib/sandbox/__tests__/active-binding-local-pc.test.ts
 scripts/pattern-patrol/manifest.test.ts
 utils/permissions/__tests__/registry.parity.test.ts
@@ -3189,3 +3189,23 @@ stale test.
 The class fix is not "fix 24 suites": it is that a suite nothing runs is not a test. Either
 scope-in the directories that are meant to be green, or run the full suite with a known-failing
 allowlist that only shrinks.
+
+**2026-09-09 — three of the 24 closed at root; 21 remain.**
+
+- `features/hr/__tests__/no-hand-built-hr-urls.test.ts` — the guard was RIGHT. Two literal
+  `/hr/people/employee-1?org=example` URLs sat in `href` position in
+  `components/membership/copy.test.ts`'s fixture. They now come from `hrEmployeeHref()`, the
+  same builder the production producer (`features/hr/entry-points/MemberEmployeeSeam.tsx:83`)
+  uses, so the fixture tracks the real builder instead of a frozen guess.
+- `features/marketing/analytics/campaign-pause.test.ts` — the ASSERTION was wrong. It asserted a
+  GA4 pause for non-super-admins that commit `62e10d8fd3` (2026-08-26) deliberately ended by
+  flipping `GOOGLE_ANALYTICS_CAMPAIGN_PHASE` to `"approved"`; that commit updated the two sibling
+  campaign suites and missed this one. Rewritten to guard the phase-INDEPENDENT wiring — the gate
+  is consulted before anything is dispatched — plus the live phase's real behaviour. No
+  production change: `dispatch(callApi(...))` never resolves `undefined`, so `response?.error`
+  would only have converted a broken result into a silent success.
+- `features/window-panels/windows/seo/KeywordWindow.test.tsx` — the window was rendered with no
+  providers, so it died in `useKeywordAssignSurfaces` (`useQueryClient`) before the test could
+  assert anything. Now wrapped in the app's real `ReactQueryProvider` over a minimal redux store,
+  the shape the sibling `features/window-panels/__tests__/*` suites use, plus the `matchMedia`
+  stub jsdom lacks.
