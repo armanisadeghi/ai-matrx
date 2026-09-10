@@ -24,12 +24,16 @@ import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope"
 import {
   resolveAnnouncedKindLoading,
   resolveProvisionalKindRender,
+  resolveSupersededKindRender,
 } from "@/features/content-ir/react/partial-kind-route";
 import {
   ProvisionalKindBoundary,
   ProvisionalKindFrame,
 } from "@/features/content-ir/react/ProvisionalKindBoundary";
-import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
+import {
+  readPartialKindEvent,
+  type CanonicalBlockIR,
+} from "@ai-matrx/content-ir";
 import {
   isBlockLoading,
   resolveBlockDispatch,
@@ -217,7 +221,13 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // only — a schema/component that lands after this block rendered (cold
   // fetch losing the race with region end) re-runs the route on the frozen
   // envelope, while arrivals for OTHER kinds never touch this block.
-  const envelopeKind = readEnvelope(rawBlock.metadata)?.root.kind || null;
+  const partialEvent = readPartialKindEvent(rawBlock.metadata);
+  const announcedKind =
+    partialEvent?.state === "partial"
+      ? partialEvent.root.kind
+      : partialEvent?.kind;
+  const envelopeKind =
+    readEnvelope(rawBlock.metadata)?.root.kind ?? announcedKind ?? null;
   const kindRouteVersion = useContentIrKindVersion(envelopeKind);
   // Fetch-from-render (the convergence seam): rendering a kind block IS the
   // demand for its schema + component, on EVERY arrival path — live stream,
@@ -238,7 +248,9 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // not on every parent render.
   const block = useMemo(() => {
     void kindRouteVersion; // registry-arrival invalidation key
-    return applyIrKindRoute(rawBlock);
+    return (
+      resolveSupersededKindRender(rawBlock)?.block ?? applyIrKindRoute(rawBlock)
+    );
   }, [rawBlock, kindRouteVersion]);
 
   // Per-conversation display flags. When a surface has `hideReasoning` or
@@ -377,7 +389,10 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // sanctioned R6 floor) renders the final value below.
   if (block.type === GENERIC_STRUCTURED_COMPONENT_KEY && !suppressLoadingGate) {
     const genericEnvelope = readEnvelope(block.metadata);
-    if (genericEnvelope?.root.kind && genericEnvelope.root.status === "streaming") {
+    if (
+      genericEnvelope?.root.kind &&
+      genericEnvelope.root.status === "streaming"
+    ) {
       return <PendingStructuredBlock key={index} envelope={genericEnvelope} />;
     }
   }

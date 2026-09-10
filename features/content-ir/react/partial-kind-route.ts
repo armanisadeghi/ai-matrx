@@ -13,10 +13,7 @@
  */
 
 import { createKindRouteBinding } from "@ai-matrx/content-ir-react";
-import {
-  MATRX_OWNED_BLOCK_TYPES,
-  matrxKindRouteEnv,
-} from "../host/route-env";
+import { MATRX_OWNED_BLOCK_TYPES, matrxKindRouteEnv } from "../host/route-env";
 
 export {
   IR_PROVISIONAL_KEY,
@@ -42,3 +39,9 @@ export const isPartialReadyKind = binding.isPartialReadyKind;
  */
 export const resolveProvisionalKindRender =
   binding.resolveProvisionalKindRender;
+
+/**
+ * Route the completed JSON already present on a workflow block when its
+ * partial-kind channel closes before the canonical envelope is attached.
+ */
+export const resolveSupersededKindRender = binding.resolveSupersededKindRender;
