@@ -105,7 +105,9 @@ export function MandateCoverageBoard({
               )}
             >
               <span className="flex min-w-0 items-center gap-1.5">
-                <Icon className={cn("h-3.5 w-3.5 shrink-0", meta.iconClassName)} />
+                <Icon
+                  className={cn("h-3.5 w-3.5 shrink-0", meta.iconClassName)}
+                />
                 <span className="truncate text-[11px] font-medium">
                   {meta.label}
                 </span>
@@ -161,7 +163,7 @@ function NamedRows({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-1.5 rounded-md border px-3 py-2 text-xs",
+        "hidden flex-wrap items-center gap-1.5 rounded-md border px-3 py-2 text-xs sm:flex",
         tone === "orange"
           ? "border-amber-500/40 bg-amber-500/10"
           : "border-rose-500/40 bg-rose-500/10",

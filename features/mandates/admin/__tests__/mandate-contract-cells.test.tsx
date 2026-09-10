@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import type { MandateDefinitionRow } from "@/lib/supabase/mandateStorage";
-import { MandateInputsCell, MandateOutputCell } from "../mandate-contract-cells";
+import {
+  MandateInputsCell,
+  MandateOutputCell,
+} from "../mandate-contract-cells";
 import type { MandateRow } from "../mandate-health";
 
 const LONG_OUTPUT_KIND =
@@ -136,7 +139,7 @@ describe("MandateInputsCell reads the Provision, not required_variables", () => 
 
   it("still says user text only when there is genuinely no input declaration", () => {
     const html = renderToStaticMarkup(<MandateInputsCell row={row} />);
-    expect(html).toContain("user text only");
+    expect(html).toContain("User text");
   });
 
   /**
@@ -183,5 +186,19 @@ describe("MandateInputsCell reads the Provision, not required_variables", () => 
     const html = renderToStaticMarkup(<MandateInputsCell row={both} />);
     expect(html).toContain("Task overview");
     expect(html).not.toContain("topic");
+  });
+});
+
+describe("input summary overflow", () => {
+  it("counts user text alongside offered inputs", () => {
+    const html = renderToStaticMarkup(
+      <MandateInputsCell
+        row={{ ...row, provisionKey: "test.offer" }}
+        offeredValues={["one", "two", "three", "four"]}
+      />,
+    );
+    expect(html).toContain("+1 additional");
+    expect(html).not.toContain("+ user text");
+    expect(html).not.toContain(">User text<");
   });
 });
