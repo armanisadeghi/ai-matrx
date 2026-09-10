@@ -1173,15 +1173,19 @@ function FactsPanel({
     const declarationFound = truth?.resolution === "code_declaration_found";
     if (sourceOnly) {
       const source = truth?.source;
-      const columns = [
-        { key: "field", label: "Declaration" },
-        { key: "value", label: "Location" },
-      ];
       const sites = declarationFound ? truth.call_sites : undefined;
-      const siteColumns = [
-        { key: "file", label: "Calling file" },
-        { key: "line", label: "Line" },
-      ];
+      const registryPath = row.mandate.code_path?.trim();
+      const declaration = source
+        ? [
+            source.module,
+            `${source.source_file}${source.line ? `:${source.line}` : ""}`,
+            source.class_name,
+          ]
+            .filter(Boolean)
+            .join(" → ")
+        : registryPath && registryPath !== "unknown"
+          ? registryPath
+          : null;
       return (
         <div className="min-w-0 space-y-4">
           <div
@@ -1198,82 +1202,55 @@ function FactsPanel({
               unused.
             </div>
           </div>
-          <ConfigurationTable label="Declaration location" columns={columns}>
-            {[
-              {
-                field: "Discovery",
-                value: source
-                  ? "Found"
-                  : truth?.import_error
-                    ? "Import failed"
-                    : "Unknown",
-              },
-              {
-                field: "Registry path",
-                value: row.mandate.code_path || "Not recorded",
-              },
-              { field: "Module", value: source?.module || "Not recorded" },
-              { field: "Class", value: source?.class_name || "Not recorded" },
-              { field: "File", value: source?.source_file || "Not recorded" },
-              { field: "Line", value: source?.line || "Not recorded" },
-              {
-                field: "Coverage",
-                value: "Partial Python scan; frontend not covered",
-              },
-            ].map((item) => (
-              <ConfigurationTableRow
-                key={item.field}
-                columns={columns}
-                cells={{
-                  ...item,
-                  value: <span className="break-all">{item.value}</span>,
-                }}
-              />
-            ))}
-          </ConfigurationTable>
-          {source ? (
-            <CopyButton
-              content={`${source.module}\n${source.class_name}\n${source.source_file}:${source.line}`}
-              label="Copy declaration location"
-              size="sm"
-            />
-          ) : null}
-          <ConfigurationTable
-            label="Discovered call sites"
-            columns={siteColumns}
-          >
-            {sites?.length ? (
-              sites.map((site, index) => (
-                <ConfigurationTableRow
-                  key={`${site.source_file}:${site.line}:${index}`}
-                  columns={siteColumns}
-                  cells={{
-                    file: <span className="break-all">{site.source_file}</span>,
-                    line: site.line,
-                  }}
+          <section className="space-y-2" aria-label="Defined in">
+            <h3 className="text-sm font-semibold">Defined in</h3>
+            <div className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm">
+              <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                {declaration ??
+                  (truth?.import_error
+                    ? "Discovery failed"
+                    : "Location not recorded")}
+              </span>
+              {declaration ? (
+                <CopyButton
+                  content={declaration}
+                  label="Copy declaration location"
+                  size="sm"
                 />
-              ))
-            ) : (
-              <ConfigurationTableRow
-                columns={siteColumns}
-                cells={{
-                  file: sites
+              ) : null}
+            </div>
+          </section>
+          <section className="space-y-2" aria-label="Used by">
+            <h3 className="text-sm font-semibold">Used by</h3>
+            <div className="divide-y divide-border rounded-md border border-border text-sm">
+              {sites?.length ? (
+                sites.map((site, index) => {
+                  const location = `${site.source_file}${site.line ? `:${site.line}` : ""}`;
+                  return (
+                    <div
+                      key={`${location}:${index}`}
+                      className="flex items-center gap-3 px-3 py-2"
+                    >
+                      <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                        {location}
+                      </span>
+                      <CopyButton
+                        content={location}
+                        label="Copy usage location"
+                        size="sm"
+                      />
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="px-3 py-2">
+                  {sites
                     ? "None discovered in partial scan"
-                    : "Discovery unavailable",
-                  line: "Unknown",
-                }}
-              />
-            )}
-          </ConfigurationTable>
-          {sites?.length ? (
-            <CopyButton
-              content={sites
-                .map((site) => `${site.source_file}:${site.line}`)
-                .join("\n")}
-              label="Copy call sites"
-              size="sm"
-            />
-          ) : null}
+                    : "Discovery unavailable"}
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       );
     }

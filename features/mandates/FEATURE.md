@@ -351,6 +351,8 @@ Deferred contract gaps: reusable Agent Builder test-data fill; exact-version-and
 
 ## Change Log
 
+- 2026-09-09 — Simplified Source & Usage to Defined in and Used by, with one copyable location per row. Technical paths remain system-admin-only; no user-facing process names are inferred from filenames.
+
 - 2026-09-09 — Moved declaration locations and discovered call sites into Source & Usage, with a persistent incomplete-data warning and explicit unknown states. Diagnostics retains contract checks; neither missing call sites nor missing source metadata establishes non-use.
 
 - 2026-09-09 — Admin table refinement: compact coverage/pin/health/binding columns, wider input/output summaries, user text shares input chips and overflow counts. Row clicks navigate without selecting the generic inspector; raw inspection is an explicit trailing window action. Phone coverage uses the filter buttons and table rather than duplicate named strips.
