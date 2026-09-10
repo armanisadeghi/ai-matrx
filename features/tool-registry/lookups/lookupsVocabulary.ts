@@ -51,7 +51,7 @@ export const LOOKUP_NAME_RULES: Record<
   clients: {
     pattern: /^[a-z][a-z0-9-]*$/,
     describe:
-      "lowercase letters, digits and hyphens, starting with a letter (e.g. `matrx-mobile`)",
+      "lowercase letters, digits and hyphens, starting with a letter (e.g. `matrx-extend`)",
   },
   surfaces: {
     pattern: /^[a-z0-9-]+$/,
