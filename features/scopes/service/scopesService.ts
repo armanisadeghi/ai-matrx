@@ -1,10 +1,12 @@
 // features/scopes/service/scopesService.ts
 //
-// THE SOLE CHOKEPOINT for all ctx_* Supabase access from frontend code.
+// THE SOLE CHOKEPOINT for all `context.*` schema access from frontend code
+// (reached via `contextDb(supabase)`; the old public `ctx_*` names are retired).
 //
-// Every read and write of ctx_scope_types, ctx_scopes, ctx_context_items,
-// ctx_context_item_values, ctx_templates, ctx_template_scope_types,
-// ctx_template_context_items, ctx_context_access_log goes through this file.
+// Every read and write of context.scope_types, context.scopes,
+// context.context_items, context.context_item_values, context.templates,
+// context.template_scope_types, context.template_context_items,
+// context.context_access_log goes through this file.
 // No other file is allowed to query these tables. ESLint rule
 // `no-restricted-syntax` enforces the chokepoint at the lint boundary; the
 // boy-scout rule applies if you find a violation.
@@ -27,7 +29,7 @@
 // a single supabase.rpc(...) call. Method signatures and return shapes
 // stay constant — that's the whole point of the chokepoint.
 //
-// For now, the read methods query ctx_* tables directly. Mutation methods
+// For now, the read methods query the context.* tables directly. Mutation methods
 // that have no safe direct-query path return a structured `internal` error
 // until the Python team ships the corresponding RPC.
 
@@ -845,7 +847,7 @@ export const scopesService = {
   //  The display counterpart of `getEntityScopes`: returns each assigned
   //  scope joined to its type's presentation fields, so read-only surfaces
   //  (AssignedScopesDisplay) render `Type: Scope` chains without joining
-  //  ctx_scopes / ctx_scope_types themselves (this file owns those tables).
+  //  context.scopes / context.scope_types themselves (this file owns those tables).
   // ──────────────────────────────────────────────────────────────────
 
   async getEntityScopeDetails(
@@ -1239,7 +1241,7 @@ export const scopesService = {
   /**
    * Write a value into a scope cell via the `set_context_value` SECURITY
    * DEFINER RPC — the only sanctioned mutation path for
-   * `ctx_context_item_values` (atomic version-flip-then-insert, scope
+   * `context.context_item_values` (atomic version-flip-then-insert, scope
    * write-access checked inside the function). `auth.uid()` is the live user
    * when called from the FE, so we never pass `acting_user_id`. Defaults
    * `source_type` to `ai_enriched` (the RPC also defaults it, but we make the
@@ -1486,7 +1488,7 @@ async function bulkEntityScopeIds(
 
 // ─── internal: scope display rows (scope joined to its type) ────────────
 //
-// The one place ctx_scopes ⋈ ctx_scope_types is read for presentation. Pass
+// The one place context.scopes ⋈ context.scope_types is read for presentation. Pass
 // scope ids to resolve a specific set, or `null` for every scope the caller
 // can see (RLS-scoped). Used by getEntityScopeDetails / listEntityScopeTags.
 
