@@ -43,10 +43,18 @@ for nesting a Group inside a Panel and fixed rails; widened to "nesting a `<Grou
 **Rationalizations harvested:** none that broke a rule. Only departure: the spec's 180px minimum
 vs the §8 #16 "≥12% is too restrictive" convention — flagged by every rep, never silent.
 
-**Pre-existing content defects every rep reported (not split-caused; tracked for repair):**
-stale `_lib/` helper links (moved to `features/resizable-panels/`), `components/icons/tap-buttons.tsx`
-gone (`@ai-matrx/tap-target/buttons`), version header 4.10.x vs installed 4.12.4, §8.5 skeleton
-`paddingTop` contradicting pitfall #22, decision-tree / §4 Redux snippet recommending
-`collapse()/expand()` against pitfall #26, false "the lib normalizes the sum" claim, and latent
-bugs in the prescribed shared helpers (`parseDefaultSizePercent("220px")` → 0; `toggle()` sets
-the icon from the requested rather than the returned layout; provider not seeded from the cookie).
+**Pre-existing content defects every rep reported (not split-caused):**
+- **Fixed in `4bd05a984c`:** stale `_lib/` helper links (now `features/resizable-panels/`); the
+  deleted tap-buttons file (now `@ai-matrx/tap-target/buttons`); stale `page.tsx` demo paths (now
+  `page.dev.tsx`); the dead agent-builder reference (now `app/(core)/tasks/page.tsx`); version header
+  4.10.x (now installed 4.12.4); the `components/ui/resizable.tsx` description (now a design-system
+  re-export); §8.5 skeleton `paddingTop` against pitfall #22 (per-panel `pt-`, as `TasksDesktopShell`
+  does); decision-tree / §4 / §9 / §11 Redux + `collapse()/expand()` against pitfall #26 (now the
+  provider); decision-tree `useDefaultLayout` against pitfall #24 (now the two-cookie shape); the
+  false "the lib normalizes the sum" and "`lastOpenSize` from `notifyResize`" claims; the §3 reader
+  missing `decodeURIComponent`; the phantom `BackChevron`. Added: `initialLayouts`, `registerAs` =
+  Panel `id`, the warn-announced fallbacks, the server render dropping a saved `0`, and
+  `LayoutChangedMeta`.
+- **Fixed in code by `ab6fd9a063`** (the skill now describes it): latent bugs in the shared
+  helpers (`parseDefaultSizePercent("220px")` → 0; `toggle()` setting the icon from the requested
+  rather than the applied layout; the provider not seeded from the cookie).
