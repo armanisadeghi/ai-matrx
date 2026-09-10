@@ -23,7 +23,7 @@ import React, { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useImageArrivalPeeks } from "./useImageArrivalPeeks";
 import { ImageArrivalPeek } from "./ImageArrivalPeek";
-import { openImageViewer } from "@/features/window-panels/windows/image/openImageViewer";
+import { openImageViewer } from "@/features/overlays/openers/imageViewer";
 
 // ─── Overlay contract props ────────────────────────────────────────────────────
 

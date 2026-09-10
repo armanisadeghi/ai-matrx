@@ -759,8 +759,9 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         visible_panes: visiblePanesArray,
         sidebar_view: sidebarView,
         find_query: findQuery,
-        library_document_count: docsState.docs.length,
-        library_document_names: docsState.docs.map((d) => d.name),
+        // Active docs only — the scope describes what the surface shows.
+        library_document_count: docsState.visible.length,
+        library_document_names: docsState.visible.map((d) => d.name),
         pipeline_running: pipelineRunning || aiCleanRunning,
         pipeline_status: liveStatus ?? "",
         ...extractionTemplateValues(),

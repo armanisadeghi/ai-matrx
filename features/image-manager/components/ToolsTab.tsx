@@ -39,7 +39,7 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
-import { openImageViewer } from "@/features/window-panels/windows/image/openImageViewer";
+import { openImageViewer } from "@/features/overlays/openers/imageViewer";
 import { useSelectedImages } from "@/components/image/context/SelectedImagesProvider";
 import { useScreenshot } from "@/hooks/useScreenshot";
 import ImageCropperWithSelect from "@/components/official/image-cropper/ImageCropperWithSelect";

@@ -414,6 +414,23 @@ export interface ListViewPrefs {
 export type ListViewsPreferences = Record<string, ListViewPrefs>;
 
 /**
+ * Cross-surface list behaviour — the QUERY half, not the per-surface STYLE
+ * half that `listViews` holds.
+ *
+ * `archivedDefault` is THE ARCHIVED-ITEMS LAW's knob
+ * (../common-docs/policies/archived-items.md §6): the law fixes the PLATFORM
+ * default at "hide archived" and puts the reveal one or two clicks away, and
+ * this preference lets a person who lives in their archive flip their own
+ * starting point without any surface hardcoding taste. It seeds a list's
+ * INITIAL query only — an explicit choice on the surface, and a value carried
+ * in the URL, always win, so a shared link never re-narrows for the recipient.
+ */
+export interface ListsPreferences {
+  /** "active" hides archived rows on arrival (platform default); "all" shows them. */
+  archivedDefault: "active" | "all";
+}
+
+/**
  * Assists (the AI chips) — where the dock sits, and whether the user has told
  * the whole system to be quiet for a while.
  *
@@ -619,6 +636,7 @@ export interface UserPreferences {
   scratchpad: ScratchpadPreferences;
   siteWorkbench: SiteWorkbenchPreferences;
   listViews: ListViewsPreferences;
+  lists: ListsPreferences;
   assists: AssistsPreferences;
 }
 
@@ -1062,6 +1080,7 @@ export const initializeUserPreferencesState = (
     // Empty = every list surface falls back to its own declared defaults
     // (lib/list-views/defaults.ts). Keep in sync with defaultUserPreferences.ts.
     listViews: {},
+    lists: { archivedDefault: "active" },
     assists: {
       // null = the default bottom-right corner; the user has not dragged it.
       dockPosition: null,
@@ -1138,6 +1157,7 @@ export const initializeUserPreferencesState = (
       ...defaultPreferences.siteWorkbench,
       ...preferences.siteWorkbench,
     },
+    lists: { ...defaultPreferences.lists, ...preferences.lists },
     listViews: {
       ...defaultPreferences.listViews,
       ...preferences.listViews,
@@ -1267,6 +1287,9 @@ const userPreferencesSlice = createSlice({
         };
         state.listViews = {
           ...state._meta.loadedPreferences.listViews,
+        };
+        state.lists = {
+          ...state._meta.loadedPreferences.lists,
         };
         state._meta.hasUnsavedChanges = false;
         state._meta.error = null;
@@ -1424,6 +1447,11 @@ const userPreferencesSlice = createSlice({
         state.listViews = {
           ...state.listViews,
           ...loaded.listViews,
+        };
+      if (loaded.lists)
+        state.lists = {
+          ...state.lists,
+          ...loaded.lists,
         };
 
       // Snapshot the loaded state so `resetToLoadedPreferences` still works.

@@ -58,6 +58,11 @@
  *               `rules-of-hooks` errors on code that has no hooks). The mirror
  *               defect is a `build<Identity>MenuSection` that DOES call a hook
  *               — a hook whose name tells the linter to stop checking it.
+ *               The third defect is a BARE `<identity>MenuSection` with no
+ *               prefix at all (20 of them survived the 2026-09-09 rename):
+ *               a third convention, off which no reader or linter can tell
+ *               whether the call site is hook position. All three are
+ *               violations; the guard names the correct rename for each.
  *               Renamed 2026-09-09; this guard is why it cannot come back.
  *   attribution — a `sourceFeature` value that is not in the generated
  *               SOURCE_FEATURES allow-list. That list comes from the Python
@@ -493,8 +498,20 @@ function namingFindings(): Finding[] {
     "components/**/*.tsx",
     "lib/**/*.ts",
   ];
-  const DEF =
-    /^\s*export\s+(?:async\s+)?function\s+((use|build)[A-Za-z0-9_]*MenuSection)\b/;
+  /**
+   * A section-builder DECLARATION — exported or not, prefixed or not. Shapes:
+   *   `function xMenuSection(`         — the common one
+   *   `const xMenuSection = (a) => …`  — arrow builder, params on one line
+   *   `const xMenuSection = (`         — arrow builder, params wrapped
+   * A `const` whose right-hand side is a CALL (`const s = useKeywordMenuSection({…})`)
+   * or an object literal (`const s: ContextMenuExtraSection = {…}`) holds a
+   * VALUE, not a builder, and is deliberately NOT matched — renaming those is
+   * the host's business, and hundreds of them exist.
+   */
+  const FN_DEF =
+    /^\s*(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][A-Za-z0-9_$]*MenuSection)\b/;
+  const CONST_DEF =
+    /^\s*(?:export\s+)?const\s+([A-Za-z_$][A-Za-z0-9_$]*MenuSection)\s*(?::[^=]*)?=\s*(?:async\s*)?(?:function\b|(?:<[^>]*>\s*)?\((?=[^()]*\)\s*(?::[^=]*)?=>)|\(\s*$)/;
   /** A hook call: `useX(` or `useX<`, not preceded by a dot or word char. */
   const HOOK_CALL = /(?<![A-Za-z0-9_$.])(use[A-Z][A-Za-z0-9_]*)\s*[(<]/g;
 
@@ -514,9 +531,14 @@ function namingFindings(): Finding[] {
       if (!src.includes("MenuSection")) continue;
       const lines = src.split("\n");
       for (let i = 0; i < lines.length; i++) {
-        const m = DEF.exec(lines[i]);
+        const m = FN_DEF.exec(lines[i]) ?? CONST_DEF.exec(lines[i]);
         if (!m) continue;
-        const [, name, prefix] = m;
+        const name = m[1];
+        const prefix = /^use[A-Z]/.test(name)
+          ? "use"
+          : /^build[A-Z]/.test(name)
+            ? "build"
+            : "none";
         const body = stripNoise(extractBody(lines, i));
         const unique = [
           ...new Set(
@@ -525,6 +547,16 @@ function namingFindings(): Finding[] {
               .filter((h) => h !== name),
           ),
         ];
+        if (prefix === "none") {
+          const stem = name[0].toUpperCase() + name.slice(1);
+          const suggested = (unique.length > 0 ? "use" : "build") + stem;
+          out.push({
+            population: "naming",
+            file: `${path}:${i + 1}`,
+            detail: `\`${name}\` carries NO \`use\`/\`build\` prefix — a third convention, so nobody can tell from the name whether calling it is hook position. Rename to \`${suggested}\` (${unique.length > 0 ? `it calls ${unique.join(", ")}` : "it calls no React hook"}) (THE NAMING LAW — SECTIONS.md).`,
+          });
+          continue;
+        }
         if (prefix === "use" && unique.length === 0)
           out.push({
             population: "naming",

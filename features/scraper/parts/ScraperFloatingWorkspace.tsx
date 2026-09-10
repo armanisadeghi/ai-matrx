@@ -61,7 +61,7 @@ import {
 } from "@/features/scraper/utils/scraper-floating-helpers";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { openImageViewer } from "@/features/window-panels/windows/image/openImageViewer";
+import { openImageViewer } from "@/features/overlays/openers/imageViewer";
 import {
   isScrapeMode,
   isValidPageLimit,

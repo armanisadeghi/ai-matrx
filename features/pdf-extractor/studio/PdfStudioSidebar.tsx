@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ItemMenu, ItemContextMenu } from "@/components/official/item/ItemMenu";
+import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { FileRowContextMenu } from "@/features/files/components/core/RowContextMenu/RowContextMenu";
 import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
@@ -99,8 +100,10 @@ export function PdfStudioSidebar({
   activePage,
   onSelectPage,
 }: PdfStudioSidebarProps) {
+  const [showArchived, setShowArchived] = useState(false);
   const {
     visible,
+    visibleArchived,
     docs,
     kinds,
     loading,
@@ -234,7 +237,7 @@ export function PdfStudioSidebar({
           >
             {loading && docs.length === 0 ? (
               <SidebarSkeleton />
-            ) : visible.length === 0 ? (
+            ) : visible.length === 0 && visibleArchived.length === 0 ? (
               <div className="px-3 py-6 text-center">
                 <p className="text-[11px] text-muted-foreground">
                   {docs.length === 0
@@ -243,16 +246,39 @@ export function PdfStudioSidebar({
                 </p>
               </div>
             ) : (
-              visible.map((d) => (
-                <DocRow
-                  key={d.id}
-                  doc={d}
-                  active={activeDocId === d.id}
-                  onClick={() => onSelectDoc(d)}
-                  onDeleteDoc={onDeleteDoc}
-                  onRenameDoc={onRenameDoc}
-                />
-              ))
+              <>
+                {visible.map((d) => (
+                  <DocRow
+                    key={d.id}
+                    doc={d}
+                    active={activeDocId === d.id}
+                    onClick={() => onSelectDoc(d)}
+                    onDeleteDoc={onDeleteDoc}
+                    onRenameDoc={onRenameDoc}
+                  />
+                ))}
+                {/* THE ARCHIVED-ITEMS LAW: archived docs are hidden by
+                    default and exactly one click away. Archiving used to make
+                    a document unreachable from the studio for good. */}
+                <ArchivedDisclosure
+                  count={visibleArchived.length}
+                  open={showArchived}
+                  onOpenChange={setShowArchived}
+                  label="Archived"
+                  contentClassName="space-y-0.5"
+                >
+                  {visibleArchived.map((d) => (
+                    <DocRow
+                      key={d.id}
+                      doc={d}
+                      active={activeDocId === d.id}
+                      onClick={() => onSelectDoc(d)}
+                      onDeleteDoc={onDeleteDoc}
+                      onRenameDoc={onRenameDoc}
+                    />
+                  ))}
+                </ArchivedDisclosure>
+              </>
             )}
           </div>
 
@@ -262,7 +288,7 @@ export function PdfStudioSidebar({
               <span className="font-medium text-foreground">
                 {visible.length.toLocaleString()}
               </span>{" "}
-              / {docs.length.toLocaleString()} docs
+              / {docs.filter((d) => !d.archived).length.toLocaleString()} docs
             </span>
             <button
               type="button"

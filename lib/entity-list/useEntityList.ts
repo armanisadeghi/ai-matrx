@@ -12,6 +12,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectArchivedDefault } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { commitUrlParams, useUrlSearchParams } from "@ai-matrx/kit/url-state";
 import type { EntityListController, EntityListService } from "./config";
 import { toEntityListFailure, type EntityListFailure } from "./failure";
@@ -141,14 +143,21 @@ export function useEntityList<TRow>({
   defaultScope,
   urlState = false,
 }: UseEntityListArgs<TRow>): EntityListController<TRow> {
-  const defaultQuery: EntityListQuery =
-    defaultFilters || defaultScope
-      ? {
-          ...DEFAULT_ENTITY_LIST_QUERY,
-          ...(defaultFilters ? { filters: defaultFilters } : {}),
-          ...(defaultScope ? { scope: defaultScope } : {}),
-        }
-      : DEFAULT_ENTITY_LIST_QUERY;
+  // THE ARCHIVED-ITEMS LAW's knob (../common-docs/policies/archived-items.md
+  // §6): the platform default hides archived rows, and a user may flip their
+  // own starting point in Settings → Lists. It seeds the DEFAULT only — the
+  // Archived control and a URL-carried value both win over it. Note the honest
+  // consequence: because the URL omits a value equal to the default, a link
+  // that carries no `archived` param reproduces the RECIPIENT's default, not
+  // the sender's — the same way `defaultFilters` already behaves. Any list a
+  // user deliberately switched carries the param and travels exactly.
+  const archivedDefault = useAppSelector(selectArchivedDefault);
+  const defaultQuery: EntityListQuery = {
+    ...DEFAULT_ENTITY_LIST_QUERY,
+    archived: archivedDefault,
+    ...(defaultFilters ? { filters: defaultFilters } : {}),
+    ...(defaultScope ? { scope: defaultScope } : {}),
+  };
   const [query, setQuery] = useQueryState(urlState, defaultQuery);
   // Seeded from the query, not from "" — a URL-backed surface opened at
   // `?q=seo` must not fire one throwaway unfiltered fetch before the debounce

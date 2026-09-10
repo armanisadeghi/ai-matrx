@@ -62,7 +62,7 @@ import {
 } from "@/components/ui/resizable";
 import { pct } from "@/components/matrx/resizable/pct";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
-import { useCodeEditorWindowState } from "@/features/window-panels/windows/code/useCodeEditorWindowState";
+import { useCodeEditorWindowState } from "@/features/code-editor/multi-file-core/useCodeEditorWindowState";
 import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
 
 import { useCodeEditorWidgetHandle } from "../hooks/useCodeEditorWidgetHandle";
