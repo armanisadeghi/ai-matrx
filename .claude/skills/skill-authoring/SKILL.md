@@ -24,9 +24,13 @@ fail-then-pass is not a guard. These rules sit on top of the target repo's `cont
 How Claude Code loads skills (official docs, checked 2026-09-10):
 - The model sees only each skill's `name` + `description` (+ `when_to_use`) until it invokes the skill.
   That combined text is **truncated at 1,536 chars** per skill in the listing.
-- The **whole listing is budget-capped** (the budget scales with the model's context window;
-  `SLASH_COMMAND_TOOL_CHAR_BUDGET` overrides it). Past the cap, entries arrive **name-only** — every
-  character you add can push another skill's trigger out.
+- The **whole listing is budget-capped** — measured in the Claude Code 2.1.263 source, not the docs:
+  budget = context window × 4 chars/token × 1% (8,000 chars at 200k, ~40,000 at 1M;
+  `SLASH_COMMAND_TOOL_CHAR_BUDGET` or the `skillListingBudgetFraction` setting overrides). Over budget,
+  **every entry still costs its name + 2 chars**, and descriptions are admitted greedily in order of
+  **usage score** (use count, 7-day half-life); a skill that doesn't fit arrives **name-only**. So
+  every character you add pushes another skill's trigger out, and every duplicate entry (a synced copy
+  listed as `aidream:x`) burns budget even with no description.
 - Skills in `.claude/skills` of subdirectories below the launch dir load **lazily**, the first time a
   file there is read or edited. That is why repo-scoped duplicates (`aidream:x`, `matrx-frontend:x`)
   appear mid-session, each one another listing entry.
@@ -58,6 +62,11 @@ Rules:
 - **Branch test:** inline what every run needs; move what only some runs reach (one stage, one
   provider, one variant, a long API reference) into a sibling file named for the branch, with a
   pointer that says **when** to read it: `Stage V only → read stage-v.md.`
+- **A routing list is read as complete.** A "read only the branch your run reaches" list names
+  **every** companion, pre-existing ones included; an unlisted file is never opened (surface-authoring
+  evals E1: 0/3 reps opened the one reference the list omitted and lost its completion gate). Never end
+  a route with "nothing else": pointers inside a branch file (e.g. "run the `safe-cutover` skill first")
+  still bind, and 2/3 data-to-kinds reps skipped one citing those words.
 - **One level deep.** SKILL.md → file, never file → file. A reference file over 100 lines opens with a
   contents list.
 - **Point at `--help` or a script** instead of restating flags or deterministic steps.
@@ -114,7 +123,10 @@ description rewrite. Exempt: typo, path, and pointer fixes.
 - [ ] Description follows §1: noun phrase + `Use when`, ≤300 chars (500 hard), no procedure, no dates;
   `skill_descriptions.py lint` passes.
 - [ ] Slash-only? `disable-model-invocation: true` after the cross-skill grep.
-- [ ] Body ≤500 lines; branch-only material disclosed one level deep with when-to-read pointers.
+- [ ] Body ≤500 lines; branch-only material disclosed one level deep with when-to-read pointers; any
+  routing list names every companion file.
+- [ ] Split a skill? Every original line survives somewhere in the directory (re-grep or an oracle), an
+  agent that did not split it verifies routing, and a §5 scenario run proves no behavior was lost.
 - [ ] Guidance form matches the observed failure (§3).
 - [ ] Discipline skill: rationalization rows and red flags come from observed failures.
 - [ ] §5 run done (or exempt) and `evals.md` updated.
