@@ -59,6 +59,7 @@ const FILTER_THRESHOLD = 10;
  */
 const TECHNICAL_COLUMN_TOKEN =
     /(^|_)(ids?|uuids?|hash|checksum|digest|metadata|offset)(_|$)/i;
+const TECHNICAL_POSITION_KEY = /^(chunk|source|record|row)_index$/i;
 
 function normalizeColumnKey(key: string): string {
     return key
@@ -68,7 +69,11 @@ function normalizeColumnKey(key: string): string {
 }
 
 export function isTechnicalTableColumn(key: string): boolean {
-    return TECHNICAL_COLUMN_TOKEN.test(normalizeColumnKey(key));
+    const normalizedKey = normalizeColumnKey(key);
+    return (
+        TECHNICAL_COLUMN_TOKEN.test(normalizedKey) ||
+        TECHNICAL_POSITION_KEY.test(normalizedKey)
+    );
 }
 
 /** Stable scalar→string for sorting / CSV / filtering. */
