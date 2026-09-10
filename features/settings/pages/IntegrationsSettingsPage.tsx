@@ -1159,7 +1159,7 @@ function ManualCredentialsForm({
           spellCheck={false}
         />
         <p className="text-[11px] text-muted-foreground">
-          Must remain HTTPS on {new URL(entry.endpointUrl!).hostname}.
+          Must remain HTTPS on {new URL(entry.endpointUrl ?? "").hostname}.
         </p>
       </div>
       <div className="space-y-2">
