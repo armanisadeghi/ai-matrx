@@ -176,6 +176,9 @@ and required proof. It reads detail and governing docs, fetches/checks `origin/m
 and verifies whether the issue still exists before claiming a discovery. Existing
 fixes need current verification; they are not new work by this patrol.
 
+For static findings, re-scan the whole changed file and compare finding identity;
+an empty result at the old line number proves nothing when edits move the finding.
+
 - Repair the producer/worker/lifecycle or isolation boundary for the full root
   class. Census siblings. Add a meaningful guard demonstrated failing before
   the fix and passing after when feasible; reconcile feature docs, commit only
@@ -289,6 +292,9 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 - Required whole-file static finding checks after an import moved two
+  lines and the old-line probe incorrectly reported the scanner repair passed.
 
 - 2026-09-10 - Separated retained closure IDs from displayed candidates after three
   bounded queue samples still produced a 75,000-token response.
