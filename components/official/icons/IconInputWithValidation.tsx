@@ -16,8 +16,8 @@ import { IconResolver,
 } from "@ai-matrx/icons";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { useOpenCuratedIconPickerWindow } from "@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow";
-import type { CuratedIconPickerHandle } from "@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow";
+import { useOpenCuratedIconPickerWindow } from "@/features/overlays/openers/curatedIconPickerWindow";
+import type { CuratedIconPickerHandle } from "@/features/overlays/openers/curatedIconPickerWindow";
 import { cn } from "@/lib/utils";
 import {
   collectLucideIconNameCandidates,

@@ -1977,6 +1977,29 @@ export default [
       "no-restricted-imports": "off",
     },
   },
+  // ─── window-panels windows — the openers layer IS the sanctioned seam ──
+  //
+  // windowPanelsImportRestriction bans importing
+  // features/window-panels/windows/** so no caller can statically pull a heavy
+  // window component into its own chunk. `features/overlays/openers/**` is the
+  // indirection layer that ban exists to force callers through: each opener is
+  // a thin module that either re-exports the window's own `useOpen*Window`
+  // hook (which only dispatches `openOverlay` — verified: no opener hook
+  // imports its window component) or declares the hook itself over a
+  // `import type` of the window's data type. Neither shape pulls a window
+  // component into the openers chunk, so the bundle-splitting contract the ban
+  // protects is intact here; OverlayController's per-overlay dynamic() still
+  // owns every actual component import.
+  //
+  // Do NOT widen this beyond features/overlays/** — a call site outside it
+  // must import from `@/features/overlays/openers/<overlay>`, not from
+  // `features/window-panels/windows/**`.
+  {
+    files: ["features/overlays/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": "off",
+    },
+  },
   // ─── Single audio system — canonical TTS allowlist ────────────────────
   // ttsHookDirectImportRestriction bans importing the streaming speaker hook
   // everywhere. Re-enable it for the ONLY sanctioned importers: the TTS

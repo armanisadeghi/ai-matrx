@@ -28,7 +28,7 @@ import { IconResolver } from "@ai-matrx/icons";
 import {
   useOpenCuratedIconPickerWindow,
   type CuratedIconPickerHandle,
-} from "@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow";
+} from "@/features/overlays/openers/curatedIconPickerWindow";
 import type { UserListItem } from "@/features/user-lists/types";
 import { useStructuredLists, type PicklistSummary } from "./useStructuredLists";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";

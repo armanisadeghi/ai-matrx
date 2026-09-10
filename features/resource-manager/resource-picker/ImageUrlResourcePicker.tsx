@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
-import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
+import { useOpenImageUploaderWindow } from "@/features/overlays/openers/imageUploaderWindow";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 
 interface ImageUrlResourcePickerProps {

@@ -111,6 +111,7 @@
     "check:partition-runway": "tsx scripts/partition-runway/check-partition-runway.ts",
     "check:partition-runway:strict": "tsx scripts/partition-runway/check-partition-runway.ts --strict",
     "check:partition-runway:json": "tsx scripts/partition-runway/check-partition-runway.ts --json",
+    "admin-query": "tsx scripts/execute-admin-query.ts",
     "review-queue:sweep": "tsx scripts/review-queue-sweep.ts",
     "check:unbounded-reads": "tsx scripts/check-unbounded-reads.ts",
     "check:one-table-law": "tsx scripts/check-one-table-law.ts",

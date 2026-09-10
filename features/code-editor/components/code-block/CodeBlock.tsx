@@ -21,7 +21,7 @@ import { toast } from "@/lib/toast";
 import { resolvePrismSyntaxStyle } from "@/features/code-editor/config/syntax-themes";
 import { codeLanguageToExtension } from "@/utils/file-operations/utils";
 import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
-import { useOpenSmartCodeEditorWindow } from "@/features/window-panels/windows/smart-code-editor/useOpenSmartCodeEditorWindow";
+import { useOpenSmartCodeEditorWindow } from "@/features/overlays/openers/smartCodeEditorWindow";
 import {
   mapLanguageForPrism,
   mapLanguageForMonaco,

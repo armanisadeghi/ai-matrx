@@ -134,11 +134,14 @@ answer**, and it beats a wrong guess.
 
 ### SQL access and mutation confirmation
 
-Discover the available SQL tool first. If no SQL MCP is exposed, the existing local operator
-path is `matrx-frontend/scripts/review-queue-sweep.ts`: it calls `public.execute_admin_query`
-through `supabase-js`, loading `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SECRET_KEY` privately
-from local env files. Verify the URL is `https://db.matrxserver.com`; use that existing RPC
-contract, never a guessed endpoint or printed credential. Explicitly select schema `public`;
+Discover the available SQL tool first. If no SQL MCP is exposed, write the SQL to a caller-owned
+temporary file outside every repository (`mktemp`), then run `pnpm admin-query --file
+/absolute/query.sql` from `matrx-frontend`. That stable operator loads
+`NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SECRET_KEY` privately from local env files, refuses any
+database except `https://db.matrxserver.com`, and prints only the RPC result. Never create a
+per-run query helper or SQL file inside a repository: shared integration sweeps can commit it
+while the review is still active. This operator uses the existing `public.execute_admin_query`
+contract; never guess another endpoint or print a credential. Explicitly select schema `public`;
 raw REST calls require both `Content-Profile: public` and `Accept-Profile: public`. A default
 `api` profile produces `PGRST202` even when this RPC exists. This SQL path does not replace
 `schedule_claim` for schedule ownership.
