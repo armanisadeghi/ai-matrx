@@ -881,6 +881,10 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-09-09 — Request-only floating runs now replace their last server phase
+  with the terminal request status, so a completed review says `Done` instead
+  of remaining stuck on `Saving…` / `persisting` after its artifact is saved.
+
 - 2026-09-09 — **One page-step run opens one floating window.** Content Plan's
   Write tab mounted both its page editor and pipeline controller over the same
   run set with different overlay ids, so a guided review opened duplicate

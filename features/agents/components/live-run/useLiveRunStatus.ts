@@ -11,6 +11,7 @@ import {
   selectStreamPhase,
   type StreamPhase,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import type { RequestStatus } from "@/features/agents/types/request.types";
 
 const ACTIVE_STREAM_PHASES: ReadonlySet<StreamPhase> = new Set([
   "connecting",
@@ -59,6 +60,41 @@ export interface LiveRunStatus {
   chunkCount: number;
 }
 
+export function resolveLiveRunStatusText({
+  streamPhase,
+  requestStatus,
+  requestPhase,
+  isActive,
+  pending,
+}: {
+  streamPhase: StreamPhase | null;
+  requestStatus: RequestStatus | undefined;
+  requestPhase: string | null;
+  isActive: boolean;
+  pending: boolean;
+}): string | null {
+  if (!isActive) {
+    const terminalPhase = phaseLabel(streamPhase, false);
+    if (terminalPhase) return terminalPhase;
+    switch (requestStatus) {
+      case "complete":
+        return "Done";
+      case "error":
+        return "Failed";
+      case "timeout":
+        return "Timed out";
+      case "cancelled":
+        return "Cancelled";
+      default:
+        return pending ? "Starting…" : null;
+    }
+  }
+
+  const serverPhase =
+    requestPhase && requestPhase !== "connected" ? requestPhase : null;
+  return serverPhase ?? phaseLabel(streamPhase, true) ?? "Starting…";
+}
+
 /** Lightweight status selector shared by full displays and shell tray previews. */
 export function useLiveRunStatus(
   conversationId?: string | null,
@@ -95,14 +131,16 @@ export function useLiveRunStatus(
       ACTIVE_REQUEST_STATUSES.has(requestStatus)) ||
     (pending && !requestId && streamPhase === null);
 
-  const serverPhase =
-    requestPhase && requestPhase !== "connected" ? requestPhase : null;
-
   return {
     requestId,
     isActive,
-    statusText:
-      serverPhase ?? phaseLabel(streamPhase, isActive || pending) ?? null,
+    statusText: resolveLiveRunStatusText({
+      streamPhase,
+      requestStatus,
+      requestPhase,
+      isActive,
+      pending,
+    }),
     errorMessage: requestError?.user_message ?? requestError?.message ?? null,
     chunkCount,
   };
