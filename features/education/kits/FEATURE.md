@@ -63,8 +63,9 @@ exactly the "add a layer on your own authority" the platform forbids. It is on h
 ## The two reads (`kitService.ts`)
 
 - **`readKit(sourceType, sourceId)`** — one kit. `listGeneratedFrom` on the anchor, then
-  `kitMembers` filters and de-dupes. Returns `null` when the anchor has no members, so the hub
-  says so honestly instead of rendering an empty shell.
+  `kitMembers` filters and de-dupes. Returns `null` only when the authoritative read succeeds
+  with no members; a read failure throws so the hub renders its retryable error instead of a
+  false empty kit.
 - **`listKits()`** — every kit, built from what exists rather than a new query: the canonical
   access-scoped library RPC lists the learner's artifacts, then ONE `assoc_for_sources` call per
   artifact type (never per artifact) resolves their origins, grouped by anchor.
@@ -139,6 +140,10 @@ same anchor and whatever is made lands in THIS kit.
   name is the name of the MATERIAL, which is what the hub is about.
 
 ## Change log
+
+- **2026-09-10** — **Kit lineage failures stay failures.** `readKit` now selects the strict mode
+  of the shared best-effort lineage helper, so an expired session or association read failure
+  renders the retryable error state instead of “Nothing has been made.”
 
 - **2026-08-29** — **Reimagined the kit as an evidence-backed study path.** The hub no longer
   repeats the material title on every artifact or presents one deck's retention as kit-wide

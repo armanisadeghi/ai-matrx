@@ -247,7 +247,12 @@ export async function readKit(
   sourceType: string,
   sourceId: string,
 ): Promise<StudyKit | null> {
-  const rows = await listGeneratedFrom(sourceType, sourceId);
+  // A kit page is an authoritative read. The shared lineage strip is
+  // deliberately best-effort, but turning its transport/auth failure into []
+  // here makes a populated kit lie that nothing has been made yet.
+  const rows = await listGeneratedFrom(sourceType, sourceId, {
+    failureMode: "throw",
+  });
   const artifacts = await refreshMediaMembers(kitMembers(rows));
   if (artifacts.length === 0) return null;
   return {

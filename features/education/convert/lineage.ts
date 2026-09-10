@@ -50,9 +50,18 @@ function metaString(meta: Json | undefined, key: string): string | null {
 export async function listGeneratedFrom(
   entityType: string,
   entityId: string,
+  options: { failureMode?: "empty" | "throw" } = {},
 ): Promise<GeneratedArtifact[]> {
   const res = await associationsService.listForEntity(entityType, entityId);
-  if (!res.ok) return [];
+  if (!res.ok) {
+    if (options.failureMode === "throw") {
+      throw new Error(
+        `Could not read generated artifacts for ${entityType}:${entityId}`,
+        { cause: res.error },
+      );
+    }
+    return [];
+  }
   return res.data.edges
     .filter((e) => e.direction === "incoming" && e.role === "source")
     .map((e): GeneratedArtifact => {
@@ -63,7 +72,9 @@ export async function listGeneratedFrom(
         artifactType: e.otherType,
         artifactId: e.otherId,
         title: e.label ?? "Study artifact",
-        href: metaString(e.metadata, "href") ?? hrefFallback(e.otherType, e.otherId),
+        href:
+          metaString(e.metadata, "href") ??
+          hrefFallback(e.otherType, e.otherId),
         detail: metaString(e.metadata, "detail"),
         sourceTitle: metaString(e.metadata, "sourceTitle"),
         createdAt: e.createdAt,
