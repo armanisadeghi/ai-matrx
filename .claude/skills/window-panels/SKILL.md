@@ -11,6 +11,13 @@ This skill covers the **WindowPanel component primitive** and the runtime **Wind
 
 If your task is "the window won't drag", "the tray isn't showing", "window state doesn't persist", "I want to render a `<WindowPanel>` directly on a page", "fix Window Manager focus / minimize-all", or "build a window component to spec" → this skill. If it's "open / dispatch / register an overlay" → overlay-system.
 
+## Branches — read only when the task reaches them
+
+- **Drag, resize, traffic lights, snap, full screen, pop-out** → read [drag-resize-popout.md](drag-resize-popout.md).
+- **The tray dock or `windowManagerSlice`** (reveal, arrange, `windowsHidden`, pop-out state, silent-render guard) → read [tray-and-window-manager.md](tray-and-window-manager.md).
+- **Saving / restoring window state, `onCollectData`, ephemeral / autosave, `?panels=` URL sync** → read [persistence.md](persistence.md).
+- **How a window renders on mobile (`mobilePresentation`)** → read [mobile-presentation.md](mobile-presentation.md).
+
 ---
 
 ## Mental model
@@ -105,72 +112,31 @@ Route-shared units (a component used both inside a window and on a plain page) d
 
 ## Drag / resize / minimize / maximize / pop-out
 
-All behavior lives in `WindowPanel.tsx` + `hooks/useWindowPanel.ts` (pointer-driven move/resize, Redux window registration). You get it for free by rendering `<WindowPanel>` — no opt-in:
-
-- **Header drag** moves; **8 edge/corner handles** resize; **min/max** respect `minWidth`/`minHeight` (defaults 180/80).
-- **Traffic lights** (top-left, macOS-style): red = close, yellow = minimize/restore, **green hover-dropdown** = snap (left/right/top/bottom/centre), Arrange All (grid/stack layouts), Enter/Exit Full Screen, Pop out, and "Save window state" (only when `overlayId` is set).
-- **Minimized / maximized** states render via `createPortal(document.body)` so they escape any parent stacking context or `overflow:hidden`.
-- **`fitContent`** sizes the shell to its content via a `ResizeObserver` syncing measured size back to Redux.
-- **Off-screen rescue:** transitioning back to `windowed` from min/max/popout clamps a stranded rect back into the viewport.
-
-**Pop-out (Document Picture-in-Picture).** Any window pops out — no per-window opt-in. Trigger via the green-dropdown "Pop out" or by dragging the header ≥80 px past the viewport edge and holding ≥250 ms. Content renders into a separate browser window via `createPortal`, keeping the React tree attached (shared Redux, callbacks, theme, providers). DPiP where supported (Chrome/Edge 116+), `window.open` fallback elsewhere; single-PiP-per-origin enforced (second+ popouts fall back to popup). Hard-disabled on mobile. Full details + `usePopoutControl` API in `FEATURE.md` → "Pop-out windows".
+Every `<WindowPanel>` gets drag, resize, min/max, snap, and pop-out for free. **Working on that behavior → read [drag-resize-popout.md](drag-resize-popout.md).**
 
 ---
 
 ## The tray (WindowTray)
 
-The bottom-right minimized-window dock. Mount **exactly one** `<WindowTray />` high in the tree (root layout / shell, outside any `transform`/`overflow` ancestor). It reads minimized entries from `windowManagerSlice` and renders a draggable chip per window:
-
-- Stacked right→left (newest right); single-click restores (drag suppresses the click); chips reorder via drag (`moveTraySlot`).
-- **`<WindowTraySync />`** mounts once alongside it — a single debounced (500 ms) resize listener that recomputes tray slot positions and clamps every docked window back into a shrunken viewport. Fire-and-forget, zero re-renders.
-- Chip dimensions + responsive helpers live in `constants/tray.ts`; minimize-time thumbnails flow through `WindowTray/traySnapshotMap.ts`. Capture precedence: `captureTraySnapshot` prop → registry entry → `WindowTray/defaultTraySnapshotCapture.ts` (the fleet-wide default for windows without a semantic `renderTrayPreview`). Double-click anywhere on a minimized card restores it.
+Mount exactly one `<WindowTray />` and one `<WindowTraySync />`, high in the tree. **Tray work → read [tray-and-window-manager.md](tray-and-window-manager.md).**
 
 ---
 
 ## Window Manager slice (`lib/redux/slices/windowManagerSlice.ts`)
 
-Runtime registry of mounted windows — geometry, z-index, tray slots, popout state. A window joins on mount (`registerWindow`) and leaves on unmount (`unregisterWindow`).
-
-- **`arrangeActiveWindows({ layout, viewportWidth, viewportHeight })`** — tile math for the Arrange-All grids/stacks.
-- **`revealWindow(id, viewport)`** — the single "bring this window into view" primitive: un-minimizes, clamps an off-screen rect back in, raises z-index, clears the global `windowsHidden` flag. Re-triggering an already-open window is never a no-op.
-- **Hardening invariant:** `registerWindow` clears `windowsHidden` (a newly opened window is always shown); `unregisterWindow` resets `windowsHidden` at zero windows (the global hide-all can't strand `true` and silently hide the next open). Don't reintroduce a path that can leave `windowsHidden` stuck on.
-- **Pop-out state** lives here too: `popOutWindow` / `dockWindow` / `setPopoutCandidate`; selectors `selectPopoutMode(id)`, `selectIsPoppedOut(id)`, `selectActivePipWindowId`. `arrangeActiveWindows` / `minimizeAll` skip popped-out windows.
-
-**Silent-render guard.** A triggered window must never silently fail to appear. Reveal-on-open (above) is the proactive layer; `overlayRenderWatchdogMiddleware` is the loud-recovery layer — ~2.5 s after an open it checks live Redux + viewport and, if no visible panel exists, `console.error`s + shows a self-healing toast. `WindowPanel` calls `ackOverlayRender(overlayId, id)` so the watchdog resolves the real window id even when it differs from the slug. Details in `FEATURE.md` → "Silent-render guard".
+Runtime registry of mounted windows — a window joins on mount and leaves on unmount. **Slice work (reveal, arrange, `windowsHidden`, pop-out state, silent-render guard) → read [tray-and-window-manager.md](tray-and-window-manager.md).**
 
 ---
 
 ## Persistence (local-first workspace cache + URL)
 
-> **The `window_sessions` Supabase table is GONE** (dropped 2026-08-12, public-schema triage — it had 0 rows and no code consumer). Persistence is a local-first, tab-scoped workspace cache: IndexedDB + localStorage via `features/window-panels/persistence/localWindowSessionStore.ts`, account-isolated, default-deny per audited registry entry (see FEATURE.md 2026-07-20 entry). Nothing window-related is stored server-side.
-
-**Save triggers — only two.** Nothing else writes to the store (moving, resizing, sidebar toggle, tab switch do NOT save):
-1. **Explicit** — user clicks "Save window state" in the green dropdown.
-2. **Piggyback** — child code calls `onCollectData` as part of its own save.
-
-**`onCollectData`** returns a plain JSON-serializable object — wrap it in `useCallback` with all deps (it's called synchronously at save time). `WindowPanel` merges it under the chrome state (`windowState`, `rect`, `sidebarOpen`, `zIndex`) and writes to the local workspace store (IndexedDB, per-account).
-
-- **On close** — `WindowPanel` deletes the row, so it doesn't reopen next load.
-- **On page load** — `WindowPersistenceManager` reads the local workspace, clamps each rect into the current viewport (`utils/rectClamp.ts`, 48 px min visible strip), and dispatches `openOverlay` + `restoreWindowState` **before** `WindowPanel` mounts.
-- **Ephemeral windows** (`ephemeral: true` in the metadata entry) skip persistence — the "Save window state" button is hidden, close skips the delete. Use for debug panels, one-shot tool dialogs, and callback-group windows whose caller-side state can't survive reload.
-- **Autosave-on-blur** (`autosave: true` / implied by `heavySnapshot: true` in metadata) saves on tab-hide + unmount with a 500 ms debounce; `onHeavySnapshot` awaits an async buffer serializer before the write.
-
-**URL deep-linking (`?panels=…`).** A window with `urlSync.key` in its metadata auto-activates `useUrlSync` — no prop wiring needed (explicit `urlSyncKey` / `urlSyncId` props still override). Instance id falls back to `overlayId` for singletons, reading like `?panels=notes:notesWindow`. Every metadata `urlSync.key` needs a hydrator in `url-sync/initUrlHydration.ts` (dev assertion logs missing ones).
+Local-first and tab-scoped; nothing window-related is stored server-side. **Save/restore, `onCollectData`, ephemeral/autosave, or `?panels=` URL sync → read [persistence.md](persistence.md).**
 
 ---
 
 ## Mobile presentation
 
-On mobile, `WindowPanel` routes by the overlay's `mobilePresentation` (from `getStaticEntryByOverlayId`; default `"fullscreen"`):
-
-| Value | Rendered as | When |
-|---|---|---|
-| `"fullscreen"` | Full-viewport takeover (one window at a time) | Content-dominant windows (Notes, AgentRun, News). Default. |
-| `"drawer"` | Bottom-sheet (`mobile/MobileDrawerSurface.tsx`, vaul) | Forms, settings, sidebar-heavy windows. Sidebars collapse into a nested drawer (`mobileSidebarAs`, default `"drawer"`). |
-| `"card"` | Floating bottom-right card (`mobile/MobileCardSurface.tsx`), non-modal | Small utility / debug surfaces. |
-| `"hidden"` | Nothing (dev warning if opened) | Windows that shouldn't exist on mobile. |
-
-Decision tree: has a sidebar → `"drawer"`; content-dominant → `"fullscreen"`; small utility/debug → `"card"`; never on mobile → `"hidden"`. Mobile rules: `h-dvh`, `pb-safe`, `--header-height`, input `font-size ≥ 16px` — see the `ios-mobile-first` skill.
+On mobile, `WindowPanel` routes by the overlay's `mobilePresentation`. **Choosing or debugging mobile rendering → read [mobile-presentation.md](mobile-presentation.md).**
 
 ---
 

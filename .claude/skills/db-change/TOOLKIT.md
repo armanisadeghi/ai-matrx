@@ -1,5 +1,18 @@
 # DB Change Toolkit — verified reality (Matrx Main)
 
+## Contents
+
+- §0 Constants (+ exposed-schema gotcha, schema `USAGE` grant, live schemas)
+- §1 The canonical base shape (+ satellites)
+- §2 The toolkit functions (`retrofit_entity`, `apply_rls`, `verify_canonical`, `canonical_certify`, `audit.*`)
+- §3 Registry tables (`entity_types`, `entity_relationships`, `shareable_resource_registry`, `association_types` + `reachability`)
+- §4 The access model — reality vs the conceptual tiers
+- §5 Triggers & versioning — what's actually live
+- §6 Gotchas that have already bitten
+- §7 Graveyard vs the deprecated-rename monitor
+- §8 Cross-repo apply order
+- §9 Clean cut — no silent shim (tripwire + RED guard)
+
 > The shared reference for every `db-*` change skill. **Everything here was read live from the database** (`pg_get_functiondef`, `information_schema`) on 2026-06-27, not from design docs. Where a design doc (`docs/db_rebuild/db-core-standards-and-automation.md`) and the live DB disagree, **this file states what the DB actually does.** Re-verify a signature with `execute_sql` before betting a migration on it.
 
 ---

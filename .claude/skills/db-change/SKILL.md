@@ -98,7 +98,7 @@ When a table is MOVED or RETIRED, **the old name MUST stop working — abruptly.
 | Take a table offline / retire it (no longer used) | **`db-graveyard-table`** |
 | Relocate a table to another schema, references intact | **`db-move-table-schema`** |
 | Bring a table/feature onto the platform standard — base cols + FKs, RLS, registry, satellites, versioning (a.k.a. "retrofit" / "base retrofit" / "Wave 3"; take it to certified or stop at the transition floor) | **`db-canonicalize-table`** |
-| Drop / merge / modify-logic | inline below |
+| Drop / merge / modify-logic / find stragglers / anything else | **[`playbooks.md`](./playbooks.md)** |
 | Sharing cascade / containment rules / new association edge shape ("share X and its contents come along") | **TOOLKIT.md §3** (`association_types` + `reachability`) + [`docs/db_changes/REACHABILITY-ROLLOUT.md`](../../../docs/db_changes/REACHABILITY-ROLLOUT.md); manage rules via `/administration/relationships`, never raw SQL |
 
 ## Constants (full table in TOOLKIT.md §0)
@@ -114,22 +114,9 @@ When a table is MOVED or RETIRED, **the old name MUST stop working — abruptly.
 4. **matrx-extend / matrx-local** — update if referenced; never block production.
 5. **Commit + push `main`** on matrx-frontend and aidream.
 
-## Inline playbooks
+## Other playbooks (drop, merge, modify logic, stragglers, anything else)
 
-### Drop a table (hard removal — rare, gated)
-Only after: graveyarded through the soak, `v_deprecated_table_access`/grep show **0** consumers in both repos, inbound FKs resolved, PITR/backup confirmed. Then `DROP TABLE graveyard.<t>`. Record it. If unsure whether something still reads it, you are not ready to drop — leave it in graveyard.
-
-### Merge two tables into one
-Additive pipeline: pick/confirm the survivor → add any missing columns to it → `INSERT … SELECT` the source rows (dedupe on the natural key; map ids and keep an id-map if other tables FK the source) → repoint inbound FKs + all code to the survivor → verify counts (survivor_after = survivor_before + migrated, 0 orphans) → **graveyard the source** (never drop yet). Document the key mapping and any dropped/coalesced columns.
-
-### Modify logic (function / RPC / trigger / policy)
-`CREATE OR REPLACE` (idempotent); keep the signature stable or you break callers — if the signature must change, add the new overload, repoint callers, then drop the old. RLS policy changes go through `iam.apply_rls` only (never hand-edit canonical policies). Re-verify dependent RPCs and run `iam.verify_canonical` if a canonical table's policies were touched. Regenerate types if a return shape changed.
-
-### Find stragglers (tables left behind when their batch moved)
-Run [`docs/db_rebuild/STRAGGLER_DETECTOR.sql`](../../../docs/db_rebuild/STRAGGLER_DETECTOR.sql) via `execute_sql` — three detectors: (A) same name in `public` + a domain schema, (B) legacy-prefix tables still in `public`, (C) empty canonical table whose live old sibling holds the data (the `org_module` pattern). **A hit is a candidate, not a verdict** — characterize (rows, inbound FKs, function refs via `pg_get_functiondef ~* name`, code grep) before acting; a name collision can be 3 legitimately-distinct tables (e.g. `public.category` vs `app.category` vs `skill.category`). The detectors MISS renamed moves (`org_module_settings`→`org_module_config`, different base names) — those still need a manual domain audit.
-
-### Anything else (split, partition, rename, backfill-only)
-Same law: additive, verify counts, repoint, retire-not-destroy, finalize cross-repo, document what you did in the relevant `docs/db_rebuild/` tracker.
+**Drop a table, merge two tables, modify logic (function / RPC / trigger / policy), find stragglers, or anything else (split, partition, rename, backfill-only) → read [`playbooks.md`](./playbooks.md).**
 
 ## Document as you go
 Update `docs/db_rebuild/CHANGEOVER_PROGRESS.md` (and the matching `FEATURE.md` for a canonicalized feature) — what changed, counts, what's still open. A change that lives only in a chat log will be redone or broken by the next agent.
