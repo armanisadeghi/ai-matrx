@@ -141,7 +141,7 @@ The canonical **"associate ANY entity to ANY entity"** primitive, owned by this 
 
 `platform.associations(source_type, source_id, target_type, target_id, organization_id, label, metadata, role, position, created_by, created_at)`. The unique key is the **5-tuple** `(source_type, source_id, target_type, target_id, role)` `NULLS NOT DISTINCT` (`associations_unique`) — any ON CONFLICT must list all five. There is **no CHECK constraint** on the type columns; the only DB gate is the **validated FK** `source_type`/`target_type → platform.entity_types.token`, so any registered token is accepted as source OR target.
 
-**Entity vocabulary is GENERATED, not hand-maintained.** `types/generated/entity-types.generated.ts` mirrors `platform.entity_types` 1:1 (217 tokens) via `pnpm gen:entity-types` (reads the public `entity_types_list()` RPC; `pnpm check:entity-types` screams on drift; folded into `pnpm sync-types`). It exports `EntityTypeToken` (the full FK-valid union — use it for any source/target-type argument), the runtime `isEntityTypeToken` guard + `ENTITY_TYPE_TOKENS` set, `ENTITY_TYPE_METADATA`, and curated subsets. `AssociationTargetType` (`types.ts`) is a curated "deliberate container" list proven valid at compile time with `satisfies readonly EntityTypeToken[]` — it can never drift to an unregistered token. The legacy hand-written `EntityType` union persists for existing scope-tag/favorites consumers and is converging onto `EntityTypeToken` (do not extend it — add tokens to the registry + regenerate). KNOWN HOLE: `agent_app` is in `EntityType` but is NOT a registered token (no `aga_apps` table) — a `source_type='agent_app'` write FK-violates; tracked for the association-cleanup pass.
+**Entity vocabulary is GENERATED, not hand-maintained.** `@ai-matrx/associations` ships it, generated inside the package from `platform.entity_types` 1:1 — import it from the package directly; this repo keeps no local copy (`pnpm check:entity-types` diffs the installed package against the live registry and screams on drift; folded into `pnpm sync-types`). It exports `EntityTypeToken` (the full FK-valid union — use it for any source/target-type argument), the runtime `isEntityTypeToken` guard + `ENTITY_TYPE_TOKENS` set, `ENTITY_TYPE_METADATA`, and curated subsets. `AssociationTargetType` (`types.ts`) is a curated "deliberate container" list proven valid at compile time with `satisfies readonly EntityTypeToken[]` — it can never drift to an unregistered token. The legacy hand-written `EntityType` union persists for existing scope-tag/favorites consumers and is converging onto `EntityTypeToken` (do not extend it — add tokens to the registry + regenerate). KNOWN HOLE: `agent_app` is in `EntityType` but is NOT a registered token (no `aga_apps` table) — a `source_type='agent_app'` write FK-violates; tracked for the association-cleanup pass.
 
 ### Where the primitive lives now (W5 swap, 2026-08-29)
 
@@ -259,6 +259,9 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   not the same axis.
 
 ## Change Log
+
+- 2026-09-10 — **DC-009: local entity-types re-export shim deleted.** Every importer now imports
+  `@ai-matrx/associations` directly; the vocabulary paragraph above no longer names a local file.
 
 - 2026-08-30 — **QA F1 (feedback 35d311a9): scope-type Resources attach fixed at the DB
   root cause.** Every attach to a `scope_type` container 403'd (then 23514'd): (1)

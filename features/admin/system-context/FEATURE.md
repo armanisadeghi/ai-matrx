@@ -20,7 +20,7 @@
 - **Values are feed outputs.** Manual feeds accept direct values. Dataset, agent, API, computed, and web feeds expose their configuration and status; do not offer direct value editing.
 - **Ambient rows are infrastructure.** The UI offers no edit/delete actions and the API rejects mutation or deletion.
 - **List surface is MatrxDataTable.** Class narrowing is a toolbar facet. Feed targets use `EntityRef`; never render a named source as a dead-end label.
-- **Generated types are authoritative.** Run `pnpm sync-types` after schema changes; never hand-edit `types/database.types.ts` or `types/generated/entity-types.generated.ts`.
+- **Generated types are authoritative.** Run `pnpm sync-types` after schema changes; never hand-edit `types/database.types.ts`; the entity vocabulary ships in `@ai-matrx/associations`.
 
 ## Change Log
 

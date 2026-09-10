@@ -68,7 +68,7 @@ export interface ItemTypeConfig {
    *
    * Only set this when the two vocabularies genuinely name the SAME table.
    * Every entry below was matched by `schema.table` against
-   * `types/generated/entity-types.generated.ts`, never by name similarity: a
+   * `ENTITY_TYPE_METADATA` (`@ai-matrx/associations`), never by name similarity: a
    * token that resolves to a different table would open the WRONG record,
    * which is worse than offering no door at all.
    */

@@ -115,8 +115,8 @@ is untouched — never widen or modify it.**
 | `admin_set_entity_type_active(token, active)`          | **The only "delete"** — tokens are FK targets of `platform.associations`; hard deletes are never offered. Loud on a missing token.                                         |
 | `admin_set_entity_type_agent_writable(token, enabled)` | Narrow super-admin toggle for generic `create:/update:/delete:` Matrx Directives; shared by Entity Types and the Actions matrix.                                              |
 
-**Generated-types drift:** after any registry write, `types/generated/entity-types.generated.ts`
-is stale until `pnpm gen:entity-types` runs. `EntityTypesClient` compares active
+**Generated-types drift:** after any registry write, the installed `@ai-matrx/associations`
+vocabulary is stale until the package is regenerated, patch-released, and updated here. `EntityTypesClient` compares active
 registry tokens against `ENTITY_TYPE_TOKENS` and shows a persistent amber banner
 (with the +/− token diff and a copy-command button) until they match;
 `pnpm check:entity-types` is the CI gate.

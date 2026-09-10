@@ -12,8 +12,8 @@ import type { EntityTypeToken } from "@ai-matrx/associations";
 // Re-export the GENERATED entity-token vocabulary so consumers import the
 // canonical, type-safe token set from the scopes types module (the single
 // place feature code already reaches for association/scope types). The
-// generated file is the source of truth — mirrored from `platform.entity_types`
-// via `pnpm gen:entity-types`; never hand-edit it.
+// vocabulary ships in `@ai-matrx/associations`, generated inside the package
+// from `platform.entity_types`.
 export type { EntityTypeToken } from "@ai-matrx/associations";
 export {
   ENTITY_TYPE_METADATA,
@@ -57,8 +57,8 @@ export type ContextAccessLogRow =
 // vocabulary — there is no separate "scope assignment" union.
 //
 // The DB registry `platform.entity_types` is the source of truth. The FULL,
-// type-safe token set is GENERATED at `types/generated/entity-types.generated.ts`
-// (`EntityTypeToken`, 216 tokens) — re-exported above. Prefer `EntityTypeToken`
+// type-safe token set is GENERATED into `@ai-matrx/associations`
+// (`EntityTypeToken`) — re-exported above. Prefer `EntityTypeToken`
 // for any NEW association/source-type argument; it covers every registered token
 // so callers are never forced to widen to a raw string.
 //

@@ -160,7 +160,7 @@ Three systems model "here is something you could do": **assists**
   domain tables where they carry domain shape".
 - **`extend.wbx_seo_audit` is NOT dead and must not be deleted.** The 2026-08-09
   gap text called it "a dead `extend.wbx_seo_audit`". It is a registered
-  canonical entity (`types/generated/entity-types.generated.ts`), RLS-applied
+  canonical entity (`@ai-matrx/associations` vocabulary), RLS-applied
   and schema-moved on purpose, with zero runtime consumers — which under
   `/policies/unfinished-work-alarm.md` means **a previous agent was
   interrupted**, not that nobody wants it. Recommending its deletion is
