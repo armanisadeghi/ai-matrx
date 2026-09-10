@@ -58,6 +58,8 @@ export interface UseKitGeneration {
     kinds: TargetKind[],
     options?: ConvertOptions,
   ) => Promise<boolean>;
+  /** Settle a streamed child after its own durable runner reports success. */
+  markTargetReady: (kind: TargetKind) => void;
   reset: () => void;
 }
 
@@ -94,6 +96,16 @@ export function useKitGeneration(): UseKitGeneration {
       );
     },
     [],
+  );
+
+  const markTargetReady = useCallback(
+    (kind: TargetKind) => {
+      patchTarget(kind, {
+        stillGenerating: false,
+        finishedAt: Date.now(),
+      });
+    },
+    [patchTarget],
   );
 
   // Returns true once the document was ingested and the kit fan-out ran (phase
@@ -221,6 +233,7 @@ export function useKitGeneration(): UseKitGeneration {
     error,
     busy: phase === "ingesting" || phase === "generating",
     run,
+    markTargetReady,
     reset,
   };
 }

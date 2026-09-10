@@ -28,9 +28,11 @@ import type { StudyMediaRow } from "@/features/education/media/types";
 export function KitAudioRunner({
   artifactId,
   accentBar,
+  onReady,
 }: {
   artifactId: string;
   accentBar: string;
+  onReady: () => void;
 }) {
   const [media, setMedia] = useState<StudyMediaRow | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -66,7 +68,12 @@ export function KitAudioRunner({
   }
 
   return (
-    <LiveKitAudio media={media} runId={media.run_id} accentBar={accentBar} />
+    <LiveKitAudio
+      media={media}
+      runId={media.run_id}
+      accentBar={accentBar}
+      onReady={onReady}
+    />
   );
 }
 
@@ -74,10 +81,12 @@ function LiveKitAudio({
   media,
   runId,
   accentBar,
+  onReady,
 }: {
   media: StudyMediaRow;
   runId: string;
   accentBar: string;
+  onReady: () => void;
 }) {
   const run = useStudioRun(runId);
   const { state } = run;
@@ -87,7 +96,10 @@ function LiveKitAudio({
     media,
     state,
     streaming: run.streaming,
-    onReady: () => setReady(true),
+    onReady: () => {
+      setReady(true);
+      onReady();
+    },
     // The board says it in place, right on the row — a toast on top of that is
     // noise while several targets are finishing at once.
     announce: false,

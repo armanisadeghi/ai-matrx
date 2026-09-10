@@ -157,7 +157,12 @@ export function KitBoard({
 
       <div className="space-y-2">
         {kit.targets.map((t) => (
-          <TargetRow key={t.targetKind} target={t} now={now} />
+          <TargetRow
+            key={t.targetKind}
+            target={t}
+            now={now}
+            onReady={() => kit.markTargetReady(t.targetKind)}
+          />
         ))}
       </div>
     </div>
@@ -263,7 +268,15 @@ function SourceStage({
 }
 
 /** Stage 2 — one row per artifact, in its own colour, saying what it is doing. */
-function TargetRow({ target: t, now }: { target: KitTargetState; now: number }) {
+function TargetRow({
+  target: t,
+  now,
+  onReady,
+}: {
+  target: KitTargetState;
+  now: number;
+  onReady: () => void;
+}) {
   const look = TARGET_PRESENTATION[t.targetKind];
   const Icon = look.icon;
   const running = t.status === "running";
@@ -354,7 +367,11 @@ function TargetRow({ target: t, now }: { target: KitTargetState; now: number }) 
 
       {producing && t.artifactId && t.targetKind === "audio" && (
         <div className="mt-2.5">
-          <KitAudioRunner artifactId={t.artifactId} accentBar={look.bar} />
+          <KitAudioRunner
+            artifactId={t.artifactId}
+            accentBar={look.bar}
+            onReady={onReady}
+          />
         </div>
       )}
     </div>
