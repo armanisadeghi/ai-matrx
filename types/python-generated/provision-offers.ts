@@ -24,6 +24,7 @@ export interface OfferedValue {
   guaranteed?: boolean;
   lazy?: boolean;
   description?: string;
+  example?: string;
 }
 
 export interface OfferedValueMapping {
@@ -1381,6 +1382,51 @@ export interface MediaYoutubeTranscriptionOffer {
   timestamp_instruction?: string;
 }
 
+/** Offered shape of provision `meet.meeting_record` (kind `meet.meeting_record.offer`). */
+export interface MeetMeetingRecordOffer {
+  __kind?: "meet.meeting_record.offer";
+  meeting_title: string;
+  meeting_status: string;
+  meeting_started_at?: string;
+  meeting_ended_at?: string;
+  meeting_elapsed_minutes: number;
+  participants: string;
+  participant_count: number;
+  speaker_roster: string[];
+  speaker_turn_counts?: string;
+  transcript_full: string;
+  transcript_recent: string;
+  transcript_window?: string;
+  transcript_segment_count: number;
+  transcript_total_segment_count: number;
+  transcript_char_count: number;
+  transcript_truncated: boolean;
+  transcript_char_budget: number;
+  window_index?: number;
+  window_start_at?: string;
+  window_end_at?: string;
+  window_seconds?: number;
+  window_segment_count?: number;
+  previous_window_note?: string;
+  existing_notes?: string;
+  existing_decisions?: string[];
+  existing_action_items?: string;
+  note_count: number;
+  recording_state?: string;
+  note_taker_state?: string;
+}
+
+/** Offered shape of provision `messaging.conversation` (kind `messaging.conversation.offer`). */
+export interface MessagingConversationOffer {
+  __kind?: "messaging.conversation.offer";
+  conversation_id: string;
+  participants: unknown;
+  transcript: unknown;
+  transcript_message_count: number;
+  transcript_truncated: boolean;
+  unread_since?: string;
+}
+
 /** Offered shape of provision `ner.deep_chunk_extraction` (kind `ner.deep_chunk_extraction.offer`). */
 export interface NerDeepChunkExtractionOffer {
   __kind?: "ner.deep_chunk_extraction.offer";
@@ -2308,11 +2354,12 @@ export interface SurfacesClientBindingContextOffer {
   __kind?: "surfaces_client.binding_context.offer";
   surface_name: string;
   surface_label: string;
-  surface_values: unknown;
-  write_targets: unknown;
+  surface_values_json: unknown;
+  write_targets_json: unknown;
   agent_name: string;
   agent_description: string;
-  agent_contract: unknown;
+  agent_contract_json: unknown;
+  combination_rule?: string;
 }
 
 /** Offered shape of provision `tool_viz.component_generation` (kind `tool_viz.component_generation.offer`). */
@@ -2400,6 +2447,13 @@ export interface WebEndpointFamilyJudgmentOffer {
   candidates: unknown;
 }
 
+/** Offered shape of provision `workflow.conductor` (kind `workflow.conductor.offer`). */
+export interface WorkflowConductorOffer {
+  __kind?: "workflow.conductor.offer";
+  workflow_id: string;
+  workflow_name: string;
+}
+
 /** Offered shape of provision `workflow.extract_sweep` (kind `workflow.extract_sweep.offer`). */
 export interface WorkflowExtractSweepOffer {
   __kind?: "workflow.extract_sweep.offer";
@@ -2413,7 +2467,6 @@ export interface WorkflowNodeStewardOffer {
   node_id: string;
   node_label: string;
   spec_type: string;
-  node_context: string;
 }
 
 /** Offered shape of provision `workflow.plan_kind_authoring` (kind `workflow.plan_kind_authoring.offer`). */
@@ -2573,6 +2626,8 @@ export interface ProvisionOffers {
   "masterwork.transcript_shortlist": MasterworkTranscriptShortlistOffer;
   "masterwork.understudy_run": MasterworkUnderstudyRunOffer;
   "media.youtube_transcription": MediaYoutubeTranscriptionOffer;
+  "meet.meeting_record": MeetMeetingRecordOffer;
+  "messaging.conversation": MessagingConversationOffer;
   "ner.deep_chunk_extraction": NerDeepChunkExtractionOffer;
   "ner.document_orientation": NerDocumentOrientationOffer;
   "ner.entity_canonicalization": NerEntityCanonicalizationOffer;
@@ -2666,6 +2721,7 @@ export interface ProvisionOffers {
   "war_room.room_context": WarRoomRoomContextOffer;
   "war_room.thread_context": WarRoomThreadContextOffer;
   "web.endpoint_family_judgment": WebEndpointFamilyJudgmentOffer;
+  "workflow.conductor": WorkflowConductorOffer;
   "workflow.extract_sweep": WorkflowExtractSweepOffer;
   "workflow.node_steward": WorkflowNodeStewardOffer;
   "workflow.plan_kind_authoring": WorkflowPlanKindAuthoringOffer;
@@ -2789,6 +2845,8 @@ export const PROVISION_OFFER_KINDS = {
   "masterwork.transcript_shortlist": "masterwork.transcript_shortlist.offer",
   "masterwork.understudy_run": "masterwork.understudy_run.offer",
   "media.youtube_transcription": "media.youtube_transcription.offer",
+  "meet.meeting_record": "meet.meeting_record.offer",
+  "messaging.conversation": "messaging.conversation.offer",
   "ner.deep_chunk_extraction": "ner.deep_chunk_extraction.offer",
   "ner.document_orientation": "ner.document_orientation.offer",
   "ner.entity_canonicalization": "ner.entity_canonicalization.offer",
@@ -2882,6 +2940,7 @@ export const PROVISION_OFFER_KINDS = {
   "war_room.room_context": "war_room.room_context.offer",
   "war_room.thread_context": "war_room.thread_context.offer",
   "web.endpoint_family_judgment": "web.endpoint_family_judgment.offer",
+  "workflow.conductor": "workflow.conductor.offer",
   "workflow.extract_sweep": "workflow.extract_sweep.offer",
   "workflow.node_steward": "workflow.node_steward.offer",
   "workflow.plan_kind_authoring": "workflow.plan_kind_authoring.offer",
