@@ -171558,13 +171558,13 @@
           "output": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/JsonValue"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Output"
+            "default": null
           },
           "error": {
             "anyOf": [

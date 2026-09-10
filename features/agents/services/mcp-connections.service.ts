@@ -92,6 +92,7 @@ export interface McpConnectionSummary {
 
 export type McpCatalogRefreshResult =
   components["schemas"]["McpCatalogRefreshResult"];
+export type McpInvokeResponse = components["schemas"]["McpInvokeResponse"];
 
 interface WireTool {
   name: string;
@@ -132,11 +133,14 @@ export function invokeMcpServerTool(
   serverId: string,
   toolName: string,
   args?: Record<string, unknown>,
-): Promise<{ success: boolean; output: string | null; error: string | null }> {
-  return mcpFetch(`/${encodeURIComponent(serverId)}/invoke`, {
-    method: "POST",
-    body: JSON.stringify({ tool_name: toolName, arguments: args ?? {} }),
-  });
+): Promise<McpInvokeResponse> {
+  return mcpFetch<McpInvokeResponse>(
+    `/${encodeURIComponent(serverId)}/invoke`,
+    {
+      method: "POST",
+      body: JSON.stringify({ tool_name: toolName, arguments: args ?? {} }),
+    },
+  );
 }
 
 /** Server-side OAuth refresh — replaces the deleted browser refresh path. */
