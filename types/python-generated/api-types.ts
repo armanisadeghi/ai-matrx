@@ -37327,6 +37327,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mandates/references/board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mandate Reference Board
+         * @description The admin fleet board: per ACTIVE repo the scan state, the open flagged
+         *     rows with a location and a remedy, and the conversion list (DESIGN §4.6).
+         *
+         *     An inactive `platform.repo` row never appears here (D24).
+         */
+        get: operations["get_mandate_reference_board_mandates_references_board_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/{mandate_key}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mandate References
+         * @description Defined in / Used by for one mandate key, plus every red flag (D21).
+         *
+         *     Nothing is dropped for being orphaned, unresolved, or broken; a row that is
+         *     not plainly ok carries its own sentence and remedy. `scan_completeness`
+         *     names the repositories nobody has finished measuring, so the tab's empty
+         *     state can be honest instead of saying "unused".
+         */
+        get: operations["get_mandate_references_mandates__mandate_key__references_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -115018,6 +115066,198 @@ export interface components {
             /** Text Preview */
             text_preview?: string | null;
         };
+        /** MandateReferenceBoard */
+        MandateReferenceBoard: {
+            /** Repos */
+            repos: components["schemas"]["BoardRepo"][];
+            /** Conversion List */
+            conversion_list: components["schemas"]["BoardConversionRow"][];
+            /** Conversion Count */
+            conversion_count: number;
+            /** Conversion Counts By Repo */
+            conversion_counts_by_repo: {
+                [key: string]: number;
+            };
+            /** Open Finding Count */
+            open_finding_count: number;
+            /** Unverified Repos */
+            unverified_repos: string[];
+            /**
+             * Source
+             * @default mandate.reference
+             * @constant
+             */
+            source?: "mandate.reference";
+        };
+        /** MandateReferenceReport */
+        MandateReferenceReport: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Defined In */
+            defined_in: components["schemas"]["MandateReferenceRow"][];
+            /** Used By */
+            used_by: components["schemas"]["MandateReferenceRow"][];
+            /** Flags */
+            flags: components["schemas"]["MandateReferenceRow"][];
+            /** Scan Completeness */
+            scan_completeness: {
+                [key: string]: components["schemas"]["RepoScanCompleteness"];
+            };
+            /** Unscanned Repos */
+            unscanned_repos: string[];
+            /** Single Consumption Site By Design */
+            single_consumption_site_by_design: boolean;
+            /**
+             * Source
+             * @default mandate.reference
+             * @constant
+             */
+            source?: "mandate.reference";
+        };
+        /**
+         * MandateReferenceRow
+         * @description One reference to a mandate key, as the tab renders it.
+         */
+        MandateReferenceRow: {
+            /** Identity Hash */
+            identity_hash: string;
+            /** Mandate Key */
+            mandate_key: string;
+            /** Reference Type */
+            reference_type: string;
+            /** Repo Slug */
+            repo_slug: string | null;
+            /** Package Path */
+            package_path: string | null;
+            /** Package Name */
+            package_name: string | null;
+            /** Language */
+            language: string | null;
+            /** File Path */
+            file_path: string | null;
+            /** Symbol */
+            symbol: string | null;
+            /** Occurrence N */
+            occurrence_n: number | null;
+            /** Line */
+            line: number | null;
+            /** Revision */
+            revision: string;
+            /** Revision Kind */
+            revision_kind: string;
+            /** Presence */
+            presence: string;
+            /** Flag */
+            flag: string;
+            /** Caller Identity Hash */
+            caller_identity_hash: string | null;
+            /** Location */
+            location: string;
+            /** Flag Sentence */
+            flag_sentence: string | null;
+            /** Remedy */
+            remedy: string | null;
+            /** Scan Status */
+            scan_status: string | null;
+        };
+        /** BoardRepo */
+        BoardRepo: {
+            /** Repo Slug */
+            repo_slug: string;
+            /** Github Full Name */
+            github_full_name: string | null;
+            /**
+             * Scan State
+             * @enum {string}
+             */
+            scan_state: "verified" | "unverified";
+            last_complete_candidate: components["schemas"]["BoardScanSummary"] | null;
+            last_complete_deployed: components["schemas"]["BoardScanSummary"] | null;
+            /** Finding Counts */
+            finding_counts: {
+                [key: string]: number;
+            };
+            /** Reference Count */
+            reference_count: number;
+            /** Open Finding Count */
+            open_finding_count: number;
+            /** Conversion Count */
+            conversion_count: number;
+            /** Open Findings */
+            open_findings: components["schemas"]["BoardFinding"][];
+        };
+        /**
+         * BoardFinding
+         * @description A flagged reference row — a real location plus what to do about it.
+         */
+        BoardFinding: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Reference Type */
+            reference_type: string;
+            /** Repo Slug */
+            repo_slug: string | null;
+            /** Location */
+            location: string;
+            /** Flag */
+            flag: string;
+            /** Presence */
+            presence: string;
+            /** Sentence */
+            sentence: string;
+            /** Remedy */
+            remedy: string;
+        };
+        /** BoardConversionRow */
+        BoardConversionRow: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Repo Slug */
+            repo_slug: string | null;
+            /** Location */
+            location: string;
+            /** Symbol */
+            symbol: string | null;
+            /** Revision */
+            revision: string;
+            /** Revision Kind */
+            revision_kind: string;
+        };
+        /** BoardScanSummary */
+        BoardScanSummary: {
+            /** Revision */
+            revision: string;
+            /** Revision Kind */
+            revision_kind: string;
+            /** Scanner Version */
+            scanner_version: string | null;
+            /** Package Path */
+            package_path: string | null;
+            /** Verification Status */
+            verification_status: string;
+            /** Scanned At */
+            scanned_at: string | null;
+            /** Finding Counts */
+            finding_counts: {
+                [key: string]: number;
+            };
+        };
+        /**
+         * RepoScanCompleteness
+         * @description The newest COMPLETE scan for one active repository, or the absence of one.
+         */
+        RepoScanCompleteness: {
+            /** Repo Slug */
+            repo_slug: string;
+            /** Revision */
+            revision: string | null;
+            /** Revision Kind */
+            revision_kind: string | null;
+            /** Scanned At */
+            scanned_at: string | null;
+            /** Is Complete */
+            is_complete: boolean;
+        };
     };
     responses: never;
     parameters: never;
@@ -174402,6 +174642,57 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mandate_reference_board_mandates_references_board_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateReferenceBoard"];
+                };
+            };
+        };
+    };
+    get_mandate_references_mandates__mandate_key__references_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateReferenceReport"];
+                };
             };
             /** @description Validation Error */
             422: {

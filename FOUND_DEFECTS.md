@@ -15,6 +15,38 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D302 — `sync-types` silently DELETES the contract for any endpoint aidream has merged but not yet deployed
+
+Found 2026-09-09 building campaign lane L7 (`../common-docs/projects/mandate-declaration-reporting/`).
+
+`pnpm sync-types` pulls `/schema/all` from the LIVE backend, so `types/python-generated/`
+loses every route and schema that exists in aidream `main` but has not reached
+`server.app.matrxserver.com` yet. The deploy train runs every ~20–30 min, so there is a
+routine window in which a merged endpoint's types vanish from this repo.
+
+That is not a cosmetic gap — it is a **work-destroying** one. Within one hour on 2026-09-09
+it caused, twice, the types for `GET /mandates/{key}/references` and
+`GET /mandates/references/board` to be dropped, and once caused another session to conclude
+the frontend lane was broken and delete it outright
+(`4ac345621a` — "park undeployed mandate contract" removed the board page,
+`features/mandates/admin/{references.ts,MandateSourceUsage.tsx,MandateReferenceBoardView.tsx}`,
+their tests, the admin catalog + nav entries and the route→surface ruling; restored in
+`6ca42ec722`).
+
+**Where:** `scripts/sync-types.mjs` (step 2 delegates to `../aidream/scripts/sync-types.mjs
+--url <live>`), which OVERWRITES `types/python-generated/openapi.json` wholesale.
+
+**The fix:** the sync should MERGE rather than replace — or at minimum refuse to remove a
+path/schema that this repo still imports, and say so loudly. aidream already writes the
+working-tree truth to `aidream/aidream/api/generated/openapi.json`
+(`uv run python scripts/generate_types.py api --direct`); a merge from that file, or a
+`--allow-ahead` mode, closes the window. Until then, re-adding the dropped paths from that
+file by hand is the only recovery, and it must be redone after every sync.
+
+**Decides:** whoever owns `scripts/sync-types.mjs`. This is a class, not one endpoint's
+problem — it hits every cross-repo feature the moment the backend half merges first, which
+is the normal order.
+
 ### D301 — the route-manifest chain is broken at both links, and the half that has a guard runs nowhere
 
 Found by the `dedupe-and-verify` rotation pass on the `route-liveness` node, 2026-09-09.
