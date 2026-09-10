@@ -30,7 +30,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@ai-matrx/design-system";
+import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
   Tooltip,
@@ -61,6 +61,7 @@ import {
   getRulebook,
   listMasterworksForRulebook,
   saveRules,
+  splitMasterworksByArchive,
   updateRulebookMeta,
   upsertRuleWithRetry,
 } from "../../service";
@@ -550,6 +551,16 @@ function RuleRow({
 export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [rulebook, setRulebook] = useState<Rulebook | null>(null);
   const [masterworks, setMasterworks] = useState<Masterwork[]>([]);
+  // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md, Arman
+  // 2026-09-09). Archived Masterworks are hidden by default EVERYWHERE on this
+  // page — the KPI strip, the built count, the Understudy card, the journey
+  // facts and the agent surface scope all read `activeMasterworks`, so nothing
+  // here (human or agent) mistakes an archived system for a live one. The
+  // archived half is one click away, under the disclosure in the Masterworks
+  // section.
+  const [showArchivedMasterworks, setShowArchivedMasterworks] = useState(false);
+  const { active: activeMasterworks, archived: archivedMasterworks } =
+    splitMasterworksByArchive(masterworks);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [search, setSearch] = useState("");
@@ -840,7 +851,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   }, [rulebookId]);
 
   const reloadMasterworks = useCallback(() => {
-    void listMasterworksForRulebook(rulebookId)
+    // The Masterworks section owns the reveal control — read both halves.
+    void listMasterworksForRulebook(rulebookId, { includeArchived: true })
       .then(setMasterworks)
       .catch(() => undefined);
   }, [rulebookId]);
@@ -878,9 +890,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       try {
         const [r, m] = await Promise.all([
           getRulebook(rulebookId),
-          listMasterworksForRulebook(rulebookId).catch(
-            () => [] as Masterwork[],
-          ),
+          listMasterworksForRulebook(rulebookId, {
+            includeArchived: true,
+          }).catch(() => [] as Masterwork[]),
         ]);
         if (cancelled) return;
         if (r) {
@@ -966,7 +978,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const refreshWorkspace = useCallback(async () => {
     const [nextRulebook, nextMasterworks] = await Promise.all([
       getRulebook(rulebookId),
-      listMasterworksForRulebook(rulebookId),
+      listMasterworksForRulebook(rulebookId, { includeArchived: true }),
     ]);
     if (!nextRulebook) {
       throw new Error(
@@ -977,7 +989,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     setMasterworks(nextMasterworks);
     return {
       rulebook_version: nextRulebook.version,
-      masterwork_count: nextMasterworks.length,
+      // Honest count: the LIVE Masterworks, matching the agent surface scope.
+      masterwork_count: splitMasterworksByArchive(nextMasterworks).active
+        .length,
     };
   }, [rulebookId]);
 
@@ -987,7 +1001,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     }
     return buildRulebookSurfaceScope({
       rulebook,
-      masterworks,
+      masterworks: activeMasterworks,
       canEdit,
       searchQuery: search,
       visibleRules,
@@ -1022,7 +1036,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     feedbackTarget,
     ingestOpen,
     interviewOpen,
-    masterworks,
+    activeMasterworks,
     rulebook,
     search,
     visibleRules,
@@ -1366,9 +1380,18 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const journey = useMemo(
     () =>
       rulebook
-        ? computeJourney(journeyFactsFromRulebook(rulebook, masterworks))
+        ? computeJourney(
+            journeyFactsFromRulebook(
+              rulebook,
+              activeMasterworks,
+              // THE ARCHIVED-ITEMS LAW, honesty half: the journey's headline
+              // is the page's header stat, and "no Masterwork yet" may not be
+              // said from the live half alone (row F10 review, 2026-09-10).
+              archivedMasterworks,
+            ),
+          )
         : null,
-    [rulebook, masterworks],
+    [rulebook, activeMasterworks, archivedMasterworks],
   );
 
   if (loading) {
@@ -1403,10 +1426,24 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const approvedCount = kpis.approved;
   // The Understudy (running-from-minute-one) is rendered as its own card and
   // never counted among the built Masterworks.
-  const understudy = masterworks.find((m) => m.understudy) ?? null;
-  const builtCount = masterworks.filter((m) => !m.understudy).length;
-  const masterworkKpis = computeMasterworkKpis(masterworks, rulebook.version);
-  const showMasterworksSection = builtCount > 0 || approvedCount > 0;
+  const understudy = activeMasterworks.find((m) => m.understudy) ?? null;
+  const builtCount = activeMasterworks.filter((m) => !m.understudy).length;
+  const masterworkKpis = computeMasterworkKpis(
+    activeMasterworks,
+    rulebook.version,
+    // The archived half feeds ONLY the never-built claim; every tile stays the
+    // live count (THE ARCHIVED-ITEMS LAW — a screen never lies about how many
+    // working systems the Expert has, nor about how many they ever built).
+    archivedMasterworks,
+  );
+  // What the disclosure would reveal: the archived BUILT systems (an archived
+  // Understudy is not one of the Expert's built Masterworks either way).
+  const archivedBuilt = archivedMasterworks.filter((m) => !m.understudy);
+  // The section must also appear when every built Masterwork is ARCHIVED:
+  // otherwise the disclosure that reveals them has nowhere to live and the
+  // archived half becomes unreachable from this page.
+  const showMasterworksSection =
+    builtCount > 0 || approvedCount > 0 || archivedBuilt.length > 0;
 
   return (
     <SurfaceRuntimeProvider
@@ -1685,6 +1722,38 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                     rulebookId={rulebook.id}
                   />
                 </div>
+
+                {/* THE ARCHIVED-ITEMS LAW: the KPI strip above counts only the
+                    LIVE systems, so the archived ones get their own honest
+                    count and are one click from being read — here, on this
+                    page, not buried behind another route. Nothing renders when
+                    there are none. */}
+                <ArchivedDisclosure
+                  className="mt-2"
+                  count={archivedBuilt.length}
+                  open={showArchivedMasterworks}
+                  onOpenChange={setShowArchivedMasterworks}
+                  label="Archived Masterworks"
+                >
+                  <ul className="space-y-1">
+                    {archivedBuilt.map((m) => (
+                      <li
+                        key={m.id}
+                        className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-2 py-1.5"
+                      >
+                        <span className="min-w-0 truncate text-xs text-foreground">
+                          {m.name}
+                        </span>
+                        <Link
+                          href={`/masterwork/${rulebook.id}/masterworks`}
+                          className="shrink-0 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                        >
+                          Open
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </ArchivedDisclosure>
 
                 {canEdit && approvedCount > 0 ? (
                   <div className="mt-3 grid grid-cols-2 gap-1.5">

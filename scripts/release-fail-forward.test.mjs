@@ -35,3 +35,8 @@ test("post-push release gates cannot propagate a nonzero exit", () => {
     /run-release-gates\.sh" --advisory \|\| true/,
   );
 });
+
+test("an advisory migration check does not claim ledger equality", () => {
+  assert.doesNotMatch(releaseScript, /ok "Migration ledger matches migrations\/\*\.sql\."/);
+  assert.match(releaseScript, /Migration ledger verification completed; review advisory findings above/);
+});

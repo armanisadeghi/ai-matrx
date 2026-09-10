@@ -83,6 +83,7 @@ export function describedOfferFrom({
     description:
       "This job's own described inputs. They ARE its provision — map them onto whatever fulfils it.",
     offerKindSlug: null,
+    codePath: null,
     values,
     isEnabled: true,
   };

@@ -23,7 +23,7 @@ import {
   FolderUp,
   Maximize2,
   Palette,
-  Wand2,
+  Zap,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -296,7 +296,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
               kind: "item" as const,
               id: `diagram-agent-${agent.agentId}`,
               label: `Edit with ${agent.name}`,
-              icon: Wand2,
+              icon: Zap,
               onSelect: () => handleOpenCanvas(agent),
             })),
           },

@@ -17,8 +17,8 @@
  * design, not by accident.
  *
  * This script is the entry point for a review pass: it shows the backlog
- * grouped by lane and repository, with each row's DIRECT URL, and prints the
- * exact claim SQL a reviewer agent runs next. It is a REPORT — it changes no
+ * grouped by lane and repository, with each row's DIRECT URL, and points to the
+ * canonical claim protocol a reviewer agent runs next. It is a REPORT — it changes no
  * row. Promotion still happens through the skill's atomic claim + evidence SQL,
  * run by an agent that did not build the thing.
  *
@@ -260,7 +260,7 @@ async function main(): Promise<number> {
   if (blocked.length > 0) {
     console.log(
       `\n${C.yellow}${blocked.length} of these ${rows.length} rows are NOT eligible for the 'agent-review-first-pass' worker${C.reset} ` +
-        `(missing triage envelope, no 'browser' required tool, or no conversation). They will never move on their own — review them by hand in this pass.`,
+        `(missing triage envelope, no 'browser' required tool, or no conversation). Reconcile malformed routing/conversations through the skill; leave non-browser work in its appropriate lane.`,
     );
   }
 
@@ -282,40 +282,30 @@ async function main(): Promise<number> {
     );
   }
 
-  const first = rows[0] as SweepRow;
   console.log(`
 ${C.bold}What a reviewer agent does next${C.reset}
-  1. You must NOT be the agent that built the thing (six laws #1 — done means
-     done, verified by someone who did not build it).
-  2. Read the skill: .claude/skills/agent-review-queue/SKILL.md — the atomic
-     claim SQL, the browser-isolation rule, and the PASS/FAIL evidence SQL live
-     there, unchanged. This sweep only tells you WHAT to claim.
-  3. Claim ONE row by id, run its instructions on the live surface, then either
-     promote it with recorded evidence or send it back with a reproducible
-     finding.
+  Read .claude/skills/agent-review-queue/SKILL.md for the current selection,
+  atomic ownership, conversation, repair, and independent verification protocol.
+  This report is ordered by age; it does not select or authorize a claim.
+  Never claim the oldest displayed row merely because it appears first.
 
-${C.dim}Claim the oldest row above (substitute your own stable label):${C.reset}
-
-update agent.review_queue
-set status = 'agent_review',
-    metadata = jsonb_set(
-      jsonb_set(metadata, '{triage,assignment,state}', '"claimed"'::jsonb),
-      '{triage,assignment,owner}', to_jsonb('<your agent label>'::text)
-    )
-where id = '${first.id}'
-  and status = 'submitted'
-returning id, title, status;
-
-${C.dim}Then open ${REVIEW_BASE}/${first.id} and test what its instructions say.${C.reset}
+  The recurring worker claims its schedule window and proves the in-app Browser
+  admin session before the skill's atomic candidate claim. Preserve active owners;
+  repair routing defects from current evidence instead of bypassing eligibility.
+  On a defect, own the repair and follow independent live verification in this run.
+  A finding or status change alone is not completion. Record fresh, attributed
+  evidence and re-read every mutation; only an independent reviewer promotes.
 `);
   return 0;
 }
 
 main()
-  .then((code) => process.exit(code))
+  .then((code) => {
+    process.exitCode = code;
+  })
   .catch((err: unknown) => {
     console.error(
       `${C.red}review-queue:sweep crashed${C.reset} — ${String(err)}`,
     );
-    process.exit(2);
+    process.exitCode = 2;
   });

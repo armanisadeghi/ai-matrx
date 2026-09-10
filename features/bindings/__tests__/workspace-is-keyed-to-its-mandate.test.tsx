@@ -92,7 +92,13 @@ const mockStore = { getState: () => FAKE_STATE, dispatch: () => undefined };
 jest.mock("@/features/bindings/ScopeHolderBar", () => ({
   // The module's pure words stay REAL — only the component is stood in for.
   ...jest.requireActual("@/features/bindings/ScopeHolderBar"),
-  ScopeHolderBar: ({ job }: { job: { mandateKey: string } }) => {
+  ScopeHolderBar: ({
+    job,
+    onRungChange,
+  }: {
+    job: { mandateKey: string };
+    onRungChange: (rung: "org", organizationId: string) => void;
+  }) => {
     // Deliberately NOT the door's own wording — the second guard below asserts
     // the DOOR's sentence, and a stand-in that emits it would make that guard
     // pass without the door ever being called.
@@ -100,7 +106,17 @@ jest.mock("@/features/bindings/ScopeHolderBar", () => ({
       () => `Held verdict about ${job.mandateKey}, captured at mount.`,
     );
     mountCount += 1;
-    return <p data-testid="refusal">{refusal}</p>;
+    return (
+      <>
+        <p data-testid="refusal">{refusal}</p>
+        <button
+          data-testid="change-rung"
+          onClick={() => onRungChange("org", "org-1")}
+        >
+          Change rung
+        </button>
+      </>
+    );
   },
 }));
 
@@ -110,8 +126,9 @@ jest.mock("@ai-matrx/agents/catalog/react", () => ({
   // Spread the REAL module: this entry also carries `SORT_OPTIONS`, which the
   // agents-hub surface manifest reads at module scope. Replacing the whole
   // entry with one stub component used to blow up an unrelated import chain.
-  ...jest.requireActual("@ai-matrx/agents/catalog/react"), AgentListDropdown: () => <div data-testid="agent-picker" /> }),
-);
+  ...jest.requireActual("@ai-matrx/agents/catalog/react"),
+  AgentListDropdown: () => <div data-testid="agent-picker" />,
+}));
 jest.mock("@/features/agent-shortcuts/components/AgentVersionPicker", () => ({
   AgentVersionPicker: () => <div data-testid="version-picker" />,
 }));
@@ -136,7 +153,17 @@ jest.mock("@/features/bindings/AutoRunBar", () => ({
   AutoRunBar: () => <div />,
 }));
 jest.mock("@/features/bindings/BindingOptionsDrawer", () => ({
-  BindingOptionsDrawer: () => <div />,
+  BindingOptionsDrawer: () => {
+    const [draft, setDraft] = useState("Saved treatment");
+    return (
+      <button
+        data-testid="treatment-draft"
+        onClick={() => setDraft("Unsaved shared treatment")}
+      >
+        {draft}
+      </button>
+    );
+  },
 }));
 jest.mock("@/features/bindings/batch/BatchMode", () => ({
   BatchMode: () => <div />,
@@ -159,7 +186,9 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({
-    organizations: [{ id: "org-1", name: "Write Target Sandbox", role: "admin" }],
+    organizations: [
+      { id: "org-1", name: "Write Target Sandbox", role: "admin" },
+    ],
   }),
 }));
 jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
@@ -258,6 +287,37 @@ describe("a refusal is keyed to the mandate it is about", () => {
     // Proof it was a REMOUNT that cleared it, not a lucky re-render: state
     // held in the second instance is a second instance.
     expect(mountCount).toBeGreaterThan(1);
+  });
+
+  it("keeps the shared treatment draft while changing the binding rung, even without a local holder", async () => {
+    await act(async () => {
+      root.render(
+        <OneBindingWorkspace
+          data={makeWorkspaceData({
+            id: "11111111-1111-4111-8111-111111111111",
+            mandateKey: MANDATE_A,
+          })}
+          initialRung="user"
+          onChanged={() => undefined}
+        />,
+      );
+    });
+    const treatment = host.querySelector<HTMLButtonElement>(
+      '[data-testid="treatment-draft"]',
+    );
+    expect(treatment).not.toBeNull();
+    await act(async () => {
+      treatment?.click();
+    });
+    await act(async () => {
+      host
+        .querySelector<HTMLButtonElement>('[data-testid="change-rung"]')
+        ?.click();
+    });
+    expect(host.querySelector('[data-testid="treatment-draft"]')).toBe(
+      treatment,
+    );
+    expect(treatment?.textContent).toBe("Unsaved shared treatment");
   });
 });
 

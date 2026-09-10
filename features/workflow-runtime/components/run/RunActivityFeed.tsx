@@ -33,14 +33,13 @@ import {
   selectRunActivity,
   selectRunStatus,
 } from "../../redux/workflow-runs.selectors";
+import { runIsOver } from "../../types";
 import { activityLine, type ActivityLine } from "./activity-copy";
 import {
   workflowFailureAgentInput,
   workflowFailureHuman,
   workflowFailureInvestigationPrompt,
 } from "./run-copy";
-
-const TERMINAL = new Set(["completed", "failed", "cancelled", "errored"]);
 
 function ToneIcon({
   tone,
@@ -84,7 +83,7 @@ export function RunActivityFeed({
   const [open, setOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const count = activity.length;
-  const streaming = status !== null && !TERMINAL.has(status);
+  const streaming = status !== null && !runIsOver(status);
 
   // Keep the newest line in view while the run is live — but only when the
   // reader is already near the bottom, so scrolling back to read something is

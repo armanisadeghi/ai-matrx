@@ -6,6 +6,7 @@
  */
 
 import type { ModuleId } from "./types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 // Trigger intervals (ms). Cleaning runs every ~30s; concepts every ~200s.
 // Min/max are enforced by both UI sliders and DB CHECK constraints.
@@ -121,7 +122,7 @@ export const MODULE_INTERVAL_DEFAULT_MS = 120_000;
 // thunks and `useMandate` in the settings picker; the surface-config
 // `assistant` role (per-user/org surface choice) still wins above it.
 export const TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY =
-  "transcript_studio.document_edit";
+  MANDATE_KEYS.transcript_studio__document_edit;
 
 // SEED MIRROR ONLY — the mandate's system-default agent id, read by exactly one
 // place: the static surface manifest's `agentRoles[].defaultAgentId`

@@ -13,7 +13,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, BrainCircuit } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -343,7 +343,7 @@ export function GenerateMediaView({
             {generating ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
             ) : (
-              <Sparkles className="mr-1.5 h-4 w-4" />
+              <BrainCircuit className="mr-1.5 h-4 w-4" />
             )}
             {generating ? "Generating…" : "Order this image"}
           </Button>

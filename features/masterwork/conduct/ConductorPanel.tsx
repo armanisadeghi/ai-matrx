@@ -70,6 +70,7 @@ import {
   type ConductorSession,
   type MasterworkAttachment,
 } from "./service";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const SOURCE_FEATURE = "masterwork" as const;
 
@@ -80,7 +81,7 @@ const SOURCE_FEATURE = "masterwork" as const;
  * /administration/mandates). No hardcoded agent id and NO SILENT
  * FALLBACK — if the Mandate can't resolve, this refuses and says so.
  */
-const CONDUCTOR_MANDATE_KEY = "masterwork.conductor";
+const CONDUCTOR_MANDATE_KEY = MANDATE_KEYS.masterwork__conductor;
 
 /**
  * The moves the Expert can make without knowing what to type. Each one stages
@@ -629,7 +630,7 @@ export function ConductorPanel({
           <BrainCircuit className="h-4 w-4 text-primary" aria-hidden />
           <span className="truncate">Build it with me</span>
           <AgentCredit
-            mandate="masterwork.conductor"
+            mandate={MANDATE_KEYS.masterwork__conductor}
             agent="masterwork_conductor"
           />
         </span>

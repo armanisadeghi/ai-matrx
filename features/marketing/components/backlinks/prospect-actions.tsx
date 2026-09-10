@@ -53,7 +53,7 @@ export function prospectDomainEntityRef(
   };
 }
 
-export function useProspectDomainMenuSection(opts: {
+export function buildProspectDomainMenuSection(opts: {
   getRow: () => ProspectDomainMenuRow | null;
   onReview: (ids: string[], status: ProspectReviewStatus) => void;
   reviewing?: boolean;

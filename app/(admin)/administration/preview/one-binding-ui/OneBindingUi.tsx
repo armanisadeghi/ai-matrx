@@ -29,7 +29,7 @@ import {
   Circle,
   MessageCircleQuestion,
   Rocket,
-  Sparkles,
+  BrainCircuit,
   Type,
   Zap,
 } from "lucide-react";
@@ -616,7 +616,7 @@ function AiMapTab({ onAccept }: { onAccept: () => void }) {
   return (
     <div className="space-y-3 p-3">
       <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
-        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+        <BrainCircuit className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
         A mandate read this place&apos;s {PLACE.declaredCount} offered values and
         the holder&apos;s {INPUTS.length} inputs and proposed a map. Nothing is
         applied until you accept it.

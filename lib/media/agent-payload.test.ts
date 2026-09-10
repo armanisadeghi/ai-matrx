@@ -25,9 +25,11 @@ describe("mediaSafe", () => {
 
   it("drops raw storage paths by key, in every casing", () => {
     expect(
+      // eslint-disable-next-line no-restricted-syntax -- proves the sanitizer drops the banned key; the fixture must contain it.
       mediaSafe({ filePath: "u/1/f.png", storage_uri: "s3://b/k" }),
     ).toEqual({
       filePath: DROPPED_STORAGE_PATH,
+      // eslint-disable-next-line no-restricted-syntax -- the expected dropped-key entry for the fixture above.
       storage_uri: DROPPED_STORAGE_PATH,
     });
   });

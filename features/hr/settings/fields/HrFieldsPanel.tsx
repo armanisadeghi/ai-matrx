@@ -41,6 +41,7 @@ import { useHrContext } from "../../shared/useHrContext";
 import { fetchHrCustomFieldRegistry } from "../service";
 import { HrSettingsShell } from "../HrSettingsShell";
 import type { HrCustomFieldDefinition, HrCustomFieldTarget } from "../types";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 /** Human names for the HR tokens that participate in the tier-1 kit. */
 const TOKEN_LABEL: Record<string, string> = {
@@ -63,6 +64,11 @@ export function HrFieldsPanel() {
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [reload, setReload] = useState(0);
+  // THE ARCHIVED-ITEMS LAW (../common-docs/policies/archived-items.md): this
+  // table used to render archived and live definitions mixed together with
+  // nothing but a badge to tell them apart. Archived rows are now hidden by
+  // default and one click away — the count is the real number.
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     if (!organizationId) return;
@@ -83,6 +89,10 @@ export function HrFieldsPanel() {
       cancelled = true;
     };
   }, [organizationId, reload]);
+
+  const liveDefinitions = definitions.filter((row) => !row.archived_at);
+  const archivedDefinitions = definitions.filter((row) => Boolean(row.archived_at));
+  const visibleDefinitions = showArchived ? definitions : liveDefinitions;
 
   const columns: MatrxColumnDef<HrCustomFieldDefinition>[] = [
     {
@@ -244,7 +254,16 @@ export function HrFieldsPanel() {
 
         {/* The registry itself */}
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">Fields defined here</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-foreground">Fields defined here</h2>
+            <ArchivedDisclosure
+              count={archivedDefinitions.length}
+              open={showArchived}
+              onOpenChange={setShowArchived}
+              label="Archived fields"
+              className="w-auto"
+            />
+          </div>
           <NonEditableContextMenu
             sourceFeature="internal"
             contentSource={{ type: "raw" }}
@@ -253,7 +272,7 @@ export function HrFieldsPanel() {
               const id = (target as HTMLElement | null)
                 ?.closest("[data-row-id]")
                 ?.getAttribute("data-row-id");
-              const row = (id && definitions.find((r) => r.id === id)) || null;
+              const row = (id && visibleDefinitions.find((r) => r.id === id)) || null;
               if (!row) return null;
               return {
                 [CONTEXT_MENU_ENTITY_KEY]: {
@@ -273,17 +292,32 @@ export function HrFieldsPanel() {
             }}
           >
           <MatrxDataTable
-            data={definitions}
+            data={visibleDefinitions}
             columns={columns}
             getRowId={(row) => row.id}
             pageSize={25}
             urlState={{ id: "hr-custom-fields" }}
             toolbar={{ search: true, searchPlaceholder: "Search custom fields" }}
-            emptyState={{
-              title: "No custom fields on HR records",
-              description:
-                "Nothing has been added beyond the built-in fields. When the platform field editor arrives, what you create with it appears here.",
-            }}
+            emptyState={
+              // THE ARCHIVED-ITEMS LAW, honesty half (row F10 class fix,
+              // 2026-09-10): the table is handed the LIVE half, so "Nothing
+              // has been added" is a claim the live half cannot support. With
+              // every definition archived it printed exactly that, one line
+              // under this section's own "Archived fields (N)" door.
+              !showArchived &&
+              liveDefinitions.length === 0 &&
+              archivedDefinitions.length > 0
+                ? {
+                    title: `All ${archivedDefinitions.length} custom ${archivedDefinitions.length === 1 ? "field is" : "fields are"} archived`,
+                    description:
+                      "Nothing is live on an HR record right now. Open “Archived fields” above to see what was defined.",
+                  }
+                : {
+                    title: "No custom fields on HR records",
+                    description:
+                      "Nothing has been added beyond the built-in fields. When the platform field editor arrives, what you create with it appears here.",
+                  }
+            }
           />
           </NonEditableContextMenu>
         </section>

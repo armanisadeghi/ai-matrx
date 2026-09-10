@@ -48,9 +48,10 @@ import {
   setContextEntry,
 } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import type { QuestionPacing } from "./types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** The Communicator's Mandate — resolve it (and refuse loudly) in the surface. */
-export const VOICE_COMMUNICATOR_MANDATE_KEY = "voice.communicator";
+export const VOICE_COMMUNICATOR_MANDATE_KEY = MANDATE_KEYS.voice__communicator;
 
 /** How long the brain may work silently before ONE narration cue is spoken. */
 const NARRATION_DELAY_MS = 2500;

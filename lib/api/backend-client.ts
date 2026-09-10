@@ -27,6 +27,17 @@ export interface BackendClientConfig {
   auth?: AuthCredentials;
   /** Org/project/task scope — merged into POST request bodies */
   scope?: ContextScope;
+  /**
+   * Whether the scope is also merged into POST request bodies. Default `true`.
+   *
+   * The organization the server's admission gate reads is the HEADER
+   * (`X-Organization-Id`) — the body copy is scope convenience for handlers
+   * that want it. An endpoint whose request model declares
+   * `model_config = ConfigDict(extra="forbid")` REFUSES that extra body field
+   * with a 422 (aidream `CmsValidationRequest`), so such a caller sets this to
+   * `false` and still carries the mandatory organization header.
+   */
+  sendScopeInBody?: boolean;
 }
 
 /**
@@ -66,6 +77,7 @@ export class BackendClient {
   private readonly baseUrl: string;
   private readonly auth: AuthCredentials;
   private readonly scope: ContextScope;
+  private readonly sendScopeInBody: boolean;
 
   constructor(config: BackendClientConfig = {}) {
     const resolvedBaseUrl = config.baseUrl ?? BACKEND_URLS.production;
@@ -79,6 +91,7 @@ export class BackendClient {
     // MATRX-EXCEPTION: `scope` is genuinely optional config (all ContextScope
     // fields are optional) — `{}` is a valid, honest empty scope.
     this.scope = config.scope ?? {};
+    this.sendScopeInBody = config.sendScopeInBody ?? true;
   }
 
   // ========================================================================
@@ -327,6 +340,9 @@ export class BackendClient {
 
   private mergeScope(body: Record<string, unknown>): Record<string, unknown> {
     const merged = { ...body };
+    // The header still carries the organization (see buildHeaders) — this only
+    // controls the body copy, which some server models forbid outright.
+    if (!this.sendScopeInBody) return merged;
 
     // Only include scope fields that are defined and non-empty
     if (this.scope.organization_id) {

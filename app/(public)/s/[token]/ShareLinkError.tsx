@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LinkIcon, Sparkles } from "lucide-react";
+import { LinkIcon, BrainCircuit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /** Anonymous-friendly error state for an invalid / expired / revoked link. */
@@ -8,7 +8,7 @@ export function ShareLinkError({ message }: { message?: string }) {
     <div className="min-h-dvh bg-textured flex flex-col">
       <header className="flex items-center justify-between px-4 sm:px-6 h-14 border-b border-border/60 bg-card/40 backdrop-blur">
         <Link href="/" className="flex items-center gap-2 font-semibold text-foreground">
-          <Sparkles className="h-5 w-5 text-primary" />
+          <BrainCircuit className="h-5 w-5 text-primary" />
           AI Matrx
         </Link>
       </header>

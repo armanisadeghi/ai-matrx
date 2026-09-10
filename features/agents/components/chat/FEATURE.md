@@ -2,10 +2,11 @@
 
 > Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/clients/client-tool-delegation/FEATURE.md` — read it before touching this feature in ANY repo.
 > Runtime-continuity system-of-record: `/Users/armanisadeghi/code/common-docs/systems/platform/runtime-continuity/FEATURE.md`.
+> Listening & Speech (the Speak / Listen actions on assistant messages) is owned by [`features/audio/FEATURE.md`](../../../audio/FEATURE.md) § LISTENING & SPEECH.
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-09-02`
+**Last updated:** `2026-09-09`
 
 > **This is the authoritative doc for the LIVE chat route.** The chat route lives at `app/(a)/chat/**` and is built on the `features/agents/` execution-system — **not** on the unbuilt `ConversationShell` in `features/conversation/`. If you were sent here by `features/conversation/FEATURE.md` or `phase-07-chat-route.md`, this file supersedes their description of how the route behaves.
 
@@ -225,6 +226,12 @@ Wire types are hand-mirrored in `runtime-reconnect/types.ts` (the generated Open
   may be driven by variables, context, tools, attachments, or the agent
   definition alone. Every composer keeps Send enabled when content is empty;
   `selectHasUserInput` counts message parts and attached resources as input.
+- **Human display is a projection, not the provider payload.** For user rows,
+  shared message selectors prefer `chat.message.user_content` and fall back to
+  `content` only for historical NULL rows. `content` may include an authored
+  agent template and resolved machine context required for replay; it is never
+  proof of what the person typed. `ChatRoomClient.variablesPanelStyle` forwards
+  a surface's variable-collection treatment into the canonical Smart Input.
 - **A submit or queued follow-up targeting a removed conversation is stale UI intent.** `smartExecute` drops a removed browser-local instance both before preflight and at the final child-execution admission boundary; an inbox 404 keeps the failed card and uses an informational corrective toast. Neither path emits a console error or error-severity toast. Navigation/fresh-chat cleanup can legitimately remove an instance while a click or keypress waits on an asynchronous gate.
 - **A conversation's `organization_id` is decided at creation and NEVER moves — every later turn re-sends the CONVERSATION's org, not the sidebar's.** The shared `requireExecutionOrganizationId` guard uses `cacheOnly` to distinguish them: the first unconfirmed request uses a launcher-supplied entity org when present, otherwise ONLY the explicitly selected `selectOrganizationId`; before networking, the execution thunk freezes that exact value onto the local conversation. After persistence it trusts ONLY `instance.organizationId`, hydrated from the request or from `chat.conversation.organization_id` by load/fork. It NEVER calls `selectEffectiveOrganizationId`: a personal organization is not an implicit substitute for an empty picker. `smartExecute` refuses before draft/optimistic state changes and every execution thunk independently refuses before networking. The server independently requires org on start and restores the saved org on continuation, so neither side depends on the other.
 - **Missing organization is corrective validation, not an incident.** `smartExecute` preserves the draft and shows an informational “Organization required” toast without `console.error` or captured error/warning toast; no request crossed the transport boundary. Persisted-conversation org loss remains an invariant failure in the execution thunks.
@@ -279,6 +286,11 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 ---
 
 ## Change log
+
+- `2026-09-09` — codex: **user bubbles now render pristine human input.** The
+  shared content selectors prefer `chat.message.user_content` for user rows
+  while retaining full `content` for model replay; `ChatRoomClient` also
+  forwards the canonical variable-panel treatment for embedded rooms.
 
 - `2026-09-08` — claude: **`/chat/[id]` opens every readable conversation; a failed read renders the access gate instead of bouncing to `/chat/new`.** The route returned null (and `redirect("/chat/new")`) whenever `initial_agent_id` was NULL — a silent dead end for 6,288 live conversations (35 in the prior week: model-direct API turns such as the patrol/canary confirmations, `claude-code`/`codex` coding-session mirrors, workflow and proof runs), every one listed by the sidebar. It also swallowed the query `error`, so a real access failure read as "not found". Now `resolveConversationSeed` returns `ok | unavailable`; `unavailable` (error OR empty) screams server-side and renders `<AccessGate token="conversation" fallbackHref="/chat/new">` — the platform says deleted / missing / denied / signed-out, the page never guesses and never redirects. An agent-less row mounts the new `ChatConversationRoom`, which is owned by the `chat.default_new_chat` mandate exactly like `/chat/new` (SSR display resolution → client `useMandate` re-resolve → the shared `ChatMandateUnavailable` face, extracted from `ChatNewClient`; no hardcoded agent). `waitForConversationPersisted` now mirrors the relaxed read (row exists). No writer was changed: an agent-less conversation is a legitimate state, not a bug at the producer. Live-verified on `/chat/617da399…` (transcript + composer + mandate agent in the header) and on a fabricated id ("We couldn't find this conversation" + New chat door). Guard: `__tests__/conversation-route-opens-agentless.test.ts`, proven failing on the prior source.
 - `2026-09-02` — codex: **missing selected models are corrective catalog drift, not `system_error`.** `useModelControls` preserves its explicit UI error when a persisted model is absent from a loaded catalog, but now emits a bounded warning instead of a `console.error` containing the entire catalog. Guard: `useModelControls.test.ts`.

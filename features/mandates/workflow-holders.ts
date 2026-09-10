@@ -53,6 +53,11 @@ export async function fetchWorkflowHolderCandidates(
   // The full visible set, not a page: the picker decides which workflows a
   // Mandate CAN be bound to, and a workflow silently missing past row 1000
   // reads as "no workflow can do this job".
+  //
+  // archived-items-law-exempt: a Holder must be a LIVE workflow. Archived
+  // definitions are not candidates for a new binding — revealing them here
+  // would offer to bind a Mandate to work its owner retired. Recorded in
+  // ../common-docs/projects/archived-items-law/STATUS.md (F7).
   const rows = await readAllRows<{
     id: string;
     name: string | null;

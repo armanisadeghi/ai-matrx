@@ -200,8 +200,14 @@ describe("deletePodcastRun", () => {
       .mockResolvedValue({ data: null, error: null });
     schema.mockReturnValue({ from: () => query });
 
+    // It must REFUSE — that is the guard. What it must NOT do is guess WHY:
+    // a zero-row UPDATE under RLS is four situations at once (already hidden,
+    // deleted, never existed, invisible to this reader), and 9d322e2f7e /
+    // 60924c3658 deliberately stopped naming two of them. The sentence now
+    // says what did not happen, in words a person can read, and never leaks a
+    // permission verdict the row cannot support.
     await expect(deletePodcastRun("missing")).rejects.toThrow(
-      "not found or you do not have permission",
+      "We couldn't remove this run from your history.",
     );
   });
 });

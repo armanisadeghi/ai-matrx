@@ -4,6 +4,7 @@ import {
   createSelector,
 } from "@reduxjs/toolkit";
 import { createClient } from "@/utils/supabase/client";
+import { extractErrorMessage } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { normalizeModel } from "@/features/ai-models/utils/model-normalizer";
 // Minimal local state type — avoids importing RootState from store.ts (which
@@ -79,6 +80,8 @@ interface ModelRegistryState {
   isLoading: boolean;
   error: string | null;
   lastFetched: number | null;
+  detailStatusById: Record<string, "loading" | "succeeded" | "failed">;
+  detailErrorById: Record<string, string>;
   /** Per-record label lookup status for historical/deprecated FK references. */
   identityById: Record<string, ModelIdentityRow>;
   identityStatusById: Record<
@@ -95,6 +98,8 @@ const initialState: ModelRegistryState = {
   isLoading: false,
   error: null,
   lastFetched: null,
+  detailStatusById: {},
+  detailErrorById: {},
   identityById: {},
   identityStatusById: {},
 };
@@ -118,6 +123,12 @@ type ModelOptionRow = {
   speed_rating: number | null;
   is_primary: boolean | null;
   capabilities: Json | null;
+  // Lifecycle (ai_075, ruled 2026-09-09). Deprecated = hidden from DEFAULT
+  // selection but fully runnable; the registry keeps it (deprecatedIds) so an
+  // id already selected anywhere still resolves. retired_at = the dead state.
+  is_deprecated: boolean | null;
+  retired_at: string | null;
+  successor_id: string | null;
 };
 
 type ModelIdentityRow = Pick<
@@ -131,7 +142,11 @@ type ModelIdentityRow = Pick<
 
 /**
  * Fetch lightweight options (id, name, common_name, maker) for
- * all active, ROUTABLE models. Used to populate dropdowns without pulling the full schema.
+ * all ROUTABLE models — live AND deprecated (a deprecated model still runs; it
+ * is only hidden from default selection, so `selectModelOptions` excludes it
+ * and `selectAllModelOptions` carries it with `isDeprecated`). Retired models
+ * are not routable and are not here. Used to populate dropdowns without
+ * pulling the full schema.
  *
  * CRITICAL: only models with ≥1 available ai.offering are returned. A bare
  * model_definition row is NOT callable — resolve_call_profile raises. Listing
@@ -148,7 +163,8 @@ export const fetchModelOptions = createAsyncThunk(
     try {
       const supabase = createClient();
       // model_offering is the user-facing join of available offerings × active
-      // services × non-deprecated models — if a model isn't here, it cannot route.
+      // services × live (non-retired) models — if a model isn't here, it cannot
+      // route. Deprecated models ARE here (ai_075): they still run.
       const { data: offeringRows, error: offeringError } = await supabase
         .schema("ai")
         .from("model_offering")
@@ -166,13 +182,14 @@ export const fetchModelOptions = createAsyncThunk(
       if (routableIds.length === 0) {
         return [] as ModelOptionRow[];
       }
-      // ai.model_public already excludes deprecated/deleted models and resolves
-      // the maker name from the provider_id FK. Constrain to routable IDs.
+      // ai.model_public resolves the maker name from the provider_id FK and
+      // EXPOSES is_deprecated / retired_at (ai_075) — consumers filter, the
+      // view never hides a model. Constrain to routable IDs.
       const { data, error } = await supabase
         .schema("ai")
         .from("model_public")
         .select(
-          "id, name, common_name, maker, cost_rating, speed_rating, is_primary, capabilities",
+          "id, name, common_name, maker, cost_rating, speed_rating, is_primary, capabilities, is_deprecated, retired_at, successor_id",
         )
         .in("id", routableIds)
         .order("common_name", { ascending: true, nullsFirst: false });
@@ -191,6 +208,9 @@ export const fetchModelOptions = createAsyncThunk(
           speed_rating: r.speed_rating,
           is_primary: r.is_primary,
           capabilities: r.capabilities,
+          is_deprecated: r.is_deprecated,
+          retired_at: r.retired_at,
+          successor_id: r.successor_id,
         }));
     } catch (err: unknown) {
       return rejectWithValue(
@@ -262,7 +282,7 @@ export const fetchModelIdentityById = createAsyncThunk<
 );
 
 /**
- * Fetch the full record for a single model by ID.
+ * Fetch the full record for a single model by ID — deprecated or not.
  *
  * Reads the ai.model_config RESOLUTION view (Phase D of the AI catalog
  * migration): `controls` and `constraints` are computed live from
@@ -271,6 +291,13 @@ export const fetchModelIdentityById = createAsyncThunk<
  * DROPPED (ai_034). The view also carries every display
  * field the registry consumes (maker, ratings, premium flag, context window,
  * capabilities), so this stays ONE read.
+ *
+ * 🚨 The view includes DEPRECATED and RETIRED rows (ai_075, 2026-09-09). Until
+ * then it filtered deprecated models out, so deprecating Gemini 3.7 Flash made
+ * every surface that referenced it reject this thunk 263 times with "Unknown
+ * error" — the id existed, the registry just never asked the database for it.
+ * A missing row now means the model is genuinely absent (soft-deleted or never
+ * existed) and the rejection says exactly that.
  *
  * Skips when the record is already marked 'full'.
  * Always runs if the record is only 'options' or unknown.
@@ -289,8 +316,17 @@ export const fetchModelById = createAsyncThunk(
         .from("model_config")
         .select("*")
         .eq("id", modelId)
-        .single();
+        .maybeSingle();
       if (error) throw error;
+      if (!data) {
+        throw recordUnavailable({
+          entity: "AI model",
+          reason: "unknown",
+          recordId: modelId,
+          token: "ai_model",
+          relation: "model_config",
+        });
+      }
       if (!data.id || !data.name) {
         throw new Error(
           `ai.model_config returned a row without id/name for model ${modelId}`,
@@ -313,20 +349,27 @@ export const fetchModelById = createAsyncThunk(
         capabilities: data.capabilities,
         controls: data.controls,
         constraints: data.constraints,
+        is_deprecated: data.is_deprecated,
+        retired_at: data.retired_at,
+        successor_id: data.successor_id,
       });
     } catch (err: unknown) {
       return rejectWithValue(
-        err instanceof Error ? err.message : "Unknown error",
+        `Model configuration ${modelId}: ${extractErrorMessage(err)}`,
       );
     }
   },
   {
     condition: (modelId: string, { getState }) => {
-      const { entities, isLoading } = (
+      const { entities, detailStatusById } = (
         getState() as { modelRegistry: ModelRegistryState }
       ).modelRegistry;
       const existing = entities[modelId];
-      if (isLoading) return false; // a fetch is already in flight
+      if (
+        detailStatusById?.[modelId] === "loading" ||
+        detailStatusById?.[modelId] === "failed"
+      )
+        return false;
       if (existing?._fetchType === "full") {
         console.log(
           "[modelRegistry] fetchModelById skipped — already full for",
@@ -347,6 +390,10 @@ const modelRegistrySlice = createSlice({
   name: "modelRegistry",
   initialState,
   reducers: {
+    retryModelDetail(state, action: { payload: string }) {
+      delete state.detailStatusById[action.payload];
+      delete state.detailErrorById[action.payload];
+    },
     /**
      * SSR hydration path.
      * Supply options-level or full records from the server shell.
@@ -420,13 +467,13 @@ const modelRegistrySlice = createSlice({
 
     // ── fetchModelById ─────────────────────────────────────────────
     builder
-      .addCase(fetchModelById.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
+      .addCase(fetchModelById.pending, (state, action) => {
+        state.detailStatusById[action.meta.arg] = "loading";
+        delete state.detailErrorById[action.meta.arg];
       })
       .addCase(fetchModelById.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.error = null;
+        state.detailStatusById[action.meta.arg] = "succeeded";
+        delete state.detailErrorById[action.meta.arg];
         const record = action.payload;
         const existing = state.entities[record.id];
         // ai.model_config resolves `maker` itself; fall back to whatever the
@@ -442,8 +489,11 @@ const modelRegistrySlice = createSlice({
         rebuildIdLists(state);
       })
       .addCase(fetchModelById.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
+        state.detailStatusById[action.meta.arg] = "failed";
+        state.detailErrorById[action.meta.arg] =
+          typeof action.payload === "string"
+            ? action.payload
+            : (action.error.message ?? "Model configuration request failed");
       });
 
     // ── fetchModelIdentityById ─────────────────────────────────────
@@ -492,6 +542,8 @@ function emptyModelRecord(): Omit<AIModelRecord, "_fetchType"> {
     organization_id: "",
     created_by: null,
     deleted_at: null,
+    retired_at: null,
+    successor_id: null,
     visibility: "personal",
     // Canonical base columns (2026-07-02 AI-catalog reshape)
     is_system: false,
@@ -531,7 +583,7 @@ function rebuildIdLists(state: ModelRegistryState): void {
   state.deprecatedIds = sort(deprecated);
 }
 
-export const { hydrateModels } = modelRegistrySlice.actions;
+export const { hydrateModels, retryModelDetail } = modelRegistrySlice.actions;
 export default modelRegistrySlice.reducer;
 
 // ---------------------------------------------------------------------------
@@ -615,7 +667,9 @@ export const selectModelOptions = createSelector(
 );
 
 /**
- * All models (active + deprecated) as dropdown options — for admin tooling.
+ * All models (active + deprecated) as dropdown options — for admin tooling and
+ * for any picker whose "Include deprecated" toggle is on. `isRetired` rows are
+ * shown for identity only and must never be selectable.
  */
 export const selectAllModelOptions = createSelector(
   [selectEntities],
@@ -625,6 +679,8 @@ export const selectAllModelOptions = createSelector(
       label: m.common_name || m.name || m.id,
       maker: m.maker,
       isDeprecated: m.is_deprecated ?? false,
+      isRetired: m.retired_at != null,
+      successorId: m.successor_id ?? null,
     })),
 );
 
@@ -763,4 +819,12 @@ export const selectModelFullyLoaded = createSelector(
     if (!modelId) return false;
     return entities[modelId]?._fetchType === "full";
   },
+);
+
+export const selectModelDetailError = createSelector(
+  [
+    (state: StateWithModelRegistry) => state.modelRegistry.detailErrorById,
+    (_state: StateWithModelRegistry, modelId: string) => modelId,
+  ],
+  (errors, modelId) => errors?.[modelId] ?? null,
 );

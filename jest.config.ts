@@ -57,17 +57,16 @@ const config: Config = {
         // because the published files are ESM).
         "^@ai-matrx/([^/]+)/package\\.json$":
             "<rootDir>/node_modules/@ai-matrx/$1/package.json",
-        // `./matrx` is the one subpath whose dist target is a DIRECTORY
-        // (dist/matrx/index.js), so it must be mapped before the generic
-        // subpath rule below (which would resolve it to dist/matrx.js).
-        "^@ai-matrx/agents/matrx$":
-            "<rootDir>/node_modules/@ai-matrx/agents/dist/matrx/index.js",
-        // `./catalog` and `./catalog/react` are DIRECTORIES as well
-        // (dist/catalog/index.js, dist/catalog/react/index.js) — the ONE agent
-        // picker lives behind them, so they must be mapped before the generic
-        // rule (which would look for dist/catalog.js and dist/catalog/react.js).
-        "^@ai-matrx/agents/catalog$":
-            "<rootDir>/node_modules/@ai-matrx/agents/dist/catalog/index.js",
+        // Some `@ai-matrx/agents` subpaths have a DIRECTORY dist target
+        // (dist/<name>/index.js), so they must be mapped BEFORE the generic
+        // subpath rule below — which would resolve `./mandates` to
+        // dist/mandates.js and fail with "Could not locate module". Every new
+        // directory subpath the package publishes belongs in this alternation:
+        //   ./matrx     the shared matrx client
+        //   ./catalog   the ONE agent picker (+ ./catalog/react)
+        //   ./mandates  the published mandate-key vocabulary (0.10.0)
+        "^@ai-matrx/agents/(matrx|catalog|mandates)$":
+            "<rootDir>/node_modules/@ai-matrx/agents/dist/$1/index.js",
         "^@ai-matrx/agents/catalog/react$":
             "<rootDir>/node_modules/@ai-matrx/agents/dist/catalog/react/index.js",
         // @ai-matrx/associations subpaths are DIRECTORIES too

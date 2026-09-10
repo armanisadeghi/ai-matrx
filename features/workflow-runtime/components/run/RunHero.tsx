@@ -29,6 +29,7 @@ import {
   selectRunStatus,
   selectRunStatusTs,
 } from "../../redux/workflow-runs.selectors";
+import { runIsOver } from "../../types";
 import {
   FAMILY_ICON,
   FAMILY_STYLE,
@@ -60,8 +61,6 @@ const TONE_DOT: Record<string, string> = {
   bad: "bg-destructive",
   hold: "bg-amber-500",
 };
-
-const TERMINAL = new Set(["completed", "failed", "cancelled", "errored"]);
 
 function usdCopy(total: number): string | null {
   if (total <= 0) return null;
@@ -125,7 +124,7 @@ export function RunHero({
   const costTotal = useAppSelector(selectRunCostTotal(runId));
 
   const copy = STATUS_COPY[status ?? "pending"] ?? STATUS_COPY.pending;
-  const terminal = status !== null && TERMINAL.has(status);
+  const terminal = runIsOver(status);
   const live = !terminal;
 
   const done = steps.filter((step) => {

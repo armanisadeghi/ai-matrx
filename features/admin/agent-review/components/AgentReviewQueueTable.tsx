@@ -18,12 +18,11 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { ADMIN_AGENT_REVIEW_SURFACE_NAME } from "@/features/surfaces/manifests/admin-agent-review.manifest";
 import { buildAgentReviewScope } from "@/features/admin/agent-review/surface-scope";
 import { AgentReviewWriteTargets } from "@/features/admin/agent-review/components/AgentReviewWriteTargets";
-import { loadReviewQueue } from "@/features/admin/agent-review/service";
 import {
   EMPTY_REVIEW_REGISTRY,
-  loadReviewRegistry,
   type ReviewRegistry,
 } from "@/features/admin/agent-review/registry";
+import { loadAuthenticatedReviewData } from "@/features/admin/agent-review/review-data";
 import {
   REVIEW_STATUSES,
   REVIEW_STATUS_LABELS,
@@ -38,6 +37,12 @@ import {
 } from "@/features/admin/agent-review/row-text";
 import { matchesTableSearch } from "@/components/official/matrx-data-table/filter-engine";
 import { useShare } from "@/features/sharing/hooks/useShare";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  ReviewCount,
+  reviewCountLabel,
+} from "@/features/admin/agent-review/components/ReviewCount";
 
 /** The row's own page — the link every agent owes Arman (see the
  *  `agent-review-queue` skill, THE DIRECT-LINK RULE). */
@@ -88,6 +93,7 @@ function reviewRowContent(
 
 export default function AgentReviewQueueTable() {
   const router = useRouter();
+  const userId = useAppSelector(selectUserId);
   const [view, setView] = useUrlState(
     "view",
     enumUrlCodec(["inbox", "all"] as const, "inbox"),
@@ -110,14 +116,13 @@ export default function AgentReviewQueueTable() {
   });
 
   async function refresh() {
+    if (!userId) return;
     setLoading(true);
     try {
-      const [queue, nextRegistry] = await Promise.all([
-        loadReviewQueue(),
-        loadReviewRegistry(),
-      ]);
-      setRows(queue);
-      setRegistry(nextRegistry);
+      const data = await loadAuthenticatedReviewData(userId);
+      if (!data) return;
+      setRows(data.queue);
+      setRegistry(data.registry);
       setLoadError(null);
     } catch (error) {
       const message =
@@ -130,12 +135,13 @@ export default function AgentReviewQueueTable() {
   }
 
   useEffect(() => {
+    if (!userId) return;
     let active = true;
-    Promise.all([loadReviewQueue(), loadReviewRegistry()])
-      .then(([queue, nextRegistry]) => {
-        if (!active) return;
-        setRows(queue);
-        setRegistry(nextRegistry);
+    loadAuthenticatedReviewData(userId)
+      .then((data) => {
+        if (!active || !data) return;
+        setRows(data.queue);
+        setRegistry(data.registry);
         setLoadError(null);
       })
       .catch((error: unknown) => {
@@ -154,7 +160,7 @@ export default function AgentReviewQueueTable() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [userId]);
 
   const columns = useMemo<MatrxColumnDef<ReviewQueueRow>[]>(
     () => [
@@ -473,16 +479,23 @@ export default function AgentReviewQueueTable() {
               variant={view === "inbox" ? "default" : "outline"}
               onClick={() => setQueueView("inbox")}
             >
-              Ready for you ({inboxRows.length})
+              Ready for you (
+              <ReviewCount count={inboxRows.length} loading={loading} />)
             </Button>
             <Button
               size="sm"
               variant={view === "all" ? "default" : "outline"}
               onClick={() => setQueueView("all")}
             >
-              All activity ({rows.length})
+              All activity (
+              <ReviewCount count={rows.length} loading={loading} />)
             </Button>
-            <Button variant="outline" size="sm" onClick={() => void refresh()}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!userId || loading}
+              onClick={() => void refresh()}
+            >
               <RefreshCw className="mr-1.5 h-4 w-4" /> Refresh
             </Button>
           </div>
@@ -514,7 +527,7 @@ export default function AgentReviewQueueTable() {
                 <button
                   type="button"
                   aria-pressed={isActive}
-                  aria-label={`Filter review items by ${step.label.replace(/^\d+\.\s*/, "")} (${count})`}
+                  aria-label={`Filter review items by ${step.label.replace(/^\d+\.\s*/, "")} (${reviewCountLabel(count, loading)})`}
                   onClick={() => {
                     setView("all");
                     setStatusFilter(step.statuses);
@@ -526,7 +539,11 @@ export default function AgentReviewQueueTable() {
                 >
                   <div className="text-sm font-medium">{step.label}</div>
                   <div className="mt-1 text-2xl font-semibold tabular-nums">
-                    {count}
+                    <ReviewCount
+                      count={count}
+                      loading={loading}
+                      skeletonClassName="h-7 w-12"
+                    />
                   </div>
                 </button>
               </div>

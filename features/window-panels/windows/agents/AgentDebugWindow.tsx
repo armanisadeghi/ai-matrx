@@ -26,7 +26,7 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import { formatJson } from "@/utils/json/json-cleaner-utility";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 
 // ─── Agent definition selectors ───────────────────────────────────────────────
 import {
@@ -1043,7 +1043,7 @@ function AgentDebugWindowInner({
     : (agentName ?? "Agent Debug");
 
   const dispatch = useAppDispatch();
-  const agentSection = useAgentMenuSection({
+  const agentSection = buildAgentMenuSection({
     agentId: selectedAgentId ?? "",
     agentName: agentName ?? null,
     onRefresh: selectedAgentId ? () => dispatch(fetchFullAgent(selectedAgentId)) : undefined,

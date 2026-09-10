@@ -4,7 +4,7 @@
  * MatrxUuidCell — canonical UUID / FK display for dense tables.
  *
  * Port of aidream `UuidDisplay` + AI Models `UuidCell` + tool-call `ShortId`:
- * short head/tail (8…4 chars), full value on hover, always-visible copy of the full
+ * short prefix (8 chars), full value on hover, always-visible copy of the full
  * id. Optional FK open: in-app WindowPanel (`onOpen`) and/or route (`href`).
  * Forbidden targets stay copyable but are not navigable.
  *
@@ -44,8 +44,7 @@ import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost
 const SHORT_LEN = 8;
 
 export function shortUuid(id: string, len = SHORT_LEN): string {
-  if (id.length <= len + 5) return id;
-  return `${id.slice(0, len)}…${id.slice(-4)}`;
+  return id.slice(0, len);
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -218,6 +217,7 @@ export function MatrxUuidCell({
 
   return (
     <span
+      data-matrx-cell-control
       className={cn(
         "inline-flex min-w-0 max-w-full items-center gap-0.5 whitespace-nowrap",
         className,

@@ -33,7 +33,7 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       url: "/masterwork",
       label: "Masterwork landing",
       description:
-        "The module home. Guests get the marketing landing (ModuleLanding); signed-in Experts get the Masterwork home — Rulebooks with review KPIs, built Masterworks with release state + quality trend, recent runs, Approach start tiles, and the 'How it's improving' Hindsight panel.",
+        "The module home. Guests get the marketing landing (ModuleLanding); signed-in Experts are redirected to /masterwork/all, the canonical entity-list Rulebook surface — Arman's own routing decision in commit 00602a2916 (2026-08-21). UNREACHABLE CAPABILITY, AWAITING HIS RULING: the hand-built authed home this row used to describe (features/masterwork/home/ — review KPIs, release state + quality trend, recent runs, Approach start tiles, the 'How it's improving' Hindsight panel) has been unrendered since that commit. It was deleted on 2026-09-10 and RESTORED the same day: THE UNFINISHED-WORK ALARM's ban means only Arman may name it dead. It compiles, it is archive-lawful, and nothing routes it — rung 2 of the reachability ladder. Registered in .matrx/ARMAN_TASKS.md.",
       filePath: "app/(core)/masterwork/page.tsx",
       status: "Live",
     },
@@ -188,27 +188,6 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
     },
   ],
   components: [
-    {
-      name: "MasterworkHomePage",
-      filePath: "features/masterwork/home/MasterworkHomePage.tsx",
-      description:
-        "The authed landing body: Rulebook cards with review progress, Masterworks with release state + quality trend, recent runs, Approach start tiles, the improvement panel.",
-      tier: "internal",
-    },
-    {
-      name: "HowItsImprovingPanel",
-      filePath: "features/masterwork/home/HowItsImprovingPanel.tsx",
-      description:
-        "The honest Hindsight panel — renders only what a signed-in user can truly read (public mandate registry + agent revision counts); never fabricates review activity.",
-      tier: "internal",
-    },
-    {
-      name: "home service",
-      filePath: "features/masterwork/home/service.ts",
-      description:
-        "Bounded overview reads for the landing (your Rulebooks / Masterworks / runs / quality scores) + fetchImprovementRows.",
-      tier: "internal",
-    },
     {
       name: "MasterworkLanding (marketing)",
       filePath:

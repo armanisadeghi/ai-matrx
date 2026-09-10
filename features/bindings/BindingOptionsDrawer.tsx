@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
 
 import {
+  ConfigurationTable,
+  ConfigurationTableRow,
   FieldHelp,
   PropertyRow,
   StatusToken,
@@ -14,6 +16,11 @@ import {
 import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  canEditAccess,
+  type ResourceAccess,
+} from "@/utils/permissions/access-core";
+import { getResourceAccess } from "@/utils/permissions/access";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { WidgetPicker } from "@/features/agent-shortcuts/components/next/WidgetPicker";
 import {
@@ -44,6 +51,17 @@ import {
   JOB_SETTINGS_WORDS,
   JOB_TREATMENT_OVERRIDE_WORDS,
 } from "./words";
+
+const LAUNCH_SCOPE_COLUMNS = [
+  { key: "defaults", label: "Preferences for" },
+  {
+    key: "features",
+    label: "Feature-launch support",
+    help: "Features can override these defaults or use a different renderer. Per-feature support is not reported to this editor. Display test exercises the default launch, not the original feature.",
+  },
+];
+const GATE_UNAVAILABLE =
+  "Unavailable: mandate launches cannot guarantee a confirmation gate across all callers. Some features explicitly bypass it. Saved gate values are preserved.";
 
 type LoadState =
   | { status: "idle" }
@@ -101,6 +119,11 @@ export function BindingOptionsDrawer({
   const [savedEnabled, setSavedEnabled] = useState(true);
   const [busy, setBusy] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [access, setAccess] = useState<ResourceAccess | null>(null);
+  const editable =
+    load.status === "ready" &&
+    (treatmentId === null || (access !== null && canEditAccess(access.level)));
+  const controlsDisabled = disabled || busy || !editable;
 
   // 🚨 THE READ HAPPENS ON MOUNT, NOT ON OPEN — and the walk is why.
   // It read on open first, which meant the CLOSED trigger could not say how
@@ -130,6 +153,7 @@ export function BindingOptionsDrawer({
         if (cancelled) return;
         setTreatmentId(stored.treatmentId);
         setSavedVersion(stored.version);
+        setAccess(stored.access);
         setSaveError(null);
         setDraft(stored.presentation);
         setSaved(stored.presentation);
@@ -234,6 +258,7 @@ export function BindingOptionsDrawer({
       : null;
 
   async function save() {
+    if (controlsDisabled) return;
     setBusy(true);
     setSaveError(null);
     try {
@@ -246,6 +271,11 @@ export function BindingOptionsDrawer({
       });
       setTreatmentId(next.treatmentId);
       setSavedVersion(next.version);
+      if (next.treatmentId) {
+        setAccess(
+          await getResourceAccess("mandate_treatment", next.treatmentId),
+        );
+      }
       setSaved(draft);
       setSavedEnabled(enabled);
     } catch (err) {
@@ -382,7 +412,64 @@ export function BindingOptionsDrawer({
             </div>
           ) : (
             <>
-              <div hidden={Boolean(section && activeSection !== "display")}>
+              <div className="rounded-lg border border-border px-3">
+                <PropertyRow
+                  label="Preferences scope"
+                  value="Shared mandate"
+                  help="These preferences belong to the mandate and apply across its system, organization, and personal holder bindings. They are not personal preferences."
+                />
+                <PropertyRow
+                  label="Owner"
+                  value={organizationName ?? "Organization name unavailable"}
+                />
+                <PropertyRow
+                  label="Your access"
+                  value={
+                    treatmentId === null
+                      ? "Checked on save"
+                      : access?.exists
+                        ? editable
+                          ? "Edit"
+                          : "Read only"
+                        : "Access unavailable"
+                  }
+                  help={
+                    treatmentId === null
+                      ? "No preferences row exists. Creating shared preferences is authorized by the database for this mandate's organization."
+                      : "Edit access is checked against the shared preferences record, independently of holder-binding scope."
+                  }
+                />
+                {treatmentId !== null && !access?.exists ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      startedFor.current = null;
+                      setReadAttempt((attempt) => attempt + 1);
+                    }}
+                  >
+                    Retry access check
+                  </Button>
+                ) : null}
+              </div>
+              <div
+                hidden={Boolean(section && activeSection !== "display")}
+                className="space-y-3"
+              >
+                <ConfigurationTable
+                  label="Display applicability"
+                  columns={LAUNCH_SCOPE_COLUMNS}
+                >
+                  <ConfigurationTableRow
+                    columns={LAUNCH_SCOPE_COLUMNS}
+                    cells={{
+                      defaults: "Default launch",
+                      features: (
+                        <StatusToken status="unknown" label="Not verified" />
+                      ),
+                    }}
+                  />
+                </ConfigurationTable>
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <h3 className="text-sm font-semibold">Result display</h3>
                   <span className="text-xs">
@@ -400,7 +487,7 @@ export function BindingOptionsDrawer({
                 <WidgetPicker
                   value={draft.displayMode}
                   onChange={(next) => set("displayMode", next)}
-                  disabled={disabled || busy}
+                  disabled={controlsDisabled}
                 />
               </div>
               <SettingsSection
@@ -408,8 +495,9 @@ export function BindingOptionsDrawer({
                 onChange={(field, next) => {
                   set(field as keyof BindingPresentation, next as never);
                 }}
-                disabled={disabled || busy}
+                disabled={controlsDisabled}
                 omitAutoRun
+                gateUnavailableReason={GATE_UNAVAILABLE}
                 section={section}
                 fieldMeta={section ? settingsMeta : undefined}
                 words={JOB_SETTINGS_WORDS}
@@ -422,7 +510,7 @@ export function BindingOptionsDrawer({
                     onChange={(next: WritePolicyMap) =>
                       set("writePolicies", next)
                     }
-                    disabled={disabled || busy}
+                    disabled={controlsDisabled}
                     structured={Boolean(section)}
                     source={sharedSource}
                     draftState={fieldMeta("writePolicies").state}
@@ -450,8 +538,8 @@ export function BindingOptionsDrawer({
                             draft.surfaceName
                               ? getManifest(draft.surfaceName)
                                 ? "No targets declared"
-                                : "Surface unavailable"
-                              : "No surface assigned"
+                                : "This place is unavailable"
+                              : "No place assigned"
                           }
                         />
                       }
@@ -460,6 +548,7 @@ export function BindingOptionsDrawer({
                 ) : null}
               </div>
               <AdvancedSection
+                gateUnavailableReason={GATE_UNAVAILABLE}
                 value={advancedValue}
                 onChange={(field, next) => {
                   if (field === "isActive") {
@@ -469,7 +558,7 @@ export function BindingOptionsDrawer({
                   }
                   set(field as keyof BindingPresentation, next as never);
                 }}
-                disabled={disabled || busy}
+                disabled={controlsDisabled}
                 omit={[
                   "description",
                   "llmOverrides",
@@ -540,13 +629,13 @@ export function BindingOptionsDrawer({
                       Reload saved
                     </Button>
                   )}
-                  <FieldHelp label="Save display preferences">
+                  <FieldHelp label="Save shared preferences">
                     Saves display preferences and permissions for this mandate.
                     Holder selection and model overrides are saved separately.
                   </FieldHelp>
                   <Button
                     size="sm"
-                    disabled={disabled || busy || !dirty}
+                    disabled={controlsDisabled || !dirty}
                     onClick={() => void save()}
                   >
                     {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}

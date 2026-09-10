@@ -191,6 +191,13 @@ doc, the deferred tail and every naming caveat all live in that STATE.md. The ba
     other surface, and a hole needing human arbitration IS the room asking the
     Expert a question.
 
+17. **THE ROLE ROOM NEVER PRESENTS MACHINE CONTEXT AS HUMAN INPUT.**
+    `RoomChatPane` mounts the canonical `ChatRoomClient` with
+    `variablesPanelStyle="hidden"`; the seven role variables are populated by
+    the room, not collected from the Expert. Persisted human bubbles and the
+    Expert Feed read `chat.message.user_content`, while `content` retains the
+    full rendered role template solely for model replay. Historical NULL
+    projections fall back to `content`.
 
 ## Reuse-first — consumed, never rebuilt
 
@@ -215,3 +222,9 @@ gets live per-node tokens the same way. Never fork them.**
 ## Realtime
 
 Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~40 lines of hand-rolled backoff ladder, attempt counter, healthy-timer and catch-up refetch; `onChannelDown` is replaced by `onBackfill`, which fires on tab wake and network restore as well as on a channel error — so a laptop that closed mid-interview no longer reopens to a room frozen at the last question it heard.
+
+## Change log
+
+- **2026-09-09** — Role rooms hide programmatic variable collection and render
+  pristine `user_content`; internal role templates no longer appear as Expert
+  input or feed speech.

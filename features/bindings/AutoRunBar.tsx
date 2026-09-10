@@ -1,35 +1,12 @@
 "use client";
 
-// features/bindings/AutoRunBar.tsx
-//
-// P14 — A BEHAVIOURAL PROMISE IS OFFERABLE ONLY WHEN IT IS FACTUALLY TRUE, AND
-// IT NARRATES WHY NOT.
-//
-// "Run instantly" is not a preference. THE-MODEL law 7: a referenced, fully
-// mapped binding runs with no user input, and prompting IS the flexibility
-// option. So the control is live only while the mapping genuinely leaves
-// nothing to ask, and the sentence beneath it changes as the map changes —
-// which is the whole mechanic Arman pointed at on the surface bind panel.
-//
-// 🚨 THE AUTO-RUN INVERSION, closed. A mandate binding could not carry this at
-// all until 2026-08-31 (`mandate.binding.auto_run`), so a job bound through a
-// mandate could never promise what the same job bound to a surface had promised
-// for months. One column, one shared fact, one set of sentences.
-//
-// NOTHING IS RE-IMPLEMENTED HERE:
-//   · the FACT is `evaluateBindingAutoRun` — the same function the surface bind
-//     panel gates its control with, and the same file whose launch-time half
-//     re-checks the promise before it fires;
-//   · the four SENTENCES are the ones at `SurfaceAgentBindPanel.tsx:265-271`,
-//     word for word, with the surface's noun swapped for this domain's.
-//
-// This file only owns the translation from a job binding's ordered, many-source
-// consumption map to the one-mapping-per-target shape that fact reads.
+// Mandate-wide pause/resume is not implemented across execution callers.
+// Mapping completeness cannot establish that capability. Keep this control
+// unavailable until the runtime can enforce it for every invocation.
 
-import { StatusToken } from "@/components/official/ConfigurationFields";
-import { ShortcutFieldRow } from "@/features/agent-shortcuts/components/next/SettingsSection";
+import { FieldHelp } from "@/components/official/ConfigurationFields";
+import { ToggleLeft } from "lucide-react";
 
-import { Switch } from "@/components/ui/switch";
 import { ServerNotes } from "@/components/official/ServerNotes";
 import {
   evaluateBindingAutoRun,
@@ -121,84 +98,33 @@ export interface AutoRunBarProps {
   serverNotes?: readonly string[];
 }
 
-export function AutoRunBar({
-  targets,
-  map,
-  value,
-  onChange,
-  disabled = false,
-  serverNotes = [],
-}: AutoRunBarProps) {
-  const eligibility = evaluateBindingAutoRun(
-    targets.map((t) => ({ name: t.name, required: t.required })),
-    autoRunMappingsFor(map),
-  );
-  // The promise is only ON when it is also TRUE — a stored `true` whose map has
-  // since started asking reads as off here and is never sent as true.
-  const on = value === true && eligibility.eligible;
-
+export function AutoRunBar({ serverNotes = [] }: AutoRunBarProps) {
   return (
     <div>
-      <ShortcutFieldRow
-        title="Run instantly"
-        source={value === null ? "Runtime default" : "Binding"}
-        hint={autoRunSentence(eligibility, on)}
-        metadata={
-          <>
-            <span>
-              <strong>Source:</strong>{" "}
-              {value === null ? "Runtime default" : "Binding"}
-            </span>
-            <span>
-              <strong>State:</strong>{" "}
-              {value === null ? "Inherited" : "Explicit"}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <strong>Eligibility:</strong>{" "}
-              <StatusToken
-                status={eligibility.eligible ? "ok" : "caution"}
-                label={
-                  eligibility.eligible
-                    ? "Eligible"
-                    : eligibility.reason === "prompts_user"
-                      ? "Needs input"
-                      : "Unmapped"
-                }
-              />
-            </span>
-            {eligibility.blockers.length > 0 && (
-              <span>
-                <strong>Inputs:</strong>{" "}
-                {eligibility.blockers.map(formatVariableDisplayName).join(", ")}
-              </span>
-            )}
-          </>
-        }
+      <div
+        className="flex items-center gap-2 text-sm"
+        data-testid="mandate-run-instantly"
       >
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={on}
-            disabled={disabled || !eligibility.eligible}
-            aria-label="Run instantly when this job fires"
-            onCheckedChange={onChange}
-          />
-          <span className="text-sm">{on ? "Yes" : "No"}</span>
-        </div>
-      </ShortcutFieldRow>
-      {/* WHAT THE SAVE ACTUALLY DID, in the server's words. Amber, because
-          every sentence that lands here is the write telling you it did not do
-          what you asked — never decoration. */}
-      {/* The shared primitive (`components/official/ServerNotes`) — this block
-          was its birthplace in v0.4.1567 and is now one of its callers, so the
-          run panels and this bar cannot drift apart. */}
+        <span className="font-semibold">Run instantly</span>
+        <FieldHelp
+          label="Run instantly"
+          triggerLabel="Run instantly — unavailable"
+          unavailable
+          triggerIcon={
+            <ToggleLeft className="h-6 w-6 opacity-50" aria-hidden />
+          }
+        >
+          Unavailable: this mandate cannot enforce a pause for user intervention
+          across all execution paths.
+        </FieldHelp>
+        <span>Unavailable</span>
+      </div>
       <ServerNotes
         heading="What the save did"
         notes={serverNotes}
         className="mt-1.5"
         testId="binding-save-notes"
       />
-      {/* P15 — an unavailable control carries its own reason, and the reason is
-          never the control being greyed out. */}
     </div>
   );
 }

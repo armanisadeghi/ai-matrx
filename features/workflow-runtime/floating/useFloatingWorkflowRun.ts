@@ -44,14 +44,7 @@ import {
 } from "@/features/overlays/openers/workflowRunWindow";
 
 import { selectRunStatus } from "../redux/workflow-runs.selectors";
-
-/** Terminal runs are never handed off — see the header. */
-const TERMINAL_STATUSES = new Set([
-  "completed",
-  "failed",
-  "cancelled",
-  "errored",
-]);
+import { runIsOver } from "../types";
 
 export interface FloatingWorkflowRunOptions {
   /** The run this surface is showing. Null while it has none. */
@@ -91,7 +84,8 @@ export function useFloatingWorkflowRun({
         latest.current;
       // Never seen (no status yet) still counts as live — a run adopted
       // moments ago is the most important one not to lose.
-      if (finalStatus !== null && TERMINAL_STATUSES.has(finalStatus)) return;
+      // A run that is over is never handed off — see the header.
+      if (runIsOver(finalStatus)) return;
       dispatch(
         openWorkflowRunWindowAction({
           runId,

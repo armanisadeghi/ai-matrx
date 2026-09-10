@@ -204,7 +204,14 @@ import type { VariableResourceContextConfig } from "@/features/agents/types/agen
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import { patchAgentConversationMetadata } from "@/features/agents/redux/conversation-list/conversation-list.slice";
-import { upsertAgentConversationFromExecutionAction } from "@/features/agents/redux/conversation-list/record-conversation-from-execution";
+import {
+  buildConversationListItemFromExecution,
+  upsertAgentConversationFromExecutionAction,
+} from "@/features/agents/redux/conversation-list/record-conversation-from-execution";
+import {
+  patchConversationInScopes,
+  upsertConversationIntoScopes,
+} from "@/features/agents/redux/conversation-history/slice";
 import { StreamProfiler } from "@/utils/stream-profiler";
 import { makePartialKindStalenessGate } from "@ai-matrx/content-ir/wire";
 import { prepareInboundRenderBlock } from "../utils/inbound-render-block";
@@ -1045,6 +1052,20 @@ export async function processStream({
               // here would blank out an existing description instead of
               // leaving it alone when the server didn't send one.
               description: labeled.description,
+            }),
+          );
+          // History sidebars hold their own copy of the row (scope-keyed);
+          // without this the list keeps "Conversation abc123" beside the
+          // titled chat in the "In this window" section.
+          dispatch(
+            patchConversationInScopes({
+              conversationId: labeled.conversation_id,
+              patch: {
+                title: labeled.title,
+                ...(labeled.description !== undefined
+                  ? { description: labeled.description }
+                  : {}),
+              },
             }),
           );
         } else if (d.type === "memory_context_injected") {
@@ -1981,6 +2002,21 @@ export async function processStream({
                 conversationId,
               );
               if (syncListCx) dispatch(syncListCx);
+              // Same row into every mounted history sidebar whose filters
+              // admit it — the live chat must appear in the list it belongs to.
+              const historyRow = buildConversationListItemFromExecution(
+                getState(),
+                conversationId,
+                conversationId,
+              );
+              if (historyRow) {
+                dispatch(
+                  upsertConversationIntoScopes({
+                    row: historyRow.row,
+                    agentId: historyRow.canonicalAgentId,
+                  }),
+                );
+              }
             }
           }
         }

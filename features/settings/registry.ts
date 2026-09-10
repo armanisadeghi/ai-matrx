@@ -37,6 +37,7 @@ import {
   Briefcase,
   FileSpreadsheet,
   Gauge,
+  Archive,
 } from "lucide-react";
 import { Chrome } from "@/components/icons/brand-icons";
 import Placeholder from "./tabs/PlaceholderTab";
@@ -81,6 +82,7 @@ import ExtensionTab from "./tabs/ExtensionTab";
 import VoiceMicTab from "./tabs/VoiceMicTab";
 import MemoryTab from "./tabs/MemoryTab";
 import ConversationFiltersTab from "./tabs/ConversationFiltersTab";
+import ListsTab from "./tabs/ListsTab";
 import type { SettingsTabDef, ResolvedSettingsTab } from "./types";
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
 
@@ -169,6 +171,26 @@ export const settingsRegistry: SettingsTabDef[] = [
       "hide",
     ],
     component: ConversationFiltersTab,
+    persistence: "synced",
+  },
+  {
+    id: "general.lists",
+    label: "Lists",
+    icon: Archive,
+    parentId: "general",
+    description:
+      "How lists start out — including whether archived items are hidden.",
+    searchKeywords: [
+      "archive",
+      "archived",
+      "list",
+      "table",
+      "hide",
+      "show",
+      "default",
+      "filter",
+    ],
+    component: ListsTab,
     persistence: "synced",
   },
   {

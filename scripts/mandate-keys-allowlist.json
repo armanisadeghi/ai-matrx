@@ -1,0 +1,17 @@
+[
+  {
+    "file": "features/mandates/authoring/constants.ts",
+    "key": "mandate.goal_writer",
+    "reason": "origin='user' \u2014 Arman created this mandate himself in the console on 2026-08-31 (live, bound, fully mapped). A user-created row can never appear in a generated union built from code declarations."
+  },
+  {
+    "file": "features/surfaces/manifests/mandate-workspace.manifest.ts",
+    "key": "mandate.goal_writer",
+    "reason": "Same origin='user' mandate as features/mandates/authoring/constants.ts, named here so the surface manifest declares the same job."
+  },
+  {
+    "file": "features/mandates/authoring/constants.ts",
+    "key": "mandates.kind_converter",
+    "reason": "DELIBERATELY UNASSIGNED \u2014 no mandate.definition row exists (verified live 2026-09-10; only a soft-deleted 'mandates.goal_writer' shares the plural prefix). This is the documented honest-refusal posture: the affordance renders disabled naming the missing key until someone creates it, and features/mandates/authoring/AutomationButton.test.tsx pins that behaviour with the case 'a key with no row at all'. Not a dead reference to delete \u2014 the refusal is the feature."
+  }
+]

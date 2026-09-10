@@ -85,6 +85,40 @@ jobs:
         # matrx-local shipped for months — walked straight through it. The
         # self-test plants that exact shape and asserts it is reported.
         run: pnpm check:canonical-pickers:self-test
+      - name: THE ARCHIVED-ITEMS LAW — every list has an archive control
+        # Arman, 2026-09-09: "everything should have an archive filter, and the
+        # default should always hide archived, but seeing archived items should
+        # be one or two clicks away." A hardcoded `.eq("is_archived", false)`
+        # on a list read is zero clicks — the rows are unreachable forever.
+        # The archivable-entity set is derived from types/database.types.ts, so
+        # a new table with an archive column is covered the day db-types runs.
+        # Pure static scan over tracked .ts/.tsx.
+        run: pnpm check:archived-items-law
+      - name: the archive guard can still fail (self-test)
+        # A guard you cannot demonstrate failing is not a guard. The self-test
+        # plants the exact shape `/agents/templates` shipped, a component that
+        # renders the archive column with no control, and a file whose only
+        # "control" is a comment — and asserts all three are reported, while a
+        # service layer, a single-record read and a reasoned exemption are not.
+        run: pnpm check:archived-items-law:self-test
+      - name: NO HAND-TYPED MANDATE KEYS — the vocabulary is the authority
+        # @ai-matrx/agents 0.10.0 publishes the declared mandate key set,
+        # emitted by THE ONE GENERATOR from aidream's own declared_mandates().
+        # A hand-typed literal is a mirror of that set: a typo, a rename or a
+        # retirement on the server becomes a 404 nobody sees, and the release
+        # report cannot resolve this repo's references against the key set it
+        # shipped. Adopted 2026-09-10 (200 literals across 76 files -> 0), so
+        # there is no baseline and any finding is NEW. Pure static scan over
+        # tracked .ts/.tsx.
+        run: pnpm check:mandate-keys
+      - name: the mandate-key guard can still fail (self-test)
+        # A guard you cannot demonstrate failing is not a guard. The self-test
+        # plants a hand-typed key in each position the guard claims to cover —
+        # constant, property, record value, JSX attribute, entry-point argument
+        # — and asserts each is reported, while the MANDATE_KEYS member, an
+        # identically-spelled entitlement meter id (the namespaces overlap) and
+        # a mandate-named holder carrying a label or a UUID are not.
+        run: pnpm check:mandate-keys:self-test
       - name: THE RENDER MATRIX — every recognition path x every shape archetype
         # The witness for the 2026-08-28 outage, in which one gate in one
         # package cost ~221 live kinds their component while every unit test
@@ -536,3 +570,24 @@ jobs:
         # `always()` so a content-IR failure never hides a workflow-runtime one.
         if: always() && steps.content_ir.outcome != 'cancelled'
         run: pnpm test:workflow-runtime
+
+      - name: Administration navigation cannot lose a route
+        # features/admin/components/AdminRouteSidebarMenu.test.tsx asserts every
+        # registry destination and every domain landing is reachable from the
+        # rendered sidebar, that no href renders twice, and that only one
+        # .shell-active-pill is live at a time (two share a static
+        # view-transition-name and kill the nav transition).
+        #
+        # check:admin-catalog compares the registry to the FILESYSTEM and is
+        # happy whether or not the menu renders what it declares, so it cannot
+        # catch a destination vanishing from the sidebar. Run both: the catalog
+        # check owns "the route exists", this owns "you can get to it".
+        #
+        # Neither ran in CI before 2026-09-08. Like the HR guards above, jest
+        # picks this file up only in an unscoped `pnpm test`, which nothing runs.
+        if: always() && steps.content_ir.outcome != 'cancelled'
+        run: pnpm test:admin-nav
+
+      - name: Administration route registry matches the filesystem
+        if: always() && steps.content_ir.outcome != 'cancelled'
+        run: pnpm check:admin-catalog:strict

@@ -24,7 +24,7 @@ import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks"
 import { SkillConfigPicker } from "@/features/skills/components/SkillConfigPicker";
 import type { SkillConfig } from "@/features/skills/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 
 interface AgentSkillsWindowProps {
@@ -58,7 +58,7 @@ function AgentSkillsWindowInner({
   );
   const agentName = useAppSelector((state) => selectAgentName(state, agentId) ?? null);
   const openAgentContentWindow = useOpenAgentContentWindow();
-  const agentSection = useAgentMenuSection({
+  const agentSection = buildAgentMenuSection({
     agentId,
     agentName,
     onRefresh: () => dispatch(fetchFullAgent(agentId)),

@@ -24,7 +24,7 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { FEEDBACK_TYPES } from "@/types/feedback.types";
-import { FEEDBACK_DRAFT_FIELDS } from "@/features/window-panels/windows/feedbackDraftWrite";
+import { FEEDBACK_DRAFT_FIELDS } from "@/features/feedback/feedbackDraftWrite";
 import {
   BASELINE_VALUES,
   mergeBaselineValues,
@@ -196,7 +196,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *    agent writing it would be fabricating an outcome.
  *
  * The handler validates through the PURE `parseFeedbackDraft`
- * (`features/window-panels/windows/feedbackDraftWrite.ts`) and THROWS on a bad
+ * (`features/feedback/feedbackDraftWrite.ts`) and THROWS on a bad
  * shape, so the failure lands synchronously in the seam and comes back to the
  * agent as a message it can act on.
  */

@@ -37,9 +37,10 @@ import {
   selectViewedJobForFile,
 } from "@/features/page-extraction/redux/selectors";
 import type { PageExtractionJob } from "@/features/page-extraction/types";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 export function SavedJobsList({ fileId }: { fileId: string }) {
-  const { jobs, loading, refetch } = useExtractionJobs(fileId);
+  const { jobs, archivedJobs, loading, refetch } = useExtractionJobs(fileId);
   const dispatch = useAppDispatch();
   const toast = useToastManager("page-extraction");
   const selectedJobId = useAppSelector((s) =>
@@ -49,10 +50,14 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
   const { launch, dialog, running } = useExtractionRunLauncher();
   const [runningJobId, setRunningJobId] = useState<string | null>(null);
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
+  // THE ARCHIVED-ITEMS LAW: archived templates are hidden by default and one
+  // click away. `includeArchived` existed in the service for months with no UI
+  // that could ever pass it — this is that control.
+  const [showArchived, setShowArchived] = useState(false);
 
   if (!fileId) return null;
-  if (loading && jobs.length === 0) return null;
-  if (jobs.length === 0) {
+  if (loading && jobs.length === 0 && archivedJobs.length === 0) return null;
+  if (jobs.length === 0 && archivedJobs.length === 0) {
     return (
       <p className="text-[10px] text-muted-foreground/70 leading-snug px-1">
         No saved templates yet. Configure below and click{" "}
@@ -114,13 +119,7 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
     }
   };
 
-  return (
-    <div className="space-y-1.5 border-b border-border pb-3">
-      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-        Saved templates ({jobs.length})
-      </p>
-      <ul className="space-y-1">
-        {jobs.map((job) => {
+  const renderJob = (job: PageExtractionJob) => {
           const isSelected = selectedJobId === job.id;
           return (
             <li
@@ -188,8 +187,25 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
               </Button>
             </li>
           );
-        })}
-      </ul>
+  };
+
+  return (
+    <div className="space-y-1.5 border-b border-border pb-3">
+      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+        Saved templates ({jobs.length})
+      </p>
+      <ul className="space-y-1">{jobs.map(renderJob)}</ul>
+
+      <ArchivedDisclosure
+        count={archivedJobs.length}
+        open={showArchived}
+        onOpenChange={setShowArchived}
+        label="Archived templates"
+        contentClassName="space-y-1"
+      >
+        <ul className="space-y-1">{archivedJobs.map(renderJob)}</ul>
+      </ArchivedDisclosure>
+
       {dialog}
     </div>
   );

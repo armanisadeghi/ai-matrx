@@ -22,6 +22,7 @@ import type { paths } from "@/types/python-generated/api-types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import type { Rulebook } from "../../types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * "Add rules from a source" — the plop-in-a-book / talk-it-out flow. Two ways
@@ -303,7 +304,7 @@ export function IngestSourceDialog({
           <DialogTitle className="flex items-center gap-2">
             Add rules from a source
             <AgentCredit
-              mandate="masterwork.source_distiller"
+              mandate={MANDATE_KEYS.masterwork__source_distiller}
               agent="masterwork_source_distiller"
             />
           </DialogTitle>

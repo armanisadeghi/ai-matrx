@@ -10,7 +10,7 @@
  * EditContextItemSheet, ContextItemsHub, ScopeItemDetail, ScopesList and
  * OrgHomeScopeSection — real recurrence. This module is the fix that stops
  * each one from growing its own copy of "open / delete" — a surface calls
- * `useContextItemMenuSection` with a `getRow` reading its own clicked-row
+ * `buildContextItemMenuSection` with a `getRow` reading its own clicked-row
  * state and the callbacks it already has, and gets the same items
  * everywhere.
  *
@@ -66,7 +66,7 @@ export interface ContextItemMenuActions {
   deleteItem: (row: ContextItemMenuRow) => void;
 }
 
-export function useContextItemMenuSection(opts: {
+export function buildContextItemMenuSection(opts: {
   /** The row the menu was opened on, resolved at select time. */
   getRow: () => ContextItemMenuRow | null;
   actions: ContextItemMenuActions;

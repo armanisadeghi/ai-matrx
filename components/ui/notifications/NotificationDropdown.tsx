@@ -16,6 +16,21 @@ interface NotificationDropdownComponentProps extends NotificationDropdownProps {
     isMobile?: boolean;
 }
 
+/** Hoisted to module scope — an inner component type remounts its subtree every render. */
+const EmptyState = () => (
+    <div className="flex flex-col items-center justify-center py-8 px-4">
+        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+            <Bell className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+        </div>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+            No new notifications
+        </h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+            You're all caught up! Check back later for updates.
+        </p>
+    </div>
+);
+
 export default function NotificationDropdown({
     notifications = [],
     onMarkAsRead,
@@ -41,19 +56,6 @@ export default function NotificationDropdown({
         }
     };
 
-    const EmptyState = () => (
-        <div className="flex flex-col items-center justify-center py-8 px-4">
-            <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-                <Bell className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-                No new notifications
-            </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                You're all caught up! Check back later for updates.
-            </p>
-        </div>
-    );
 
     const TriggerIcon = unreadCount > 0 ? BellRingTapButton : BellTapButton;
 

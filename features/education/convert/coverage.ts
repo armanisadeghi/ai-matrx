@@ -46,9 +46,7 @@ export const COVERAGE_DEPTHS: readonly CoverageDepth[] = [
 ] as const;
 
 export function isCoverageDepth(v: unknown): v is CoverageDepth {
-  return (
-    v === "quick" || v === "standard" || v === "thorough"
-  );
+  return v === "quick" || v === "standard" || v === "thorough";
 }
 
 const DEPTH_MULTIPLIER: Record<CoverageDepth, number> = {
@@ -106,23 +104,60 @@ function splitUnits(text: string): string[] {
   const lines = text.split("\n");
   const units: string[] = [];
   let buf: string[] = [];
+  let sawBoundary = false;
   const flush = () => {
     const t = buf.join("\n").trim();
     if (t) units.push(t);
     buf = [];
   };
   for (const line of lines) {
-    if (BOUNDARY_RE.test(line.trim()) && buf.length > 0) flush();
+    if (BOUNDARY_RE.test(line.trim())) {
+      sawBoundary = true;
+      if (buf.length > 0) flush();
+    }
     buf.push(line);
   }
   flush();
-  if (units.length > 0) return units;
+  if (sawBoundary) return units;
   // No headings at all (a plain paste): fall back to paragraphs so a long
   // unstructured source still segments instead of collapsing to one unit.
   return text
     .split(/\n{2,}/)
     .map((p) => p.trim())
     .filter(Boolean);
+}
+
+/**
+ * A page, paragraph, or OCR stream can itself be larger than one coverage
+ * segment. Natural-boundary detection is a preference, not permission to hand
+ * an arbitrarily large unit to one agent call. Split an oversized unit near a
+ * readable boundary and preserve every character, including the tail.
+ */
+function splitOversizedUnit(unit: string, targetChars: number): string[] {
+  const clean = unit.trim();
+  if (clean.length <= targetChars) return clean ? [clean] : [];
+
+  const pieces: string[] = [];
+  let remaining = clean;
+  while (remaining.length > targetChars) {
+    const window = remaining.slice(0, targetChars + 1);
+    const floor = Math.max(1, Math.floor(targetChars * 0.6));
+    const candidates = [
+      window.lastIndexOf("\n\n"),
+      window.lastIndexOf("\n"),
+      window.lastIndexOf(". "),
+      window.lastIndexOf("? "),
+      window.lastIndexOf("! "),
+      window.lastIndexOf(" "),
+    ].filter((at) => at >= floor);
+    const cut =
+      candidates.length > 0 ? Math.max(...candidates) + 1 : targetChars;
+    const piece = remaining.slice(0, cut).trim();
+    if (piece) pieces.push(piece);
+    remaining = remaining.slice(cut).trimStart();
+  }
+  if (remaining.trim()) pieces.push(remaining.trim());
+  return pieces;
 }
 
 /** The first heading-ish line of a unit, cleaned up for a label. */
@@ -136,7 +171,11 @@ function unitLabel(unit: string): string {
   return cleaned.length > 60 ? `${cleaned.slice(0, 57)}...` : cleaned;
 }
 
-function packSegments(units: string[], targetChars: number, maxSegments: number) {
+function packSegments(
+  units: string[],
+  targetChars: number,
+  maxSegments: number,
+) {
   const packed: { text: string; first: string; last: string }[] = [];
   let buf: string[] = [];
   let labels: string[] = [];
@@ -150,11 +189,19 @@ function packSegments(units: string[], targetChars: number, maxSegments: number)
     buf = [];
     labels = [];
   };
-  for (const unit of units) {
-    const projected = buf.reduce((n, u) => n + u.length + 2, 0) + unit.length;
-    if (buf.length > 0 && projected > targetChars) flush();
-    buf.push(unit);
-    labels.push(unitLabel(unit));
+  for (const rawUnit of units) {
+    const pieces = splitOversizedUnit(rawUnit, targetChars);
+    const baseLabel = unitLabel(rawUnit);
+    for (const [pieceIndex, unit] of pieces.entries()) {
+      const projected = buf.reduce((n, u) => n + u.length + 2, 0) + unit.length;
+      if (buf.length > 0 && projected > targetChars) flush();
+      buf.push(unit);
+      labels.push(
+        pieces.length > 1
+          ? `${baseLabel || "Part"} (${pieceIndex + 1}/${pieces.length})`
+          : baseLabel,
+      );
+    }
   }
   flush();
 
@@ -260,7 +307,10 @@ export async function planCoverage({
       knobInt(KIT_KNOB_FEATURE, "max_segments"),
       knobInt(KIT_KNOB_FEATURE, "max_items_total"),
       knobInt(KIT_KNOB_FEATURE, "min_items_total"),
-      knobInt(KIT_KNOB_FEATURE, ITEMS_KNOB[targetKind] ?? "items_per_segment_deck"),
+      knobInt(
+        KIT_KNOB_FEATURE,
+        ITEMS_KNOB[targetKind] ?? "items_per_segment_deck",
+      ),
     ]);
 
   const clean = text.trim();
@@ -368,7 +418,10 @@ export async function segmentConcurrency(): Promise<number> {
  */
 export function describeGaps(missed: SourceSegment[]): string | null {
   if (missed.length === 0) return null;
-  const names = missed.slice(0, 3).map((m) => m.label).join(", ");
+  const names = missed
+    .slice(0, 3)
+    .map((m) => m.label)
+    .join(", ");
   const more = missed.length > 3 ? ` and ${missed.length - 3} more` : "";
   return `${missed.length} section${missed.length === 1 ? "" : "s"} could not be covered (${names}${more}). Use "Add more" to fill the gap.`;
 }

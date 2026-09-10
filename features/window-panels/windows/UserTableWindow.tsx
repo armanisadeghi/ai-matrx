@@ -15,7 +15,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   datasetTableEntityRef,
-  useDatasetTableMenuSection,
+  buildDatasetTableMenuSection,
   type DatasetTableMenuRow,
 } from "@/features/data-tables/dataset-table-actions";
 
@@ -31,21 +31,25 @@ export interface UserTableWindowProps {
   tableId?: string;
 }
 
-export function UserTableWindow({
-  isOpen,
+export function UserTableWindow({ isOpen, ...rest }: UserTableWindowProps) {
+  if (!isOpen) return null;
+  // Body split out so its hooks are unconditional: they mount with the open
+  // window and unmount with it, exactly as before.
+  return <UserTableWindowBody {...rest} />;
+}
+
+function UserTableWindowBody({
   onClose,
   title = "Table",
   tableId,
-}: UserTableWindowProps) {
-  if (!isOpen) return null;
-
+}: Omit<UserTableWindowProps, "isOpen">) {
   // Size to the viewport so the window is "nice and big but always fits".
   const { width, height } = computeViewportSize();
 
   const row: DatasetTableMenuRow | null = tableId
     ? { id: tableId, name: title !== "Table" ? title : null }
     : null;
-  const datasetSection = useDatasetTableMenuSection({ getRow: () => row });
+  const datasetSection = buildDatasetTableMenuSection({ getRow: () => row });
 
   return (
     <WindowPanel

@@ -37,7 +37,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   captureItemEntityRef,
-  useCaptureItemMenuSection,
+  buildCaptureItemMenuSection,
   type CaptureItemMenuRow,
 } from "../item-actions";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -280,6 +280,34 @@ export function AllItemsTable() {
     },
   ];
 
+  // `build*MenuSection` is a PURE builder, not a hook (see SECTIONS.md — the
+  // naming law). It sits above the mobile early return only because the
+  // desktop branch below is its only consumer; no hook-order rule applies.
+  const captureItemMenuSection = buildCaptureItemMenuSection({
+    getRow: (): CaptureItemMenuRow | null =>
+      clickedRow
+        ? { id: clickedRow.id, code: clickedRow.code, status: clickedRow.status }
+        : null,
+    actions: {
+      openView: (row) => {
+        const full = rows?.find((r) => r.id === row.id);
+        if (full) openView(full);
+      },
+      openCapture: (row) => {
+        const full = rows?.find((r) => r.id === row.id);
+        if (full) openCapture(full);
+      },
+      markReady: (row) => {
+        const full = rows?.find((r) => r.id === row.id);
+        if (full) void markReady(full);
+      },
+      requestDelete: (row) => {
+        const full = rows?.find((r) => r.id === row.id);
+        if (full) setConfirmDelete(full);
+      },
+    },
+  });
+
   // Mobile: a swipeable card list on the shared gesture row (tap → view,
   // swipe RIGHT → capture, swipe LEFT → delete, long-press → all actions —
   // the iOS-native shape of the same list). Desktop keeps the canonical
@@ -375,30 +403,6 @@ export function AllItemsTable() {
     );
   }
 
-  const captureItemMenuSection = useCaptureItemMenuSection({
-    getRow: (): CaptureItemMenuRow | null =>
-      clickedRow
-        ? { id: clickedRow.id, code: clickedRow.code, status: clickedRow.status }
-        : null,
-    actions: {
-      openView: (row) => {
-        const full = rows?.find((r) => r.id === row.id);
-        if (full) openView(full);
-      },
-      openCapture: (row) => {
-        const full = rows?.find((r) => r.id === row.id);
-        if (full) openCapture(full);
-      },
-      markReady: (row) => {
-        const full = rows?.find((r) => r.id === row.id);
-        if (full) void markReady(full);
-      },
-      requestDelete: (row) => {
-        const full = rows?.find((r) => r.id === row.id);
-        if (full) setConfirmDelete(full);
-      },
-    },
-  });
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

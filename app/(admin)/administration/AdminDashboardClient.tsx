@@ -9,7 +9,7 @@ import {
 } from "@tabler/icons-react";
 import AppLink from "@/components/navigation/AppLink";
 import { Input } from "@ai-matrx/design-system";
-import { AdminDomainSection } from "@/features/admin/components/AdminDomainDirectory";
+import { AdminDomainSection } from "@/features/admin/components/AdminDomainSection";
 import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
 import {
   adminNavigationRegistry,

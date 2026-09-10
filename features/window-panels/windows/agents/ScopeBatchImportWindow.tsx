@@ -15,7 +15,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 
 interface ScopeBatchImportWindowProps {
   isOpen: boolean;
@@ -33,7 +33,7 @@ export default function ScopeBatchImportWindow({
 }: ScopeBatchImportWindowProps) {
   const dispatch = useAppDispatch();
   const agentName = useAppSelector((s) => selectAgentName(s, agentId) ?? null);
-  const agentSection = useAgentMenuSection({
+  const agentSection = buildAgentMenuSection({
     agentId,
     agentName,
     onRefresh: () => dispatch(fetchFullAgent(agentId)),

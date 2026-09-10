@@ -23,7 +23,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   pageEntityRef,
-  pageMenuSection,
+  buildPageMenuSection,
 } from "@/features/marketing/search-console/components/insights/insight-row-menu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { Badge } from "@/components/ui/badge";
@@ -696,7 +696,7 @@ function EvidenceTable({
         extraSections={
           contextRow
             ? [
-                pageMenuSection({
+                buildPageMenuSection({
                   siteId,
                   siteName: null,
                   url: contextRow.url,

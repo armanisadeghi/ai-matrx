@@ -32,12 +32,23 @@ import {
   type MandateNoteKind,
 } from "../notes";
 import {
+  ConfigurationTable,
+  ConfigurationTableRow,
+  FieldHelp,
   PropertyRow,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
 import { ProTextarea } from "@/components/official/ProTextarea";
+
+const NOTE_COLUMNS = [
+  { key: "type", label: "Type" },
+  { key: "author", label: "Author" },
+  { key: "created", label: "Created" },
+  { key: "origin", label: "Origin" },
+  { key: "holder", label: "Observed holder" },
+];
 
 export interface MandateNotesPanelProps {
   /** The mandate the notes hang off. */
@@ -234,52 +245,45 @@ export function MandateNotesPanel({
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>
-              <div className="mt-2 border-t border-border/40 pt-1">
-                <PropertyRow
-                  label="Type"
-                  value={MANDATE_NOTE_KIND_LABELS[note.noteKind]}
-                />
-                <PropertyRow
-                  label="Author"
-                  value={note.authorName || "Name unavailable"}
-                />
-                <PropertyRow
-                  label="Created"
-                  value={
-                    <time dateTime={note.createdAt}>
-                      {new Date(note.createdAt).toLocaleString()}
-                    </time>
-                  }
-                  help={formatDistanceToNow(new Date(note.createdAt), {
-                    addSuffix: true,
-                  })}
-                />
-                <PropertyRow
-                  label="Origin"
-                  value={
-                    note.surfaceName
-                      ? getSurfaceDisplayLabel(note.surfaceName)
-                      : "Mandate console"
-                  }
-                />
-                <PropertyRow
-                  label="Observed holder"
-                  value={
-                    note.observedAgentId ? (
-                      <EntityRef
-                        token="agent"
-                        id={note.observedAgentId}
-                        name={
-                          agentNames[note.observedAgentId] || "Name unavailable"
-                        }
-                        showIcon={false}
-                        wrap
-                      />
-                    ) : (
-                      "Not recorded"
-                    )
-                  }
-                />
+              <div className="mt-2">
+                <ConfigurationTable label="Note details" columns={NOTE_COLUMNS}>
+                  <ConfigurationTableRow
+                    columns={NOTE_COLUMNS}
+                    cells={{
+                      type: MANDATE_NOTE_KIND_LABELS[note.noteKind],
+                      author: note.authorName || "Name unavailable",
+                      created: (
+                        <span className="inline-flex flex-wrap items-center gap-1">
+                          <time dateTime={note.createdAt}>
+                            {new Date(note.createdAt).toLocaleString()}
+                          </time>
+                          <FieldHelp label="Created">
+                            {formatDistanceToNow(new Date(note.createdAt), {
+                              addSuffix: true,
+                            })}
+                          </FieldHelp>
+                        </span>
+                      ),
+                      origin: note.surfaceName
+                        ? getSurfaceDisplayLabel(note.surfaceName)
+                        : "Mandate console",
+                      holder: note.observedAgentId ? (
+                        <EntityRef
+                          token="agent"
+                          id={note.observedAgentId}
+                          name={
+                            agentNames[note.observedAgentId] ||
+                            "Name unavailable"
+                          }
+                          showIcon={false}
+                          wrap
+                        />
+                      ) : (
+                        "Not recorded"
+                      ),
+                    }}
+                  />
+                </ConfigurationTable>
               </div>
             </li>
           ))}

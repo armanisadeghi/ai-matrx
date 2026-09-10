@@ -27,7 +27,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   crawlUrlEntityRef,
-  crawlUrlMenuSection,
+  buildCrawlUrlMenuSection,
   type CrawlUrlMenuRow,
 } from "@/features/marketing/components/crawls/crawl-url-actions";
 
@@ -229,7 +229,7 @@ export function CrawlUrlsTable({ crawlId }: { crawlId: string }) {
               };
             }}
             extraSections={[
-              crawlUrlMenuSection(
+              buildCrawlUrlMenuSection(
                 clickedRow ? toCrawlUrlMenuRow(clickedRow) : null,
               ),
             ]}

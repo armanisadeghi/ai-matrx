@@ -821,6 +821,18 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        // The reported side of the SAME fleet — where every mandate is
+        // declared and called, per repository, plus the conversion list.
+        // A repository nobody finished scanning reads "unverified" here;
+        // this board never says "unused".
+        title: "Mandate references",
+        description:
+          "Per repository: the last complete scan or unverified, open findings with location and remedy, and the conversion list (work still running outside a mandate).",
+        iconName: "Plug",
+        link: "/administration/mandates/references",
+        isNew: true,
+      },
+      {
         title: "Lookups",
         description:
           "CRUD for tool-registry lookup tables: ui.ui_client, ui.ui_surface (basic), tool.executor. Foundation tables every other registry feature reads.",
@@ -1326,6 +1338,14 @@ export const adminCategoriesData: AdminCategory[] = [
           "Door Law scoreboard — every surface that names a record without letting the user open it, ranked by feature and file, each row with a one-click repair brief.",
         iconName: "DoorOpen",
         link: "/administration/reporting/dead-ends",
+        isNew: true,
+      },
+      {
+        title: "Tool re-fetch",
+        description:
+          "How often an agent asks a tool for something it was already given. Per tool: repeats (identical name + arguments in one conversation), how many returned byte-identical data and therefore bought nothing, how many were legitimate refreshes, how many happened only after the first result was trimmed out of context, and the characters of context that re-fetching cost.",
+        iconName: "Repeat2",
+        link: "/administration/reporting/tool-refetch",
         isNew: true,
       },
       {

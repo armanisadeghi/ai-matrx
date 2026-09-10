@@ -15,7 +15,7 @@ import {
   Loader2,
   Pencil,
   RotateCcw,
-  Sparkles,
+  BrainCircuit,
   Upload,
 } from "lucide-react";
 
@@ -266,7 +266,7 @@ function OriginBadge({ origin }: { origin: string }) {
     default:
       return (
         <Badge variant="outline" className="gap-1">
-          <Sparkles className="size-3" /> Autosave
+          <BrainCircuit className="size-3" /> Autosave
         </Badge>
       );
   }

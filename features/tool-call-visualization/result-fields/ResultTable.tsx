@@ -19,7 +19,12 @@ import React from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TableColumn } from "./shape";
-import { humanizeEnumValue, isPlainObject } from "./shape";
+import {
+    detectResultShape,
+    humanizeEnumValue,
+    isPlainObject,
+    mediaElementHintForKey,
+} from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
 import {
   MOBILE_TABLE,
@@ -41,6 +46,35 @@ type SortDir = "asc" | "desc" | null;
 
 const INLINE_ROW_CAP = 3;
 const FILTER_THRESHOLD = 10;
+
+/**
+ * Machine plumbing is still part of the result, but it is not the document's
+ * primary reading path. A raw object-array table used to put UUIDs, hashes,
+ * source metadata, and byte offsets beside the reader's actual content — the
+ * exact developer artifact the structured-value floor exists to remove.
+ *
+ * Keep the test deliberately structural rather than domain-specific. These
+ * tokens describe transport identity/provenance in every payload; everything
+ * remains reachable through the per-row Details disclosure below.
+ */
+const TECHNICAL_COLUMN_TOKEN =
+    /(^|_)(ids?|uuids?|hash|checksum|digest|metadata|offset)(_|$)/i;
+const TECHNICAL_POSITION_KEY = /^(chunk|source|record|row)_index$/i;
+
+function normalizeColumnKey(key: string): string {
+    return key
+        .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+        .replace(/[-\s]+/g, "_")
+        .toLowerCase();
+}
+
+export function isTechnicalTableColumn(key: string): boolean {
+    const normalizedKey = normalizeColumnKey(key);
+    return (
+        TECHNICAL_COLUMN_TOKEN.test(normalizedKey) ||
+        TECHNICAL_POSITION_KEY.test(normalizedKey)
+    );
+}
 
 /** Stable scalar→string for sorting / CSV / filtering. */
 function cellToText(value: unknown): string {
@@ -107,6 +141,43 @@ const NestedCell: React.FC<{ value: unknown; depth: number; embedMedia: boolean 
     );
 };
 
+const TechnicalDetailsCell: React.FC<{
+    row: Record<string, unknown>;
+    columns: TableColumn[];
+    depth: number;
+    embedMedia: boolean;
+}> = ({ row, columns, depth, embedMedia }) => {
+    const [open, setOpen] = React.useState(false);
+    const details = Object.fromEntries(columns.map((column) => [column.key, row[column.key]]));
+    const count = columns.length;
+
+    return (
+        <div className="min-w-0">
+            <button
+                type="button"
+                onClick={(event) => {
+                    event.stopPropagation();
+                    setOpen((value) => !value);
+                }}
+                aria-expanded={open}
+                className="whitespace-nowrap text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+                {open ? "Hide details" : `${count} ${count === 1 ? "detail" : "details"}`}
+            </button>
+            {open ? (
+                <div className="mt-2 min-w-[16rem] max-w-md rounded-md bg-muted/30 p-2">
+                    <ResultValue
+                        value={details}
+                        density="full"
+                        depth={depth + 1}
+                        embedMedia={embedMedia}
+                    />
+                </div>
+            ) : null}
+        </div>
+    );
+};
+
 /**
  * A long string inside a cell. Unclamped it makes one cell own half the page;
  * it clamps to 2 lines and expands in place on click (nothing hidden for good).
@@ -154,9 +225,32 @@ function isShortScalarList(
 }
 
 /** Render a single cell — scalar inline, structure collapsed behind a toggle. */
-const Cell: React.FC<{ value: unknown; depth: number; embedMedia: boolean }> = ({ value, depth, embedMedia }) => {
+const Cell: React.FC<{ fieldKey: string; value: unknown; depth: number; embedMedia: boolean }> = ({
+    fieldKey,
+    value,
+    depth,
+    embedMedia,
+}) => {
+    const mediaElementHint = mediaElementHintForKey(fieldKey);
     if (value === null || value === undefined) {
         return <span className="italic text-muted-foreground">—</span>;
+    }
+    // A signed owned-file URL is often longer than LONG_CELL_CHARS. Recognize
+    // media before the generic long-text clamp so table cells receive the same
+    // durable renderer and field-name type hint as key/value results.
+    if (
+        typeof value === "string" &&
+        detectResultShape(value, { embedMedia }).kind === "media"
+    ) {
+        return (
+            <ResultValue
+                value={value}
+                density="inline"
+                depth={depth + 1}
+                embedMedia={embedMedia}
+                mediaElementHint={mediaElementHint}
+            />
+        );
     }
     if (typeof value === "string" && value.length > LONG_CELL_CHARS) {
         return <LongTextCell value={value} />;
@@ -172,7 +266,15 @@ const Cell: React.FC<{ value: unknown; depth: number; embedMedia: boolean }> = (
         }
     }
     if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-        return <ResultValue value={value} density="inline" depth={depth + 1} embedMedia={embedMedia} />;
+        return (
+            <ResultValue
+                value={value}
+                density="inline"
+                depth={depth + 1}
+                embedMedia={embedMedia}
+                mediaElementHint={mediaElementHint}
+            />
+        );
     }
     // A SHORT list of short scalars is the cell — tags, labels, aliases. It
     // reads as chips; collapsing it to "[1 item]" made the reader click to
@@ -213,6 +315,18 @@ export const ResultTable: React.FC<ResultTableProps> = ({
     const [filter, setFilter] = React.useState("");
 
     const full = density === "full";
+    const technicalColumns = columns.filter((column) =>
+        isTechnicalTableColumn(column.key),
+    );
+    const readerColumns = columns.filter(
+        (column) => !isTechnicalTableColumn(column.key),
+    );
+    // A payload made entirely of machine fields has no higher-level document
+    // to promote. Render it honestly instead of replacing the whole table
+    // with one column of identical disclosure buttons.
+    const collapseTechnicalColumns =
+        technicalColumns.length > 0 && readerColumns.length > 0;
+    const visibleColumns = collapseTechnicalColumns ? readerColumns : columns;
 
     // Filter (full density only).
     const filtered = (() => {
@@ -277,7 +391,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                 <table className={cn("border-collapse text-xs", MOBILE_TABLE)}>
                     <thead>
                         <tr>
-                            {columns.map((col, colIdx) => {
+                            {visibleColumns.map((col, colIdx) => {
                                 const active = sortKey === col.key;
                                 return (
                                     <th
@@ -308,13 +422,18 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                                     </th>
                                 );
                             })}
+                            {collapseTechnicalColumns ? (
+                                <th className="border-b border-border/60 px-2.5 py-1.5 text-left align-bottom text-[11px] font-medium text-muted-foreground">
+                                    Details
+                                </th>
+                            ) : null}
                         </tr>
                     </thead>
                     <tbody>
                         {shown.length === 0 ? (
                             <tr>
                                 <td
-                                    colSpan={columns.length}
+                                    colSpan={visibleColumns.length + (collapseTechnicalColumns ? 1 : 0)}
                                     className="px-3 py-4 text-center text-xs text-muted-foreground"
                                 >
                                     No rows match the filter
@@ -323,7 +442,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                         ) : (
                             shown.map((row, ri) => (
                                 <tr key={ri} className="border-b border-border/60 last:border-0 hover:bg-muted/30">
-                                    {columns.map((col, colIdx) => (
+                                    {visibleColumns.map((col, colIdx) => (
                                         <td
                                             key={col.key}
                                             className={cn(
@@ -331,9 +450,24 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                                                 colIdx === 0 && MOBILE_TABLE_FROZEN_CELL,
                                             )}
                                         >
-                                            <Cell value={row[col.key]} depth={depth} embedMedia={embedMedia} />
+                                            <Cell
+                                                fieldKey={col.key}
+                                                value={row[col.key]}
+                                                depth={depth}
+                                                embedMedia={embedMedia}
+                                            />
                                         </td>
                                     ))}
+                                    {collapseTechnicalColumns ? (
+                                        <td className="px-2.5 py-1.5 align-top text-foreground">
+                                            <TechnicalDetailsCell
+                                                row={row}
+                                                columns={technicalColumns}
+                                                depth={depth}
+                                                embedMedia={embedMedia}
+                                            />
+                                        </td>
+                                    ) : null}
                                 </tr>
                             ))
                         )}

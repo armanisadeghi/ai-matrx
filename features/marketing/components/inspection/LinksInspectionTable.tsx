@@ -66,7 +66,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   linkEdgeEntityRef,
-  linkEdgeMenuSection,
+  buildLinkEdgeMenuSection,
   type LinkEdgeMenuRow,
 } from "@/features/marketing/components/inspection/link-edge-actions";
 
@@ -635,7 +635,7 @@ export function LinksInspectionTable({
               };
             }}
             extraSections={[
-              linkEdgeMenuSection(
+              buildLinkEdgeMenuSection(
                 clickedLinkRow ? toLinkEdgeMenuRow(clickedLinkRow) : null,
               ),
             ]}

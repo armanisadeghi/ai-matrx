@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { AlertTriangle, CheckCircle2, Circle, Loader2, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Circle, Loader2, BrainCircuit } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -87,7 +87,7 @@ export function StructuredDataValidatorTool() {
                 </>
               ) : (
                 <>
-                  <Sparkles className="mr-2 h-4 w-4" /> Validate
+                  <BrainCircuit className="mr-2 h-4 w-4" /> Validate
                 </>
               )}
             </Button>

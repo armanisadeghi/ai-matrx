@@ -15,6 +15,7 @@
 // See features/agents/browse/FEATURE.md for the worked implementation and
 // lib/list-scope/FEATURE.md for the scope vocabulary + RPC template rules.
 
+import type { ArchiveFilterValue } from "@ai-matrx/design-system";
 import type { ListScope, ListScopeKind } from "@/lib/list-scope/types";
 import { DEFAULT_LIST_SCOPE } from "@/lib/list-scope/types";
 
@@ -39,7 +40,15 @@ export type EntityFilterValue =
 /** Keyed by COLUMN ID, so the server predicate and the header agree by name. */
 export type EntityFilters = Record<string, EntityFilterValue>;
 
-export type ArchivedFilter = "active" | "archived" | "all";
+/**
+ * THE ARCHIVED-ITEMS LAW's tri-state, from the ONE place it is defined:
+ * `@ai-matrx/design-system`'s `ArchiveFilterValue` (`active` | `archived` |
+ * `all`). This alias exists only so the ~200 call sites that already say
+ * `ArchivedFilter` keep reading naturally — the vocabulary itself is the
+ * package's, never this repo's, so the words on screen and the words in the
+ * type can never drift apart.
+ */
+export type ArchivedFilter = ArchiveFilterValue;
 
 export interface EntityListQuery {
   scope: ListScope;
@@ -73,12 +82,55 @@ export const DEFAULT_ENTITY_LIST_QUERY: EntityListQuery = {
  * Counts ONLY what the user applied — never the sort or the active scope.
  * A badge that reads "1" on an untouched page is a permanent lie that trains
  * people to ignore the number (which is exactly what /agents/all's did).
+ *
+ * 🚨 THE ARCHIVE AXIS IS COMPARED AGAINST THE SURFACE'S OWN DEFAULT, NOT
+ * AGAINST THE LITERAL `"active"`. THE ARCHIVED-ITEMS LAW §6 made the starting
+ * value a user KNOB (`userPreferences.lists.archivedDefault`), so a user who
+ * set theirs to "Active + archived" met an untouched page whose Filters badge
+ * read "1" and whose empty state claimed a search-and-filter narrowing that
+ * nobody had applied — the exact permanent lie this function exists to
+ * prevent, reintroduced by the knob. The default is passed in because only the
+ * hook knows it.
  */
-export function countActiveFilters(query: EntityListQuery): number {
+export function countActiveFilters(
+  query: EntityListQuery,
+  defaultArchived: ArchivedFilter = DEFAULT_ENTITY_LIST_QUERY.archived,
+): number {
   return (
-    Object.keys(query.filters).length + (query.archived !== "active" ? 1 : 0)
+    Object.keys(query.filters).length +
+    (query.archived !== defaultArchived ? 1 : 0)
   );
 }
+
+/**
+ * 🚨 THE ALL-ARCHIVED FACT — what a list must know before it may say "none".
+ *
+ * THE DEFECT THIS CLOSES (row F10 repair, 2026-09-10). Every archive-aware
+ * `EntityListConfig` carries a STATIC `emptyState`, and the shell fell back to
+ * it whenever the query was untouched and no rows came back. But the archive
+ * filter's default HIDES archived rows (THE ARCHIVED-ITEMS LAW §2), so "the
+ * live half is empty" and "there is nothing here" are different facts — and
+ * the shell was printing the second when it only knew the first. Measured on
+ * `/maps` with all 46 of a user's maps archived: *"No maps yet — A map is a
+ * picture of how something works … Make one"*, beside a "New map" button, one
+ * popover away from that page's own Archived filter holding all 46. A screen
+ * telling an Expert to rebuild work they already have.
+ *
+ * The count CANNOT come from the facets or the scope counts: both are fetched
+ * with the query's CURRENT `archived` value, so on the defaulted page they
+ * describe the live half too. It is its own read, `archived: "archived"`, and
+ * it is asked ONLY when the live half came back empty — at most one extra,
+ * page-size-1 request, on the one screen that would otherwise lie.
+ */
+export type ArchivedProbe =
+  /** Not applicable: the surface has no archive axis, or is already showing archived rows, or the live half is not empty. */
+  | { state: "off" }
+  /** The live half is empty and the archived count is in flight. Say nothing yet. */
+  | { state: "loading" }
+  /** Answered. `total` archived rows match this exact scope/search/filters. */
+  | { state: "known"; total: number }
+  /** The read broke. The page must say it cannot tell — never fall back to "none yet". */
+  | { state: "failed" };
 
 /**
  * One narrowing choice inside a scope — an org under "My Orgs", an industry

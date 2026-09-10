@@ -177,22 +177,129 @@ describe("coerceEndowmentPortfolio", () => {
   });
 });
 
+/** The smallest payload `coerceEndowmentPortfolio` accepts, with platforms swapped in. */
+function portfolioWith(platforms: unknown[]): Record<string, unknown> {
+  return {
+    business_read: "A certified recycler with real operational data.",
+    endowments: [{ endowment: "data", verdict: "strong", rationale: "Weighs every ton." }],
+    artifacts: [makeArtifact()],
+    platforms,
+    tier3_concepts: [],
+    what_not_to_do: [],
+  };
+}
+
 describe("matchPlatformsToRegistry", () => {
-  it("matches on domain even when the slugs disagree", () => {
+  it("matches the same claimable surface even when the slugs disagree", () => {
     const [match] = matchPlatformsToRegistry(
       [makePlatform({ suggested_slug: "zenodo-open-data" })],
-      [makePublisher()],
+      [makePublisher({ manage_url: "https://zenodo.org/signup" })],
     );
-    expect(match?.matchedBy).toBe("domain");
+    expect(match?.matchedBy).toBe("surface");
     expect(match?.existing?.slug).toBe("zenodo");
   });
 
-  it("matches on domain across www / scheme differences in the stored row", () => {
+  it("matches a surface across www / scheme / trailing-slash differences", () => {
     const [match] = matchPlatformsToRegistry(
       [makePlatform()],
-      [makePublisher({ domain: "https://www.zenodo.org/" })],
+      [
+        makePublisher({
+          domain: "https://www.zenodo.org/",
+          manage_url: "http://www.zenodo.org/signup/",
+        }),
+      ],
     );
-    expect(match?.matchedBy).toBe("domain");
+    expect(match?.matchedBy).toBe("surface");
+  });
+
+  // THE WS7 RULING (2026-08-21): the dedup key is (domain, manage_url) — one row
+  // per CLAIMABLE SURFACE, not one row per domain. A domain hosting two genuinely
+  // distinct publishers gets two rows. Before this was fixed, the code deduped on
+  // the domain alone and suppressed the second surface entirely (GitHub Sponsors
+  // and Google Dataset Search were both wrongly excluded that way).
+  it("does NOT suppress a second, genuinely distinct surface on one domain", () => {
+    const claimYourPage = makePlatform({
+      name: "Facebook Pages",
+      domain: "facebook.com",
+      suggested_slug: "facebook-pages",
+      signup_url: "https://facebook.com/pages/create",
+    });
+    const agencyDirectory = makePlatform({
+      name: "Meta Business Partners",
+      domain: "facebook.com",
+      suggested_slug: "meta-business-partners",
+      signup_url: "https://facebook.com/business/partner-directory",
+    });
+    const [firstMatch, secondMatch] = matchPlatformsToRegistry(
+      [claimYourPage, agencyDirectory],
+      [
+        makePublisher({
+          slug: "facebook-pages",
+          domain: "facebook.com",
+          manage_url: "https://facebook.com/pages/create",
+        }),
+      ],
+    );
+    expect(firstMatch?.matchedBy).toBe("surface");
+    expect(firstMatch?.existing?.slug).toBe("facebook-pages");
+    // The agency directory is a different surface on the same domain — it is NEW.
+    expect(secondMatch?.matchedBy).toBeNull();
+    expect(secondMatch?.existing).toBeNull();
+  });
+
+  it("keeps two distinct surfaces on one domain when coercing a single agent run", () => {
+    const portfolio = coerceEndowmentPortfolio(
+      portfolioWith([
+        {
+          name: "HubSpot Template Marketplace",
+          domain: "hubspot.com",
+          suggested_slug: "hubspot-template-marketplace",
+          signup_url: "https://hubspot.com/template-marketplace/submit",
+        },
+        {
+          name: "HubSpot Solutions Partners",
+          domain: "hubspot.com",
+          suggested_slug: "hubspot-solutions-partners",
+          signup_url: "https://hubspot.com/solutions/become-a-partner",
+        },
+      ]),
+    );
+    expect(portfolio.platforms).toHaveLength(2);
+    expect(portfolio.platforms.map((p) => p.suggested_slug)).toEqual([
+      "hubspot-template-marketplace",
+      "hubspot-solutions-partners",
+    ]);
+  });
+
+  it("still collapses the SAME surface proposed twice in one run", () => {
+    const portfolio = coerceEndowmentPortfolio(
+      portfolioWith([
+        {
+          name: "Zenodo",
+          domain: "zenodo.org",
+          suggested_slug: "zenodo",
+          signup_url: "https://zenodo.org/signup",
+        },
+        {
+          name: "Zenodo Open Data",
+          domain: "www.zenodo.org",
+          suggested_slug: "zenodo-open-data",
+          signup_url: "https://zenodo.org/signup/",
+        },
+      ]),
+    );
+    expect(portfolio.platforms).toHaveLength(1);
+  });
+
+  it("flags an existing row that has no claim URL instead of guessing", () => {
+    const [match] = matchPlatformsToRegistry(
+      [makePlatform({ suggested_slug: "zenodo-open-data" })],
+      [makePublisher({ manage_url: null })],
+    );
+    // The registry cannot tell surfaces apart without a claim URL, so it matches
+    // rather than blind-inserting — but names the reason so a human can split it.
+    expect(match?.matchedBy).toBe("domain-unclaimed");
+    expect(match?.existing?.slug).toBe("zenodo");
   });
 
   it("falls back to the slug when the registry row has no domain", () => {

@@ -20,10 +20,13 @@ export default async function AgentTemplatesPage() {
     .schema("agent")
     .from("template")
     .select(
-      "id, name, description, category, is_featured, use_count, created_at, updated_at",
+      "id, name, description, category, is_featured, use_count, is_archived, created_at, updated_at",
     )
     .is("deleted_at", null)
-    .eq("is_archived", false)
+    // THE ARCHIVED-ITEMS LAW (../common-docs/policies/archived-items.md):
+    // archived templates are HIDDEN BY DEFAULT but must stay one click away,
+    // so the read carries them and `TemplatesGrid` owns the control. A hard
+    // `.eq("is_archived", false)` here made revealing them impossible.
     .order("is_featured", { ascending: false })
     .order("use_count", { ascending: false });
 

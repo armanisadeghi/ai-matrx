@@ -167,6 +167,12 @@ export interface ConversationHistorySidebarProps {
   topSlot?: React.ReactNode;
   /** Extra header actions (shown next to grouping + search toggles). */
   headerActions?: React.ReactNode;
+  /**
+   * Consumer variant only: the heading over the list. Default "Filtered Chats"
+   * (the /chat sidebar, which really does filter by source). A surface that
+   * lists one agent's conversations names what the list IS instead.
+   */
+  historyLabel?: string;
 
   /** Controls whether the built-in search input is shown. Default: true. */
   showSearch?: boolean;
@@ -752,6 +758,7 @@ const ConsumerView: React.FC<
   topSlot,
   initialSearchOpen = false,
   hideSearchAffordance = false,
+  historyLabel = "Filtered Chats",
   className,
 }) => {
   const dispatch = useAppDispatch();
@@ -799,7 +806,7 @@ const ConsumerView: React.FC<
       {surfaceId && (
         <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-2 pb-1">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-            Filtered Chats
+            {historyLabel}
           </span>
           <div className="flex items-center gap-1">
             {status === "loading" ? (
@@ -1321,6 +1328,18 @@ const PinnedChatsSection: React.FC<{
   );
 };
 
+/**
+ * Exported so a host that keeps its OWN short list of conversations (e.g. the
+ * agent-run window's "In this window" section) renders them with the same row
+ * — never a second row component that drifts.
+ */
+export const ConversationHistorySection: React.FC<{
+  label: string;
+  children: React.ReactNode;
+}> = ({ label, children }) => (
+  <ConsumerSection label={label}>{children}</ConsumerSection>
+);
+
 const ConsumerSection: React.FC<{
   label: string;
   children: React.ReactNode;
@@ -1332,6 +1351,10 @@ const ConsumerSection: React.FC<{
     <div>{children}</div>
   </div>
 );
+
+export const ConversationHistoryRow: React.FC<
+  React.ComponentProps<typeof ConsumerRow>
+> = (props) => <ConsumerRow {...props} />;
 
 const ConsumerRow: React.FC<{
   conv: ConversationListItem;

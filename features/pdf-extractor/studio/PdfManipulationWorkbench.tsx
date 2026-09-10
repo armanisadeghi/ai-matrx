@@ -47,6 +47,8 @@ function provisionalDocFromFile(params: {
     updatedAt: now,
     charCount: 0,
     wordCount: 0,
+    // A provisional doc is one being opened right now — never archived.
+    archivedAt: null,
     ownerId: null,
     organizationId: null,
     totalPages: null,

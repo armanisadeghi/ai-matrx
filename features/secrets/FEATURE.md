@@ -1,6 +1,6 @@
 # Secrets — Unified Credential Vault
 
-> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-08-22
+> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-09-09
 
 > Cross-repo implementation authority: `/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md` — read it before expanding this feature in ANY repository.
 >
@@ -283,6 +283,11 @@ the sealed setup seed has no reveal path at any privilege.
   menu also offers Rename login and a new-tab door without cluttering the
   code-first list. Renaming updates the credential item's `display_name`, so the
   Authenticator and Vault never diverge.
+- **Organization hydration is explicit.** The Authenticator hook waits for the
+  shell's active-organization bootstrap, reloads whenever that organization
+  changes, and discards superseded requests. If bootstrap resolves without a
+  selection, the page renders the canonical organization picker instead of a
+  dead Retry error beside a false empty state.
 
 ## Invariants
 
@@ -322,6 +327,12 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-09-09** — Repaired Authenticator's fresh-route organization race. The
+  hook now waits for shell bootstrap, reloads on organization changes, and
+  request-orders results; the page uses the canonical organization picker when
+  no organization is selected instead of caching a pre-hydration transport
+  error beside “No codes yet.”
 
 - **2026-08-24** — Moved Vault and Authenticator JSON calls onto the shared
   organization-context kernel, moved the protected-file byte adapter onto the

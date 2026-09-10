@@ -23,9 +23,8 @@
 //  1. LABELS, NOT PARAGRAPHS. A control that needs a paragraph is the wrong
 //     control. The only sentence this component can print is a REFUSAL — a
 //     constraint the controls themselves cannot state.
-//  2. THE VERSION QUESTION COMES AFTER THE INTELLIGENCE (Arman, 2026-08-31:
-//     "that question may only be asked AFTER an intelligence is selected").
-//     No holder ⇒ no version control at all — absent, never disabled-looking.
+//  2. Version shares the Assigned Agent/Workflow row. Before selection it is
+//     disabled; workflows retain their latest-only limitation.
 //  3. LATEST IS A VALUE, NOT A SWITCH. Storage is `default_holder_version_id
 //     IS NULL` ⇒ latest; there is no `use_latest` flag, so the screen does not
 //     invent a second control for one column.
@@ -53,7 +52,9 @@
 // test rather than a walk.
 
 import { useEffect, useRef, useState } from "react";
+import { BrainCircuit, Workflow } from "lucide-react";
 import {
+  CONFIGURATION_CHOICE_SIZE,
   PropertyRow,
   FieldHelp,
 } from "@/components/official/ConfigurationFields";
@@ -97,6 +98,8 @@ export interface HolderAssignmentProps {
   };
   /** The mandate's declared output kind, for the workflow picker. */
   outputKind?: string | null;
+  /** Scope-specific eligibility, attached to the type label. */
+  holderTypeHelp?: string | null;
   /**
    * A REFUSAL — the one thing a control cannot say about itself (a personal
    * agent drafted where only a system agent may hold). One sentence with its
@@ -125,19 +128,22 @@ export interface HolderAssignmentProps {
 function Row({
   label,
   control,
+  help,
   children,
 }: {
   label: string;
+  help?: string | null;
   control: "type" | "assignment" | "version";
   children: React.ReactNode;
 }) {
   return (
     <div
       data-holder-control={control}
-      className="grid gap-x-3 gap-y-1.5 sm:grid-cols-[9.5rem_minmax(0,1fr)]"
+      className="grid items-center gap-x-3 gap-y-1.5 sm:grid-cols-[9.5rem_minmax(0,1fr)]"
     >
-      <span className="w-[9.5rem] shrink-0 text-[12px] font-medium text-foreground">
+      <span className="flex w-[9.5rem] shrink-0 items-center gap-1 text-[12px] font-medium text-foreground">
         {label}
+        {help ? <FieldHelp label="Eligible holders">{help}</FieldHelp> : null}
       </span>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
         {children}
@@ -153,6 +159,7 @@ export function HolderAssignment({
   mandateKey,
   agentTabs,
   outputKind = null,
+  holderTypeHelp = null,
   refusal = null,
   coverageLine = null,
   disabled = false,
@@ -164,11 +171,11 @@ export function HolderAssignment({
       {/* 1 — HOLDER TYPE. A switch between the only two things that can hold
           a job. Changing it clears the other kind's value rather than carrying
           a stale id under a label that no longer names it. */}
-      <Row label="Holder Type" control="type">
+      <Row label="Holder Type" control="type" help={holderTypeHelp}>
         <div
           role="radiogroup"
           aria-label="Holder Type"
-          className="inline-flex rounded-md border border-border p-0.5"
+          className="flex flex-wrap gap-1.5"
         >
           {(
             [
@@ -195,13 +202,19 @@ export function HolderAssignment({
                     })
               }
               className={cn(
-                "rounded px-2.5 py-1 text-[12px] transition-colors",
+                CONFIGURATION_CHOICE_SIZE,
+                "inline-flex min-w-[8.5rem] items-center justify-center gap-1.5 border py-2 transition-all",
                 holder.kind === kind
-                  ? "bg-primary/10 font-medium text-primary"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "border-primary bg-primary/10 text-foreground shadow-sm"
+                  : "border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent/50",
                 disabled && "opacity-60",
               )}
             >
+              {kind === "agent" ? (
+                <BrainCircuit className="h-4 w-4" aria-hidden />
+              ) : (
+                <Workflow className="h-4 w-4" aria-hidden />
+              )}
               {label}
             </button>
           ))}
@@ -222,7 +235,7 @@ export function HolderAssignment({
             placeholder="Choose a workflow"
             wantedOutputKind={outputKind}
             disabled={disabled}
-            className="w-full max-w-[22rem]"
+            className={cn(CONFIGURATION_CHOICE_SIZE, "w-full max-w-[22rem]")}
             onSelect={(id) => onHolderChange({ ...holder, workflowId: id })}
           />
         ) : (
@@ -233,7 +246,7 @@ export function HolderAssignment({
             initialTab={agentTabs?.initialTab}
             includeSystemInAll={agentTabs?.includeSystemInAll}
             systemTabLabel="System"
-            className="w-full max-w-[22rem]"
+            className={cn(CONFIGURATION_CHOICE_SIZE, "w-full max-w-[22rem]")}
             // THE NAME IS THE LABEL. Not "Change agent" — the trigger IS the
             // statement of who holds this job, and the dropdown resolves the
             // name itself when the host has not got one yet.
@@ -251,41 +264,56 @@ export function HolderAssignment({
             }
           />
         )}
-      </Row>
 
-      {/* 3 — VERSION. ABSENT until an intelligence is chosen: the question has
-          no meaning before it, and a control that cannot mean anything is the
-          dead control the fourth law forbids. A workflow holder pins no agent
-          version, so it has no version control either. */}
-      {!isWorkflow && holder.agentId ? (
-        <Row label="Version" control="version">
-          <VersionSelect
-            agentId={holder.agentId}
-            agentVersionId={holder.agentVersionId}
-            useLatest={holder.useLatest}
-            disabled={disabled}
-            onChange={(versionId) =>
-              onHolderChange({
-                ...holder,
-                agentVersionId: versionId,
-                useLatest: versionId === null,
-              })
-            }
-          />
-        </Row>
-      ) : (
-        <Row label="Version" control="version">
-          <span className="text-xs">
-            {isWorkflow && holder.workflowId ? "Latest" : "No holder selected"}
-          </span>
-          {isWorkflow ? (
-            <FieldHelp label="Workflow version">
-              Pinned workflow versions are not supported by this assignment
-              control.
-            </FieldHelp>
-          ) : null}
-        </Row>
-      )}
+        {/* Version shares the assignment row. Workflows remain latest-only. */}
+        {!isWorkflow && holder.agentId ? (
+          <div
+            data-holder-control="version"
+            className="flex items-center gap-2"
+          >
+            <VersionSelect
+              agentId={holder.agentId}
+              agentVersionId={holder.agentVersionId}
+              useLatest={holder.useLatest}
+              disabled={disabled}
+              onChange={(versionId) =>
+                onHolderChange({
+                  ...holder,
+                  agentVersionId: versionId,
+                  useLatest: versionId === null,
+                })
+              }
+            />
+          </div>
+        ) : (
+          <div
+            data-holder-control="version"
+            className="flex items-center gap-2"
+          >
+            <Select
+              value={isWorkflow && holder.workflowId ? "latest" : "unselected"}
+              disabled
+            >
+              <SelectTrigger
+                aria-label="Version"
+                className={cn(CONFIGURATION_CHOICE_SIZE, "w-[9rem]")}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="latest">Latest</SelectItem>
+                <SelectItem value="unselected">Select holder</SelectItem>
+              </SelectContent>
+            </Select>
+            {isWorkflow ? (
+              <FieldHelp label="Workflow version">
+                Pinned workflow versions are not supported by this assignment
+                control.
+              </FieldHelp>
+            ) : null}
+          </div>
+        )}
+      </Row>
 
       {/* THE COVERAGE FACT — one line, attached to the assignment it is about.
           It is honest in both directions: "Every input this holder needs is
@@ -362,7 +390,10 @@ function VersionSelect({
           onChange(next === LATEST_VERSION_VALUE ? null : next)
         }
       >
-        <SelectTrigger className="h-7 w-[13rem] text-[12px]">
+        <SelectTrigger
+          aria-label="Version"
+          className={cn(CONFIGURATION_CHOICE_SIZE, "w-[9rem]")}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

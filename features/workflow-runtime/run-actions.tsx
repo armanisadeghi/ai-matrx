@@ -10,7 +10,7 @@
  * EncoreRunPage and UsageHistoricalContext — six real surfaces before this
  * extraction, each one either menu-less or (if it ever grew one) reinventing
  * "open this run". This module is the fix that stops that recurring: a
- * surface calls `useWorkflowRunMenuSection` with a `getRow` reading its own
+ * surface calls `buildWorkflowRunMenuSection` with a `getRow` reading its own
  * clicked-row state and gets the same items everywhere.
  *
  * 🚨 NO NEW WRITE PATH LIVES HERE. Every item is a door (`kind: "link"`) onto
@@ -66,7 +66,7 @@ export function runMenuContent(row: WorkflowRunMenuRow): string {
   return row.workflowName ?? "Workflow run";
 }
 
-export function useWorkflowRunMenuSection(opts: {
+export function buildWorkflowRunMenuSection(opts: {
   /** The row the menu was opened on, resolved at select time. */
   getRow: () => WorkflowRunMenuRow | null;
   /** Label for the section heading. */

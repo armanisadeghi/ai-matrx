@@ -1,3 +1,4 @@
+import type { KIND_KEY } from "@ai-matrx/content-ir";
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
 import type {
@@ -18,7 +19,7 @@ import {
   type DiagramNodeShape,
 } from "./diagram-visual-defaults";
 
-export type DiagramNode = Omit<DiagramNodeKind, "__kind"> & {
+export type DiagramNode = Omit<DiagramNodeKind, typeof KIND_KEY> & {
   /** Layout/presentation the RENDERER owns — never part of the wire kind. */
   nodeType?: string;
   metadata?: Record<string, unknown>;
@@ -32,7 +33,7 @@ export type DiagramNode = Omit<DiagramNodeKind, "__kind"> & {
   textAlign?: string;
 };
 
-export type DiagramEdge = Omit<DiagramEdgeKind, "__kind"> &
+export type DiagramEdge = Omit<DiagramEdgeKind, typeof KIND_KEY> &
   Required<Pick<DiagramEdgeKind, "id">> & {
   /** Presentation the RENDERER owns — never part of the wire kind. */
   lineStyle?: string;

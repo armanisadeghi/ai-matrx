@@ -1,5 +1,12 @@
 "use client";
 
+// 🚨 DO NOT DELETE. UNFINISHED WORK AWAITING ARMAN'S RULING — see the full
+// note at the top of ./MasterworkHomePage.tsx. This directory was deleted on
+// 2026-09-10 for being unreferenced and restored the same day: THE
+// UNFINISHED-WORK ALARM's ban means only Arman may name it dead, and he never
+// has. It is unrouted because Arman himself routed /masterwork to
+// /masterwork/all in commit 00602a2916 — an agent may not reverse that either.
+//
 // features/masterwork/home/HowItsImprovingPanel.tsx
 //
 // "How it's improving" — the Expert-facing view of the review loop behind

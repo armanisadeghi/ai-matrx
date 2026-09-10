@@ -45,31 +45,33 @@ function ChipRow({
   maxChips,
   title,
   mono = true,
-  trailing = "+ user text",
 }: {
   items: readonly string[];
   maxChips: number;
   title: string;
   mono?: boolean;
-  trailing?: string;
 }) {
-  const shown = items.slice(0, maxChips);
-  const hidden = items.length - shown.length;
+  const inputs = [...items, "User text"];
+  const shown = inputs.slice(0, maxChips);
+  const hidden = inputs.length - shown.length;
   return (
     <div className="flex flex-wrap items-center gap-1" title={title}>
       {shown.map((name) => (
         <Badge
           key={name}
           variant="outline"
-          className={mono ? `${CONTRACT_BADGE_CLASS} font-mono` : CONTRACT_BADGE_CLASS}
+          className={
+            mono ? `${CONTRACT_BADGE_CLASS} font-mono` : CONTRACT_BADGE_CLASS
+          }
         >
           {name}
         </Badge>
       ))}
       {hidden > 0 && (
-        <span className="text-[10px] text-muted-foreground">+{hidden}</span>
+        <span className="text-[10px] text-muted-foreground">
+          +{hidden} additional
+        </span>
       )}
-      <span className="text-[10px] text-muted-foreground">{trailing}</span>
     </div>
   );
 }
@@ -129,32 +131,14 @@ export function MandateInputsCell({
         className="text-xs text-muted-foreground"
         title="No required variables, no Provision, no described inputs, and nothing declared by the agent that fulfils this job — it runs on the user's message alone."
       >
-        user text only
+        User text
       </span>
     );
   }
-  const shown = variables.slice(0, maxChips);
-  const hidden = variables.length - shown.length;
   const label = fromProvision
-    ? `Offered by ${row.provisionKey}: ${variables.join(", ")} — a mandate consumes what it needs; user text rides every run on top.`
-    : `Required variables: ${variables.join(", ")} — plus optional user text on every run.`;
-  return (
-    <div className="flex flex-wrap items-center gap-1" title={label}>
-      {shown.map((name) => (
-        <Badge
-          key={name}
-          variant="outline"
-          className={`${CONTRACT_BADGE_CLASS} font-mono`}
-        >
-          {name}
-        </Badge>
-      ))}
-      {hidden > 0 && (
-        <span className="text-[10px] text-muted-foreground">+{hidden}</span>
-      )}
-      <span className="text-[10px] text-muted-foreground">+ user text</span>
-    </div>
-  );
+    ? `Offered by ${row.provisionKey}: ${variables.join(", ")}; User text (optional).`
+    : `Required variables: ${variables.join(", ")}; User text (optional).`;
+  return <ChipRow items={variables} maxChips={maxChips} title={label} />;
 }
 
 /** The output promise: a registered kind (a door), the required output keys,

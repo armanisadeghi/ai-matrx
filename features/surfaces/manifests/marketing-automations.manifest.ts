@@ -21,6 +21,7 @@
 import type { SurfaceAgentRole, SurfaceManifest } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import { RUN_CONSOLE_GROUPS, RUN_CONSOLE_VALUES } from "./_run-console.manifest";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export const MARKETING_AUTOMATIONS_SURFACE_NAME =
   "matrx-user/marketing-automations";
@@ -33,7 +34,7 @@ const agentRoles: SurfaceAgentRole[] = [
       "The agent a topic-placement pass runs on this organization's brands: it reads the highest-demand unplaced keywords and places them on the Offering tree. Listed here so the work is never anonymous and can be inspected and tested on real evidence.",
     kind: "single",
     defaultAgentId: null,
-    mandateKey: "seo.topic_assigner",
+    mandateKey: MANDATE_KEYS.seo__topic_assigner,
     autoRun: "never",
     sortOrder: 100,
   },

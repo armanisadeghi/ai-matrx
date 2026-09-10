@@ -44,6 +44,8 @@ export interface ProvisionOffer {
   offerKindSlug: string | null;
   values: OfferedValue[];
   isEnabled: boolean;
+  /** Exact declaring module/path recorded by the provision synchronizer. */
+  codePath: string | null;
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -79,6 +81,7 @@ export async function fetchProvision(
         offerKindSlug: data.derived_input_kind,
         values: parseOfferedValues(data.offered_values),
         isEnabled: data.is_enabled,
+        codePath: data.code_path,
       }
     : null;
   provisionCache.set(provisionKey, { at: Date.now(), value });
@@ -140,6 +143,7 @@ export async function fetchProvisions(
         offerKindSlug: row.derived_input_kind,
         values: parseOfferedValues(row.offered_values),
         isEnabled: row.is_enabled,
+        codePath: row.code_path,
       };
       seen.add(row.provision_key);
       provisionCache.set(row.provision_key, { at, value: offer });

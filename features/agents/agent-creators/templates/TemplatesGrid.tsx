@@ -3,8 +3,9 @@
 import { useState, useTransition } from "react";
 import { TemplateCard } from "./TemplateCard";
 import { useRouter } from "next/navigation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast-service";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 interface Template {
   id: string;
@@ -13,6 +14,7 @@ interface Template {
   category: string | null;
   is_featured: boolean;
   use_count: number;
+  is_archived: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +29,9 @@ export function TemplatesGrid({ templates }: TemplatesGridProps) {
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const [usingTemplateId, setUsingTemplateId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
+  // THE ARCHIVED-ITEMS LAW: archived templates are hidden by default and are
+  // exactly one click away — never a separate page, never impossible.
+  const [showArchived, setShowArchived] = useState(false);
 
   const handleNavigate = (id: string, path: string) => {
     // Prevent navigation if already navigating or using a template
@@ -65,15 +70,25 @@ export function TemplatesGrid({ templates }: TemplatesGridProps) {
     }
   };
 
-  const filteredTemplates = templates.filter((template) => {
+  const matchesTab = (template: Template) => {
     if (activeTab === "all") return true;
     if (activeTab === "featured") return template.is_featured;
     return template.category?.toLowerCase() === activeTab.toLowerCase();
-  });
+  };
 
-  // Get unique categories
+  const inTab = templates.filter(matchesTab);
+  const filteredTemplates = inTab.filter((t) => !t.is_archived);
+  const archivedTemplates = inTab.filter((t) => t.is_archived);
+
+  // Get unique categories — from the ACTIVE templates, so a category that
+  // exists only among archived rows never opens an empty-looking tab.
   const categories = Array.from(
-    new Set(templates.map((t) => t.category).filter(Boolean)),
+    new Set(
+      templates
+        .filter((t) => !t.is_archived)
+        .map((t) => t.category)
+        .filter(Boolean),
+    ),
   );
 
   if (templates.length === 0) {
@@ -110,6 +125,7 @@ export function TemplatesGrid({ templates }: TemplatesGridProps) {
             category={template.category}
             isFeatured={template.is_featured}
             useCount={template.use_count}
+            isArchived={template.is_archived}
             onUseTemplate={handleUseTemplate}
             onNavigate={handleNavigate}
             isNavigating={navigatingId === template.id}
@@ -119,13 +135,39 @@ export function TemplatesGrid({ templates }: TemplatesGridProps) {
         ))}
       </div>
 
-      {filteredTemplates.length === 0 && (
+      {filteredTemplates.length === 0 && archivedTemplates.length === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">
             No templates found in this category.
           </p>
         </div>
       )}
+
+      <ArchivedDisclosure
+        count={archivedTemplates.length}
+        open={showArchived}
+        onOpenChange={setShowArchived}
+        className="mt-6"
+        contentClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+      >
+        {archivedTemplates.map((template) => (
+          <TemplateCard
+            key={template.id}
+            id={template.id}
+            name={template.name}
+            description={template.description}
+            category={template.category}
+            isFeatured={template.is_featured}
+            useCount={template.use_count}
+            isArchived
+            onUseTemplate={handleUseTemplate}
+            onNavigate={handleNavigate}
+            isNavigating={navigatingId === template.id}
+            isUsingTemplate={usingTemplateId === template.id}
+            isAnyProcessing={navigatingId !== null || usingTemplateId !== null}
+          />
+        ))}
+      </ArchivedDisclosure>
     </div>
   );
 }

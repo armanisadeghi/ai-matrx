@@ -18,6 +18,9 @@
 }
 .control {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  min-height: 34px;
 }
 .metadata {
   display: flex;
@@ -45,4 +48,13 @@
   .metadata {
     grid-column: 1;
   }
+}
+
+/* Use the source-picker height for each single-line configuration control. */
+.control :is(button[role="combobox"], input:not([type="checkbox"]):not([type="radio"])) {
+  height: 34px;
+  min-height: 34px;
+}
+.control > [role="combobox"] {
+  width: 100%;
 }

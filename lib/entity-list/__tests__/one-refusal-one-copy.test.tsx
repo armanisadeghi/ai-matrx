@@ -302,13 +302,25 @@ describe("one failure, one channel", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
+    // `useEntityList` reads the user's own archive default out of the real
+    // store (THE ARCHIVED-ITEMS LAW's knob), so the hook runs under the real
+    // provider here exactly as it does on a page.
+    const store = makeStore();
     await act(async () => {
-      root.render(<Harness nonce={1} />);
+      root.render(
+        <Provider store={store}>
+          <Harness nonce={1} />
+        </Provider>,
+      );
     });
     // The caller's organizations land: same query, new service inputs, so the
     // shell re-asks — and the standing refusal comes back a second time.
     await act(async () => {
-      root.render(<Harness nonce={2} />);
+      root.render(
+        <Provider store={store}>
+          <Harness nonce={2} />
+        </Provider>,
+      );
     });
     act(() => root.unmount());
     container.remove();

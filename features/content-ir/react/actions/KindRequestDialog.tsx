@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import { AlertTriangle, Loader2, RotateCcw, BrainCircuit } from "lucide-react";
 import MarkdownStream from "@/components/MarkdownStream";
 import {
   Dialog,
@@ -299,7 +299,7 @@ export function KindRequestDialog({
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
+            <BrainCircuit className="h-4 w-4 text-primary" />
             {title}
           </DialogTitle>
           {description ? (
@@ -386,7 +386,7 @@ export function KindRequestDialog({
                 {isRunning ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Sparkles className="h-4 w-4" />
+                  <BrainCircuit className="h-4 w-4" />
                 )}
                 {isRunning ? "Generating…" : "Generate ideas"}
               </Button>

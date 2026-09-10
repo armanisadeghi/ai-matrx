@@ -1,4 +1,5 @@
 import type { Database } from "@/types/database.types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 type SmsAssistantProgramRpcRow =
   Database["communication"]["Functions"]["get_my_sms_assistant_program"]["Returns"][number];
@@ -40,7 +41,7 @@ export interface UpdateSmsAssistantProgram {
 export const SMS_ASSISTANT_TEST_BODY =
   "AI Matrx: Your text assistant is connected. Reply with a harmless question to test your saved agent. Reply STOP to opt out or HELP for help.";
 export const SMS_ASSISTANT_OWNER_BETA_PROGRAM = "ai_matrx_owner_beta";
-export const SMS_ASSISTANT_OWNER_BETA_MANDATE = "sms.owner_beta";
+export const SMS_ASSISTANT_OWNER_BETA_MANDATE = MANDATE_KEYS.sms__owner_beta;
 
 const BLOCKED_REASON_LABELS: Record<string, string> = {
   destination_not_ready: "The approved sender is not ready.",
@@ -62,6 +63,47 @@ export function smsPermissionLabel(state: SmsAssistantProgramState): string {
   if (state.consentStatus === "opted_out") return "Opted out";
   if (state.consentStatus === "opted_in") return "SMS notifications on";
   return "SMS notifications on · no opt-out recorded";
+}
+
+export function smsSenderProgramDisplay(
+  state: SmsAssistantProgramState | null,
+  loading: boolean,
+): { description: string; value: string } {
+  if (!state) {
+    return loading
+      ? {
+          description: "Checking the approved sender and assistant program.",
+          value: "Checking…",
+        }
+      : {
+          description:
+            "Verify a mobile number above to connect this account to a sender and program.",
+          value: "Not enrolled",
+        };
+  }
+  if (!state.numberActive) {
+    return {
+      description: "The approved sender is not active.",
+      value: state.maskedPhone && state.programKey
+        ? `${state.maskedPhone} · ${state.programKey}`
+        : "Sender inactive",
+    };
+  }
+  if (!state.globalAssistantEnabled) {
+    return {
+      description: "Assistant messaging is temporarily paused for everyone.",
+      value: state.maskedPhone && state.programKey
+        ? `${state.maskedPhone} · ${state.programKey}`
+        : "Program paused",
+    };
+  }
+  return {
+    description: "The approved sender and global assistant program are active.",
+    value:
+      state.maskedPhone && state.programKey
+        ? `${state.maskedPhone} · ${state.programKey}`
+        : "Program active",
+  };
 }
 
 function nullableRpcText(value: string | null): string | null {

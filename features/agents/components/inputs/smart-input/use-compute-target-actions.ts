@@ -5,7 +5,7 @@ import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { setConversationSandbox } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
+import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
 import { selectConversationIsEphemeral } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import {
   useComputeTargets,

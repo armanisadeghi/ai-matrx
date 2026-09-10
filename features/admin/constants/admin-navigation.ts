@@ -216,6 +216,14 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         name: "Mandates",
         iconName: "Plug",
         destinations: [
+          // 🚨 DECLARED FIRST ON PURPOSE. `findAdminNavigationLocation` is
+          // first-match-wins, and the console below OWNS
+          // `/administration/mandates/[mandateKey]`, whose pattern is
+          // `/[^/]+` — it matches the literal segment `references` too. Next's
+          // router picks the static route correctly either way; it is the
+          // sidebar highlight that would name the wrong screen. Specific
+          // before general, exactly as the route→surface map does it.
+          destination("/administration/mandates/references"),
           destination("/administration/mandates", [
             "/administration/mandates/[mandateKey]",
             "/administration/mandates/advanced",
@@ -697,6 +705,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/reporting/lint-debt"),
           destination("/administration/reporting/grounding"),
           destination("/administration/reporting/producer-yield"),
+          destination("/administration/reporting/tool-refetch"),
         ],
       },
     ],
@@ -719,6 +728,11 @@ export function getAdminNavigationLocations(): AdminNavigationLocation[] {
       })),
     ),
   );
+}
+
+/** Strip any query string and trailing slash so a path compares cleanly. */
+export function adminPathOnly(path: string): string {
+  return pathOnly(path);
 }
 
 function pathOnly(path: string): string {

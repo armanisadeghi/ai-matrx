@@ -18,7 +18,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   FileText,
   Microscope,
-  Wand2,
+  Zap,
   Database,
 } from "lucide-react";
 import { buildPdfExtractorHref } from "./hrefs";
@@ -63,7 +63,7 @@ export const PDF_SURFACES: PdfSurfaceDef[] = [
     id: "extractor-studio",
     label: "PDF Extractor",
     description: "Extract, AI clean, manipulate, chunk",
-    icon: Wand2,
+    icon: Zap,
     // Preserve the source file identity even before it has a processed-doc
     // bridge. The extractor route consumes `?file=` and starts the canonical
     // remote pipeline; dropping the id here used to strand users at upload.

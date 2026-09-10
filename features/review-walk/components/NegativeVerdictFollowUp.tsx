@@ -81,7 +81,12 @@ export function NegativeVerdictFollowUp({
 
   return (
     <>
-      <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
+      <div
+        className={cn(
+          "matrx-touch-targets flex flex-wrap items-center gap-1.5",
+          className,
+        )}
+      >
         <button
           type="button"
           onClick={() =>
@@ -134,9 +139,9 @@ export function NegativeVerdictFollowUp({
               </div>
               <p className="text-muted-foreground">
                 Opens a breakdown of this turn — your message, the context the
-                system added, and every step the agent took. Mark the piece
-                that looks wrong and the system traces where it came from,
-                then files it so the agent actually gets fixed.
+                system added, and every step the agent took. Mark the piece that
+                looks wrong and the system traces where it came from, then files
+                it so the agent actually gets fixed.
               </p>
             </div>
             <div>
@@ -145,9 +150,9 @@ export function NegativeVerdictFollowUp({
                 Attach your version
               </div>
               <p className="text-muted-foreground">
-                Write what the response SHOULD have said. Your version is
-                saved next to the original and becomes the reference the
-                system judges itself against.
+                Write what the response SHOULD have said. Your version is saved
+                next to the original and becomes the reference the system judges
+                itself against.
               </p>
             </div>
           </PopoverContent>

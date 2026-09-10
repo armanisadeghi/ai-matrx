@@ -7,6 +7,7 @@
 //
 // Admin-only. Do not generalize into the shared ModuleHeader.
 
+import { isConcreteRoute } from "@/utils/route-discovery/shared";
 import type { ModulePageIcon } from "@/components/matrx/navigation/types";
 import { MODULE_HOME, MODULE_NAME, filteredPages } from "../config";
 
@@ -97,7 +98,7 @@ export function buildAdminTree(routes: string[]): AdminTreeNode {
   for (const raw of list) {
     const rel = raw.replace(/^\/?administration\/?/, "").replace(/^\/+/, "");
     const segments = rel.split("/").filter(Boolean);
-    if (segments.length === 0) continue;
+    if (segments.length === 0 || !isConcreteRoute(rel)) continue;
 
     let cursor = root;
     let accumulated = MODULE_HOME;
@@ -160,12 +161,17 @@ export function getAdminCrumbs(
   for (let i = 1; i < segments.length; i++) {
     const segment = segments[i];
     accumulated = `${accumulated}/${segment}`;
-    const node: AdminTreeNode | null = cursor ? findChild(cursor, segment) : null;
+    const node: AdminTreeNode | null = cursor
+      ? findChild(cursor, segment)
+      : null;
     const isLast = i === segments.length - 1;
 
     crumbs.push({
       fullPath: accumulated,
-      label: i === 2 && segments[1] === "mandates" ? "Mandate" : node?.label ?? titleCase(segment),
+      label:
+        !node && i === 2 && segments[1] === "mandates"
+          ? "Mandate"
+          : (node?.label ?? titleCase(segment)),
       isPage: node?.isPage ?? false,
       isLast,
       children: node?.children ?? [],

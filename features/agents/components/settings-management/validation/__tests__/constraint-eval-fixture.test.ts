@@ -13,17 +13,36 @@ import * as path from "path";
 import { evaluateAllConstraints } from "../constraints";
 import type { ModelConstraint } from "@/features/ai-models/types";
 
+// common-docs is a SIBLING repo checked out beside this one. The fixture moved
+// from `systems/model-config/` to `systems/agents/ai-models/` in the common-docs
+// docs rename cascade (6bb0b8aa).
 const DEFAULT_FIXTURES_DIR = path.resolve(
   __dirname,
   "../../../../../..",
   "..",
-  "common-docs/systems/model-config",
+  "common-docs/systems/agents/ai-models",
 );
 
-const FIXTURE_PATH = path.join(
-  process.env.MATRX_SHARED_FIXTURES_DIR ?? DEFAULT_FIXTURES_DIR,
-  "constraint-eval-fixture.json",
-);
+const FIXTURES_DIR =
+  process.env.MATRX_SHARED_FIXTURES_DIR ?? DEFAULT_FIXTURES_DIR;
+const FIXTURE_PATH = path.join(FIXTURES_DIR, "constraint-eval-fixture.json");
+
+if (!fs.existsSync(FIXTURE_PATH)) {
+  // NEVER downgrade this to a skip. A missing cross-repo fixture means the
+  // evaluator contract is UNMEASURED on both sides, not that it passes.
+  throw new Error(
+    [
+      `UNMEASURED: the shared constraint-evaluator contract fixture is missing at ${FIXTURE_PATH}.`,
+      "This suite is the only thing proving evaluateAllConstraints still matches the Python port",
+      "(aidream packages/matrx-ai/matrx_ai/catalog/constraint_eval.py), so a missing fixture is a",
+      "RED contract, never a pass.",
+      "Remedy: clone/refresh the sibling common-docs repo beside this one so",
+      "common-docs/systems/agents/ai-models/constraint-eval-fixture.json exists, or point",
+      "MATRX_SHARED_FIXTURES_DIR at the directory that holds it. If the fixture was intentionally",
+      "moved again, update DEFAULT_FIXTURES_DIR here AND the aidream test that reads the same file.",
+    ].join(" "),
+  );
+}
 
 interface ExpectedIssue {
   ruleId: string;

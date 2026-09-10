@@ -6,6 +6,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import { FlashcardsSubcardsSet } from "@/components/mardown-display/blocks/flashcards/FlashcardsSubcardsSet";
 import { LayoutToggle } from "@/components/mardown-display/blocks/flashcards/flashcards-set-parts";
@@ -20,7 +21,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
-  useFlashcardMenuSection,
+  buildFlashcardMenuSection,
   flashcardEntityRef,
   resolveFlashcardGridIndex,
   type FlashcardMenuRow,
@@ -53,7 +54,7 @@ export function FlashcardSubcardsWindow({
     null,
   );
   const openItemWindow = useOpenFlashcardItemWindow();
-  const flashcardSection = useFlashcardMenuSection({
+  const flashcardSection = buildFlashcardMenuSection({
     getRow: () => clickedCard,
     actions: {
       onOpenItem: (row) =>
@@ -85,6 +86,11 @@ export function FlashcardSubcardsWindow({
       enterMobileView(0);
     }
   }, [isOpen, isMobile, cards.length, enterMobileView]);
+
+  useOverlaySurfaceRenderAck(
+    "flashcardSubcardsWindow",
+    isOpen && isMobileView && cards.length > 0,
+  );
 
   if (!isOpen) return null;
 

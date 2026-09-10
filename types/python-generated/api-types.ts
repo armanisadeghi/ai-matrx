@@ -8232,6 +8232,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/doodle/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_doodle_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/audienceful/public/status": {
         parameters: {
             query?: never;
@@ -29515,6 +29532,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mandates/references/board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mandate Reference Board
+         * @description The admin fleet board: per ACTIVE repo the scan state, the open flagged
+         *     rows with a location and a remedy, and the conversion list (DESIGN §4.6).
+         *
+         *     An inactive `platform.repo` row never appears here (D24).
+         */
+        get: operations["get_mandate_reference_board_mandates_references_board_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/{mandate_key}/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mandate References
+         * @description Defined in / Used by for one mandate key, plus every red flag (D21).
+         *
+         *     Nothing is dropped for being orphaned, unresolved, or broken; a row that is
+         *     not plainly ok carries its own sentence and remedy. `scan_completeness`
+         *     names the repositories nobody has finished measuring, so the tab's empty
+         *     state can be honest instead of saying "unused".
+         */
+        get: operations["get_mandate_references_mandates__mandate_key__references_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mandates/{mandate_key}/exemplars/{exemplar_id}/promote": {
         parameters: {
             query?: never;
@@ -31695,7 +31760,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Plan */
+        /**
+         * Get Plan
+         * @description The Plan Room's read. Carries the stored Steward transcript so the room
+         *     reopens with its conversation instead of a blank pane (WF-019).
+         */
         get: operations["get_plan_plans__plan_id__get"];
         put?: never;
         post?: never;
@@ -38248,7 +38317,7 @@ export interface components {
          */
         AgentAssignmentRunRequest: {
             /** @description Saved-agent invocation template applied once to every resolved assignment. */
-            agent: components["schemas"]["AgentStartStrictInput"];
+            agent: components["schemas"]["AssignmentAgentInput"];
             /**
              * Plan
              * @description Coordinated rows, random options, or Cartesian values to materialize once.
@@ -38698,262 +38767,6 @@ export interface components {
             /** Skill Config */
             skill_config?: {
                 [key: string]: unknown;
-            } | null;
-        };
-        /**
-         * AgentStartStrictInput
-         * @description Workflow-side request body for the ``ai.agent.start`` action.
-         *
-         *     Field names are kept identical to ``aidream.api.routers.agents.AgentStartRequest``
-         *     so the action's input form is a 1:1 mirror of the API contract. Types
-         *     that live in the host application (``IdeState``, ``CacheBypass``) are
-         *     accepted as ``dict`` and validated by the host-injected request class
-         *     on the boundary.
-         *
-         *     ONE field is workflow-only: ``runtime_config_overrides``. It is not a
-         *     request field — it is the per-run config layer an upstream step delivers
-         *     on an edge, folded into ``config_overrides`` before the host request is
-         *     built (see ``agent_start``). A workflow step's authored config is static
-         *     by definition, so without it nothing computed during the run could ever
-         *     reach the agent's config.
-         */
-        AgentStartStrictInput: {
-            /**
-             * Mandate Key
-             * @description Mandate key naming the JOB this step performs (e.g. 'podcast.deep_research'). The database decides which agent runs it, resolved at run time — so an org or user Binding swaps this step's agent without touching the workflow. Preferred over agent_id, and mutually exclusive with it: a step naming both is refused.
-             */
-            mandate_key?: string | null;
-            /**
-             * Agent Id
-             * @description UUID of a specific agent (or agent version, when is_version=true). Pins this step to one agent forever — prefer mandate_key. Mutually exclusive with mandate_key: a step naming both is refused, because a Mandate exists to settle which authority picks the agent.
-             */
-            agent_id?: string | null;
-            /**
-             * Is Version
-             * @description If true, `agent_id` is treated as a pinned version_id instead of a current-agent id.
-             * @default false
-             */
-            is_version?: boolean;
-            /**
-             * User Input
-             * @description User message to append before running. Accepts a string or a list of content parts.
-             */
-            user_input?: string | {
-                [key: string]: components["schemas"]["JsonValue"];
-            }[] | null;
-            /**
-             * Variables
-             * @description Agent variable overrides for this invocation.
-             */
-            variables?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            };
-            /**
-             * Variable Resource Context
-             * @description Per-request media-context presentation policy keyed by agent variable name (promote/exclude a resource's representations). Changes context presentation only, never the saved agent definition. Validated against the host's ResourceContextPolicy model per key on entry.
-             */
-            variable_resource_context?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            } | null;
-            /**
-             * Config Overrides
-             * @description LLM parameter overrides (temperature, max_tokens, model, ...) the workflow AUTHOR set for this step. Static by nature — it is part of the saved definition. Validated against LLMParams by the host's AgentStartRequest on entry.
-             */
-            config_overrides?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            } | null;
-            /**
-             * Runtime Config Overrides
-             * @description Per-RUN LLM parameter overrides, meant to arrive on an EDGE from an upstream step (e.g. a voice map computed from the run's cast). Merged on TOP of both the mandate's config and this step's authored config_overrides, key by key — this is the run-scope layer, so it never wipes the other two the way a plain edge-delivered config_overrides would (the engine's input merge is last-writer-wins per KEY of the node input, so an edge feeding config_overrides replaces the whole authored dict).
-             */
-            runtime_config_overrides?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            } | null;
-            /**
-             * Conversation Id
-             * @description Continue an existing conversation. Leave blank for a fresh thread.
-             */
-            conversation_id?: string | null;
-            /**
-             * Is New
-             * @description Explicit assertion about whether this is a new conversation. True = create new (409 if id already exists), False = continue (404 if id missing). Blank means: new when no conversation_id was given, continue when one was.
-             */
-            is_new?: boolean | null;
-            /**
-             * Prior Messages
-             * @description Transcript of THIS ephemeral run, owned by the caller and ordered oldest-first — appended after the agent's own definition messages and before user_input. The server still owns the agent (model, tools, system prompt); only the history comes from here. ONLY valid with store=false — a persisted conversation's history is the DB's, and the host request refuses a second, conflicting transcript. Validated against the host's ChatMessageInput model on entry.
-             */
-            prior_messages?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            }[];
-            /** @description Client capability envelope: surface, active capabilities (editor-state, sandbox-fs, browser-dom, desktop-native, ...), and their typed state payloads. Gates every client-capability tool bundle and desktop-instance targeting (client.state['desktop-native'].target_instance_id). */
-            client?: components["schemas"]["ClientContext"] | null;
-            /** @description Per-request user-level tool inclusion/exclusion overrides (add/remove, apply_policy). Highest inclusion precedence: user.remove beats everything, user.add beats agent.forbidden. */
-            user?: components["schemas"]["UserOverrides"] | null;
-            /**
-             * Ide State
-             * @description IDE / editor state from the caller (vsc_* variables, active file, selection, diagnostics, workspace, git). Validated against the host's IdeState model on entry.
-             */
-            ide_state?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            } | null;
-            /**
-             * Sandbox
-             * @description Sandbox binding for this step (container/session identity for sandbox-delegated tool calls). Validated against the host's SandboxBindingRequest model on entry.
-             */
-            sandbox?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            } | null;
-            /**
-             * Context
-             * @description Deferred context objects keyed by name (context / context_patch payloads).
-             */
-            context?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            };
-            /**
-             * Writable Variables
-             * @description Variables the agent is allowed to mutate at runtime via context_patch.
-             */
-            writable_variables?: string[];
-            /**
-             * Allow Context Create
-             * @description Permit the agent to spawn new context objects via the context tool's create action.
-             * @default false
-             */
-            allow_context_create?: boolean;
-            /**
-             * Tools
-             * @description Additive ToolSpec list merged into the agent's resolved tool set. Each item is {kind: 'registered'|'inline'|'agent', ...}; validated against the host's ToolSpec union on entry.
-             */
-            tools?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            }[];
-            /**
-             * Tools Replace
-             * @description When set, this list becomes the agent's ENTIRE tool set for the turn — capability defaults and the agent's own declared tools are skipped. Same ToolSpec item shape as `tools`.
-             */
-            tools_replace?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            }[] | null;
-            /**
-             * Organization Id
-             * @description Organization scope applied to every item execution.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional project context applied to every item execution.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional task context applied to every item execution.
-             */
-            task_id?: string | null;
-            /**
-             * Source App
-             * @description Stable application slug that initiated the agent run.
-             */
-            source_app?: string | null;
-            /**
-             * Source Feature
-             * @description Stable feature slug within the source application.
-             */
-            source_feature?: string | null;
-            /**
-             * Store
-             * @description Persist each item's conversation and messages when true.
-             * @default true
-             */
-            store?: boolean;
-            /**
-             * Scope Ids
-             * @description Active context-scope ids selected by the caller's global picker, membership-validated server-side. Threads the selected scopes' context cells to the agent even when the entity carries no scope tags of its own.
-             */
-            scope_ids?: string[] | null;
-            /**
-             * Context Anchor
-             * @description Durable resource identity ({resource_type, resource_id}) from which authoritative organization/project/task context is reloaded, overruling ambient picker values. Validated against the host's ContextAnchor model on entry.
-             */
-            context_anchor?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            } | null;
-            /**
-             * Initiation
-             * @description How the caller initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for ordinary workflow/API-triggered steps.
-             */
-            initiation?: ("user" | "auto") | null;
-            /**
-             * Stream
-             * @description Stream the agent's tokens as they are produced.
-             * @default true
-             */
-            stream?: boolean;
-            /**
-             * Debug
-             * @description Enable verbose execution diagnostics for the agent run.
-             * @default false
-             */
-            debug?: boolean;
-            /**
-             * Block Mode
-             * @description Return block-oriented output events when supported by the agent.
-             * @default false
-             */
-            block_mode?: boolean;
-            /**
-             * Dry Run
-             * @description Run the full pre-LLM assembly (context, system-prompt render, message + tool merge) and return it as JSON instead of streaming an LLM turn. Pair with store=false for a true read-only preview — enables preview/approval/cost-estimate steps.
-             * @default false
-             */
-            dry_run?: boolean;
-            /**
-             * Snapshot
-             * @description Request-snapshot capture override. Omit for the platform default (capture ON — the exact provider request/response of every persisted iteration is recorded for replay); false to opt this step out; true to force capture on plus wire-level outbound-capture debug events.
-             */
-            snapshot?: boolean | null;
-            /**
-             * Memory
-             * @description True = enable OM and persist on conversation; False = disable and persist; None = inherit persisted state.
-             */
-            memory?: boolean | null;
-            /**
-             * Memory Model
-             * @description Optional model override for observational-memory processing.
-             */
-            memory_model?: string | null;
-            /**
-             * Memory Scope
-             * @description Observational-memory scope, normally the current thread.
-             * @default thread
-             */
-            memory_scope?: string;
-            /**
-             * Cache Bypass
-             * @description Per-call cache invalidation flags ({conversation, agent, tools, models}). Validated against the host's CacheBypass model on entry.
-             */
-            cache_bypass?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            } | null;
-            /**
-             * Max Iterations
-             * @description Maximum agent reasoning/tool-loop iterations.
-             * @default 100
-             */
-            max_iterations?: number;
-            /**
-             * Max Retries Per Iteration
-             * @description Maximum provider retries allowed within one agent iteration.
-             * @default 2
-             */
-            max_retries_per_iteration?: number;
-            /**
-             * Skill Config
-             * @description Per-request skill visibility override (Smart Input additive picks). Validated against the host's skill-config shape on entry.
-             */
-            skill_config?: {
-                [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
         /**
@@ -40958,6 +40771,11 @@ export interface components {
             validation: components["schemas"]["ValidationResult"];
             /** Updated At */
             updated_at?: string | null;
+            /**
+             * Pre Existing Issues
+             * @default []
+             */
+            pre_existing_issues?: string[];
         };
         /** ApprovalDecision */
         ApprovalDecision: {
@@ -41723,6 +41541,254 @@ export interface components {
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /**
+         * AssignmentAgentInput
+         * @description The per-item invocation template: an agent id, or a Mandate key.
+         *
+         *     Unlike Run Agent, a coordinated batch may still name a Mandate — it is
+         *     resolved ONCE for the whole batch, so a mid-batch rebind can never split
+         *     one batch across two doers. Exactly one selector may be set; the shared
+         *     resolver refuses both.
+         */
+        AssignmentAgentInput: {
+            /**
+             * User Input
+             * @description User message to append before running. Accepts a string or a list of content parts.
+             */
+            user_input?: string | {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[] | null;
+            /**
+             * Variables
+             * @description Agent variable overrides for this invocation.
+             */
+            variables?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Variable Resource Context
+             * @description Per-request media-context presentation policy keyed by agent variable name (promote/exclude a resource's representations). Changes context presentation only, never the saved agent definition. Validated against the host's ResourceContextPolicy model per key on entry.
+             */
+            variable_resource_context?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Config Overrides
+             * @description LLM parameter overrides (temperature, max_tokens, model, ...) the workflow AUTHOR set for this step. Static by nature — it is part of the saved definition. Validated against LLMParams by the host's AgentStartRequest on entry.
+             */
+            config_overrides?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Runtime Config Overrides
+             * @description Per-RUN LLM parameter overrides, meant to arrive on an EDGE from an upstream step (e.g. a voice map computed from the run's cast). Merged on TOP of both the mandate's config and this step's authored config_overrides, key by key — this is the run-scope layer, so it never wipes the other two the way a plain edge-delivered config_overrides would (the engine's input merge is last-writer-wins per KEY of the node input, so an edge feeding config_overrides replaces the whole authored dict).
+             */
+            runtime_config_overrides?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Conversation Id
+             * @description Continue an existing conversation. Leave blank for a fresh thread.
+             */
+            conversation_id?: string | null;
+            /**
+             * Is New
+             * @description Explicit assertion about whether this is a new conversation. True = create new (409 if id already exists), False = continue (404 if id missing). Blank means: new when no conversation_id was given, continue when one was.
+             */
+            is_new?: boolean | null;
+            /**
+             * Prior Messages
+             * @description Transcript of THIS ephemeral run, owned by the caller and ordered oldest-first — appended after the agent's own definition messages and before user_input. The server still owns the agent (model, tools, system prompt); only the history comes from here. ONLY valid with store=false — a persisted conversation's history is the DB's, and the host request refuses a second, conflicting transcript. Validated against the host's ChatMessageInput model on entry.
+             */
+            prior_messages?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** @description Client capability envelope: surface, active capabilities (editor-state, sandbox-fs, browser-dom, desktop-native, ...), and their typed state payloads. Gates every client-capability tool bundle and desktop-instance targeting (client.state['desktop-native'].target_instance_id). */
+            client?: components["schemas"]["ClientContext"] | null;
+            /** @description Per-request user-level tool inclusion/exclusion overrides (add/remove, apply_policy). Highest inclusion precedence: user.remove beats everything, user.add beats agent.forbidden. */
+            user?: components["schemas"]["UserOverrides"] | null;
+            /**
+             * Ide State
+             * @description IDE / editor state from the caller (vsc_* variables, active file, selection, diagnostics, workspace, git). Validated against the host's IdeState model on entry.
+             */
+            ide_state?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Sandbox
+             * @description Sandbox binding for this step (container/session identity for sandbox-delegated tool calls). Validated against the host's SandboxBindingRequest model on entry.
+             */
+            sandbox?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Context
+             * @description Deferred context objects keyed by name (context / context_patch payloads).
+             */
+            context?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Writable Variables
+             * @description Variables the agent is allowed to mutate at runtime via context_patch.
+             */
+            writable_variables?: string[];
+            /**
+             * Allow Context Create
+             * @description Permit the agent to spawn new context objects via the context tool's create action.
+             * @default false
+             */
+            allow_context_create?: boolean;
+            /**
+             * Tools
+             * @description Additive ToolSpec list merged into the agent's resolved tool set. Each item is {kind: 'registered'|'inline'|'agent', ...}; validated against the host's ToolSpec union on entry.
+             */
+            tools?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /**
+             * Tools Replace
+             * @description When set, this list becomes the agent's ENTIRE tool set for the turn — capability defaults and the agent's own declared tools are skipped. Same ToolSpec item shape as `tools`.
+             */
+            tools_replace?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[] | null;
+            /**
+             * Organization Id
+             * @description Organization scope applied to every item execution.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional project context applied to every item execution.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional task context applied to every item execution.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the agent run.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Store
+             * @description Persist each item's conversation and messages when true.
+             * @default true
+             */
+            store?: boolean;
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller's global picker, membership-validated server-side. Threads the selected scopes' context cells to the agent even when the entity carries no scope tags of its own.
+             */
+            scope_ids?: string[] | null;
+            /**
+             * Context Anchor
+             * @description Durable resource identity ({resource_type, resource_id}) from which authoritative organization/project/task context is reloaded, overruling ambient picker values. Validated against the host's ContextAnchor model on entry.
+             */
+            context_anchor?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Initiation
+             * @description How the caller initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for ordinary workflow/API-triggered steps.
+             */
+            initiation?: ("user" | "auto") | null;
+            /**
+             * Stream
+             * @description Stream the agent's tokens as they are produced.
+             * @default true
+             */
+            stream?: boolean;
+            /**
+             * Debug
+             * @description Enable verbose execution diagnostics for the agent run.
+             * @default false
+             */
+            debug?: boolean;
+            /**
+             * Block Mode
+             * @description Return block-oriented output events when supported by the agent.
+             * @default false
+             */
+            block_mode?: boolean;
+            /**
+             * Dry Run
+             * @description Run the full pre-LLM assembly (context, system-prompt render, message + tool merge) and return it as JSON instead of streaming an LLM turn. Pair with store=false for a true read-only preview — enables preview/approval/cost-estimate steps.
+             * @default false
+             */
+            dry_run?: boolean;
+            /**
+             * Snapshot
+             * @description Request-snapshot capture override. Omit for the platform default (capture ON — the exact provider request/response of every persisted iteration is recorded for replay); false to opt this step out; true to force capture on plus wire-level outbound-capture debug events.
+             */
+            snapshot?: boolean | null;
+            /**
+             * Memory
+             * @description True = enable OM and persist on conversation; False = disable and persist; None = inherit persisted state.
+             */
+            memory?: boolean | null;
+            /**
+             * Memory Model
+             * @description Optional model override for observational-memory processing.
+             */
+            memory_model?: string | null;
+            /**
+             * Memory Scope
+             * @description Observational-memory scope, normally the current thread.
+             * @default thread
+             */
+            memory_scope?: string;
+            /**
+             * Cache Bypass
+             * @description Per-call cache invalidation flags ({conversation, agent, tools, models}). Validated against the host's CacheBypass model on entry.
+             */
+            cache_bypass?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Max Iterations
+             * @description Maximum agent reasoning/tool-loop iterations.
+             * @default 100
+             */
+            max_iterations?: number;
+            /**
+             * Max Retries Per Iteration
+             * @description Maximum provider retries allowed within one agent iteration.
+             * @default 2
+             */
+            max_retries_per_iteration?: number;
+            /**
+             * Skill Config
+             * @description Per-request skill visibility override (Smart Input additive picks). Validated against the host's skill-config shape on entry.
+             */
+            skill_config?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Mandate Key
+             * @description The job this step performs, named as a Mandate key (e.g. 'podcast.deep_research'). Your organization decides which agent or workflow actually does it, looked up every time the step runs — so the job can be reassigned without editing this workflow.
+             */
+            mandate_key?: string | null;
+            /**
+             * Agent Id
+             * @description The agent this step runs. Pick one of your saved agents — this step runs that agent, every time. (Turn on 'Pin to this version' to freeze it at one saved version instead of always using the agent's current form.)
+             */
+            agent_id?: string | null;
+            /**
+             * Is Version
+             * @description Pin to this version: run the exact saved version named above instead of the agent's current form.
+             * @default false
+             */
+            is_version?: boolean;
         };
         /** AssignmentBatchResult */
         AssignmentBatchResult: {
@@ -43907,6 +43973,88 @@ export interface components {
             like_count: number;
             /** Quote Count */
             quote_count: number;
+        };
+        /** BoardConversionRow */
+        BoardConversionRow: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Repo Slug */
+            repo_slug: string | null;
+            /** Location */
+            location: string;
+            /** Symbol */
+            symbol: string | null;
+            /** Revision */
+            revision: string;
+            /** Revision Kind */
+            revision_kind: string;
+        };
+        /**
+         * BoardFinding
+         * @description A flagged reference row — a real location plus what to do about it.
+         */
+        BoardFinding: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Reference Type */
+            reference_type: string;
+            /** Repo Slug */
+            repo_slug: string | null;
+            /** Location */
+            location: string;
+            /** Flag */
+            flag: string;
+            /** Presence */
+            presence: string;
+            /** Sentence */
+            sentence: string;
+            /** Remedy */
+            remedy: string;
+        };
+        /** BoardRepo */
+        BoardRepo: {
+            /** Repo Slug */
+            repo_slug: string;
+            /** Github Full Name */
+            github_full_name: string | null;
+            /**
+             * Scan State
+             * @enum {string}
+             */
+            scan_state: "verified" | "unverified";
+            last_complete_candidate: components["schemas"]["BoardScanSummary"] | null;
+            last_complete_deployed: components["schemas"]["BoardScanSummary"] | null;
+            /** Finding Counts */
+            finding_counts: {
+                [key: string]: number;
+            };
+            /** Reference Count */
+            reference_count: number;
+            /** Open Finding Count */
+            open_finding_count: number;
+            /** Conversion Count */
+            conversion_count: number;
+            /** Open Findings */
+            open_findings: components["schemas"]["BoardFinding"][];
+        };
+        /** BoardScanSummary */
+        BoardScanSummary: {
+            /** Revision */
+            revision: string;
+            /** Revision Kind */
+            revision_kind: string;
+            /** Scanner Version */
+            scanner_version: string | null;
+            /** Package Path */
+            package_path: string | null;
+            /** Verification Status */
+            verification_status: string;
+            /** Scanned At */
+            scanned_at: string | null;
+            /** Finding Counts */
+            finding_counts: {
+                [key: string]: number;
+            };
         };
         /** Body_add_attachment_vault_items__item_id__attachments_post */
         Body_add_attachment_vault_items__item_id__attachments_post: {
@@ -58338,6 +58486,40 @@ export interface components {
              * @default datacenter
              */
             proxy_type?: string;
+        };
+        /** DoodleServiceStatus */
+        DoodleServiceStatus: {
+            /**
+             * Kind
+             * @default doodle_public_service_status
+             * @constant
+             */
+            __kind?: "doodle_public_service_status";
+            /**
+             * Provider
+             * @default doodle
+             * @constant
+             */
+            provider?: "doodle";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+            /**
+             * Status Page
+             * @default https://uptime.doodle.com
+             * @constant
+             */
+            status_page?: "https://uptime.doodle.com";
         };
         /**
          * DorikServiceStatus
@@ -74853,6 +75035,100 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             }[];
         };
+        /** MandateReferenceBoard */
+        MandateReferenceBoard: {
+            /** Repos */
+            repos: components["schemas"]["BoardRepo"][];
+            /** Conversion List */
+            conversion_list: components["schemas"]["BoardConversionRow"][];
+            /** Conversion Count */
+            conversion_count: number;
+            /** Conversion Counts By Repo */
+            conversion_counts_by_repo: {
+                [key: string]: number;
+            };
+            /** Open Finding Count */
+            open_finding_count: number;
+            /** Unverified Repos */
+            unverified_repos: string[];
+            /**
+             * Source
+             * @default mandate.reference
+             * @constant
+             */
+            source?: "mandate.reference";
+        };
+        /** MandateReferenceReport */
+        MandateReferenceReport: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Defined In */
+            defined_in: components["schemas"]["MandateReferenceRow"][];
+            /** Used By */
+            used_by: components["schemas"]["MandateReferenceRow"][];
+            /** Flags */
+            flags: components["schemas"]["MandateReferenceRow"][];
+            /** Scan Completeness */
+            scan_completeness: {
+                [key: string]: components["schemas"]["RepoScanCompleteness"];
+            };
+            /** Unscanned Repos */
+            unscanned_repos: string[];
+            /** Single Consumption Site By Design */
+            single_consumption_site_by_design: boolean;
+            /**
+             * Source
+             * @default mandate.reference
+             * @constant
+             */
+            source?: "mandate.reference";
+        };
+        /**
+         * MandateReferenceRow
+         * @description One reference to a mandate key, as the tab renders it.
+         */
+        MandateReferenceRow: {
+            /** Identity Hash */
+            identity_hash: string;
+            /** Mandate Key */
+            mandate_key: string;
+            /** Reference Type */
+            reference_type: string;
+            /** Repo Slug */
+            repo_slug: string | null;
+            /** Package Path */
+            package_path: string | null;
+            /** Package Name */
+            package_name: string | null;
+            /** Language */
+            language: string | null;
+            /** File Path */
+            file_path: string | null;
+            /** Symbol */
+            symbol: string | null;
+            /** Occurrence N */
+            occurrence_n: number | null;
+            /** Line */
+            line: number | null;
+            /** Revision */
+            revision: string;
+            /** Revision Kind */
+            revision_kind: string;
+            /** Presence */
+            presence: string;
+            /** Flag */
+            flag: string;
+            /** Caller Identity Hash */
+            caller_identity_hash: string | null;
+            /** Location */
+            location: string;
+            /** Flag Sentence */
+            flag_sentence: string | null;
+            /** Remedy */
+            remedy: string | null;
+            /** Scan Status */
+            scan_status: string | null;
+        };
         /**
          * MandateResolutionResponse
          * @description What a client needs to run this mandate's agent, resolved for the caller.
@@ -75889,8 +76165,7 @@ export interface components {
         McpInvokeResponse: {
             /** Success */
             success: boolean;
-            /** Output */
-            output?: string | null;
+            output?: components["schemas"]["JsonValue"] | null;
             /** Error */
             error?: string | null;
         };
@@ -77484,6 +77759,8 @@ export interface components {
              * @default false
              */
             is_deprecated?: boolean;
+            /** Successor Id */
+            successor_id?: string | null;
             /**
              * Output Type
              * @default text
@@ -78578,8 +78855,9 @@ export interface components {
         };
         /**
          * NodeAgentChatContext
-         * @description Everything the studio needs to open a Node Agent chat for one node:
-         *     the resolved mandate agent + the variables to pass on POST /agents/{id}.
+         * @description Everything the studio needs to open the Steward for one step: the
+         *     resolved mandate agent, the ONE stored conversation to continue (with its
+         *     transcript), the identity variables, and the per-turn context.
          */
         NodeAgentChatContext: {
             /** Mandate Key */
@@ -78609,11 +78887,35 @@ export interface components {
             /** Backing Agent Id */
             backing_agent_id?: string | null;
             /**
+             * Conversation Id
+             * @description The ONE stored Steward conversation for this person and this step (deterministic; the studio continues it with is_new=false when conversation_exists, else starts it).
+             */
+            conversation_id: string;
+            /**
+             * Conversation Exists
+             * @default false
+             */
+            conversation_exists?: boolean;
+            /**
+             * Messages
+             * @description The stored transcript so far, oldest first — the panel reopens with it.
+             */
+            messages?: {
+                [key: string]: unknown;
+            }[];
+            /**
              * Variables
-             * @description Pass verbatim as the agent-start `variables`: node_context (the XML bundle), workflow_id, node_id, node_label, spec_type.
+             * @description Pass as the agent-start `variables` on EVERY turn (the Mandate route re-checks the provision): workflow_id, node_id, node_label, spec_type.
              */
             variables?: {
                 [key: string]: string;
+            };
+            /**
+             * Context
+             * @description Pass as the agent-start `context` on EVERY turn: node_context (the XML envelope, rebuilt fresh each time).
+             */
+            context?: {
+                [key: string]: unknown;
             };
         };
         /**
@@ -84658,6 +84960,8 @@ export interface components {
             samples: components["schemas"]["PlanSampleRecord"][];
             /** Events */
             events: components["schemas"]["PlanEventRecord"][];
+            /** Messages */
+            messages?: components["schemas"]["StoredMessageRecord"][];
         };
         /**
          * PlanGroup
@@ -91476,6 +91780,22 @@ export interface components {
             file_path: string;
             /** Feedback Id */
             feedback_id?: string | null;
+        };
+        /**
+         * RepoScanCompleteness
+         * @description The newest COMPLETE scan for one active repository, or the absence of one.
+         */
+        RepoScanCompleteness: {
+            /** Repo Slug */
+            repo_slug: string;
+            /** Revision */
+            revision: string | null;
+            /** Revision Kind */
+            revision_kind: string | null;
+            /** Scanned At */
+            scanned_at: string | null;
+            /** Is Complete */
+            is_complete: boolean;
         };
         /** RepositoriesListResponse */
         RepositoriesListResponse: {
@@ -100544,6 +100864,27 @@ export interface components {
             };
         };
         /**
+         * StoredMessageRecord
+         * @description One normalized visible `chat.message` — the same projection every
+         *     launcher-named canvas chat replays from (`launcher_history`).
+         */
+        StoredMessageRecord: {
+            /** Message Id */
+            message_id: string;
+            /** Role */
+            role: string;
+            /**
+             * Text
+             * @default
+             */
+            text?: string;
+            /**
+             * Position
+             * @default 0
+             */
+            position?: number;
+        };
+        /**
          * StoredSuggestedTag
          * @description One persisted cross-cutting tag suggestion (a row of
          *     ``rs_topic.tag_suggestions.tags``). ``applied`` flips to true once the user
@@ -106505,8 +106846,18 @@ export interface components {
             messages?: {
                 [key: string]: components["schemas"]["JsonValue"];
             }[] | null;
-            /** Variable Definitions */
+            /**
+             * Variable Definitions
+             * @description The stored column name for the agent's variable definitions. `variables` is the caller-facing alias and folds into this.
+             */
             variable_definitions?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[] | null;
+            /**
+             * Variables
+             * @description The agent's variable definitions — REPLACES the whole list. Named `variables` to match every other surface (the create path, the read path, `agent_run`); it is written to the `variable_definitions` column. Accepts either the compact read shape ({name, description, required, default_value}) or the stored FE shape ({name, helpText, defaultValue, required, customComponent}) — the compact keys are translated, never stored raw.
+             */
+            variables?: {
                 [key: string]: components["schemas"]["JsonValue"];
             }[] | null;
             /**
@@ -128491,6 +128842,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DorikServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_doodle_public_status_get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoodleServiceStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -161085,6 +161467,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MandateCodeTruthReport"];
+                };
+            };
+        };
+    };
+    get_mandate_reference_board_mandates_references_board_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateReferenceBoard"];
+                };
+            };
+        };
+    };
+    get_mandate_references_mandates__mandate_key__references_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateReferenceReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -13,7 +13,7 @@ import {
   SITE_WORKBENCH_DEFAULT_URL,
   SITE_WORKBENCH_USER_BOOKMARKS_MAX,
   type SiteWorkbenchBookmark,
-} from "@/features/window-panels/windows/iframe/site-workbench-bookmarks";
+} from "@/features/settings/site-workbench-bookmarks";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import type { SiteWorkbenchUserBookmark } from "@/lib/redux/preferences/userPreferencesSlice";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { BookMarked, Plus, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { browserFrameMenuSection } from "@/features/window-panels/windows/iframe/browser-frame-menu";
+import { buildBrowserFrameMenuSection } from "@/features/window-panels/windows/iframe/browser-frame-menu";
 
 export type { SiteWorkbenchBookmark };
 
@@ -467,7 +467,7 @@ function BrowserWorkbenchWindowInner({
               contentSource={{ type: "raw" }}
               contextData={{ content: activeTab.url }}
               extraSections={[
-                browserFrameMenuSection({
+                buildBrowserFrameMenuSection({
                   url: activeTab.url,
                   title: activeTab.label,
                   onReload: () => setReloadNonce((n) => n + 1),

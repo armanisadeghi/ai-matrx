@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
-  Circle,
   CircleCheck,
   CircleHelp,
   CircleX,
@@ -24,6 +23,10 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
+
+/** Source-selector dimensions shared by configuration choices and pickers. */
+export const CONFIGURATION_CHOICE_SIZE =
+  "h-[34px] min-h-[34px] rounded-lg px-2.5 text-[11.5px] font-medium";
 
 const FIELD_HELP_OPEN = "matrx:field-help-open";
 
@@ -191,7 +194,7 @@ export function FieldHelp({
 const STATUS = {
   neutral: {
     label: "Not evaluated",
-    Icon: Circle,
+    Icon: null,
     color: "text-foreground",
   },
   ok: { label: "Passed", Icon: CircleCheck, color: "text-success" },
@@ -204,7 +207,7 @@ const STATUS = {
   },
 } as const;
 
-/** A named severity with both text and an icon; never a color-only verdict. */
+/** Status always has text. Only meaningful severity icons accompany it. */
 export function StatusToken({
   status,
   label,
@@ -221,7 +224,7 @@ export function StatusToken({
         color,
       )}
     >
-      <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+      {Icon ? <Icon className="size-3.5 shrink-0" aria-hidden="true" /> : null}
       <span className="break-words">{label ?? defaultLabel}</span>
     </span>
   );
@@ -246,20 +249,20 @@ export function PropertyRow({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col gap-1 border-b border-border py-2 text-sm last:border-b-0 sm:flex-row sm:gap-4",
+        "flex min-w-0 flex-col gap-1 border-b border-border py-2 text-sm last:border-b-0 sm:flex-row sm:items-center sm:gap-4",
         className,
       )}
     >
-      <div className="flex min-w-0 shrink-0 items-start gap-1 font-semibold text-foreground sm:w-44">
+      <div className="flex min-w-0 shrink-0 items-center gap-1 font-semibold text-foreground sm:w-44">
         <span className="break-words">{label}:</span>
         {help != null ? <FieldHelp label={label}>{help}</FieldHelp> : null}
       </div>
-      <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-6 gap-y-1 font-normal">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-1 font-normal">
         <div className="min-w-0 flex-1 break-words text-foreground">
           {value}
         </div>
         {source != null || state != null ? (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground">
             {source != null ? (
               <span>
                 <span className="font-semibold">Source:</span> {source}

@@ -31,6 +31,9 @@ export interface TableColumn {
     label: string;
 }
 
+/** Native element used for a tool-result media value. */
+export type ResultMediaElement = "img" | "video" | "audio";
+
 /**
  * A downloadable, non-media file (docx / pptx / xlsx / pdf / zip / …).
  * Carries whatever the tool handed us; the renderer resolves a live URL from
@@ -112,6 +115,27 @@ export function humanizeKey(key: string): string {
         .trim();
     if (spaced.length === 0) return key;
     return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/**
+ * Infer a media element from an explicit media URL field name. This is a
+ * render hint only — it never fabricates or persists a MIME type. It covers
+ * the interval before an ID-backed URL's canonical file metadata hydrates,
+ * when the media client otherwise has no type signal and defaults to image.
+ *
+ * Requiring BOTH a media-family token and a URL token keeps ordinary fields
+ * such as `audio_summary` or `video_status` out of the heuristic.
+ */
+export function mediaElementHintForKey(key: string): ResultMediaElement | undefined {
+    const normalized = key
+        .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+        .replace(/[-\s]+/g, "_")
+        .toLowerCase();
+    if (!/(^|_)(urls?|uris?|srcs?|hrefs?|links?)(_|$)/.test(normalized)) return undefined;
+    if (/(^|_)(audio|sound)(_|$)/.test(normalized)) return "audio";
+    if (/(^|_)(video|movie)(_|$)/.test(normalized)) return "video";
+    if (/(^|_)(image|photo|picture|thumbnail|poster)(_|$)/.test(normalized)) return "img";
+    return undefined;
 }
 
 /**

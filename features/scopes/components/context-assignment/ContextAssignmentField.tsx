@@ -51,7 +51,7 @@ import {
   Plus,
   Save,
   Search,
-  Wand2,
+  Zap,
   X,
   FileText,
   type LucideIcon,
@@ -1828,7 +1828,7 @@ export function ContextAssignmentField({
                       }
                       className="inline-flex items-center gap-1 rounded-md border border-dashed border-amber-400/60 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/40"
                     >
-                      <Wand2 className="h-3 w-3" />
+                      <Zap className="h-3 w-3" />
                       {s.label}
                       <Plus className="h-3 w-3" />
                     </button>

@@ -42,7 +42,7 @@ import {
   familyNoun,
 } from "../../components/run/node-presentation";
 import type { RunActivityEntry } from "../../redux/workflow-runs.slice";
-import type { WorkflowRunStatus } from "../../types";
+import { runIsOver, type WorkflowRunStatus } from "../../types";
 import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
 import { spotlightStep, type StepView } from "./plan-view";
 
@@ -321,11 +321,7 @@ export function LiveDesk({
     }
   };
 
-  const terminal =
-    status === "completed" ||
-    status === "failed" ||
-    status === "errored" ||
-    status === "cancelled";
+  const terminal = runIsOver(status);
 
   return (
     <div className="grid shrink-0 grid-cols-1 gap-3 xl:grid-cols-5">

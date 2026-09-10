@@ -18,7 +18,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { detectResultShape } from "./shape";
+import { detectResultShape, type ResultMediaElement } from "./shape";
 import { ResultScalar } from "./ResultScalar";
 import { ResultMarkdown } from "./ResultMarkdown";
 import { ResultMedia } from "./ResultMedia";
@@ -44,6 +44,8 @@ export interface ResultValueProps {
      * tables and grids so one decision covers the whole document.
      */
     embedMedia?: boolean;
+    /** Trusted containing-field hint for ID-backed media with no inline type. */
+    mediaElementHint?: ResultMediaElement;
     className?: string;
 }
 
@@ -125,6 +127,7 @@ export const ResultValue: React.FC<ResultValueProps> = ({
     density = "inline",
     depth = 0,
     embedMedia = true,
+    mediaElementHint,
     className,
 }) => {
     const shape = detectResultShape(value, { embedMedia });
@@ -151,7 +154,14 @@ export const ResultValue: React.FC<ResultValueProps> = ({
                 return <UrlChip url={shape.value} />;
 
             case "media":
-                return <ResultMedia mediaRef={shape.ref} alt={shape.alt} density={density} />;
+                return (
+                    <ResultMedia
+                        mediaRef={shape.ref}
+                        elementTypeHint={mediaElementHint}
+                        alt={shape.alt}
+                        density={density}
+                    />
+                );
 
             case "file":
                 return <ResultFile file={shape.file} density={density} />;
@@ -165,6 +175,7 @@ export const ResultValue: React.FC<ResultValueProps> = ({
                                     <ResultMedia
                                         key={`${item.ref.file_id ?? item.ref.url ?? "media"}-${index}`}
                                         mediaRef={item.ref}
+                                        elementTypeHint={mediaElementHint}
                                         alt={item.alt}
                                         density={density}
                                     />

@@ -2070,9 +2070,11 @@ export type Database = {
           organization_id: string
           provider_id: string | null
           release_date: string | null
+          retired_at: string | null
           retry_fallback_id: string | null
           retry_max_attempts: number
           speed_rating: number | null
+          successor_id: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -2100,9 +2102,11 @@ export type Database = {
           organization_id: string
           provider_id?: string | null
           release_date?: string | null
+          retired_at?: string | null
           retry_fallback_id?: string | null
           retry_max_attempts?: number
           speed_rating?: number | null
+          successor_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -2130,9 +2134,11 @@ export type Database = {
           organization_id?: string
           provider_id?: string | null
           release_date?: string | null
+          retired_at?: string | null
           retry_fallback_id?: string | null
           retry_max_attempts?: number
           speed_rating?: number | null
+          successor_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -2226,6 +2232,34 @@ export type Database = {
           {
             foreignKeyName: "model_definition_retry_fallback_id_fkey"
             columns: ["retry_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
             isOneToOne: false
             referencedRelation: "model_public"
             referencedColumns: ["id"]
@@ -2620,9 +2654,11 @@ export type Database = {
           provider_id: string | null
           provider_model_id: string | null
           release_date: string | null
+          retired_at: string | null
           retry_fallback_id: string | null
           retry_max_attempts: number | null
           speed_rating: number | null
+          successor_id: string | null
           token_billed: boolean | null
           translator_key: string | null
           transport: string | null
@@ -2722,6 +2758,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "offering_api_id_fkey"
             columns: ["api_id"]
             isOneToOne: false
@@ -2753,14 +2817,46 @@ export type Database = {
           controls: Json | null
           cost_rating: number | null
           id: string | null
+          is_deprecated: boolean | null
           is_premium: boolean | null
           is_primary: boolean | null
           maker: string | null
           max_tokens: number | null
           name: string | null
+          retired_at: string | null
           speed_rating: number | null
+          successor_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       model_offering: {
         Row: {
@@ -2768,6 +2864,7 @@ export type Database = {
           is_available: boolean | null
           model_common_name: string | null
           model_id: string | null
+          model_is_deprecated: boolean | null
           model_name: string | null
           offering_id: string | null
           points_per_million_cached_input: number | null
@@ -2893,6 +2990,7 @@ export type Database = {
           description: string | null
           guest_fallback_id: string | null
           id: string | null
+          is_deprecated: boolean | null
           is_premium: boolean | null
           is_primary: boolean | null
           maker: string | null
@@ -2902,7 +3000,9 @@ export type Database = {
           points_per_million_input: number | null
           points_per_million_output: number | null
           release_date: string | null
+          retired_at: string | null
           speed_rating: number | null
+          successor_id: string | null
           token_billed: boolean | null
           usage_basis: string | null
         }
@@ -2959,6 +3059,34 @@ export type Database = {
           {
             foreignKeyName: "ai_model_mid_fallback_id_fkey"
             columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_successor_id_fkey"
+            columns: ["successor_id"]
             isOneToOne: false
             referencedRelation: "model_public"
             referencedColumns: ["id"]
@@ -10143,6 +10271,27 @@ export type Database = {
         }
         Relationships: []
       }
+      mv_tool_refetch_summary: {
+        Row: {
+          after_trim_repeats: number | null
+          chars_refetched_same_data: number | null
+          conversations: number | null
+          last_repeat_at: string | null
+          median_gap_calls: number | null
+          median_gap_secs: number | null
+          new_data_repeats: number | null
+          refreshed_at: string | null
+          repeat_rate: number | null
+          repeats: number | null
+          same_data_rate: number | null
+          same_data_repeats: number | null
+          tool_name: string | null
+          total_calls: number | null
+          total_conversations: number | null
+          unknown_data_repeats: number | null
+        }
+        Relationships: []
+      }
       user_request_summary: {
         Row: {
           agent_id: string | null
@@ -10189,11 +10338,16 @@ export type Database = {
           first_output_chars: number | null
           first_result_trimmed_before_repeat: boolean | null
           first_tool_call_id: string | null
+          gap_calls: number | null
+          gap_iterations: number | null
+          gap_secs: number | null
           prior_identical_calls: number | null
           repeat_at: string | null
           repeat_call_id: string | null
           repeat_iteration: number | null
+          repeat_output_chars: number | null
           repeat_tool_call_id: string | null
+          same_data: boolean | null
           tool_name: string | null
         }
         Relationships: [
@@ -10219,6 +10373,26 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vw_tool_refetch_summary: {
+        Row: {
+          after_trim_repeats: number | null
+          chars_refetched_same_data: number | null
+          conversations: number | null
+          last_repeat_at: string | null
+          median_gap_calls: number | null
+          median_gap_secs: number | null
+          new_data_repeats: number | null
+          repeat_rate: number | null
+          repeats: number | null
+          same_data_rate: number | null
+          same_data_repeats: number | null
+          tool_name: string | null
+          total_calls: number | null
+          total_conversations: number | null
+          unknown_data_repeats: number | null
+        }
+        Relationships: []
       }
     }
     Functions: {
@@ -53106,6 +53280,7 @@ export type Database = {
           pinned_context: Json
           pins: Json
           provision_key: string | null
+          renamed_from_key: string | null
           required_context_policies: string[]
           required_output_keys: string[]
           source_mandate_id: string | null
@@ -53143,6 +53318,7 @@ export type Database = {
           pinned_context?: Json
           pins?: Json
           provision_key?: string | null
+          renamed_from_key?: string | null
           required_context_policies?: string[]
           required_output_keys?: string[]
           source_mandate_id?: string | null
@@ -53180,6 +53356,7 @@ export type Database = {
           pinned_context?: Json
           pins?: Json
           provision_key?: string | null
+          renamed_from_key?: string | null
           required_context_policies?: string[]
           required_output_keys?: string[]
           source_mandate_id?: string | null
@@ -53206,6 +53383,91 @@ export type Database = {
           {
             foreignKeyName: "definition_source_mandate_id_fkey"
             columns: ["source_mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+        ]
+      }
+      observation: {
+        Row: {
+          attempted_count: number
+          created_at: string
+          created_by: string | null
+          deployed_revision: string | null
+          executed_count: number
+          first_observed_at: string
+          id: string
+          last_observed_at: string
+          mandate_id: string
+          mandate_key: string
+          metadata: Json
+          organization_id: string
+          repo_slug: string | null
+          resolved_count: number
+          site_identity_hash: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          attempted_count?: number
+          created_at?: string
+          created_by?: string | null
+          deployed_revision?: string | null
+          executed_count?: number
+          first_observed_at?: string
+          id?: string
+          last_observed_at?: string
+          mandate_id: string
+          mandate_key: string
+          metadata?: Json
+          organization_id: string
+          repo_slug?: string | null
+          resolved_count?: number
+          site_identity_hash?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          attempted_count?: number
+          created_at?: string
+          created_by?: string | null
+          deployed_revision?: string | null
+          executed_count?: number
+          first_observed_at?: string
+          id?: string
+          last_observed_at?: string
+          mandate_id?: string
+          mandate_key?: string
+          metadata?: Json
+          organization_id?: string
+          repo_slug?: string | null
+          resolved_count?: number
+          site_identity_hash?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "observation_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observation_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "observation_mandate_id_fkey"
+            columns: ["mandate_id"]
             isOneToOne: false
             referencedRelation: "vw_shortcut"
             referencedColumns: ["mandate_id"]
@@ -53267,6 +53529,206 @@ export type Database = {
           provision_key?: string
           updated_at?: string
           updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      reference: {
+        Row: {
+          caller_identity_hash: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          file_path: string | null
+          flag: string
+          id: string
+          identity_hash: string
+          language: string | null
+          line: number | null
+          mandate_id: string | null
+          mandate_key: string
+          metadata: Json
+          occurrence_n: number | null
+          organization_id: string
+          package_name: string | null
+          package_path: string | null
+          presence: string
+          reference_type_id: string
+          repo_slug: string | null
+          revision: string
+          revision_kind: string
+          scan_id: string | null
+          symbol: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          caller_identity_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          file_path?: string | null
+          flag?: string
+          id?: string
+          identity_hash: string
+          language?: string | null
+          line?: number | null
+          mandate_id?: string | null
+          mandate_key: string
+          metadata?: Json
+          occurrence_n?: number | null
+          organization_id: string
+          package_name?: string | null
+          package_path?: string | null
+          presence?: string
+          reference_type_id: string
+          repo_slug?: string | null
+          revision: string
+          revision_kind: string
+          scan_id?: string | null
+          symbol?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          caller_identity_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          file_path?: string | null
+          flag?: string
+          id?: string
+          identity_hash?: string
+          language?: string | null
+          line?: number | null
+          mandate_id?: string | null
+          mandate_key?: string
+          metadata?: Json
+          occurrence_n?: number | null
+          organization_id?: string
+          package_name?: string | null
+          package_path?: string | null
+          presence?: string
+          reference_type_id?: string
+          repo_slug?: string | null
+          revision?: string
+          revision_kind?: string
+          scan_id?: string | null
+          symbol?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "scan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scan: {
+        Row: {
+          coverage: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          finding_counts: Json
+          finished_at: string | null
+          id: string
+          languages: string[]
+          metadata: Json
+          observer: string | null
+          organization_id: string
+          package_name: string | null
+          package_path: string
+          repo_slug: string
+          revision: string
+          revision_kind: string
+          scanner_version: string
+          started_at: string | null
+          updated_at: string
+          updated_by: string | null
+          verification_status: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          coverage?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          finding_counts?: Json
+          finished_at?: string | null
+          id?: string
+          languages?: string[]
+          metadata?: Json
+          observer?: string | null
+          organization_id: string
+          package_name?: string | null
+          package_path: string
+          repo_slug: string
+          revision: string
+          revision_kind: string
+          scanner_version: string
+          started_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_status: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          coverage?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          finding_counts?: Json
+          finished_at?: string | null
+          id?: string
+          languages?: string[]
+          metadata?: Json
+          observer?: string | null
+          organization_id?: string
+          package_name?: string | null
+          package_path?: string
+          repo_slug?: string
+          revision?: string
+          revision_kind?: string
+          scanner_version?: string
+          started_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_status?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -53365,6 +53827,68 @@ export type Database = {
           placement_type: string | null
         }
         Relationships: []
+      }
+      reference_latest_deployed: {
+        Row: {
+          caller_identity_hash: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          file_path: string | null
+          flag: string | null
+          id: string | null
+          identity_hash: string | null
+          language: string | null
+          line: number | null
+          mandate_id: string | null
+          mandate_key: string | null
+          metadata: Json | null
+          occurrence_n: number | null
+          organization_id: string | null
+          package_name: string | null
+          package_path: string | null
+          presence: string | null
+          reference_type_id: string | null
+          repo_slug: string | null
+          revision: string | null
+          revision_kind: string | null
+          scan_id: string | null
+          symbol: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "scan"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shortcut_key_map: {
         Row: {
@@ -53499,6 +54023,7 @@ export type Database = {
         Args: { p_label: string; p_surface: string }
         Returns: string
       }
+      mandate_references: { Args: { p_mandate_key: string }; Returns: Json }
       missing_output_keys: {
         Args: { p_output_schema: Json; p_required_output_keys: string[] }
         Returns: string[]
@@ -53560,6 +54085,7 @@ export type Database = {
       sanitize_shortcut_segment: { Args: { p_seg: string }; Returns: string }
       shortcut_slug: { Args: { p_text: string }; Returns: string }
       shortcut_treatment_config: { Args: { p_row: Json }; Returns: Json }
+      submit_scan_report: { Args: { p_report: Json }; Returns: Json }
       validate_treatment_config: {
         Args: { p_config: Json; p_tier: string }
         Returns: boolean
@@ -64601,7 +65127,7 @@ export type Database = {
         }[]
       }
       agx_get_shared_for_chat: {
-        Args: never
+        Args: { p_archived?: string }
         Returns: {
           id: string
           name: string
@@ -64610,7 +65136,7 @@ export type Database = {
         }[]
       }
       agx_get_shared_with_me: {
-        Args: never
+        Args: { p_archived?: string }
         Returns: {
           agent_type: string
           category: string
@@ -67748,6 +68274,7 @@ export type Database = {
       get_database_schema_json: { Args: never; Returns: Json }
       get_dm_conversations_with_details: {
         Args: {
+          p_archived?: string
           p_before_conversation_id?: string
           p_before_sort_at?: string
           p_limit?: number

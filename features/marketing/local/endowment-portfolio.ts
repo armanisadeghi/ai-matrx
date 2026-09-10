@@ -21,10 +21,11 @@ import {
   type PublisherApiAccess,
   type PublisherTier,
 } from "@/features/marketing/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Mandate keys — which agent runs is DB-bound, never coded here. */
-export const ENDOWMENT_ANALYSIS_MANDATE = "marketing.endowment_analysis";
-export const ENDOWMENT_PORTFOLIO_MANDATE = "marketing.endowment_portfolio";
+export const ENDOWMENT_ANALYSIS_MANDATE = MANDATE_KEYS.marketing__endowment_analysis;
+export const ENDOWMENT_PORTFOLIO_MANDATE = MANDATE_KEYS.marketing__endowment_portfolio;
 
 export const ENDOWMENTS = [
   "data",
@@ -186,6 +187,46 @@ export function platformSlug(platform: PortfolioPlatform): string {
   );
 }
 
+/**
+ * A comparable claim URL: scheme and `www.` dropped, host lowercased, trailing
+ * slash and empty query/fragment removed. Case is preserved in the PATH, because
+ * a path can be case-sensitive and two different paths are two different surfaces.
+ */
+export function normalizeManageUrl(raw: string | null | undefined): string {
+  const value = (raw ?? "").trim();
+  if (!value) return "";
+  const withoutScheme = value.replace(/^[a-z][a-z0-9+.-]*:\/\//i, "").replace(/^[^/@]*@/, "");
+  const slash = withoutScheme.search(/[/?#]/);
+  const host = (slash === -1 ? withoutScheme : withoutScheme.slice(0, slash))
+    .toLowerCase()
+    .replace(/:\d+$/, "")
+    .replace(/\.+$/, "")
+    .replace(/^www\./, "");
+  const rest = (slash === -1 ? "" : withoutScheme.slice(slash))
+    .replace(/[?#]$/, "")
+    .replace(/\/+$/, "");
+  return host + rest;
+}
+
+/**
+ * THE WS7 DEDUP KEY: `(domain, manage_url)` — one row per CLAIMABLE SURFACE,
+ * not one row per domain (ruled 2026-08-21; see
+ * `common-docs/systems/marketing/local-listings/DECISIONS.md`).
+ *
+ * A single domain MAY legitimately carry several rows when it hosts genuinely
+ * distinct publishers with different claim URLs, gates and audiences —
+ * `facebook-pages` (claim your Page) vs `meta-business-partners` (agency
+ * directory); `hubspot-template-marketplace` vs `hubspot-solutions-partners`.
+ * Two rows describing the SAME surface through different lenses are duplicates
+ * and must be merged, not kept.
+ *
+ * A surface with no claim URL collapses to the domain alone, so two rows on one
+ * domain that neither names a distinct claim URL are still one surface.
+ */
+export function surfaceKey(domain: string, manageUrl: string | null | undefined): string {
+  return `${normalizeDomain(domain)}\u0000${normalizeManageUrl(manageUrl)}`;
+}
+
 // ── Coercion ─────────────────────────────────────────────────────────────────
 
 function str(value: unknown): string {
@@ -274,7 +315,7 @@ export function coerceEndowmentPortfolio(value: unknown): EndowmentPortfolio {
 
   const platforms: PortfolioPlatform[] = [];
   const seenSlugs = new Set<string>();
-  const seenDomains = new Set<string>();
+  const seenSurfaces = new Set<string>();
   for (const entry of records(value.platforms)) {
     const domain = normalizeDomain(str(entry.domain));
     const name = str(entry.name);
@@ -295,13 +336,16 @@ export function coerceEndowmentPortfolio(value: unknown): EndowmentPortfolio {
       suggested_slug: str(entry.suggested_slug),
     });
     if (!candidate.suggested_slug) continue;
-    // One agent run must never propose the same property twice — its own
-    // duplicates would race each other into the registry.
-    if (seenSlugs.has(candidate.suggested_slug) || seenDomains.has(candidate.domain)) {
+    // One agent run must never propose the same SURFACE twice — its own
+    // duplicates would race each other into the registry. Keyed on
+    // `(domain, manage_url)` per WS7, so one domain may still contribute two
+    // genuinely distinct claimable surfaces in a single run.
+    const candidateSurface = surfaceKey(candidate.domain, candidate.signup_url);
+    if (seenSlugs.has(candidate.suggested_slug) || seenSurfaces.has(candidateSurface)) {
       continue;
     }
     seenSlugs.add(candidate.suggested_slug);
-    seenDomains.add(candidate.domain);
+    seenSurfaces.add(candidateSurface);
     platforms.push(candidate);
   }
 
@@ -409,23 +453,37 @@ export function toDiscoveredPublisher(
   };
 }
 
-export type RegistryMatchReason = "domain" | "slug";
+export type RegistryMatchReason = "surface" | "domain-unclaimed" | "slug";
 
 export interface RegistryMatch {
   platform: PortfolioPlatform;
   /** The registry row this platform already IS, if any. */
   existing: ListingPublisher | null;
-  /** Why it matched — domain first, because WS7 dedups on the domain. */
+  /** Why it matched — surface first, because WS7 dedups on `(domain, manage_url)`. */
   matchedBy: RegistryMatchReason | null;
 }
 
 /**
  * Decide, for every proposed platform, whether the registry already tracks it.
  *
- * THE WS7 DEDUP RULE: never insert a domain twice under two slugs. Domain wins
- * over slug because two agents naming the same site ("wikimedia-commons" vs
- * "commons-wikimedia") produce different slugs for one property, and the
- * domain is the thing that is actually unique.
+ * THE WS7 DEDUP RULE (ruled 2026-08-21): the key is the CLAIMABLE SURFACE —
+ * `(domain, manage_url)` — not the domain alone. One domain may carry several
+ * rows when it hosts genuinely distinct publishers with different claim URLs;
+ * two rows describing the SAME surface are duplicates and must be merged.
+ * See `surfaceKey` above and
+ * `common-docs/systems/marketing/local-listings/DECISIONS.md`.
+ *
+ * Surface beats slug because two agents naming one property ("wikimedia-commons"
+ * vs "commons-wikimedia") produce different slugs for the same surface.
+ *
+ * THE UNCLAIMED-DOMAIN CASE. A stored row with NO `manage_url` cannot be told
+ * apart from any other surface on its domain — the registry simply does not
+ * know yet. Matching it strictly would blind-insert a duplicate of a row we
+ * already hold; ignoring the ruling and matching by domain would re-suppress a
+ * genuinely distinct surface, which is the defect WS7 was ruled to fix. So it
+ * matches, and says `domain-unclaimed` — the caller surfaces that a human must
+ * decide whether this is the same surface or a second one that needs the
+ * stored row's claim URL recorded first. Never silently treated as identical.
  *
  * `existing` MUST come from a complete read of the registry (`readAllRows`) —
  * a truncated list turns "already tracked" into a confident duplicate insert.
@@ -434,17 +492,28 @@ export function matchPlatformsToRegistry(
   platforms: PortfolioPlatform[],
   existing: ListingPublisher[],
 ): RegistryMatch[] {
-  const byDomain = new Map<string, ListingPublisher>();
+  const bySurface = new Map<string, ListingPublisher>();
+  const unclaimedByDomain = new Map<string, ListingPublisher>();
   const bySlug = new Map<string, ListingPublisher>();
   for (const row of existing) {
     const domain = normalizeDomain(row.domain ?? "");
-    if (domain && !byDomain.has(domain)) byDomain.set(domain, row);
+    if (domain) {
+      const key = surfaceKey(domain, row.manage_url);
+      if (!bySurface.has(key)) bySurface.set(key, row);
+      if (!normalizeManageUrl(row.manage_url) && !unclaimedByDomain.has(domain)) {
+        unclaimedByDomain.set(domain, row);
+      }
+    }
     const slug = normalizeSlug(row.slug ?? "");
     if (slug && !bySlug.has(slug)) bySlug.set(slug, row);
   }
   return platforms.map((platform) => {
-    const domainHit = byDomain.get(platform.domain);
-    if (domainHit) return { platform, existing: domainHit, matchedBy: "domain" };
+    const surfaceHit = bySurface.get(surfaceKey(platform.domain, platform.signup_url));
+    if (surfaceHit) return { platform, existing: surfaceHit, matchedBy: "surface" };
+    const unclaimedHit = unclaimedByDomain.get(platform.domain);
+    if (unclaimedHit) {
+      return { platform, existing: unclaimedHit, matchedBy: "domain-unclaimed" };
+    }
     const slugHit = bySlug.get(platformSlug(platform));
     if (slugHit) return { platform, existing: slugHit, matchedBy: "slug" };
     return { platform, existing: null, matchedBy: null };

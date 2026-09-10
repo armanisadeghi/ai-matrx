@@ -38,6 +38,11 @@ test("edits the last text-bearing row when a turn ends with a tool-only row", ()
   ).toEqual({
     messageId: "answer",
     content: "The completed answer",
+    // A text-bearing row is flat text, never the structured raw view
+    // (`isStructuredRaw` added by de6a2c40ff, "expose structured assistant
+    // content" — the edit entry points open the read-only raw viewer when it
+    // is true).
+    isStructuredRaw: false,
   });
 });
 
@@ -47,5 +52,22 @@ test("keeps the normal single-message edit target unchanged", () => {
   ).toEqual({
     messageId: "answer",
     content: "One answer",
+    isStructuredRaw: false,
+  });
+});
+
+test("carries the structured-raw fallback through to the edit target", () => {
+  expect(
+    resolveAssistantEditTarget(
+      ["mediaOnly"],
+      { mediaOnly: assistantMessage("mediaOnly") },
+      "mediaOnly",
+      '{\n  "__kind": "image"\n}',
+      true,
+    ),
+  ).toEqual({
+    messageId: "mediaOnly",
+    content: '{\n  "__kind": "image"\n}',
+    isStructuredRaw: true,
   });
 });

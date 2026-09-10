@@ -58,7 +58,7 @@ import {
   selectRunStatus,
   selectRunStatusTs,
 } from "../../redux/workflow-runs.selectors";
-import { TERMINAL_RUN_STATUSES } from "../../types";
+import { runIsOver } from "../../types";
 import {
   fetchRunDefinitionId,
   fetchWorkflowDefinition,
@@ -259,12 +259,10 @@ function Desk({
   const cost = useAppSelector(selectRunCostTotal(selectorRunId));
   const { pause, resumePaused, cancel } = useWorkflowRunControls();
 
-  // `errored` is not in TERMINAL_RUN_STATUSES, but for THIS page's clock and
-  // controls it is over: the engine won't advance it, so a ticking elapsed
-  // time and a Stop button would both be lies.
-  const runOver =
-    status !== null &&
-    (TERMINAL_RUN_STATUSES.has(status) || status === "errored");
+  // `runIsOver` is the ONE viewer predicate (it counts `errored`, which the
+  // engine's generated set excludes): the engine won't advance an errored run,
+  // so a ticking elapsed time and a Stop button would both be lies.
+  const runOver = runIsOver(status);
   const rows = deriveLedgerRows(steps, runState);
   const doneCount = rows.filter(
     (r) => r.phase === "settled" || r.phase === "skipped",

@@ -22,6 +22,7 @@ import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TabbedBottomSheet } from "@ai-matrx/design-system";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import {
   RunControlsTabPanel,
   useRunControlsState,
@@ -37,7 +38,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceAgentId } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 
 const OVERLAY_ID = "runControlsWindow" as const;
 
@@ -69,10 +70,16 @@ function RunControlsWindowInner({
   const agentName = useAppSelector((s) =>
     agentId ? (selectAgentName(s, agentId) ?? null) : null,
   );
-  const agentSection = useAgentMenuSection({ agentId: agentId ?? "", agentName });
+  const agentSection = buildAgentMenuSection({ agentId: agentId ?? "", agentName });
   const handleResourceSelected = async (resource: Resource) => {
     return attachResource(resource);
   };
+
+  // The mobile presentation deliberately substitutes a bottom sheet for
+  // WindowPanel. Tell the shared visibility watchdog that this registered
+  // window-kind overlay mounted its alternate surface, then remove the ack as
+  // soon as the sheet unmounts or the viewport returns to desktop.
+  useOverlaySurfaceRenderAck(OVERLAY_ID, isMobile);
 
   // Mobile: never a draggable window — iOS-style bottom sheet with the same
   // tabs (level 1 list → drill into a tab), matching RunControlsMenu's mobile

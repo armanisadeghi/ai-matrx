@@ -7,7 +7,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { QUICK_DATA_SURFACE_NAME } from "@/features/surfaces/manifests/quick-data.manifest";
 import {
   datasetTableEntityRef,
-  useDatasetTableMenuSection,
+  buildDatasetTableMenuSection,
 } from "@/features/data-tables/dataset-table-actions";
 
 interface QuickDataWindowProps {
@@ -24,11 +24,18 @@ interface QuickDataWindowProps {
 
 export default function QuickDataWindow({
   isOpen,
-  onClose,
-  selectedTable,
+  ...rest
 }: QuickDataWindowProps) {
   if (!isOpen) return null;
+  // The body is a separate component so its hooks are unconditional: they
+  // mount with the open window and unmount with it, exactly as before.
+  return <QuickDataWindowBody {...rest} />;
+}
 
+function QuickDataWindowBody({
+  onClose,
+  selectedTable,
+}: Omit<QuickDataWindowProps, "isOpen">) {
   // Best-effort row: `QuickDataSheet` owns its live table-picker selection
   // internally (no `onSelectionChange` out today), so this reflects the
   // window's OPEN-time table, not a later in-window re-pick. Good enough for
@@ -36,7 +43,7 @@ export default function QuickDataWindow({
   // entity needs `QuickDataSheet` to lift its `selectedTableId` — flagged,
   // not fixed here (out of this shard).
   const row = selectedTable ? { id: selectedTable, name: null } : null;
-  const datasetSection = useDatasetTableMenuSection({ getRow: () => row });
+  const datasetSection = buildDatasetTableMenuSection({ getRow: () => row });
 
   return (
     <WindowPanel

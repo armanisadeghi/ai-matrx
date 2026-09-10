@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useWindowSize } from "@/hooks/usehooks";
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 import ModuleHeaderMobileContent from "@/components/matrx/navigation/ModuleHeaderMobileContent";
 import type { ModulePage } from "@/components/matrx/navigation/types";
 
@@ -23,9 +23,8 @@ interface AdminModuleHeaderProps {
  */
 function AdminModuleHeaderContent(props: AdminModuleHeaderProps) {
   const { width } = useWindowSize();
-  const [DesktopContent, setDesktopContent] = useState<React.ComponentType<AdminModuleHeaderProps> | null>(
-    null,
-  );
+  const [DesktopContent, setDesktopContent] =
+    useState<React.ComponentType<AdminModuleHeaderProps> | null>(null);
 
   useEffect(() => {
     import("./AdminModuleHeaderDesktopContent").then((module) => {
@@ -48,8 +47,8 @@ function AdminModuleHeaderContent(props: AdminModuleHeaderProps) {
 
 export function AdminModuleHeader(props: AdminModuleHeaderProps) {
   return (
-    <PageSpecificHeader>
+    <PageHeader fallback>
       <AdminModuleHeaderContent {...props} />
-    </PageSpecificHeader>
+    </PageHeader>
   );
 }

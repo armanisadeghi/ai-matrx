@@ -1,3 +1,4 @@
+import type { KIND_KEY } from "@ai-matrx/content-ir";
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
 import type {
@@ -6,7 +7,7 @@ import type {
 } from "@/features/content-ir/kinds/generated/kinds.generated";
 export type ComparisonCriterion = Omit<
   ComparisonCriterionKind,
-  "__kind" | "values" | "type"
+  typeof KIND_KEY | "values" | "type"
 > & {
   /** A cell is whatever the author wrote — the registry types the wire form. */
   values: (string | number | boolean)[];
@@ -15,7 +16,7 @@ export type ComparisonCriterion = Omit<
 
 export type ComparisonTableData = Omit<
   ComparisonSet,
-  "__kind" | "criteria" | "additionalDetails"
+  typeof KIND_KEY | "criteria" | "additionalDetails"
 > & { criteria: ComparisonCriterion[] };
 
 // Shape of a single criterion as it arrives from unvalidated user/LLM JSON —

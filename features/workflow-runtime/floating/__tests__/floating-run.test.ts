@@ -67,8 +67,11 @@ describe("the handoff hook", () => {
   });
 
   it("never hands off a run that already finished", () => {
-    expect(source).toContain("TERMINAL_STATUSES");
-    expect(source).toMatch(/TERMINAL_STATUSES\.has\(finalStatus\)/);
+    // Through the ONE viewer predicate — a private terminal set here would
+    // miss the next status the engine adds (and already missed `errored`).
+    expect(source).toContain("runIsOver");
+    expect(source).toMatch(/runIsOver\(finalStatus\)/);
+    expect(source).not.toContain("new Set([");
   });
 
   it("reads the LATEST status at cleanup, not the one captured at setup", () => {

@@ -30,6 +30,70 @@ interface MessageContentDisplayProps {
   role: "assistant" | "user";
 }
 
+/**
+ * Hoisted to module scope: declaring these inside MessageContentDisplay made
+ * MarkdownContent a new component type each render, remounting the rendered
+ * markdown (and its scroll position) on every keystroke of a streaming reply.
+ */
+// Markdown components configuration
+const MarkdownComponents = {
+  code: ({ node, inline, className, children, ...props }: any) => {
+    const match = /language-(\w+)/.exec(className || "");
+    const code = String(children).replace(/\n$/, "");
+
+    if (inline) {
+      return (
+        <code className="px-1.5 py-0.5 rounded-md bg-muted font-mono text-md text-foreground">
+          {children}
+        </code>
+      );
+    }
+
+    // Unlabeled fences are usually prose/notes — markdown, not TypeScript.
+    const language = match?.[1] || "markdown";
+
+    return (
+      <CodeBlock
+        code={code}
+        language={language}
+        inline={false}
+        className={className}
+        {...props}
+      />
+    );
+  },
+  p: ({ children }: any) => {
+    // Check if children contains a block element
+    const childrenArray = React.Children.toArray(children);
+    const isBlockElement = childrenArray.some(
+      (child: any) => child?.type === CodeBlock,
+    );
+
+    if (isBlockElement) {
+      return <>{children}</>;
+    }
+
+    return <div className="text-foreground">{children}</div>;
+  },
+  table: TableWrapper,
+  a: LinkWrapper as any,
+} as Components;
+
+// Client-side rendering of markdown content
+const MarkdownContent = ({
+  mounted,
+  content,
+}: {
+  mounted: boolean;
+  content: string;
+}) => {
+  if (!mounted) return <div className="text-foreground">Loading...</div>;
+
+  return (
+    <MarkdownWithPlugins content={content} components={MarkdownComponents} />
+  );
+};
+
 const MessageContentDisplay = ({
   content,
   role,
@@ -44,59 +108,6 @@ const MessageContentDisplay = ({
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Markdown components configuration
-  const MarkdownComponents = {
-    code: ({ node, inline, className, children, ...props }: any) => {
-      const match = /language-(\w+)/.exec(className || "");
-      const code = String(children).replace(/\n$/, "");
-
-      if (inline) {
-        return (
-          <code className="px-1.5 py-0.5 rounded-md bg-muted font-mono text-md text-foreground">
-            {children}
-          </code>
-        );
-      }
-
-      // Unlabeled fences are usually prose/notes — markdown, not TypeScript.
-      const language = match?.[1] || "markdown";
-
-      return (
-        <CodeBlock
-          code={code}
-          language={language}
-          inline={false}
-          className={className}
-          {...props}
-        />
-      );
-    },
-    p: ({ children }: any) => {
-      // Check if children contains a block element
-      const childrenArray = React.Children.toArray(children);
-      const isBlockElement = childrenArray.some(
-        (child: any) => child?.type === CodeBlock,
-      );
-
-      if (isBlockElement) {
-        return <>{children}</>;
-      }
-
-      return <div className="text-foreground">{children}</div>;
-    },
-    table: TableWrapper,
-    a: LinkWrapper as any,
-  } as Components;
-
-  // Client-side rendering of markdown content
-  const MarkdownContent = () => {
-    if (!mounted) return <div className="text-foreground">Loading...</div>;
-
-    return (
-      <MarkdownWithPlugins content={content} components={MarkdownComponents} />
-    );
-  };
 
   return (
     <motion.div
@@ -125,7 +136,7 @@ const MessageContentDisplay = ({
             <TabsTrigger value="raw">Raw</TabsTrigger>
           </TabsList>
           <TabsContent value="rendered" className="mt-0">
-            <MarkdownContent />
+            <MarkdownContent mounted={mounted} content={content} />
           </TabsContent>
           <TabsContent value="raw" className="mt-0">
             <pre className="p-4 bg-muted/50 rounded-lg overflow-x-auto text-sm">
@@ -134,7 +145,7 @@ const MessageContentDisplay = ({
           </TabsContent>
         </Tabs>
       ) : (
-        <MarkdownContent />
+        <MarkdownContent mounted={mounted} content={content} />
       )}
     </motion.div>
   );

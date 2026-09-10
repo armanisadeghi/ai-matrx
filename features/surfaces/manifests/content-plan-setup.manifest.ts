@@ -25,6 +25,7 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -227,7 +228,7 @@ A "conflict" route means a page already lives at that route under a different pa
       // The shape-planner Mandate — the same job the Setup view's
       // "Recommend shape & counts" pass runs. The DB decides the Holder
       // (NO HARDCODED AGENTS; re-pointed from a pinned id 2026-08-23).
-      mandateKey: "content_plan.shape_planner",
+      mandateKey: MANDATE_KEYS.content_plan__shape_planner,
       defaultAgentId: null,
       sortOrder: 100,
     },

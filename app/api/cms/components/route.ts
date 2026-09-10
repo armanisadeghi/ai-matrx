@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import {
   getCmsClient,
+  lookupCmsSiteAccess,
   verifySiteOwnership,
   verifyComponentOwnership,
 } from "../_lib/cmsDb";
@@ -125,7 +126,10 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifySiteOwnership(db, siteId, caller))) {
+        // Full lookup, not the boolean wrapper: the same site row carries the
+        // organization the content guard must be called in.
+        const siteAccess = await lookupCmsSiteAccess(db, siteId, caller);
+        if (siteAccess.status !== "ok") {
           return NextResponse.json(
             { error: "Site not found or access denied" },
             { status: 403 },
@@ -135,6 +139,7 @@ export async function POST(request: NextRequest) {
         contentValidation = await validateContent({
           content: { html: htmlContent, css: cssContent },
           siteId,
+          organizationId: siteAccess.site.organization_id,
           accessToken,
         });
         const blockedResponse = cmsContentBlockedResponse(contentValidation);
@@ -186,12 +191,18 @@ export async function POST(request: NextRequest) {
           componentId,
           caller,
         );
-        if (!ok) {
+        if (!ok || !clientId) {
           return NextResponse.json(
             { error: "Component not found or access denied" },
             { status: 403 },
           );
         }
+        // The organization the content guard is called in belongs to the site
+        // this component lives on — read from the site row itself, never
+        // assumed and never resolved underneath the call.
+        const siteAccess = await lookupCmsSiteAccess(db, clientId, caller);
+        const organizationId =
+          siteAccess.status === "ok" ? siteAccess.site.organization_id : null;
 
         const fieldMap: Record<string, string> = {
           name: "name",
@@ -219,6 +230,7 @@ export async function POST(request: NextRequest) {
                 css: updateFields.cssContent,
               },
               siteId: clientId,
+              organizationId,
               accessToken,
             }),
             validateContent({
@@ -227,6 +239,7 @@ export async function POST(request: NextRequest) {
                 css: updateFields.cssContentDraft,
               },
               siteId: clientId,
+              organizationId,
               accessToken,
             }),
           ]),

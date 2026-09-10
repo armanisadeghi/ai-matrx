@@ -6,8 +6,6 @@
 // authority — this page's admin/owner gate mirrors it).
 
 import { useParams } from "next/navigation";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import {
   useResolvedOrganization,
   useUserRole,
@@ -21,29 +19,25 @@ export default function OrgMandateWorkspacePage() {
   const mandateKey = decodeURIComponent(params.mandateKey as string);
   const { organization, organizationId, loading, error, refresh } =
     useResolvedOrganization(orgId);
-  const { loading: roleLoading, isOwner, isAdmin } = useUserRole(
-    organizationId ?? undefined,
-  );
+  const {
+    loading: roleLoading,
+    isOwner,
+    isAdmin,
+  } = useUserRole(organizationId ?? undefined);
 
   if (loading || roleLoading) return null;
   if (error || !organization || !organizationId || !(isOwner || isAdmin)) {
-    return <OrganizationAccessGate orgSlugOrId={orgId} organizationId={organizationId} onRetry={refresh} />;
+    return (
+      <OrganizationAccessGate
+        orgSlugOrId={orgId}
+        organizationId={organizationId}
+        onRetry={refresh}
+      />
+    );
   }
 
   return (
     <>
-      <PageHeader>
-        <CrumbTrailHeader
-          trail={[
-            { label: organization.name, href: `/organizations/${orgId}` },
-            {
-              label: "Mandates",
-              href: `/organizations/${orgId}/settings/mandates`,
-            },
-            { label: mandateKey },
-          ]}
-        />
-      </PageHeader>
       <MandateWorkspace
         mandateKeyOrId={mandateKey}
         host="route"

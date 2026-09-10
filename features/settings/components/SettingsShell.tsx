@@ -13,6 +13,7 @@ import { Check, Loader2, Settings as SettingsIcon } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/redux/store";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SettingsTree } from "@/components/official/settings/tree/SettingsTree";
 import { SettingsDrawerNav } from "@/components/official/settings/tree/SettingsDrawerNav";
@@ -76,6 +77,11 @@ export function SettingsShell({
   // context so descendants (breadcrumbs, "open profile" buttons in
   // other tabs, etc.) can swap tabs in-place instead of route-pushing.
   const activateTab = useCallback((id: string) => setActiveTabId(id), []);
+
+  // Mobile intentionally renders the purpose-built push-navigation drawer
+  // instead of WindowPanel. Acknowledge that alternate visible surface so the
+  // shared watchdog does not demand geometry this presentation never owns.
+  useOverlaySurfaceRenderAck("userPreferencesWindow", isOpen && isMobile);
 
   if (!isOpen) return null;
 

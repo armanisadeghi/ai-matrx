@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { MandatesHeader } from "@/features/mandates/components/MandatesHeader";
 import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace";
 
 /**
@@ -22,9 +20,6 @@ export default async function MandateWorkspaceRoute({
 
   return (
     <>
-      <PageHeader>
-        <MandatesHeader />
-      </PageHeader>
       <MandateWorkspace
         mandateKeyOrId={decodeURIComponent(mandateKey)}
         host="route"

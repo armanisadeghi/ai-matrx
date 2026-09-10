@@ -52,8 +52,8 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import CodeSidebar from "@/features/code-editor/multi-file-core/CodeSidebar";
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
 import { getLanguageIconNode } from "@/features/code-editor/components/code-block/LanguageDisplay";
-import { CodeEditorTabBar } from "@/features/window-panels/windows/code/CodeEditorTabBar";
-import { useCodeEditorWindowState } from "@/features/window-panels/windows/code/useCodeEditorWindowState";
+import { CodeEditorTabBar } from "@/features/code-editor/multi-file-core/CodeEditorTabBar";
+import { useCodeEditorWindowState } from "@/features/code-editor/multi-file-core/useCodeEditorWindowState";
 import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
 
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";

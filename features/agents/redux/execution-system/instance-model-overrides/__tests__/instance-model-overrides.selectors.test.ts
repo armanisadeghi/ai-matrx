@@ -17,6 +17,7 @@ import reducer, {
   replaceOverrides,
   setOverrides,
   resetOverride,
+  updateBaseSettings,
 } from "../instance-model-overrides.slice";
 
 function makeState(entry: {
@@ -134,6 +135,45 @@ describe("selectSettingsForChatApi", () => {
 });
 
 describe("Controls and Advanced share the override document", () => {
+  it("keeps draft intent while the inherited baseline changes, exposing only current local deltas", () => {
+    let state = reducer(
+      undefined,
+      initInstanceOverrides({
+        conversationId: "c1",
+        baseSettings: { model: "system-model", temperature: 0.3 },
+      }),
+    );
+    state = reducer(
+      state,
+      setOverrides({
+        conversationId: "c1",
+        changes: { model: "personal-model", temperature: 0.8 },
+      }),
+    );
+    const wire = () => api(makeState(state.byConversationId.c1));
+    expect(Object.keys(wire() ?? {})).toHaveLength(2);
+    state = reducer(
+      state,
+      updateBaseSettings({
+        conversationId: "c1",
+        baseSettings: { model: "personal-model", temperature: 0.8 },
+      }),
+    );
+    expect(wire()).toBeUndefined();
+    expect(state.byConversationId.c1.overrides).toEqual({
+      model: "personal-model",
+      temperature: 0.8,
+    });
+    state = reducer(
+      state,
+      updateBaseSettings({
+        conversationId: "c1",
+        baseSettings: { model: "system-model", temperature: 0.4 },
+      }),
+    );
+    expect(wire()).toEqual({ model: "personal-model", temperature: 0.8 });
+  });
+
   it("round trips control edits, JSON replacement, null removal and reset through the API selector", () => {
     let state = reducer(
       undefined,

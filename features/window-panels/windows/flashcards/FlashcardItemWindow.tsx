@@ -7,6 +7,7 @@
 import React, { useEffect } from "react";
 import { Smartphone } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import { Button } from "@/components/ui/button";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
@@ -20,7 +21,7 @@ import type { FaceImageRef } from "@/components/mardown-display/blocks/flashcard
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
-  useFlashcardMenuSection,
+  buildFlashcardMenuSection,
   flashcardEntityRef,
 } from "@/features/flashcards/components/flashcard-menu";
 import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
@@ -62,12 +63,16 @@ export function FlashcardItemWindow({
     }
   }, [isOpen, isMobile, front, enterMobileView]);
 
-  if (!isOpen) return null;
+  useOverlaySurfaceRenderAck(
+    "flashcardItemWindow",
+    isOpen && isMobileView && Boolean(front),
+  );
 
-  const displayTitle = title ?? `Flashcard ${index + 1}`;
-  const mobileCards = toFlashcardMobileCards([{ front, back }]);
+  // Hooks stay above the early return — RULES OF HOOKS. The menu section
+  // itself is a PURE builder (`build*`, not `use*` — see SECTIONS.md), so its
+  // position is a readability choice, not a hook-order constraint.
   const cardRow = { front, back, index };
-  const flashcardSection = useFlashcardMenuSection({
+  const flashcardSection = buildFlashcardMenuSection({
     getRow: () => cardRow,
     unavailable: {
       "flashcard-flip": unavailableHere("the flashcard grid"),
@@ -76,6 +81,10 @@ export function FlashcardItemWindow({
     },
   });
 
+  if (!isOpen) return null;
+
+  const displayTitle = title ?? `Flashcard ${index + 1}`;
+  const mobileCards = toFlashcardMobileCards([{ front, back }]);
   if (isMobileView && front) {
     return <FlashcardMobileView cards={mobileCards} onClose={exitMobileView} />;
   }

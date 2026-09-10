@@ -547,9 +547,20 @@ function ModelDetailCard({
                 Premium
               </span>
             )}
-            {model.isDeprecated && (
-              <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
+            {model.isDeprecated && !model.retiredAt && (
+              <span
+                className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+                title="Still runs normally; hidden from default selection."
+              >
                 Deprecated
+              </span>
+            )}
+            {model.retiredAt && (
+              <span
+                className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+                title={`The provider no longer serves this model (retired ${model.retiredAt.slice(0, 10)}). It cannot be selected.`}
+              >
+                Retired
               </span>
             )}
           </div>
@@ -799,6 +810,12 @@ interface Filters {
   interaction: Interaction | "any";
   multilingualOnly: boolean;
   sort: SortKey;
+  /**
+   * User variant only — OFF by default (ruled 2026-09-09): a normal user is not
+   * offered a deprecated model unless they ask. The admin variant always lists
+   * deprecated rows (its `deprecated` tri-state narrows them instead).
+   */
+  includeDeprecated: boolean;
   // ── Admin-only dimensions (always "any"/empty in the user variant) ──
   /** Real serving vendors (ai.endpoint.vendor). Empty = any. */
   vendors: Set<string>;
@@ -1112,6 +1129,25 @@ function FiltersPanel({
         </span>
       </ChipToggle>
 
+      {variant === "user" && (
+        <ChipToggle
+          active={filters.includeDeprecated}
+          onClick={() =>
+            setFilters((f) => ({
+              ...f,
+              includeDeprecated: !f.includeDeprecated,
+            }))
+          }
+        >
+          <span
+            className="inline-flex items-center gap-1"
+            title="Deprecated models still run; they are hidden by default so you are not steered to one."
+          >
+            Include deprecated
+          </span>
+        </ChipToggle>
+      )}
+
       {/* Admin-only dimensions — everything displayed is filterable. */}
       {variant === "admin" && (
         <>
@@ -1251,12 +1287,21 @@ function ModelRow({
   const unavailable =
     variant === "admin" &&
     !(model.admin?.offerings ?? []).some((o) => o.isAvailable);
+  // A RETIRED model cannot be selected anywhere (ruled 2026-09-09). The row
+  // stays visible for identity and says exactly why it will not respond.
+  const retired = model.retiredAt != null;
+  const retiredTitle = retired
+    ? `Retired ${model.retiredAt?.slice(0, 10)} — the provider no longer serves this model, so it cannot be selected.`
+    : undefined;
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={onSelect}
+      aria-disabled={retired || undefined}
+      title={retiredTitle}
+      onClick={retired ? undefined : onSelect}
       onKeyDown={(e) => {
+        if (retired) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onSelect();
@@ -1264,8 +1309,10 @@ function ModelRow({
       }}
       onMouseEnter={onHover}
       className={cn(
-        "grid w-full cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] items-center gap-2 rounded px-2 py-1 transition-colors",
-        "hover:bg-muted/60 focus:bg-muted/60 focus:outline-none",
+        "grid w-full grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] items-center gap-2 rounded px-2 py-1 transition-colors",
+        retired
+          ? "cursor-not-allowed opacity-60"
+          : "cursor-pointer hover:bg-muted/60 focus:bg-muted/60 focus:outline-none",
         selected && "bg-muted",
       )}
     >
@@ -1296,9 +1343,20 @@ function ModelRow({
         <span className="truncate text-xs font-medium text-foreground">
           {model.name}
         </span>
-        {model.isDeprecated && (
-          <span className="shrink-0 rounded bg-destructive/15 px-1 text-[9px] text-destructive">
+        {model.isDeprecated && !retired && (
+          <span
+            className="shrink-0 rounded bg-destructive/15 px-1 text-[9px] text-destructive"
+            title="Deprecated — still runs; hidden from default selection"
+          >
             dep
+          </span>
+        )}
+        {retired && (
+          <span
+            className="shrink-0 rounded bg-destructive/15 px-1 text-[9px] text-destructive"
+            title={retiredTitle}
+          >
+            retired
           </span>
         )}
         {unavailable && (
@@ -1389,6 +1447,7 @@ export function ModelListDropdown({
     sort: "name",
     vendors: new Set<string>(),
     apis: new Set<string>(),
+    includeDeprecated: false,
     deprecated: "any",
     availability: "any",
     premium: "any",
@@ -1532,6 +1591,17 @@ export function ModelListDropdown({
         )
       )
         return false;
+      // User variant: deprecated is hidden by DEFAULT — not removed. The
+      // toggle reveals it, and the currently selected model always stays
+      // listed so a persisted choice never silently disappears from its own
+      // picker. Admins always see every row.
+      if (
+        variant === "user" &&
+        !filters.includeDeprecated &&
+        m.isDeprecated &&
+        m.id !== value
+      )
+        return false;
       if (filters.deprecated !== "any") {
         if ((filters.deprecated === "yes") !== m.isDeprecated) return false;
       }
@@ -1648,7 +1718,19 @@ export function ModelListDropdown({
     }
   };
 
+  // Every selection path (row, detail card, offering pin) funnels here, so a
+  // retired model is refused ONCE for all of them — never a per-surface check.
+  const refuseIfRetired = (id: string): boolean => {
+    const target = models.find((m) => m.id === id);
+    if (!target?.retiredAt) return false;
+    console.warn(
+      `[ModelListDropdown] Refused to select ${target.name} (${id}): retired ${target.retiredAt} — the provider no longer serves it.`,
+    );
+    return true;
+  };
+
   const handleSelect = (id: string) => {
+    if (refuseIfRetired(id)) return;
     // A pinned offering belongs to exactly one model — selecting a model whose
     // offerings don't include the pin clears it (back to Auto), loudly.
     if (onOfferingPinChange && pinnedOfferingId) {
@@ -1683,6 +1765,7 @@ export function ModelListDropdown({
     offeringId: string | undefined,
   ) => {
     if (!onOfferingPinChange) return;
+    if (refuseIfRetired(model.id)) return;
     if (model.id !== value) onValueChange(model.id);
     onOfferingPinChange(offeringId);
   };
@@ -1878,6 +1961,30 @@ export function ModelListDropdown({
           {filtered.length} of {eligibleModels.length} model
           {eligibleModels.length === 1 ? "" : "s"}
         </span>
+        {variant === "user" && (
+          <button
+            type="button"
+            onClick={() =>
+              setFilters((f) => ({
+                ...f,
+                includeDeprecated: !f.includeDeprecated,
+              }))
+            }
+            title={
+              filters.includeDeprecated
+                ? "Deprecated models are listed. Click to hide them again."
+                : "Deprecated models still run but are hidden by default. Click to list them."
+            }
+            className={cn(
+              "inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors",
+              filters.includeDeprecated
+                ? "bg-primary/10 text-foreground"
+                : "hover:text-foreground",
+            )}
+          >
+            Include deprecated
+          </button>
+        )}
         {isSuperAdmin && catalogVariant == null && (
           <button
             type="button"

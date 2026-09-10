@@ -90,6 +90,10 @@ async function walkProcessingAncestors(
 async function fetchProcessingChildren(
   docId: string,
 ): Promise<ProcessingNode[]> {
+  // archived-items-law-exempt: derivation-lineage walk, not a browsable list —
+  // a lineage that dropped or hid an archived ancestor/descendant would draw a
+  // false picture of where this document came from. Same ruling as the four
+  // other lineage/candidate readers under register row F7.
   const { data, error } = await docprocDb(supabase)
     .from("processed_documents")
     .select(

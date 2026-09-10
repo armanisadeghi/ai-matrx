@@ -67,14 +67,15 @@ import {
 } from "./outputDefinitions";
 import { getBundleBySlug, getResourceManifest } from "../../service/resources";
 import { resolveBundle } from "../../resources/resolve";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Research content-engine generators run through AGENT MANDATES — the mandate is the
  *  identity, never a hardcoded agent id. The system default is managed in the
  *  admin console; each user may bind their own agent via the MandateAgentPicker in
  *  each card header. SoR: common-docs/systems/mandates/FEATURE.md. */
-const BLOG_MANDATE = "research_client.output_blog";
-const SLIDES_MANDATE = "research_client.output_slides";
-const SEO_MANDATE = "research_client.output_seo";
+const BLOG_MANDATE = MANDATE_KEYS.research_client__output_blog;
+const SLIDES_MANDATE = MANDATE_KEYS.research_client__output_slides;
+const SEO_MANDATE = MANDATE_KEYS.research_client__output_seo;
 
 /** Build the generator's declared variables. Structured content (the report)
  *  and the Voice & Lens note travel as named variables, never as user_input —

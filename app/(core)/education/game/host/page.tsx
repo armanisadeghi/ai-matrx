@@ -2,6 +2,7 @@
 // "use client" leaf (no browser-only APIs at import time), so importing it here
 // forms the client boundary and Next.js code-splits it automatically.
 import type { Metadata } from "next";
+// eslint-disable-next-line no-restricted-syntax -- HostSetupImpl has no dynamic wrapper sibling; this page IS its client boundary (see header comment), so Next code-splits it per route.
 import { HostSetupImpl } from "@/features/education/engage/components/lobby/HostSetupImpl";
 
 export const metadata: Metadata = {

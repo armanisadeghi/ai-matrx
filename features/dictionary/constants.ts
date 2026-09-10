@@ -3,6 +3,7 @@
 // Stable identifiers + labels for the Custom Dictionary feature.
 
 import type { DictLevel } from "@/features/dictionary/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * The Mandate behind every "Ask assistant" button — resolved at launch
@@ -11,7 +12,7 @@ import type { DictLevel } from "@/features/dictionary/types";
  * the .md spec system was deleted 2026-08-25); users rebind at `/mandates`.
  * The discoverable global shortcut + the two skills it uses live in the DB.
  */
-export const DICTIONARY_ASSISTANT_MANDATE_KEY = "dictionary.workspace_guide";
+export const DICTIONARY_ASSISTANT_MANDATE_KEY = MANDATE_KEYS.dictionary__workspace_guide;
 
 /**
  * Explicit per-surface dictionary key. Ambient audio (read-aloud playback + STT)

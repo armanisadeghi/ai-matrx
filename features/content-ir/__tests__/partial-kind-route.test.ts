@@ -20,6 +20,7 @@ import {
   markKindPartialUnsafe,
   resetPartialUnsafeKinds,
   resolveProvisionalKindRender,
+  resolveSupersededKindRender,
 } from "../react/partial-kind-route";
 import fixture from "./partial-kind-events.generated.json";
 
@@ -43,7 +44,9 @@ function blockFor(event: Record<string, unknown>): TestBlock {
   };
 }
 
-function questionCount(block: { serverData?: Record<string, unknown> }): number {
+function questionCount(block: {
+  serverData?: Record<string, unknown>;
+}): number {
   const mc = block.serverData?.multipleChoice;
   return Array.isArray(mc) ? mc.length : 0;
 }
@@ -75,7 +78,9 @@ describe("resolveProvisionalKindRender — the real quiz_set stream", () => {
     ).toBeNull();
     // Explicitly live, and the omitted case, both still render.
     expect(
-      resolveProvisionalKindRender(blockFor(live.event), { streamActive: true }),
+      resolveProvisionalKindRender(blockFor(live.event), {
+        streamActive: true,
+      }),
     ).not.toBeNull();
     expect(
       resolveProvisionalKindRender(blockFor(live.event), {}),
@@ -121,6 +126,25 @@ describe("resolveProvisionalKindRender — the real quiz_set stream", () => {
     const retracted = (FIXTURES.wrong_detection_retracted ?? []).at(-1)!;
     expect(retracted.event.state).toBe("retracted");
     expect(resolveProvisionalKindRender(blockFor(retracted.event))).toBeNull();
+  });
+
+  it("routes the completed workflow JSON when superseded arrives before __ir", () => {
+    const completed = rows.at(-2)!;
+    const terminal = rows.at(-1)!;
+    const value = (completed.event.root as { value: Record<string, unknown> })
+      .value;
+    const block = blockFor(terminal.event);
+    block.content = JSON.stringify(value);
+
+    const resolved = resolveSupersededKindRender(block);
+    expect(resolved?.kind).toBe("quiz_set");
+    expect(resolved?.block.type).toBe("quiz");
+    expect(questionCount(resolved!.block)).toBe(2);
+    expect(resolved?.envelope.root.status).toBe("complete");
+    expect(resolved?.block.metadata?.[IR_PARTIAL_KEY]).toBeUndefined();
+    expect(resolved?.block.metadata?.[IR_ENVELOPE_KEY]).toBe(
+      resolved?.envelope,
+    );
   });
 
   it("never mutates the block it was given (the wire metadata is untouched)", () => {
@@ -244,7 +268,8 @@ describe("resolveAnnouncedKindLoading — announced but not yet renderable", () 
   const rows = FIXTURES.clean_finish ?? [];
 
   it("names the kind from the FIRST partial, before anything is renderable", async () => {
-    const { resolveAnnouncedKindLoading } = await import("../react/partial-kind-route");
+    const { resolveAnnouncedKindLoading } =
+      await import("../react/partial-kind-route");
     const first = rows.find((r) => r.event.state === "partial");
     expect(first).toBeDefined();
     const announced = resolveAnnouncedKindLoading(blockFor(first!.event), {
@@ -255,44 +280,62 @@ describe("resolveAnnouncedKindLoading — announced but not yet renderable", () 
   });
 
   it("keeps announcing through a WITHHELD kind — a skeleton cannot throw", async () => {
-    const { resolveAnnouncedKindLoading } = await import("../react/partial-kind-route");
+    const { resolveAnnouncedKindLoading } =
+      await import("../react/partial-kind-route");
     // Withhold the kind the way a thrown component does. The VALUE is now
     // withheld (that decision stands) but the reader must still be told what
     // is coming instead of being shown raw text.
     markKindPartialUnsafe("quiz_set");
     const row = rows.find((r) => r.event.state === "partial")!;
     expect(isPartialReadyKind("quiz_set")).toBe(false);
-    expect(resolveProvisionalKindRender(blockFor(row.event), { streamActive: true })).toBeNull();
     expect(
-      resolveAnnouncedKindLoading(blockFor(row.event), { streamActive: true })?.kind,
+      resolveProvisionalKindRender(blockFor(row.event), { streamActive: true }),
+    ).toBeNull();
+    expect(
+      resolveAnnouncedKindLoading(blockFor(row.event), { streamActive: true })
+        ?.kind,
     ).toBe("quiz_set");
   });
 
   it("stops at the terminal and at a dead stream — never a stuck loader", async () => {
-    const { resolveAnnouncedKindLoading } = await import("../react/partial-kind-route");
+    const { resolveAnnouncedKindLoading } =
+      await import("../react/partial-kind-route");
     const terminal = rows.find((r) => r.event.state !== "partial");
     expect(terminal).toBeDefined();
-    expect(resolveAnnouncedKindLoading(blockFor(terminal!.event), { streamActive: true })).toBeNull();
+    expect(
+      resolveAnnouncedKindLoading(blockFor(terminal!.event), {
+        streamActive: true,
+      }),
+    ).toBeNull();
 
     const partial = rows.find((r) => r.event.state === "partial")!;
-    expect(resolveAnnouncedKindLoading(blockFor(partial.event), { streamActive: false })).toBeNull();
+    expect(
+      resolveAnnouncedKindLoading(blockFor(partial.event), {
+        streamActive: false,
+      }),
+    ).toBeNull();
   });
 
   it("never covers a region that already VERIFIED", async () => {
-    const { resolveAnnouncedKindLoading } = await import("../react/partial-kind-route");
+    const { resolveAnnouncedKindLoading } =
+      await import("../react/partial-kind-route");
     const partial = rows.find((r) => r.event.state === "partial")!;
     const block = blockFor(partial.event);
     block.metadata[IR_ENVELOPE_KEY] = {
       ...envelopeFromPartialKind(partial.event as never),
-      root: { ...envelopeFromPartialKind(partial.event as never).root, status: "complete" },
+      root: {
+        ...envelopeFromPartialKind(partial.event as never).root,
+        status: "complete",
+      },
     };
-    expect(resolveAnnouncedKindLoading(block, { streamActive: true })).toBeNull();
+    expect(
+      resolveAnnouncedKindLoading(block, { streamActive: true }),
+    ).toBeNull();
   });
 
   it("every Study Pack kind resolves a loader that is NOT the generic one", async () => {
-    const { resolveKindLoadingComponent, KIND_LOADING_COMPONENTS } = await import(
-      "../react/loading/kind-loading-registry"
-    );
+    const { resolveKindLoadingComponent, KIND_LOADING_COMPONENTS } =
+      await import("../react/loading/kind-loading-registry");
     const generic = resolveKindLoadingComponent(null);
     for (const kind of [
       "flashcard_set",
@@ -301,7 +344,9 @@ describe("resolveAnnouncedKindLoading — announced but not yet renderable", () 
       "study_pack_set",
       "lesson_script_set",
     ]) {
-      const slug = SYSTEM_KIND_DEFINITIONS.find((d) => d.kind === kind)?.loadingComponent;
+      const slug = SYSTEM_KIND_DEFINITIONS.find(
+        (d) => d.kind === kind,
+      )?.loadingComponent;
       expect(slug).toBeTruthy();
       expect(KIND_LOADING_COMPONENTS[slug!]).toBeDefined();
       expect(resolveKindLoadingComponent(slug)).not.toBe(generic);
@@ -323,13 +368,15 @@ describe("a kind-bound agent's unfenced answer", () => {
   const rows = FIXTURES.bound_agent_unfenced_kind_first ?? [];
 
   it("announces flashcard_set on its FIRST partial, before any card exists", async () => {
-    const { resolveAnnouncedKindLoading } = await import("../react/partial-kind-route");
+    const { resolveAnnouncedKindLoading } =
+      await import("../react/partial-kind-route");
     expect(rows.length).toBeGreaterThan(0);
     const first = rows[0]!.event;
     expect(first.state).toBe("partial");
-    expect(resolveAnnouncedKindLoading(blockFor(first), { streamActive: true })?.kind).toBe(
-      "flashcard_set",
-    );
+    expect(
+      resolveAnnouncedKindLoading(blockFor(first), { streamActive: true })
+        ?.kind,
+    ).toBe("flashcard_set");
     const value = (first.root as { value: Record<string, unknown> }).value;
     expect(value.__kind).toBe("flashcard_set");
     expect(value.cards ?? []).toEqual([]);
@@ -339,7 +386,8 @@ describe("a kind-bound agent's unfenced answer", () => {
     const counts = rows
       .filter((r) => r.event.state === "partial")
       .map((r) => {
-        const value = (r.event.root as { value: Record<string, unknown> }).value;
+        const value = (r.event.root as { value: Record<string, unknown> })
+          .value;
         return Array.isArray(value.cards) ? value.cards.length : 0;
       });
     expect(counts).toEqual([...counts].sort((a, b) => a - b));
@@ -394,7 +442,9 @@ describe("a kind-bound agent's unfenced answer", () => {
   });
 
   it("ends in exactly one terminal, and it is superseded", () => {
-    const terminals = rows.filter((r) => r.event.state !== "partial").map((r) => r.event.state);
+    const terminals = rows
+      .filter((r) => r.event.state !== "partial")
+      .map((r) => r.event.state);
     expect(terminals).toEqual(["superseded"]);
   });
 

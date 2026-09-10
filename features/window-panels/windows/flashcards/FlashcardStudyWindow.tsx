@@ -9,6 +9,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { AlertCircle, BookOpen } from "lucide-react";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
@@ -30,7 +31,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
-  useFlashcardMenuSection,
+  buildFlashcardMenuSection,
   flashcardEntityRef,
 } from "@/features/flashcards/components/flashcard-menu";
 import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
@@ -87,15 +88,54 @@ export function FlashcardStudyWindow({
     onGrade: handleGrade,
   });
 
-  if (!isOpen) return null;
-
   const showMobileStudy =
+    isOpen &&
     isMobile &&
     !mobileDismissed &&
     !study.loading &&
     !study.error &&
     study.cards.length > 0 &&
     !completed;
+
+  useOverlaySurfaceRenderAck(
+    "flashcardStudyWindow",
+    showMobileStudy || (isOpen && completed && isMobile && !mobileDismissed),
+  );
+
+  // Hooks stay above the early returns — RULES OF HOOKS (`useOpenFlashcard-
+  // ItemWindow` below is a real hook). `current` and the menu section are
+  // cheap, pure derivations of `study` — `buildFlashcardMenuSection` is a PURE
+  // builder, not a hook (see SECTIONS.md) — so their position is free.
+  const current = study.cards[study.currentIndex];
+  const openItemWindow = useOpenFlashcardItemWindow();
+  const cardRow = current
+    ? {
+        front: current.front,
+        back: current.back,
+        index: study.currentIndex,
+        setId: study.set?.id ?? null,
+        setTitle: study.set?.name ?? null,
+      }
+    : null;
+  const flashcardSection = buildFlashcardMenuSection({
+    getRow: () => cardRow,
+    actions: {
+      onFlip: () => study.flip(),
+      onOpenItem: (row) =>
+        openItemWindow({
+          front: row.front,
+          back: row.back,
+          index: row.index,
+          title: row.setTitle ?? undefined,
+          lastResult: current ? study.resultsByCard[current.id] ?? null : null,
+        }),
+    },
+    unavailable: {
+      "flashcard-study-set": "Already studying this set",
+    },
+  });
+
+  if (!isOpen) return null;
 
   if (showMobileStudy) {
     return (
@@ -142,35 +182,6 @@ export function FlashcardStudyWindow({
   const { width, height } = computeViewportSize();
   const displayTitle =
     title ?? study.set?.name ?? (setId ? "Study" : "Flashcard Study");
-  const current = study.cards[study.currentIndex];
-
-  const openItemWindow = useOpenFlashcardItemWindow();
-  const cardRow = current
-    ? {
-        front: current.front,
-        back: current.back,
-        index: study.currentIndex,
-        setId: study.set?.id ?? null,
-        setTitle: study.set?.name ?? null,
-      }
-    : null;
-  const flashcardSection = useFlashcardMenuSection({
-    getRow: () => cardRow,
-    actions: {
-      onFlip: () => study.flip(),
-      onOpenItem: (row) =>
-        openItemWindow({
-          front: row.front,
-          back: row.back,
-          index: row.index,
-          title: row.setTitle ?? undefined,
-          lastResult: current ? study.resultsByCard[current.id] ?? null : null,
-        }),
-    },
-    unavailable: {
-      "flashcard-study-set": "Already studying this set",
-    },
-  });
 
   const body = (() => {
     if (study.loading) {

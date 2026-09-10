@@ -90,6 +90,21 @@ export interface JourneyFacts {
   checkupSettledAt: string | null;
 
   masterworks: JourneyMasterwork[];
+  /**
+   * 🚨 THE ARCHIVED-ITEMS LAW, honesty half (row F10 repair, 2026-09-10).
+   *
+   * How many BUILT Masterworks this Rulebook has that are archived. A caller
+   * that hands `masterworks` the LIVE half of the archive split must declare
+   * the other half here, or `conductor_ready` prints "no Masterwork yet" at an
+   * Expert who has two — the exact lie the law exists to kill.
+   *
+   * MIRROR NOTE: `journey.py` has no archive axis at all — its Masterwork read
+   * returns archived and live together, so `real_masterworks` is already the
+   * whole corpus and the fact is 0 there. That keeps the two halves saying the
+   * same sentence today; the day the server splits, it computes this the same
+   * way. Recorded in `/projects/archived-items-law/STATUS.md` (row F10).
+   */
+  archivedMasterworks: number;
   latestAudition: JourneyAudition | null;
 
   /**
@@ -231,9 +246,19 @@ export function computeJourney(
   // 6 — enough approved rules and NO Masterwork. The product is on the other
   // side of this one move.
   if (facts.approvedRules >= CONDUCTOR_MIN_APPROVED && real.length === 0) {
+    // "no Masterwork yet" is a claim about everything this Expert has ever
+    // built, so it may not be made from the LIVE half alone. With every
+    // Masterwork archived the same move is still true — the Conductor can
+    // build — but the sentence must name what already exists (row F10 live
+    // review, 2026-09-10). Same key, same rank, same precedence: only the
+    // words change, and only in a case `journey.py` cannot reach.
+    const archived = facts.archivedMasterworks;
     moves.push({
       key: "conductor_ready",
-      headline: `${facts.approvedRules} approved rules and no Masterwork yet — the Conductor can build one.`,
+      headline:
+        archived > 0
+          ? `${facts.approvedRules} approved rules, and all ${archived} ${plural(archived, "Masterwork is", "Masterworks are")} archived — the Conductor can build a new one.`
+          : `${facts.approvedRules} approved rules and no Masterwork yet — the Conductor can build one.`,
       rank: 7,
     });
   }
@@ -346,6 +371,13 @@ export function ruleFacts(rules: RulebookRule[]): Pick<
 export function journeyFactsFromRulebook(
   rulebook: Pick<Rulebook, "id" | "name" | "rules" | "metadata">,
   masterworks: Masterwork[] = [],
+  /**
+   * The ARCHIVED half of the page's split. The page hands `masterworks` the
+   * live half (the law: the default hides), so without this the headline
+   * would claim nothing was ever built while the page's own
+   * `ArchivedDisclosure` offers two.
+   */
+  archivedMasterworks: readonly Masterwork[] = [],
 ): JourneyFacts {
   const tensions = allTensions(rulebook);
   const checkup = readCheckupMemory(rulebook as Rulebook);
@@ -366,6 +398,8 @@ export function journeyFactsFromRulebook(
       understudy: m.understudy,
       releasedAt: m.released_at,
     })),
+    archivedMasterworks: archivedMasterworks.filter((m) => !m.understudy)
+      .length,
     latestAudition: null,
     hasRunFacts: false,
   };

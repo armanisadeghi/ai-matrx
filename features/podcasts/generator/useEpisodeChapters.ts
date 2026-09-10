@@ -33,8 +33,9 @@ import type { PcEpisode, PcEpisodeChapter } from "@/features/podcasts/types";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name.
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-const CHAPTER_MARKER_MANDATE_KEY = "podcast.chapter_marker";
+const CHAPTER_MARKER_MANDATE_KEY = MANDATE_KEYS.podcast__chapter_marker;
 
 /** `duration_hint` for the agent: HH:MM:SS / MM:SS from the stored runtime. */
 /** The clock reading an episode's chapter hint carries; blank when unknown. */

@@ -137,6 +137,11 @@ export function useBuildRun(
     parseResult: parseBuilt,
     onDomainEvent,
   });
+  // The durable pointer already owns the exact launch label. After a reload
+  // local form state returns to its fallback, so rendering `masterworkName`
+  // would temporarily rename the active Build while its own progress still
+  // named the custom Masterwork. Rejoin copy must come from the receipt.
+  const progressTitle = run.rejoinedTarget ?? masterworkName;
 
   const launchedRef = useRef(false);
 
@@ -167,13 +172,13 @@ export function useBuildRun(
       };
     });
     return {
-      title: masterworkName,
+      title: progressTitle,
       description: run.rejoinedTarget
         ? "This Build kept running while you were away — picking it back up."
         : "Building — this takes about a minute.",
       items,
     };
-  }, [run.status, run.result, run.rejoinedTarget, reached, parts, masterworkName]);
+  }, [run.status, run.result, run.rejoinedTarget, reached, parts, progressTitle]);
 
   const launch = useCallback(
     (input: Record<string, unknown>, label: string) => {

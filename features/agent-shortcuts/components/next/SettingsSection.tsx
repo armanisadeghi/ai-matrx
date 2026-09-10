@@ -77,7 +77,9 @@ export function SettingsSection({
   words,
   section,
   fieldMeta,
+  gateUnavailableReason,
 }: {
+  gateUnavailableReason?: string;
   section?: "display" | "overrides" | "permissions";
   fieldMeta?: (field: keyof SettingsFields) => {
     source: string;
@@ -91,17 +93,8 @@ export function SettingsSection({
   disabled?: boolean;
   /** This host's nouns. Omit for the shortcut wording. */
   words?: Partial<SettingsSectionWords>;
-  /**
-   * Hide the auto-run row AND its gate cascade, for a host that already owns
-   * that promise elsewhere on the same screen.
-   *
-   * 🚨 The one binding UI's `AutoRunBar` is such a host: on a job, "run
-   * instantly" is not a preference but a FACT about the mapping, narrated as
-   * the map changes, refused at the write and re-checked by the resolver
-   * (`mandate.binding.auto_run`). A second switch for it inside OPTIONS would be
-   * two controls for one answer, and the loser would be silently ignored. The
-   * shortcut editor passes nothing and is unchanged.
-   */
+  /** Hide this host's duplicate auto-run control. Gate fields remain visible;
+   * gateUnavailableReason prevents edits when the host cannot enforce them. */
   omitAutoRun?: boolean;
 }) {
   const w = { ...SHORTCUT_SETTINGS_WORDS, ...words };
@@ -132,10 +125,8 @@ export function SettingsSection({
         />
       )}
 
-      {/* The GATE is presentation, not the promise: it is what the person sees
-          in the moment an auto-run fires. So it survives `omitAutoRun` — the
-          host that owns the promise still passes the current `autoRun` fact,
-          and the gate is offered exactly while that fact makes it meaningful. */}
+      {/* A presentation countdown is separate from runtime intervention.
+          Hosts without gate support preserve saved values but disable edits. */}
       {(value.autoRun || section === "display") &&
         section !== "overrides" &&
         section !== "permissions" && (
@@ -143,17 +134,26 @@ export function SettingsSection({
             <ShortcutToggleRow
               title="Show pre-execution gate"
               {...fieldMeta?.("showPreExecutionGate")}
-              hint="Show a confirmation step before the auto-run fires."
+              hint={
+                gateUnavailableReason ??
+                "Show a confirmation step before the auto-run fires."
+              }
+              unavailableReason={gateUnavailableReason}
               checked={value.showPreExecutionGate}
               onChange={(v) => onChange("showPreExecutionGate", v)}
-              disabled={disabled || !value.autoRun}
+              disabled={
+                disabled || Boolean(gateUnavailableReason) || !value.autoRun
+              }
             />
             {(value.showPreExecutionGate || section === "display") && (
               <Indent flat={Boolean(section)}>
                 <ShortcutFieldRow
                   title="Pre-execution message"
                   {...fieldMeta?.("preExecutionMessage")}
-                  hint="Text shown to the user during the confirmation step."
+                  hint={
+                    gateUnavailableReason ??
+                    "Text shown to the user during the confirmation step."
+                  }
                 >
                   <Input
                     value={value.preExecutionMessage ?? ""}
@@ -167,7 +167,10 @@ export function SettingsSection({
                     }
                     aria-label="Pre-execution message"
                     disabled={
-                      disabled || !value.autoRun || !value.showPreExecutionGate
+                      disabled ||
+                      Boolean(gateUnavailableReason) ||
+                      !value.autoRun ||
+                      !value.showPreExecutionGate
                     }
                     className="h-9 text-sm"
                     style={{ fontSize: "16px" }}
@@ -274,7 +277,9 @@ export function ShortcutToggleRow({
   disabled,
   source,
   state,
+  unavailableReason,
 }: {
+  unavailableReason?: string;
   source?: string;
   state?: string;
   title: string;
@@ -293,7 +298,9 @@ export function ShortcutToggleRow({
             onCheckedChange={onChange}
             disabled={disabled}
           />
-          <span className="text-sm">{checked ? "Yes" : "No"}</span>
+          <span className="text-sm">
+            {unavailableReason ? "Unavailable" : checked ? "Yes" : "No"}
+          </span>
         </div>
       </ShortcutFieldRow>
     );

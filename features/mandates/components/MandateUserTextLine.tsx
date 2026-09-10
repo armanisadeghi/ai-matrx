@@ -23,7 +23,7 @@ import {
   PropertyRow,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
-import { useMandateInputSurface } from "../input-surface";
+import { useMandateInputSurface, userTextSentence } from "../input-surface";
 
 export interface MandateUserTextLineProps {
   mandateKey: string;
@@ -40,6 +40,13 @@ export function MandateUserTextLine({
 }: MandateUserTextLineProps) {
   const state = useMandateInputSurface(mandateKey);
 
+  // 🚨 ONE AUTHORITY, ONE SENTENCE. `816ea88701` densified this row to a bare
+  // Yes/No and stopped calling `userTextSentence` — leaving the shared sentence
+  // with no renderer, which is how the two hosts drifted apart the first time.
+  // The terse answer is the row's value; the sentence explains it, and it comes
+  // from the ONE helper so neither host can re-derive it. The row's `source`
+  // also stopped saying "Served input surface" — the retired system's noun on a
+  // mandate screen, which `mandate-screen-vocabulary` sweeps out.
   return (
     <PropertyRow
       label="Human input"
@@ -62,8 +69,14 @@ export function MandateUserTextLine({
           )}
         </span>
       }
-      source="Served input surface"
-      help={state.status === "error" ? state.message : undefined}
+      source="The job's own answer"
+      help={
+        state.status === "error"
+          ? state.message
+          : state.status === "ready"
+            ? userTextSentence(state.surface)
+            : undefined
+      }
       className={className}
     />
   );

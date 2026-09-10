@@ -47,7 +47,7 @@ import type { HrDenied, HrDirectoryRow, HrFailed } from "@/features/hr/types";
 import {
   hrDirectoryRowTarget,
   hrPersonMenuContent,
-  hrPersonMenuSection,
+  buildHrPersonMenuSection,
   leaveBalanceRowTarget,
 } from "@/features/hr/people/hr-person-menu";
 
@@ -369,7 +369,7 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
               return { content: hrPersonMenuContent(leaveBalanceRowTarget(row, orgRef)) };
             }}
             extraSections={[
-              hrPersonMenuSection(
+              buildHrPersonMenuSection(
                 clickedRosterRow ? leaveBalanceRowTarget(clickedRosterRow, orgRef) : null,
               ),
             ]}
@@ -492,7 +492,7 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
                 return { content: hrPersonMenuContent(hrDirectoryRowTarget(row, orgRef)) };
               }}
               extraSections={[
-                hrPersonMenuSection(
+                buildHrPersonMenuSection(
                   clickedCandidate ? hrDirectoryRowTarget(clickedCandidate, orgRef) : null,
                 ),
               ]}

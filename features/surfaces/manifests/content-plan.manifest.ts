@@ -30,6 +30,7 @@ import type {
 // manifest registry stays free of client-component imports.
 import type { PlanView } from "@/features/marketing/content-plan/hooks/usePlanWorkspaceParams";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -412,7 +413,7 @@ Empty values mean the workspace is still loading, no site is selected, or the da
       // section runs. It audits the live plan against the site's linked
       // research report and proposes the pages that are missing. The DB
       // decides the Holder (re-pointed from a pinned id 2026-08-23).
-      mandateKey: "content_plan.plan_reviewer",
+      mandateKey: MANDATE_KEYS.content_plan__plan_reviewer,
       defaultAgentId: null,
       sortOrder: 100,
     },
@@ -426,7 +427,7 @@ Empty values mean the workspace is still loading, no site is selected, or the da
       // "Suggest from research" button runs. It proposes the people/orgs/
       // sources the roster is missing from the research report. The DB
       // decides the Holder (re-pointed from a pinned id 2026-08-23).
-      mandateKey: "content_plan.entity_curator",
+      mandateKey: MANDATE_KEYS.content_plan__entity_curator,
       defaultAgentId: null,
       sortOrder: 120,
     },

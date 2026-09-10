@@ -36,6 +36,15 @@ export const selectPlaygroundPreferences = createSelector(
   (state): PlaygroundPreferences => state.playground,
 );
 
+/**
+ * THE ARCHIVED-ITEMS LAW's knob: the user's own starting point for every
+ * list's archive filter. Platform default is "active" (hide archived).
+ */
+export const selectArchivedDefault = createSelector(
+  selectUserPreferences,
+  (state): "active" | "all" => state.lists?.archivedDefault ?? "active",
+);
+
 export const selectDisplayPreferences = createSelector(
   selectUserPreferences,
   (state): DisplayPreferences => state.display,

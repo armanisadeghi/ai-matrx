@@ -12,6 +12,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectArchivedDefault } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { commitUrlParams, useUrlSearchParams } from "@ai-matrx/kit/url-state";
 import type { EntityListController, EntityListService } from "./config";
 import { toEntityListFailure, type EntityListFailure } from "./failure";
@@ -19,6 +21,7 @@ import {
   DEFAULT_ENTITY_LIST_QUERY,
   EMPTY_FACETS,
   EMPTY_SCOPE_COUNTS,
+  type ArchivedProbe,
   type EntityFacets,
   type EntityFilters,
   type EntityListQuery,
@@ -89,6 +92,13 @@ export interface UseEntityListArgs<TRow> {
    * the source of truth and Back/Forward/refresh/deep-link all work.
    */
   urlState?: boolean;
+  /**
+   * Whether this surface's entity has an archive axis at all
+   * (`EntityListConfig.supportsArchived`, default TRUE). It gates THE
+   * ALL-ARCHIVED FACT: a surface with no archive axis can never have rows
+   * hidden by one, so it is never asked (`./types.ts` § ArchivedProbe).
+   */
+  supportsArchived?: boolean;
 }
 
 /**
@@ -140,16 +150,40 @@ export function useEntityList<TRow>({
   defaultFilters,
   defaultScope,
   urlState = false,
+  supportsArchived = true,
 }: UseEntityListArgs<TRow>): EntityListController<TRow> {
-  const defaultQuery: EntityListQuery =
-    defaultFilters || defaultScope
-      ? {
-          ...DEFAULT_ENTITY_LIST_QUERY,
-          ...(defaultFilters ? { filters: defaultFilters } : {}),
-          ...(defaultScope ? { scope: defaultScope } : {}),
-        }
-      : DEFAULT_ENTITY_LIST_QUERY;
-  const [query, setQuery] = useQueryState(urlState, defaultQuery);
+  // THE ARCHIVED-ITEMS LAW's knob (../common-docs/policies/archived-items.md
+  // §6): the platform default hides archived rows, and a user may flip their
+  // own starting point in Settings → Lists. It seeds the DEFAULT only — the
+  // Archived control and a URL-carried value both win over it. Note the honest
+  // consequence: because the URL omits a value equal to the default, a link
+  // that carries no `archived` param reproduces the RECIPIENT's default, not
+  // the sender's — the same way `defaultFilters` already behaves. Any list a
+  // user deliberately switched carries the param and travels exactly.
+  const archivedDefault = useAppSelector(selectArchivedDefault);
+  const defaultQuery: EntityListQuery = {
+    ...DEFAULT_ENTITY_LIST_QUERY,
+    archived: archivedDefault,
+    ...(defaultFilters ? { filters: defaultFilters } : {}),
+    ...(defaultScope ? { scope: defaultScope } : {}),
+  };
+  const [rawQuery, setQuery] = useQueryState(urlState, defaultQuery);
+
+  // 🚨 THE LATE-KNOB PROBLEM. A surface without `urlState` holds its query in
+  // `useState(defaults)`, which is seeded ONCE — on the very first render, and
+  // the preferences slice is a warm cache that rehydrates AFTER that. Wired
+  // naively, the archive knob was written, persisted, and then ignored by
+  // every non-URL list, which is worse than not having it: the setting says
+  // one thing and the screen does another. So an UNTOUCHED archive axis
+  // follows the knob whenever it lands; the moment the user picks a value on
+  // the surface, their choice owns the axis for the rest of the session.
+  // URL-backed surfaces need none of this — they re-parse against live
+  // defaults on every render.
+  const archivedTouched = useRef(false);
+  const query: EntityListQuery =
+    urlState || archivedTouched.current
+      ? rawQuery
+      : { ...rawQuery, archived: defaultQuery.archived };
   // Seeded from the query, not from "" — a URL-backed surface opened at
   // `?q=seo` must not fire one throwaway unfiltered fetch before the debounce
   // catches up.
@@ -321,11 +355,83 @@ export function useEntityList<TRow>({
     };
   }, [facetsKey]);
 
+  // ── THE ALL-ARCHIVED FACT ────────────────────────────────────────────────
+  //
+  // 🚨 A LIST MAY NOT SAY "NONE" WHILE ITS OWN DEFAULT IS HIDING ROWS.
+  // See `./types.ts` § ArchivedProbe for the measured defect (/maps printing
+  // "No maps yet … Make one" with all 46 of the user's maps archived, two
+  // clicks from its own Archived filter).
+  //
+  // Asked ONLY when the live half came back EMPTY, so a page that has rows —
+  // which is nearly every page, nearly always — pays nothing at all. It is
+  // deliberately `fetchPage` with `pageSize: 1` rather than `fetchCounts`:
+  // `total` from the surface's OWN page reader is exactly the number of rows
+  // the door this empty state offers will reveal, under the same scope, search
+  // and filters, with no second query authority to drift from it. Every
+  // service already implements it, so no config anywhere had to change.
+  const archiveAxisIsHiding = supportsArchived && query.archived === "active";
+  const liveHalfIsEmpty =
+    !isLoading && !error && rows.length === 0 && total === 0;
+  const archivedProbeKey =
+    archiveAxisIsHiding && liveHalfIsEmpty
+      ? JSON.stringify({
+          q: { ...effectiveQuery, archived: "archived", page: 1 },
+          refreshToken,
+          service: serviceKey,
+        })
+      : null;
+  const [archivedAnswer, setArchivedAnswer] = useState<{
+    key: string;
+    total: number | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!archivedProbeKey) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const page = await service.fetchPage(
+          { ...effectiveQuery, archived: "archived", page: 1 },
+          {
+            sort: view.sort,
+            direction: view.direction,
+            favoritesFirst: view.favoritesFirst,
+            pageSize: 1,
+          },
+        );
+        if (!cancelled)
+          setArchivedAnswer({ key: archivedProbeKey, total: page.total });
+      } catch (err) {
+        // NOTHING FAILS SILENTLY, and a failed count is NOT zero: falling back
+        // to the static "none yet" copy here would restore the very lie this
+        // read exists to prevent. `total: null` makes the shell say it cannot
+        // tell and point at the control.
+        console.error(`[entity-list] archived count failed`, err);
+        if (!cancelled)
+          setArchivedAnswer({ key: archivedProbeKey, total: null });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [archivedProbeKey]);
+
+  const archivedProbe: ArchivedProbe = !archivedProbeKey
+    ? { state: "off" }
+    : archivedAnswer?.key !== archivedProbeKey
+      ? { state: "loading" }
+      : archivedAnswer.total === null
+        ? { state: "failed" }
+        : { state: "known", total: archivedAnswer.total };
+
   // Plain functions, NOT useCallback: `setQuery` is re-created per render for a
   // URL-backed surface, so an empty dep array here would freeze the very first
   // commit function and every later change would write against a stale URL.
   // The React Compiler owns memoization (CLAUDE.md core invariant).
   const patchQuery = (patch: Partial<EntityListQuery>) => {
+    // The surface's archive control patches this axis (EntityFilterPanel's
+    // Archived radio). Once the user has chosen, the knob stops seeding it.
+    if (patch.archived !== undefined) archivedTouched.current = true;
     setQuery((prev) => ({
       ...prev,
       ...patch,
@@ -344,13 +450,17 @@ export function useEntityList<TRow>({
   // `defaultFilters`, "Clear filters" meaning "now show me the 4,613 internal
   // machine runs too" would be a trap; the explicit door to those is its own
   // control.
-  const resetFilters = () =>
+  // "Clear filters" hands the archive axis back to the user's knob, not to a
+  // hardcoded "active" — the knob IS their default.
+  const resetFilters = () => {
+    archivedTouched.current = false;
     setQuery((prev) => ({
       ...prev,
       archived: defaultQuery.archived,
       filters: defaultQuery.filters,
       page: 1,
     }));
+  };
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), []);
 
   const removeRow = useCallback((id: string) => {
@@ -372,6 +482,8 @@ export function useEntityList<TRow>({
     countsLoading,
     countsError,
     facets,
+    archivedProbe,
+    defaultArchived: defaultQuery.archived,
     isLoading,
     isFetching,
     error,

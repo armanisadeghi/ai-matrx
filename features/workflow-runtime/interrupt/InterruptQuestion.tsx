@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import {
+  componentForInputOptions,
   resolveVariantComponent,
   type ResolvedVariantComponent,
   type VariantResolvableKind,
@@ -404,15 +405,10 @@ function AnswerField({
     field.variant,
   );
 
-  // A closed `enum` is a VALUE CONTRACT, not a presentation preference: the
-  // schema admits those values and no others, so a textarea would invite an
-  // answer the engine will refuse. This mirrors SPEC §1.1's server-side
-  // derivation (`choice` → `select`) and only ever applies when no variant and
-  // no kind default answered — an author's variant still wins.
-  const component =
-    field.options.length > 0 && resolution.source === "derived-default"
-      ? { type: "select" as const, options: field.options }
-      : resolution.component;
+  // A closed enum is the value contract; the kind variant chooses only the
+  // presentation. The shared join also covers generic registered pickers whose
+  // kind-level option list is deliberately empty.
+  const component = componentForInputOptions(resolution, field.options);
 
   return (
     <label className="block" data-interrupt-field={field.name}>
@@ -444,7 +440,7 @@ function AnswerField({
           this card has no routing for. Route it in the kind host.
         </p>
       )}
-      {resolution.unregisteredVariant ? (
+      {kind && resolution.unregisteredVariant ? (
         <p className="mt-0.5 flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-300">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
           Variant{" "}

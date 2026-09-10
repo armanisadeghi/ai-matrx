@@ -1,3 +1,12 @@
+// features/masterwork/home/service.ts
+//
+// 🚨 DO NOT DELETE. UNFINISHED WORK AWAITING ARMAN'S RULING — see the full
+// note at the top of ./MasterworkHomePage.tsx. This directory was deleted on
+// 2026-09-10 for being unreferenced and restored the same day: THE
+// UNFINISHED-WORK ALARM's ban means only Arman may name it dead, and he never
+// has. It is unrouted because Arman himself routed /masterwork to
+// /masterwork/all in commit 00602a2916 — an agent may not reverse that either.
+//
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { fetchMandatePins } from "@/features/mandates/service";
@@ -6,12 +15,14 @@ import {
   MASTERWORK_SELECT_COLUMNS,
   parseMasterworkRow,
   type MasterworkDefinitionRow,
+  type MasterworkListOptions,
 } from "../service";
 import type {
   Masterwork,
   RulebookRule,
   RulebookSource,
 } from "../types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * Reads for the Masterwork HOME (the authed landing at /masterwork) — a
@@ -105,7 +116,8 @@ export async function fetchMasterworkHome(): Promise<MasterworkHomeData> {
   const rulebookIds = rulebooks.map((r) => r.id);
   const nameById = new Map(rulebooks.map((r) => [r.id, r.name]));
   const [masterworks, runs] = await Promise.all([
-    fetchMasterworksFor(rulebookIds, nameById),
+    // The home grid carries the reveal control, so it reads BOTH halves.
+    fetchMasterworksFor(rulebookIds, nameById, { includeArchived: true }),
     fetchRecentRuns(rulebookIds, nameById),
   ]);
 
@@ -137,18 +149,31 @@ export async function fetchMasterworkHome(): Promise<MasterworkHomeData> {
   };
 }
 
+/**
+ * THE ARCHIVED-ITEMS LAW (`common-docs/policies/archived-items.md`, Arman
+ * 2026-09-09). `includeArchived` defaults to FALSE here too; the home page is
+ * one of the surfaces that OWNS a reveal control, so it asks for `true` and
+ * splits with `splitMasterworksByArchive` — its grid and every count on it are
+ * the live half, and the archived half is one click below the grid. Each row
+ * carries `is_archived` (from `MASTERWORK_SELECT_COLUMNS`), so a revealed card
+ * says what it is.
+ */
 async function fetchMasterworksFor(
   rulebookIds: string[],
   nameById: Map<string, string>,
+  { includeArchived = false }: MasterworkListOptions = {},
 ): Promise<(Masterwork & { rulebookName: string | null })[]> {
   if (rulebookIds.length === 0) return [];
-  const { data, error } = await supabase
+  let query = supabase
     .schema("workflow")
     .from("definition")
     .select(MASTERWORK_SELECT_COLUMNS)
     .in("metadata->>built_from_rulebook", rulebookIds)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
+    .is("deleted_at", null);
+  if (!includeArchived) query = query.eq("is_archived", false);
+  const { data, error } = await query.order("updated_at", {
+    ascending: false,
+  });
   if (error) throw new Error(`${error.message} (${error.code})`);
   return (data ?? []).map((row) => {
     const m = parseMasterworkRow(row as MasterworkDefinitionRow);
@@ -201,11 +226,11 @@ async function fetchRecentRuns(
 // and each bound agent's definition row. NEVER fabricate review activity.
 
 export const MASTERWORK_MANDATE_KEYS = [
-  "masterwork.scout",
-  "masterwork.source_distiller",
-  "masterwork.exemplar_distiller",
-  "masterwork.rulebook_auditor",
-  "masterwork.audition_judge",
+  MANDATE_KEYS.masterwork__scout,
+  MANDATE_KEYS.masterwork__source_distiller,
+  MANDATE_KEYS.masterwork__exemplar_distiller,
+  MANDATE_KEYS.masterwork__rulebook_auditor,
+  MANDATE_KEYS.masterwork__audition_judge,
 ] as const;
 
 export type MasterworkMandateKey = (typeof MASTERWORK_MANDATE_KEYS)[number];

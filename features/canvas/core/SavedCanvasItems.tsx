@@ -16,7 +16,7 @@ import {
   Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
@@ -29,21 +29,23 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import type { CanvasItemRow } from "@/features/canvas/services/canvasItemsService";
 
-interface SavedCanvasItemsProps {
-  showArchived?: boolean;
-}
-
 /**
  * SavedCanvasItems - Management UI for saved canvas items
- * 
+ *
  * Features:
  * - List all saved items with search and filters
  * - Rename, favorite, archive, delete items
  * - Open items in canvas
  * - Share items
  * - Batch operations
+ *
+ * THE ARCHIVED-ITEMS LAW (../common-docs/policies/archived-items.md): this
+ * panel used to take a `showArchived` prop that its ONE call site
+ * (`CanvasRenderer`) hard-coded to `false`, so archived items were impossible
+ * to reach from here. The prop is gone. The query now loads both and the
+ * "Archived (N)" disclosure below the grid reveals them in one click.
  */
-export function SavedCanvasItems({ showArchived = false }: SavedCanvasItemsProps) {
+export function SavedCanvasItems() {
   const { openItem } = useOpenCanvasItem();
   const {
     items,
@@ -55,9 +57,10 @@ export function SavedCanvasItems({ showArchived = false }: SavedCanvasItemsProps
     toggleArchive,
     share,
     updateFilters,
-  } = useCanvasItems({ is_archived: showArchived });
+  } = useCanvasItems({});
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -70,7 +73,6 @@ export function SavedCanvasItems({ showArchived = false }: SavedCanvasItemsProps
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     updateFilters({
-      is_archived: showArchived,
       search: query || undefined,
       type: typeFilter !== "all" ? typeFilter : undefined,
     });
@@ -79,7 +81,6 @@ export function SavedCanvasItems({ showArchived = false }: SavedCanvasItemsProps
   const handleTypeFilter = (type: string) => {
     setTypeFilter(type);
     updateFilters({
-      is_archived: showArchived,
       search: searchQuery || undefined,
       type: type !== "all" ? type : undefined,
     });
@@ -140,85 +141,14 @@ export function SavedCanvasItems({ showArchived = false }: SavedCanvasItemsProps
     return colors[type] || "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300";
   };
 
-  const uniqueTypes = Array.from(new Set(items.map(item => item.type)));
+  // Active is what the surface shows; archived rides one click below it.
+  const activeItems = items.filter((item) => !item.is_archived);
+  const archivedItems = items.filter((item) => item.is_archived);
 
-  if (isLoading && items.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-6 h-6 animate-spin text-gray-400 dark:text-gray-600" />
-      </div>
-    );
-  }
+  const uniqueTypes = Array.from(new Set(activeItems.map(item => item.type)));
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header with Search and Filters */}
-      <div className="flex-shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-        <div className="flex items-center gap-3">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-600" />
-            <Input
-              type="text"
-              placeholder="Search saved items..."
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+  const renderItem = (item: CanvasItemRow) => (
 
-          {/* Type Filter */}
-          <Select value={typeFilter} onValueChange={handleTypeFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="All types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              {uniqueTypes.map(type => (
-                <SelectItem key={type} value={type}>
-                  {getTypeLabel(type)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Refresh */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => load()}
-            disabled={isLoading}
-          >
-            <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-          </Button>
-        </div>
-
-        {/* Stats */}
-        <div className="mt-3 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-          <span>{items.length} item{items.length !== 1 ? 's' : ''}</span>
-          {typeFilter !== "all" && (
-            <Badge variant="secondary">{getTypeLabel(typeFilter)}</Badge>
-          )}
-        </div>
-      </div>
-
-      {/* Items List */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
-        {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Archive className="w-12 h-12 text-gray-300 dark:text-gray-700 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">
-              {showArchived ? "No archived items" : "No saved canvas items yet"}
-            </p>
-            <p className="text-sm text-gray-400 dark:text-gray-600 mt-1">
-              {showArchived
-                ? "Archive items to see them here"
-                : "Create and save canvas items to see them here"}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map(item => (
               <div
                 key={item.id}
                 className="group relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 hover:shadow-md dark:hover:shadow-zinc-950/50 transition-all"
@@ -352,8 +282,95 @@ export function SavedCanvasItems({ showArchived = false }: SavedCanvasItemsProps
                   </div>
                 )}
               </div>
-            ))}
+  );
+
+  if (isLoading && items.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="w-6 h-6 animate-spin text-gray-400 dark:text-gray-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header with Search and Filters */}
+      <div className="flex-shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+        <div className="flex items-center gap-3">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-600" />
+            <Input
+              type="text"
+              placeholder="Search saved items..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-9"
+            />
           </div>
+
+          {/* Type Filter */}
+          <Select value={typeFilter} onValueChange={handleTypeFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {uniqueTypes.map(type => (
+                <SelectItem key={type} value={type}>
+                  {getTypeLabel(type)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Refresh */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => load()}
+            disabled={isLoading}
+          >
+            <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
+          </Button>
+        </div>
+
+        {/* Stats */}
+        <div className="mt-3 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+          <span>{activeItems.length} item{activeItems.length !== 1 ? 's' : ''}</span>
+          {typeFilter !== "all" && (
+            <Badge variant="secondary">{getTypeLabel(typeFilter)}</Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Items List */}
+      <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
+        {activeItems.length === 0 && archivedItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <Archive className="w-12 h-12 text-gray-300 dark:text-gray-700 mb-3" />
+            <p className="text-gray-500 dark:text-gray-400">
+              No saved canvas items yet
+            </p>
+            <p className="text-sm text-gray-400 dark:text-gray-600 mt-1">
+              Create and save canvas items to see them here
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activeItems.map(renderItem)}
+            </div>
+            <ArchivedDisclosure
+              count={archivedItems.length}
+              open={showArchived}
+              onOpenChange={setShowArchived}
+              className="mt-4"
+              contentClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            >
+              {archivedItems.map(renderItem)}
+            </ArchivedDisclosure>
+          </>
         )}
       </div>
     </div>

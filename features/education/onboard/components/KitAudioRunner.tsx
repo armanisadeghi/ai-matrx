@@ -28,9 +28,11 @@ import type { StudyMediaRow } from "@/features/education/media/types";
 export function KitAudioRunner({
   artifactId,
   accentBar,
+  onReady,
 }: {
   artifactId: string;
   accentBar: string;
+  onReady: () => void;
 }) {
   const [media, setMedia] = useState<StudyMediaRow | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -66,7 +68,12 @@ export function KitAudioRunner({
   }
 
   return (
-    <LiveKitAudio media={media} runId={media.run_id} accentBar={accentBar} />
+    <LiveKitAudio
+      media={media}
+      runId={media.run_id}
+      accentBar={accentBar}
+      onReady={onReady}
+    />
   );
 }
 
@@ -74,10 +81,12 @@ function LiveKitAudio({
   media,
   runId,
   accentBar,
+  onReady,
 }: {
   media: StudyMediaRow;
   runId: string;
   accentBar: string;
+  onReady: () => void;
 }) {
   const run = useStudioRun(runId);
   const { state } = run;
@@ -87,7 +96,10 @@ function LiveKitAudio({
     media,
     state,
     streaming: run.streaming,
-    onReady: () => setReady(true),
+    onReady: () => {
+      setReady(true);
+      onReady();
+    },
     // The board says it in place, right on the row — a toast on top of that is
     // noise while several targets are finishing at once.
     announce: false,
@@ -144,7 +156,10 @@ function LiveKitAudio({
         // The TTS render is the long step, and the platform already streams the
         // audio as it is spoken — so let the student HEAR it arriving instead of
         // watching one percentage sit still. Canonical player, not a second one.
-        <LiveAudioPlayer player={run.livePlayer} title="Listening in as it records" />
+        <LiveAudioPlayer
+          player={run.livePlayer}
+          title="Listening in as it records"
+        />
       )}
       <p className="text-[11px] text-muted-foreground">
         {/* Percent alone goes quiet for minutes during the TTS render, and a
@@ -173,5 +188,7 @@ function StepClock() {
 
   const elapsed = Math.max(0, now - startedAt);
   if (elapsed < 15_000) return null;
-  return <>On this step for {formatElapsed(elapsed)} — audio takes the longest. </>;
+  return (
+    <>On this step for {formatElapsed(elapsed)} — audio takes the longest. </>
+  );
 }

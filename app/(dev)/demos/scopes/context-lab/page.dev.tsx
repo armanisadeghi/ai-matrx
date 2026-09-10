@@ -36,7 +36,7 @@ import {
   CornerDownRight,
   Ban,
   ArrowRight,
-  Wand2,
+  Zap,
   GitBranch,
   ShieldCheck,
   ShieldAlert,

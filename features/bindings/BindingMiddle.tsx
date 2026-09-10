@@ -31,9 +31,10 @@
 //     Direct Value and Prompt User all store now; the stand-in that refused the
 //     last two while the server could not carry them is deleted.
 
-import { AlertTriangle, ArrowDown, ArrowUp, Plus, X, Zap } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, X, Zap } from "lucide-react";
 
 import {
+  CONFIGURATION_CHOICE_SIZE,
   PropertyRow,
   StatusToken,
   FieldHelp,
@@ -50,7 +51,10 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
-import { SurfaceVariableBinding } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
+import {
+  SurfaceVariableBinding,
+  offeredAvailabilityLabel,
+} from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import {
   consumptionMapProblems,
@@ -143,7 +147,6 @@ export function BindingMiddleRow({
   pinnedContext,
   value,
   onChange,
-  autoBound,
   disabled = false,
 }: {
   holderKind: "agent" | "workflow";
@@ -198,26 +201,33 @@ export function BindingMiddleRow({
     !hasHolderDefault(target.defaultValue);
 
   return (
-    <div className="space-y-3 rounded-xl border-2 border-border bg-card p-4">
-      <div className="grid min-w-0 gap-x-6 sm:grid-cols-2">
-        <PropertyRow
-          label="Destination"
-          value={isContext ? "Context slot" : "Variable"}
-        />
-        <PropertyRow
-          label="Name matching"
-          value={
-            autoBound.has(target.name) && sources.length === 1
-              ? "Applied"
-              : "Not applied"
-          }
-        />
-      </div>
-
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
       {/* THE SHARED ROW, VERBATIM. */}
       <SurfaceVariableBinding
         target={target}
+        targetKindLabel={
+          isContext
+            ? "Context policy"
+            : holderKind === "workflow"
+              ? "Workflow input"
+              : "Variable"
+        }
         structured
+        sourceDetailAside={
+          sources[0] &&
+          isOfferedSource(sources[0]) &&
+          sources[0].target !== "" ? (
+            <AbsenceControl
+              entry={sources[0]}
+              offered={offeredByName.get(sources[0].target)}
+              disabled={disabled}
+              onPatch={(patch) =>
+                onChange(patchSourceAt(value, target.name, 0, patch))
+              }
+            />
+          ) : null
+        }
+        sourceAbsenceManaged
         mapping={mappingForRow(sources) ?? { mapType: "unmapped" }}
         availableSurfaceValues={selectableSurfaceValues}
         disabled={disabled}
@@ -236,105 +246,91 @@ export function BindingMiddleRow({
         }
       />
 
-      {/* P9 — a source that is not guaranteed must declare what happens
-                when it is absent. The shared row carries a Required toggle but
-                no absence answer (a surface value's absence is the surface's
-                problem; an offered value's is the binding's), so source 0 gets
+      {sources.length > 0 ||
+      rowProblems.length > 0 ||
+      awaitingPick ||
+      unfedRequired ? (
+        <div className="space-y-3 border-t border-border p-3 text-sm">
+          {/* P9 — a source that is not guaranteed must declare what happens
+                when it is absent. The shared source-required toggle is suppressed
+                for mandates because when_absent owns this behavior. Source 0 gets
                 its control HERE — sources 1..n get the same one in the strip
                 below. `skip` is pre-answered on selection; this makes the
                 answer visible and changeable instead of merely stored. */}
-      {/* P5 / D2 — the chosen value's own example, right under the pick.
+          {/* P5 / D2 — the chosen value's own example, right under the pick.
                 "Looks like", not "Right now": this is a STATIC illustration the
                 provision declared, and calling it the current value would be a
                 sentence the screen cannot keep. */}
-      {sources[0] && isOfferedSource(sources[0])
-        ? (() => {
-            const example = offeredByName.get(sources[0].target)?.example;
-            return example ? (
-              <p className="px-0.5 text-[11px] leading-snug text-muted-foreground">
-                <span className="text-muted-foreground/60">Looks like: </span>
-                <span className="font-mono">{example}</span>
-              </p>
-            ) : null;
-          })()
-        : null}
+          {sources[0] && isOfferedSource(sources[0])
+            ? (() => {
+                const example = offeredByName.get(sources[0].target)?.example;
+                return example ? (
+                  <p className="text-sm text-foreground">
+                    <span className="font-semibold">Example: </span>
+                    <span>{example}</span>
+                  </p>
+                ) : null;
+              })()
+            : null}
 
-      {sources[0] && isOfferedSource(sources[0]) && sources[0].target !== "" ? (
-        <AbsenceControl
-          entry={sources[0]}
-          offered={offeredByName.get(sources[0].target)}
-          disabled={disabled}
-          onPatch={(patch) =>
-            onChange(patchSourceAt(value, target.name, 0, patch))
-          }
-        />
-      ) : null}
+          {awaitingPick ? (
+            <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              Source selection: Missing
+            </p>
+          ) : null}
 
-      {awaitingPick ? (
-        <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          Source selection: Missing
-        </p>
-      ) : null}
+          {rowProblems.map((problem, index) => (
+            <PropertyRow
+              key={problem}
+              label={`Mapping issue ${index + 1}`}
+              value={<StatusToken status="error" label="Invalid" />}
+              help={<TextWithDoors text={problem} defaultToken="agent" />}
+            />
+          ))}
 
-      {rowProblems.map((problem, index) => (
-        <PropertyRow
-          key={problem}
-          label={`Mapping issue ${index + 1}`}
-          value={<StatusToken status="error" label="Invalid" />}
-          help={<TextWithDoors text={problem} defaultToken="agent" />}
-        />
-      ))}
+          {unfedRequired ? (
+            <StatusToken
+              status="caution"
+              label="Required destination has no source or default"
+            />
+          ) : null}
 
-      <PropertyRow
-        label="Required mapping"
-        value={
-          <StatusToken
-            status={unfedRequired ? "caution" : "neutral"}
-            label={
-              unfedRequired
-                ? "Missing"
-                : target.required
-                  ? "Assigned"
-                  : "Not required"
+          {/* D18.2 — the extra sources joined into this same input. */}
+          <ExtraSources
+            targetName={target.name}
+            sources={sources}
+            offeredByName={offeredByName}
+            disabled={disabled}
+            onMove={(index, delta) =>
+              onChange(moveSource(value, target.name, index, delta))
+            }
+            onRemove={(index) =>
+              onChange(removeSourceAt(value, target.name, index))
+            }
+            onPatch={(index, patch) =>
+              onChange(patchSourceAt(value, target.name, index, patch))
             }
           />
-        }
-      />
 
-      {/* D18.2 — the extra sources joined into this same input. */}
-      <ExtraSources
-        targetName={target.name}
-        sources={sources}
-        offeredByName={offeredByName}
-        disabled={disabled}
-        onMove={(index, delta) =>
-          onChange(moveSource(value, target.name, index, delta))
-        }
-        onRemove={(index) =>
-          onChange(removeSourceAt(value, target.name, index))
-        }
-        onPatch={(index, patch) =>
-          onChange(patchSourceAt(value, target.name, index, patch))
-        }
-      />
-
-      <AddAnotherSource
-        targetName={target.name}
-        targetLabel={target.label ?? formatVariableDisplayName(target.name)}
-        remaining={remaining}
-        hasSources={sources.length > 0}
-        disabled={disabled}
-        onAdd={(sourceName) => {
-          onChange(
-            addSource(value, target.name, {
-              sourceName,
-              offered: offeredByName.get(sourceName),
-              deliver,
-            }),
-          );
-        }}
-      />
+          <AddAnotherSource
+            targetName={target.name}
+            targetLabel={target.label ?? formatVariableDisplayName(target.name)}
+            remaining={remaining}
+            hasSources={sources.length > 0}
+            disabled={disabled}
+            onAdd={(sourceName) => {
+              onChange(
+                addSource(value, target.name, {
+                  sourceName,
+                  offered: offeredByName.get(sourceName),
+                  deliver,
+                }),
+              );
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -496,21 +492,11 @@ function AbsenceControl({
     { value: "fail", label: "Stop run" },
   ] as const;
   return (
-    <div
-      className={cn(
-        "space-y-2 border-t border-border pt-3",
-        (disabled || unavailable) && "opacity-50",
-      )}
-    >
+    <div className={cn("space-y-2", (disabled || unavailable) && "opacity-50")}>
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="font-semibold">Missing source:</span>
-        {unavailable ? (
-          <StatusToken
-            status="neutral"
-            label={offered ? "Not applicable" : "Unknown"}
-          />
-        ) : null}
-        <FieldHelp label="Missing source">
+        <span className="font-semibold">When missing</span>
+        {!offered ? <StatusToken status="unknown" label="Unknown" /> : null}
+        <FieldHelp label="When missing">
           {offered?.guaranteed
             ? "This input is always available, so missing-source behavior does not apply."
             : !offered
@@ -521,12 +507,13 @@ function AbsenceControl({
       <div
         role="group"
         aria-label={`Missing ${formatVariableDisplayName(entry.target)}`}
-        className="flex flex-wrap gap-2"
+        className="flex flex-wrap gap-1"
       >
         {choices.map((choice) => (
           <Button
             key={choice.value}
             size="sm"
+            className={cn(CONFIGURATION_CHOICE_SIZE, "px-2")}
             variant={
               !unavailable && (entry.when_absent ?? "skip") === choice.value
                 ? "default"
@@ -541,6 +528,15 @@ function AbsenceControl({
             {choice.label}
           </Button>
         ))}
+        <Button
+          size="sm"
+          className={cn(CONFIGURATION_CHOICE_SIZE, "px-2")}
+          variant={offered?.guaranteed ? "default" : "outline"}
+          disabled
+          aria-pressed={offered?.guaranteed === true}
+        >
+          Not applicable
+        </Button>
       </div>
       {entry.when_absent === "use_default" ? (
         <ProTextarea
@@ -549,7 +545,7 @@ function AbsenceControl({
           onChange={(e) => onPatch({ default: e.target.value })}
           aria-label="Missing source default"
           placeholder="Default value"
-          className="min-h-16"
+          className="min-h-16 basis-full"
         />
       ) : null}
     </div>
@@ -578,8 +574,8 @@ function AddAnotherSource({
     );
   }
   return (
-    <div className="flex items-center gap-1.5 px-0.5">
-      <Plus className="h-3 w-3 text-muted-foreground" />
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-sm font-semibold">Additional sources:</span>
       <Select value="" disabled={disabled} onValueChange={(v) => v && onAdd(v)}>
         {/* 🚨 LET IT SAY THE WHOLE THING (V2 round-2 residual 5, the only
             truncation that survived 1600). The trigger was a fixed 280px box
@@ -590,7 +586,10 @@ function AddAnotherSource({
             `[&>span]:line-clamp-1`; both are overridden here so the label
             wraps to a second line instead, and the box grows with it. */}
         <SelectTrigger
-          className="h-auto min-h-7 w-full max-w-[280px] whitespace-normal py-1 text-left text-[11.5px] [&>span]:line-clamp-none"
+          className={cn(
+            CONFIGURATION_CHOICE_SIZE,
+            "h-auto w-full max-w-[280px] whitespace-normal py-1 text-left [&>span]:line-clamp-none",
+          )}
           aria-label={`Add another value to ${targetLabel}`}
         >
           <SelectValue placeholder="Add source" />
@@ -598,15 +597,13 @@ function AddAnotherSource({
         <SelectContent>
           {remaining.map((v) => (
             <SelectItem key={v.name} value={v.name}>
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="truncate text-sm font-medium">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                <span className="break-words text-sm font-medium">
                   {formatVariableDisplayName(v.name)}
                 </span>
-                {!v.guaranteed ? (
-                  <span className="text-[10px] text-muted-foreground">
-                    · sometimes
-                  </span>
-                ) : null}
+                <span className="text-xs text-foreground">
+                  {offeredAvailabilityLabel(v.guaranteed)}
+                </span>
               </div>
             </SelectItem>
           ))}

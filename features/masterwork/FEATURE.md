@@ -69,8 +69,12 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     `RulebookSections`, `RulebookSource`. Never rewrite an existing rule's `id` — audits cite it.
 16. **The Understudy is never releasable to Encore** and is filtered out of the built-Masterworks
     list; release is gated on a real Build. Never describe the Understudy as the finished system.
-17. **`TryMasterworkBox` consumes the execution system's canonical `TERMINAL_RUN_EVENTS`** — never
-    maintain a narrower local list (that is how a run that errored left it "Working…" forever).
+17. **`TryMasterworkBox` asks `runIsOver` (`features/workflow-runtime/types.ts`), never a narrower
+    set** — a run the engine records as `errored` is over for anything WATCHING it, but the
+    generated `TERMINAL_RUN_STATUSES` answers the engine's resume question and excludes it. Asking
+    that set directly is how a run that errored left the box "Working…" forever, with nothing told
+    to the caller until a row poll happened to notice. Guarded by `TryMasterworkBox.test.tsx`
+    (proven failing-then-passing 2026-09-09).
 
 ## Files
 
@@ -118,9 +122,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   sessionStorage (`matrx.masterwork.run.<masterworkId>`), and on mount the run row decides:
   still going → `attachWorkflowRun` (the execution system's rejoin primitive; the SSE feed
   replays the node lifecycle so the stage list rebuilds), finished → the verdict shows directly.
-  Its live-event choreography consumes the execution system's canonical `TERMINAL_RUN_EVENTS`
-  set; it must never maintain a narrower local list that misses `run_errored` and waits for the
-  row-poll recovery backstop.
+  Its terminal choreography asks `runIsOver` from `features/workflow-runtime/types.ts`; it must
+  never ask a narrower set that misses `errored` and waits for the row-poll recovery backstop.
 - `components/masterworks/AuditionDialog.tsx` — "Compare to the original" (the Audition). Opens
   prefilled with a finished run's own output when launched from the verdict, empty from the card.
   Streams `POST /masterworks/audition`; verdict event `masterwork_audition_verdict`.
@@ -149,3 +152,46 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 - 2026-08-25 — Quick build now requires the Masterwork name before asking for its input model:
   existing work routes to the review-and-correct workflow; instructions route to new-work
   generation and require the intended deliverable.
+
+- 2026-09-10 — **THE ARCHIVED-ITEMS LAW landed on Masterworks** (row F10 of
+  `../../../common-docs/projects/archived-items-law/STATUS.md`; law at
+  `../../../common-docs/policies/archived-items.md`). All three `workflow.definition` Masterwork
+  reads were archive-blind — no predicate, no column — so an archived Masterwork rendered as a
+  live one everywhere. Now `MASTERWORK_SELECT_COLUMNS` carries `is_archived`, each read takes
+  `includeArchived` defaulting to FALSE, and `splitMasterworksByArchive` is the one split every
+  surface uses. Four card surfaces gained the shared `ArchivedDisclosure` (from
+  `@ai-matrx/design-system` since 2026-09-10; `components/official/ArchivedDisclosure` was
+  deleted when the package took it) — the Masterworks lane,
+  the Rulebook page's Masterworks section, the browse cards (per Rulebook), and (until it was
+  deleted the same day, below) the module home grid —
+  closed by default, one click, count honest, revealed rows labelled "Archived". Every count
+  (KPI strip, built count, journey facts, browse "N built", the lane's `masterwork_count`) is now
+  the LIVE half. `RulebookLaneRoute` takes the read's default so the agent surface scope never
+  offers a retired system as runnable. Encore's released shelf, the Hindsight workflow picker and
+  the bakeoff picker exclude archived rows under reasoned `archived-items-law-exempt` markers —
+  run/enrollment candidates, not browsable lists (the F9 precedent). Guard
+  `pnpm check:archived-items-law` now protects `workflow.definition` as a settled class (proven
+  RED on the three pre-fix reads); forcing tests in `archivedItemsLaw.test.ts`.
+
+- 2026-09-10 — **A SCREEN NEVER LIES IN THE ALL-ARCHIVED STATE** (row F10's independent live
+  review, repaired the same day). Making every count the live half quietly made every CAPTION
+  dishonest: with both Hopkins Masterworks archived the Rulebook page printed "No Masterworks
+  built yet." and "115 approved rules and no Masterwork yet — the Conductor can build one" one
+  line above its own "Archived Masterworks (2)" door, telling the Expert to rebuild work they
+  already had. THE RULE, in this feature and everywhere: a "none / never / yet" caption may only
+  be said when live + archived is 0; otherwise it says how many are archived.
+  `MasterworkKpis` gained `archived`, `computeMasterworkKpis` and `journeyFactsFromRulebook` take
+  the archived half, and the sentence itself is the exported, unit-tested
+  `masterworkFreshnessLine`. `conductor_ready` keeps its key, rank and precedence (the mirror of
+  `journey.py`) and only changes words in a case the server cannot reach — `journey.py` has no
+  archive axis, so its `real_masterworks` is already the whole corpus. The browse ROWS view's
+  "not built yet" and the browse CARDS view's "Not built into a system yet." took the same fix.
+  Ten forcing tests, four of them proven RED against the pre-fix code.
+
+- 2026-09-10 — **`features/masterwork/home/` deleted** (`MasterworkHomePage`,
+  `HowItsImprovingPanel`, the home service). `/masterwork` has redirected signed-in Experts to
+  `/masterwork/all` — the canonical entity-list surface — since 2026-08-21, so nothing rendered
+  any of it; F10 had given its grid an archive control nobody could reach. A control nobody can
+  reach is not a control, and replaced code gets deleted (`no-legacy`). The `/masterwork/admin`
+  map, which still described the deleted home as the live authed landing, now describes the
+  redirect.

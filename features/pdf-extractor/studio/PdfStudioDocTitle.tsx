@@ -87,7 +87,11 @@ export function PdfStudioDocTitle({
   }
 
   // Non-cloud docs (external URL / legacy) — lighter studio menu.
-  const summary: StudioDocSummary = { ...doc, sourceMissing: false };
+  const summary: StudioDocSummary = {
+    ...doc,
+    archived: false,
+    sourceMissing: false,
+  };
   const menu = buildPdfDocMenu({ doc: summary, onDelete: onDeleteDoc });
 
   return (

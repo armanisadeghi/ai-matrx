@@ -18,7 +18,7 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
 import {
   referringDomainEntityRef,
-  useReferringDomainMenuSection,
+  buildReferringDomainMenuSection,
 } from "@/features/marketing/components/backlinks/referring-domain-actions";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -385,7 +385,7 @@ export function BacklinkDimensionTable({
   // of the SAME `/backlinks?view=domains` identity ReferringDomainIntelligenceTable
   // owns; every non-domain dimension (anchor, target page, competitor) is a
   // different identity and disables the whole section rather than forking it.
-  const referringDomainSection = useReferringDomainMenuSection({
+  const referringDomainSection = buildReferringDomainMenuSection({
     brandId,
     siteId,
     getRow: () =>

@@ -19,7 +19,7 @@ import {
   Stethoscope,
   Pencil,
   Volume2,
-  Sparkles,
+  BrainCircuit,
   BookOpen,
   Users,
   ClipboardCheck,
@@ -75,7 +75,7 @@ const GRADES: AxisEntry[] = (
             "Every card and question can be read out loud, so readers of every speed can keep up.",
         },
         {
-          icon: Sparkles,
+          icon: BrainCircuit,
           title: "Celebrations that motivate",
           description:
             "Stars, badges, and cheerful celebrations reward effort and keep practice fun.",
@@ -141,7 +141,7 @@ export const LEVELS: AxisEntry[] = [
               "Lessons wrap facts in short stories and characters, so kids remember the idea, not just the answer.",
           },
           {
-            icon: Sparkles,
+            icon: BrainCircuit,
             title: "Rewards that motivate",
             description:
               "Stars, badges, and gentle celebrations reward steady effort — building a habit instead of pressure.",

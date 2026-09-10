@@ -42,7 +42,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { MessagingProvider } from "@ai-matrx/messaging/react";
+import {
+  MessagingProvider,
+  toMessagingArchiveFilter,
+  useConversations,
+  useMessagingHost,
+} from "@ai-matrx/messaging/react";
+import type { MessagingArchiveFilter } from "@ai-matrx/messaging/react";
 import type { ActionHandler } from "@ai-matrx/messaging";
 // One entry point: `@ai-matrx/meet/react` re-exports the whole core, so a React
 // file needs exactly one import specifier. (Through 0.2.0 this was a REQUIREMENT
@@ -67,6 +73,7 @@ import {
   useMessagingAiDemandCounter,
 } from "@/features/messaging/lib/messagingAiDemand";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectArchivedDefault } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { MESSAGE_ACTION_SURFACES } from "@/features/messaging/actions/messageActionSurfaces";
 import {
@@ -87,6 +94,13 @@ export function MessagingHost({ children }: MessagingHostProps) {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectActiveOrganizationId);
+  // THE ARCHIVED-ITEMS LAW clause 6 (`common-docs/policies/archived-items.md`):
+  // the archive filter's starting state is the PERSON's setting, never this
+  // file's taste. `lists.archivedDefault` is the same knob `useEntityList` and
+  // `AgentCatalogHost` read, so every list in the app opens the same way.
+  const archiveKnob = toMessagingArchiveFilter(
+    useAppSelector(selectArchivedDefault),
+  );
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const notifyIncoming = useIncomingMessageNotifier();
   const store = useAppStore();
@@ -261,6 +275,9 @@ export function MessagingHost({ children }: MessagingHostProps) {
         maxTranscriptMessages={maxTranscriptMessages}
         sourceApp="matrx-frontend"
         sourceFeature="messages"
+        // Seeds the engine at creation; `<MessagingArchiveKnob>` below owns
+        // every later value of the same setting (see its comment).
+        archiveFilter={archiveKnob}
         actions={actions}
         actionRenderers={MESSAGE_ACTION_SURFACES}
         // App chrome around the package's own surfaces: the data attributes the
@@ -283,6 +300,7 @@ export function MessagingHost({ children }: MessagingHostProps) {
           return data.session !== null;
         }}
       >
+        <MessagingArchiveKnob knob={archiveKnob} />
         {children}
       </MessagingProvider>
     </MessagingAiDemandProvider>
@@ -290,3 +308,56 @@ export function MessagingHost({ children }: MessagingHostProps) {
 }
 
 export default MessagingHost;
+
+/**
+ * THE LATE-KNOB PROBLEM, solved the way `AgentCatalogHost` solves it.
+ *
+ * `<MessagingProvider archiveFilter>` seeds the engine when the engine is
+ * BUILT, and the user's preferences rehydrate from Redux on their own schedule
+ * — often after that. Without this, a person whose setting says "show archived
+ * by default" would silently get the platform default instead: a knob that
+ * does nothing is the same defect as a dead control.
+ *
+ * So this reconciles. It applies the knob whenever it changes, but ONLY while
+ * the filter is still exactly the value this component last put there (or the
+ * package's own default, the first time). The moment a person moves the
+ * control on a list, that choice owns the axis for the rest of the session and
+ * this component stops touching it.
+ *
+ * It renders nothing. It must live INSIDE the provider because
+ * `useConversations()` is where the package exposes the live axis.
+ */
+function MessagingArchiveKnob({ knob }: { knob: MessagingArchiveFilter }) {
+  const host = useMessagingHost();
+  const { archiveFilter, setArchiveFilter } = useConversations();
+  const appliedRef = useRef<MessagingArchiveFilter | null>(null);
+  const hostRef = useRef(host);
+  const filterRef = useRef(archiveFilter);
+  filterRef.current = archiveFilter;
+  // `useConversations()` rebuilds its object every render, so this setter is a
+  // fresh function each time. Reading it through a ref keeps the effect below
+  // firing only when the KNOB or the ENGINE actually changes.
+  const setFilterRef = useRef(setArchiveFilter);
+  setFilterRef.current = setArchiveFilter;
+
+  useEffect(() => {
+    // No engine yet means `setArchiveFilter` is a no-op — recording the knob as
+    // applied here would swallow it forever. Wait for the host.
+    if (host === null) return;
+    if (hostRef.current !== host) {
+      // A new engine starts from the provider's own seed, so this component has
+      // put nothing there yet.
+      hostRef.current = host;
+      appliedRef.current = null;
+    }
+    const untouched =
+      appliedRef.current === null
+        ? filterRef.current === knob || filterRef.current === "active"
+        : filterRef.current === appliedRef.current;
+    if (!untouched) return;
+    appliedRef.current = knob;
+    if (filterRef.current !== knob) setFilterRef.current(knob);
+  }, [host, knob]);
+
+  return null;
+}

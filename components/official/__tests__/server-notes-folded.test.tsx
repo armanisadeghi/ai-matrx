@@ -27,8 +27,8 @@
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { join, relative } from "node:path";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -103,19 +103,59 @@ describe("a host that already states the defect folds the server's second copy",
 describe("the admin mandate host is the one that folds it", () => {
   const REPO_ROOT = join(__dirname, "..", "..", "..");
 
-  it("the workspace folds the run panel's surface notes on the system perspective only", () => {
+  /**
+   * WHERE THE HOST MOVED (816ea88701, "refactor(mandates): separate
+   * configuration concerns into tabs", 2026-09-08 — one day after the fold).
+   * The admin mandate screen became tabs, and the ad-hoc run left the always-on
+   * workspace body: it is the super-admin-only **Test** tab now
+   * (`MandateWorkspace` `adminContent` → `MandateDetailView section="test"` →
+   * `MandateTestBench` → `TryItNowPanel`). So `MandateWorkspace` no longer
+   * carries `foldSurfaceNotes={perspective === "system"}` — the perspective
+   * condition went away with the host, because the tab that runs the job is
+   * admin-only in the first place, and the panel folds the server's second
+   * telling UNCONDITIONALLY. That is the same ruling, stated once and more
+   * strongly, so this guard follows the fold to its live host rather than
+   * pinning a line the refactor deliberately deleted.
+   */
+  it("the admin run panel folds the input-declaration notes it re-states", () => {
     const source = readFileSync(
-      join(REPO_ROOT, "features/mandates/workspace/MandateWorkspace.tsx"),
+      join(REPO_ROOT, "features/mandates/admin/TryItNowPanel.tsx"),
       "utf8",
     );
-    expect(source).toContain('foldSurfaceNotes={perspective === "system"}');
+    const block = source.slice(source.indexOf('testId="test-input-surface-notes"'));
+    expect(block.slice(0, 200)).toContain("folded");
   });
 
-  it("the run panel passes it through to the block", () => {
-    const source = readFileSync(
-      join(REPO_ROOT, "features/mandates/workspace/RunThisJobSection.tsx"),
-      "utf8",
+  /**
+   * The orphaned twin — `features/mandates/workspace/RunThisJobSection.tsx`,
+   * which took the fold decision as a `foldSurfaceNotes` prop — was deleted on
+   * 2026-09-09: nothing had mounted it since `816ea88701`. There is ONE run
+   * form now, guarded above. This assertion guards that there is not a second
+   * one again, because a second run panel is how the fold ruling drifted in
+   * the first place.
+   */
+  it("there is exactly one mandate run form, and it is the one above", () => {
+    const runForms = MANDATE_TREES.flatMap((tree) =>
+      walkFiles(join(REPO_ROOT, tree)).filter((file) =>
+        readFileSync(file, "utf8").includes("runMandateAdHocTest(dispatch"),
+      ),
     );
-    expect(source).toContain("folded={foldSurfaceNotes}");
+    expect(runForms.map((f) => relative(REPO_ROOT, f))).toEqual([
+      "features/mandates/admin/TryItNowPanel.tsx",
+    ]);
   });
 });
+
+const MANDATE_TREES = ["features/mandates", "features/bindings"] as const;
+
+function walkFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      return entry.name === "__tests__" ? [] : walkFiles(full);
+    }
+    return entry.name.endsWith(".tsx") || entry.name.endsWith(".ts")
+      ? [full]
+      : [];
+  });
+}

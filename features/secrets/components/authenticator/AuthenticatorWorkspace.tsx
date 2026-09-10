@@ -37,6 +37,7 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { SourceFavicon } from "@/features/research/components/results/SourceFavicon";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useAuthenticator } from "../../hooks/use-authenticator";
 import { useVault, useVaultDefinitions } from "../../vault-hooks";
 import { WEBSITE_LOGIN_DEFINITION_KEY } from "../../types";
@@ -203,6 +204,7 @@ export function AuthenticatorWorkspace() {
     loading,
     busy: authenticatorBusy,
     error,
+    organizationRequired,
     refresh,
     actions,
   } = useAuthenticator();
@@ -267,7 +269,14 @@ export function AuthenticatorWorkspace() {
             </Button>
           </div>
 
-          {error ? (
+          {organizationRequired ? (
+            <div className="border-b border-border sm:border-x">
+              <OrganizationRequiredNotice
+                compact
+                description="Authenticator codes are loaded in one organization context. Pick one below and the list loads automatically."
+              />
+            </div>
+          ) : error ? (
             <div className="flex items-center justify-between gap-3 border-b border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive sm:border-x">
               <span>{error}</span>
               <Button variant="ghost" size="sm" onClick={refresh}>
@@ -277,7 +286,7 @@ export function AuthenticatorWorkspace() {
             </div>
           ) : null}
 
-          {loading ? (
+          {organizationRequired ? null : loading ? (
             <div className="sm:rounded-b-xl sm:border-x sm:border-b sm:bg-card">
               <AuthenticatorListSkeleton />
             </div>

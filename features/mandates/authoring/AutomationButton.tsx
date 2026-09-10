@@ -207,9 +207,14 @@ export function AutomationButton({
       <div className="flex flex-wrap items-center gap-1.5">
         {button}
         <StatusToken status="caution" label="Unavailable" />
-        <FieldHelp label={`${label}: Unavailable`}>
+        {/* 🚨 WORDS ON THE SCREEN, NOT IN A POPOVER. `46330d9f93` moved this
+            sentence into a `FieldHelp`, which is a hover/click popover — the
+            exact "a tooltip is not words on the screen" state §1 of this file
+            forbids, and a disabled control whose reason nobody can see is the
+            fourth law's silent failure. The reason renders inline again. */}
+        <span className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
           {unavailableAutomationMandateLine(mandateKey, refusedReason)}
-        </FieldHelp>
+        </span>
       </div>
     );
   }
@@ -219,9 +224,9 @@ export function AutomationButton({
       <div className="flex flex-wrap items-center gap-1.5">
         {button}
         <StatusToken status="caution" label="Not configured" />
-        <FieldHelp label={`${label}: Not configured`}>
+        <span className="text-[11px] leading-snug text-muted-foreground">
           {missingAutomationMandateLine(mandateKey)}
-        </FieldHelp>
+        </span>
       </div>
     );
   }
@@ -235,9 +240,11 @@ export function AutomationButton({
         {surfaceBroken ? (
           <>
             <StatusToken status="error" label="Unavailable" />
-            <FieldHelp label={`${label}: Input error`}>
-              {surfaceState.status === "error" ? surfaceState.message : ""}
-            </FieldHelp>
+            <span className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+              {surfaceState.status === "error" ? surfaceState.message : ""}{" "}
+              Until it can be read, this cannot run — nothing else on this page
+              is blocked by it.
+            </span>
           </>
         ) : null}
       </div>

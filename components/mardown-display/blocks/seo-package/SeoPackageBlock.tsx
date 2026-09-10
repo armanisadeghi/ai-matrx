@@ -36,7 +36,7 @@ import {
   Search,
   Tag,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type {
   SeoFaqItemData,
   SeoPackageData,

@@ -14,31 +14,46 @@
 // Modelled on AgentBrowseCards: a few NAMED actions plus the same complete "…"
 // menu the table row has. No icon quizzes.
 
+import { useState } from "react";
 import Link from "next/link";
-import { BookOpen, Hammer, Play, MoreHorizontal, Sparkle } from "lucide-react";
+import { BookOpen, Hammer, Play, MoreHorizontal, BrainCircuit } from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
 import type { Masterwork, RulebookListRow } from "../../types";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 interface Props {
   rows: RulebookListRow[];
   density: "compact" | "comfortable";
   menuFor: (row: RulebookListRow) => () => ItemMenuConfig;
   hrefFor: (row: RulebookListRow) => string | undefined;
+  /** LIVE Masterworks only (THE ARCHIVED-ITEMS LAW — the default hides). */
   masterworksBy: Record<string, Masterwork[]>;
+  /** The archived half, revealed per Rulebook by `ArchivedDisclosure`. */
+  archivedBy: Record<string, Masterwork[]>;
 }
 
-/** The Masterworks built from this Rulebook — each one named and openable. */
-function MasterworkChips({ items }: { items: Masterwork[] }) {
+/**
+ * The Masterworks built from this Rulebook — each one named and openable.
+ *
+ * `emptyLabel` exists because "Not built into a system yet." is a claim about
+ * everything the Expert ever built, and this component is handed the LIVE half
+ * of the archive split. With every Masterwork archived it printed that
+ * sentence one line above the card's own "Archived (2)" door (row F10 live
+ * review, 2026-09-10).
+ */
+function MasterworkChips({
+  items,
+  emptyLabel = "Not built into a system yet.",
+}: {
+  items: Masterwork[];
+  emptyLabel?: string;
+}) {
   if (items.length === 0) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        Not built into a system yet.
-      </p>
-    );
+    return <p className="text-xs text-muted-foreground">{emptyLabel}</p>;
   }
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -77,7 +92,11 @@ export function MasterworkBrowseCards({
   menuFor,
   hrefFor,
   masterworksBy,
+  archivedBy,
 }: Props) {
+  // One open disclosure at a time — the card grid stays readable, and the
+  // control is on the card whose archived systems it reveals.
+  const [openArchived, setOpenArchived] = useState<string | null>(null);
   return (
     <div
       className={cn(
@@ -90,6 +109,7 @@ export function MasterworkBrowseCards({
       {rows.map((row) => {
         const href = hrefFor(row);
         const built = masterworksBy[row.id] ?? [];
+        const archived = archivedBy[row.id] ?? [];
         const released = built.filter((m) => m.released_at).length;
         return (
           <div
@@ -146,10 +166,28 @@ export function MasterworkBrowseCards({
 
             <div className="mt-auto space-y-1.5 border-t border-border pt-2.5">
               <span className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                <Sparkle className="h-3 w-3" />
+                <BrainCircuit className="h-3 w-3" />
                 Built into
               </span>
-              <MasterworkChips items={built} />
+              <MasterworkChips
+                items={built}
+                emptyLabel={
+                  archived.length > 0
+                    ? `All ${archived.length} ${archived.length === 1 ? "Masterwork is" : "Masterworks are"} archived.`
+                    : undefined
+                }
+              />
+              {/* THE ARCHIVED-ITEMS LAW: one click, closed by default, honest
+                  count — and nothing at all when this Rulebook has none. */}
+              <ArchivedDisclosure
+                count={archived.length}
+                open={openArchived === row.id}
+                onOpenChange={(open) =>
+                  setOpenArchived(open ? row.id : null)
+                }
+              >
+                <MasterworkChips items={archived} />
+              </ArchivedDisclosure>
             </div>
           </div>
         );

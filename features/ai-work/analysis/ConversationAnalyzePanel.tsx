@@ -21,7 +21,7 @@
  */
 
 import { useState } from "react";
-import { CircleAlert, Loader2, Play, Sparkles } from "lucide-react";
+import { CircleAlert, Loader2, Play, BrainCircuit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -98,7 +98,7 @@ export function ConversationAnalyzePanel({
   return (
     <section className="rounded-xl border border-border bg-card p-4">
       <div className="flex items-start gap-3">
-        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <BrainCircuit className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-foreground">
             Analyze this conversation

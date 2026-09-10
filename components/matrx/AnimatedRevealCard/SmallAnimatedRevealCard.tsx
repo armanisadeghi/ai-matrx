@@ -23,6 +23,84 @@ interface SmallAnimatedRevealCardProps {
   component?: React.ComponentType;
 }
 
+/**
+ * Hoisted to module scope: defined inside the card these were a new component
+ * type each render, remounting the reveal canvas on every hover state change.
+ */
+const EdgeIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
+  className,
+  ...rest
+}) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="1.5"
+      stroke="currentColor"
+      className={className}
+      {...rest}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+    </svg>
+  );
+};
+
+interface CardContentProps {
+  icon: React.ComponentProps<typeof DynamicIcon>["name"];
+  title: string;
+  hovered: boolean;
+  animationSpeed: number | undefined;
+  containerClassName: string | undefined;
+  colors: number[][] | undefined;
+}
+
+const CardContent = ({
+  icon,
+  title,
+  hovered,
+  animationSpeed,
+  containerClassName,
+  colors,
+}: CardContentProps) => (
+  <>
+    <EdgeIcon className="absolute h-4 w-4 -top-2 -left-2 dark:text-white text-black" />
+    <EdgeIcon className="absolute h-4 w-4 -bottom-2 -left-2 dark:text-white text-black" />
+    <EdgeIcon className="absolute h-4 w-4 -top-2 -right-2 dark:text-white text-black" />
+    <EdgeIcon className="absolute h-4 w-4 -bottom-2 -right-2 dark:text-white text-black" />
+
+    <AnimatePresence>
+      {hovered && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="h-full w-full absolute inset-0"
+        >
+          <CanvasRevealEffect
+            animationSpeed={animationSpeed}
+            containerClassName={containerClassName}
+            colors={colors}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
+
+    <div className="relative z-20 flex flex-col items-center justify-center h-full">
+      <div className="text-center group-hover:-translate-y-2 group-hover:opacity-0 transition duration-200">
+        <DynamicIcon
+            name={icon}
+            fallbackIcon="HelpCircle"
+            className="h-8 w-8 text-black dark:text-white group-hover:text-white"
+          />
+      </div>
+      <h3 className="dark:text-white text-sm opacity-0 group-hover:opacity-100 relative z-10 text-black mt-2 font-bold group-hover:text-white group-hover:-translate-y-1 transition duration-200 text-center">
+        {title}
+      </h3>
+    </div>
+  </>
+);
+
 const SmallAnimatedRevealCard: React.FC<SmallAnimatedRevealCardProps> = ({
   title,
   icon,
@@ -46,70 +124,11 @@ const SmallAnimatedRevealCard: React.FC<SmallAnimatedRevealCardProps> = ({
     ? colorsOverride.map((color) => color.match(/\d+/g)?.map(Number) || [])
     : presetStyle.colors;
 
-  // Update the IconComponent type
-  const IconComponent = (props: Omit<React.ComponentProps<typeof DynamicIcon>, "name" | "fallbackIcon">) => (
-    <DynamicIcon name={icon} fallbackIcon="HelpCircle" {...props} />
-  );
-
   const handleClick = () => {
     if (Component) {
       setIsComponentVisible(!isComponentVisible);
     }
   };
-
-  const EdgeIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
-    className,
-    ...rest
-  }) => {
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth="1.5"
-        stroke="currentColor"
-        className={className}
-        {...rest}
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
-      </svg>
-    );
-  };
-
-  const CardContent = () => (
-    <>
-      <EdgeIcon className="absolute h-4 w-4 -top-2 -left-2 dark:text-white text-black" />
-      <EdgeIcon className="absolute h-4 w-4 -bottom-2 -left-2 dark:text-white text-black" />
-      <EdgeIcon className="absolute h-4 w-4 -top-2 -right-2 dark:text-white text-black" />
-      <EdgeIcon className="absolute h-4 w-4 -bottom-2 -right-2 dark:text-white text-black" />
-
-      <AnimatePresence>
-        {hovered && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="h-full w-full absolute inset-0"
-          >
-            <CanvasRevealEffect
-              animationSpeed={animationSpeed}
-              containerClassName={containerClassName}
-              colors={colors}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="relative z-20 flex flex-col items-center justify-center h-full">
-        <div className="text-center group-hover:-translate-y-2 group-hover:opacity-0 transition duration-200">
-          <IconComponent className="h-8 w-8 text-black dark:text-white group-hover:text-white" />
-        </div>
-        <h3 className="dark:text-white text-sm opacity-0 group-hover:opacity-100 relative z-10 text-black mt-2 font-bold group-hover:text-white group-hover:-translate-y-1 transition duration-200 text-center">
-          {title}
-        </h3>
-      </div>
-    </>
-  );
 
   const cardClassName = cn(
     "border border-black/[0.2] dark:border-white/[0.2] w-full mx-auto p-2 relative h-[200px] w-[200px] cursor-pointer group",
@@ -124,7 +143,14 @@ const SmallAnimatedRevealCard: React.FC<SmallAnimatedRevealCardProps> = ({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        <CardContent />
+        <CardContent
+          icon={icon}
+          title={title}
+          hovered={hovered}
+          animationSpeed={animationSpeed}
+          containerClassName={containerClassName}
+          colors={colors}
+        />
       </Link>
     );
   }
@@ -137,7 +163,14 @@ const SmallAnimatedRevealCard: React.FC<SmallAnimatedRevealCardProps> = ({
         onMouseLeave={() => setHovered(false)}
         onClick={handleClick}
       >
-        <CardContent />
+        <CardContent
+          icon={icon}
+          title={title}
+          hovered={hovered}
+          animationSpeed={animationSpeed}
+          containerClassName={containerClassName}
+          colors={colors}
+        />
       </div>
       {Component && isComponentVisible && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

@@ -1,3 +1,4 @@
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import {
   buildDirectiveEnvelope,
   referenceFieldsForSpecs,
@@ -19,7 +20,7 @@ describe("directive reference examples", () => {
     });
     // `__kind` FIRST is the contract, not an accident of the literal: the
     // streaming detector types a JSON document by its first key alone.
-    expect(Object.keys(shell)).toEqual(["__kind", "items"]);
+    expect(Object.keys(shell)).toEqual([KIND_KEY, "items"]);
   });
 
   it("updates placeholders when the selected noun changes", () => {

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
+import type { MessagingArchiveFilter } from "@ai-matrx/messaging";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConversationListHeader } from "./ConversationListHeader";
 import { ConversationSearch } from "./ConversationSearch";
@@ -11,12 +12,24 @@ import {
 } from "./ConversationFilterChips";
 import { ConversationRow } from "./ConversationRow";
 import type { WAConversation } from "../types";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 interface ConversationListPaneProps {
+  /**
+   * Exactly the rows the current `archiveFilter` asked the SERVER for. This
+   * pane never partitions them on `isArchived`: THE ARCHIVED-ITEMS LAW's axis
+   * is a request to the reader (`p_archived`), so a client-side split would
+   * render rows the server would not have sent and print counts describing a
+   * different set from the one on screen.
+   */
   conversations: WAConversation[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onNewChat?: () => void;
+  archiveFilter: MessagingArchiveFilter;
+  onArchiveFilterChange: (next: MessagingArchiveFilter) => void;
+  /** The server's archived total, or `null` before the count lands. */
+  archivedCount: { count: number; exact: boolean } | null;
 }
 
 export function ConversationListPane({
@@ -24,9 +37,13 @@ export function ConversationListPane({
   selectedId,
   onSelect,
   onNewChat,
+  archiveFilter,
+  onArchiveFilterChange,
+  archivedCount,
 }: ConversationListPaneProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
+  const showingArchive = archiveFilter !== "active";
 
   const filtered = useMemo(() => {
     let list = conversations;
@@ -52,6 +69,28 @@ export function ConversationListPane({
       <ConversationFilterChips active={filter} onChange={setFilter} />
       <ScrollArea className="flex-1">
         <div className="flex flex-col">
+          {/*
+            One click each way, and it is a SERVER round-trip: the list below
+            becomes the archive. Closed, it appears only when there is
+            something to reveal; open, it always renders, so the way back is
+            never missing.
+          */}
+          <ArchivedDisclosure
+            count={archivedCount?.count ?? 0}
+            countLabel={
+              archivedCount === null
+                ? null
+                : `${archivedCount.count}${archivedCount.exact ? "" : "+"}`
+            }
+            open={showingArchive}
+            onOpenChange={(open) =>
+              onArchiveFilterChange(open ? "archived" : "active")
+            }
+            keepWhileOpen
+            label="Archived chats"
+            className="px-2"
+          />
+
           {filtered.map((c) => (
             <ConversationRow
               key={c.id}
@@ -60,14 +99,25 @@ export function ConversationListPane({
               onSelect={() => onSelect(c.id)}
             />
           ))}
+
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
               <span className="text-[13px] text-muted-foreground">
-                {conversations.length === 0
-                  ? "No conversations yet."
-                  : "No chats match your filter."}
+                {/* THE ARCHIVED-ITEMS LAW, honesty half (row F10 class fix,
+                    2026-09-10): `conversations` is the ACTIVE half — a server
+                    round-trip, not a client sieve — so "No conversations yet."
+                    is a claim it cannot support. With every chat archived it
+                    printed that one line under this pane's own "Archived chats
+                    (N)" door. */}
+                {conversations.length > 0
+                  ? "No chats match your filter."
+                  : showingArchive
+                    ? "No archived chats."
+                    : (archivedCount?.count ?? 0) > 0
+                      ? "Every chat is archived — open “Archived chats” above to read them."
+                      : "No conversations yet."}
               </span>
-              {conversations.length === 0 && onNewChat ? (
+              {conversations.length === 0 && !showingArchive && onNewChat ? (
                 <button
                   type="button"
                   onClick={onNewChat}

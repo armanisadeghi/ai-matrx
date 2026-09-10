@@ -52,8 +52,8 @@ export function WidgetPicker({
             />
             <span
               className={cn(
-                "text-[11px] leading-tight font-medium px-1 text-center line-clamp-2 break-words w-full",
-                active ? "text-foreground" : "text-muted-foreground",
+                "text-[11px] leading-tight font-medium px-1 text-center break-words w-full min-h-7",
+                "text-foreground",
               )}
             >
               {meta.label}

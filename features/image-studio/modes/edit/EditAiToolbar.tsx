@@ -29,11 +29,10 @@ import {
   PaintBucket,
   Settings2,
   Sliders,
-  Sparkles,
+  BrainCircuit,
   Sun,
-  Wand2,
-  Waves,
   Zap,
+  Waves,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -378,7 +377,7 @@ export function EditAiToolbar({
   return (
     <div className="flex items-center gap-0.5 overflow-x-auto border-b border-border bg-muted/30 px-2 py-1 shrink-0">
       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 mr-2 ml-1 flex items-center gap-1 shrink-0">
-        <Sparkles className="h-3 w-3" />
+        <BrainCircuit className="h-3 w-3" />
         Ops
       </span>
 
@@ -475,7 +474,7 @@ export function EditAiToolbar({
 
       <ToolbarOpButton
         label="Auto color"
-        icon={Wand2}
+        icon={Zap}
         running={busy === "auto"}
         disabled={anyBusy || idMissing}
         onClick={handleAutoColor}
@@ -609,7 +608,7 @@ export function EditAiToolbar({
               {busy === "prompt" ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <Zap className="h-3.5 w-3.5" />
+                <BrainCircuit className="h-3.5 w-3.5" />
               )}
               AI edit
               {mask.hasPixels ? (

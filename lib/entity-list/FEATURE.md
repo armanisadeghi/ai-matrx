@@ -45,6 +45,82 @@ state, and a pasted link reproduces the list exactly.
 - Typing in search commits with `replace`, so one search is one history entry,
   not forty.
 
+## The archive axis is a LAW, and its default is a knob
+
+THE ARCHIVED-ITEMS LAW (`../../../common-docs/policies/archived-items.md`,
+Arman 2026-09-09): every list over an entity that can be archived carries an
+archive control, the default HIDES archived rows, and revealing them is one or
+two clicks. This shell's Archived section renders `<ArchiveFilter>` from
+`@ai-matrx/design-system` (Active only / Archived only / Active + archived, in
+the Filters & Sort panel) — this shell owns the URL and preference plumbing and
+`query.archived` is still a real server-side RPC parameter, but the CONTROL and
+its words are the package's, so this panel, workflow-studio, the dashboard and
+the desktop cannot drift apart. `ArchivedFilter` here is an alias of the
+package's `ArchiveFilterValue`. It is one of exactly TWO allowed implementations
+platform-wide; the other is `ArchivedDisclosure` from the same package — an
+"Archived (N)" disclosure for card lists that are not entity-list shaped (it
+lived at `components/official/ArchivedDisclosure` until 2026-09-10, when the
+package took it and the local file was deleted). There is never a third, and
+never a local copy: `pnpm check:package-twins` fails on one.
+
+The INITIAL value of the axis is a user knob, not code taste (law §6):
+`userPreferences.lists.archivedDefault` (`"active"` platform default, Settings →
+General → Lists) seeds `defaultQuery.archived`. Two consequences worth knowing:
+
+- **A non-URL surface holds its query in `useState(defaults)`, seeded once, and
+  preferences are a warm cache that rehydrates AFTER that.** So an UNTOUCHED
+  archive axis follows the knob whenever it lands; the first time the user picks
+  a value on the surface, their choice owns the axis for the session (and
+  "Clear filters" hands it back to the knob). Wired without that, the setting
+  said one thing and every non-URL list did another — found in browser
+  verification, not by a test.
+- **A shared link that carries no `archived` param reproduces the RECIPIENT's
+  default**, because the URL omits a value equal to the default — the same way
+  `defaultFilters` already behaves. A list the sender deliberately switched
+  carries the param and travels exactly.
+
+Guard: `pnpm check:archived-items-law` (+ `:self-test`), in CI.
+
+### 🚨 A LIST MAY NOT SAY "NONE" WHILE ITS OWN DEFAULT IS HIDING ROWS
+
+The archive filter's default HIDES archived rows, so **"the live half is empty"
+and "there is nothing here" are different facts** — and until 2026-09-10 this
+shell printed the second knowing only the first, straight out of the config's
+STATIC `emptyState`. Measured on `/maps` with all 46 of a user's maps archived:
+*"No maps yet — A map is a picture of how something works … Make one"*, beside a
+**New map** button, two clicks from that page's own Archived filter holding all
+46. A screen telling an Expert to rebuild work they already had.
+
+It was a CLASS, not an instance: `EntityListConfig` gave a surface no way to
+name an archived count at all, so every archive-aware config inherited it
+verbatim (`/maps`, `/agents/all`, `/workflows/all`, `/work/conversations` — the
+four configs that do not set `supportsArchived: false`). So the fix is here, and
+no listConfig changed.
+
+- **`EntityListController.archivedProbe`** (`./types.ts` § `ArchivedProbe`) —
+  `off` | `loading` | `known` | `failed`. It is its OWN read, because the
+  facets and the scope counts are both fetched with the query's CURRENT
+  `archived` value and therefore describe the live half too.
+- It is `service.fetchPage` with `archived: "archived"` and `pageSize: 1`,
+  fired **only when the live half came back empty** — so a list that has rows
+  pays nothing. `total` from the surface's own page reader is exactly what the
+  door will reveal, under the same scope/search/filters, with no second query
+  authority to drift from it. Every service already implements it.
+- The shell renders **"All N ⟨plural⟩ are archived"** plus a one-click door that
+  sets `archived: "archived"`; a NARROWED page that hid archived matches says so
+  too. The static `emptyState` is reached only when the probe answers `0` (or
+  the surface has no archive axis) — i.e. live + archived really is zero. A
+  FAILED probe says it cannot tell; it never falls back to "none yet".
+- **`countActiveFilters(query, defaultArchived)`** compares the archive axis
+  against the SURFACE's default, not the literal `"active"`. Law §6 made that
+  value a user knob, so a user whose knob is "Active + archived" met an
+  untouched page whose Filters badge read "1" and whose empty state blamed
+  filters nobody had applied.
+
+Guard: `__tests__/all-archived-empty-state.test.tsx` drives the real
+`EntityListPage` through the real `useEntityList` — **8 of its 12 RED against
+the pre-fix shell at `41fb3da018`**, 12 GREEN after.
+
 ## Honest defaults (`config.defaultFilters`)
 
 A corpus is not always the list. `/work/conversations` holds ~4,613
@@ -226,6 +302,20 @@ demoting the detail page — cheap, high value, not a redesign. This shell is
 how that savior page gets built.
 
 ## Change log
+
+- 2026-09-10 — **A LIST MAY NOT SAY "NONE" WHILE ITS OWN DEFAULT IS HIDING
+  ROWS** (archived-items-law row F10 repair, from an independent live review).
+  `EntityListController.archivedProbe` + the shell's all-archived empty state
+  and its one-click door; `countActiveFilters` now compares against the
+  surface's own archive default rather than the literal `"active"`. Full
+  reasoning under § The archive axis is a LAW above. **RED 8 of 12 against the
+  pre-fix shell** (`41fb3da018`), GREEN 12. Verified live on `/maps` with all
+  46 of `admin@admin.com`'s maps archived — *"All 46 maps are archived"* + a
+  working door — and on `/workflows/all` (`workflow.definition`), where a
+  search whose only match was archived said *"No live workflows match … but 1
+  archived workflow did"* instead of the old *"Nothing matched your current
+  search and filters"*. Every touched row restored byte-exact (`is_archived`,
+  `updated_at`, `updated_by`, `version`) and confirmed by SELECT.
 
 - 2026-09-08 — **A SERVICE'S OWN INPUTS ARE PART OF THE FETCH KEY, AND A
   DECLARED SCOPE SECTION IS NEVER ABSENT** (one-resolution FIX-R6/F1, from a

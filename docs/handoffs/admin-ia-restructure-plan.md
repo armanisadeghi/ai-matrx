@@ -46,7 +46,7 @@ So the fix has two halves: **regroup** (below) **and restore the section tier in
 8. **A query-string row.** `/administration/ui/surfaces?drift=1` is a second menu row onto the same page.
 9. **24 admin surfaces are unreachable from the admin panel.** Every Tier 1 feature ships an admin map at `/[feature]/admin` (`features/admin/FEATURE.md` documents them), and **not one** is linked from the administration registry: `/agents/admin`, `/camera/admin`, `/cms/admin`, `/commerce/intake/admin`, `/commerce/review/admin`, `/crm/admin`, `/dictionary/admin`, `/education/admin`, `/education/flashcards/admin`, `/education/learn/admin`, `/files/admin`, `/knowledge/extractions/admin`, `/marketing/admin`, `/masterwork/admin`, `/messages/admin`, `/rag/admin`, `/reports/admin`, `/shapes/admin`, `/tool-call-visualization/admin`, `/tools/pdf-extractor/admin`, `/tools/product-capture/admin`, `/transcripts/admin`, `/war-room/admin`, `/work/admin`. This is the "missing routes" gap.
 
-10. **The dashboard and Launchpad already render sections** (`AdminDomainDirectory.tsx:50-57`, `AdminLaunchpad.tsx`). Only the sidebar drops them. The section tier is fully authored — names and icons already exist — it is simply thrown away in one component.
+10. **The dashboard and Launchpad already render sections** (`AdminDomainSection.tsx`, `AdminLaunchpad.tsx` — as of 2026-09-08; the file was `AdminDomainDirectory.tsx` when this was written). Only the sidebar drops them. The section tier is fully authored — names and icons already exist — it is simply thrown away in one component.
 
 ## 4. Migration-cost reality (why menu ≠ route here)
 

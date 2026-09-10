@@ -3,13 +3,21 @@
  *
  * `features/mandates/__tests__/run-honesty.test.tsx` pins the pieces (the
  * counted notes block, the whole-refusal read). This file pins the SURFACE the
- * V3 round-4 honesty pass actually walked: the mandate workspace's "Run this
- * job" panel.
+ * V3 round-4 honesty pass walked:
  *
  *   1. A 200 whose `notes` carry the `mandate_consumption_map_no_op` scream
  *      must SHOW that sentence. It used to arrive and vanish.
  *   2. A 409 must leave the refusal IN THE PANEL. It used to clear the panel
  *      and put the server's sentence in a toast the person had to race.
+ *
+ * 🚨 IT MOVED HOSTS, AND SO DID THIS GUARD (2026-09-09). The surface was the
+ * workspace's `RunThisJobSection`; `816ea88701` ("refactor(mandates): separate
+ * configuration concerns into tabs") stopped mounting it, and the run
+ * affordance became the super-admin **Test** tab — `MandateWorkspace`
+ * `adminContent` → `MandateDetailView section="test"` → `MandateTestBench` →
+ * `TryItNowPanel`. The orphan was deleted rather than left as dead code, so
+ * this file follows the two defects to the ONE run form that exists. A guard
+ * pointed at a component nothing mounts is not a guard.
  *
  * Only the seams are mocked — the network call, the served input surface, and
  * the heavy render children the answer would go through. The panel's own logic
@@ -23,24 +31,31 @@ import { createRoot, type Root } from "react-dom/client";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 jest.mock("@/lib/toast", () => ({
-  toast: { error: jest.fn(), success: jest.fn(), warning: jest.fn() },
+  toast: {
+    error: jest.fn(),
+    success: jest.fn(),
+    warning: jest.fn(),
+    info: jest.fn(),
+  },
 }));
 
-// One value answers every selector this panel reads: super-admin (truthy), the
-// viewer's user id and their organization id.
+// One value answers every selector this panel reads: the viewer's user id and
+// their organization id.
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppDispatch: () => jest.fn(),
+  useAppDispatch: () => {
+    const dispatch = () => ({ unwrap: () => Promise.resolve(null) });
+    return dispatch;
+  },
   useAppSelector: () => "viewer-1",
-  // `ProTextarea`'s agent action reads the store object itself.
   useAppStore: () => ({
     getState: () => ({}),
-    dispatch: jest.fn(),
+    dispatch: () => undefined,
     subscribe: () => () => undefined,
   }),
 }));
 
-jest.mock("../../input-surface", () => {
-  const actual = jest.requireActual("../../input-surface");
+jest.mock("@/features/mandates/input-surface", () => {
+  const actual = jest.requireActual("@/features/mandates/input-surface");
   return {
     ...actual,
     useMandateInputSurface: () => ({
@@ -58,36 +73,63 @@ jest.mock("../../input-surface", () => {
   };
 });
 
-jest.mock("../../test-run", () => {
-  const actual = jest.requireActual("../../test-run");
+jest.mock("@/features/mandates/test-run", () => {
+  const actual = jest.requireActual("@/features/mandates/test-run");
   return { ...actual, runMandateAdHocTest: jest.fn() };
 });
 
+// Seams this panel calls but this file does not test.
+jest.mock("../service", () => ({
+  fetchVersionVariableDefinitions: () => Promise.resolve([]),
+  saveAdHocResultAsExemplar: () => Promise.resolve(undefined),
+}));
+jest.mock("@/features/mandates/service", () => ({
+  resolveMandate: () => Promise.resolve(null),
+}));
+jest.mock("@/features/agents/hooks/useAgentLauncher", () => ({
+  useAgentLauncher: () => ({ launchMandate: () => Promise.resolve(undefined) }),
+}));
+jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
+  fetchAgentExecutionMinimal: () => ({ type: "noop" }),
+}));
+jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+  selectAgentExecutionPayload: () => null,
+}));
+
 // Heavy render children — the answer's pipeline is not what this file tests,
 // and it is pinned by the content-ir suites.
-jest.mock("@/components/MarkdownStream", () => ({
-  __esModule: true,
-  default: ({ content }: { content: string }) => <div>{content}</div>,
+jest.mock("../bench-output-preview", () => ({
+  OutputPreview: ({ output }: { output: string }) => <div>{output}</div>,
 }));
-jest.mock(
-  "@/components/official/structured-value/StructuredValueView",
-  () => ({
-    StructuredValueView: () => <div>structured</div>,
-  }),
-);
 jest.mock(
   "@/features/agents/components/inputs/input-components/VariableInputComponent",
   () => ({ VariableInputComponent: () => <div /> }),
 );
-// The free-text box drags the whole agent-action / context-menu tree in; it is
-// an input this panel forwards, not behaviour this file tests.
+jest.mock("@/features/agents/components/samples/AgentSamplesManager", () => ({
+  AgentSamplesManager: () => <div />,
+}));
+jest.mock("@/components/official/entity-ref/EntityRef", () => ({
+  EntityRef: ({ id }: { id?: string }) => <span>{id ?? ""}</span>,
+}));
+// The free-text boxes drag the whole agent-action / context-menu tree in; they
+// are inputs this panel forwards, not behaviour this file tests.
 jest.mock("@/components/official/ProTextarea", () => ({
-  ProTextarea: (props: { value: string }) => <textarea readOnly value={props.value} />,
+  ProTextarea: (props: { value: string }) => (
+    <textarea readOnly value={props.value} />
+  ),
+}));
+jest.mock("@/components/official/ProJsonTextarea", () => ({
+  ProJsonTextarea: (props: { value: string }) => (
+    <textarea readOnly value={props.value} />
+  ),
 }));
 
-import { RunThisJobSection } from "../RunThisJobSection";
-import { MandateRunRefusal, runMandateAdHocTest } from "../../test-run";
-import type { MandateWorkspaceData } from "../useMandateWorkspaceData";
+import { TryItNowPanel } from "../TryItNowPanel";
+import {
+  MandateRunRefusal,
+  runMandateAdHocTest,
+} from "@/features/mandates/test-run";
+import type { MandateDefinitionRow } from "../service";
 
 const mockedRun = runMandateAdHocTest as unknown as jest.Mock;
 
@@ -99,10 +141,29 @@ const UNFULFILLED =
   "variable binding blocks this run: no Holder is bound for this job at any " +
   "rung — bind an agent or a workflow to it and run again.";
 
-/** Only what this panel reads off the workspace data. */
-const DATA = {
-  mandate: { mandate_key: "mandate.goal_writer" },
-} as unknown as MandateWorkspaceData;
+/** Only what this panel reads off the mandate row. */
+const MANDATE = {
+  id: "11111111-1111-4111-8111-111111111111",
+  mandate_key: "mandate.goal_writer",
+} as unknown as MandateDefinitionRow;
+
+function completedRun(overrides: Record<string, unknown>) {
+  return {
+    id: "r1",
+    created_at: "2026-08-31T00:00:00Z",
+    mandate_key: "mandate.goal_writer",
+    exemplar_id: null,
+    candidate_id: "c1",
+    candidate_label: "Run once",
+    provenance: "user",
+    is_version: false,
+    output: "A goal.",
+    duration_ms: 1200,
+    structural: { checked: false, ok: true, errors: [] },
+    notes: [],
+    ...overrides,
+  };
+}
 
 let container: HTMLDivElement;
 let root: Root;
@@ -119,10 +180,10 @@ afterEach(() => {
   container.remove();
 });
 
-/** Press "Run it" and let the mocked call settle. */
+/** Press the run button and let the mocked call settle. */
 async function pressRun() {
   const button = Array.from(container.querySelectorAll("button")).find((b) =>
-    (b.textContent ?? "").includes("Run it"),
+    (b.textContent ?? "").includes("Run test"),
   );
   if (!button) throw new Error("The run button is not on the panel.");
   await act(async () => {
@@ -132,30 +193,24 @@ async function pressRun() {
 
 function render() {
   act(() => {
-    root.render(<RunThisJobSection data={DATA} />);
+    root.render(
+      <TryItNowPanel
+        mandate={MANDATE}
+        defaultAgentId={null}
+        passesUserInput
+        onSavedTestCase={() => undefined}
+      />,
+    );
   });
 }
 
 it("SHOWS the no-op scream a 200 carried, counted, on the result panel", async () => {
-  mockedRun.mockResolvedValue({
-    id: "r1",
-    created_at: "2026-08-31T00:00:00Z",
-    mandate_key: "mandate.goal_writer",
-    exemplar_id: null,
-    candidate_id: "c1",
-    candidate_label: "Run this job",
-    provenance: "user",
-    is_version: false,
-    output: "A goal.",
-    duration_ms: 1200,
-    structural: { checked: false, ok: true, errors: [] },
-    notes: [NO_OP_SCREAM],
-  });
+  mockedRun.mockResolvedValue(completedRun({ notes: [NO_OP_SCREAM] }));
   render();
   await pressRun();
   const text = container.textContent ?? "";
   expect(text).toContain(NO_OP_SCREAM);
-  expect(text).toContain("What this run did — 1 note");
+  expect(text).toContain("Run notes — 1 note");
 });
 
 it("KEEPS a 409 refusal in the panel instead of clearing it to nothing", async () => {
@@ -188,20 +243,9 @@ it("replaces the refusal when the next run succeeds — never stacks stale verdi
   await pressRun();
   expect(container.textContent).toContain(UNFULFILLED);
 
-  mockedRun.mockResolvedValueOnce({
-    id: "r2",
-    created_at: "2026-08-31T00:00:00Z",
-    mandate_key: "mandate.goal_writer",
-    exemplar_id: null,
-    candidate_id: "c2",
-    candidate_label: "Run this job",
-    provenance: "user",
-    is_version: false,
-    output: "A goal.",
-    duration_ms: 900,
-    structural: { checked: false, ok: true, errors: [] },
-    notes: [],
-  });
+  mockedRun.mockResolvedValueOnce(
+    completedRun({ id: "r2", candidate_id: "c2", duration_ms: 900 }),
+  );
   await pressRun();
   const text = container.textContent ?? "";
   expect(text).not.toContain(UNFULFILLED);

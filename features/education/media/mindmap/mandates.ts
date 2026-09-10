@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 // features/education/media/mindmap/mandates.ts
 //
 // Mandate key for the Mind Maps tool. This is a MANDATE KEY, not an agent id:
@@ -8,5 +10,5 @@
 
 export const EDU_MEDIA_MANDATES = {
   /** source_content, title, focus → diagram_spec { __kind, title, type, nodes[], edges[] } */
-  mindMap: "education.mindmap_generate",
+  mindMap: MANDATE_KEYS.education__mindmap_generate,
 } as const;

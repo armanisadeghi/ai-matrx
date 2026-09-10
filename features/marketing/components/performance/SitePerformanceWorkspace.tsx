@@ -21,7 +21,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   pageEntityRef,
-  pageMenuSection,
+  buildPageMenuSection,
 } from "@/features/marketing/search-console/components/insights/insight-row-menu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { Badge } from "@/components/ui/badge";
@@ -262,7 +262,7 @@ function ChangeList({
         extraSections={
           contextRow
             ? [
-                pageMenuSection({
+                buildPageMenuSection({
                   siteId,
                   siteName,
                   url: contextRow.url,
@@ -618,7 +618,7 @@ export function SitePerformanceWorkspace() {
                 extraSections={
                   suggestedContextRow
                     ? [
-                        pageMenuSection({
+                        buildPageMenuSection({
                           siteId: site.id,
                           siteName: site.name,
                           url: suggestedContextRow.url,
@@ -827,7 +827,7 @@ export function SitePerformanceWorkspace() {
                   extraSections={
                     worstContextRow
                       ? [
-                          pageMenuSection({
+                          buildPageMenuSection({
                             siteId: site.id,
                             siteName: site.name,
                             url: worstContextRow.url,

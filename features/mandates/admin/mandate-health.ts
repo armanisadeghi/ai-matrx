@@ -396,19 +396,19 @@ export function buildRow(
 }
 
 export const HEALTH_CLASS: Record<MandateHealth, string> = {
-  ok: "text-emerald-600 border-emerald-500/40 bg-emerald-500/10",
+  ok: "text-success border-success/40 bg-success/10",
   // Neutral on purpose — this is the true resting state of a new mandate,
   // not a problem. Nothing red, nothing amber.
   "no holder yet": "text-muted-foreground border-border bg-muted/40",
-  "code ↔ agent drift": "text-rose-600 border-rose-500/40 bg-rose-500/10",
+  "code ↔ agent drift": "text-foreground border-destructive/40 bg-destructive/10",
   "code truth import failed":
-    "text-amber-600 border-amber-500/40 bg-amber-500/10",
-  "version drift": "text-amber-600 border-amber-500/40 bg-amber-500/10",
-  "code ↔ contract drift": "text-amber-600 border-amber-500/40 bg-amber-500/10",
-  "output contract unmet": "text-rose-600 border-rose-500/40 bg-rose-500/10",
-  "agent archived": "text-rose-600 border-rose-500/40 bg-rose-500/10",
-  "not a system agent": "text-rose-600 border-rose-500/40 bg-rose-500/10",
-  "unresolved pin": "text-rose-600 border-rose-500/40 bg-rose-500/10",
+    "text-foreground border-warning/40 bg-warning/10",
+  "version drift": "text-foreground border-warning/40 bg-warning/10",
+  "code ↔ contract drift": "text-foreground border-warning/40 bg-warning/10",
+  "output contract unmet": "text-foreground border-destructive/40 bg-destructive/10",
+  "agent archived": "text-foreground border-destructive/40 bg-destructive/10",
+  "not a system agent": "text-foreground border-destructive/40 bg-destructive/10",
+  "unresolved pin": "text-foreground border-destructive/40 bg-destructive/10",
 };
 
 /** What the admin should do about each unhealthy state — shown, not implied. */

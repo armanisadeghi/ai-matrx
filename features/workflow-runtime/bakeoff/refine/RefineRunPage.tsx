@@ -50,7 +50,7 @@ import {
   useServedRunStarter,
 } from "../../served-form/useServedRunForm";
 import { fetchWorkflowDefinition } from "../../surface/service";
-import { TERMINAL_RUN_STATUSES } from "../../types";
+import { runIsOver } from "../../types";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 
 import { buildStepViews, spotlightStep, terminalStepIds } from "./plan-view";
@@ -184,12 +184,10 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
   const stepViews = buildStepViews(steps, run);
   const status = run?.status ?? null;
   // "Over" for COPY purposes: nothing more is coming without a human act.
-  // Wider than the generated TERMINAL set on purpose — an errored run is not
-  // engine-terminal (it can be resumed), but a promise card must stop saying
+  // `runIsOver` is wider than the generated TERMINAL set on purpose — an
+  // errored run is not engine-terminal, but a promise card must stop saying
   // "coming up" the moment the run stops producing.
-  const runOver =
-    status !== null &&
-    (TERMINAL_RUN_STATUSES.has(status) || status === "errored");
+  const runOver = runIsOver(status);
 
   // Keep the step under the spotlight streaming: promote its lane (single-
   // invocation steps only — fan-out deltas stay in the tracked tier).

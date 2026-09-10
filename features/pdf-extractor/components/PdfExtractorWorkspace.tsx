@@ -63,6 +63,7 @@ import { PDF_EXTRACTOR_SURFACE_NAME as PDF_EXTRACTOR_SURFACE } from "@/features/
 // `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
 // census H1 2026-09-07). This surface previously carried a local copy.
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 // ─── Sub-tab type for per-extraction view ────────────────────────────────────
 
@@ -303,6 +304,7 @@ export function PdfExtractorFloatingWorkspace({
       sidebar={
         <PdfExtractorSidebar
           history={extractor.history}
+          archivedHistory={extractor.archivedHistory}
           historyLoading={extractor.historyLoading}
           openTabIds={extractor.openTabIds}
           activeTabId={extractor.activeTabId}
@@ -1141,6 +1143,7 @@ function AiCleanView({
 
 export function PdfExtractorSidebar({
   history,
+  archivedHistory,
   historyLoading,
   openTabIds,
   activeTabId,
@@ -1148,44 +1151,16 @@ export function PdfExtractorSidebar({
   onRefresh,
 }: {
   history: PdfDocument[];
+  archivedHistory: PdfDocument[];
   historyLoading: boolean;
   openTabIds: Set<string>;
   activeTabId: ActiveTabId;
   onSelect: (doc: PdfDocument) => void;
   onRefresh: () => void;
 }) {
-  return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="px-2 py-1.5 border-b border-border flex items-center justify-between shrink-0">
-        <span className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider">
-          History
-        </span>
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={historyLoading}
-          className="p-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors rounded disabled:opacity-50"
-          title="Refresh history"
-        >
-          <RefreshCw
-            className={cn("w-3 h-3", historyLoading && "animate-spin")}
-          />
-        </button>
-      </div>
+  const [showArchived, setShowArchived] = useState(false);
 
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-1 space-y-0.5">
-        {historyLoading && history.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-4 h-4 text-muted-foreground/40 animate-spin" />
-          </div>
-        ) : history.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-[10px] text-muted-foreground/40 italic text-center px-2">
-              Extracted files appear here
-            </p>
-          </div>
-        ) : (
-          history.map((doc) => {
+  const renderDoc = (doc: PdfDocument) => {
             const isOpen = openTabIds.has(doc.id);
             const isActive = activeTabId === doc.id;
 
@@ -1240,7 +1215,51 @@ export function PdfExtractorSidebar({
                 </div>
               </button>
             );
-          })
+  };
+
+  return (
+    <div className="flex flex-col h-full min-h-0">
+      <div className="px-2 py-1.5 border-b border-border flex items-center justify-between shrink-0">
+        <span className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider">
+          History
+        </span>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={historyLoading}
+          className="p-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors rounded disabled:opacity-50"
+          title="Refresh history"
+        >
+          <RefreshCw
+            className={cn("w-3 h-3", historyLoading && "animate-spin")}
+          />
+        </button>
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-1 space-y-0.5">
+        {historyLoading && history.length === 0 && archivedHistory.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="w-4 h-4 text-muted-foreground/40 animate-spin" />
+          </div>
+        ) : history.length === 0 && archivedHistory.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-[10px] text-muted-foreground/40 italic text-center px-2">
+              Extracted files appear here
+            </p>
+          </div>
+        ) : (
+          <>
+            {history.map(renderDoc)}
+            {/* THE ARCHIVED-ITEMS LAW: hidden by default, one click away. */}
+            <ArchivedDisclosure
+              count={archivedHistory.length}
+              open={showArchived}
+              onOpenChange={setShowArchived}
+              contentClassName="space-y-0.5"
+            >
+              {archivedHistory.map(renderDoc)}
+            </ArchivedDisclosure>
+          </>
         )}
       </div>
     </div>

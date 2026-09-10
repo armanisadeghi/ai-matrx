@@ -1,5 +1,5 @@
 import { join } from "path";
-import { Bot } from "lucide-react";
+import { BrainCircuit } from "lucide-react";
 import { RouteIndexPage } from "@/components/ssr/RouteIndexPage";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
@@ -15,7 +15,7 @@ export default async function AgentsDemosIndexPage() {
       basePath="/demos/agents"
       title="Agent demos"
       description="Agent UI experiments and component playgrounds."
-      icon={Bot}
+      icon={BrainCircuit}
     />
   );
 }

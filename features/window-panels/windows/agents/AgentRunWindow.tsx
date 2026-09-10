@@ -13,7 +13,12 @@
  *   └──────────────┴───────────────────────────────────────────────┘
  *
  * Compared to `/agents/[id]/run`:
- *   - The "main app" sidebar is recreated locally (scoped to the selected agent).
+ *   - The "main app" sidebar is recreated locally (scoped to the selected agent),
+ *     with an "In this window" section above it listing every conversation
+ *     this window instance has run or opened — across agent switches — so the
+ *     chat the person is typing in is always on screen and switching agents
+ *     never strands it (2026-09-09: the sidebar showed "No conversations yet."
+ *     above the live chat, and a switch lost it).
  *   - Agent selection lives in the window title (not the shell nav).
  *   - Everything else — launcher hook, conversation loading, new-run — mirrors
  *     the route so behavior is identical.
@@ -40,7 +45,12 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
+import {
+  ConversationHistoryRow,
+  ConversationHistorySection,
+  ConversationHistorySidebar,
+} from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
+import { selectConversationListItemById } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
 import { selectLatestConversationId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
@@ -59,7 +69,7 @@ import { setUserVariableValues } from "@/features/agents/redux/execution-system/
 import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 
 const SOURCE_FEATURE: SourceFeature = "agent-runner";
@@ -79,15 +89,65 @@ const HEADER_NEW_RUN_BTN =
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
+/** A conversation this window instance has run or opened, and the agent it ran with. */
+interface SessionChat {
+  conversationId: string;
+  agentId: string;
+}
+
+function SessionChatRow({
+  chat,
+  active,
+  onSelect,
+  resolveHref,
+}: {
+  chat: SessionChat;
+  active: boolean;
+  onSelect: (conversation: ConversationListItem) => void;
+  resolveHref: (conv: ConversationListItem) => string;
+}) {
+  const listItem = useAppSelector(
+    selectConversationListItemById(chat.conversationId),
+  );
+  // Until the server confirms the row, the only title is the local transcript's.
+  const localTitle = useAppSelector(
+    (state: RootState) =>
+      state.messages.byConversationId[chat.conversationId]?.title ?? null,
+  );
+  const row: ConversationListItem = listItem
+    ? { ...listItem, agentId: chat.agentId }
+    : {
+        conversationId: chat.conversationId,
+        title: localTitle ?? "New chat",
+        updatedAt: new Date(0).toISOString(),
+        messageCount: 0,
+        status: "active",
+        isFavorite: false,
+        excludeFromKg: false,
+        agentId: chat.agentId,
+      };
+  return (
+    <ConversationHistoryRow
+      conv={row}
+      active={active}
+      onOpen={onSelect}
+      openInPlace
+      resolveHref={resolveHref}
+    />
+  );
+}
+
 function AgentRunWindowSidebar({
   agentId,
   surfaceKey,
   activeConversationId,
+  sessionChats,
   onSelect,
 }: {
   agentId: string | null;
   surfaceKey: string | null;
   activeConversationId: string | null;
+  sessionChats: SessionChat[];
   onSelect: (conversation: ConversationListItem) => void;
 }) {
   const canonicalAgentId = useAppSelector((state: RootState) => {
@@ -113,9 +173,25 @@ function AgentRunWindowSidebar({
     [agentId],
   );
 
+  const sessionSection =
+    sessionChats.length > 0 ? (
+      <ConversationHistorySection label="In this window">
+        {sessionChats.map((chat) => (
+          <SessionChatRow
+            key={chat.conversationId}
+            chat={chat}
+            active={chat.conversationId === activeConversationId}
+            onSelect={handleOpenConversation}
+            resolveHref={getConversationHref}
+          />
+        ))}
+      </ConversationHistorySection>
+    ) : null;
+
   if (!agentId || !canonicalAgentId) {
     return (
       <div className="flex h-full min-h-0 flex-col">
+        {sessionSection}
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-3 py-10 text-center">
           <Brain className="h-6 w-6 text-muted-foreground opacity-25" />
           <p className="text-xs text-muted-foreground">
@@ -137,6 +213,8 @@ function AgentRunWindowSidebar({
       openInPlace
       surfaceKey={surfaceKey ?? undefined}
       getConversationHref={getConversationHref}
+      historyLabel="Agent history"
+      topSlot={sessionSection}
       className="bg-transparent"
     />
   );
@@ -500,7 +578,7 @@ function AgentRunBodyMenu({
 }) {
   const dispatch = useAppDispatch();
   const agentName = useAppSelector((state: RootState) => selectAgentName(state, agentId) ?? null);
-  const agentSection = useAgentMenuSection({
+  const agentSection = buildAgentMenuSection({
     agentId,
     agentName,
     onRefresh: () => dispatch(fetchFullAgent(agentId)),
@@ -635,11 +713,18 @@ function AgentRunWindowInner({
   useEffect(() => {
     if (seedKey !== null) consumedSeeds.add(seedKey);
   }, [seedKey]);
-  const liveDraftText = seedLive ? initialDraftText : null;
-  const liveVariableValues = seedLive ? initialVariableValues : null;
-  const liveAutoRun = seedLive ? initialAutoRun : false;
-
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
+
+  // The seed (draft / variables / auto-run) belongs to the agent the window
+  // was opened on — like `mandateKey` below. Picking another agent from the
+  // title bar remounts the body; without this gate that remount replayed the
+  // opener's variables into the new agent and auto-fired a run the person
+  // never asked for (caught live 2026-09-09: switching to a test agent spent
+  // a web-search run on the mandate's inputs).
+  const seedApplies = seedLive && agentId === initialAgentId;
+  const liveDraftText = seedApplies ? initialDraftText : null;
+  const liveVariableValues = seedApplies ? initialVariableValues : null;
+  const liveAutoRun = seedApplies ? initialAutoRun : false;
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(initialSelectedConversationId);
@@ -671,6 +756,24 @@ function AgentRunWindowInner({
     : null;
   const liveConversationId = useLiveConversationId(surfaceKey);
   const activeConversationId = selectedConversationId ?? liveConversationId;
+
+  // Every conversation this window has run or opened, newest first, with the
+  // agent it ran under — survives agent switches so nothing started here is
+  // ever off-screen. Session-only by design: history that outlives the window
+  // is the agent-scoped list below it.
+  // Derived during render (React's adjust-state-on-change pattern), not in
+  // an effect: the row must exist the same frame the conversation does.
+  const [sessionChats, setSessionChats] = useState<SessionChat[]>([]);
+  if (
+    activeConversationId &&
+    agentId &&
+    !sessionChats.some((c) => c.conversationId === activeConversationId)
+  ) {
+    setSessionChats([
+      { conversationId: activeConversationId, agentId },
+      ...sessionChats,
+    ]);
+  }
 
   const handleAgentSelect = useCallback((nextId: string) => {
     setAgentId(nextId);
@@ -741,6 +844,7 @@ function AgentRunWindowInner({
           agentId={agentId}
           surfaceKey={surfaceKey}
           activeConversationId={activeConversationId}
+          sessionChats={sessionChats}
           onSelect={handleConversationSelect}
         />
       }
@@ -775,7 +879,8 @@ function AgentRunWindowInner({
             </p>
             <p className="text-xs opacity-60">
               Use the agent dropdown in the title bar to choose an agent. Its
-              past conversations appear in the sidebar.
+              past conversations appear in the sidebar, and every chat from
+              this window stays listed under &quot;In this window&quot;.
             </p>
           </div>
         </div>

@@ -9,14 +9,15 @@ Before handing work back, prove it's healthy, then deliver it. Migrations and ty
 
 ## The commit/push contract (read first)
 
-Invoking this skill **is** the authorization to commit. Two independent decisions — **scope** (what to stage) and **delivery** (commit vs push vs hold). Read both from the user's words.
+The user task and repository instructions determine commit authorization; invoking a skill grants no additional authority. Two independent decisions — **scope** (what to stage) and **delivery** (commit vs push vs hold). Read both from the user's words.
 
 **Scope — what to stage:**
 
 | User said | Stage |
 |---|---|
 | "commit **your** work" / "commit what **you** did" / "your changes" | **Only the files you created or modified this session.** Leave everything else in the working tree untouched. |
-| "commit **everything**" / "commit **all**" / a general "commit & push" / **nothing specific** | The **entire** working tree. |
+| "commit **everything**" / "commit **all**" | The explicitly authorized batch, after checking concurrent ownership. |
+| A general "commit & push" / **nothing specific** | Only this task's files; shared-checkout work from other agents stays theirs. |
 
 When scope = your-own and the tree also holds files you didn't touch, never sweep them in — stage your paths explicitly (never blind `git add -A`).
 
@@ -28,7 +29,7 @@ When scope = your-own and the tree also holds files you didn't touch, never swee
 | "get it ready, but don't push" / "don't push" | All checks → fix → **commit → STOP** (no push) |
 | "don't commit" / "just stage" / "leave it for review" | All checks → fix → **stop before committing** |
 
-Defaults: scope = **everything**, delivery = **commit and push**. Narrow scope or hold delivery only when the user says so. If the tree contains a large batch of changes you didn't make and scope is ambiguous, **stop and ask** rather than guessing.
+Defaults: scope = **this task's files**, delivery = **commit and push**. Follow explicit holds. Concurrent edits are normal: stage scoped paths and coordinate overlapping files; do not turn unrelated dirty files into an approval request.
 
 ## Checklist
 
@@ -46,7 +47,7 @@ Refreshes every `@ai-matrx/*` dependency from npm `latest`, regenerates Supabase
 
 ### 2. Migrations — `pnpm check:migrations`
 
-Must come back **silent** (clean). If it flags `[UNAPPLIED]` or `[DRIFTED]`: apply via the Supabase MCP `apply_migration` (always available, `project_id: "brsgrqvjdzwihsvnfqkf"`), then record the ledger row so the check goes green. Full procedure: **CLAUDE.md → "Database migrations"** (idempotency, SHA-256 ledger write, verify-live).
+Must come back **silent** (clean). If it flags `[UNAPPLIED]` or `[DRIFTED]`: discover the configured database capability for `https://db.matrxserver.com`, recover authentication or the established local admin path if needed, then apply and record the ledger row. Never assume a named MCP tool is always available or target a database by project ref. Full procedure: **CLAUDE.md → "Database migrations"** (idempotency, SHA-256 ledger write, verify-live).
 
 ### 3. Touch-based checks — only the rows your change hit
 
@@ -57,7 +58,7 @@ Must come back **silent** (clean). If it flags `[UNAPPLIED]` or `[DRIFTED]`: app
 | A **new type / component / hook / slice** | Confirm no existing primitive could extend instead (PRINCIPLES.md); `pnpm check:doctrine` flags new ones |
 | **Scope/context** code | Respect the global-vs-local invariant (CLAUDE.md → Scopes) |
 | Any **user-facing surface** | No `window.confirm/alert/prompt`; no new barrel `index.ts`; Lucide icons only, no emojis |
-| A **completed plan / handoff / campaign** | HISTORY docs get archived in the SAME session that completes them: move the finished plan/handoff doc to `docs/archive/<year>/` (grooming its inbound pointers) — never leave a done doc sitting in `docs/handoffs/` or `docs/` to rot |
+| A **completed plan / handoff / campaign** | Invoke `handoffs` for handoffs: completed handoffs are deleted, not archived. Archive completed plans/history under their owning documentation policy and repair inbound pointers. |
 
 Fuller sweep when unsure (surface-drift + doctrine + types): `pnpm validate --no-lint`. (`lint` is advisory and slow — skip unless asked.)
 
@@ -76,20 +77,24 @@ Before ending the turn, close the release gap:
 | Situation | Do |
 |---|---|
 | Latest applicable `origin/main` code is already contained in every affected target's latest `Ready` deployment | No release; record the verified target SHAs. |
-| Any affected target is missing applicable `origin/main` code | Run `./scripts/release.sh --target all` by default, then verify all three projects become `Ready`. Use a narrower target only when changed paths positively prove isolation. |
+| Any affected target is missing applicable `origin/main` code | Coordinate with the existing frontend release-watch task and follow the repair through its next authorized release. Run `./scripts/release.sh` yourself only when the user requested an immediate release, per `CLAUDE.md`. Shared runtime changes affect all three targets. |
 | A release for the exact applicable SHA is already queued or building | Do not duplicate it; monitor it to `Ready`, repair failure, and re-verify freshness. |
 
 Verify a release actually landed: a `READY` production deployment whose commit is yours or a descendant (Vercel MCP `list_deployments`), then assert on a string that exists **only** in the new build — a marker the old build also contained reports a false success.
 
 **Never edit `scripts/release.sh` to skip a check so a build goes out.** A `TEMP_SKIP_RELEASE_CHECKS` flag added during one emergency silently disabled migrations, protocol sync, source attribution, and every gate for *all* subsequent releases. Per-invocation `--no-migrate` / `--no-gates` exist for that; use those, and never commit a default-on skip.
 
-## Stop-and-ask triggers
+## Recover before escalating
 
-Halt and ask the user instead of pushing through when:
-- A migration is **not idempotent** or would alter/drop data destructively.
-- A check contradicts the code in a way whose fix is **ambiguous** or needs logic/architecture changes.
-- The change touches **protected resources** (`admins`, RLS, `SECURITY DEFINER`) — invoke `protected-resources` first.
-- A fix would only pass by using a **forbidden escape hatch** (`as any`, `@ts-ignore`, …) — leave it and report.
+Read `protected-resources` before changing admins, RLS, or SECURITY DEFINER code; a skill name
+alone does not require approval. Fix non-idempotent migrations, type-contract mismatches, and
+failed checks at their source. Never use forbidden casts/suppressions to force a pass.
+Escalate only when safe discovery and repair are exhausted and a missing credential,
+human-only authentication gate, destructive action outside authorization, or consequential
+unresolved product decision actually requires the user. Record exact unfinished evidence;
+a status report does not replace an available repair.
+
+Verified 2026-09-09 during Agent Review First Pass: reconciled shared-checkout scope, database capability recovery, release ownership, and handoff cleanup with repository instructions.
 
 ## Reference
 

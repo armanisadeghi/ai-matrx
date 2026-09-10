@@ -10,11 +10,11 @@
  * The dispatcher helper used to live here too, but importing it from a
  * route-level consumer would pull <WindowPanel> and the entire window-
  * panels chunk graph along with it. It now lives in
- * `./openImageViewer.ts` — a light file with no window-panel-system
- * imports. Consumers should import the helper from there:
+ * `@/features/overlays/openers/imageViewer` — the openers layer, which has no
+ * window-panel-system imports. Consumers import the helper from there:
  *
  *   import { openImageViewer } from
- *     "@/features/window-panels/windows/image/openImageViewer";
+ *     "@/features/overlays/openers/imageViewer";
  */
 
 import React, { useState, useCallback, useEffect } from "react";
@@ -512,9 +512,10 @@ export function ImageViewerWindow({
   );
 }
 
-// `openImageViewer` + its payload type live in `./openImageViewer.ts` —
-// a separate light file with no window-panel-system imports. Route-level
-// consumers MUST import the helper from there. The back-compat re-export
-// that used to live here was a trap: it pulled this whole window component
-// (and its <WindowPanel> dependency graph) into any caller's bundle. Burn
-// the boats — direct imports of the helper file only.
+// `openImageViewer` + its payload type live in
+// `features/overlays/openers/imageViewer.tsx` — the sanctioned openers layer,
+// which has no window-panel-system imports. Route-level consumers MUST import
+// the helper from there. The back-compat re-export that used to live here was
+// a trap: it pulled this whole window component (and its <WindowPanel>
+// dependency graph) into any caller's bundle. Burn the boats — the opener
+// only.

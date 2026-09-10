@@ -62,7 +62,7 @@ import {
   useKeywordAssignSurfaces,
   useKeywordMenuSection,
 } from "@/features/marketing/seo/keyword/keyword-actions";
-import { pageMenuSection } from "@/features/marketing/search-console/components/insights/insight-row-menu";
+import { buildPageMenuSection } from "@/features/marketing/search-console/components/insights/insight-row-menu";
 import { LocationPanel } from "@/features/marketing/seo/value-system/locations/LocationPanel";
 import type {
   GscCannibalizationRow,
@@ -401,7 +401,7 @@ function useInsightRowMenu<
     ? []
     : dimension === "page"
       ? [
-          pageMenuSection({
+          buildPageMenuSection({
             siteId,
             siteName,
             url: contextRow.key,

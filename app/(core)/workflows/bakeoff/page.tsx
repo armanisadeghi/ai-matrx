@@ -43,11 +43,17 @@ export default function BakeoffPickerPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // archived-items-law-exempt: bakeoff RUN candidates, not a browsable
+      // list — this picker exists to launch a workflow against two models, and
+      // an archived workflow is not a legal run target (the same ruling F9 made
+      // for enrollment and convert-flow candidates). It already refuses
+      // inactive definitions for the same reason.
       const { data, error: err } = await supabase
         .schema("workflow")
         .from("definition")
         .select("id,name,description,updated_at")
         .is("deleted_at", null)
+        .eq("is_archived", false)
         .eq("is_active", true)
         .order("updated_at", { ascending: false })
         .limit(300);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -42,9 +42,11 @@ import {
   listMasterworksForRulebook,
   listRecentRunsForMasterworks,
   setMasterworkReleased,
+  splitMasterworksByArchive,
   type MasterworkRun,
 } from "../../service";
 import type { Masterwork, Rulebook } from "../../types";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 function runDuration(run: MasterworkRun): string | null {
   if (!run.started_at || !run.completed_at) return null;
@@ -177,20 +179,39 @@ export function MasterworksPage({
   // Release / un-release in flight for one Masterwork (the Studio's lifecycle
   // action — released Masterworks appear on /masterwork/encore for Operators).
   const [releaseBusy, setReleaseBusy] = useState<string | null>(null);
-  const kpis = computeMasterworkKpis(masterworks, rulebook.version);
-  const visibleMasterworks = useMemo(
-    () =>
-      masterworks.filter((masterwork) => {
-        if (activeFilter === "current") {
-          return masterwork.rulebook_version === rulebook.version;
-        }
-        if (activeFilter === "released") {
-          return masterwork.released_at !== null;
-        }
-        return true;
-      }),
-    [activeFilter, masterworks, rulebook.version],
+  // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md, Arman
+  // 2026-09-09): archived Masterworks are HIDDEN by default and one click from
+  // being revealed, on this surface. Every count on this page — the KPI strip
+  // included — is computed from the ACTIVE half, because a screen never lies
+  // about how many working systems this Rulebook has.
+  const [showArchived, setShowArchived] = useState(false);
+  const { active: activeMasterworks, archived: archivedMasterworks } =
+    splitMasterworksByArchive(masterworks);
+  // The archived half feeds ONLY the strip's never-built sentence — every tile
+  // stays the live count (row F10 repair, 2026-09-10: "No Masterworks built
+  // yet." was printed with two archived Masterworks one click below).
+  const kpis = computeMasterworkKpis(
+    activeMasterworks,
+    rulebook.version,
+    archivedMasterworks,
   );
+  const matchesFilter = (masterwork: Masterwork) => {
+    if (activeFilter === "current") {
+      return masterwork.rulebook_version === rulebook.version;
+    }
+    if (activeFilter === "released") {
+      return masterwork.released_at !== null;
+    }
+    return true;
+  };
+  const visibleMasterworks = activeMasterworks.filter(matchesFilter);
+  // The count on the disclosure is what THIS view would reveal — the archived
+  // rows that also pass the status filter — never a total the click cannot
+  // deliver.
+  const visibleArchived = archivedMasterworks.filter(matchesFilter);
+  const renderedMasterworks = showArchived
+    ? [...visibleMasterworks, ...visibleArchived]
+    : visibleMasterworks;
 
   const toggleReleased = async (masterwork: Masterwork) => {
     setReleaseBusy(masterwork.id);
@@ -232,7 +253,11 @@ export function MasterworksPage({
     let cancelled = false;
     (async () => {
       try {
-        const allRows = await listMasterworksForRulebook(rulebookId);
+        // This page owns the reveal control, so it reads BOTH halves in one
+        // trip and splits them below (THE ARCHIVED-ITEMS LAW).
+        const allRows = await listMasterworksForRulebook(rulebookId, {
+          includeArchived: true,
+        });
         if (cancelled) return;
         // The Understudy (running-from-minute-one) lives on the Rulebook page
         // and is never releasable — this page manages the BUILT Masterworks.
@@ -300,21 +325,27 @@ export function MasterworksPage({
             <Link href={`/masterwork/${rulebook.id}`}>Open the Rulebook</Link>
           </Button>
         </div>
-      ) : visibleMasterworks.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            No {activeFilter === "current" ? "current" : "released"}{" "}
-            Masterworks.
-          </p>
-          <Button asChild size="sm" variant="ghost" className="mt-2">
-            <Link href={`/masterwork/${rulebook.id}/masterworks?status=all`}>
-              Show all Masterworks
-            </Link>
-          </Button>
-        </div>
       ) : (
         <div className="space-y-2">
-          {visibleMasterworks.map((masterwork) => {
+          {renderedMasterworks.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                {activeFilter === "all"
+                  ? "Every Masterwork built from this Rulebook is archived."
+                  : `No ${activeFilter === "current" ? "current" : "released"} Masterworks.`}
+              </p>
+              {activeFilter === "all" ? null : (
+                <Button asChild size="sm" variant="ghost" className="mt-2">
+                  <Link
+                    href={`/masterwork/${rulebook.id}/masterworks?status=all`}
+                  >
+                    Show all Masterworks
+                  </Link>
+                </Button>
+              )}
+            </div>
+          ) : null}
+          {renderedMasterworks.map((masterwork) => {
             const drifted =
               masterwork.rulebook_version !== null &&
               masterwork.rulebook_version < rulebook.version;
@@ -352,6 +383,16 @@ export function MasterworksPage({
                           className="px-1.5 py-0 text-[10px]"
                         >
                           v{masterwork.rulebook_version}
+                        </Badge>
+                      ) : null}
+                      {/* A revealed archived row SAYS it is archived — the
+                          disclosure is above it, the label is on it. */}
+                      {masterwork.is_archived ? (
+                        <Badge
+                          variant="outline"
+                          className="px-1.5 py-0 text-[10px] text-muted-foreground"
+                        >
+                          Archived
                         </Badge>
                       ) : null}
                       {masterwork.released_at !== null ? (
@@ -545,6 +586,15 @@ export function MasterworksPage({
               </div>
             );
           })}
+          {/* THE ARCHIVED-ITEMS LAW: one click, closed by default, and the
+              count is the true number of archived Masterworks this view would
+              reveal. Nothing renders at all when there are none. */}
+          <ArchivedDisclosure
+            count={visibleArchived.length}
+            open={showArchived}
+            onOpenChange={setShowArchived}
+            label="Archived Masterworks"
+          />
         </div>
       )}
       {driftMasterwork !== null && driftMasterwork.rulebook_version !== null ? (

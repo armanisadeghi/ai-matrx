@@ -6,6 +6,7 @@
 > - **The WindowPanel component itself** (drag, resize, minimize, tray) → this file's "Architecture" and below
 > - **Migration history + cutover plan** → [`docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md`](../../docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md)
 > - **Future improvements + known gaps** → [`docs/OVERLAY_WINDOW_ROADMAP.md`](../../docs/OVERLAY_WINDOW_ROADMAP.md)
+> - **The Listen panel** (`windows/listen/ListenSummaryWindow.tsx`) is one window of the Listening & Speech feature → owning doc [`features/audio/FEATURE.md`](../audio/FEATURE.md) § LISTENING & SPEECH
 >
 > **Status**: The cutover is complete. `features/overlays/OverlayController.tsx` is the renderer. `registry/windowRegistryMetadata.ts` is component-free metadata, not a render registry. `WindowPanel.tsx`, `WindowTraySync.tsx`, `WindowPersistenceManager.tsx`, and the window-manager Redux slice form the independent window-management primitive.
 
@@ -98,6 +99,10 @@ The rule, and why it is not a style preference:
   open the canonical window from a `rowActions` button.
 
 ## Change Log
+
+- 2026-09-09 — Watchdog failure payloads retain the viewport used for diagnosis, its degenerate/fallback flag, and render acknowledgement kind; missing acknowledgements remain `none`, never an inferred presentation.
+
+- 2026-09-09 — **Alternate mobile surfaces acknowledge visibility without fake geometry.** A registered window may deliberately replace `WindowPanel` on mobile with a purpose-built surface. Settings, Chat Options, and the four flashcard viewers use `useOverlaySurfaceRenderAck` while their drawer, sheet, or fullscreen viewer is active; the silent-render watchdog treats that mount as visibility proof instead of false-screaming `no-window-registered` and offering a useless `revealWindow` action.
 
 - 2026-08-30 — **`?panels=` deep-linking works everywhere; it had been working
   nowhere.** `UrlPanelManager` is now mounted globally and unallowlisted in
@@ -555,9 +560,11 @@ A triggered panel must **never** silently fail to appear. Two layers enforce it 
 
 Never derive window geometry from a raw `window.innerWidth/innerHeight` read.
 
+**Diagnostic context.** Failure payloads include `viewportWidth`, `viewportHeight` (the safe dimensions used by diagnosis), `viewportDegenerate` (true when those dimensions are fallbacks), and `renderAcknowledgement` (`window`, `surface`, or `none`). A missing acknowledgement does not identify which presentation rendered. Middleware payload coverage: `__tests__/overlayRenderWatchdogContext.test.ts`.
+
 **Watchdog (loud recovery).** ~2.5 s after an open, the middleware runs the pure `diagnoseOverlayRender` against live Redux + viewport state. If no visible panel is on screen — `windowsHidden` still on, off-screen, or zero-size — it `console.error`s with diagnostics and shows a self-healing `toast.error` ("Show it" → `revealWindow`). Scoped to **singleton window-kind** overlays; minimized and popped-out states count as OK (parked, not failed). Tests: `__tests__/overlayRenderWatchdog.test.ts`, `__tests__/windowManagerReveal.test.ts`.
 
-**"No panel mounted" is ack-gated, never timer-guessed.** Every window enters through `next/dynamic`, so a still-loading chunk (dev compile, slow fetch) is indistinguishable from a genuine no-mount by timer alone. `WindowPanel` calls `ackOverlayRender(overlayId, id)` from a mount effect — strictly after the dynamic import settled — which doubles as the chunk-settle signal and resolves the real window id when it differs from the slug. While no ack exists the watchdog **waits for it** (hard no-mount deadline: 12 s prod / 45 s dev) and diagnoses geometry only once it arrives. If a scream fires and the panel becomes visible while the toast is up, the toast **auto-dismisses** with a recovery `console.info` — a false or stale scream trains people to ignore the real ones.
+**"No panel mounted" is ack-gated, never timer-guessed.** Every window enters through `next/dynamic`, so a still-loading chunk (dev compile, slow fetch) is indistinguishable from a genuine no-mount by timer alone. `WindowPanel` calls `ackOverlayRender(overlayId, id)` from a mount effect — strictly after the dynamic import settled — which doubles as the chunk-settle signal and resolves the real window id when it differs from the slug. A registered window that deliberately swaps `WindowPanel` for a purpose-built mobile surface calls `useOverlaySurfaceRenderAck(overlayId, active)` at its composition root; that mount is its visibility proof because it owns no window-manager geometry, and the hook guarantees cleanup when the alternate surface closes or the viewport changes. While no ack exists the watchdog **waits for it** (hard no-mount deadline: 12 s prod / 45 s dev) and diagnoses geometry only once it arrives. If a scream fires and the panel becomes visible while the toast is up, the toast **auto-dismisses** with a recovery `console.info` — a false or stale scream trains people to ignore the real ones.
 
 ---
 
@@ -669,6 +676,7 @@ Enforced by:
 | `persistence/localWindowSessionStore.ts`    | Composes localStorage + IndexedDB with tab leases, identity isolation, write ordering, and reaping.                |
 | `hooks/useOverlay.ts`                       | Factory hooks (`useOverlayOpen`, `useOverlayData`, `useOverlayInstances`, `useOverlayActions`, `useCloseOverlay`). |
 | `hooks/useWindowPanel.ts`                   | Pointer-driven move/resize; Redux window registration.                                                             |
+| `diagnostics/useOverlaySurfaceRenderAck.ts` | Mount/cleanup contract for registered windows that substitute a mobile drawer, sheet, or fullscreen viewer.       |
 | `mobile/MobileDrawerSurface.tsx`            | Vaul-based bottom sheet for `mobilePresentation: "drawer"`.                                                        |
 | `mobile/MobileCardSurface.tsx`              | Floating card for `mobilePresentation: "card"`.                                                                    |
 | `tools-grid/toolsGridTiles.ts`              | Declarative config for every Tools-grid tile.                                                                      |
@@ -865,6 +873,7 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 
 ## Change log
 
+- **2026-09-09** — **The chat window's sidebar never lies about the chat you are in.** Three defects seen on the mandate goal-writer window: the sidebar read "No conversations yet." above the live chat (the history scope was fetched at mount and never learned about the conversation minted after it), an unexplained "1" source-filter badge hid the agent's own Agent Builder drafts, and folding the sidebar left the resize handle drawn down the window's left edge. Fixes, each at the class: `process-stream` now dispatches `upsertConversationIntoScopes` on the server's conversation confirmation and `patchConversationInScopes` on `conversation_labeled`, so every mounted history sidebar (chat, code, window) shows and titles the live conversation without a refetch (guard: `conversation-history/__tests__/live-upsert.test.ts`); the `agent-runner` surface default is no source filter because the list is already agent-scoped; `WindowPanel` hides the sidebar handle while the sidebar is collapsed. `AgentRunWindow` additionally keeps an **"In this window"** section (session-only, across agent switches) above the agent's history so picking another agent from the title bar never strands the chat you came from, and the opener seed (draft / variables / auto-run) is now gated to the agent the window opened on — a switch used to replay the mandate's inputs into the new agent and auto-fire a run.
 - **2026-08-30** — **PopoutShell bridges the design-system portal seam.** The C9 swap moved Popover onto `@ai-matrx/design-system`, whose primitives resolve nested portal targets through the package's injected `PortalContainerProvider` instead of the host's `useNestedPortalContainer`. `PopoutShell` now wraps its children in that provider fed with the popout `<body>`, and `components/ui/dialog.tsx` provides `dialog content ?? popout body` beneath its own container context — together preserving the original dialog > popout > document.body portal priority, so package popovers opened inside a popped-out window render in the right window. Host wrappers (tooltip/dropdown/select) still use `useNestedPortalContainer` directly.
 - **2026-08-30** — **Chat windows are independent and rich titles no longer erase their drag zone.** `agentRunWindow` now threads a fresh overlay instance through its Window Manager id, overlay close identity, URL registration, per-window execution surface key, and conversation-history scope; new windows cascade across the standard positions, and each `+` starts a fresh conversation with that window's selected agent. `WindowHeader` now stops drag only for the interactive descendant under the pointer, leaving rich-title padding and adjacent space draggable.
 - **2026-08-30** — **Chat history selection now resumes the row's conversation with its owning agent.** `AgentRunWindow` passes the complete history row across the sidebar boundary, updates `agentId` and `conversationId` as one selection, and uses `useConversationResume` instead of a window-local hydration sequence. The floating chat therefore follows the same existing-conversation path as `/chat`, including cold-state hydration, pending tool-call surfacing, and server-operation reconnect, while preserving the launcher path for genuinely new chats.

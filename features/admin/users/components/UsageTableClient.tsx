@@ -15,7 +15,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { AdminUserRef } from "./AdminUserRef";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { adminUserMenuSection } from "./admin-user-menu-section";
+import { buildAdminUserMenuSection } from "./admin-user-menu-section";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import type { AdminUserUsageRow } from "../types";
 import {
@@ -409,7 +409,7 @@ export function UsageTableClient() {
             };
           }}
           extraSections={[
-            adminUserMenuSection(
+            buildAdminUserMenuSection(
               clickedRow
                 ? { id: clickedRow.user_id, email: clickedRow.email }
                 : null,

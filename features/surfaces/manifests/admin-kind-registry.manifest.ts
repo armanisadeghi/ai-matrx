@@ -35,6 +35,7 @@ import type {
   SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export const ADMIN_KIND_REGISTRY_SURFACE_NAME = "matrx-admin/kind-registry";
 
@@ -429,7 +430,7 @@ Only the values matching the current kind_registry_section are populated — eve
         "Creates or improves the selected kind and its schema, examples, component, skills, content blocks, and activation state.",
       kind: "single",
       defaultAgentId: null,
-      mandateKey: "content_ir.kind_creator",
+      mandateKey: MANDATE_KEYS.content_ir__kind_creator,
       allowCustom: false,
       autoRun: "never",
       sortOrder: 100,

@@ -143,25 +143,30 @@ const Header = ({ children }: { children: React.ReactNode }) => {
 
 // Skeletons
 
+/**
+ * Hoisted to module scope: defined inside SkeletonOne it was a new component
+ * type every render, remounting the animated cards.
+ */
+const Container = ({
+                       children,
+                       ...props
+                   }: { children: React.ReactNode } & React.ComponentProps<
+    typeof motion.div
+>) => {
+    return (
+        <motion.div
+            {...props}
+            className={cn(
+                "w-full h-14 md:h-40 p-2 rounded-lg relative shadow-lg flex items-center bg-gradient-to-b from-white to-white dark:from-neutral-800 dark:to-neutral-700 justify-center",
+                props.className
+            )}
+        >
+            {children}
+        </motion.div>
+    );
+};
+
 export const SkeletonOne = () => {
-    const Container = ({
-                           children,
-                           ...props
-                       }: { children: React.ReactNode } & React.ComponentProps<
-        typeof motion.div
-    >) => {
-        return (
-            <motion.div
-                {...props}
-                className={cn(
-                    "w-full h-14 md:h-40 p-2 rounded-lg relative shadow-lg flex items-center bg-gradient-to-b from-white to-white dark:from-neutral-800 dark:to-neutral-700 justify-center",
-                    props.className
-                )}
-            >
-                {children}
-            </motion.div>
-        );
-    };
     return (
         <div className="relative flex items-center justify-center  w-full h-full">
             <svg

@@ -28,7 +28,9 @@ export function useRulebookMasterworks(
       return;
     }
     let alive = true;
-    listMasterworksForRulebooks(ids)
+    // The cards view carries a per-Rulebook reveal control, so BOTH halves
+    // come back in the one read and the split happens in listConfig.
+    listMasterworksForRulebooks(ids, { includeArchived: true })
       .then((map) => {
         if (alive) setByRulebook(map);
       })

@@ -14,6 +14,7 @@ import { readAllRows } from "@ai-matrx/data/db";
 import {
   getCmsClient,
   lookupCmsPageAccess,
+  lookupCmsSiteAccess,
   verifySiteOwnership,
   verifyPageOwnership,
   verifyHtmlPageOwnership,
@@ -239,8 +240,11 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Verify site ownership
-        if (!(await verifySiteOwnership(db, siteId, caller))) {
+        // Verify site ownership. The full lookup (not the boolean wrapper) is
+        // used because the SAME row carries the organization the content guard
+        // must be called in — one read, no second source of truth for it.
+        const siteAccess = await lookupCmsSiteAccess(db, siteId, caller);
+        if (siteAccess.status !== "ok") {
           return NextResponse.json(
             { error: "Site not found or access denied" },
             { status: 403 },
@@ -250,6 +254,7 @@ export async function POST(request: NextRequest) {
         contentValidation = await validateContent({
           content: { html: htmlContent, css: cssContent, js: jsContent },
           siteId,
+          organizationId: siteAccess.site.organization_id,
           accessToken,
         });
         const blockedResponse = cmsContentBlockedResponse(contentValidation);
@@ -334,7 +339,8 @@ export async function POST(request: NextRequest) {
             { status: 403 },
           );
         }
-        if (!(await verifySiteOwnership(db, siteId, caller))) {
+        const siteAccess = await lookupCmsSiteAccess(db, siteId, caller);
+        if (siteAccess.status !== "ok") {
           return NextResponse.json(
             { error: "Site not found or access denied" },
             { status: 403 },
@@ -397,6 +403,7 @@ export async function POST(request: NextRequest) {
             js: conversion.js,
           },
           siteId,
+          organizationId: siteAccess.site.organization_id,
           accessToken,
         });
         const blockedResponse = cmsContentBlockedResponse(contentValidation);
@@ -574,7 +581,10 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, caller))) {
+        // Full lookup, not the boolean wrapper: the page's site row carries
+        // the organization the content guard must be called in.
+        const pageAccess = await lookupCmsPageAccess(db, pageId, caller);
+        if (pageAccess.status !== "ok") {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },
@@ -633,6 +643,7 @@ export async function POST(request: NextRequest) {
             js: updateFields.jsContent,
           },
           pageId,
+          organizationId: pageAccess.site.organization_id,
           accessToken,
         });
         const blockedResponse = cmsContentBlockedResponse(contentValidation);
@@ -812,7 +823,8 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, caller))) {
+        const pageAccess = await lookupCmsPageAccess(db, pageId, caller);
+        if (pageAccess.status !== "ok") {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },
@@ -822,6 +834,7 @@ export async function POST(request: NextRequest) {
         contentValidation = await validateContent({
           content: { html: htmlContent, css: cssContent, js: jsContent },
           pageId,
+          organizationId: pageAccess.site.organization_id,
           accessToken,
         });
         const blockedResponse = cmsContentBlockedResponse(contentValidation);

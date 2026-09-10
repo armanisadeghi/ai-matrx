@@ -38,6 +38,11 @@ export async function GET(request: Request) {
       );
     }
 
+    // archived-items-law-exempt: update-target candidates for the convert flow,
+    // not a browsable list — the caller picks ONE system agent to overwrite, and
+    // an archived one is not a legal target. Archived candidates are therefore
+    // excluded rather than revealed, the same ruling F7 made for Mandate
+    // workflow-Holder candidates and RAG grounding candidates.
     const { data, error } = await adminClient
       .schema("agent")
       .from("definition")
@@ -45,6 +50,7 @@ export async function GET(request: Request) {
         "id, name, description, category, tags, version, source_agent_id, source_snapshot_at, created_at, updated_at, variable_definitions",
       )
       .is("deleted_at", null)
+      .eq("is_archived", false)
       .eq("agent_type", "builtin")
       .eq("source_agent_id", sourceAgentId)
       .order("created_at", { ascending: false });

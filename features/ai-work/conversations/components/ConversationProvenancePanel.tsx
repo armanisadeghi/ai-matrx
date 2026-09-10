@@ -25,7 +25,7 @@
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
-  Bot,
+  BrainCircuit,
   Loader2,
   RefreshCw,
   TerminalSquare,
@@ -212,7 +212,7 @@ export function ConversationProvenancePanel({
           {provenance.fromProvider ? (
             <TerminalSquare className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
           ) : (
-            <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+            <BrainCircuit className="h-3.5 w-3.5 text-muted-foreground" />
           )}
           <span className="text-sm font-medium text-foreground">
             {conversation.title?.trim() || "Untitled conversation"}

@@ -148,8 +148,8 @@ import { default as instanceVariableValuesReducer } from "@/features/agents/redu
 import { default as instanceResourcesReducer } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { default as instanceUserInputReducer } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { default as conversationsReducer } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
-import chatIncognitoReducer from "@/features/agents/components/chat/chat-incognito.slice";
-import chatRouteReducer from "@/features/agents/components/chat/chat-route.slice";
+import chatIncognitoReducer from "@/features/agents/redux/chat/chat-incognito.slice";
+import chatRouteReducer from "@/features/agents/redux/chat/chat-route.slice";
 import { default as activeRequestsReducer } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { default as runSetsReducer } from "@/features/agents/redux/execution-system/run-sets/run-sets.slice";
 import { default as workflowRunsReducer } from "@/features/workflow-runtime/redux/workflow-runs.slice";

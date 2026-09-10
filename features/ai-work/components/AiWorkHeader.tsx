@@ -5,7 +5,7 @@ import {
   LayoutDashboard,
   MessagesSquare,
   Plug,
-  Sparkles,
+  BrainCircuit,
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
@@ -20,7 +20,7 @@ const AI_WORK_NAV_ITEMS = [
   {
     name: "Start work",
     href: "/work/new",
-    icon: Sparkles,
+    icon: BrainCircuit,
   },
   {
     name: "Conversations",

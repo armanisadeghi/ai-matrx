@@ -86,17 +86,20 @@ const TOAST_DURATION_MS = 8000;
 const RECOVERY_POLL_MS = 500;
 
 // ── Render acknowledgement registry ─────────────────────────────────────────
-// WindowPanel reports the real window-manager id it rendered under, keyed by
-// overlayId, from a mount effect — which only runs once the dynamic import has
-// settled. The watchdog uses it two ways: to resolve the geometry entry even
-// when a window's `id` prop differs from its registry slug, and as the
+// WindowPanel reports the real window-manager id it rendered under. A
+// registered window that deliberately swaps WindowPanel for an alternate
+// mobile surface reports a surface ack instead: that presentation is visible
+// but owns no window-manager geometry. Both acknowledgements are also the
 // chunk-settle signal that gates the "no window registered" verdict.
 
-const renderAcks = new Map<string, string>();
+type RenderAck =
+  | { kind: "window"; windowId: string }
+  | { kind: "surface" };
+
+const renderAcks = new Map<string, RenderAck>();
 const ackWaiters = new Map<string, () => void>();
 
-export function ackOverlayRender(overlayId: string, windowId: string): void {
-  renderAcks.set(overlayId, windowId);
+function notifyRenderAck(overlayId: string): void {
   const notify = ackWaiters.get(overlayId);
   if (notify) {
     ackWaiters.delete(overlayId);
@@ -104,8 +107,32 @@ export function ackOverlayRender(overlayId: string, windowId: string): void {
   }
 }
 
+export function ackOverlayRender(overlayId: string, windowId: string): void {
+  renderAcks.set(overlayId, { kind: "window", windowId });
+  notifyRenderAck(overlayId);
+}
+
 export function clearOverlayRender(overlayId: string, windowId: string): void {
-  if (renderAcks.get(overlayId) === windowId) renderAcks.delete(overlayId);
+  const ack = renderAcks.get(overlayId);
+  if (ack?.kind === "window" && ack.windowId === windowId) {
+    renderAcks.delete(overlayId);
+  }
+}
+
+export function ackOverlaySurfaceRender(overlayId: string): void {
+  renderAcks.set(overlayId, { kind: "surface" });
+  notifyRenderAck(overlayId);
+}
+
+export function clearOverlaySurfaceRender(overlayId: string): void {
+  if (renderAcks.get(overlayId)?.kind === "surface") {
+    renderAcks.delete(overlayId);
+  }
+}
+
+function acknowledgedWindowId(overlayId: string, fallback: string): string {
+  const ack = renderAcks.get(overlayId);
+  return ack?.kind === "window" ? ack.windowId : fallback;
 }
 
 // ── Pure visibility diagnosis ───────────────────────────────────────────────
@@ -144,8 +171,19 @@ export function diagnoseOverlayRender(args: {
   windowsHidden: boolean;
   viewportWidth: number;
   viewportHeight: number;
+  surfaceAcknowledged?: boolean;
 }): RenderDiagnosis {
-  const { entry, windowsHidden, viewportWidth, viewportHeight } = args;
+  const {
+    entry,
+    windowsHidden,
+    viewportWidth,
+    viewportHeight,
+    surfaceAcknowledged = false,
+  } = args;
+  // Alternate mobile surfaces (for example a purpose-built settings drawer)
+  // do not join the window manager. Their mount acknowledgement is the
+  // visibility proof; applying window geometry to them is a category error.
+  if (surfaceAcknowledged) return { ok: true, reason: null };
   if (!entry) return { ok: false, reason: "no-window-registered" };
   // Popped-out windows live in a separate OS-managed browser window; the
   // global hide-all doesn't apply and there's nothing to verify on our canvas.
@@ -202,6 +240,10 @@ function endWatch(watch: Watch): void {
 }
 
 type Evaluation = {
+  viewportWidth: number;
+  viewportHeight: number;
+  viewportDegenerate: boolean;
+  renderAcknowledgement: "window" | "surface" | "none";
   diag: RenderDiagnosis;
   windowId: string;
   entry: WindowEntry | undefined;
@@ -215,18 +257,24 @@ function evaluate(store: WMApi, watch: Watch): Evaluation | null {
   if (!selectIsOverlayOpen(state, watch.overlayId, DEFAULT_INSTANCE_ID)) {
     return null;
   }
-  const windowId = renderAcks.get(watch.overlayId) ?? watch.slug;
+  const ack = renderAcks.get(watch.overlayId);
+  const windowId = ack?.kind === "window" ? ack.windowId : watch.slug;
   const entry = state.windowManager.windows[windowId];
   // Judge geometry against sanitized dims — a degenerate 0×0 measurement
   // (hidden/prerendered page) makes every on-screen rect read as off-screen,
   // and a false scream trains people to ignore the real ones.
-  const { vw, vh } = safeViewportDims();
+  const { vw, vh, degenerate } = safeViewportDims();
   return {
+    viewportWidth: vw,
+    viewportHeight: vh,
+    viewportDegenerate: degenerate,
+    renderAcknowledgement: ack?.kind ?? "none",
     diag: diagnoseOverlayRender({
       entry,
       windowsHidden: state.windowManager.windowsHidden,
       viewportWidth: vw,
       viewportHeight: vh,
+      surfaceAcknowledged: ack?.kind === "surface",
     }),
     windowId,
     entry,
@@ -319,6 +367,10 @@ function scream(store: WMApi, watch: Watch, res: Evaluation): void {
     {
       overlayId,
       windowId: res.windowId,
+      viewportWidth: res.viewportWidth,
+      viewportHeight: res.viewportHeight,
+      viewportDegenerate: res.viewportDegenerate,
+      renderAcknowledgement: res.renderAcknowledgement,
       entry: res.entry,
       windowsHidden: res.windowsHidden,
     },
@@ -335,7 +387,7 @@ function scream(store: WMApi, watch: Watch, res: Evaluation): void {
         const dims = safeViewportDims();
         store.dispatch(
           revealWindow({
-            id: renderAcks.get(overlayId) ?? watch.slug,
+            id: acknowledgedWindowId(overlayId, watch.slug),
             viewportWidth: dims.vw,
             viewportHeight: dims.vh,
           }),
@@ -411,7 +463,7 @@ export const overlayRenderWatchdogMiddleware: Middleware<object, WMState> =
     const revealDims = safeViewportDims();
     store.dispatch(
       revealWindow({
-        id: renderAcks.get(overlayId) ?? meta.slug,
+        id: acknowledgedWindowId(overlayId, meta.slug),
         viewportWidth: revealDims.vw,
         viewportHeight: revealDims.vh,
       }),

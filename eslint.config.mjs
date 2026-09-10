@@ -6,8 +6,19 @@
 // guard around `features/window-panels/windows/**` is preserved to keep the
 // window-panels bundle-splitting contract intact (see .claude/skills/window-panels/SKILL.md).
 
+import { createRequire } from "node:module";
+
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import noBarrelFiles from "eslint-plugin-no-barrel-files";
+import tseslint from "typescript-eslint";
+
+// eslint-plugin-react's `version: "detect"` (what eslint-config-next sets) calls
+// the `context.getFilename()` method that ESLint 10 removed, which made EVERY
+// lint run crash with `contextOrFilename.getFilename is not a function`. The
+// plugin's own documented alternative is to state the version instead of
+// detecting it, so we read it off the installed React package — no pin, it
+// drifts with `react: latest` exactly like the detect path did.
+const reactVersion = createRequire(import.meta.url)("react/package.json").version;
 
 const windowPanelsImportRestriction = {
   patterns: [
@@ -22,10 +33,15 @@ const windowPanelsImportRestriction = {
     // File-handling: the public index barrel was deleted (2026-07-26).
     // Import directly from the owning module. Internal subdirs below
     // stay banned. See features/files/FEATURE.md.
+    // `features/files/api/<module>` ARE the owning modules (direct.ts, assets.ts,
+    // files.ts, pdf-pages.ts, ...). Only the bare directory path is banned — a
+    // directory import would need an index barrel, and invariant 17 forbids one.
+    // (Until 2026-09-10 this banned api/* too, with a message written when api/
+    // held HTTP shims; 24 legitimate consumers were red with no sanctioned door.)
     {
-      group: ["@/features/files/api", "@/features/files/api/*"],
+      group: ["@/features/files/api"],
       message:
-        "Do not import from features/files/api — use direct module paths or @/lib/python-client for HTTP helpers (getJson/postJson/del/patchJson/etc.).",
+        "Import the owning module directly (e.g. @/features/files/api/assets), never the api directory — there is no barrel (features/files/FEATURE.md invariant 17). Raw HTTP helpers live in @/lib/python-client.",
     },
     {
       group: ["@/features/files/cache", "@/features/files/cache/*"],
@@ -1480,6 +1496,29 @@ export default [
   { ignores: [".next*/**"] },
   ...nextCoreWebVitals,
   {
+    // MUST stay directly after nextCoreWebVitals — it overrides that config's
+    // `react.version: "detect"`. See the note beside `reactVersion` above.
+    settings: { react: { version: reactVersion } },
+  },
+  {
+    // eslint-config-next's `next/base` block parses plain JS with Next's
+    // bundled @babel/eslint-parser, whose vendored eslint-scope predates
+    // ESLint 10 — every .js/.mjs/.cjs file died with
+    // `scopeManager.addGlobals is not a function`. Next's own `next/typescript`
+    // block already swaps in the typescript-eslint parser for .ts/.tsx, so this
+    // does the same for the rest of the tree. Nothing here is compiled by
+    // Babel (SWC/Turbopack only), so the Babel parser bought us nothing.
+    // Remove this block if/when eslint-config-next stops shipping that parser.
+    files: ["**/*.{js,jsx,mjs,cjs}"],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        sourceType: "module",
+        ecmaFeatures: { jsx: true },
+      },
+    },
+  },
+  {
     plugins: {
       "no-barrel-files": noBarrelFiles,
       matrx: matrxLintPlugin,
@@ -1723,6 +1762,39 @@ export default [
     },
   },
   {
+    // ─── The Files feature's three sanctioned OUTSIDE entry points ──────
+    //
+    // `windowPanelsImportRestriction` ring-fences features/files/providers,
+    // /cache and /upload against outside consumers. These three files are the
+    // sites those bans NAME as correct, so the ban has nothing left to protect
+    // here — it was only ever reporting the mounts it points people at:
+    //
+    //   app/Providers.tsx           — the ONE global <CloudFilesRealtimeProvider>
+    //                                 mount (the `providers` ban's own message
+    //                                 says the mount lives here) plus the
+    //                                 app-shell singleton <UploadGuardHost>,
+    //                                 whose dynamic wrapper IS the sanctioned
+    //                                 boundary (.claude/skills/code-splitting).
+    //   app/DeferredSingletonCore   — registers the blob-cache Service Worker
+    //                                 once for the app; there is no hook form
+    //                                 of a one-shot SW registration.
+    //   the blob-cache admin page   — renders cache/admin/BlobCacheInspector,
+    //                                 the inspector built for that route.
+    //
+    // Scoped to these three files ONLY. Every other importer of
+    // features/files/{api,cache,providers,upload,services,virtual-sources}
+    // stays banned. The sonner chokepoint is unaffected — its
+    // `no-restricted-syntax` twin still runs here.
+    files: [
+      "app/Providers.tsx",
+      "app/DeferredSingletonCore.tsx",
+      "app/(admin)/administration/utilities/blob-cache/page.tsx",
+    ],
+    rules: {
+      "no-restricted-imports": "off",
+    },
+  },
+  {
     // Media durability fence (see CLAUDE.md "Media durability" +
     // FOUND_DEFECTS.md D1). Podcast surfaces render OUR OWN media (covers,
     // clip video, audio) which is persisted from a stream and can arrive as
@@ -1932,13 +2004,38 @@ export default [
     files: [
       "lib/redux/**",
       "lib/sync/**",
-      "features/*/redux/**",
-      "features/*/state/**",
+      // Any depth: a slice under features/<x>/modes/<y>/redux/ is still "in a
+      // redux directory" — the intent is the directory, not the nesting.
+      "features/**/redux/**",
+      "features/**/state/**",
       "styles/themes/**",
       "**/__tests__/**",
       "**/*.test.ts",
       "**/*.test.tsx",
     ],
+    rules: {
+      "no-restricted-imports": "off",
+    },
+  },
+  // ─── window-panels windows — the openers layer IS the sanctioned seam ──
+  //
+  // windowPanelsImportRestriction bans importing
+  // features/window-panels/windows/** so no caller can statically pull a heavy
+  // window component into its own chunk. `features/overlays/openers/**` is the
+  // indirection layer that ban exists to force callers through: each opener is
+  // a thin module that either re-exports the window's own `useOpen*Window`
+  // hook (which only dispatches `openOverlay` — verified: no opener hook
+  // imports its window component) or declares the hook itself over a
+  // `import type` of the window's data type. Neither shape pulls a window
+  // component into the openers chunk, so the bundle-splitting contract the ban
+  // protects is intact here; OverlayController's per-overlay dynamic() still
+  // owns every actual component import.
+  //
+  // Do NOT widen this beyond features/overlays/** — a call site outside it
+  // must import from `@/features/overlays/openers/<overlay>`, not from
+  // `features/window-panels/windows/**`.
+  {
+    files: ["features/overlays/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": "off",
     },

@@ -50,7 +50,7 @@ import { ContextItemAddForm } from "@/features/scope-system/components/ContextIt
 import {
   contextItemEntityRef,
   contextItemMenuContent,
-  useContextItemMenuSection,
+  buildContextItemMenuSection,
   type ContextItemMenuRow,
 } from "@/features/scope-system/components/context-item-actions";
 import { ReorderDialog } from "@/features/scopes/components/management/ReorderDialog";
@@ -554,7 +554,7 @@ function ContextItemsWindowInner({
     [dispatch, tabs],
   );
 
-  const contextItemSection = useContextItemMenuSection({
+  const contextItemSection = buildContextItemMenuSection({
     getRow: () => clickedItem,
     actions: {
       openItem: (row) => tabs.openTab(row.id),

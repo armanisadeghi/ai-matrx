@@ -64,7 +64,7 @@ import {
 } from "../../components/run/node-presentation";
 import { InterruptCard, RunErrorCard } from "../../components/readout-parts";
 import { RunStatusChip } from "../../run-status";
-import { TERMINAL_RUN_STATUSES, type WorkflowRunStatus } from "../../types";
+import { runIsOver, type WorkflowRunStatus } from "../../types";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 
 import { PlanRail } from "./PlanRail";
@@ -88,19 +88,6 @@ type Resolution =
     };
 
 const BASE = "/workflows/bakeoff/refine-2";
-
-/**
- * "errored" is a terminal fact for THIS page even though it is not in the
- * generated TERMINAL set (verified live: a run the engine records as
- * `errored` never moves again) — the clock freezes, controls hide, and the
- * "run it again" door opens.
- */
-function runIsOver(status: WorkflowRunStatus | null): boolean {
-  return (
-    status !== null &&
-    (TERMINAL_RUN_STATUSES.has(status) || status === "errored")
-  );
-}
 
 export function RefineRunPage({ id }: { id: string }) {
   const router = useRouter();

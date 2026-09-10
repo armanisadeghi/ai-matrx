@@ -6,8 +6,8 @@
  * `SnapshotsTable` (the list), `SnapshotCompare` (before/after diff), and
  * future adopters (`SnapshotArtifacts`).
  *
- * Plain function, not a hook — same shape as `pageMenuSection` /
- * `siteMenuSection`: the host keeps the clicked row in STATE and rebuilds
+ * Plain function, not a hook — same shape as `buildPageMenuSection` /
+ * `buildSiteMenuSection`: the host keeps the clicked row in STATE and rebuilds
  * `extraSections` off it.
  *
  * 🚨 NO NEW READ OR WRITE PATH LIVES HERE. Both items are navigation to a
@@ -49,7 +49,7 @@ export function snapshotEntityRef(
   };
 }
 
-export function snapshotMenuSection(
+export function buildSnapshotMenuSection(
   row: SnapshotMenuRow | null,
   opts?: {
     label?: string;

@@ -36,7 +36,7 @@ import {
   Loader2,
   RotateCcw,
   Save,
-  Sparkles,
+  BrainCircuit,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -673,7 +673,7 @@ export function EditModeShell({
                     {savingVariants ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <Sparkles className="h-3.5 w-3.5" />
+                      <BrainCircuit className="h-3.5 w-3.5" />
                     )}
                     Sizes
                   </Button>

@@ -16,7 +16,7 @@ import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
 import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
-import { useOpenSmartCodeEditorWindow } from "@/features/window-panels/windows/smart-code-editor/useOpenSmartCodeEditorWindow";
+import { useOpenSmartCodeEditorWindow } from "@/features/overlays/openers/smartCodeEditorWindow";
 import {
   mapLanguageForMonaco,
   getMonacoFileExtension,

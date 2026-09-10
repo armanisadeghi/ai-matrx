@@ -1,5 +1,5 @@
-import { AdminDomainDirectory } from "@/features/admin/components/AdminDomainDirectory";
+import { AdminDomainLanding } from "@/features/admin/components/AdminDomainLanding";
 
 export default function AiAdministrationPage() {
-  return <AdminDomainDirectory domainSlug="ai" />;
+  return <AdminDomainLanding domainSlug="ai" />;
 }

@@ -31,11 +31,12 @@
  */
 
 import type { AssistAction } from "@/features/assists/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** The mandate the AI remedies resolve at click time (rebindnable from the
  * admin mandates console, no deploy). Declared server-side in aidream
  * `services/seo/keyword_agents.py::PAGE_ANALYZER_MANDATE`. */
-export const SEO_PAGE_ANALYZER_MANDATE = "seo.page_analyzer";
+export const SEO_PAGE_ANALYZER_MANDATE = MANDATE_KEYS.seo__page_analyzer;
 const SEO_AGENT_NAME = "SEO Page Analyzer";
 
 /** Everything a remedy may use. Only `itemKey` is required — every other

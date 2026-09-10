@@ -20,11 +20,13 @@
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { Provider } from "react-redux";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+import { makeStore } from "@/lib/redux/store";
 import { useEntityList } from "../useEntityList";
 import {
   EMPTY_FACETS,
@@ -89,12 +91,17 @@ function Probe({ organizations }: { organizations: readonly string[] }) {
 describe("counts follow the service's own inputs", () => {
   let container: HTMLDivElement;
   let root: Root;
+  // `useEntityList` reads the user's own archive default out of the real store
+  // (THE ARCHIVED-ITEMS LAW's knob), so the hook runs under the real provider
+  // here exactly as it does on a page.
+  let store: ReturnType<typeof makeStore>;
 
   beforeEach(() => {
     seen = null;
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
+    store = makeStore();
   });
 
   afterEach(() => {
@@ -104,7 +111,11 @@ describe("counts follow the service's own inputs", () => {
 
   it("re-asks when the caller's organizations land after the first render", async () => {
     await act(async () => {
-      root.render(<Probe organizations={[]} />);
+      root.render(
+        <Provider store={store}>
+          <Probe organizations={[]} />
+        </Provider>,
+      );
     });
     // The first render is the honest empty world — and it SAYS so.
     expect(seen?.narrow.orgs ?? []).toHaveLength(0);
@@ -112,7 +123,11 @@ describe("counts follow the service's own inputs", () => {
 
     // The memberships land. Nothing about the QUERY changed.
     await act(async () => {
-      root.render(<Probe organizations={["org-a", "org-b"]} />);
+      root.render(
+        <Provider store={store}>
+          <Probe organizations={["org-a", "org-b"]} />
+        </Provider>,
+      );
     });
 
     expect(seen?.narrow.orgs?.map((o) => o.id)).toEqual(["org-a", "org-b"]);

@@ -11,9 +11,12 @@ import { ExternalLink } from "lucide-react";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import type { MediaRef } from "@/features/files/types";
 import { cn } from "@/lib/utils";
+import type { ResultMediaElement } from "./shape";
 
 export interface ResultMediaProps {
     mediaRef: MediaRef;
+    /** Trusted field-name hint used only when the ref has no MIME/extension. */
+    elementTypeHint?: ResultMediaElement;
     alt?: string;
     density?: "inline" | "full";
     className?: string;
@@ -21,7 +24,7 @@ export interface ResultMediaProps {
 
 interface InlineResultMediaProps {
     source: MediaRef;
-    as: "img" | "video" | "audio";
+    as?: ResultMediaElement;
     size: "fill" | "xl";
     alt: string;
 }
@@ -35,8 +38,14 @@ function InlineResultMedia({ source, as, size, alt }: InlineResultMediaProps) {
     return <InlineMediaRef ref={source} as={as} size={size} fit="contain" alt={alt} fallback="icon" />;
 }
 
-/** Resolve which media element to render from the ref's hints. */
-function pickElement(ref: MediaRef): "img" | "video" | "audio" {
+/**
+ * Resolve a media element only when the result already carries a trustworthy
+ * type hint. An ID-only ref deliberately returns undefined so InlineMediaRef
+ * can hydrate the file row and infer from its canonical media kind. Defaulting
+ * an unknown ref to `img` overrides that later metadata and makes every owned
+ * audio/video result fail as a broken image.
+ */
+function pickElement(ref: MediaRef): ResultMediaElement | undefined {
     const mime = ref.mime_type?.toLowerCase() ?? "";
     if (mime.startsWith("video/")) return "video";
     if (mime.startsWith("audio/")) return "audio";
@@ -45,11 +54,17 @@ function pickElement(ref: MediaRef): "img" | "video" | "audio" {
     const url = (ref.url ?? "").toLowerCase();
     if (/\.(mp4|webm|mov|m4v|ogv)(\?|$)/.test(url)) return "video";
     if (/\.(mp3|wav|ogg|m4a|flac|aac)(\?|$)/.test(url)) return "audio";
-    return "img";
+    return undefined;
 }
 
-export const ResultMedia: React.FC<ResultMediaProps> = ({ mediaRef, alt, density = "inline", className }) => {
-    const as = pickElement(mediaRef);
+export const ResultMedia: React.FC<ResultMediaProps> = ({
+    mediaRef,
+    elementTypeHint,
+    alt,
+    density = "inline",
+    className,
+}) => {
+    const as = pickElement(mediaRef) ?? elementTypeHint;
     const size = density === "full" ? "fill" : "xl";
     const viewerHref = mediaRef.file_id ? `/files/f/${encodeURIComponent(mediaRef.file_id)}` : null;
 

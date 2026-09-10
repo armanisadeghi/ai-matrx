@@ -26,8 +26,13 @@ import {
   useSharedStore,
 } from "@/features/file-analysis/hooks/shared-cache";
 
+// THE ARCHIVED-ITEMS LAW (../common-docs/policies/archived-items.md): the
+// cache holds BOTH archived and active templates so a surface can reveal the
+// archived ones without a second fetch; the hook hands out the split, and the
+// plain `jobs` field stays active-only so every existing caller keeps the
+// hide-by-default behaviour it already had.
 const store = createSharedStore<PageExtractionJob[]>(async (fileId) => {
-  return listJobsForFile(fileId);
+  return listJobsForFile(fileId, { includeArchived: true });
 });
 
 /**
@@ -53,8 +58,10 @@ export function upsertJobInCache(fileId: string, job: PageExtractionJob): void {
 }
 
 /**
- * Optimistically remove a job from the shared cache (used by the
- * sidebar's soft-delete affordance so the row vanishes instantly).
+ * Optimistically remove a job from the shared cache (used by the sidebar's
+ * archive affordance so the row leaves the ACTIVE list instantly). The
+ * following refetch brings it back as an archived row, where the surface's
+ * "Archived (N)" disclosure can reveal it — archived is not deleted.
  */
 export function removeJobFromCache(fileId: string, jobId: string): void {
   setKey(store, fileId, (prev) => (prev ?? []).filter((j) => j.id !== jobId));
@@ -68,7 +75,10 @@ const extractionJobsChannel = defineChannelNamespace({
 });
 
 export interface UseExtractionJobsResult {
+  /** Active templates only — what a surface shows by default. */
   jobs: PageExtractionJob[];
+  /** Archived templates — what an "Archived (N)" disclosure reveals. */
+  archivedJobs: PageExtractionJob[];
   loading: boolean;
   error: string | null;
   refetch: () => void;
@@ -103,8 +113,11 @@ export function useExtractionJobs(
     }));
   }, [fileId, manager]);
 
+  const all = data ?? [];
+
   return {
-    jobs: data ?? [],
+    jobs: all.filter((j) => !j.archived_at),
+    archivedJobs: all.filter((j) => Boolean(j.archived_at)),
     loading,
     error,
     refetch,

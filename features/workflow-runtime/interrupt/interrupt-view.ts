@@ -159,7 +159,7 @@ export function plainContextEntries(
   // The whole map WAS the kind instance — it has no leftover plain entries.
   if (kindName === null && str(context.__kind).trim()) return [];
   return Object.entries(context)
-    .filter(([name]) => name !== kindName && name !== "__kind")
+    .filter(([name]) => name !== kindName)
     .map(([name, value]) => ({ name, value }));
 }
 

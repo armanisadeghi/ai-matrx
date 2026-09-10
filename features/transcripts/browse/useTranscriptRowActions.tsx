@@ -9,7 +9,7 @@
 // hub cards carried.
 
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   Eye,
   Columns2,

@@ -48,7 +48,7 @@ import {
   selectRunStatus,
   selectRunStatusTs,
 } from "../../redux/workflow-runs.selectors";
-import { TERMINAL_RUN_STATUSES } from "../../types";
+import { runIsOver } from "../../types";
 import { RunStatusChip } from "../../run-status";
 import { RunOutcomeBanner } from "./RunOutcomeBanner";
 import {
@@ -287,7 +287,7 @@ function ReadyPage({
     makeSelectDurations(runId ?? "__none__"),
   );
 
-  const runOver = status !== null && TERMINAL_RUN_STATUSES.has(status);
+  const runOver = runIsOver(status);
   const running = runId !== null && !runOver;
 
   // ── One aimed focus ─────────────────────────────────────────────────────

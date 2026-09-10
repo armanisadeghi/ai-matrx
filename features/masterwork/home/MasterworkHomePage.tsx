@@ -2,6 +2,38 @@
 
 // features/masterwork/home/MasterworkHomePage.tsx
 //
+// 🚨🚨 DO NOT DELETE THIS DIRECTORY. IT IS UNFINISHED WORK AWAITING ARMAN'S
+// RULING — NOT DEAD CODE. 🚨🚨
+//
+// `features/masterwork/home/` (this file, `HowItsImprovingPanel.tsx`,
+// `service.ts` — 1,022 lines) was DELETED on 2026-09-10 on the grounds that
+// nothing rendered it, and RESTORED the same day from `810a4d299a` after an
+// independent review found the deletion unlawful. THE UNFINISHED-WORK ALARM
+// (`../../../../common-docs/policies/unfinished-work-alarm.md` § The ban):
+// *"You may NEVER recommend deleting … a purpose-built artifact on the grounds
+// that it is unreferenced or empty … ONLY after Arman has himself named it
+// dead, in writing, first."* He never did.
+//
+// WHY IT IS NOT ROUTED, AND WHY AN AGENT MUST NOT ROUTE IT: Arman HIMSELF made
+// `/masterwork` bounce signed-in Experts to `/masterwork/all` in his own
+// commit `00602a2916` (2026-08-21) — *"'/masterwork' is the marketing page
+// (authed bounce to /all on the canonical list template)"*. That is his
+// routing decision in writing. Re-mounting this page there would reverse it on
+// an agent's authority, which is the mirror of the deletion, not its repair.
+// He named the ROUTE; he never named this page dead.
+//
+// WHAT IS ACTUALLY AT STAKE, for his ruling: `/masterwork/all` is a generic
+// Rulebook entity list. It carries NONE of what this page carries — the review
+// KPI strip, release state + quality trend per Masterwork, recent runs, the
+// Approach start tiles, and the "How it's improving" Hindsight panel. That
+// capability is currently unreachable, which is rung 2 of THE REACHABILITY
+// LADDER: report the missing caller, never the missing value.
+//
+// STATUS: restored, compiling, and archive-lawful (it carries F10's
+// `ArchivedDisclosure` split and the all-archived caption). Registered for
+// Arman in `.matrx/ARMAN_TASKS.md` and in the archived-items-law register
+// (`common-docs/projects/archived-items-law/STATUS.md`, row F10).
+//
 // The Masterwork HOME — the authed landing at /masterwork. Makes the depth
 // of the system visible in the Expert's own terms: your Rulebooks (with
 // review progress), the Masterworks built from them (release state + quality
@@ -27,6 +59,7 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import {
   computeKpis,
+  masterworkFreshnessLine,
   type RulebookKpis,
 } from "../components/detail/RulebookKpiStrip";
 import {
@@ -35,13 +68,16 @@ import {
   type DistillationApproach,
 } from "../browse/approaches";
 import { ApproachCard } from "@/features/masterwork/browse/ApproachCard";
+import { splitMasterworksByArchive } from "../service";
 import {
   fetchMasterworkHome,
+  type HomeMasterwork,
   type MasterworkHomeData,
 } from "./service";
 import { HowItsImprovingPanel } from "./HowItsImprovingPanel";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { MASTERWORK_RULEBOOK_SURFACE } from "../assists";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 function when(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -122,6 +158,66 @@ function MiniProgress({ kpis }: { kpis: RulebookKpis }) {
   );
 }
 
+/**
+ * One Masterwork card on the home grid. Extracted so the ACTIVE grid and the
+ * ArchivedDisclosure render the identical card (THE ARCHIVED-ITEMS LAW — the
+ * reveal shows the real rows, never a lesser summary of them); a revealed card
+ * says "Archived" on its face so the two halves are never confused.
+ */
+function HomeMasterworkCard({ masterwork: m }: { masterwork: HomeMasterwork }) {
+  return (
+    <div className="flex flex-col rounded-lg border border-border bg-card p-4">
+      <div className="flex items-start justify-between gap-2">
+        <Link
+          href={
+            m.built_from_rulebook
+              ? `/masterwork/${m.built_from_rulebook}/masterworks`
+              : "/masterwork/all"
+          }
+          className="font-medium text-foreground hover:text-primary"
+        >
+          {m.name}
+        </Link>
+        <span
+          className={cn(
+            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+            m.is_archived
+              ? "bg-muted text-muted-foreground"
+              : m.released_at !== null
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-muted text-muted-foreground",
+          )}
+        >
+          {m.is_archived
+            ? "Archived"
+            : m.released_at !== null
+              ? "Released"
+              : "Draft"}
+        </span>
+      </div>
+      {m.rulebookName && m.built_from_rulebook ? (
+        <Link
+          href={`/masterwork/${m.built_from_rulebook}`}
+          className="mt-0.5 w-fit text-xs text-muted-foreground hover:text-foreground"
+        >
+          From {m.rulebookName}
+        </Link>
+      ) : null}
+      <div className="mt-auto flex items-center justify-between pt-3">
+        <QualityTrend latest={m.qualityLatest} previous={m.qualityPrevious} />
+        {m.released_at !== null && !m.is_archived ? (
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/masterwork/encore/${m.id}`}>
+              <Play className="mr-1 h-3.5 w-3.5" />
+              Run
+            </Link>
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function QualityTrend({
   latest,
   previous,
@@ -162,6 +258,7 @@ export function MasterworkHomePage() {
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [showArchivedMasterworks, setShowArchivedMasterworks] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,7 +303,15 @@ export function MasterworkHomePage() {
   }
 
   const hasRulebooks = home.rulebooks.length > 0;
-  const released = home.masterworks.filter((m) => m.released_at !== null);
+  // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md, Arman
+  // 2026-09-09): the grid and every count on this page are the LIVE half; the
+  // archived half is one click away, under the disclosure below the grid.
+  const { active: activeMasterworks, archived: archivedMasterworks } =
+    splitMasterworksByArchive(home.masterworks) as {
+      active: HomeMasterwork[];
+      archived: HomeMasterwork[];
+    };
+  const released = activeMasterworks.filter((m) => m.released_at !== null);
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 pb-10 sm:px-6">
@@ -325,62 +430,50 @@ export function MasterworkHomePage() {
       </section>
 
       {/* Your Masterworks */}
-      {home.masterworks.length > 0 ? (
+      {activeMasterworks.length > 0 || archivedMasterworks.length > 0 ? (
         <section className="space-y-2">
-          <SectionHeading title={`Your Masterworks (${home.masterworks.length})`} />
+          <SectionHeading
+            title={`Your Masterworks (${activeMasterworks.length})`}
+          />
+          {/*
+            🚨 A COUNT OF ZERO IS NOT A STATEMENT THAT NOTHING EXISTS (row F10
+            repair, 2026-09-10). Every count on this page is the LIVE half, so
+            with everything archived the heading reads "Your Masterworks (0)"
+            over an empty grid — true, and read as "you have none". The
+            canonical sentence for that state is `masterworkFreshnessLine`,
+            the SAME exported function the Rulebook and lane KPI strips print,
+            so this surface can never word it differently.
+          */}
+          {activeMasterworks.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              {masterworkFreshnessLine({
+                built: 0,
+                current: 0,
+                released: 0,
+                currentPct: 0,
+                archived: archivedMasterworks.length,
+              })}
+            </p>
+          ) : null}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {home.masterworks.map((m) => (
-              <div
-                key={m.id}
-                className="flex flex-col rounded-lg border border-border bg-card p-4"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <Link
-                    href={
-                      m.built_from_rulebook
-                        ? `/masterwork/${m.built_from_rulebook}/masterworks`
-                        : "/masterwork/all"
-                    }
-                    className="font-medium text-foreground hover:text-primary"
-                  >
-                    {m.name}
-                  </Link>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                      m.released_at !== null
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {m.released_at !== null ? "Released" : "Draft"}
-                  </span>
-                </div>
-                {m.rulebookName && m.built_from_rulebook ? (
-                  <Link
-                    href={`/masterwork/${m.built_from_rulebook}`}
-                    className="mt-0.5 w-fit text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    From {m.rulebookName}
-                  </Link>
-                ) : null}
-                <div className="mt-auto flex items-center justify-between pt-3">
-                  <QualityTrend
-                    latest={m.qualityLatest}
-                    previous={m.qualityPrevious}
-                  />
-                  {m.released_at !== null ? (
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/masterwork/encore/${m.id}`}>
-                        <Play className="mr-1 h-3.5 w-3.5" />
-                        Run
-                      </Link>
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
+            {activeMasterworks.map((m) => (
+              <HomeMasterworkCard key={m.id} masterwork={m} />
             ))}
           </div>
+          {/* THE ARCHIVED-ITEMS LAW: hidden by default, one click to reveal,
+              and the heading above counts only what is live. */}
+          <ArchivedDisclosure
+            count={archivedMasterworks.length}
+            open={showArchivedMasterworks}
+            onOpenChange={setShowArchivedMasterworks}
+            label="Archived Masterworks"
+          >
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {archivedMasterworks.map((m) => (
+                <HomeMasterworkCard key={m.id} masterwork={m} />
+              ))}
+            </div>
+          </ArchivedDisclosure>
           {released.length > 0 ? (
             <p className="text-xs text-muted-foreground">
               {released.length === 1

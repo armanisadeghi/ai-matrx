@@ -10,8 +10,8 @@ import {
   Files,
   Plug,
   ArrowDown,
-  Wand2,
-  Sparkles,
+  Zap,
+  BrainCircuit,
   GitBranch,
   ShieldCheck,
   Database,
@@ -78,7 +78,7 @@ const PHASES: Phase[] = [
       "→ raw text (messy)",
     ],
     tone: "flow",
-    icon: Wand2,
+    icon: Zap,
   },
   {
     id: "clean",
@@ -88,7 +88,7 @@ const PHASES: Phase[] = [
       "Two tiers. Tier A does a generic clean (fix OCR, restore structure, label speakers). Tier B runs a known-type agent that applies your org rules and emits structured JSON.",
     chips: ["Tier A · generic clean", "Tier B · org rules → JSON"],
     tone: "flow",
-    icon: Sparkles,
+    icon: BrainCircuit,
   },
   {
     id: "enrich",

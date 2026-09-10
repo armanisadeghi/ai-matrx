@@ -103,9 +103,16 @@ every finding, not by reading the number:
   indicator, a progress readout). Those five are correct *by coincidence*: the
   ref mutation happens to sit next to a state update that re-renders. Only 3
   put a ref inside a dependency array (a dep that can never fire).
-- **`static-components` (209).** Mechanical and genuinely user-visible —
-  remounting a subtree loses focus, scroll and child state. **152 are in
-  product code**, not demos.
+- **`static-components` (129 at the 2026-09-10 re-measure; 44 after the
+  burn-down).** Two different things wore this rule id, and the split matters
+  more than the count. **85 were real inner component definitions** — a
+  component declared inside another, so its subtree remounts every render and
+  loses focus, scroll and child state. Those are fixed (hoisted to module
+  scope, closure values passed as props). **The 44 that remain are registry
+  dispatch** — `const Icon = resolveIcon(x)` / `getViewComponent(id)` then
+  `<Icon />` — where the reference comes out of a module-level map and nothing
+  remounts. They cannot be hoisted (the argument is a runtime value) and are
+  not worth chasing per call site; see the campaign handoff item 2b.
 
 **The findings are NOT mostly demo code.** By zone: 965 of the
 `set-state-in-effect` and 572 of the `refs` findings are in product paths;

@@ -157,7 +157,16 @@ export interface CatalogModel {
   maxTokens: number | null;
   isPrimary: boolean;
   isPremium: boolean;
+  /**
+   * Deprecated = hidden from a normal user's DEFAULT list (the picker's
+   * "Include deprecated" toggle reveals it) but fully runnable — ruled
+   * 2026-09-09. Admin variant always shows it, badged.
+   */
   isDeprecated: boolean;
+  /** The dead state (ai_075): the provider no longer serves it. Shown for identity, never selectable. */
+  retiredAt: string | null;
+  /** Explicit replacement named in the deprecation warning / retirement refusal. */
+  successorId: string | null;
   /** OUTPUT cost basis used for the price tier (points for user view). */
   outputCost: number | null;
   /** Points per 1M input tokens — THE user currency, prominently displayed. */
@@ -261,7 +270,9 @@ function normalizePublic(
     maxTokens: row.max_tokens,
     isPrimary: row.is_primary ?? false,
     isPremium: row.is_premium ?? false,
-    isDeprecated: false,
+    isDeprecated: row.is_deprecated ?? false,
+    retiredAt: row.retired_at ?? null,
+    successorId: row.successor_id ?? null,
     outputCost: row.points_per_million_output,
     pointsInput: row.points_per_million_input,
     pointsOutput: row.points_per_million_output,
@@ -344,6 +355,8 @@ function normalizeAdmin(
     isPrimary: row.is_primary ?? false,
     isPremium: row.is_premium ?? false,
     isDeprecated: row.is_deprecated ?? false,
+    retiredAt: row.retired_at ?? null,
+    successorId: row.successor_id ?? null,
     outputCost: pricingOutputCost(row.pricing),
     // Model-level points = the preferred offering's points (user currency).
     pointsInput: offerings[0]?.pointsInput ?? null,

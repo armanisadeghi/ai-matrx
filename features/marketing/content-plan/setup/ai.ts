@@ -30,6 +30,7 @@ import {
 import type { PlanNodeRow } from "../types";
 import type { Archetype, ExpandedArchetype } from "./archetypes";
 import type { CommittedArchetype } from "./service";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * Platform agent "Content Plan Shape Planner" — permanent latest-version
@@ -38,7 +39,7 @@ import type { CommittedArchetype } from "./service";
  * current_plan_summary, target_page_count, guidance. Structured output:
  * {archetype_key, rationale, family_counts[], concept_names[]}.
  */
-export const SHAPE_PLANNER_MANDATE = "content_plan.shape_planner";
+export const SHAPE_PLANNER_MANDATE = MANDATE_KEYS.content_plan__shape_planner;
 
 /**
  * Platform agent "Content Plan Family Namer" — permanent latest-version
@@ -47,7 +48,7 @@ export const SHAPE_PLANNER_MANDATE = "content_plan.shape_planner";
  * target_count, existing_names, guidance. Structured output:
  * {names: [{label, reason}], notes}.
  */
-export const FAMILY_NAMER_MANDATE = "content_plan.family_namer";
+export const FAMILY_NAMER_MANDATE = MANDATE_KEYS.content_plan__family_namer;
 
 /**
  * Platform agent "Content Plan Entity Curator" — permanent latest-version
@@ -55,7 +56,7 @@ export const FAMILY_NAMER_MANDATE = "content_plan.family_namer";
  * research_report, site_domain, existing_entities, guidance. Structured
  * output: {entities: [{label, entity_type, description, reason}], notes}.
  */
-export const ENTITY_CURATOR_MANDATE = "content_plan.entity_curator";
+export const ENTITY_CURATOR_MANDATE = MANDATE_KEYS.content_plan__entity_curator;
 
 // NOTE: the plan-review, keyword-strategy, and entity-attach passes run
 // SERVER-SIDE since 2026-08-11 — the mandates (`content_plan.plan_reviewer`,

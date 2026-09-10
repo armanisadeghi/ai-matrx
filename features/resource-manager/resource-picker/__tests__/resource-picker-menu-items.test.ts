@@ -20,7 +20,18 @@ describe("getVisibleResourcePickerCategories", () => {
     const primary = categories.find((c) => c.category === "");
 
     // One "files" row (Voice Pad / Tools / Skills are conversation-gated).
-    expect(primary?.items.map((item) => item.id)).toEqual(["files", "webpage"]);
+    // `google` (d840ed7b40) and `cloud_browser` (38d7d71d45, Arman's
+    // 2026-08-21 ruling that the browser entry point lives in THIS menu and
+    // nowhere else) joined the primary list after this guard was written —
+    // both are deliberate rows, so the list they belong to is what gets
+    // pinned. What the guard is actually protecting is below: ONE files row,
+    // never a second "upload"/"storage" door.
+    expect(primary?.items.map((item) => item.id)).toEqual([
+      "files",
+      "webpage",
+      "google",
+      "cloud_browser",
+    ]);
     const allIds = categories.flatMap((c) => c.items.map((i) => i.id));
     expect(allIds).not.toContain("upload");
     expect(allIds).not.toContain("storage");
@@ -41,6 +52,8 @@ describe("getVisibleResourcePickerCategories", () => {
       "files",
       "audio",
       "webpage",
+      "google",
+      "cloud_browser",
       "tools",
       "skills",
     ]);

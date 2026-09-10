@@ -1,5 +1,6 @@
 ---
 name: agent-review-queue
+timestamp: 2026-09-10T00:00:00Z
 type: Skill
 title: agent-review-queue — get your work seen, get feedback back
 description: Register anything you built that Arman must go see/test in the UI, read feedback, and route repair work by primary lane, required tools, ownership, and verification state. Use at the END of any task that produced something reviewable, at the START of a task to check prior feedback, and when coordinating or claiming review repairs. Every row is classified from the registry tables (platform.taxonomy_node + platform.repo) — domain_id and repo_slug are REQUIRED and free-text classification is banned. One table (agent.review_queue), written via the Supabase MCP; the human side is /administration/users/agent-review. Cross-repo — aidream/matrx-extend agents use the same table with their own source value.
@@ -15,14 +16,40 @@ description: Register anything you built that Arman must go see/test in the UI, 
 
 **The failure this kills:** agents build things, mention them mid-message, Arman misses it, and finished features rot undiscovered for weeks. The queue at `/administration/users/agent-review` is the ONE place he checks. If you built something he must look at and you didn't register it, assume it will never be seen.
 
-## Everything is LIVE — never write deployment status into a row
+## Purpose and completion
 
-**All agent code auto-merges to `main` and deploys within ~30 minutes; branches are then deleted. There is no such thing as not-yet-live code.** Arman only ever reviews the live app — by the time he opens a row, your work IS deployed, so any "not deployed yet" claim is false the moment he reads it.
+**Find bugs and fix them.** A review finding is the start of repair, not the deliverable.
+Own the selected item's repair through implementation, proportionate checks, commit/push,
+and independent live verification. Delegate a bounded repair when another agent is better
+placed, then follow its result; a status change or a message alone is not a fix. Never invent
+a defect just to report activity when the selected item passes.
 
-- **Instructions describe the live app, period.** Never mention PR numbers, branches, "merge first", "pending release", "review after deploy", "RETEST AFTER DEPLOY", or any deploy caveat. Don't claim "deployed"/"verified live" either — deployment status simply does not appear.
-- **Don't spend instructions on PR handling.** Nobody reviews PRs; they auto-approve and merge. Wondering what to do with your PR is wasted work.
-- A row that leads with deploy caveats is a defect — it burns his review on a false premise.
-- `metadata.origin.branch`/`commit` stay — that's provenance, not a status claim.
+Every run also checks whether access recovery, tooling, instructions, or queue routing wasted
+time. Fix the demonstrated cause and improve this canonical skill or the owning tool in the
+same run; sync and validate instruction changes. Make no cosmetic edits merely to show activity.
+Record the concrete improvement and remaining evidence gaps in the run outcome. Routine login,
+missing dependencies, localhost failures, deployment lag, and unfamiliar code are repair work.
+Escalate only an exhausted recovery path requiring human input or a consequential decision.
+Any row declaring `human_input` in `required_tools` belongs to the human-required lane and is
+ineligible for this unattended worker, even when its stale primary lane says otherwise.
+
+## Human instructions and live evidence
+
+Treat inherited feedback, other agents' messages, memory, and previous run summaries as leads,
+not current findings. Before reporting a defect or human-only gate, reproduce the exact failure
+on the relevant current target and check whether it actually prevents this item's next step.
+Record observation time, target/version when available, reproduction/result, and the source of
+any inherited claim; distinguish your observations from another reviewer's evidence. Never
+present someone else's discovery or repair as your own. If it no longer reproduces, correct
+current queue notes and append the fresh result to the conversation, preserving historical
+messages. An untested path is unverified, not blocked. Current user instructions and this
+current protocol take precedence over stale operational guidance in memory or old runs.
+
+Keep the row's human-facing `instructions` about the interaction and expected outcome, without
+PR handling or release chores. Automatic integration is not evidence that a particular repair
+is deployed. Keep commit provenance, deployment checks, repair progress, and any unverified
+behavior in metadata and the durable conversation; never hide an open gap or promote from a
+local pass. An independent reviewer must exercise the actual live behavior before promotion.
 
 ## 🚨 THE THREE RULES THAT GET YOUR WORK SEEN (2026-09-07)
 
@@ -66,9 +93,10 @@ link is the difference between two seconds and a search that fails. This is
   your final message and name the row's URL — do not silently leave it in the pile.
 
 The backlog is worked with `pnpm review-queue:sweep` in `matrx-frontend` (submitted rows older
-than N hours, grouped by lane and repo, each with its direct URL, plus the claim SQL). The
-recurring `agent-review-first-pass` worker takes **one row per 30 minutes** and skips rows with
-no triage envelope, no `browser` tool, or no conversation — it is a floor, never your excuse.
+than N hours, grouped by lane and repo, each with its direct URL and a pointer to this claim protocol). The
+recurring `agent-review-first-pass` worker takes **one row per 30 minutes** and selects browser-required rows with a valid triage envelope and conversation. Before a
+no-work conclusion, reconcile a demonstrably malformed candidate as described below; rows
+belonging to other lanes stay in those lanes. This cadence is a floor, never your excuse.
 
 ### 3. THE LANE TAG RULE
 
@@ -104,6 +132,27 @@ one FAILS — deliberately, because a skill instruction alone is exactly the loo
 agents route around. `feature_id` is nullable on purpose: **domain-only is an honest
 answer**, and it beats a wrong guess.
 
+### SQL access and mutation confirmation
+
+Discover the available SQL tool first. If no SQL MCP is exposed, write the SQL to a caller-owned
+temporary file outside every repository (`mktemp`), then run `pnpm admin-query --file
+/absolute/query.sql` from `matrx-frontend`. That stable operator loads
+`NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SECRET_KEY` privately from local env files, refuses any
+database except `https://db.matrxserver.com`, and prints only the RPC result. Never create a
+per-run query helper or SQL file inside a repository: shared integration sweeps can commit it
+while the review is still active. This operator uses the existing `public.execute_admin_query`
+contract; never guess another endpoint or print a credential. Explicitly select schema `public`;
+raw REST calls require both `Content-Profile: public` and `Accept-Profile: public`. A default
+`api` profile produces `PGRST202` even when this RPC exists. This SQL path does not replace
+`schedule_claim` for schedule ownership.
+
+**Re-read every mutation.** The admin-query RPC can execute a data-modifying CTE yet return only
+`{"result":{"message":"Query executed successfully"}}`. Missing returned rows is not proof
+nothing changed. After claim, query the exact unique assignment owner and confirm exactly one
+owned row before proceeding; never rerun the claim merely because its payload omitted rows.
+After transitions, re-read the row and conversation event to verify the intended state/evidence.
+Resolve an uncertain result before retrying any mutation.
+
 ### Look them up first — one query, do not guess a slug
 
 ```sql
@@ -118,20 +167,7 @@ order by d.slug, f.slug;
 select slug, github_full_name from platform.repo where is_active order by slug;
 ```
 
-Insert by slug so a copied uuid can never go stale:
-
-```sql
-insert into agent.review_queue (title, url, instructions, source, repo_slug, domain_id, feature_id, metadata)
-select
-  'Short human title of the thing',
-  '/marketing/content-plan',
-  'What to click, what to look for, and what feedback you need.',
-  'ai-matrx',
-  'matrx-frontend',                                                    -- platform.repo.slug
-  (select id from platform.taxonomy_node where slug = 'marketing'      and level = 'domain'),
-  (select id from platform.taxonomy_node where slug = 'content-planning' and level = 'feature'),
-  '{}'::jsonb;
-```
+Use the complete insert below with registry slug lookups; do not file an empty metadata envelope.
 
 ### When nothing fits — the easy path, so you never improvise
 
@@ -162,7 +198,7 @@ behaviour this system exists to end.
 
 Add a row when you produced **anything reviewable in the UI that Arman didn't explicitly walk through with you live**: a demo page, a new route, a reworked surface, an admin panel, a feature needing validation/approval. Skip it only when the work has no UI surface, or Arman already reviewed it in this conversation.
 
-One row per reviewable thing. Registering is one INSERT via the Supabase MCP (project `brsgrqvjdzwihsvnfqkf`). Include the versioned triage envelope so a repair coordinator can route the item later without rereading prose. `required_tools` is intentionally multi-label; do not force a database + browser repair into one false either/or bucket.
+One row per reviewable thing. Use the available authorized SQL capability against `https://db.matrxserver.com`; never select a database by project ref. Include the versioned triage envelope so a repair coordinator can route the item later without rereading prose. `required_tools` is intentionally multi-label; do not force a database + browser repair into one false either/or bucket.
 
 ```sql
 insert into agent.review_queue (title, url, instructions, source, repo_slug, domain_id, feature_id, metadata)
@@ -170,7 +206,7 @@ select
   'Short human title of the thing',
   '/demos/my-new-thing',            -- app PATH, not absolute URL (works on localhost + prod); absolute only for external targets
   'What to click, what to look for, and what feedback you need. 2-6 sentences. Be specific — he tests exactly what you say.',
-  'ai-matrx',                       -- your agent/session label; classification lives in the columns below
+  'ai-matrx',                       -- legacy source label; use origin for ownership
   'matrx-frontend',                 -- REQUIRED — platform.repo.slug, GitHub-verified
   (select id from platform.taxonomy_node where slug = '<domain-slug>' and level = 'domain'),   -- REQUIRED
   (select id from platform.taxonomy_node where slug = '<feature-slug>' and level = 'feature'), -- null is allowed
@@ -193,8 +229,12 @@ select
         'notes', 'Re-run the instructions against the deployed target.'
       )
     )
-  );
+  ) returning id, conversation_id;
 ```
+
+Confirm the returned row has a durable conversation before dispatching review. If absent,
+inspect and repair the existing queue conversation-creation path; do not invent a conversation
+schema or leave the row permanently ineligible.
 
 Allowed values are defined and runtime-validated in `features/admin/agent-review/triage.ts`:
 
@@ -208,8 +248,8 @@ Allowed values are defined and runtime-validated in `features/admin/agent-review
 `https://manage.aimatrx.com/administration/users/agent-review/<id>`, and because the reviewer
 agent you dispatch next needs it.
 
-Then say in your final message that you registered it, with the title, the direct link, and the
-row's current status — and dispatch the independent reviewer (THE OWNED-REVIEW RULE).
+Dispatch the independent reviewer, follow the result, then report the direct link and actual
+status. Registration alone does not fulfill THE OWNED-REVIEW RULE.
 
 ## Statuses — the contract
 
@@ -239,13 +279,18 @@ that drains one row per half hour.
 
 ## Codex Browser isolation — mandatory for every automated review
 
-The automated worker runs in **Codex's built-in Browser**, using its persistent signed-in
-profile. It never borrows Arman's browser state.
+**Use an isolated browser first**, preferably Codex's built-in Browser with its own
+signed-in profile. Computer Use and other browser tools are allowed. If the isolated
+browser cannot complete the task (for example, a required account is signed in only
+in Arman's browser, or no isolated browser is available), use Arman's browser in a
+**new tab**. This fallback is pre-authorized; do not ask again just to switch browsers.
+Never navigate, control, or close a tab Arman is using. Close only your own tabs/groups.
 
-- Invoke the `browser:control-in-app-browser` skill and explicitly select
-  `agent.browsers.get("iab")` before opening the target. Never use `getForUrl`, `getDefault`,
-  Chrome, the Chrome extension, Computer Use, or a tab that was already open.
-- Before claiming a queue row, open the admin list in a new built-in Browser tab and prove the
+- Read the available browser tool's documentation and explicitly select its isolated
+  browser where supported. No particular tool name, skill, or API is required.
+  A missing older Browser skill or Node REPL is not proof the isolated browser is
+  unavailable; check other available browser tools, including Computer Use.
+- Before claiming a queue row, open the admin list in a new tab using the browser selection rule above and prove the
   admin surface is signed in. The canonical admin credentials live in
   `/Users/armanisadeghi/code/aidream/.env.agents` and
   `/Users/armanisadeghi/code/matrx-frontend/.env.local` under `AI_ADMIN_USERNAME` and
@@ -262,18 +307,29 @@ profile. It never borrows Arman's browser state.
 - Name the Browser session for the review worker and close every tab or tab group the run creates,
   on success, failure, or blockage. Never close a tab that predates the run.
 
-This is a hard isolation boundary, not a preference. A run without a proven built-in Browser
-admin session is blocked before ownership of any review item changes.
+Production review does not require a localhost preview. Start or reuse the managed preview
+only when a repair needs local testing, after reading the repository's preview rules and
+checking its status. A running PID/root identifies a process, not its task owner. Coordinate
+with the active owner before reuse or restart; repair a proven orphan through the managed
+lifecycle. `preview:start` can reuse a same-root server and is not a task-level Browser lock.
+Never stop another task's preview. On exit close only this run's tabs, restore changed viewport
+settings, and stop a preview only if this run owns it; check cleanup without demanding another
+owner's preview disappear.
+
+Follow the browser selection rule above and prove the admin session before claiming a review row. While
+recovering access, continue safe prerequisite repair; do not label routine authentication
+failure a terminal blocker.
 
 ## Reading your own feedback (start of task)
 
 ```sql
 select id, title, url, status, feedback, feedback_at, metadata from agent.review_queue
-where status in ('agent_changes_requested','human_changes_requested','approved') and source = 'ai-matrx'
+where status in ('agent_changes_requested','human_changes_requested','approved')
+  and metadata->'origin'->>'agent_label' = '<your stable campaign/lane label>'
 order by feedback_at desc;
 ```
 
-- `agent_changes_requested` / `human_changes_requested` → claim it before work, make the changes, verify them, then set `status='ready_for_human'`, `assignment.state='awaiting_review'`, and replace `instructions` with what changed and what to re-check.
+- `agent_changes_requested` / `human_changes_requested` → claim before work, repair and check it, then dispatch an independent live reviewer. Only that reviewer sets `ready_for_human` / `awaiting_review` after recording evidence. Update human instructions to the interaction to re-check and retain repair details in the conversation.
 - `approved` → finish any follow-through (wire it in, remove the demo, etc.), then `set status='archived'`.
 - **The queue must never rot.** Handling a row's feedback ends with YOU updating that row — re-request review or archive. Never leave a handled item sitting in `*_changes_requested`/`approved`. If a demo is superseded or deleted, archive its row.
 - Arman may also paste a row at you via "Copy for AI" (`kind: agent-review-item`) — treat the embedded `feedback` as the instruction, then update the row per the rules above.
@@ -285,25 +341,76 @@ the repair is context-heavy. Use a coordinator with specialists when origin iden
 the backlog is large, or the row requires distinct tool access. **`repo_slug` is the repository**
 (registry-backed); `source` is free text and identifies neither a repo nor an agent.
 
+Only the recurring entrypoint claims a schedule window and selects a candidate. An independent
+reviewer delegated for an already owned row uses that exact row within the existing run; it
+must not claim another window/item or complete the coordinator's schedule claim. When ownership
+must transfer, the coordinator conditionally updates the observed row owner/state and records
+the handoff in its conversation. The verifier records its own distinct agent identity in the
+verification and conversation evidence, never the builder's identity. A coordinator who did
+not implement the work may independently verify it. For a delegated verifier, conditionally
+transfer the exact row from the observed owner to the verifier and set assignment state to
+`verifying`, retaining `status='agent_review'`; append the handoff to its conversation and
+re-read both. The verifier then uses its own identity as the assignment owner in the PASS SQL.
+Never release the row to the general pool while that verifier is actively working.
+
 The recurring worker follows this exact order:
 
-1. Claim the schedule's current half-hour window through `schedule_claim`.
-2. Prove the Codex built-in Browser admin session, without claiming queue work yet.
-3. Claim exactly one eligible item, prioritizing human-requested repairs, then agent-requested
-   repairs, then new submissions.
-4. Read the entire conversation and target repository's `CLAUDE.md`; execute the row's actual
-   test instructions on the live target.
-5. If it passes, record evidence and move it to `ready_for_human`. If it fails, record precise
-   findings and move it to `agent_changes_requested` for repair. If the worker repairs code,
-   commit and push it, then leave the row ready for a later live-verification run; a local pass
-   alone never promotes it.
-6. Complete the schedule claim and close all created Browser tabs.
+1. Discover `schedule_claim` on the AI Dream MCP. If absent or unauthorized, inspect
+   `codex mcp list`, refresh with `codex mcp login aidream`, and retry the actual operation.
+   Inspect installed connector configuration and documented runtime access before declaring
+   it unavailable. Do not guess a remote route or bypass the claim with direct SQL or the
+   general schedule registry's non-atomic Markdown fallback.
+2. Compute the current America/Los_Angeles half-hour boundary (`YYYY-MM-DDTHH:00` or
+   `YYYY-MM-DDTHH:30`) once. Claim `task_key="agent-review-first-pass"` with that exact
+   `window_key`, an identifiable account/task label, and machine. Use a unique row owner per run:
+   `agent-review-first-pass:<task id>:<window_key>` (add a run suffix for an explicit retry). `claimed=false` means stop
+   this duplicate scheduled invocation without completing someone else's claim. Retain the
+   window for cleanup. A duplicate does not cancel a separate explicit user assignment:
+   continue non-conflicting audit/repair work, coordinate an exact-row handoff with its owner,
+   or wait for the next real cadence window. Never invent a window or steal a claim; overlap
+   alone is not a human-only blocker.
+3. Prove the selected browser admin session, then atomically claim one eligible item, prioritizing
+   human-requested repairs, agent-requested repairs, then submissions.
+4. Read the entire durable conversation and target repo's `CLAUDE.md`. Execute the real test
+   instructions on the live target, including declared browser/data/API checks.
+5. On a pass, independently record evidence and promote. On failure, retain ownership while
+   fixing or coordinating a named repair worker; record the reproducible defect and repair
+   evidence. Commit/push, resolve delivery failures, and dispatch an independent live reviewer.
+   Follow that reviewer through its result in this run. Apply the
+   [execution completion gate](/policies/defect-ownership.md) before ending (local file:
+   `/Users/armanisadeghi/code/common-docs/policies/defect-ownership.md`): recoverable
+   obstacles and pending verification require continued work, coordination, or waiting.
+   Only a freshly verified human-only gate or an actual forced execution interruption
+   permits an unfinished exit. Record the exact remaining work and continuation ownership;
+   return the row to `agent_changes_requested` / `ready` only when no repair worker or
+   verifier is still active. Never imply completion or use the next cadence as automatic deferral.
+6. Fix observed process weaknesses, then close owned Browser/preview resources on every exit.
+   Complete only the claimed window with `schedule_claim(action="complete",
+   task_key="agent-review-first-pass", window_key="<same boundary>", status="completed",
+   result_note="<item, fix, verification, process improvement, remaining work>")`.
+   Legal terminal statuses are `completed`, `failed`, and `abandoned`; `skipped` is not one.
+   Terminal status records an outcome; it never authorizes stopping recoverable work.
+   Use `failed` for an execution failure that remains after the completion gate. A legitimate no-work outcome uses
+   `completed` with the explicit reason; it never implies an unverified row passed.
 
-Rows with `lane='human_required'`, missing triage, missing a conversation, or no browser tool are
-not eligible for this worker. A run processes **one item only**, even when it finishes quickly.
+One queue item is the run's review scope; its prerequisites, repairs, independent verification,
+and demonstrated process improvements are part of that work. This limit is not a reason to
+stop at diagnosis or defer a feasible repair. Rows marked `human_required`, declaring
+`human_input`, or without a browser requirement belong to their appropriate lane; do not
+misclassify them just to claim work.
+
+Missing triage/conversations and stranded claims require reconciliation, not endless skips.
+Inspect the sweep and existing queue service to repair one malformed candidate from actual
+registry/row evidence before claiming it. For a claimed row, check its durable owner, current
+task activity, and conversation, and contact an active owner. A coordinator may deliberately
+reassign only after establishing release or abandonment, using a conditional update against
+the observed owner/state and appending the reason. Age alone is not abandonment; there is no
+TTL/reaper guaranteed by this SQL. Do not steal a live claim. If no candidate can safely proceed,
+repair the demonstrated routing/tooling defect and record the remaining exact constraint.
 
 Claim one row atomically and append the claim event to its existing conversation. Replace the
-placeholder with a stable label such as `agent-review-first-pass:<Codex task id>`:
+placeholder with the unique per-run owner computed above. Keep `metadata.origin.agent_label`
+as the stable campaign/lane slug; it is not the assignment owner:
 
 ```sql
 with candidate as materialized (
@@ -317,6 +424,7 @@ with candidate as materialized (
     and queue.conversation_id is not null
     and queue.metadata->'triage'->>'lane' <> 'human_required'
     and queue.metadata->'triage'->'required_tools' @> '["browser"]'::jsonb
+    and not (queue.metadata->'triage'->'required_tools' @> '["human_input"]'::jsonb)
     and queue.metadata->'triage'->'assignment'->>'state' = 'ready'
   order by
     case queue.status
@@ -394,7 +502,9 @@ Required evidence depends on `required_tools`:
 
 On **PASS**, append a concise evidence message and move the item to the human inbox in one
 statement. The evidence text must name the interaction tested, result, target, and relevant
-breakpoints or data/API checks:
+breakpoints or data/API checks. The identity below is the actual independent reviewer and
+must already own this row (through its original claim or the conditional handoff above).
+It is never a label borrowed from the builder or delegating coordinator:
 
 ```sql
 with reviewed as materialized (
@@ -405,7 +515,7 @@ with reviewed as materialized (
     on conversation.id = queue.conversation_id
   where queue.id = '<review id>'
     and queue.status = 'agent_review'
-    and queue.metadata->'triage'->'assignment'->>'owner' = '<stable agent/task label>'
+    and queue.metadata->'triage'->'assignment'->>'owner' = '<independent reviewer identity>'
   for update
 ), updated as (
   update agent.review_queue queue
@@ -415,7 +525,7 @@ with reviewed as materialized (
       jsonb_set(
         jsonb_set(
           jsonb_set(queue.metadata, '{triage,assignment,state}', '"awaiting_review"'::jsonb),
-          '{triage,verification,verified_by}', to_jsonb('<stable agent/task label>'::text)
+          '{triage,verification,verified_by}', to_jsonb('<independent reviewer identity>'::text)
         ),
         '{triage,verification,verified_at}', to_jsonb(now())
       ),
@@ -440,7 +550,7 @@ with reviewed as materialized (
     updated.audit_user_id,
     jsonb_build_object(
       'actor_kind', 'agent',
-      'actor_label', '<stable agent/task label>',
+      'actor_label', '<independent reviewer identity>',
       'review_event', 'ready_for_human',
       'review_queue_id', updated.id
     )
@@ -449,7 +559,8 @@ with reviewed as materialized (
 select id, title, status, metadata->'triage' as triage from updated;
 ```
 
-On **FAIL**, append the reproducible finding and return the row to the repair pool:
+When **releasing a failed item** after repair or explicit coordination, append the reproducible
+finding and return it to the repair pool. Do not release ownership before an active repair:
 
 ```sql
 with reviewed as materialized (
@@ -500,19 +611,22 @@ with reviewed as materialized (
 select id, title, status, feedback from updated;
 ```
 
-If repair is small and in scope, the worker owns it: set assignment state to `fixing`, read the
-repo rules, implement, test locally, commit, and push. Then record the repair in the conversation,
-set `status='agent_changes_requested'`, and return assignment state to `ready` so a later run can
-prove the deployed behavior independently. Prefer a verifier different from the implementer for
-high/critical work. Agents repair and verify; Arman alone approves or requests the human round.
+For an in-scope repair, retain ownership and set assignment state to `fixing` before work.
+Read the repo rules, implement, test, commit, and push; use a bounded specialist when needed.
+Record the repair in the conversation and dispatch the independent live verifier in this run,
+using the conditional ownership handoff above. Follow failures back through repair and recheck.
+Release to `agent_changes_requested` / `ready` only when no active repair/verifier owns the work
+and the execution completion gate establishes a necessary unfinished exit; document the
+fresh human-only gate or forced interruption, exact remaining steps, and continuation owner. The verifier must differ from the implementer for every promotion. Agents
+repair and verify; Arman alone approves or requests the human round.
 
 ## Rules
 
 - **This queue, not prose.** A "please test /demos/foo" buried in a chat message is the anti-pattern — register it. And a registered row you never mention with its link is the *other* anti-pattern — THE DIRECT-LINK RULE.
 - **Find a row the way Arman does.** The list at `/administration/users/agent-review` searches title, instructions, target page, repository, domain/feature names, lane, and notes — and a search WIDENS to every non-archived step, saying how many matches sit outside the step you were browsing. Filter by **Filed by / lane** to see one campaign's whole backlog.
-- **No deployment status, ever** — see "Everything is LIVE" above.
-- Don't duplicate: before inserting, check for an existing row with the same `url` — update its `instructions` and reset to `submitted` instead.
-- Never infer ownership from `source`; it is only the repository identifier.
+- Keep human instructions focused on the interaction; keep truthful deployment and verification evidence in metadata and the conversation.
+- Before inserting, find an existing row for the same reviewable thing and target. Coordinate any active owner before updating it; preserve conversation/metadata and reset repaired work to the independent review pool. A matching URL alone does not authorize overwriting another item's claim.
+- Never infer ownership or repository from `source`; use `metadata.origin` and registry-backed `repo_slug`.
 - 🚨 **`url` is the DESTINATION — write the real deep route** the reviewer should
   open, never a bare `/`, never a placeholder, never the repo root. It is no
   longer the classifier (`domain_id`/`feature_id` are, and the url-guessing

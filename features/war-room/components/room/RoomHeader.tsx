@@ -29,7 +29,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Bot,
+  BrainCircuit,
   Check,
   Circle,
   EyeOff,
@@ -450,7 +450,7 @@ export function RoomHeader({
               }}
             />
             <SheetRow
-              Icon={Bot}
+              Icon={BrainCircuit}
               label={roomAgentOpen ? "Close Room Agent" : "Room Agent"}
               active={roomAgentOpen}
               onPress={() => {
@@ -562,7 +562,7 @@ function RoomAgentToggle({
       )}
       title="Chat with an agent that sees every thread in this room"
     >
-      <Bot className="size-3.5 shrink-0" />
+      <BrainCircuit className="size-3.5 shrink-0" />
       <span className="@max-2xl:hidden">Room Agent</span>
     </button>
   );

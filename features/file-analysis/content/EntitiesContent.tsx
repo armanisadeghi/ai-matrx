@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Loader2, Sparkles, Tag } from "lucide-react";
+import { Loader2, BrainCircuit, Tag } from "lucide-react";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type { EntityOut } from "@/features/file-analysis/api/file-analysis";
 
@@ -77,7 +77,7 @@ export function EntitiesContent({ fileId }: Props) {
   if (entities.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-        <Sparkles className="h-6 w-6 text-muted-foreground" />
+        <BrainCircuit className="h-6 w-6 text-muted-foreground" />
         <p className="text-sm font-medium">No entities extracted yet</p>
         <p className="max-w-sm text-xs text-muted-foreground">
           Run the knowledge + NER pipeline from the{" "}

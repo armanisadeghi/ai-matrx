@@ -9,7 +9,7 @@
  * (the single-item workspace), ItemsSheet (the capture-screen review drawer)
  * and pipeline/ItemWorkspace — four real surfaces. This module is the fix
  * that stops each one from growing its own copy of "view / capture more /
- * mark ready / delete": a surface calls `useCaptureItemMenuSection` with a
+ * mark ready / delete": a surface calls `buildCaptureItemMenuSection` with a
  * `getRow` reading its own clicked-row state and the callbacks it already
  * has, and gets the same items everywhere.
  *
@@ -58,7 +58,7 @@ export interface CaptureItemMenuActions {
   requestDelete: (row: CaptureItemMenuRow) => void;
 }
 
-export function useCaptureItemMenuSection(opts: {
+export function buildCaptureItemMenuSection(opts: {
   /** The row the menu was opened on, resolved at select time. */
   getRow: () => CaptureItemMenuRow | null;
   actions: CaptureItemMenuActions;

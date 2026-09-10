@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-11
+updated: 2026-09-10
 repos: [matrx-frontend]
 ---
 
@@ -62,22 +62,48 @@ is a live trap here:
 Ordered by value per edit. Re-derive counts from the scoreboard before
 starting — the tree moves daily and other sessions add debt.
 
-**1 — the ~5 confirmed user-visible `refs` bugs.** Values the user SEES derived
-from a `ref.current` read during render, so they are correct only by
-coincidence: `use2048.ts:186` (`canUndo` drives a disabled Undo button on a
-PUBLIC page), `CodeInlinePreview.tsx:65` (dirty indicator),
-`useDesiredValueSlice.ts:50` (same), `ProcessingProgressDialog.tsx:523`
-(progress readout), `useAppletRecipeFastAPI.ts:129` (rendered list). The other
-~20 in that shape are benign (`const supabase = supabaseRef.current` and
-friends) — do not touch them.
+**1 — the ~5 user-visible `refs` bugs. DONE** (`2da38821bf`) — 2048's undo
+history, CodeInlinePreview's last-saved text, `useDesiredValueSlice`'s seed,
+ProcessingProgressDialog's "Xs ago" clock and `useAppletRecipeFastAPI`'s
+needed-broker list are all state now. The ~20 benign `const x = ref.current`
+sites were left alone, as instructed.
 
-**2 — `react-hooks/static-components` (209; 152 in product code).** Mechanical
-and genuinely user-visible: a component defined inside another remounts its
-subtree every render, losing focus, scroll and child state. Worst product
-files: `ContainerComparisonDetails.tsx` (11),
-`agent-apps/apps/page.tsx` (7), `ShortcutDirectory.tsx` (7),
-`ShortcutList.tsx` (7), `DeprecatedModelsAudit.tsx` (7),
-`TasksTableView.tsx` (6). Fix = hoist to module scope, pass props. Nothing else.
+**2 — `react-hooks/static-components`. DONE for the whole fixable class**
+(`acd5315ec9`, `864de08423`, plus the icon-resolver commit): **129 → 44**, and
+every one of the 44 that remain is a false positive of the same shape — see
+below. 23 files hoisted, threading the closure values through as props:
+JsonEditor/JsonEditorItem `IconButton`, functionDetails `CodeBlock`+`DetailItem`,
+DocumentsHubTable `ColumnHead`, RateLimitsClient + search-console DataTable
+`SortIcon`, MessageContentDisplay `MarkdownContent`, both AnimatedRevealCards'
+`CardContent`, NotificationDropdown `EmptyState`, PodcastsTable `SkeletonRows`,
+AssetUploader `VideoStatusIcon`, PodcastEpisodePage's two share buttons,
+inline-copy-button `DemoContent` (it held its own `useState`), the four
+`Content` components in `components/animated/**`, ThreeColumnBentoGrid's
+`Cursor`/`Container`/`CircleWithLine`/`Beam`, BentoGridExampleThree `Container`,
+cloud-sync `MsgBanner`. LargeIndicator's `LargeControls` had one call site and
+~20 closure values, so it was inlined into that call site instead.
+
+The six "worst product files" this doc used to name
+(`ContainerComparisonDetails`, `agent-apps/apps/page.tsx`, `ShortcutDirectory`,
+`ShortcutList`, `DeprecatedModelsAudit`, `TasksTableView`) were already at zero
+when this batch started — re-derive from the scoreboard, never from this list.
+
+**2b — the 44 that remain are NOT hoistable, and should not be chased.** Every
+one is `const Icon = resolveIcon(x)` / `getIconComponent(x)` / `roomIconOf(x)` /
+`getViewComponent(id)` / a compiled-component lookup, then `<Icon />`. That is
+registry dispatch, not a component defined inside a component: the reference
+comes out of a module-level map, so the element type is stable and nothing
+remounts unless the icon genuinely changed. There is no hoist that fixes them —
+the argument is a runtime value. Concentrated in `resolveIcon` consumers
+(scope-system + scopes TemplateGalleryDrawer, OrgScopeTree, ScopeTypeCard,
+container-drop), `getMenuIcon` (the three header-right-menu items), `roomIconOf`
+(war-room), and the kind/view dispatchers (`ViewRenderer` 4, `ViewWrapper`,
+`KindRenderPaths`, `DbKindComponentImpl`, `StudyPackBlock`,
+`TemplatePreviewRendererImpl`). **Closing these needs a ruling, not edits:**
+either a narrow scoped `eslint.config.mjs` override for the icon-resolver
+helpers (one change, with a comment saying why — the doctrine's sanctioned move
+for a rule that is wrong for this codebase), or accept them as permanent noise
+in the report. Do not sprinkle disables per call site.
 
 **3 — `react-hooks/refs`, the remaining ~586.** ~151 write a ref during render
 (unsafe under concurrent rendering; benign today), 3 put a ref in a dependency
@@ -87,25 +113,33 @@ array (a dep that can never fire — a lie in the deps). Concentrated:
 `applet-card/{Default,Enhanced}.tsx` (16 each — near-identical files; fix one,
 port it, and ask whether they should be one component).
 
-**4 — `no-restricted-imports` (86) + `no-restricted-syntax` (19).**
+**4 — `no-restricted-imports` (26 left) + `no-restricted-syntax` (19).**
 Architectural bans, never silenced — the import or the shape changes, and the
 message names the canonical path. **Read the `code-splitting` skill rule 3
 first.**
 
-**5 — `react-hooks/set-state-in-effect` (1,107).** Biggest number, lowest
-urgency per finding: all 61 self-feeding effects already converge behind a
-guard, so there is no live freeze loop. Treat as quality debt — derive during
-render, or move the write into the handler that caused it. **Never "fix" one by
-adding another effect.** Do this last, and in small verified batches.
+*Burned down 2026-09-09 from 49 → 26.* The `window-panels/windows/**` group is
+at **zero**: `openImageViewer` moved into the openers layer
+(`features/overlays/openers/imageViewer.tsx`, alongside the hook), and the four
+modules that were never window components at all moved to the features that own
+them (`CodeEditorTabBar` + `useCodeEditorWindowState` →
+`features/code-editor/multi-file-core/`, `feedbackDraftWrite` →
+`features/feedback/`, `site-workbench-bookmarks` → `features/settings/`). The
+`window-demo` page now opens the real Notes window through
+`useOpenNotesWindow` and reads `selectIsOverlayOpen` for its toggle state.
+Four `features/files/**` findings cleared via a three-file scoped override for
+the mounts the ban's own config comment NAMES as correct (`app/Providers.tsx`,
+`app/DeferredSingletonCore.tsx`, the blob-cache admin page).
 
-**6 — the long tail** (`immutability` 122, `purity` 97, `error-boundaries` 42,
-`preserve-manual-memoization` 38, `use-memo` 25, `globals` 1).
-
-**Not worth doing:** the 4 `style` findings.
-
-**Keep the snapshot honest.** After any batch: `pnpm check:lint-debt:write` and
-commit `report.json` + `history.json`. The page shows the scan's age and screams
-past 7 days; a stale snapshot means stale line numbers on every link.
+**Resolved 2026-09-10:** the `features/files/api/*` ban contradicted its own
+comment ("import directly from the owning module") — it was written when `api/`
+held HTTP shims, and `api/<module>` are now the owning modules. The group now
+bans only the bare `@/features/files/api` directory path (no barrel, invariant
+17 intact); the 24 consumers are green. `createSlice` allowlist widened to
+`features/**/redux/**` (any depth) and the two chat slices moved into
+`features/agents/redux/chat/`. `no-restricted-syntax` is at 0. Items 1–2 above
+(user-visible refs bugs, static-components) are in flight; item 3 (~586 refs,
+benign today) is the standing backlog.
 
 ## Done
 
@@ -117,6 +151,9 @@ past 7 days; a stale snapshot means stale line numbers on every link.
   `@next/next/no-html-link-for-pages` (5), `react-hooks/rules-of-hooks` (132).
   All four rules are gone from the report entirely.
 - Severity analysis of the `correctness` bulk — see the FEATURE.md section.
+- **The 5 user-visible `refs` bugs** (item 1) and **the whole hoistable
+  `static-components` class** (item 2) — 2026-09-10. `static-components`
+  129 → 44, all 44 remaining being registry dispatch (item 2b).
 
 ## Decisions needed
 

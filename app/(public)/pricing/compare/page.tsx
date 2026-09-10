@@ -7,7 +7,7 @@ import {
   Gauge,
   Info,
   MousePointerClick,
-  Sparkles,
+  BrainCircuit,
   Star,
   X,
 } from "lucide-react";
@@ -118,7 +118,7 @@ type Stance = {
 
 const STANCES: Stance[] = [
   {
-    icon: Sparkles,
+    icon: BrainCircuit,
     title: "Free study loop",
     body: "Finish a real study session without paying. Generation is metered; studying what you made is not.",
   },

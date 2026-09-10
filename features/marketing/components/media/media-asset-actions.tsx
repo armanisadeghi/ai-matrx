@@ -20,7 +20,7 @@
  *
  * No `mediaAssetEntityRef`: the asset has no id of its own (its identity IS
  * `src`), so Attach To / Share correctly stay absent rather than offered
- * against a fabricated token — same reasoning as `adminUserMenuSection`.
+ * against a fabricated token — same reasoning as `buildAdminUserMenuSection`.
  */
 
 import {
@@ -62,7 +62,7 @@ export interface MediaAssetMenuActions {
   onAddToLibrary?: (row: MediaAssetMenuRow, kind: BrandAssetKind) => void;
 }
 
-export function mediaAssetMenuSection(
+export function buildMediaAssetMenuSection(
   row: MediaAssetMenuRow | null,
   actions: MediaAssetMenuActions,
   opts?: {

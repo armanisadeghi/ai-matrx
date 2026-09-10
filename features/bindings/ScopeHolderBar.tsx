@@ -2,8 +2,10 @@
 
 // features/bindings/ScopeHolderBar.tsx
 //
-// WHO THIS IS FOR, AND WHAT RUNS — three cells across the top of the one
-// binding UI: RUNG · HOLDER · JOB.
+// Scope and holder controls for every binding host, plus the one row that names
+// the JOB they are about. Mandate specification belongs in Definition; this bar
+// does not repeat its input inventory — only which job, what it offers, and
+// where that offer comes from, because a holder is chosen against those facts.
 //
 // UI-STANDARD P13: scope is ONE DESCRIBED CONTROL INSIDE THE FLOW, not a
 // property of which URL family you happened to open. Before this, `/mandates/…`
@@ -23,7 +25,10 @@
 import { useEffect, useMemo } from "react";
 import { TriangleAlert } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import {
+  PropertyRow,
+  StatusToken,
+} from "@/components/official/ConfigurationFields";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
@@ -188,7 +193,7 @@ export interface ScopeHolderBarProps {
    * On that host the rung is not a choice (the admin page IS the system rung),
    * the job's identity is already the page's own heading, and everything the
    * old cells explained is either stated by a control or deleted. Every other
-   * host keeps the three-cell bar.
+   * host also shows its scope selector and default-holder actions.
    */
   perspective?: "person" | "organization" | "system";
   /**
@@ -406,13 +411,17 @@ export function ScopeHolderBar({
       mandateKey={job.mandateKey}
       agentTabs={restriction}
       outputKind={job.outputKind}
-      // 🚨 FIX-R13/B — THE COVERAGE FACT GOES WHERE THE JOB CELL USED TO BE,
-      // and NOWHERE ELSE. Every other host still renders it in the JOB cell
-      // below; the system host has no JOB cell (FIX-R9-UI deleted it under
-      // D19), and this sentence is the only place on that page that says
-      // whether what the job offers actually feeds what the holder needs.
-      // Passing it on both hosts would be the repetition Arman rejected.
-      coverageLine={null}
+      holderTypeHelp={perspective === "system" ? null : restriction.sentence}
+      /* 🚨 THE COVERAGE FACT REACHES A READER ON EVERY HOST. `96e45f3aa2`
+         ("wip: integrate concurrent frontend repairs") set this to `null` with
+         the note "Matching owns coverage" AND deleted the JOB cell that carried
+         it on the other host — so `jobCoverage` was computed in
+         `OneBindingWorkspace` and rendered nowhere, and a person could set a
+         holder, read a healthy verdict about it, and never learn that a
+         required input was unmapped and a run would refuse.
+         Inside the block on the system host (which has no JOB cell), and as its
+         own fact row below on the person host — once per page, never twice. */
+      coverageLine={perspective === "system" ? job.coverageLine : null}
       refusal={
         // Verbatim, unchanged: it is the rule Arman ruled on, and the guard
         // that pins it (`system-rung-holder-refusal.test.tsx`) reads this
@@ -475,273 +484,205 @@ export function ScopeHolderBar({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card">
-      <header className="border-b border-border px-3 py-2">
-        <h3 className="text-[12.5px] font-semibold text-foreground">
-          Who this is for, and what runs
-        </h3>
-      </header>
+    <section className="min-w-0 space-y-4 rounded-xl border border-border bg-card p-3">
+      <div>
+        {/* 🚨 THE JOB IS NAMED WHERE ITS HOLDER IS CHOSEN — ONE ROW, THREE
+            FACTS (restored 2026-09-09).
 
-      {/* 🚨 THREE CELLS, PROPORTIONED TO WHAT THEY HOLD (V2 finding G3, a
-          re-occurrence of a class Arman rejected by name). Equal thirds gave
-          the HOLDER — a name, a version control and its consequence sentence —
-          the same 240px the RUNG's one select gets, so the holder overflowed
-          while the RUNG cell sat 62% empty and the JOB cell 73%. The holder now
-          takes the width it needs and the two reference cells compress first,
-          exactly as the match's own grid template already does with its rails.
-          The ladder sentence moved OUT of the header and INTO the rung cell:
-          it is a fact about the rung, so it belongs where the rung is chosen —
-          which fills that cell with meaning instead of padding. */}
-      <div className="grid gap-4 p-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)_minmax(0,1fr)]">
-        {/* ── RUNG ── */}
-        <div className="space-y-1.5">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Rung
-          </p>
-          {pinnedList ? (
-            /* THE RUNGS ARE STATED, NOT SEARCHED FOR. A pinned host manages a
-               FIXED set — the admin route manages the job's own default and the
-               platform-wide binding, and nothing else — so the cell names the
-               rung it is standing on and, when there is a sibling, offers that
-               one by name. A scope select would offer rungs this page does not
-               mean. */
-            <div className="space-y-1.5 rounded-md border border-border bg-muted/40 px-2 py-1.5">
-              <p className="text-[12px] font-medium text-foreground">
-                {pinnedRungWords(rung, defaultHolderOffer).noun}
+            `96e45f3aa2` ("wip: integrate concurrent frontend repairs") replaced
+            the three-cell bar with these property rows and deleted the JOB cell
+            wholesale. `coverageLine` came back the same day because a guard
+            named it; `label`, `offeredCount` and `offerSourceLine` did not,
+            because nothing asserted them — so the bar went on ACCEPTING three
+            props and rendering none of them. A prop a component takes and
+            throws away is the fourth law's silent failure at the component
+            boundary: the caller has every reason to believe the reader saw it.
+
+            Restored in this surface's density rather than as the old cell: one
+            row carries the job's name and key, its offer count rides the row's
+            source slot, and the sentence saying WHERE that offer comes from is
+            the row's second line — visible text, never a hover.
+            `scope-holder-bar-renders-every-job-prop.test.tsx` now fails on any
+            `job` field this bar accepts and does not render. */}
+        <PropertyRow
+          label="Job"
+          value={
+            <div className="min-w-0 space-y-0.5">
+              <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                <span className="break-words font-medium text-foreground">
+                  {job.label}
+                </span>
+                <code className="break-all font-mono text-[11px] text-muted-foreground">
+                  {job.mandateKey}
+                </code>
+              </span>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {job.offerSourceLine}
               </p>
-              <p className="text-[11px] leading-relaxed text-muted-foreground">
-                {pinnedRungWords(rung, defaultHolderOffer).covers}
-              </p>
-              {pinnedList
-                .filter((other) => other !== rung)
-                .map((other) => (
-                  <Button
-                    key={other}
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-[11px]"
-                    disabled={disabled}
-                    onClick={() => onRungChange(other, null)}
-                  >
-                    {/* NOT lowercased — a rung's noun can carry an
-                        organization's NAME (FIX-R6/F3). */}
-                    Set {pinnedRungWords(other, defaultHolderOffer).noun}{" "}
-                    instead
-                  </Button>
-                ))}
             </div>
-          ) : onDefaultHolderRung ? (
-            /* STANDING ON THE BOTTOM RUNG. The scope select cannot represent it
-               — it is not a binding principal — so the rung is STATED here, in
-               the words `defaultHolderRungOffer()` chose for this reader's own
-               situation, with the way back beside it. */
-            <div className="rounded-md border border-border bg-muted/40 px-2 py-1.5">
-              <p className="text-[12px] font-medium text-foreground">
-                {defaultHolderOffer?.label ?? "The job's own default"}
+          }
+          source={
+            job.offeredCount === null ? (
+              /* Never a premature 0 — an unread offer says it is unread. */
+              <StatusToken status="unknown" label="Reading what it offers" />
+            ) : (
+              `Offers ${job.offeredCount}`
+            )
+          }
+        />
+        <PropertyRow
+          label="Scope"
+          source={
+            pinnedList && rung === "org"
+              ? (organizationNames[organizationId ?? ""] ??
+                "Organization name unavailable")
+              : undefined
+          }
+          help={
+            <div className="space-y-2">
+              <p>
+                {pinnedList || onDefaultHolderRung
+                  ? pinnedRungWords(rung, defaultHolderOffer).covers
+                  : ladderLine}
               </p>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                {defaultHolderOffer?.covers ??
-                  "Whoever this names runs the job wherever no binding above it answers."}
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-1 h-6 px-1.5 text-[11px] text-muted-foreground"
+              {!allowGlobal && !pinnedList && !onDefaultHolderRung ? (
+                <p>Platform-wide bindings require a super administrator.</p>
+              ) : null}
+            </div>
+          }
+          value={
+            pinnedList ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span>{pinnedRungWords(rung, defaultHolderOffer).noun}</span>
+                {pinnedList
+                  .filter((other) => other !== rung)
+                  .map((other) => (
+                    <Button
+                      key={other}
+                      variant="outline"
+                      size="sm"
+                      disabled={disabled}
+                      onClick={() => onRungChange(other, null)}
+                    >
+                      {pinnedRungWords(other, defaultHolderOffer).noun}
+                    </Button>
+                  ))}
+              </div>
+            ) : onDefaultHolderRung ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span>{defaultHolderOffer?.label ?? "Mandate default"}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={disabled}
+                  onClick={() => onRungChange("user", null)}
+                >
+                  Personal override
+                </Button>
+              </div>
+            ) : (
+              <ShortcutScopePicker
+                className="[&>div:first-child>label]:sr-only"
+                scope={RUNG_TO_SCOPE[rung]}
+                scopeId={organizationId ?? undefined}
+                allowGlobal={allowGlobal}
+                allowedScopes={MANDATE_SCOPES}
                 disabled={disabled}
-                onClick={() => onRungChange("user", null)}
-              >
-                Set a binding above it instead
-              </Button>
-            </div>
-          ) : (
-            <ShortcutScopePicker
-              scope={RUNG_TO_SCOPE[rung]}
-              scopeId={organizationId ?? undefined}
-              allowGlobal={allowGlobal}
-              allowedScopes={MANDATE_SCOPES}
-              disabled={disabled}
-              onScopeChange={(scope, scopeId) =>
-                onRungChange(scopeToRung(scope), scopeId ?? null)
-              }
-            />
-          )}
-          {/* THE RUNG EXPLAINS ITSELF IN ITS OWN CELL — who it covers and what
-              it overrides — instead of a lone select in dead space. */}
-          {/* `ladderLine` OPENS with this rung's own `covers` sentence and then
-              names which rungs are answered today — one paragraph, not two, so
-              the cell is filled with the ladder rather than with a repeat. */}
-          {/* A fixed-rung host has already said what the rung covers, and the
-              ladder line is about rungs it does not manage — so it is dropped
-              rather than restated. */}
-          {pinnedList || onDefaultHolderRung ? null : (
-            <p className="text-[11px] leading-relaxed text-muted-foreground">
-              {ladderLine}
-            </p>
-          )}
-          {/* THE SAVED ROW SAYS WHERE IT ANSWERS, in the server's own words —
-              beneath the ladder sentence, which is about the rung you are
-              choosing, not about the row that exists. */}
-          {appliesInResolved ? (
-            /* 🚨 FOLDED AFTER IT IS READ (V2 round 3: it drove the cell to
-               52.8% empty and never cleared). It is a fact about the write that
-               just happened — worth reading once, not worth owning the cell
-               afterwards — so it opens expanded and the person can close it. */
-            <details
-              open
-              className="rounded-md border border-border bg-muted/40 px-2 py-1.5"
-            >
-              <summary className="cursor-pointer text-[11px] font-medium text-foreground">
-                Saved — where this applies
-              </summary>
-              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                {appliesInResolved}
-              </p>
-            </details>
-          ) : null}
-          {/* 🚨 WHY THE BLANKET SENTENCE IS GONE (FIX-R3/W3). This cell used to
-              print, to every reader who was not a super admin, "The system rung
-              — the answer everybody gets — is a super-admin decision, so it is
-              not offered here." One sentence, two rungs, and wrong about both
-              of them for an org-homed job: the mandate's own default belongs to
-              the HOME organization's administrators, and the reader was told a
-              platform administrator owned it. Each rung now speaks for itself,
-              about the situation actually in front of this reader. */}
-          {!allowGlobal && !pinnedList && !onDefaultHolderRung ? (
-            <p className="text-[10.5px] leading-snug text-muted-foreground/80">
-              &ldquo;{SYSTEM_RUNG_TITLE}&rdquo; is a platform-wide binding, and
-              only a super admin may write one — so that rung is absent from the
-              list above.
-            </p>
-          ) : null}
-          {/* ── THE BOTTOM RUNG, OFFERED OR EXPLAINED ── */}
-          {defaultHolderOffer && !pinnedList && !onDefaultHolderRung ? (
-            <div className="space-y-1 rounded-md border border-dashed border-border px-2 py-1.5">
-              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                The job&apos;s own default
-              </p>
-              {/* 🚨 A RUNG DESCRIBED IS A RUNG ANSWERED (FIX-R6/F3). This block
-                  said what the bottom rung COVERS and offered a button to go
-                  set it, and never once said who holds it TODAY — so a reader
-                  standing on a rung above had no way to see the default they
-                  had just saved, and the empty holder cell beside it read as
-                  "there is nothing". The current answer comes from the mandate
-                  definition through the one accessor; an unreadable name says
-                  it is unreadable rather than printing an id. */}
-              <p className="text-[11px] leading-relaxed text-foreground">
-                {defaultHolderNow === null
-                  ? "Reading who holds it…"
-                  : defaultHolderNow.set
-                    ? `Held by ${defaultHolderNow.name ?? "an agent whose name could not be read — reload to see it"} today.`
-                    : "Nobody holds it — this job has no default of its own."}
-              </p>
-              {defaultHolderOffer.offered ? (
-                <>
-                  <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    {defaultHolderOffer.covers}
-                  </p>
+                onScopeChange={(scope, scopeId) =>
+                  onRungChange(scopeToRung(scope), scopeId ?? null)
+                }
+              />
+            )
+          }
+        />
+        {rung === "org" && !organizationId ? (
+          <PropertyRow
+            label="Organization"
+            value={<StatusToken status="caution" label="Required" />}
+            help="Choose an organization before saving its binding."
+          />
+        ) : null}
+        {defaultHolderOffer && !pinnedList && !onDefaultHolderRung ? (
+          <PropertyRow
+            label="Mandate default"
+            source={defaultHolderOffer.homeName}
+            help={
+              defaultHolderOffer.offered
+                ? defaultHolderOffer.covers
+                : defaultHolderOffer.refusal
+            }
+            value={
+              <div className="flex flex-wrap items-center gap-2">
+                {defaultHolderNow === null ? (
+                  <StatusToken status="unknown" label="Not loaded" />
+                ) : defaultHolderNow.set ? (
+                  (defaultHolderNow.name ?? (
+                    <StatusToken status="caution" label="Name unavailable" />
+                  ))
+                ) : (
+                  "Not assigned"
+                )}
+                {defaultHolderOffer.offered ? (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 text-[11px]"
                     disabled={disabled}
                     onClick={() => onRungChange(DEFAULT_HOLDER_RUNG, null)}
                   >
-                    Set {defaultHolderOffer.label}
+                    Edit default
                   </Button>
-                </>
-              ) : (
-                /* NOT OFFERED, AND THE SENTENCE SAYS WHO MAY DECIDE — plus
-                   what this reader can still do. A refusal without a remedy is
-                   the half that always goes missing. */
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  {defaultHolderOffer.refusal}
-                </p>
-              )}
-            </div>
-          ) : null}
-          {unsavedNote ? (
-            <p className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
-              {unsavedNote}
-            </p>
-          ) : null}
-          {rung === "org" && !organizationId ? (
-            <p className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
-              Pick the organization this answer is for — nothing can be saved
-              until you do.
-            </p>
-          ) : null}
-        </div>
-
-        {/* ── HOLDER ── */}
-        <div className="space-y-1.5">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Holder
-          </p>
-          {/* WHO MAY HOLD THIS, SAID BEFORE THE PICKER IS OPENED — the rule,
-              not an apology after a refusal. `holderRestriction()` carries the
-              reason and the props that enforce it together, so the sentence
-              can never drift from what the list does. */}
-          {restriction.sentence ? (
-            <p className="text-[11px] leading-snug text-muted-foreground">
-              {restriction.sentence}
-            </p>
-          ) : null}
-          {holderControls}
-          {/* 🚨 AN EMPTY ASSIGNMENT NAMES THE RUNG IT IS EMPTY AT (FIX-R6/F3),
-              on the hosts where a rung is a choice. A walker who had just set
-              the job's own default read a subject-less "No holder yet" beside
-              a block headed "The job's own default" and reported the save lost.
-              The three controls state everything else; this states the one
-              thing they cannot — WHICH rung is empty, and what that costs.
-              The system host has one rung and its own verdict, so it prints
-              neither. */}
-          {(holder.kind === "agent" && !holder.agentId) ||
-          (holder.kind === "workflow" && !holder.workflowId) ? (
-            <p className="text-[11px] leading-snug text-muted-foreground">
-              Nothing is set at{" "}
-              {/* NOT lowercased: the bottom rung's noun carries the home
-                  organization's NAME. */}
-              {pinnedRungWords(rung, defaultHolderOffer).noun} yet.
-              {onDefaultHolderRung
-                ? " This is the bottom rung, so while it is empty the job has no holder of its own at all."
-                : " That is only about this rung: whatever a rung below it names is still what runs."}
-            </p>
-          ) : null}
-        </div>
-
-        {/* ── THE JOB ── */}
-        <div className="space-y-1.5">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Job
-          </p>
-          <div className="rounded-md border border-border px-2 py-1.5">
-            <span className="block text-[12px] font-medium text-foreground">
-              {job.label}
-            </span>
-            <code className="block font-mono text-[10px] text-muted-foreground">
-              {job.mandateKey}
-            </code>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="outline" className="py-0 font-mono text-[9.5px]">
-              {job.outputKind ?? "no declared output kind"}
-            </Badge>
-            <Badge variant="outline" className="py-0 text-[9.5px]">
-              {job.offeredCount === null
-                ? "reading what it offers…"
-                : `offers ${job.offeredCount}`}
-            </Badge>
-          </div>
-          <p className="text-[11px] leading-snug text-muted-foreground">
-            {job.offerSourceLine}
-          </p>
-          {/* DOES THE OFFER COVER THE HOLDER? The cell's own reason to exist,
-              and the answer to the only question a person asks while looking
-              at it. */}
-          <p className="rounded-md border border-border bg-muted/40 px-2 py-1.5 text-[11px] leading-relaxed text-muted-foreground">
-            {job.coverageLine}
-          </p>
-        </div>
+                ) : (
+                  <StatusToken status="neutral" label="Read only" />
+                )}
+              </div>
+            }
+          />
+        ) : null}
+        <PropertyRow
+          label="Changes"
+          value={
+            unsavedNote ? (
+              <StatusToken status="caution" label="Unsaved" />
+            ) : (
+              "None"
+            )
+          }
+          help={unsavedNote ?? undefined}
+        />
+        {appliesInResolved ? (
+          <PropertyRow
+            label="Last save"
+            value="Saved"
+            help={appliesInResolved.replace(
+              /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+              "Organization name unavailable",
+            )}
+          />
+        ) : null}
+      </div>
+      <div className="min-w-0 space-y-3">
+        {holderControls}
+        {/* The same fact the system host prints inside the block — here it is a
+            row of its own, so `holder-coverage-line` is never on the page
+            twice. */}
+        <PropertyRow
+          label="Coverage"
+          value={job.coverageLine}
+          help="Whether what this job offers actually feeds every input the chosen holder requires."
+        />
+        {(holder.kind === "agent" && !holder.agentId) ||
+        (holder.kind === "workflow" && !holder.workflowId) ? (
+          <PropertyRow
+            label="Local holder"
+            value="Not assigned"
+            source={pinnedRungWords(rung, defaultHolderOffer).noun}
+            help={
+              onDefaultHolderRung
+                ? "No mandate default is assigned."
+                : "No holder is assigned at this scope. The resolution chain can still provide an inherited holder."
+            }
+          />
+        ) : null}
       </div>
     </section>
   );

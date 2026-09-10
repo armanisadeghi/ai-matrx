@@ -17,7 +17,7 @@
 
 import { useState } from "react";
 import {
-  Bot,
+  BrainCircuit,
   ChevronDown,
   CircleHelp,
   GitBranch,
@@ -102,7 +102,7 @@ function BindingRow({
 }) {
   const [open, setOpen] = useState(false);
   const c = completeness(binding);
-  const HolderIcon = binding.holder.type === "workflow" ? GitBranch : Bot;
+  const HolderIcon = binding.holder.type === "workflow" ? GitBranch : BrainCircuit;
 
   /** The whole rule, resolved for THIS row. */
   const behaviour = autoRun

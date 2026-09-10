@@ -42,7 +42,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import { siteEntityRef, siteMenuSection, type SiteMenuRow } from "./site-menu";
+import { siteEntityRef, buildSiteMenuSection, type SiteMenuRow } from "./site-menu";
 import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { getSituationalRefreshStatus, runSituationalRefresh } from "./data";
@@ -406,7 +406,7 @@ export function SituationalRefreshConsole({
                 };
               }}
               extraSections={
-                contextBrandRow ? [siteMenuSection(contextBrandRow)] : []
+                contextBrandRow ? [buildSiteMenuSection(contextBrandRow)] : []
               }
             >
               <MatrxDataTable<SituationalRow>

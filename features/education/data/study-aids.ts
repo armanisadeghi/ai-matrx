@@ -18,7 +18,7 @@ import {
   PenLine,
   MessageSquareText,
   Target,
-  Sparkles,
+  BrainCircuit,
   Timer,
   TrendingUp,
   BarChart3,
@@ -279,7 +279,7 @@ export const STUDY_AIDS: AxisEntry[] = [
         columns: 2,
         items: [
           { icon: KeyRound, title: "Acronyms & rhymes", description: "First-letter acronyms and rhythmic rhymes that lock ordered lists and sequences into place." },
-          { icon: Sparkles, title: "Analogies & memory bridges", description: "A relatable comparison for an abstract concept, so the unfamiliar attaches to something you already know." },
+          { icon: BrainCircuit, title: "Analogies & memory bridges", description: "A relatable comparison for an abstract concept, so the unfamiliar attaches to something you already know." },
           { icon: Building2, title: "Memory-palace scaffolding", description: "Spatial structures the AI suggests for large content sets — the method of loci, set up for you." },
           { icon: Brain, title: "Proactive suggestions", description: "Memory aids appear automatically beside your toughest cards; you don't have to ask for them." },
         ],
@@ -318,7 +318,7 @@ export const STUDY_AIDS: AxisEntry[] = [
           { icon: Highlighter, title: "Highlight to anything", description: "Select any passage and convert it instantly into cards, a quiz, a summary, or a mind map." },
           { icon: Mic, title: "Live lecture transcription", description: "Record in class and the transcript flows straight into the editor — annotate it live as you go." },
           { icon: Layers, title: "One-click conversion", description: "A whole note becomes a deck, a practice quiz, or a diagram without leaving the page." },
-          { icon: Sparkles, title: "Rich text & markdown", description: "Full formatting, images, and structure — notes are real documents, not throwaway scratch." },
+          { icon: BrainCircuit, title: "Rich text & markdown", description: "Full formatting, images, and structure — notes are real documents, not throwaway scratch." },
         ],
       },
       {

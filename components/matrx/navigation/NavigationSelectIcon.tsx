@@ -1,3 +1,4 @@
+import { isConcreteRoute } from "@/utils/route-discovery/shared";
 import React from "react";
 import { PanelTopOpen } from "lucide-react";
 import IconSelect from "@/components/official/IconSelect";
@@ -16,15 +17,17 @@ const NavigationSelectIcon = ({
   getFullPath,
   handleNavigation,
 }: NavigationSelectIconProps) => {
-  const navigationItems = pages.map((page, index) => {
-    const path = getFullPath(page);
-    return {
-      id: `${path}-${index}`,
-      label: page.title,
-      value: path,
-      href: path,
-    };
-  });
+  const navigationItems = pages
+    .filter((page) => isConcreteRoute(getFullPath(page)))
+    .map((page, index) => {
+      const path = getFullPath(page);
+      return {
+        id: `${path}-${index}`,
+        label: page.title,
+        value: path,
+        href: path,
+      };
+    });
 
   return (
     <IconSelect

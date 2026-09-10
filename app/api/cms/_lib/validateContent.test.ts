@@ -6,6 +6,8 @@ import {
   withCmsValidationHeader,
 } from "./validateContent";
 
+const ORGANIZATION_ID = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
+
 describe("CMS content validation client", () => {
   beforeEach(() => {
     jest.restoreAllMocks();
@@ -42,6 +44,11 @@ describe("CMS content validation client", () => {
       content: { html: '<a href="javascript:alert(1)">x</a>' },
       siteId: "site-1",
       pageId: "page-1",
+      // The site's organization. Mandatory: every identified call to aidream
+      // carries X-Organization-Id, and the fail-closed kernel refuses one that
+      // does not before any networking happens. Omitting it here is what made
+      // this call throw in production and skip every CMS write unvalidated.
+      organizationId: ORGANIZATION_ID,
       accessToken: "jwt",
       baseUrl: "https://aidream.test",
     });
@@ -64,7 +71,11 @@ describe("CMS content validation client", () => {
         headers: {
           Authorization: "Bearer jwt",
           "Content-Type": "application/json",
+          "X-Organization-Id": ORGANIZATION_ID,
         },
+        // The organization rides in the HEADER only: aidream's
+        // `CmsValidationRequest` is `extra="forbid"`, so a scope field merged
+        // into this body would be refused with a 422.
         body: JSON.stringify({
           content: { html: '<a href="javascript:alert(1)">x</a>' },
           site_id: "site-1",
@@ -93,6 +104,7 @@ describe("CMS content validation client", () => {
     const result = await validateContent({
       content: { css: "body { color: red; }" },
       siteId: "site-1",
+      organizationId: ORGANIZATION_ID,
       accessToken: "jwt",
       baseUrl: "https://aidream.test",
     });
@@ -107,5 +119,27 @@ describe("CMS content validation client", () => {
       expect.any(Error),
     );
     expect(response.headers.get("X-Cms-Validation")).toBe("skipped");
+  });
+
+  it("never blames aidream for a missing organization — and never calls it", async () => {
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const fetchSpy = jest.spyOn(global, "fetch");
+
+    const result = await validateContent({
+      content: { html: "<p>hi</p>" },
+      siteId: "site-1",
+      organizationId: null,
+      accessToken: "jwt",
+      baseUrl: "https://aidream.test",
+    });
+
+    expect(result).toEqual({ allowed: true, skipped: true, findings: [] });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const [message] = consoleError.mock.calls[0] ?? [];
+    expect(message).toEqual(expect.stringContaining("SKIPPED"));
+    expect(message).toEqual(expect.stringContaining("organization"));
+    expect(message).not.toEqual(expect.stringContaining("unreachable"));
   });
 });

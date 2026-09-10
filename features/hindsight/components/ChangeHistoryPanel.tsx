@@ -24,7 +24,7 @@
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, RotateCcw, Sparkles, UserRound } from "lucide-react";
+import { ArrowRight, RotateCcw, BrainCircuit, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -164,7 +164,7 @@ export function ChangeHistoryPanel({
           }}
           data-testid="change-history-findings-filter"
         >
-          <Sparkles className="mr-1 h-3.5 w-3.5" />
+          <BrainCircuit className="mr-1 h-3.5 w-3.5" />
           {withFindingsOnly ? "Finding-caused only" : "All changes"}
         </Button>
       </header>

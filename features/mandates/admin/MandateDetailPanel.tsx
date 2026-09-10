@@ -67,6 +67,7 @@ import {
   isFloatingMandate,
 } from "@/lib/supabase/mandateStorage";
 import { MandateTestBench } from "./MandateTestBench";
+import { MandateSourceUsage } from "./MandateSourceUsage";
 import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
 import { MandateContextGate } from "./MandateContextGate";
 import { MandateUserTextLine } from "../components/MandateUserTextLine";
@@ -78,6 +79,8 @@ import {
 } from "./rebind-impact";
 import {
   PropertyRow,
+  ConfigurationTable,
+  ConfigurationTableRow,
   FieldHelp,
   StatusToken,
 } from "@/components/official/ConfigurationFields";
@@ -1122,8 +1125,10 @@ function FactsPanel({
   verdictsError,
   onSaved,
   diagnosticsOnly = false,
+  sourceOnly = false,
 }: {
   diagnosticsOnly?: boolean;
+  sourceOnly?: boolean;
   row: MandateRow;
   /** False on a host whose own controls name the holder — see the prop. */
   showHolderAnswer: boolean;
@@ -1164,6 +1169,128 @@ function FactsPanel({
       cancelled = true;
     };
   }, [factProvisionKey]);
+  if (diagnosticsOnly || sourceOnly) {
+    const truth = row.codeTruth;
+    const declarationFound = truth?.resolution === "code_declaration_found";
+    if (sourceOnly) {
+      // 🚨 THE ROWS COME FROM `mandate.reference` NOW (campaign L7,
+      // common-docs/projects/mandate-declaration-reporting DESIGN §4.6). The
+      // SHAPE is unchanged — Defined in / Used by, one copyable location per
+      // row — but code-truth's `call_sites` were import-time discovery inside
+      // ONE process, so a call in matrx-frontend, matrx-extend or matrx-local
+      // could never appear there at all. The old declaration string survives
+      // as a LABELLED fallback for the declaration half only, used exactly
+      // when no scanner has reported a declaration for this key yet.
+      const source = truth?.source;
+      const registryPath = row.mandate.code_path?.trim();
+      const declaration = source
+        ? [
+            source.module,
+            `${source.source_file}${source.line ? `:${source.line}` : ""}`,
+            source.class_name,
+          ]
+            .filter(Boolean)
+            .join(" \u2192 ")
+        : registryPath && registryPath !== "unknown"
+          ? registryPath
+          : null;
+      return (
+        <MandateSourceUsage
+          mandateKey={row.mandateKey}
+          fallback={{
+            declaration,
+            importFailed: Boolean(truth?.import_error),
+          }}
+        />
+      );
+    }
+    const columns = [
+      { key: "fact", label: "Diagnostic" },
+      { key: "value", label: "Result" },
+    ];
+    const unknown = <StatusToken status="unknown" label="Unknown" />;
+    const facts = [
+      {
+        fact: "Code inputs",
+        value: declarationFound
+          ? truth.code_variables
+              .map((name) => displayLabelForKey(name))
+              .join(", ") || "None"
+          : unknown,
+      },
+      {
+        fact: "Agent variables",
+        value: truth?.bound_agent
+          ? truth.bound_agent.declared_variables
+              .map((name) => displayLabelForKey(name))
+              .join(", ") || "None"
+          : unknown,
+      },
+      {
+        fact: "User text declared",
+        value:
+          declarationFound && typeof truth.passes_user_input === "boolean"
+            ? truth.passes_user_input
+              ? "Yes"
+              : "No"
+            : unknown,
+      },
+      {
+        fact: "Code / contract check",
+        value: wave1.provisionKey ? (
+          <span className="inline-flex items-center gap-1.5">
+            <StatusToken status="neutral" label="Not applicable" />
+            <FieldHelp label="Code / contract check">
+              Provision inputs are checked through holder matching. This legacy
+              variable comparison does not evaluate them.
+            </FieldHelp>
+          </span>
+        ) : declarationFound ? (
+          <StatusToken
+            status={truth.drift === "match" ? "ok" : "caution"}
+            label={
+              truth.drift === "match"
+                ? "Preliminary match"
+                : "Preliminary mismatch"
+            }
+          />
+        ) : (
+          <StatusToken status="unknown" label="Not yet evaluated" />
+        ),
+      },
+      {
+        fact: "Variable flow",
+        value: !declarationFound ? (
+          <StatusToken status="unknown" label="Not yet evaluated" />
+        ) : verdictsLoading ? (
+          <span className="inline-flex items-center gap-1.5">
+            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+            Checking
+          </span>
+        ) : verdictsError ? (
+          <div className="inline-flex items-center gap-1.5">
+            <StatusToken status="error" label="Check failed" />
+            <FieldHelp label="Variable flow error">{verdictsError}</FieldHelp>
+          </div>
+        ) : variableVerdicts.length > 0 ? (
+          <VariableVerdictList items={variableVerdicts} />
+        ) : (
+          <StatusToken status="unknown" label="Not yet evaluated" />
+        ),
+      },
+    ];
+    return (
+      <ConfigurationTable label="Code diagnostics" columns={columns}>
+        {facts.map((fact) => (
+          <ConfigurationTableRow
+            key={fact.fact}
+            columns={columns}
+            cells={fact}
+          />
+        ))}
+      </ConfigurationTable>
+    );
+  }
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)] items-center gap-x-4 gap-y-1.5 rounded-md border border-border bg-card px-3 py-2.5">
       {!diagnosticsOnly && (
@@ -1322,25 +1449,6 @@ function FactsPanel({
       )}
       {row.codeTruth ? (
         <>
-          <Fact label="Code declaration">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusToken
-                status={row.codeTruth.source ? "ok" : "unknown"}
-                label={
-                  row.codeTruth.source
-                    ? "Available"
-                    : displayLabelForKey(row.codeTruth.resolution)
-                }
-              />
-              {row.codeTruth.source ? (
-                <CopyButton
-                  content={`${row.codeTruth.source.class_name}\n${row.codeTruth.source.source_file}:${row.codeTruth.source.line}`}
-                  label="Copy source location"
-                  size="sm"
-                />
-              ) : null}
-            </div>
-          </Fact>
           <Fact label="Code passes">
             {row.codeTruth.code_variables.length > 0 ? (
               <div className="flex flex-wrap gap-1">
@@ -1379,20 +1487,6 @@ function FactsPanel({
           <Fact label="Code passes user text">
             {row.codeTruth.passes_user_input ? "Yes" : "No"}
           </Fact>
-          <Fact label="Call sites">
-            <div className="flex flex-wrap items-center gap-2">
-              <span>{row.codeTruth.call_sites?.length ?? 0} discovered</span>
-              {row.codeTruth.call_sites?.length ? (
-                <CopyButton
-                  content={row.codeTruth.call_sites
-                    .map((site) => `${site.source_file}:${site.line}`)
-                    .join("\n")}
-                  label="Copy call sites"
-                  size="sm"
-                />
-              ) : null}
-            </div>
-          </Fact>
           <Fact label="Variable flow">
             {verdictsLoading ? (
               <span className="inline-flex items-center gap-1 text-muted-foreground">
@@ -1408,11 +1502,7 @@ function FactsPanel({
             )}
           </Fact>
         </>
-      ) : (
-        <Fact label="Code declaration">
-          <StatusToken status="unknown" label="Unavailable" />
-        </Fact>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -1570,7 +1660,7 @@ export function MandateDetailView({
   showHolderAnswer = true,
   section,
 }: {
-  section?: "diagnostics" | "test" | "permissions";
+  section?: "source" | "diagnostics" | "test" | "permissions";
   row: MandateRow;
   data: MandateConsoleData;
   lineage: AgentLineage;
@@ -1695,6 +1785,17 @@ export function MandateDetailView({
   if (section) {
     return (
       <div className="min-w-0 space-y-4">
+        <div hidden={section !== "source"}>
+          <FactsPanel
+            row={row}
+            showHolderAnswer={false}
+            sourceOnly
+            variableVerdicts={variableVerdicts}
+            verdictsLoading={verdictsLoading}
+            verdictsError={liveVerdictState?.error ?? null}
+            onSaved={onSaved}
+          />
+        </div>
         <div hidden={section !== "diagnostics"} className="space-y-3">
           <FactsPanel
             row={row}
@@ -1717,30 +1818,16 @@ export function MandateDetailView({
               onTest={() => setBenchFocus((n) => n + 1)}
               onOpenRebind={openTheBindingUi}
             />
-          ) : (
-            <PropertyRow
-              label="Code / contract check"
-              value={
-                <StatusToken
-                  status={
-                    row.codeTruth?.resolution === "code_declaration_found"
-                      ? "neutral"
-                      : "unknown"
-                  }
-                  label={
-                    row.codeTruth?.resolution === "code_declaration_found"
-                      ? "No reported drift"
-                      : "Not yet evaluated"
-                  }
-                />
-              }
-            />
-          )}
+          ) : null}
         </div>
         <div hidden={section !== "test"}>
           <MandateTestBench
             key={row.id}
             mandate={row.mandate}
+            globalBinding={data.bindingsByMandateId[row.id]?.find(
+              (binding) =>
+                binding.principal_type === "global" && binding.is_enabled,
+            )}
             baselineLabel={baselineLabel}
             presetLatestCandidate={row.drift != null}
             autoRunSignal={benchFocus}
@@ -1821,6 +1908,10 @@ export function MandateDetailView({
           <MandateTestBench
             key={row.id}
             mandate={row.mandate}
+            globalBinding={data.bindingsByMandateId[row.id]?.find(
+              (binding) =>
+                binding.principal_type === "global" && binding.is_enabled,
+            )}
             baselineLabel={baselineLabel}
             presetLatestCandidate={row.drift != null}
             autoRunSignal={benchFocus}

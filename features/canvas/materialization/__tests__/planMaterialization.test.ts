@@ -142,11 +142,17 @@ describe("planMaterialization — structured kind detection", () => {
     const artifact = plan.artifacts[0];
     expect(artifact?.canvasType).toBe("diagram");
     expect(artifact?.title).toBe("Example organization");
+    // Icon ids are CANONICAL Lucide names on the way in: 463feb726a
+    // (2026-08-15, "use canonical icons") made `normalizeDiagramIconName`
+    // translate the legacy lowercase ids ("crown", "square") at the document
+    // boundary, so what gets PERSISTED is "Crown"/"Square". The sibling
+    // features/canvas/maps/__tests__/map-data.test.ts moved with it; this one
+    // did not, and was pinning the pre-normalization spelling.
     expect(artifact?.structured?.nodes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: "ceo",
-          icon: "crown",
+          icon: "Crown",
           color: "indigo",
           shape: "rounded",
         }),
@@ -187,7 +193,7 @@ describe("planMaterialization — structured kind detection", () => {
     ).toMatchObject({
       [KIND_KEY]: "diagram_node",
       extra_note: "preserve me",
-      icon: "square",
+      icon: "Square",
       color: "gray",
     });
   });
@@ -200,7 +206,7 @@ describe("planMaterialization — the raw kindState gate (2026-08-31 audit)", ()
     // marks kindState "raw"; before the gate, the envelope branch declined it
     // and the parse fallback then happily planned a typed artifact from the
     // same broken bytes.
-    const broken = `{"${"__kind"}": "flashcard_set", "title": 123, "cards": "nope"}`;
+    const broken = `{"${KIND_KEY}": "flashcard_set", "title": 123, "cards": "nope"}`;
     const plan = planMaterialization([
       textBlock(`Result:\n\n\`\`\`json\n${broken}\n\`\`\`\n`),
     ]);

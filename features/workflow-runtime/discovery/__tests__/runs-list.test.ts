@@ -142,9 +142,16 @@ describe("row identity", () => {
     expect(runHref(parseRunListRow(ROW)!)).toBe("/workflows/runs/run-1");
   });
 
-  it("knows which statuses are finished forever", () => {
+  it("knows which statuses are over", () => {
     expect(isTerminalStatus("completed")).toBe(true);
     expect(isTerminalStatus("interrupted")).toBe(false);
     expect(isTerminalStatus("awaiting_input")).toBe(false);
+  });
+
+  it("counts `errored` as over — the list's clock must stop", () => {
+    // The generated TERMINAL_RUN_STATUSES excludes `errored` (it answers the
+    // ENGINE's resume question), so a list asking that set measured an errored
+    // row's duration to `now` forever. `runIsOver` is the viewer's predicate.
+    expect(isTerminalStatus("errored")).toBe(true);
   });
 });

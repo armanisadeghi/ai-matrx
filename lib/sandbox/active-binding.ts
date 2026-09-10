@@ -82,7 +82,7 @@ import {
   selectConversationIsEphemeral,
   selectConversationSandboxBinding,
 } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
+import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
 
 /** Loud, greppable prefix. Every branch of the binding chain logs under this. */
 const LOG = "[sandbox-binding]";

@@ -1,16 +1,20 @@
 import { formatTitleCase } from "@ai-matrx/kit/text-case";
 import type { ModulePage } from "@/components/matrx/navigation/types";
 
-export function groupRoutes(
-  routes: string[],
-): Record<string, string[]> {
+/** Filesystem parameter templates are inventory, never navigation destinations. */
+export function isConcreteRoute(path: string): boolean {
+  const pathname = path.split(/[?#]/, 1)[0];
+  return !pathname.split("/").some((segment) => /^\[.+\]$/.test(segment));
+}
+
+export function groupRoutes(routes: string[]): Record<string, string[]> {
   const groups: Record<string, string[]> = {};
 
   const parentSegments = new Set(
     routes.filter((r) => r.includes("/")).map((r) => r.split("/")[0]),
   );
 
-  for (const route of routes) {
+  for (const route of routes.filter(isConcreteRoute)) {
     const parts = route.split("/");
     const isTopLevel = parts.length === 1;
 
@@ -41,7 +45,7 @@ export function toModulePages(
   routes: string[],
   moduleHome: string,
 ): ModulePage[] {
-  return routes.map((route) => ({
+  return routes.filter(isConcreteRoute).map((route) => ({
     title: formatTitleCase(route.split("/").pop() ?? route),
     path: route,
     relative: true,

@@ -1,3 +1,4 @@
+import type { KIND_KEY } from "@ai-matrx/content-ir";
 import type {
   ResearchChallenge as ResearchChallengeKind,
   ResearchFinding as ResearchFindingKind,
@@ -10,7 +11,7 @@ import type {
  * adds only `id` — a render key the wire format has no reason to carry.
  * Nothing here re-declares a registry field (`check:kind-type-twins`).
  */
-export type ResearchFinding = Omit<ResearchFindingKind, "__kind"> &
+export type ResearchFinding = Omit<ResearchFindingKind, typeof KIND_KEY> &
   Required<
     Pick<
       ResearchFindingKind,
@@ -23,15 +24,15 @@ export type ResearchFinding = Omit<ResearchFindingKind, "__kind"> &
     >
   > & { id: string };
 
-export type ResearchSection = Omit<ResearchSectionKind, "__kind" | "findings"> & {
+export type ResearchSection = Omit<ResearchSectionKind, typeof KIND_KEY | "findings"> & {
   id: string;
   findings: ResearchFinding[];
 };
 
-export type ResearchChallenge = Omit<ResearchChallengeKind, "__kind"> &
+export type ResearchChallenge = Omit<ResearchChallengeKind, typeof KIND_KEY> &
   Required<Pick<ResearchChallengeKind, "category">> & { id: string };
 
-export type ResearchRecommendation = Omit<ResearchRecommendationKind, "__kind"> &
+export type ResearchRecommendation = Omit<ResearchRecommendationKind, typeof KIND_KEY> &
   Required<Pick<ResearchRecommendationKind, "target">> & { id: string };
 
 interface UnrecognizedSection {

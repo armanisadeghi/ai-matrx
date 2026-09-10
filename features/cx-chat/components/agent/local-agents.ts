@@ -9,6 +9,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export interface AgentOption {
   id: string;
@@ -152,16 +153,16 @@ export type ResponseMode = (typeof RESPONSE_MODES)[number];
 export const RESPONSE_MODE_MANDATE_MAP: Readonly<
   Record<ResponseMode, string | null>
 > = {
-  text: "chat.cx_default",
-  images: "chat.cx_default",
-  videos: "chat.response_mode_video",
+  text: MANDATE_KEYS.chat__cx_default,
+  images: MANDATE_KEYS.chat__cx_default,
+  videos: MANDATE_KEYS.chat__response_mode_video,
   // D4 (wave 4): research mode has its OWN conversational mandate now — it
   // used to run `research.report` (the pipeline's report generator) with four
   // empty required variables, and kept that mandate's user-text channel
   // pinned open. Never point a chat mode at a pipeline stage again.
-  research: "chat.response_mode_research",
-  brainstorm: "chat.response_mode_brainstorm",
-  data: "chat.response_mode_data",
+  research: MANDATE_KEYS.chat__response_mode_research,
+  brainstorm: MANDATE_KEYS.chat__response_mode_brainstorm,
+  data: MANDATE_KEYS.chat__response_mode_data,
   recipe: null,
   code: null,
 };

@@ -46,7 +46,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   planNodeEntityRef,
-  planNodeMenuSection,
+  buildPlanNodeMenuSection,
   type PlanNodeMenuRow,
 } from "./plan-node-actions";
 import { UnresolvedEntityRef } from "@/features/access-gate/components/UnresolvedEntityRef";
@@ -750,7 +750,7 @@ export function PlanNodesTable({
       extraSections={
         contextRow
           ? [
-              planNodeMenuSection(toMenuRow(contextRow), {
+              buildPlanNodeMenuSection(toMenuRow(contextRow), {
                 onOpenKeyword: (menuRow) =>
                   menuRow.keywordPhrase &&
                   openKeywordIntel({ phrase: menuRow.keywordPhrase, siteId }),

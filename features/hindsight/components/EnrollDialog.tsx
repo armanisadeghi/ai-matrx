@@ -182,11 +182,18 @@ export function EnrollDialog({
   const agents = useQuery<PickerRow[]>({
     queryKey: ["hindsight", "picker", "agent", search],
     queryFn: async () => {
+      // archived-items-law-exempt: enrollment candidates must be live — a
+      // learning loop enrolled on an archived agent would watch a thing nobody
+      // runs. Archived agents are excluded rather than revealed, the same
+      // ruling F7 made for Mandate workflow-Holder and RAG grounding
+      // candidates. The browsable roster is the canonical agent catalogue,
+      // which carries the control.
       let q = supabase
         .schema("agent")
         .from("definition")
         .select("id, name")
         .is("deleted_at", null)
+        .eq("is_archived", false)
         .order("updated_at", { ascending: false })
         .limit(50);
       if (search) q = q.ilike("name", `%${search}%`);
@@ -220,12 +227,15 @@ export function EnrollDialog({
         new Set((markers ?? []).map((m) => m.source_id as string)),
       );
       if (ids.length === 0) return [];
+      // archived-items-law-exempt: enrollment candidates must be live (see the
+      // agent picker above) — an archived orchestrator is not enrollable.
       let q = supabase
         .schema("agent")
         .from("definition")
         .select("id, name")
         .in("id", ids)
         .is("deleted_at", null)
+        .eq("is_archived", false)
         .order("updated_at", { ascending: false })
         .limit(50);
       if (search) q = q.ilike("name", `%${search}%`);
@@ -239,11 +249,17 @@ export function EnrollDialog({
   const workflows = useQuery<PickerRow[]>({
     queryKey: ["hindsight", "picker", "workflow", search],
     queryFn: async () => {
+      // archived-items-law-exempt: enrollment candidates must be live — the
+      // identical ruling this file already carries for the agent and
+      // orchestrator pickers above (F9). An archived workflow is not an
+      // enrollable target, so archived rows are excluded rather than revealed;
+      // the browsable Masterwork/workflow lists carry the control.
       let q = supabase
         .schema("workflow")
         .from("definition")
         .select("id, name")
         .is("deleted_at", null)
+        .eq("is_archived", false)
         .order("updated_at", { ascending: false })
         .limit(50);
       if (search) q = q.ilike("name", `%${search}%`);

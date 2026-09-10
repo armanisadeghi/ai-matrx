@@ -8,7 +8,7 @@ import {
   type ImageUploaderResult,
 } from "@/components/official/ImageAssetUploader";
 import type { AssetPreset, Visibility } from "@/features/files/types";
-import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
+import { useOpenImageUploaderWindow } from "@/features/overlays/openers/imageUploaderWindow";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ExternalLink } from "lucide-react";
@@ -82,7 +82,7 @@ export default function ImageAssetUploaderDisplay({
   const openWindow = useOpenImageUploaderWindow();
 
   const code = `import { ImageAssetUploader, type ImageUploaderResult } from '@/components/official/ImageAssetUploader';
-import { useOpenImageUploaderWindow } from '@/features/window-panels/windows/image/useOpenImageUploaderWindow';
+import { useOpenImageUploaderWindow } from '@/features/overlays/openers/imageUploaderWindow';
 
 // ── Classic dropzone (default) ────────────────────────────────────────────
 <ImageAssetUploader

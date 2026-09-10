@@ -34,7 +34,7 @@ import {
   MessagesSquare,
   ShieldCheck,
   FileStack,
-  Sparkles,
+  BrainCircuit,
   RefreshCw,
   Play,
   X as XIcon,
@@ -365,7 +365,7 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+            <BrainCircuit className="h-4 w-4 text-primary shrink-0" />
             <h3 className="text-sm font-semibold leading-tight truncate">
               Knowledge Asset Builder
             </h3>
@@ -403,7 +403,7 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
           {buildingAll ? (
             <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
           ) : (
-            <Sparkles className="h-3.5 w-3.5 mr-1" />
+            <BrainCircuit className="h-3.5 w-3.5 mr-1" />
           )}
           {buildingAll
             ? "Building…"
@@ -847,7 +847,7 @@ function RealityLine({
 
   return (
     <div className="mt-1.5 flex items-start gap-1 text-[10px] leading-snug text-muted-foreground">
-      <Sparkles className="mt-[1px] h-2.5 w-2.5 shrink-0 text-primary/70" />
+      <BrainCircuit className="mt-[1px] h-2.5 w-2.5 shrink-0 text-primary/70" />
       <span className="min-w-0">
         <span className="font-medium text-foreground/80">
           {estimate.items.toLocaleString()} {estimate.unit || unit}

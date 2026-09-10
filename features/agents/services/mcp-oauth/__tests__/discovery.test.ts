@@ -1,10 +1,49 @@
 import {
   buildTokenEndpointClientAuthentication,
+  resolveRegisteredTokenEndpointAuthMethod,
   registerDynamicClient,
   selectDcrTokenEndpointAuthMethod,
 } from "../discovery";
 
 describe("MCP dynamic client registration", () => {
+  it("honors a public auth method explicitly returned by DCR", () => {
+    expect(
+      resolveRegisteredTokenEndpointAuthMethod(
+        "client_secret_post",
+        {
+          client_id: "registered-client",
+          token_endpoint_auth_method: "none",
+        },
+        ["client_secret_post", "none"],
+      ),
+    ).toBe("none");
+  });
+
+  it("does not silently downgrade a secretless confidential registration", () => {
+    expect(() =>
+      resolveRegisteredTokenEndpointAuthMethod(
+        "client_secret_post",
+        { client_id: "registered-client" },
+        ["client_secret_post", "none"],
+      ),
+    ).toThrow(
+      "returned neither a client secret nor an explicit public-client method",
+    );
+  });
+
+  it("rejects a DCR auth method outside the authorization server contract", () => {
+    expect(() =>
+      resolveRegisteredTokenEndpointAuthMethod(
+        "client_secret_post",
+        {
+          client_id: "registered-client",
+          token_endpoint_auth_method: "none",
+        },
+        ["client_secret_post"],
+      ),
+    ).toThrow("not advertised by the authorization server");
+  });
+
   it("uses a public PKCE client when the provider advertises only none", () => {
     expect(
       selectDcrTokenEndpointAuthMethod({

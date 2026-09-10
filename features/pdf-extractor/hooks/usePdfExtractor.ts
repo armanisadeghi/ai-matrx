@@ -67,6 +67,8 @@ export interface PdfDocument {
   sourceKind: string | null;
   /** Id within `sourceKind` — e.g. the `cld_files.id` when sourceKind = 'cld_file'. */
   sourceId: string | null;
+  /** Set when the doc is archived — hidden by default, one click away. */
+  archivedAt: string | null;
   /** Processing-lineage parent. Null on the initial extract. */
   parentProcessedId: string | null;
   /** `'initial_extract' | 're_extract' | 're_clean' | 're_chunk' | 'merge_processings'` */
@@ -144,6 +146,7 @@ function docFromApi(raw: Record<string, unknown>): PdfDocument {
     mimeType: (raw.mime_type as string | null) ?? null,
     sourceKind: (raw.source_kind as string | null) ?? null,
     sourceId: (raw.source_id as string | null) ?? null,
+    archivedAt: (raw.archived_at as string | null) ?? null,
     parentProcessedId: (raw.parent_processed_id as string | null) ?? null,
     derivationKind: (raw.derivation_kind as string) ?? "initial_extract",
     derivationMetadata:
@@ -334,12 +337,15 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         // to open. Lineage + size hints come along so the sidebar can
         // surface them without a second round-trip.
         .select(
-          "id, name, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind",
+          "id, name, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind, archived_at",
         )
         .eq("owner_id", userId)
-        // Exclude archived docs (the canonical "removed from view" state —
-        // mirrors document-lookup.ts and usePdfStudioDocs) and trashed docs.
-        .is("archived_at", null)
+        // THE ARCHIVED-ITEMS LAW (../common-docs/policies/archived-items.md):
+        // archived docs are HIDDEN BY DEFAULT and one click away, so the read
+        // carries them and `history` / `archivedHistory` do the split. The
+        // hardcoded `.is("archived_at", null)` that used to live here made an
+        // archived doc unreachable from this workspace forever. Trashed
+        // (`deleted_at`) docs stay out: deletion is not archiving.
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(HISTORY_PAGE_SIZE);
@@ -1381,7 +1387,8 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     openTabIds,
 
     // History
-    history,
+    history: history.filter((doc) => !doc.archivedAt),
+    archivedHistory: history.filter((doc) => Boolean(doc.archivedAt)),
     historyLoading,
     loadHistory,
     openDocument,

@@ -13,7 +13,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Lightbulb, GitBranch, Loader2, Check, X, Sparkles } from "lucide-react";
+import { Lightbulb, GitBranch, Loader2, Check, X, BrainCircuit } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
   Dialog,
@@ -503,7 +503,7 @@ export function EnhanceSetDialog({
         <DrawerContent className="pb-safe">
           <DrawerHeader>
             <DrawerTitle className="flex items-center justify-center gap-2 text-base">
-              <Sparkles className="h-4 w-4 text-primary" />
+              <BrainCircuit className="h-4 w-4 text-primary" />
               Make cards deeper
             </DrawerTitle>
             <DrawerDescription className="text-xs">
@@ -522,7 +522,7 @@ export function EnhanceSetDialog({
       <DialogContent className="max-w-2xl gap-0 p-0">
         <DialogHeader className="border-b border-border px-5 py-4">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Sparkles className="h-4 w-4 text-primary" />
+            <BrainCircuit className="h-4 w-4 text-primary" />
             Make cards deeper
           </DialogTitle>
           <DialogDescription className="text-xs">

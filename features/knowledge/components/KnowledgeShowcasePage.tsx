@@ -4,7 +4,7 @@ import {
   Brain,
   ArrowRight,
   Upload,
-  Wand2,
+  Zap,
   ScanText,
   Network,
   Search,
@@ -51,7 +51,7 @@ const CAPABILITIES: Capability[] = [
     hrefLabel: "Files",
   },
   {
-    icon: Wand2,
+    icon: Zap,
     title: "A real extraction pipeline",
     description: `Extract → clean → ${RAG_VOCAB.segmentStage} → embed, run per-stage or as one streamed job. Watch the original PDF, raw text, cleaned markdown, and ${RAG_VOCAB.segmentsShort.toLowerCase()} side by side in a 4-pane viewer.`,
     href: "/knowledge/library",

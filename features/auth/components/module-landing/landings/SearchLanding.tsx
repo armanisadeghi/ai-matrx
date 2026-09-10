@@ -15,7 +15,7 @@ import {
   Newspaper,
   Search,
   Shapes,
-  Sparkle,
+  BrainCircuit,
 } from "lucide-react";
 import {
   ModuleLanding,
@@ -50,7 +50,7 @@ const CAPABILITIES: ModuleCapability[] = [
       "The search you are looking at is in the address bar. Send it to someone and they see the same search. Back and forward move through the ones you ran.",
   },
   {
-    icon: Sparkle,
+    icon: BrainCircuit,
     title: "The same pieces the rest of AI Matrx uses",
     description:
       "A result here is the identical piece an agent, a workflow, or a document works with — so what you find can be handed straight to the work you are doing.",

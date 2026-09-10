@@ -42,8 +42,9 @@ import type {
   WritePolicyMap,
 } from "@/features/surfaces/types";
 import { cn } from "@/lib/utils";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-export const BINDING_MAPPER_MANDATE_KEY = "surfaces_client.binding_mapper";
+export const BINDING_MAPPER_MANDATE_KEY = MANDATE_KEYS.surfaces_client__binding_mapper;
 
 /**
  * THE DOMAIN'S NOUNS. The mechanic is one; the words belong to whoever hosts

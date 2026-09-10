@@ -29,7 +29,7 @@ import {
   GraduationCap,
   Braces,
   ScrollText,
-  Sparkles,
+  BrainCircuit,
   BookOpen,
   Tags,
   Image as ImageIcon,
@@ -531,7 +531,7 @@ export const CATALOG: ResourceKindDef[] = [
     label: "Analysis",
     description:
       "The AI write-up produced for each page — the same rows the Analysis page lists. Already distilled, far smaller than the page itself.",
-    icon: Sparkles,
+    icon: BrainCircuit,
     group: "pages",
     granularity: "source",
     heavy: false,

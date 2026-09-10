@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Plus, Check, Loader2, Sparkles, X } from "lucide-react";
+import { Plus, Check, Loader2, BrainCircuit, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -249,7 +249,7 @@ export function SourceTagPicker({
                     {applying ? (
                       <Loader2 className="h-2.5 w-2.5 animate-spin" />
                     ) : (
-                      <Sparkles className="h-2.5 w-2.5" />
+                      <BrainCircuit className="h-2.5 w-2.5" />
                     )}
                     <span className="truncate max-w-[10rem] font-medium">
                       {s.name}
@@ -284,7 +284,7 @@ export function SourceTagPicker({
         {suggesting ? (
           <Loader2 className="h-3 w-3 animate-spin" />
         ) : (
-          <Sparkles className="h-3 w-3" />
+          <BrainCircuit className="h-3 w-3" />
         )}
         {suggesting ? "Suggesting…" : "Suggest tags"}
       </button>

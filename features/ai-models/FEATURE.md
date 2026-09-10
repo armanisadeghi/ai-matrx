@@ -73,6 +73,16 @@ must obey.
 > updates this file in the same change; a change to what the catalog MEANS updates the node's STATE.md.
 
 ## Change log
+- `2026-09-09` — **Deprecated models RUN; retired is the dead state** (ai_075, ruling in
+  `../../../common-docs/systems/agents/ai-models/DECISIONS.md`). Deprecating Gemini 3.7 Flash had
+  made it vanish: `ai.model_config`/`model_public` filtered deprecated rows, so `fetchModelById`
+  rejected 263 times with "Unknown error" on a mandate page that referenced it. The views now
+  EXPOSE `is_deprecated` / `retired_at` / `successor_id`; `fetchModelById` reads any model by id
+  (a missing row is now the honest `recordUnavailable`), the registry keeps deprecated records,
+  `ModelListDropdown`'s user variant hides deprecated rows by default behind an
+  **Include deprecated** toggle (filter panel + bottom bar, off by default; the selected model
+  always stays listed), the admin variant always shows them badged, and a **retired** row is
+  visible-but-unselectable everywhere (`refuseIfRetired` guards every selection path).
 
 - `2026-08-30` — Provider Sync now gives its mobile toolbar distinct stats,
   legend, and action rows plus the canonical coarse-pointer touch floor while

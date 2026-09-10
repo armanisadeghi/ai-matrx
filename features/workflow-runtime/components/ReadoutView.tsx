@@ -44,14 +44,14 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 
-import { useWorkflowRunMenuSection } from "../run-actions";
+import { buildWorkflowRunMenuSection } from "../run-actions";
 import {
   describeSource,
   type Readout,
   type ReadoutSource,
   type RunSurfaceConfig,
 } from "../surface/config";
-import { TERMINAL_RUN_STATUSES } from "../types";
+import { runIsOver } from "../types";
 import {
   getDefaultSurface,
   fetchWorkflowDefinition,
@@ -222,7 +222,7 @@ function NodeReadout({
 }) {
   const aggregate = useAppSelector(selectNodeAggregate(runId, nodeId));
   const runStatus = useAppSelector(selectRunStatus(runId));
-  const terminal = runStatus !== null && TERMINAL_RUN_STATUSES.has(runStatus);
+  const over = runIsOver(runStatus);
   const { invocations, phase } = aggregate;
   // The step's promised shape, from the DEFINITION — threaded to every
   // InvocationBody so a bare-JSON stream shows this kind's arriving
@@ -259,12 +259,10 @@ function NodeReadout({
     // A TERMINAL run reserves nothing: there is no future to hold space for,
     // and "This step never ran." is the final, honest answer.
     //
-    // `errored` is not in TERMINAL_RUN_STATUSES but the run is over all the
-    // same, and three sibling consoles already treat it that way. Reserving
-    // there left a mute, breathing skeleton on screen forever — `bare` skips
-    // the header that would have said "Coming up", and the host tile is in
-    // content mode, so nothing on screen explained itself.
-    const over = terminal || runStatus === "errored";
+    // `runIsOver` counts `errored` — the generated set does not, and reserving
+    // there left a mute, breathing skeleton on screen forever: `bare` skips the
+    // header that would have said "Coming up", and the host tile is in content
+    // mode, so nothing on screen explained itself.
     const reservedKind = waiting && !over ? nodeOutputKind(definition, nodeId) : null;
     const caption = !waiting
       ? (PHASE_LABEL[phase] ?? phase)
@@ -708,7 +706,7 @@ export function ReadoutView({
 }) {
   const title = readout.title ?? describeSource(readout.source);
   const definitionId = useAppSelector(selectRunDefinitionId(runId));
-  const runMenuSection = useWorkflowRunMenuSection({
+  const runMenuSection = buildWorkflowRunMenuSection({
     getRow: () => ({ runId, definitionId, workflowName: null }),
     label: "This readout",
   });

@@ -54,7 +54,7 @@ import {
   selectRunStatus,
   selectRunStickyFacts,
 } from "../redux/workflow-runs.selectors";
-import { TERMINAL_RUN_STATUSES } from "../types";
+import { runIsOver } from "../types";
 import type { NodeInvocationState } from "../redux/workflow-runs.slice";
 import {
   workflowFailureAgentInput,
@@ -295,7 +295,7 @@ export function InvocationBody({
   // and hands over when the RUN ends. A terminal run always hands over — that
   // is the half that was missing.
   const runStatus = useAppSelector(selectRunStatus(runId));
-  const runOver = runStatus !== null && TERMINAL_RUN_STATUSES.has(runStatus);
+  const runOver = runIsOver(runStatus);
   const documentWins = settledOutput && (prefer === "persisted" || runOver);
   const working =
     invocation.phase === "running" || invocation.phase === "retrying";

@@ -37,6 +37,8 @@ export interface StudioDocSummary {
    * source is visible at a glance instead of only erroring on open.
    */
   sourceMissing: boolean;
+  /** True when this doc has been archived — hidden by default, one click away. */
+  archived: boolean;
 }
 
 /**
@@ -56,6 +58,7 @@ export function cldSourceFileIdsFromStudioDocs(
   const ordered: string[] = [];
   for (const d of docs) {
     if (
+      d.archived ||
       d.parentProcessedId != null ||
       d.sourceKind !== "cld_file" ||
       !d.sourceId ||
@@ -101,9 +104,11 @@ export function usePdfStudioDocs(opts?: {
     async (id: string) => {
       if (!userId) throw new Error("Not signed in");
       let prev: StudioDocSummary[] = [];
+      // Archived is not deleted: the row moves to the "Archived (N)"
+      // disclosure, it does not vanish.
       setDocs((cur) => {
         prev = cur;
-        return cur.filter((d) => d.id !== id);
+        return cur.map((d) => (d.id === id ? { ...d, archived: true } : d));
       });
       const { error: err } = await docprocDb(supabase)
         .from("processed_documents")
@@ -132,15 +137,17 @@ export function usePdfStudioDocs(opts?: {
         const { data, error: err } = await docprocDb(supabase)
           .from("processed_documents")
           .select(
-            "id, name, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind",
+            "id, name, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind, archived_at",
           )
           .eq("owner_id", userId)
-          // Archived docs are the canonical "removed from view" state
-          // (mirrors document-lookup.ts). Dangling docs whose source binary
-          // was lost in the 2026-05 AWS migration are archived, so this
-          // keeps them out of the studio without destroying their text.
-          // Soft-deleted (trashed) docs are equally out of view.
-          .is("archived_at", null)
+          // THE ARCHIVED-ITEMS LAW (../common-docs/policies/archived-items.md):
+          // archived docs are HIDDEN BY DEFAULT but must stay one click away,
+          // so the read carries them and `visible` / `visibleArchived` do the
+          // split. This query used to hardcode `.is("archived_at", null)`,
+          // which made an archived doc unreachable from the studio forever —
+          // including every doc auto-archived by the 2026-05 AWS migration.
+          // Soft-deleted (trashed) docs stay out of view: that is deletion,
+          // not archiving, and the law does not reveal it.
           .is("deleted_at", null)
           .order("created_at", { ascending: false })
           .limit(pageSize);
@@ -193,6 +200,7 @@ export function usePdfStudioDocs(opts?: {
                 sourceKind === "cld_file" &&
                 !!sourceId &&
                 !healthyCldIds.has(sourceId),
+              archived: r.archived_at != null,
             };
           }),
         );
@@ -219,9 +227,10 @@ export function usePdfStudioDocs(opts?: {
   // backend list is already filtered; this is the client-side safety net.
   const [tier, setTier] = useState<"all" | "roots" | "derivatives">("roots");
 
-  const visible = useMemo(() => {
+  // React Compiler memoizes this; no manual useMemo.
+  const narrow = (input: StudioDocSummary[]) => {
+    let rows = input;
     const q = search.trim().toLowerCase();
-    let rows = docs;
     if (q) {
       rows = rows.filter(
         (d) =>
@@ -246,19 +255,25 @@ export function usePdfStudioDocs(opts?: {
       // recent — keeps Supabase default order
     }
     return rows;
-  }, [docs, search, sortBy, filterKind, tier]);
+  };
+
+  // THE ARCHIVED-ITEMS LAW: two lists off the same narrowing, so the archived
+  // count the disclosure shows is the true count of what it would reveal.
+  const visible = narrow(docs.filter((d) => !d.archived));
+  const visibleArchived = narrow(docs.filter((d) => d.archived));
 
   // ── Derivation kinds present in the corpus, for the filter chip row ────
 
   const kinds = useMemo(() => {
     const s = new Set<string>();
-    for (const d of docs) s.add(d.derivationKind);
+    for (const d of docs) if (!d.archived) s.add(d.derivationKind);
     return Array.from(s).sort();
   }, [docs]);
 
   return {
     docs,
     visible,
+    visibleArchived,
     kinds,
     loading,
     error,

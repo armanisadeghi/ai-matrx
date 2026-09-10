@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 // features/education/memory/mandates.ts
 //
 // Mandate keys for the Memory Tools AI lanes (VISION §11 — Mnemonics,
@@ -14,11 +16,11 @@ export const EDU_MEMORY_MANDATES = {
    * Grounded strictly in the supplied material. Powers /education/memory + the
    * `memory_aid` converter target.
    */
-  memoryAid: "education.memory_generate",
+  memoryAid: MANDATE_KEYS.education__memory_generate,
   /**
    * front, back, topic → a single `memory_hint` envelope:
    * { __kind, technique, aid, explanation }. Cheap/fast — the proactive,
    * opt-in per-card memory affordance in the flashcards StudyDeck.
    */
-  memoryHint: "education.memory_hint",
+  memoryHint: MANDATE_KEYS.education__memory_hint,
 } as const;

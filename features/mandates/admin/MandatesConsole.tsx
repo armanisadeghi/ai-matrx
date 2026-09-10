@@ -33,6 +33,7 @@ import {
   ExternalLink,
   History,
   Loader2,
+  Link2,
   Plus,
   RefreshCw,
   ShieldCheck,
@@ -907,9 +908,10 @@ export function MandatesConsole() {
         // tab, and the same destination the whole-row click uses.
         href: (r) => adminMandateHref(r.mandateKey),
         cell: (r) => (
-          <div className="flex flex-col items-start gap-0.5">
+          <div className="flex min-w-0 flex-col items-start gap-0.5">
             <span
-              className="font-mono text-xs"
+              className="block max-w-full truncate font-mono text-xs"
+              style={{ whiteSpace: "nowrap" }}
               title={`Full mandate key: ${r.mandateKey}`}
             >
               {r.mandateName}
@@ -954,7 +956,7 @@ export function MandatesConsole() {
         accessorKey: "coverage",
         header: "Coverage",
         filter: "select",
-        width: 190,
+        width: 120,
         cell: (r) => {
           const meta = COVERAGE_META[r.coverage];
           return (
@@ -964,13 +966,8 @@ export function MandatesConsole() {
                 className={meta.toneClassName}
                 title={r.coverageDetail ?? meta.description}
               >
-                {meta.label}
+                {r.coverage === "orange" ? "Fallback" : meta.label}
               </Badge>
-              {r.coverage === "orange" && r.coverageDetail ? (
-                <span className="font-mono text-[10px] leading-tight text-amber-700 dark:text-amber-400">
-                  {r.coverageDetail}
-                </span>
-              ) : null}
             </div>
           );
         },
@@ -1000,7 +997,7 @@ export function MandatesConsole() {
         accessorKey: "pinLabel",
         header: "Pin",
         filter: "select",
-        width: 190,
+        width: 96,
         cell: (r) => (
           <div className="flex items-center gap-1">
             <Badge
@@ -1034,7 +1031,7 @@ export function MandatesConsole() {
         accessorKey: "health",
         header: "Health",
         filter: "select",
-        width: 320,
+        width: 180,
         // A detected problem ships with its fix and its link — never a red
         // badge that tells the admin to go find the answer themselves.
         cell: (r) => {
@@ -1104,7 +1101,7 @@ export function MandatesConsole() {
         id: "inputSummary",
         accessorKey: "inputSummary",
         header: "Inputs",
-        width: 220,
+        width: 320,
         cell: (r) => (
           <MandateInputsCell
             row={r}
@@ -1121,22 +1118,25 @@ export function MandatesConsole() {
         accessorKey: "outputSummary",
         header: "Output",
         filter: "select",
-        width: 160,
+        width: 220,
         cell: (r) => <MandateOutputCell row={r} />,
       },
       {
-        id: "overridesCount",
+        id: "bindings",
         accessorKey: "overridesCount",
-        header: "Bindings",
+        header: <Link2 className="h-3.5 w-3.5" aria-label="Bindings" />,
+        compact: true,
         filter: "number",
         align: "center",
-        width: 90,
-        cell: (r) =>
-          r.overridesCount > 0 ? (
-            <Badge variant="secondary">{r.overridesCount}</Badge>
-          ) : (
-            <span className="text-xs text-muted-foreground">none</span>
-          ),
+        width: 52,
+        cell: (r) => (
+          <span
+            className="text-xs tabular-nums"
+            title={`${r.overridesCount} bindings`}
+          >
+            {r.overridesCount}
+          </span>
+        ),
       },
       {
         id: "isEnabled",
@@ -1148,6 +1148,7 @@ export function MandatesConsole() {
         cell: (r) => (
           <div onClick={(e) => e.stopPropagation()} className="inline-flex">
             <Switch
+              aria-label={`Enable ${r.label || r.mandateKey}`}
               checked={r.isEnabled}
               onCheckedChange={(v) => void toggleEnabled(r, v)}
             />
@@ -1215,8 +1216,8 @@ export function MandatesConsole() {
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
             <div className="space-y-1">
               <div className="font-medium">
-                This console lists the platform&apos;s own jobs, and your account
-                may not.
+                This console lists the platform&apos;s own jobs, and your
+                account may not.
               </div>
               <div className="text-muted-foreground">{systemHomeRefusal}</div>
               <div className="text-muted-foreground">
@@ -1329,15 +1330,20 @@ export function MandatesConsole() {
                     {/* Declaring a job is admin work, so the New button lives
                       here — the user route has none. */}
                     <Button asChild size="sm">
-                      <AppLink href="/administration/mandates/new">
+                      <AppLink
+                        href="/administration/mandates/new"
+                        aria-label="New Mandate"
+                      >
                         <Plus className="w-4 h-4" />
-                        New Mandate
+                        <span className="hidden sm:inline">New Mandate</span>
                       </AppLink>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={reload}
+                      aria-label="Refresh mandates"
+                      title="Refresh mandates"
                       disabled={fetching}
                     >
                       {fetching ? (
@@ -1365,10 +1371,13 @@ export function MandatesConsole() {
                   enabled: r.isEnabled,
                 }),
               }}
-              // ONE MANDATE UI: a row opens the mandate's PAGE. No side-panel
-              // drawer, no table-owned window — this console is the LIST, and
-              // the page is the mandate. (`MandateDetailPanel` still exists and
-              // still renders the admin controls; it lives on that page now.)
+              // Navigation and raw inspection are separate, explicit actions.
+              detail={{ enabled: false }}
+              window={{
+                enabled: true,
+                title: (r) => `Inspect ${r.label || r.mandateKey}`,
+                onOpen: () => {},
+              }}
               onRowOpen={(r) => openMandatePage(r.mandateKey)}
             />
           </NonEditableContextMenu>

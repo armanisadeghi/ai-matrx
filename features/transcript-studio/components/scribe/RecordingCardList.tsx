@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Archive, ChevronDown, ChevronRight, Trash2, X } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -11,6 +11,7 @@ import {
 import { deleteRecordingSegmentThunk } from "../../redux/thunks";
 import { RecordingCard } from "./RecordingCard";
 import type { TranscriptSection } from "./FullTranscriptDrawer";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 interface RecordingCardListProps {
   sessionId: string;
@@ -109,37 +110,27 @@ export function RecordingCardList({
         />
       ))}
 
-      {archived.length > 0 && (
-        <div className="mt-1">
-          <button
-            type="button"
-            onClick={() => setShowArchived((v) => !v)}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-muted-foreground active:bg-accent"
-          >
-            {showArchived ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-            <Archive className="h-4 w-4" />
-            Archived ({archived.length})
-          </button>
-          {showArchived && (
-            <div className="mt-1 flex flex-col gap-2">
-              {archived.map((rec, idx) => (
-                <RecordingCard
-                  key={rec.id}
-                  sessionId={sessionId}
-                  recording={rec}
-                  index={idx}
-                  variant="archived"
-                  onOpenTranscript={onOpenTranscript}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* THE ARCHIVED-ITEMS LAW: hidden by default, one click to reveal. The
+          shared primitive owns the control — this surface proved the pattern,
+          it does not own a second copy of it. */}
+      <ArchivedDisclosure
+        count={archived.length}
+        open={showArchived}
+        onOpenChange={setShowArchived}
+        className="mt-1"
+        contentClassName="flex flex-col gap-2"
+      >
+        {archived.map((rec, idx) => (
+          <RecordingCard
+            key={rec.id}
+            sessionId={sessionId}
+            recording={rec}
+            index={idx}
+            variant="archived"
+            onOpenTranscript={onOpenTranscript}
+          />
+        ))}
+      </ArchivedDisclosure>
     </div>
   );
 }

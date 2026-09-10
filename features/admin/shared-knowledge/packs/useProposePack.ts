@@ -29,8 +29,9 @@ import {
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { fetchPackCorpus, packFromProposal, type AdminPackRecord } from "./data";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-export const STARTER_PACK_PROPOSER_MANDATE_KEY = "seo.starter_pack_proposer";
+export const STARTER_PACK_PROPOSER_MANDATE_KEY = MANDATE_KEYS.seo__starter_pack_proposer;
 export const PROPOSER_VERSION = "packpropose-v1";
 
 export interface ProposePackInput {

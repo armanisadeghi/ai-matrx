@@ -4,7 +4,7 @@
  * ADMIN SURFACE. Drives `/administration/utilities/**` — eight unrelated
  * developer/admin diagnostic tools that happen to live under one hub:
  *
- *   /administration/utilities                    hub (AdminDomainDirectory — static link directory, no data)
+ *   /administration/utilities                    hub (AdminDomainLanding — registry-generated link directory, no data)
  *   /administration/utilities/all-routes           full app route tree (server-scanned at request time)
  *   /administration/utilities/blob-cache           browser file-cache inspector (IDB L1/L2 stats, SW status)
  *   /administration/utilities/capture-inspector     live fetch/stream capture viewer (every HTTP exchange, both directions)

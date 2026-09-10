@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { ChevronDown, Loader2, Save, Wand2 } from "lucide-react";
+import { ChevronDown, Loader2, Save, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -279,7 +279,7 @@ export function SchemaConvertTab({
         </CollapsiblePanel>
 
         <Button size="sm" className="w-full shrink-0" onClick={handleConvert}>
-          <Wand2 className="mr-1.5 size-3.5" />
+          <Zap className="mr-1.5 size-3.5" />
           Convert schema
         </Button>
 

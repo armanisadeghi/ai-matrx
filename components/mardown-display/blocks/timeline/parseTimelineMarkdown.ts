@@ -1,3 +1,4 @@
+import type { KIND_KEY } from "@ai-matrx/content-ir";
 import type {
   Timeline as TimelineKind,
   TimelineEvent as TimelineEventKind,
@@ -5,14 +6,14 @@ import type {
 } from "@/features/content-ir/kinds/generated/kinds.generated";
 
 /** THE SHAPES COME FROM THE REGISTRY; the parser only guarantees the render key. */
-export type TimelineEvent = Omit<TimelineEventKind, "__kind" | "id"> &
+export type TimelineEvent = Omit<TimelineEventKind, typeof KIND_KEY | "id"> &
   Required<Pick<TimelineEventKind, "date" | "description">> & { id: string };
 
-export type TimelinePeriod = Omit<TimelinePeriodKind, "__kind" | "events"> & {
+export type TimelinePeriod = Omit<TimelinePeriodKind, typeof KIND_KEY | "events"> & {
   events: TimelineEvent[];
 };
 
-export type TimelineData = Omit<TimelineKind, "__kind" | "periods"> & {
+export type TimelineData = Omit<TimelineKind, typeof KIND_KEY | "periods"> & {
   periods: TimelinePeriod[];
 };
 

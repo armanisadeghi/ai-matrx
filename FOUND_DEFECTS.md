@@ -15,6 +15,136 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D303 — the `mandate.*` L1 tables broke their OWN schema's org-backstop convention (D300's class is still growing)
+
+Found by the docs-steward `ddl_guard_log` sweep 2026-09-10. Three rows of
+`org_not_null_no_backstop` fired at 2026-09-10T05:54Z for `mandate.scan`,
+`mandate.reference` and `mandate.observation` — the tables the Mandate Declaration
+& Usage Reporting campaign's L1/L2 lanes created.
+
+This is **not** the D262 "organization_id IS the row identity" exemption. Censused
+live across the whole `mandate` schema (`pg_attribute` + non-internal `pg_trigger`,
+matching `_stamp_org_default` / `inherit_org_from_parent`):
+
+| `mandate.*` table | `organization_id NOT NULL` | backstop trigger |
+| --- | --- | --- |
+| `binding`, `definition`, `provision`, `treatment` | yes | **yes** |
+| `scan`, `reference`, `observation` | yes | **no** |
+
+All seven are NOT NULL with no column default. The four older tables carry the
+backstop; the three new ones do not. The schema's own convention is unambiguous and
+the new tables simply missed it, so an org-forgetting write to any of the three
+500s instead of being stamped.
+
+**The fix:** attach the same backstop the four siblings use, in one migration under
+`migrations/`, then re-run the sentinel. Confirm first which parent each inherits
+from — `reference` and `observation` hang off a `scan`, so `inherit_org_from_parent`
+is likely right for those two and `_stamp_org_default` for `scan` itself.
+
+**Why this is filed separately from D300 rather than folded into it:** D300's finding
+was that the guard is a going-forward tripwire on a condition **240 live tables
+already meet**, and therefore cannot size its own class. These three arrived the day
+*after* D300 was filed — new DDL, guard working exactly as designed, convention
+broken anyway. The class is not just unmeasured, it is still growing at the point
+where the guard *does* fire. D300's ask (a census mode alongside the triggers)
+stands; this is the first datum showing the going-forward half needs teeth too.
+
+---
+
+### D302 — `sync-types` silently DELETES the contract for any endpoint aidream has merged but not yet deployed
+
+Found 2026-09-09 building campaign lane L7 (`../common-docs/projects/mandate-declaration-reporting/`).
+
+`pnpm sync-types` pulls `/schema/all` from the LIVE backend, so `types/python-generated/`
+loses every route and schema that exists in aidream `main` but has not reached
+`server.app.matrxserver.com` yet. The deploy train runs every ~20–30 min, so there is a
+routine window in which a merged endpoint's types vanish from this repo.
+
+That is not a cosmetic gap — it is a **work-destroying** one. On 2026-09-09 it repeatedly
+dropped the types for `GET /mandates/{key}/references` and `GET /mandates/references/board`,
+and THREE separate sessions read the missing types as "this UI has no contract" and deleted
+the whole frontend lane — the third time hours before a release, so `v0.4.1806` shipped
+without it. See the parking-reflex table below for the three reverts and their restores.
+
+**Where:** `scripts/sync-types.mjs` (step 2 delegates to `../aidream/scripts/sync-types.mjs
+--url <live>`), which OVERWRITES `types/python-generated/openapi.json` wholesale.
+
+**The fix:** the sync should MERGE rather than replace — or at minimum refuse to remove a
+path/schema that this repo still imports, and say so loudly. aidream already writes the
+working-tree truth to `aidream/aidream/api/generated/openapi.json`
+(`uv run python scripts/generate_types.py api --direct`); a merge from that file, or a
+`--allow-ahead` mode, closes the window. Until then, re-adding the dropped paths from that
+file by hand is the only recovery, and it must be redone after every sync.
+
+**Decides:** whoever owns `scripts/sync-types.mjs`. This is a class, not one endpoint's
+problem — it hits every cross-repo feature the moment the backend half merges first, which
+is the normal order.
+
+**`--fast` silently means `--local`, and the local dev server is usually the STALEST
+source of all.** `scripts/sync-types.mjs` line 37: `const useLocal = fastMode || args.includes('--local')`,
+so `pnpm sync-types --fast` syncs from `http://localhost:8000` — a long-lived dev server that
+booted days ago — while printing "Backend: http://localhost:8000" in a banner nobody reads as a
+warning. On 2026-09-09 that wiped the two L7 routes back out MINUTES AFTER they went live on
+production. aidream's own generator screams about exactly this hazard (`generate_types.py`
+prints a 7-line banner when a schema comes from a running server); this script does not.
+Sync from the deployed backend explicitly instead:
+`node ../aidream/scripts/sync-types.mjs --url https://server.app.matrxserver.com --out types/python-generated`.
+
+**Second-order damage — the parking reflex, three times.** The dropped types read as "this
+UI has no contract", and the L7 lane was deleted on that reading three separate times — the
+SAME file set each time (`app/(admin)/administration/mandates/references/page.tsx`,
+`features/mandates/admin/{references.ts,MandateSourceUsage.tsx,MandateReferenceBoardView.tsx}`
+and their tests, the admin-catalog + admin-nav entries, the `route-to-surface.ts` ruling and
+the `features/mandates/FEATURE.md` Change Log line):
+
+| # | Revert | Restore |
+|---|---|---|
+| 1 | `4ac345621a` "park undeployed mandate contract" | `6ca42ec722` |
+| 2 | `aa877c239f` "park reference UI until live contract" | `ca65dc5e2d` |
+| 3 | `2f12a4b67e` "keep undeployed reference contract off main" | **none — released without the lane** |
+
+The third one is the expensive one: the very next commit was `3066659c91`
+`release-all: v0.4.1806`, so **v0.4.1806 shipped to production with the L7 UI absent**, and
+V-L7 (`../common-docs/projects/mandate-declaration-reporting/verdicts/V-L7.md`) failed the
+lane for exactly that. It was restored on 2026-09-09 once the backend went live, after
+`https://server.app.matrxserver.com/health/version` reported `1814438171` — a descendant of
+aidream `ea79e334f`, which carries both routes.
+
+Parking is the wrong remedy twice over: the contract exists in aidream `main` (`ea79e334f`)
+and can be checked into this repo from aidream's own working-tree `openapi.json`, so
+`pnpm type-check` is green with the lane present; and the surfaces degrade HONESTLY without
+the endpoint — "The reference report failed. This list is not empty — it is unknown." plus
+the verbatim error — which is exactly what a screen is supposed to do while the deploy train
+catches up. **Do not delete a lane because its backend half has not shipped yet;** re-add the
+paths from `../aidream/aidream/api/generated/openapi.json` and let the honest failure state
+do its job.
+
+**Class fix adopted by the campaign (ordering, not hand-patching).** A frontend consumer of a
+NEW aidream endpoint is pushed only after `https://server.app.matrxserver.com/health/version`
+reports a SHA that has the endpoint's aidream commit as an ancestor:
+
+```
+curl -s https://server.app.matrxserver.com/health/version          # → {"git_sha": "<live>"}
+git -C ../aidream merge-base --is-ancestor <endpoint-commit> <live> && echo LIVE
+```
+
+Only then is `pnpm sync-types` (against the live backend, never `--fast`) able to produce the
+types the consumer imports, and only then does the window that caused all three reverts close.
+Hand-patching `types/python-generated` from aidream's working tree is a bridge, not the fix —
+the next sync erases it.
+
+**Still open — the guard that would have stopped all three.** `scripts/sync-types.mjs` should
+WARN LOUDLY when it is about to DROP a path or schema that committed code in this repo still
+imports, instead of silently replacing the file. Sketch: before overwriting
+`types/python-generated/`, diff the old vs new `openapi.json` for removed
+`components.schemas.*` keys and removed paths; for each removal, `grep` the tracked source
+(`git grep -l 'schemas"\]\["<Name>"\]'` / the route literal) and, if anything still
+references it, print a banner naming the type, the files that import it, and the one-line
+recovery — and exit non-zero under a `--strict` flag. That turns a silent deletion into a
+sentence a session cannot misread as "this UI has no contract". Not implemented here: it is a
+real change to a shared generator script and belongs to whoever owns `sync-types.mjs`, not to
+a restore commit.
+
 ### D301 — the route-manifest chain is broken at both links, and the half that has a guard runs nowhere
 
 Found by the `dedupe-and-verify` rotation pass on the `route-liveness` node, 2026-09-09.
@@ -2690,6 +2820,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **The two mandate-UI affordances the 2026-09-09 rotted-tests pass left behind.** That pass restored `ScopeHolderBar`'s `coverageLine` — the one a guard covered — and left the other three: the bar went on accepting `job.label`, `job.offeredCount` and `job.offerSourceLine` from `OneBindingWorkspace` and rendering none of them, and `features/mandates/workspace/RunThisJobSection.tsx` had been mounted by nothing since `816ea88701`. **FIXED 2026-09-09.** (1) The job is named on the bar again as ONE property row in the surface's own density — name + mono key, `Offers N` in the row's source slot (an unread offer says "Reading what it offers", never a premature 0), and the offer-source sentence as visible second-line text. The guard is the BOUNDARY, not the sentences: `features/bindings/__tests__/scope-holder-bar-renders-every-job-prop.test.tsx` requires every `job` field to be visible text or declared as forwarded to a named control, proven failing-then-passing (6 of 9 red against `56c1eaedc4`). `default-holder-is-stated.test.tsx`'s `not.toContain("zzz.walk_r6")` line — added by `96e45f3aa2` in the same commit that deleted the JOB cell, pinning a deletion rather than a rule — is OVERTURNED in place and now guards the real rule: the key never appears without its human label. (2) The removal of `RunThisJobSection` was DELIBERATE — `816ea88701` moved every admin concern into tabs and the run affordance is the super-admin **Test** tab (`MandateWorkspace` `adminContent` → `MandateDetailView section="test"` → `MandateTestBench` → `TryItNowPanel`), which already carried the same endpoint, served surface, failure card and folded server notes. The orphan and its suite are deleted; both its guards follow the affordance to the live form (`admin/__tests__/run-panel-honesty.test.tsx`; `invoke-supplied-values.test.ts` repointed), and the ONE thing the orphan had that the live form did not — the sentence saying an OPTIONAL `binding_prompt` input left blank makes the run use the holder's own default — was ported into `TryItNowPanel` first. `server-notes-folded.test.tsx` now asserts there is exactly ONE mandate run form. Verified on localhost:3001 as admin@admin.com: `/mandates/research_client.output_slides` Holder tab renders `Job: Research Output: Slides research_client.output_slides / The call site supplies these every launch — declared by the provision / Source: Offers 2`, and the admin Test tab still mounts the run form. 2026-09-09.
+
 - **D295** (filed 2026-08-31 as "D294", renumbered — that id names the resolved dangling-id RPC defect below) — every frontend release was refused by the entity-vocabulary gate: `@ai-matrx/associations` 0.6.1 carried 656 tokens vs 657 live (`commerce_certified_printer` migrated into `platform.entity_types` without the package publish). **RESOLVED 2026-08-31**: vocabulary regenerated (657, clean single-token diff), 0.6.2 published via the sanctioned CI flow (`publish-all-ts-packages.mjs`, OIDC, `npm dist-tags.latest`=0.6.2, aidream a2ba9f7ef, tag npm/associations/v0.6.2), frontend lockfile bumped, gate green, release v0.4.1552 cut. **The gate was CORRECT — the defect is publish ordering**, and this was the second identical outage in two days (0.6.1/commerce_print_order on 08-30). The class fix is tracked separately: a migration adding an entity token must publish the vocabulary in the same wave. 2026-08-31.
 
 - **D293** — `agx_duplicate_shortcut` / `agx_promote_shortcut_to_global` and both `_m` mirrors omitted `value_mappings` from their INSERT column lists (verified live on all four), so a duplicate or promotion was born with an empty consumption map — and post-wave-B, a missing `write_policies` too. **FIXED 2026-08-30 by migration `d293_duplicate_promote_carry_consumption_map`**: all four now carry `value_mappings`; the `_m` pair also carries `write_policies` (first-class on the view). **Proving it surfaced D294** (below), so the behavioral proof ran after both fixes: in a rolled-back transaction as the real admin claims, legacy duplicate's map is byte-identical to its source, mirror duplicate's returned id resolves to a real view row whose `value_mappings` AND `write_policies` match the source. Grants re-verified intact after the replaces; ddl_guard_log unacked backlog 0. 2026-08-30.
@@ -2861,6 +2993,46 @@ test has to drive the store rather than a captured `onEvent` callback. Not done 
 is a test-architecture decision, and doing it inside a repoint would hide whether the repoint or the
 rewrite moved the result. Only the stale `getMasterworkRunFields` mock key was updated (that export
 is gone).
+
+**REPAIRED 2026-09-09.** The suite now renders under a real store + `Provider` and folds a real
+`run_errored` event through the real `workflowRuns` reducer; only TRANSPORT (the adapter thunk) is
+stubbed. Rewriting it exposed a live product defect it had stopped guarding: the box asked the
+generated `TERMINAL_RUN_STATUSES`, which excludes `errored`, so an errored run never settled —
+`onRunFinished` never fired and no failure was explained. Fixed with `runIsOver` in
+`features/workflow-runtime/types.ts`, proven failing-then-passing.
+
+## Every run-watching surface hand-rolls "is this run over?" — 2026-09-09
+
+`runIsOver` (added above) is the single expression, but at least a dozen surfaces still carry their
+own `TERMINAL_RUN_STATUSES.has(s) || s === "errored"` (or a private `TERMINAL` set): `RunHero`,
+`RunActivityFeed`, `ReadoutView`, `RunFailureCard`, `useFloatingWorkflowRun`, `FloatingRunBody`,
+`ProgressRailReadout` and the workflow-runtime bake-off pages. Each copy is a place the next
+status the engine adds gets missed. Not swept here (a five-agent test-repair session owned only
+this suite's files) — the sweep is mechanical: import `runIsOver` and delete the local set.
+
+**SWEPT + GUARDED 2026-09-09.** The census came to **17** sites, not a dozen, and grep alone was
+not the census: two of them (`RunHero`, `RunActivityFeed`) named their private set `TERMINAL`, two
+more (`useFloatingWorkflowRun`, `FloatingRunBody`) called it `TERMINAL_STATUSES`, and three
+(`Marquee`, `LiveDesk`, `refine-2/RefineRunPage`) had no set at all — a spelled-out four-way `||`
+and a privately re-declared `runIsOver`. All 17 now call the ONE predicate. `RunFailureCard` had no
+terminal logic to sweep. Two sites were changed BEYOND cosmetics because they had the live defect:
+`discovery/runs.ts` (`isTerminalStatus`, which stamps a list row's `completedAt` on the announce —
+an errored row's duration had been measuring to `now` forever) and `ReadoutView` (the reservation
+skeleton). THREE sites deliberately keep the generated set because they ask the ENGINE's question,
+not a viewer's: `run-controls.ts` (Stop/Cancel stay enabled on an errored run — pinned by
+`run-controls.test.ts`), `workflow-runs.slice.ts` (row-vs-replay reconciliation) and
+`adopt-workflow-run.thunk.ts` (transport adoption). Those three are the named allowlist in the
+guard, each with the question it asks — not a silencer list.
+
+Guard: `pnpm check:run-is-over` (`scripts/check-run-is-over.ts`), added to both release-gate lists.
+It matches on the STATUS MEMBERS, never on a name, because a name test would have caught none of
+the four renamed copies. Proven failing-then-passing twice: `--self-test` is RED on the hand-rolled
+union, on a private terminal set under any name, and on the spelled-out union, and GREEN on
+`runIsOver()`, on a comment naming the defect, on another domain's `completed/failed/cancelled`
+vocabulary, and on an allowlisted engine site; and the real pre-fix `RunHero.tsx` from `HEAD` was
+restored into the tree and the guard went RED on it (`RunHero.tsx:64`), then GREEN again on the
+swept file. `pnpm test:workflow-runtime` 374/374, `features/masterwork` 32/32, `pnpm type-check`
+clean.
 
 ## Fixed in passing: the trigger surface was unreachable on every cold load — 2026-08-28
 
@@ -3093,3 +3265,196 @@ export type CmsHtmlPageResultData = Pick<CmsHtmlPageResult, "page" | "pages"> & 
 ```
 
 Whoever takes it must re-check the block's null handling, not just swap the declaration.
+
+## 2026-09-08 — 24 jest suites fail on main, and CI runs none of them (3 FIXED 2026-09-09)
+
+Found by accidentally triggering an unscoped `pnpm test` while working on admin navigation.
+The full suite is **24 suites / 37 tests failing** (1196 suites / 8941 tests pass). None are
+admin-nav files; all predate that work.
+
+The reason nobody noticed is structural, and it is the same trap `.github/workflows/ci.yml`
+already documents for the HR guards at `:234-236`: **CI's jest jobs are scoped**
+(`test:content-ir`, `test:workflow-runtime`, `test:render-matrix`, plus two explicitly-named HR
+files). `package.json:27` `"test": "jest --no-coverage"` is invoked by nothing. So any suite
+outside those four scopes can rot indefinitely while CI stays green.
+
+Failing suites, for whoever picks this up:
+
+```
+app/api/cms/_lib/validateContent.test.ts
+components/image/shared/ImageCards.test.tsx
+components/kind-kit/kind-kit.test.tsx
+components/ui/__tests__/dialog-mobile-sheet.test.tsx
+features/access-gate/components/GovernedActionDialog.responsive-contract.test.ts
+features/agent-apps/utils/compile-slot.test.ts
+features/agents/components/inputs/resources/resource-family-policy.test.ts
+features/agents/components/messages-display/message-options/__tests__/resolveAssistantEditTarget.test.ts
+features/agents/components/settings-management/validation/__tests__/constraint-eval-fixture.test.ts
+features/canvas/materialization/__tests__/planMaterialization.test.ts      (already logged 2026-08-31)
+features/canvas/services/__tests__/canvasArtifactService.test.ts
+features/cms/accessGateTokens.test.ts
+features/dynamic-react/toolRendererScope.bundle-contract.test.ts
+features/hr/__tests__/no-hand-built-hr-urls.test.ts   FIXED 2026-09-09 (IS a CI-blocking step)
+features/marketing/analytics/campaign-pause.test.ts   FIXED 2026-09-09
+features/masterwork/components/masterworks/TryMasterworkBox.test.tsx
+features/organizations/__tests__/memberships-session-boundary.test.ts
+features/podcasts/studio/runs/__tests__/runsRepository.test.ts
+features/resource-manager/resource-picker/__tests__/resource-picker-menu-items.test.ts
+features/window-panels/windows/seo/KeywordWindow.test.tsx   FIXED 2026-09-09
+lib/sandbox/__tests__/active-binding-local-pc.test.ts
+scripts/pattern-patrol/manifest.test.ts
+utils/permissions/__tests__/registry.parity.test.ts
+utils/permissions/__tests__/registry.routes.test.ts
+```
+
+Two notes worth acting on. `features/hr/__tests__/no-hand-built-hr-urls.test.ts` is wired into
+CI as a blocking step (`ci.yml:246`) and is failing, which is a second red gate on main beyond
+the two already logged above. And `utils/permissions/__tests__/registry.routes.test.ts` fails on
+`interview_session -> /vision-interview/{id}` and `web_brand -> /marketing/brands/{id}` — a
+sharing registry handing callers URLs that resolve to no route, i.e. a live dead-end, not just a
+stale test.
+
+The class fix is not "fix 24 suites": it is that a suite nothing runs is not a test. Either
+scope-in the directories that are meant to be green, or run the full suite with a known-failing
+allowlist that only shrinks.
+
+**2026-09-09 — three of the 24 closed at root; 21 remain.**
+
+- `features/hr/__tests__/no-hand-built-hr-urls.test.ts` — the guard was RIGHT. Two literal
+  `/hr/people/employee-1?org=example` URLs sat in `href` position in
+  `components/membership/copy.test.ts`'s fixture. They now come from `hrEmployeeHref()`, the
+  same builder the production producer (`features/hr/entry-points/MemberEmployeeSeam.tsx:83`)
+  uses, so the fixture tracks the real builder instead of a frozen guess.
+- `features/marketing/analytics/campaign-pause.test.ts` — the ASSERTION was wrong. It asserted a
+  GA4 pause for non-super-admins that commit `62e10d8fd3` (2026-08-26) deliberately ended by
+  flipping `GOOGLE_ANALYTICS_CAMPAIGN_PHASE` to `"approved"`; that commit updated the two sibling
+  campaign suites and missed this one. Rewritten to guard the phase-INDEPENDENT wiring — the gate
+  is consulted before anything is dispatched — plus the live phase's real behaviour. No
+  production change: `dispatch(callApi(...))` never resolves `undefined`, so `response?.error`
+  would only have converted a broken result into a silent success.
+- `features/window-panels/windows/seo/KeywordWindow.test.tsx` — the window was rendered with no
+  providers, so it died in `useKeywordAssignSurfaces` (`useQueryClient`) before the test could
+  assert anything. Now wrapped in the app's real `ReactQueryProvider` over a minimal redux store,
+  the shape the sibling `features/window-panels/__tests__/*` suites use, plus the `matchMedia`
+  stub jsdom lacks.
+
+**2026-09-09 (later) — the remaining 21 closed, plus 12 more the first census never saw. CLOSED.**
+
+A fresh unscoped run before starting found **32 suites / 56 tests** red, not 21: the original
+list was taken on 2026-09-08 and 12 suites had gone red since (six under `features/mandates`,
+two under `lib/entity-list`, `components/official/__tests__/server-notes-folded`,
+`components/official/matrx-data-table/ColumnHeaderCell.focus`,
+`components/ui/__tests__/toaster-stale-sweep`, `features/bindings/__tests__/holder-block-affordances`).
+`lib/sandbox/__tests__/active-binding-local-pc.test.ts` had gone green on its own. That drift in
+one day is the entry's own point made twice: nothing was running these.
+
+All 32 are fixed at their roots. **No test was skipped, deleted or weakened**, and three suites
+came out guarding MORE than they did before. The repair splits three ways:
+
+**A. The test was RIGHT and a real product defect was hiding behind it (9 suites).**
+- `app/api/cms/_lib/validateContent.test.ts` — the worst of them. `validateContent` built its
+  backend client with no organization scope, so since the fail-closed org kernel landed
+  `requireOrganizationContext(null)` threw BEFORE any networking and the `catch` reported it as
+  *"aidream is unreachable or timed out"*. **The CMS content guard has been silently dead in
+  production, every CMS write proceeding unvalidated while the log blamed the network.** Fixed:
+  `organizationId` is now an explicit input threaded from the site row at all 7 call sites, it
+  travels in the header only (aidream's `CmsValidationRequest` is `extra="forbid"`, so
+  `BackendClient` gained `sendScopeInBody`), and the skip path now distinguishes our own wiring
+  defect from a genuine transport failure, each with its own remedy. New guard: a missing org
+  never blames aidream and never calls it.
+- `features/masterwork/.../TryMasterworkBox.tsx` — asked the generated `TERMINAL_RUN_STATUSES`,
+  which answers the ENGINE's resume question and excludes `errored`, so an errored run never
+  settled: no failure explanation, screen waiting on a row poll. Root fix is the shared
+  `runIsOver(status)` primitive in `features/workflow-runtime/types.ts`. Proven failing-then-
+  passing. The sibling census (17 surfaces hand-rolling `TERMINAL_RUN_STATUSES.has(s) ||
+  s === "errored"`) is logged separately above — SWEPT and GUARDED 2026-09-09
+  (`pnpm check:run-is-over`).
+- `features/bindings/__tests__/holder-block-affordances.test.tsx` — `96e45f3aa2` deleted the JOB
+  cell and set `coverageLine={null}`; `jobCoverage` was computed and thrown away, so a person
+  could set a holder, read a healthy verdict, and never learn a required input was unmapped and
+  the run would refuse. Coverage is rendered again, once per page.
+- `features/mandates/authoring/AutomationButton.tsx` + `automation-availability-honesty` —
+  `46330d9f93` moved a blocked control's reason into a hover popover; the component's own header
+  forbids exactly that ("a tooltip is not words on the screen"). The screen said only "Not
+  configured". The sentence is inline visible text again, all three blocked states.
+- `features/mandates/__tests__/user-text-sentence.test.ts` — the shared sentence had no renderer
+  left; it is the row's `help` now.
+- `features/mandates/__tests__/mandate-screen-vocabulary.test.ts` — four real vocabulary leaks
+  (internal nouns on screen, plus `ProvisionOfferList` re-typing the provision flags locally
+  while the shared `OFFERED_*` constants said something else).
+- `features/mandates/__tests__/default-holder-has-one-road.test.ts` — `MandateTestBench` composed
+  the exact `default_holder_*` payload the gated door exists to prevent; it passes a resolved
+  `HolderRef` now.
+- `features/mandates/admin/__tests__/mandate-delete.test.ts` — the destructive control had lost
+  half its consequence sentence (what else stops working, that it is reversible). Restored.
+- `utils/permissions/__tests__/registry.routes.test.ts` — see D below.
+
+**B. The assertion was stale because a ruling moved the truth (13 suites).** Each rewritten to
+guard the NEW true behaviour with the commit that changed it named in the file: the C9/C26
+design-system extraction (`animate-pulse` → the package-owned `MOTION_PULSE`, `slide-in-from-bottom`
+→ `MOTION_BOTTOM_SHEET` — 3 suites; two of them now assert the exported constant and the package
+keyframes rather than a literal utility name), the knowledge/RAG surface consolidation, the
+access-gate vocabulary ruling (`"CMS site"` → `"website"`), the canvas icon-name canonicalization,
+the `AssistantEditTarget` third field, the retry moving into `@ai-matrx/data`, the podcast
+repository's refusal that deliberately stopped guessing WHY, two picker rows added by ruling, and
+P7's move from ERADICATION to MAINTENANCE (that guard is now strictly stronger: `PatrolDefinition`
+is a discriminated union where `mode: "MAINTENANCE"` REQUIRES a `maintenanceProof` string, so the
+manifest's zero-backlog claim is typed instead of asserted).
+
+**C. The harness was lying, in ways worth naming (10 suites).** Blanket `jest.mock` of a whole
+published package once a host file became a thin re-export (so `Card` resolved to `undefined`);
+a `jest.mock("sonner")` returning a bare object where the real `toast` is a CALLABLE, which the
+package's own guard correctly rejected; components rendered with no redux `Provider` after
+`useEntityList` started reading THE ARCHIVED-ITEMS LAW knob; a suite mocking a thunk module that
+had not existed since the run-adapter rename; a cross-repo fixture that moved inside `common-docs`
+(now repointed, and a missing fixture THROWS as `UNMEASURED:` with a remedy — never a skip); and a
+guard that had quietly become a no-op by grepping a `components/ui/*.tsx` file that is now a pure
+re-export (rewritten to render the real shared component and read the DOM).
+
+One of these was an environment pathology worth the whole repo's attention:
+`ColumnHeaderCell.focus.test.tsx` was not slow, it was quadratic. jsdom 30 has no native selector
+engine, so `Element.matches` IS nwsapi, and nwsapi's `isModal()`/`isFullscreen()` ask for the
+"native" answer by calling `node.matches(':modal')` — re-entering themselves. `@floating-ui`
+calls those on every element it positions, so 32k calls became **37 million**. `jest.setup.ts` now
+answers the three top-layer pseudo-classes (`:modal`, `:fullscreen`, `:popover-open`) as `false`
+— the honest answer, since jsdom implements no top layer — and passes everything else to the real
+engine. One popover open: **12,107ms → 61ms**; that suite 55s → ~4s. Every popper/dropdown/select/
+tooltip suite in the repo was paying this.
+
+**D. The live dead-end was 15 rows, not two.** The entry flagged
+`interview_session -> /vision-interview/{id}` and `web_brand -> /marketing/brands/{id}`.
+`web_brand` was never broken — the GUARD was: its route matcher did not consume the separator
+before an OPTIONAL catch-all, so `/marketing/brands/[brandId]/[[...rest]]` was held to demand a
+trailing slash the real URL never has. Fixed, with both arms of the optional catch-all now pinned
+in the scan's self-test.
+
+Chasing the real one exposed the bigger hole. The routes guard only ever read the TS MIRROR, and
+the parity guard only ever compared that mirror to a COMMITTED SNAPSHOT — and the snapshot was
+itself **31 rows behind the live table**, because `pnpm check:shareable-registry` (which pulls the
+live registry and screams on drift) was, like `pnpm test`, invoked by nothing. A census of the
+LIVE `platform.shareable_resource_registry` against the `app/` tree found **15 rows advertising a
+URL that resolves to no route** — each one rendered as a link on the org sharing surfaces.
+Repaired per the registry's own two lawful fixes, in
+`migrations/20260909_shareable_registry_dead_end_urls.sql` (applied + ledgered):
+`interview_session` → the real `/masterwork/vision-interview/{id}`; `code_repository` /
+`data_store` → the canonical `/knowledge/*` the TS mirror had already moved to; and `''` — "no
+signed-in destination", so the surface renders NO link — for the twelve whose detail route simply
+does not exist in `app/` (`browser_profile`, both `custom_*`, both `esign_*`, seven `hr_*`, plus
+three retired rows). A list page was deliberately NOT substituted for a missing detail route: a
+link that lands on a list does not show the record the share was for. The snapshot was
+regenerated (90 → 121 rows) and the TS mirror caught up (84 → 114 active rows, +32 mirrored, 2
+deactivated rows retired with their reason).
+
+**THE CLASS FIX.** `scripts/run-release-gates.sh` now runs, in both lanes:
+- `"Whole jest suite (every suite, not CI's four scopes)|pnpm test"` — the whole battery, 221s
+  over 1,257 suites, the same order as `type-check` which was already there. STRICT (no
+  `--advisory`): the suite is at **zero red**, so there is no backlog to grandfather and any
+  finding is new.
+- `"Shareable registry: live DB vs committed snapshot|pnpm check:shareable-registry"` — the guard
+  that would have caught D years earlier had anything called it.
+
+Both are the same lesson the 2026-09-08 entry drew and neither half had: a check nothing invokes
+is not a check. CI still runs its four fast scopes on every PR; the ship path now runs everything.
+
+Final run on this checkout: **1,257 suites passed / 1,257 total; 9,311 tests passed, 3 todo, 0
+failed; 220.6s**. Before: 32 suites / 56 tests red. `pnpm type-check` clean.

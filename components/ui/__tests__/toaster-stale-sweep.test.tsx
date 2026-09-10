@@ -28,11 +28,34 @@ import { createRoot, type Root } from "react-dom/client";
 
 const dismiss = jest.fn();
 
-jest.mock("sonner", () => ({
-  __esModule: true,
-  Toaster: (props: Record<string, unknown>) => <div data-testid="sonner" {...{}} />,
-  toast: { dismiss: (...args: unknown[]) => dismiss(...args) },
-}));
+/**
+ * The fake sonner `toast` must be a CALLABLE with sonner's methods hung off it,
+ * not a bare object: `Toaster` imports `@/lib/toast`, which hands the real
+ * sonner export to `createMatrxToast` from `@ai-matrx/kit/toast`, and that
+ * package guards its input (`options.toast must be the sonner toast object (or
+ * a structural equivalent)`). A plain `{ dismiss }` object threw at import and
+ * took the whole suite down before a single case ran. Keeping the mock
+ * structurally honest means this suite still exercises the REAL `Toaster` and
+ * the REAL captured-toast wiring — only sonner itself is stubbed.
+ */
+jest.mock("sonner", () => {
+  const noop = () => undefined;
+  return {
+    __esModule: true,
+    Toaster: () => <div data-testid="sonner" />,
+    toast: Object.assign(noop, {
+      dismiss: (...args: unknown[]) => dismiss(...args),
+      error: noop,
+      warning: noop,
+      success: noop,
+      info: noop,
+      message: noop,
+      loading: noop,
+      custom: noop,
+      promise: noop,
+    }),
+  };
+});
 
 jest.mock("@/styles/themes/useThemeMode", () => ({
   __esModule: true,

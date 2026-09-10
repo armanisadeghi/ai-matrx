@@ -59,7 +59,23 @@ jest.mock("@/features/agents/redux/agent-shortcut-categories/thunks", () => ({
 // covered where they live; this test is about the drawer's LOAD, so they are
 // stubbed to keep the mount free of Redux, portals and the manifest registry.
 jest.mock("@/features/agent-shortcuts/components/next/WidgetPicker", () => ({
-  WidgetPicker: () => <div data-testid="widget-picker" />,
+  WidgetPicker: ({
+    value,
+    disabled,
+    onChange,
+  }: {
+    value: string;
+    disabled: boolean;
+    onChange: (value: string) => void;
+  }) => (
+    <button
+      data-testid="widget-picker"
+      disabled={disabled}
+      onClick={() => onChange("sidebar")}
+    >
+      {value}
+    </button>
+  ),
 }));
 jest.mock("@/features/agent-shortcuts/components/next/CategoryPicker", () => ({
   CategoryPicker: () => <div data-testid="category-picker" />,
@@ -116,6 +132,7 @@ describe("BindingOptionsDrawer — the one-shot read", () => {
   it("the CLOSED trigger already says what is set — 'empty' and 'unknown' never look alike", async () => {
     readPresentation.mockResolvedValue({
       treatmentId: null,
+      access: null,
       presentation: defaultPresentation(),
       disabled: false,
     });
@@ -131,6 +148,7 @@ describe("BindingOptionsDrawer — the one-shot read", () => {
   it("counts the answered options ON THE CLOSED TRIGGER, without being opened", async () => {
     readPresentation.mockResolvedValue({
       treatmentId: "treatment-1",
+      access: { level: "edit", exists: true, isOwner: false },
       presentation: { ...defaultPresentation(), displayMode: "sidebar" },
       disabled: false,
     });
@@ -152,6 +170,7 @@ describe("BindingOptionsDrawer — the one-shot read", () => {
   it("SETTLES when opened, and reads exactly once", async () => {
     readPresentation.mockResolvedValue({
       treatmentId: "treatment-1",
+      access: { level: "edit", exists: true, isOwner: false },
       presentation: { ...defaultPresentation(), displayMode: "sidebar" },
       disabled: false,
     });
@@ -186,5 +205,76 @@ describe("BindingOptionsDrawer — the one-shot read", () => {
     });
     expect(container.textContent).toContain("permission denied");
     expect(container.textContent).toContain("Try again");
+  });
+
+  it.each(["view", "edit", "admin"])(
+    "uses treatment %s access independently of holder scope",
+    async (level) => {
+      readPresentation.mockResolvedValue({
+        treatmentId: "treatment-1",
+        version: 3,
+        access: { level, exists: true, isOwner: false },
+        presentation: defaultPresentation(),
+        disabled: false,
+      });
+      await act(async () => {
+        root.render(
+          <BindingOptionsDrawer
+            owner={OWNER}
+            autoRun={false}
+            organizationName="Titanium Success"
+            section="display"
+          />,
+        );
+      });
+      const picker = container.querySelector<HTMLButtonElement>(
+        '[data-testid="widget-picker"]',
+      );
+      expect(picker?.disabled).toBe(level === "view");
+      expect(container.textContent).toContain("Shared mandate");
+      expect(container.textContent).toContain("Titanium Success");
+      if (level !== "view") {
+        await act(async () => {
+          picker?.click();
+        });
+        expect(container.textContent).toContain("Unsaved");
+      }
+    },
+  );
+
+  it("preserves shared edits while changing sections", async () => {
+    readPresentation.mockResolvedValue({
+      treatmentId: "treatment-1",
+      version: 3,
+      access: { level: "edit", exists: true, isOwner: false },
+      presentation: defaultPresentation(),
+      disabled: false,
+    });
+    const render = (section: "display" | "permissions") => (
+      <BindingOptionsDrawer
+        owner={OWNER}
+        autoRun={false}
+        organizationName="Titanium Success"
+        section={section}
+      />
+    );
+    await act(async () => {
+      root.render(render("display"));
+    });
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="widget-picker"]')
+        ?.click();
+    });
+    await act(async () => {
+      root.render(render("permissions"));
+    });
+    await act(async () => {
+      root.render(render("display"));
+    });
+    expect(
+      container.querySelector('[data-testid="widget-picker"]')?.textContent,
+    ).toBe("sidebar");
+    expect(readPresentation).toHaveBeenCalledTimes(1);
   });
 });

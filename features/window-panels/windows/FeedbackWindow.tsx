@@ -51,7 +51,7 @@ import {
   FEEDBACK_SURFACE_NAME,
   createFeedbackScope,
 } from "@/features/surfaces/manifests/feedback.manifest";
-import { parseFeedbackDraft } from "./feedbackDraftWrite";
+import { parseFeedbackDraft } from "@/features/feedback/feedbackDraftWrite";
 import {
   Select,
   SelectContent,

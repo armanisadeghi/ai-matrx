@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, FlaskConical, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import {
   PropertyRow,
+  CONFIGURATION_CHOICE_SIZE,
   ConfigurationTable,
   ConfigurationTableRow,
   FieldHelp,
@@ -27,7 +28,10 @@ import type {
   VariableCustomComponent,
   VariableDefinition,
 } from "@/features/agents/types/agent-definition.types";
-import { holderOfMandate } from "@/lib/supabase/mandateStorage";
+import {
+  holderOfMandate,
+  type HolderRef,
+} from "@/lib/supabase/mandateStorage";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -60,6 +64,15 @@ import {
   type MandateDefinitionRow,
 } from "./service";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
+import { AgentSamplesManager } from "@/features/agents/components/samples/AgentSamplesManager";
+import {
+  sampleAttachmentParts,
+  sampleInputText,
+  type AgentSampleRow,
+} from "@/features/agents/samples/service";
+import { resolveMandate } from "@/features/mandates/service";
+import { sampleInputsForMandate } from "./sample-inputs";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
 interface CompletedRun {
@@ -102,10 +115,24 @@ function componentForKind(kind: string): VariableCustomComponent | undefined {
  * supply rich controls only. Saving always uses the completed run's snapshot. */
 export function TryItNowPanel({
   mandate,
+  effectiveHolder,
   defaultAgentId,
   onSavedTestCase,
+  allowPrincipalSelection = false,
+  consumptionMap,
 }: {
+  /** Explicitly opt in on a host that supports testing another principal. */
+  allowPrincipalSelection?: boolean;
+  consumptionMap?: unknown;
   mandate: MandateDefinitionRow;
+  /**
+   * The Holder actually in force for this bench — a binding's Holder when one
+   * answers, otherwise the mandate's own. The bench used to express this by
+   * building a mandate row with the three `default_holder_*` columns
+   * overwritten; that literal is the write shape `default-holder-has-one-road`
+   * forbids in client code, so the Holder travels as a Holder.
+   */
+  effectiveHolder?: HolderRef;
   defaultAgentId: string | null;
   passesUserInput: boolean | undefined;
   onSavedTestCase: () => void;
@@ -119,7 +146,8 @@ export function TryItNowPanel({
   const surfaceState = useMandateInputSurface(mandate.mandate_key);
   const surface = surfaceState.status === "ready" ? surfaceState.surface : null;
   const fields = surface?.inputs ?? [];
-  const pinnedVersionId = holderOfMandate(mandate).versionId;
+  const pinnedVersionId = (effectiveHolder ?? holderOfMandate(mandate))
+    .versionId;
   const execution = useAppSelector((state) =>
     defaultAgentId ? selectAgentExecutionPayload(state, defaultAgentId) : null,
   );
@@ -129,9 +157,29 @@ export function TryItNowPanel({
   } | null>(null);
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [userInput, setUserInput] = useState("");
+  const sampleRequest = useRef(0);
+  const [sampleSource, setSampleSource] = useState<{
+    agentId: string;
+    map: unknown;
+  } | null>(null);
+  const [readingSamples, setReadingSamples] = useState(false);
+  const [sampleError, setSampleError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [completed, setCompleted] = useState<CompletedRun | null>(null);
   const [failure, setFailure] = useState<MandateRunFailure | null>(null);
+  useEffect(() => {
+    sampleRequest.current += 1;
+    setSampleSource(null);
+    setSampleError(null);
+    setReadingSamples(false);
+  }, [
+    defaultAgentId,
+    consumptionMap,
+    testContext,
+    testMode,
+    viewerOrgId,
+    mandate.id,
+  ]);
   const [saveLabel, setSaveLabel] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -199,6 +247,67 @@ export function TryItNowPanel({
       }
     }
     return variables;
+  }
+  async function openSamples() {
+    const request = ++sampleRequest.current;
+    setReadingSamples(true);
+    setSampleError(null);
+    try {
+      if (
+        testMode === "display" ||
+        (allowPrincipalSelection && testContext === "viewer")
+      ) {
+        const resolved = await resolveMandate(mandate.mandate_key);
+        if (request !== sampleRequest.current) return;
+        setSampleSource({
+          agentId: resolved.agentId,
+          map: resolved.consumptionMap,
+        });
+      } else if (defaultAgentId)
+        setSampleSource({ agentId: defaultAgentId, map: consumptionMap });
+      else throw new Error("Assign an agent before choosing its samples.");
+    } catch (error) {
+      if (request === sampleRequest.current)
+        setSampleError(describeError(error));
+    } finally {
+      if (request === sampleRequest.current) setReadingSamples(false);
+    }
+  }
+  function fillSample(sample: AgentSampleRow) {
+    try {
+      if (!sampleSource || sample.agent_id !== sampleSource.agentId)
+        throw new Error("The selected holder changed. Reopen its samples.");
+      if (sampleAttachmentParts(sample).length)
+        throw new Error(
+          "This sample contains attachments. The mandate test endpoint cannot accept those message parts yet; no inputs were changed.",
+        );
+      const { values: next, skipped } = sampleInputsForMandate(
+        sample,
+        mandate.id,
+        fields,
+        sampleSource?.map,
+      );
+      const text = sampleInputText(sample);
+      if (text && !surface?.acceptsUserInput)
+        throw new Error(
+          "This sample includes a user message that this mandate does not accept. No inputs were changed.",
+        );
+      if (!Object.keys(next).length && !(surface?.acceptsUserInput && text))
+        throw new Error(
+          "No sample values map to this mandate's editable inputs. Check Provision Mapping or use the sample preview.",
+        );
+      setValues((current) => ({ ...current, ...next }));
+      if (surface?.acceptsUserInput) setUserInput(text);
+      setSampleSource(null);
+      setSampleError(null);
+      if (skipped.length)
+        toast.info(
+          `Filled ${Object.keys(next).length} inputs. Not used: ${skipped.map((name) => displayLabelForKey(name)).join(", ")}. Review before running.`,
+        );
+      else toast.success("Sample filled. Review inputs before running.");
+    } catch (error) {
+      setSampleError(describeError(error));
+    }
   }
   async function run() {
     if (!surface) return;
@@ -293,66 +402,111 @@ export function TryItNowPanel({
     }
   }
 
+  const inputColumns = [
+    { key: "format", label: "Format" },
+    { key: "required", label: "Required" },
+    { key: "delivery", label: "Entry" },
+    { key: "source", label: "Source" },
+  ];
+
   return (
     <section className="min-w-0 space-y-4">
-      <h3 className="text-sm font-semibold">Test inputs</h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold">Run once</h3>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={readingSamples || !surface}
+          onClick={() =>
+            sampleSource ? setSampleSource(null) : void openSamples()
+          }
+        >
+          {readingSamples ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <FlaskConical className="size-3.5" />
+          )}
+          Agent samples
+        </Button>
+      </div>
+      {sampleError ? (
+        <div role="alert" className="text-sm text-destructive">
+          {sampleError}
+        </div>
+      ) : null}
+      {sampleSource ? (
+        <section
+          className="space-y-3 rounded-lg border border-border p-3"
+          aria-label="Agent samples"
+        >
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold">Agent samples</h4>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSampleSource(null)}
+            >
+              Close
+            </Button>
+          </div>
+          <AgentSamplesManager
+            agentId={sampleSource.agentId}
+            onUseSample={fillSample}
+          />
+        </section>
+      ) : null}
       <PropertyRow
         label="Test mode"
-        help="Server test returns execution diagnostics. Display test launches the saved presentation using your effective holder, including organization and personal bindings. Surfaces that explicitly choose their own layout can override the saved display."
+        help={`${allowPrincipalSelection ? "Server test executes the selected test context" : "Server test executes the system default"} and returns diagnostics. My display preview executes your resolved holder with saved display defaults; it does not reproduce the original feature. Test inputs come from the signed-in organization, so cross-principal input compatibility has not been verified.`}
         value={
           <Select
             value={testMode}
-            onValueChange={(value: "server" | "display") => setTestMode(value)}
+            onValueChange={(value: "server" | "display") => {
+              setTestMode(value);
+              setSampleSource(null);
+              setSampleError(null);
+            }}
           >
-            <SelectTrigger className="w-full max-w-72">
+            <SelectTrigger
+              className={`${CONFIGURATION_CHOICE_SIZE} w-full max-w-72`}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="server">Server test</SelectItem>
-              <SelectItem value="display">Display test</SelectItem>
+              <SelectItem value="display">My display preview</SelectItem>
             </SelectContent>
           </Select>
         }
       />
-      <PropertyRow
-        label="Test context"
-        value={
-          testMode === "display" ? (
-            "My effective holder"
-          ) : (
-            <Select
-              value={testContext}
-              onValueChange={(value: "system" | "viewer") =>
-                setTestContext(value)
-              }
-            >
-              <SelectTrigger className="w-full max-w-72">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="system">System default</SelectItem>
-                <SelectItem value="viewer">My effective holder</SelectItem>
-              </SelectContent>
-            </Select>
-          )
-        }
-        help="System default preserves the administrator bench. My effective holder includes your organization and personal binding overrides. Both execute as the signed-in administrator."
-      />
-      <PropertyRow
-        label="Input declaration scope"
-        value="Signed-in organization"
-        source="Served input surface"
-      />
-      <PropertyRow
-        label="Input / test scope match"
-        value={<StatusToken status="unknown" label="Not verified" />}
-        help="The input-surface endpoint has no test-principal selector. Its declarations may differ from the holder selected by the test context. The result reports the actual holder."
-      />
-      <PropertyRow
-        label="Sample-data fill"
-        value="Not available"
-        help="Agent Builder sample-data support is tracked for a later pass. Saved test cases remain available below."
-      />
+      {allowPrincipalSelection ? (
+        <PropertyRow
+          label="Test context"
+          value={
+            testMode === "display" ? (
+              "My effective holder"
+            ) : (
+              <Select
+                value={testContext}
+                onValueChange={(value: "system" | "viewer") =>
+                  setTestContext(value)
+                }
+              >
+                <SelectTrigger
+                  className={`${CONFIGURATION_CHOICE_SIZE} w-full max-w-72`}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="system">System default</SelectItem>
+                  <SelectItem value="viewer">My effective holder</SelectItem>
+                </SelectContent>
+              </Select>
+            )
+          }
+          help="System default preserves the administrator bench. My effective holder includes your organization and personal binding overrides. Both execute as the signed-in administrator."
+        />
+      ) : null}
       {surfaceState.status === "loading" ? (
         <div role="status" className="flex items-center gap-2 text-sm">
           <Loader2 className="size-4 animate-spin" />
@@ -371,7 +525,7 @@ export function TryItNowPanel({
         testId="test-input-surface-notes"
         folded
       />
-      <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+      <div className="grid min-w-0 gap-3">
         {fields.map((field) => {
           const definition = agentDefinitions.find(
             (item) => item.name === field.name,
@@ -394,19 +548,39 @@ export function TryItNowPanel({
                   <FieldHelp label={label}>{field.help}</FieldHelp>
                 ) : null}
               </h4>
-              <PropertyRow
-                label="Format"
-                value={formatVariableDisplayName(field.kind)}
-              />
-              <PropertyRow
-                label="Required"
-                value={field.sourcing !== "optional" ? "Yes" : "No"}
-              />
-              <PropertyRow
-                label="Delivery"
-                value={field.pinned ? "Automatic" : "Entered for test"}
-                source={ORIGIN_LABEL[field.origin]}
-              />
+              <ConfigurationTable
+                label={`${label} input properties`}
+                columns={inputColumns}
+              >
+                <ConfigurationTableRow
+                  columns={inputColumns}
+                  cells={{
+                    format: formatVariableDisplayName(field.kind),
+                    required: field.sourcing !== "optional" ? "Yes" : "No",
+                    delivery: field.pinned ? "Automatic" : "Manual",
+                    source: ORIGIN_LABEL[field.origin],
+                  }}
+                />
+              </ConfigurationTable>
+              {/* 🚨 A QUESTION THIS JOB ASKS YOU NEVER GETS SILENTLY ANSWERED
+                  (walk, 2026-08-31; moved here 2026-09-09 when the workspace's
+                  own run panel was deleted by `816ea88701`'s tab refactor and
+                  this became the only run form in the product). A
+                  `binding_prompt` source served as an OPTIONAL field was left
+                  blank and the run went ahead on the agent's own default — the
+                  person was asked nothing, told nothing, and got a value they
+                  never chose. It is not made required: the binding's author
+                  said optional and that stands. The consequence of leaving it
+                  blank is stated BEFORE the run instead of discovered after
+                  it. Guard: `features/mandates/__tests__/invoke-supplied-values.test.ts`. */}
+              {field.origin === "binding_prompt" &&
+              field.sourcing === "optional" &&
+              !field.pinned ? (
+                <p className="text-xs leading-snug text-warning">
+                  This job asks you for this. Leave it blank and the run uses
+                  the holder&rsquo;s own default instead of an answer from you.
+                </p>
+              ) : null}
               {field.pinned ? (
                 <PropertyRow
                   label="Value"
@@ -419,7 +593,7 @@ export function TryItNowPanel({
                   }
                 />
               ) : structured ? (
-                <ProTextarea
+                <ProJsonTextarea
                   aria-label={label}
                   value={
                     typeof currentValue(field) === "string"
@@ -433,7 +607,31 @@ export function TryItNowPanel({
                     }))
                   }
                   placeholder="JSON value"
-                  className="min-h-24 font-mono text-sm"
+                  className="min-h-32 text-sm"
+                  minHeight={128}
+                  enableTextStats={false}
+                  autoFocus={false}
+                />
+              ) : ["text", "string", "markdown"].includes(field.kind) &&
+                (!definition?.customComponent ||
+                  (["textarea", "markdown"].includes(
+                    definition.customComponent.type,
+                  ) &&
+                    !definition.customComponent.structured_list &&
+                    !definition.customComponent.picklist &&
+                    !definition.customComponent.assignment)) ? (
+                <ProTextarea
+                  aria-label={label}
+                  value={String(currentValue(field))}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      [field.name]: event.target.value,
+                    }))
+                  }
+                  placeholder={label}
+                  className="min-h-32 text-sm"
+                  minHeight={128}
                   autoFocus={false}
                 />
               ) : (
@@ -461,22 +659,45 @@ export function TryItNowPanel({
       {surface && fields.length === 0 ? (
         <PropertyRow label="Declared inputs" value="None" />
       ) : null}
-      <PropertyRow
-        label="User message accepted"
-        value={surface ? (surface.acceptsUserInput ? "Yes" : "No") : "Unknown"}
-      />
-      {surface?.acceptsUserInput ? (
-        <label className="block space-y-1 text-sm">
-          <span>User message</span>
+      <div className="min-w-0 space-y-2 rounded-lg border border-border p-3">
+        <h4 className="flex items-center gap-2 text-sm font-medium">
+          User message
+          <FieldHelp label="User message">
+            Optional text from the person running the test. Provision values are
+            sent separately.
+          </FieldHelp>
+        </h4>
+        <ConfigurationTable
+          label="User message properties"
+          columns={inputColumns}
+        >
+          <ConfigurationTableRow
+            columns={inputColumns}
+            cells={{
+              format: "Text",
+              required: "No",
+              delivery: "Manual",
+              source: "User",
+            }}
+          />
+        </ConfigurationTable>
+        {surface?.acceptsUserInput ? (
           <ProTextarea
+            aria-label="User message"
             value={userInput}
             onChange={(event) => setUserInput(event.target.value)}
             placeholder="User message"
-            className="min-h-20"
+            className="min-h-32 text-sm"
+            minHeight={128}
             autoFocus={false}
           />
-        </label>
-      ) : null}
+        ) : (
+          <PropertyRow
+            label="User message"
+            value={surface ? "Not accepted" : "Unknown"}
+          />
+        )}
+      </div>
       <Button
         size="sm"
         disabled={running || !surface}

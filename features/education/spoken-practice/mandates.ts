@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 // features/education/spoken-practice/mandates.ts
 //
 // Mandate keys for the Spoken Practice AI lanes. These are MANDATE KEYS, not
@@ -15,15 +17,15 @@
 
 export const SPOKEN_PRACTICE_MANDATES = {
   /** mode, focus, study_material, difficulty, count → grounded oral-exam / interview / debate plan */
-  designSession: "education.spoken_practice_design",
+  designSession: MANDATE_KEYS.education__spoken_practice_design,
   /** focus, difficulty, count, study_material → the same plan shape, target-language utterances (pronunciation mode) */
-  designLanguageSession: "education.spoken_practice_design_language",
+  designLanguageSession: MANDATE_KEYS.education__spoken_practice_design_language,
   /** front, back, rubric (mode-framed), seconds_allowed, answer_audio (durable file_id) → unified spoken grade JSON */
-  gradeAnswer: "education.spoken_practice_grade",
+  gradeAnswer: MANDATE_KEYS.education__spoken_practice_grade,
   /** Same grade JSON PLUS { pronunciation } — the dedicated pronunciation-mode grader */
-  gradePronunciation: "education.spoken_practice_grade_pronunciation",
+  gradePronunciation: MANDATE_KEYS.education__spoken_practice_grade_pronunciation,
   /** mode, transcript, aggregate → { summary, strengths[], weaknesses[] } — mode-aware session review */
-  reviewSession: "education.spoken_practice_review",
+  reviewSession: MANDATE_KEYS.education__spoken_practice_review,
 } as const;
 
 export type SpokenPracticeMandateKey = keyof typeof SPOKEN_PRACTICE_MANDATES;

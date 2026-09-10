@@ -17,7 +17,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 
 import { RunStatusChip } from "../../run-status";
-import { TERMINAL_RUN_STATUSES } from "../../types";
+import { runIsOver } from "../../types";
 import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
 import {
   selectNodeAggregatePhases,
@@ -61,7 +61,7 @@ export function SharpStatusBand({
   const phases = useAppSelector(selectNodeAggregatePhases(runId));
   const { pause, resumePaused, cancel } = useWorkflowRunControls();
 
-  const terminal = status !== null && TERMINAL_RUN_STATUSES.has(status);
+  const terminal = runIsOver(status);
   const running = status === "running";
   const paused = status === "paused";
   const done = settledStepCount(steps, phases);

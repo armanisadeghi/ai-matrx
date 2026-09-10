@@ -55,7 +55,7 @@ export interface CodeFileMenuActions {
   onRefresh?: (row: CodeFileMenuRow) => void;
 }
 
-export function useCodeFileMenuSection(opts: {
+export function buildCodeFileMenuSection(opts: {
   /** The row the menu was opened on, resolved at select time. */
   getRow: () => CodeFileMenuRow | null;
   actions: CodeFileMenuActions;

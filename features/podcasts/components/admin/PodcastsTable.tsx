@@ -75,6 +75,31 @@ function CopyLinkButton({ slug }: { slug: string }) {
     );
 }
 
+/** Hoisted to module scope — an inner component type remounts its subtree every render. */
+// Fixed widths per column per row — no Math.random() to avoid SSR/client hydration mismatch
+const SKELETON_WIDTHS = [
+    ['w-3/5', 'w-2/5', 'w-4/5', 'w-1/2'],
+    ['w-4/5', 'w-3/5', 'w-2/5', 'w-3/4'],
+    ['w-1/2', 'w-4/5', 'w-3/5', 'w-2/3'],
+    ['w-2/3', 'w-1/2', 'w-4/5', 'w-3/5'],
+    ['w-3/4', 'w-2/3', 'w-1/2', 'w-4/5'],
+    ['w-2/5', 'w-3/4', 'w-2/3', 'w-1/2'],
+] as const;
+
+const SkeletonRows = () => (
+    <>
+        {SKELETON_WIDTHS.map((cols, i) => (
+            <tr key={i} className="border-b">
+                {cols.map((w, j) => (
+                    <td key={j} className="px-4 py-3">
+                        <div className={`h-4 bg-muted rounded animate-pulse ${w}`} />
+                    </td>
+                ))}
+            </tr>
+        ))}
+    </>
+);
+
 export function PodcastsTable({
     activeTab,
     shows,
@@ -127,30 +152,6 @@ export function PodcastsTable({
             setPendingDeleteId(null);
         }
     };
-
-    // Fixed widths per column per row — no Math.random() to avoid SSR/client hydration mismatch
-    const SKELETON_WIDTHS = [
-        ['w-3/5', 'w-2/5', 'w-4/5', 'w-1/2'],
-        ['w-4/5', 'w-3/5', 'w-2/5', 'w-3/4'],
-        ['w-1/2', 'w-4/5', 'w-3/5', 'w-2/3'],
-        ['w-2/3', 'w-1/2', 'w-4/5', 'w-3/5'],
-        ['w-3/4', 'w-2/3', 'w-1/2', 'w-4/5'],
-        ['w-2/5', 'w-3/4', 'w-2/3', 'w-1/2'],
-    ] as const;
-
-    const SkeletonRows = () => (
-        <>
-            {SKELETON_WIDTHS.map((cols, i) => (
-                <tr key={i} className="border-b">
-                    {cols.map((w, j) => (
-                        <td key={j} className="px-4 py-3">
-                            <div className={`h-4 bg-muted rounded animate-pulse ${w}`} />
-                        </td>
-                    ))}
-                </tr>
-            ))}
-        </>
-    );
 
     return (
         <>

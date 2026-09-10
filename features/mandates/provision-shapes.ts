@@ -131,6 +131,8 @@ export function kindPhrase(kind: string): string {
 export const OFFERED_ALWAYS_WORDS = "Always there";
 export const OFFERED_SOMETIMES_WORDS = "Sometimes missing";
 export const OFFERED_LAZY_WORDS = "Fetched when used";
+/** The other arm of the same flag, for a renderer that shows both. */
+export const OFFERED_EAGER_WORDS = "Ready at launch";
 
 export interface OfferedValue {
   name: string;

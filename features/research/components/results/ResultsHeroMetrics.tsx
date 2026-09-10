@@ -7,7 +7,7 @@ import {
   Type,
   Brain,
   FileText,
-  Sparkles,
+  BrainCircuit,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -112,7 +112,7 @@ export function buildHeroMetrics(input: {
       key: "calls",
       label: "LLM calls",
       value: input.llmCalls,
-      icon: Sparkles,
+      icon: BrainCircuit,
       format: "int",
       accent: "text-rose-500",
     },

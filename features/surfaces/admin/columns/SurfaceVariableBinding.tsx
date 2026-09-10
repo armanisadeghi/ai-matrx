@@ -1,6 +1,9 @@
 "use client";
 
+import styles from "./SurfaceVariableBinding.module.css";
+
 import {
+  CONFIGURATION_CHOICE_SIZE,
   PropertyRow,
   FieldHelp,
 } from "@/components/official/ConfigurationFields";
@@ -117,6 +120,16 @@ export interface SourceLabels {
   prompt_user?: string;
 }
 
+export function offeredAvailabilityLabel(
+  alwaysAvailable: boolean | undefined,
+): string {
+  return alwaysAvailable === undefined
+    ? "Availability unknown"
+    : alwaysAvailable
+      ? "Always available"
+      : "Sometimes available";
+}
+
 export function SurfaceVariableBinding({
   target,
   mapping,
@@ -124,7 +137,10 @@ export function SurfaceVariableBinding({
   disabled = false,
   sourceLabels,
   valueFieldLabel,
+  targetKindLabel,
   structured = false,
+  sourceAbsenceManaged = false,
+  sourceDetailAside,
   onChange,
 }: {
   target: BindingTarget;
@@ -135,7 +151,13 @@ export function SurfaceVariableBinding({
   sourceLabels?: SourceLabels;
   /** Label over the picker ("Surface value" by default). */
   valueFieldLabel?: string;
+  /** Explicit destination type for consumers that mix variables and context policies. */
+  targetKindLabel?: string;
   structured?: boolean;
+  /** Mandate mappings own when_absent; their source-required flag is not the runtime policy. */
+  sourceAbsenceManaged?: boolean;
+  /** Consumer-owned policy paired with the selected source. */
+  sourceDetailAside?: React.ReactNode;
   onChange: (next: ValueMapping | null) => void;
 }) {
   const surfaceValueIndex = useMemo(() => {
@@ -203,33 +225,68 @@ export function SurfaceVariableBinding({
         )}
       >
         {/* Name + required pill */}
-        <header className="px-4 pt-3 pb-2 flex items-start gap-2 min-w-0">
-          <div className="min-w-0 flex-1">
-            <h4 className="flex items-center gap-1 text-sm font-semibold text-foreground break-words">
-              {displayName}
-              {target.description ? (
-                <FieldHelp label={displayName}>{target.description}</FieldHelp>
+        {structured ? (
+          <header className="border-b border-border px-3 py-3">
+            <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-foreground">
+              <div className="flex gap-1.5">
+                <dt className="font-semibold">Type:</dt>
+                <dd>{targetKindLabel ?? "Variable"}</dd>
+              </div>
+              <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                <dt className="font-semibold">Name:</dt>
+                <dd className="break-words">{displayName}</dd>
+                {target.description ? (
+                  <FieldHelp label={displayName}>
+                    {target.description}
+                  </FieldHelp>
+                ) : null}
+              </div>
+              <div className="flex gap-1.5">
+                <dt className="font-semibold">Required by Holder:</dt>
+                <dd>
+                  {target.required === undefined
+                    ? "Unknown"
+                    : target.required
+                      ? "Yes"
+                      : "No"}
+                </dd>
+              </div>
+            </dl>
+          </header>
+        ) : (
+          <header className="px-4 pt-3 pb-2 flex items-start gap-2 min-w-0">
+            <div className="min-w-0 flex-1">
+              <h4 className="flex items-center gap-1 text-sm font-semibold text-foreground break-words">
+                {targetKindLabel ? <span>{targetKindLabel}:</span> : null}
+                {displayName}
+                {target.description ? (
+                  <FieldHelp label={displayName}>
+                    {target.description}
+                  </FieldHelp>
+                ) : null}
+              </h4>
+              {!structured ? (
+                <code className="mt-0.5 block font-mono text-[10px] text-muted-foreground">
+                  {target.name}
+                </code>
               ) : null}
-            </h4>
-            {!structured ? (
-              <code className="mt-0.5 block font-mono text-[10px] text-muted-foreground">
-                {target.name}
-              </code>
-            ) : null}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Required:{" "}
-            {target.required === undefined
-              ? "Unknown"
-              : target.required
-                ? "Yes"
-                : "No"}
-          </div>
-        </header>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Required:{" "}
+              {target.required === undefined
+                ? "Unknown"
+                : target.required
+                  ? "Yes"
+                  : "No"}
+            </div>
+          </header>
+        )}
 
         {/* 4-button source picker */}
-        <div className="px-4">
-          <div className="mb-1 text-xs text-muted-foreground">Source</div>
+        <div className={structured ? "px-3 pt-3" : "px-4"}>
+          <div className="mb-2 text-sm font-semibold text-foreground">
+            Source
+          </div>
           <ModeButtons
             mode={mode}
             onChange={setMode}
@@ -239,54 +296,72 @@ export function SurfaceVariableBinding({
         </div>
 
         {/* Detail panel — fixed height, no UI shift between modes */}
-        <div className="px-4 pt-3 pb-4 min-h-[120px]">
-          {mode === "agent_default" && (
-            <AgentDefaultDetail
-              autoBindCandidate={autoBindCandidate}
-              structured={structured}
-              defaultValue={target.defaultValue}
-            />
+        <div
+          className={cn(
+            structured ? "px-3 py-3" : "px-4 pt-3 pb-4 min-h-[120px]",
+            mode === "surface_value" &&
+              sourceDetailAside &&
+              "grid gap-3 md:grid-cols-2",
           )}
-          {mode === "surface_value" && mapping?.mapType === "surface_value" && (
-            <SurfaceValueDetail
-              mapping={mapping}
-              availableSurfaceValues={availableSurfaceValues}
-              disabled={disabled}
-              fieldLabel={valueFieldLabel}
-              onChange={onChange}
-            />
-          )}
-          {mode === "surface_value" && mapping?.mapType !== "surface_value" && (
-            // Auto-bind case — there's no explicit mapping yet, but we've
-            // surfaced it as "Surface Value" because of the name match.
-            <SurfaceValueDetail
-              mapping={{
-                mapType: "surface_value",
-                target: autoBindCandidate?.name ?? "",
-                required: false,
-              }}
-              availableSurfaceValues={availableSurfaceValues}
-              disabled={disabled}
-              fieldLabel={valueFieldLabel}
-              onChange={onChange}
-            />
-          )}
-          {mode === "direct_value" && mapping?.mapType === "direct_value" && (
-            <DirectValueDetail
-              mapping={mapping}
-              agentDefault={target.defaultValue}
-              disabled={disabled}
-              onChange={onChange}
-            />
-          )}
-          {mode === "prompt_user" && mapping?.mapType === "prompt_user" && (
-            <PromptUserDetail
-              mapping={mapping}
-              agentDefault={target.defaultValue}
-              disabled={disabled}
-              onChange={onChange}
-            />
-          )}
+        >
+          <div className="min-w-0">
+            {mode === "agent_default" && (
+              <AgentDefaultDetail
+                autoBindCandidate={autoBindCandidate}
+                structured={structured}
+                defaultValue={target.defaultValue}
+              />
+            )}
+            {mode === "surface_value" &&
+              mapping?.mapType === "surface_value" && (
+                <SurfaceValueDetail
+                  mapping={mapping}
+                  availableSurfaceValues={availableSurfaceValues}
+                  disabled={disabled}
+                  fieldLabel={valueFieldLabel}
+                  showRequired={!sourceAbsenceManaged}
+                  onChange={onChange}
+                />
+              )}
+            {mode === "surface_value" &&
+              mapping?.mapType !== "surface_value" && (
+                // Auto-bind case — there's no explicit mapping yet, but we've
+                // surfaced it as "Surface Value" because of the name match.
+                <SurfaceValueDetail
+                  mapping={{
+                    mapType: "surface_value",
+                    target: autoBindCandidate?.name ?? "",
+                    required: false,
+                  }}
+                  availableSurfaceValues={availableSurfaceValues}
+                  disabled={disabled}
+                  fieldLabel={valueFieldLabel}
+                  showRequired={!sourceAbsenceManaged}
+                  onChange={onChange}
+                />
+              )}
+            {mode === "direct_value" && mapping?.mapType === "direct_value" && (
+              <DirectValueDetail
+                mapping={mapping}
+                agentDefault={target.defaultValue}
+                disabled={disabled}
+                onChange={onChange}
+              />
+            )}
+            {mode === "prompt_user" && mapping?.mapType === "prompt_user" && (
+              <PromptUserDetail
+                mapping={mapping}
+                agentDefault={target.defaultValue}
+                disabled={disabled}
+                onChange={onChange}
+              />
+            )}
+          </div>
+          {mode === "surface_value" && sourceDetailAside ? (
+            <div className={cn(styles.sourceDetailAside, "min-w-0 border-border")}>
+              {sourceDetailAside}
+            </div>
+          ) : null}
         </div>
       </article>
     </TooltipProvider>
@@ -339,7 +414,8 @@ function ModeButtons({
             onClick={() => onChange(id)}
             title={words}
             className={cn(
-              "flex min-w-0 flex-1 basis-[8.5rem] items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-center",
+              CONFIGURATION_CHOICE_SIZE,
+              "flex min-w-0 flex-1 basis-[8.5rem] items-center justify-center gap-1.5 py-2 text-center",
               "border transition-all",
               active
                 ? "border-primary bg-primary/10 text-foreground shadow-sm"
@@ -427,12 +503,14 @@ function SurfaceValueDetail({
   availableSurfaceValues,
   disabled,
   fieldLabel,
+  showRequired,
   onChange,
 }: {
   mapping: Extract<ValueMapping, { mapType: "surface_value" }>;
   availableSurfaceValues: readonly SurfaceValue[];
   disabled: boolean;
   fieldLabel?: string;
+  showRequired: boolean;
   onChange: (next: ValueMapping) => void;
 }) {
   const selected = availableSurfaceValues.find(
@@ -442,8 +520,13 @@ function SurfaceValueDetail({
   return (
     <div className="space-y-2.5">
       <div className="space-y-1.5">
-        <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+        <Label className="flex items-center gap-1 text-sm font-semibold text-foreground">
           {fieldLabel ?? "Surface value"}
+          {selected?.description ? (
+            <FieldHelp label={fieldLabel ?? "Surface value"}>
+              {selected.description}
+            </FieldHelp>
+          ) : null}
         </Label>
         <Select
           value={mapping.target || "__none__"}
@@ -452,7 +535,12 @@ function SurfaceValueDetail({
           }
           disabled={disabled}
         >
-          <SelectTrigger className="h-9 text-sm">
+          <SelectTrigger
+            className={cn(
+              CONFIGURATION_CHOICE_SIZE,
+              "h-auto whitespace-normal text-left [&>span]:line-clamp-none",
+            )}
+          >
             <SelectValue placeholder="Pick a surface value" />
           </SelectTrigger>
           <SelectContent>
@@ -463,45 +551,32 @@ function SurfaceValueDetail({
             )}
             {availableSurfaceValues.map((sv) => (
               <SelectItem key={sv.name} value={sv.name}>
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-sm font-medium truncate">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span className="break-words text-sm font-medium">
                     {sv.label || formatVariableDisplayName(sv.name)}
                   </span>
-                  {!sv.alwaysAvailable && (
-                    <span className="text-[10px] text-muted-foreground">
-                      · sometimes
-                    </span>
-                  )}
+                  <span className="text-xs text-foreground">
+                    {offeredAvailabilityLabel(sv.alwaysAvailable)}
+                  </span>
                 </div>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {selected ? (
-          <PropertyRow
-            label="Always available"
-            value={
-              selected.alwaysAvailable === undefined
-                ? "Unknown"
-                : selected.alwaysAvailable
-                  ? "Yes"
-                  : "No"
-            }
-            help={selected.description}
-          />
-        ) : null}
       </div>
 
-      <RequiredToggle
-        checked={mapping.required ?? false}
-        disabled={disabled || selected?.alwaysAvailable === true}
-        onChange={(v) => onChange({ ...mapping, required: v })}
-        hint={
-          selected?.alwaysAvailable
-            ? "This source is always available."
-            : "Abort the run if the surface doesn't supply this value."
-        }
-      />
+      {showRequired ? (
+        <RequiredToggle
+          checked={mapping.required ?? false}
+          disabled={disabled || selected?.alwaysAvailable === true}
+          onChange={(v) => onChange({ ...mapping, required: v })}
+          hint={
+            selected?.alwaysAvailable
+              ? "This source is always available."
+              : "Abort the run if the surface doesn't supply this value."
+          }
+        />
+      ) : null}
     </div>
   );
 }
@@ -529,9 +604,7 @@ function DirectValueDetail({
 
   return (
     <div className="space-y-1.5">
-      <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
-        Value
-      </Label>
+      <Label className="text-sm font-semibold text-foreground">Value</Label>
       <ProTextarea
         value={stringValue}
         onChange={(e) => onChange({ ...mapping, target: e.target.value })}
@@ -566,7 +639,7 @@ function PromptUserDetail({
   return (
     <div className="space-y-2.5">
       <div className="space-y-1.5">
-        <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+        <Label className="text-sm font-semibold text-foreground">
           Prompt text
         </Label>
         <Input
@@ -579,7 +652,7 @@ function PromptUserDetail({
       </div>
       <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
         <div className="space-y-1.5 min-w-0">
-          <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+          <Label className="text-sm font-semibold text-foreground">
             Default (optional)
           </Label>
           <Input
@@ -600,6 +673,7 @@ function PromptUserDetail({
           />
         </div>
         <RequiredToggle
+          label="Answer required"
           checked={mapping.required ?? false}
           disabled={disabled}
           onChange={(v) => onChange({ ...mapping, required: v })}
@@ -612,12 +686,14 @@ function PromptUserDetail({
 }
 
 function RequiredToggle({
+  label = "Source required",
   checked,
   disabled,
   onChange,
   hint,
   compact,
 }: {
+  label?: string;
   checked: boolean;
   disabled: boolean;
   onChange: (next: boolean) => void;
@@ -638,8 +714,10 @@ function RequiredToggle({
         onCheckedChange={(v) => onChange(v === true)}
         disabled={disabled}
       />
-      <span>Required: {checked ? "Yes" : "No"}</span>
-      <FieldHelp label="Required">{hint}</FieldHelp>
+      <span>
+        {label}: {checked ? "Yes" : "No"}
+      </span>
+      <FieldHelp label={label}>{hint}</FieldHelp>
     </label>
   );
 }

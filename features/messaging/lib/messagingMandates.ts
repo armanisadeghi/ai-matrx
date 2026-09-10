@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 // features/messaging/lib/messagingMandates.ts
 //
 // THE FOUR JOBS the messaging conversation pane runs, named once.
@@ -17,10 +19,10 @@
 
 /** The package's capability name → the platform Mandate that fulfils it. */
 export const MESSAGING_MANDATE_KEYS = {
-  catchUp: "messaging.conversation_catch_up",
-  summarize: "messaging.conversation_summary",
-  actionItems: "messaging.action_item_extraction",
-  draftReply: "messaging.reply_drafting",
+  catchUp: MANDATE_KEYS.messaging__conversation_catch_up,
+  summarize: MANDATE_KEYS.messaging__conversation_summary,
+  actionItems: MANDATE_KEYS.messaging__action_item_extraction,
+  draftReply: MANDATE_KEYS.messaging__reply_drafting,
 } as const;
 
 export type MessagingCapability = keyof typeof MESSAGING_MANDATE_KEYS;

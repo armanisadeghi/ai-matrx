@@ -41,7 +41,7 @@ import { FloatingRunBody } from "@/features/workflow-runtime/floating/FloatingRu
 import {
   runEntityRef,
   runMenuContent,
-  useWorkflowRunMenuSection,
+  buildWorkflowRunMenuSection,
 } from "@/features/workflow-runtime/run-actions";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
@@ -87,7 +87,7 @@ export default function WorkflowRunWindow({
   const definitionId = useAppSelector(selectRunDefinitionId(runId));
 
   const runRow = { runId, definitionId, workflowName };
-  const runSection = useWorkflowRunMenuSection({ getRow: () => runRow });
+  const runSection = buildWorkflowRunMenuSection({ getRow: () => runRow });
 
   return (
     <NonEditableContextMenu

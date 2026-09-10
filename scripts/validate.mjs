@@ -68,8 +68,8 @@ const steps = [];
  * `advisory: true` means the step prints output but never causes the run to
  * fail (e.g. doctrine).
  */
-function step({ id, title, command, skip, advisory = false }) {
-  steps.push({ id, title, command, skip, advisory });
+function step({ id, title, command, skip, advisory = false, fatalStatuses = [] }) {
+  steps.push({ id, title, command, skip, advisory, fatalStatuses });
 }
 
 // ── Fast static checks (<2s each) ──────────────────────────────────────────
@@ -137,6 +137,13 @@ step({
   title: "ESLint (advisory — repo has a large pre-existing baseline)",
   command: ["pnpm", "lint"],
   advisory: true,
+  // ESLint exit 1 = "it ran and found problems" (the baseline — advisory).
+  // ESLint exit 2 = "it could not run at all": broken config, a plugin that
+  // does not work on this ESLint version, an unresolvable import. That is NOT
+  // debt, it is a dead check — and being lumped in with the baseline is how a
+  // repo-wide crash (eslint-plugin-react vs ESLint 10) survived a month
+  // unnoticed. A dead check never passes quietly again.
+  fatalStatuses: [2],
   skip: () => (noLint ? "--no-lint" : false),
 });
 step({
@@ -195,12 +202,17 @@ for (const [idx, s] of steps.entries()) {
       `\n${C.green}✓ ${s.title} (${fmtMs(duration)})${C.reset}\n`,
     );
     results.push({ ...s, status: "pass", duration });
-  } else if (s.advisory) {
+  } else if (s.advisory && !(s.fatalStatuses ?? []).includes(result.status)) {
     console.log(
       `\n${C.yellow}⚠ ${s.title} reported issues (advisory — not failing the run, ${fmtMs(duration)})${C.reset}\n`,
     );
     results.push({ ...s, status: "advisory", duration });
   } else {
+    if (s.advisory) {
+      console.log(
+        `\n${C.red}${C.bold}  ${s.title} did not RUN (exit ${result.status}) — this is a broken check, not a finding. Advisory status does not apply.${C.reset}`,
+      );
+    }
     console.log(
       `\n${C.red}✗ ${s.title} failed (${fmtMs(duration)})${C.reset}\n`,
     );

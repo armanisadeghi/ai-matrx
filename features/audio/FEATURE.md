@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-17`
+**Last updated:** `2026-09-10`
 
 ---
 
@@ -26,6 +26,23 @@ Every recording made through the shared recorder is auto-persisted as a `transcr
 - **Persistence needed no schema change** — `transcripts.transcripts.metadata` is an existing jsonb column. Readers query `metadata->origin->>conversationId` and must go through `parseRecordingOrigin` (every row written before this date has no origin at all).
 - **The door back** is `features/transcripts/components/RecordingOriginRef.tsx`, rendered in `TranscriptViewer`.
 - **Guarded by `__tests__/recordingOrigin.test.tsx`.** The microphone cannot be driven in a headless browser, so these are the only tests that can prove the write path; a regression here breaks nothing visible — recording keeps working and the words silently become unfindable again.
+
+## LISTENING & SPEECH — the read-aloud stack and its three-tier settings (2026-09-10)
+
+**This is the feature's owning doc.** "Listen" turns any selected text or on-screen content into a spoken summary (optionally speaking it *while it is still being written*). Its code is split across `features/audio/`, `features/window-panels/windows/listen/` and `features/context-menu-v3/`; this section is the one place that describes the whole thing. Invoke the `tts-audio-system` skill before touching any audio file.
+
+- **The ONE way to make audio is `features/audio/service/speak.ts`.** Never hand-roll a speaker. On iOS/WebKit, call `primeAudioOutput()` from `features/audio/unlock.ts` inside any handler that later starts audio — the gesture unlock, shared context and silent-switch session live there, and skipping it is the silent-audio class that was fixed 2026-09-08.
+- **Settings resolve in `features/audio/service/listeningConfig.ts` — read its header first.** The cascade is **system → org → user, user wins**; a tier with no override falls through. Reads resolve there; writes go through `useListeningSettings.ts`, which writes the **user tier only**. Storage is `ui.ui_surface_config`, namespace `listening`. The "voice keeps reverting" root cause is explained in that header.
+  - 🚨 **The org rung has no editor and zero org rows exist.** Who may write it is SETTLED — **org admins** (Arman, 2026-09-08), gate `public.is_org_admin(org_id)`. It is not built because clients write `ui.ui_surface_config` directly through RLS and the generated `std_insert` policy gates org writes on plain membership (`iam.has_org_access`), not admin — a class affecting 313 of 622 generated insert policies. The fix belongs in `iam.apply_rls`, which has no governance variant; hand-written policies are banned. Awaiting Arman's scope call — see the handoff.
+  - The **system** tier is edited at `/administration/ui/surfaces/matrx-user/assistant-message` → "Config namespaces" → `listening` (raw JSON textarea today).
+- **Reach:** one context-menu submenu (`listen` role, `features/context-menu-v3/model/menu-model.ts`; agent resolution + fallback in `hooks/useContextMenuActions.ts`) and the action-bar ⋯ menu (`features/agents/components/messages-display/message-options/messageActionRegistry.ts` → `listeningItems`). Both reach the same panel.
+- **The panel** is `features/window-panels/windows/listen/ListenSummaryWindow.tsx` (overlay `listenSummaryWindow`) — streaming summary, audio transport, and an in-place settings pane.
+- **Stream-to-stream speech** (speaking before the summary finishes) is `voicePlaybackBus` `includeActive` + `useAutoVoiceResponse`.
+- **No agent UUID appears in code.** The default agent is mandate-backed: `ambient.spoken_summary` in `mandate.definition`, holder "Listening Summary", carried by the `spoken_summary` surface role on `matrx-user/assistant-message`. That is what makes Listen work for every user on every surface with no personal binding.
+- **Tests:** `pnpm jest features/audio features/context-menu-v3/model`. Manual: `pnpm preview:start` (port 3001), `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/chat`, then right-click any assistant reply → Listen.
+- **Open work:** [`docs/handoffs/listening-and-speech.md`](../../docs/handoffs/listening-and-speech.md). VISION MISSING — Arman's verbatim words are quoted in that handoff, no vision doc exists.
+
+---
 
 > Combined doc covering the three audio-adjacent features. This doc lives under `features/audio/` as the umbrella.
 

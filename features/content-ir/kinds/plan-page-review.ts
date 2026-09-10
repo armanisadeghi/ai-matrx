@@ -8,9 +8,11 @@
  *
  * Canonical `__kind` JSON shape:
  *   { "__kind":"plan_page_review", "verdict":"revised",
- *     "issues":[ { "severity":"blocker", "section":"…",
+ *     "issues":[ { "__kind":"plan_review_issue",
+ *                  "severity":"blocker", "section":"…",
  *                  "problem":"…", "fix":"…" } ],
- *     "revised": { …a plan_page_draft… } }
+ *     "revised": { "__kind":"plan_page_draft",
+ *                    …a plan_page_draft… } }
  *
  * FIELD PARITY is with `PageReview` / `ReviewIssue` in that module
  * (`extra="forbid"` on both).
@@ -27,9 +29,12 @@
  * only sanctioned way to show part of another shape. On an `approved` verdict
  * `revised` is the input draft unchanged; it is always present.
  *
- * WHY THE NESTED DRAFT CARRIES NO `__kind`: the reviewer emits a bare object;
- * speculative descent commits it from this field's `kind` prediction. Designed
- * path — do not stamp a discriminator the server has never written.
+ * Every nested Shape carries its own `__kind`: `revised` is
+ * `plan_page_draft`, its sections are `plan_draft_section`, and issue rows are
+ * `plan_review_issue`. The emitted schema requires those markers, and aidream's
+ * Pydantic models preserve them through validation and persistence. Removing a
+ * nested marker makes a successful review fail its own registered schema after
+ * settlement.
  *
  * The bridge is STREAMING: `issues` is an array of a CHILD KIND, so issues
  * appear one at a time and a still-empty list is a normal mid-stream state.

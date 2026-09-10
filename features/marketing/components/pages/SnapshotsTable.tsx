@@ -11,7 +11,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   snapshotEntityRef,
-  snapshotMenuSection,
+  buildSnapshotMenuSection,
 } from "@/features/marketing/components/pages/snapshot-actions";
 import { SnapshotCompare } from "@/features/marketing/components/pages/SnapshotCompare";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
@@ -202,7 +202,7 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
         extraSections={
           contextRow
             ? [
-                snapshotMenuSection({
+                buildSnapshotMenuSection({
                   siteId: site.id,
                   brandId,
                   pageId,

@@ -54,6 +54,8 @@ import {
   ChevronUp,
   Zap,
   Info,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,6 +74,10 @@ import { githubConnectUrl } from "@/features/github-integration/service";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { DirectoryConnectorCards } from "@/features/connectors/DirectoryConnectorCards";
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  buildManualMcpCredentials,
+  type ManualHeaderInput,
+} from "./manual-mcp-credentials";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -289,6 +295,27 @@ export default function IntegrationsPage() {
         transport: "http",
       }),
     );
+  };
+
+  const handleManualConnect = async (
+    entry: McpCatalogEntry,
+    endpointOverride: string,
+    headers: ManualHeaderInput[],
+  ) => {
+    const credentials = buildManualMcpCredentials(
+      entry.endpointUrl ?? "",
+      endpointOverride,
+      headers,
+    );
+    await dispatch(
+      connectServerWithCredentials({
+        serverId: entry.serverId,
+        authMethod: "headers",
+        fields: credentials.fields,
+        transport: entry.transport,
+        endpointOverride: credentials.endpointOverride,
+      }),
+    ).unwrap();
   };
 
   /**
@@ -543,6 +570,9 @@ export default function IntegrationsPage() {
                   handleBearerConnect(entry.serverId, token)
                 }
                 onNoAuthConnect={() => handleNoAuthConnect(entry)}
+                onManualConnect={(endpointOverride, headers) =>
+                  handleManualConnect(entry, endpointOverride, headers)
+                }
                 onDisconnect={() => void handleDisconnect(entry)}
               />
             ))}
@@ -563,6 +593,10 @@ interface ServerCardProps {
   onOAuthConnect: (endpointOverride?: string) => void;
   onBearerConnect: (token: string) => void;
   onNoAuthConnect: () => void;
+  onManualConnect: (
+    endpointOverride: string,
+    headers: ManualHeaderInput[],
+  ) => Promise<void>;
   onDisconnect: () => void;
 }
 
@@ -574,6 +608,7 @@ function ServerCard({
   onOAuthConnect,
   onBearerConnect,
   onNoAuthConnect,
+  onManualConnect,
   onDisconnect,
 }: ServerCardProps) {
   const isComingSoon = entry.serverStatus === "coming_soon";
@@ -601,6 +636,7 @@ function ServerCard({
   const [showToken, setShowToken] = useState(false);
   const [supabaseProjectRef, setSupabaseProjectRef] = useState("");
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
+  const [showManualForm, setShowManualForm] = useState(false);
 
   const isSupabase = entry.slug === "supabase";
 
@@ -783,19 +819,30 @@ function ServerCard({
               Disconnect
             </Button>
           ) : canConnect && needsOAuth && !isSupabase ? (
-            <Button
-              size="sm"
-              className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
-              onClick={() => onOAuthConnect()}
-              disabled={isConnecting}
-            >
-              {isConnecting ? (
-                <Loader2 className="h-3 w-3 animate-spin mr-1" />
-              ) : (
-                <Lock className="h-3 w-3 mr-1" />
-              )}
-              Connect with OAuth
-            </Button>
+            <div className="flex flex-1 gap-2">
+              <Button
+                size="sm"
+                className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
+                onClick={() => onOAuthConnect()}
+                disabled={isConnecting}
+              >
+                {isConnecting ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <Lock className="h-3 w-3 mr-1" />
+                )}
+                Connect with OAuth
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-11 text-sm sm:h-7 sm:text-xs"
+                onClick={() => setShowManualForm((visible) => !visible)}
+                disabled={isConnecting}
+              >
+                {showManualForm ? "Cancel" : "Use token"}
+              </Button>
+            </div>
           ) : canConnect && needsOAuth && isSupabase ? (
             <Button
               size="sm"
@@ -965,6 +1012,15 @@ function ServerCard({
           </div>
         )}
 
+        {showManualForm && needsOAuth && !isConnected && entry.endpointUrl && (
+          <ManualCredentialsForm
+            entry={entry}
+            isSaving={isConnecting}
+            onSave={onManualConnect}
+            onSaved={() => setShowManualForm(false)}
+          />
+        )}
+
         {/* Expanded details */}
         {isExpanded && (
           <div className="mt-3 pt-3 border-t border-border space-y-2">
@@ -1041,6 +1097,171 @@ function ServerCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function ManualCredentialsForm({
+  entry,
+  isSaving,
+  onSave,
+  onSaved,
+}: {
+  entry: McpCatalogEntry;
+  isSaving: boolean;
+  onSave: (
+    endpointOverride: string,
+    headers: ManualHeaderInput[],
+  ) => Promise<void>;
+  onSaved: () => void;
+}) {
+  const [endpointOverride, setEndpointOverride] = useState("");
+  const [headers, setHeaders] = useState<ManualHeaderInput[]>([
+    { name: "Authorization", value: "" },
+  ]);
+  const [showValues, setShowValues] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = async () => {
+    setError(null);
+    try {
+      await onSave(endpointOverride, headers);
+      setHeaders([{ name: "Authorization", value: "" }]);
+      setEndpointOverride("");
+      onSaved();
+      toast.success(`Connected to ${entry.name}`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Connection failed");
+    }
+  };
+
+  return (
+    <div className="mt-3 space-y-3 border-t border-border pt-3">
+      <div>
+        <p className="text-xs font-medium text-foreground">Token and headers</p>
+        <p className="text-[11px] text-muted-foreground">
+          OAuth remains recommended. Use this only when the provider issued a
+          personal token or requires workspace headers. Values are sealed in
+          Vault and never returned to this browser.
+        </p>
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-foreground">
+          Endpoint override{" "}
+          <span className="text-muted-foreground">(optional)</span>
+        </label>
+        <Input
+          value={endpointOverride}
+          onChange={(event) => setEndpointOverride(event.target.value)}
+          placeholder={entry.endpointUrl ?? "https://provider.example/mcp"}
+          className="h-11 font-mono text-base sm:h-8 sm:text-xs"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+        <p className="text-[11px] text-muted-foreground">
+          Must remain HTTPS on {new URL(entry.endpointUrl ?? "").hostname}.
+        </p>
+      </div>
+      <div className="space-y-2">
+        {headers.map((header, index) => (
+          <div key={index} className="grid grid-cols-[1fr_1fr_44px] gap-2">
+            <Input
+              value={header.name}
+              onChange={(event) =>
+                setHeaders((current) =>
+                  current.map((item, itemIndex) =>
+                    itemIndex === index
+                      ? { ...item, name: event.target.value }
+                      : item,
+                  ),
+                )
+              }
+              placeholder="Header name"
+              className="h-11 font-mono text-base sm:h-8 sm:text-xs"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+            <Input
+              type={showValues ? "text" : "password"}
+              value={header.value}
+              onChange={(event) =>
+                setHeaders((current) =>
+                  current.map((item, itemIndex) =>
+                    itemIndex === index
+                      ? { ...item, value: event.target.value }
+                      : item,
+                  ),
+                )
+              }
+              placeholder="Secret value"
+              className="h-11 font-mono text-base sm:h-8 sm:text-xs"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 sm:h-8 sm:w-8"
+              onClick={() =>
+                setHeaders((current) =>
+                  current.length === 1
+                    ? [{ name: "", value: "" }]
+                    : current.filter((_, itemIndex) => itemIndex !== index),
+                )
+              }
+              aria-label={`Remove header ${index + 1}`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-11 text-sm sm:h-8 sm:text-xs"
+          onClick={() =>
+            setHeaders((current) => [...current, { name: "", value: "" }])
+          }
+        >
+          <Plus className="mr-1 h-3.5 w-3.5" /> Add header
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-11 text-sm sm:h-8 sm:text-xs"
+          onClick={() => setShowValues((visible) => !visible)}
+        >
+          {showValues ? (
+            <EyeOff className="mr-1 h-3.5 w-3.5" />
+          ) : (
+            <Eye className="mr-1 h-3.5 w-3.5" />
+          )}
+          {showValues ? "Hide values" : "Show values"}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          className="h-11 flex-1 text-sm sm:h-8 sm:text-xs"
+          onClick={() => void save()}
+          disabled={isSaving}
+        >
+          {isSaving && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
+          Save securely
+        </Button>
+      </div>
+      {error && (
+        <p className="text-[11px] text-destructive" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
 

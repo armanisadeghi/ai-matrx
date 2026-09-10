@@ -25,6 +25,7 @@ import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import { assistPriority } from "@/features/assists/types";
 import type { TaskWithProject } from "@/features/tasks/types";
 import { UNASSIGNED_PROJECT_ID } from "@/features/tasks/redux/selectors";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const SOURCE_KEY = "tasks.overdue_pileup";
 
@@ -34,7 +35,7 @@ export const TASKS_ASSIST_SURFACE = "matrx-user/tasks";
 /** Agent-mandate the launch action resolves at click time (agent.mandate,
  * seeded by migrations/agent_slots_assist_producers_seed.sql — swappable from
  * the admin mandates console, no deploy). */
-export const TASK_TRIAGE_MANDATE = "tasks.triage";
+export const TASK_TRIAGE_MANDATE = MANDATE_KEYS.tasks__triage;
 
 // Conservative threshold — one or two overdue tasks is a normal Tuesday;
 // a pileup is the signal ("loud, never nagging").

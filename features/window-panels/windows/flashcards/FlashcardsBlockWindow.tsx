@@ -8,6 +8,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useOverlaySurfaceRenderAck } from "@/features/window-panels/diagnostics/useOverlaySurfaceRenderAck";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import {
   FlashcardsSetBody,
@@ -27,7 +28,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
-  useFlashcardMenuSection,
+  buildFlashcardMenuSection,
   flashcardEntityRef,
   resolveFlashcardGridIndex,
   type FlashcardMenuRow,
@@ -86,15 +87,15 @@ export function FlashcardsBlockWindow({
     }
   }, [isOpen, isMobile, set.flashcards.length, enterMobileView]);
 
-  if (!isOpen) return null;
-
-  const { width, height } = computeViewportSize();
-  const hasContent = Boolean(
-    content || serverData || set.flashcards.length > 0,
+  useOverlaySurfaceRenderAck(
+    "flashcardsBlockWindow",
+    isOpen && isMobileView && set.flashcards.length > 0,
   );
-  const displayTitle = `${title}${set.completeCount > 0 ? ` (${set.completeCount})` : ""}`;
 
-  const flashcardSection = useFlashcardMenuSection({
+  // The menu section is a PURE builder (`build*`, not `use*` — see
+  // SECTIONS.md), a derivation of state already computed above. It sits here
+  // for readability, not because of any hook-order rule.
+  const flashcardSection = buildFlashcardMenuSection({
     getRow: () => clickedCard,
     actions: {
       onOpenItem: (row) =>
@@ -110,6 +111,15 @@ export function FlashcardsBlockWindow({
       "flashcard-study-set": "This set has no separate study session",
     },
   });
+
+  if (!isOpen) return null;
+
+  const { width, height } = computeViewportSize();
+  const hasContent = Boolean(
+    content || serverData || set.flashcards.length > 0,
+  );
+  const displayTitle = `${title}${set.completeCount > 0 ? ` (${set.completeCount})` : ""}`;
+
   const resolveCardContext = (target: HTMLElement | null) => {
     const idx = resolveFlashcardGridIndex(gridRef.current, target);
     const card = idx != null ? set.flashcards[idx] : null;

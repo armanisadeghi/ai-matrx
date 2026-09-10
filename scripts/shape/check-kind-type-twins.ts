@@ -36,6 +36,7 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "
 import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
@@ -144,7 +145,7 @@ function readArtifact(): Artifact {
     const fields = new Set<string>();
     for (const field of match[2].matchAll(/^ {2}(?:"([^"]+)"|([A-Za-z_$][\w$]*))\??:/gmu)) {
       const name = field[1] ?? field[2];
-      if (name !== "__kind") fields.add(normalizeField(name));
+      if (name !== KIND_KEY) fields.add(normalizeField(name));
     }
     fieldsByType.set(match[1], fields);
   }
@@ -215,7 +216,7 @@ function declarationsIn(file: string): Declaration[] {
     const fields: string[] = [];
     for (const field of block[2].matchAll(/^ {2}(?:"([^"]+)"|([A-Za-z_$][\w$]*))\??:/gmu)) {
       const name = field[1] ?? field[2];
-      if (name !== "__kind") fields.push(normalizeField(name));
+      if (name !== KIND_KEY) fields.push(normalizeField(name));
     }
     declarations.push({
       file: rel,

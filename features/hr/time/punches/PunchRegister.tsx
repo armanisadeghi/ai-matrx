@@ -49,7 +49,7 @@ import {
   PUNCH_KIND_LABELS,
   PUNCH_SOURCE_LABELS,
 } from "../shared/vocabulary";
-import { punchMenuContent, punchMenuSection } from "../shared/punch-menu";
+import { punchMenuContent, buildPunchMenuSection } from "../shared/punch-menu";
 import { PunchCorrectionDialog, type PunchCorrectionMode } from "./PunchCorrectionDialog";
 import { PunchRegisterScopePicker } from "./PunchRegisterScopePicker";
 import { downloadPunchRegisterCsv, punchRegisterToCsv } from "./registerCsv";
@@ -195,7 +195,7 @@ export function PunchRegister({
                 return { content: punchMenuContent(punch) };
               }}
               extraSections={[
-                punchMenuSection(
+                buildPunchMenuSection(
                   clickedPunch,
                   orgRef,
                   canEdit

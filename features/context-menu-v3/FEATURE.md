@@ -104,6 +104,8 @@ A menu that opens but Copy does nothing and the selection bar is empty is a **bu
 
 ### Selection-aware listening actions
 
+> **Owning doc:** the Listening & Speech stack (speech entry point, iOS unlock, the system→org→user settings cascade, the mandate-backed default agent) is documented in [`features/audio/FEATURE.md`](../audio/FEATURE.md) § LISTENING & SPEECH. This section covers only the menu's half.
+
 Read-only content with actionable text exposes **Speak** and ONE **Listen** submenu (single slot) carrying **Summarize for listening** and **Summarize & listen**. Speak sends the current selection (or resolved content when nothing is selected) through the canonical speech queue. Both Listen actions auto-run the resolved `spoken_summary` agent in the floating **Listen panel** (`features/window-panels/windows/listen/ListenSummaryWindow.tsx`, overlay `listenSummaryWindow`) with `content` plus `style = "Extremely Concise Summary"` — the panel shows the streaming summary through the canonical pipeline plus an audio transport. "Summarize & listen" additionally streams speech in real time (stream-to-stream via the `voicePlaybackBus` `includeActive` request); plain "Summarize for listening" waits for the user to press Play. **Listening is UNIVERSAL:** a surface that declares its own `spoken_summary` role wins; every other surface falls back to the platform home role on `matrx-user/assistant-message` (`LISTEN_SUMMARY_HOME_SURFACE` in the `listenSummaryWindow` opener), which carries the `ambient.spoken_summary` mandate — `agent.mandate` holds the default builtin agent ("Listening Summary", system org), so the actions resolve for every user on every surface with no per-user binding. The submenu disables (never hides) only when there is no actionable text or the mandate is unseeded. Assistant messages tag their rendered response body with `data-message-content`, so no-selection actions exclude action-bar labels and other message chrome.
 
 ---
@@ -393,6 +395,7 @@ v3 is the only UNIVERSAL menu. Full-repo census 2026-08-25 (`onContextMenu=` swe
 - **Build the platform, not the artifact.** v3 is the reusable primitive; every action delegates to an existing system. Forbidden: a copy/save/share/attach/export path that only serves this menu.
 - **Loud recovery.** Both no-fake-menu guards scream when they fire — a firing means a real bug got past surface wiring.
 - **One menu.** No bespoke per-surface context menus. A surface contributes via `extraSections`, never a fork.
+- **THE NAMING LAW: `use*` calls hooks, `build*` is pure — and there is NO third option.** A shared section builder that calls at least one React hook is `use<Identity>MenuSection`; one that calls none is `build<Identity>MenuSection`. A pure builder wearing `use` lies to the hook linter and drags every call site into hook position. A **bare `<identity>MenuSection` with no prefix is equally a violation** — it tells the reader and the linter nothing about whether the call site is hook position (20 such builders were renamed on 2026-09-09). Enforced by `pnpm check:menu-naming` (blocking; also a `naming` population in `pnpm check:context-menu`), which matches `function` declarations AND arrow-function `const`s, exported or not; registry in [`SECTIONS.md`](./SECTIONS.md).
 
 ---
 

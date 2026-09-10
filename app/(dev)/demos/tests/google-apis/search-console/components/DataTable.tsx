@@ -17,6 +17,24 @@ interface DataTableProps {
 type SortField = 'name' | 'clicks' | 'impressions' | 'ctr' | 'position';
 type SortDirection = 'asc' | 'desc';
 
+/** Hoisted to module scope — an inner component type remounts the whole table header every render. */
+const SortIcon = ({
+    field,
+    sortField,
+    sortDirection,
+}: {
+    field: SortField;
+    sortField: SortField;
+    sortDirection: 'asc' | 'desc';
+}) => {
+    if (sortField !== field) {
+        return <ArrowUpDown className="w-3.5 h-3.5 opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+        ? <ArrowUp className="w-3.5 h-3.5" />
+        : <ArrowDown className="w-3.5 h-3.5" />;
+};
+
 export function DataTable({ data, dimension, title }: DataTableProps) {
     const [sortField, setSortField] = useState<SortField>('clicks');
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -79,15 +97,6 @@ export function DataTable({ data, dimension, title }: DataTableProps) {
             setSortField(field);
             setSortDirection(field === 'position' ? 'asc' : 'desc'); // Position is better when lower
         }
-    };
-
-    const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortField !== field) {
-            return <ArrowUpDown className="w-3.5 h-3.5 opacity-50" />;
-        }
-        return sortDirection === 'asc' 
-            ? <ArrowUp className="w-3.5 h-3.5" />
-            : <ArrowDown className="w-3.5 h-3.5" />;
     };
 
     if (!data || !data.rows || data.rows.length === 0) {
@@ -170,7 +179,7 @@ export function DataTable({ data, dimension, title }: DataTableProps) {
                                         className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
                                     >
                                         {dimension.charAt(0).toUpperCase() + dimension.slice(1)}
-                                        <SortIcon field="name" />
+                                        <SortIcon field="name" sortField={sortField} sortDirection={sortDirection} />
                                     </button>
                                 </th>
                                 <th className="text-right py-3 px-4">
@@ -179,7 +188,7 @@ export function DataTable({ data, dimension, title }: DataTableProps) {
                                         className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 ml-auto"
                                     >
                                         Clicks
-                                        <SortIcon field="clicks" />
+                                        <SortIcon field="clicks" sortField={sortField} sortDirection={sortDirection} />
                                     </button>
                                 </th>
                                 <th className="text-right py-3 px-4">
@@ -188,7 +197,7 @@ export function DataTable({ data, dimension, title }: DataTableProps) {
                                         className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 ml-auto"
                                     >
                                         Impressions
-                                        <SortIcon field="impressions" />
+                                        <SortIcon field="impressions" sortField={sortField} sortDirection={sortDirection} />
                                     </button>
                                 </th>
                                 <th className="text-right py-3 px-4">
@@ -197,7 +206,7 @@ export function DataTable({ data, dimension, title }: DataTableProps) {
                                         className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 ml-auto"
                                     >
                                         CTR
-                                        <SortIcon field="ctr" />
+                                        <SortIcon field="ctr" sortField={sortField} sortDirection={sortDirection} />
                                     </button>
                                 </th>
                                 <th className="text-right py-3 px-4">
@@ -206,7 +215,7 @@ export function DataTable({ data, dimension, title }: DataTableProps) {
                                         className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 ml-auto"
                                     >
                                         Position
-                                        <SortIcon field="position" />
+                                        <SortIcon field="position" sortField={sortField} sortDirection={sortDirection} />
                                     </button>
                                 </th>
                             </tr>

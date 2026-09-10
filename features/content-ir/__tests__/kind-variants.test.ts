@@ -9,6 +9,7 @@
 
 import {
   BANNED_VARIANT_NAMES,
+  componentForInputOptions,
   customComponentToVariantParts,
   defaultComponentForValueType,
   parseKindVariants,
@@ -248,6 +249,38 @@ describe("resolveVariantComponent", () => {
     expect(
       resolveVariantComponent({ kind: "text", variants: "junk" }).component,
     ).toEqual({ type: "textarea" });
+  });
+});
+
+describe("componentForInputOptions", () => {
+  it("hydrates a generic registered dropdown from the input value contract", () => {
+    const resolution = resolveVariantComponent(
+      {
+        kind: "text",
+        variants: serializeKindVariants([
+          {
+            name: "dropdown",
+            label: "Dropdown",
+            component_type: "select",
+            config: { options: [] },
+          },
+        ]),
+      },
+      "dropdown",
+    );
+
+    expect(componentForInputOptions(resolution, ["1", "2", "3"])).toEqual({
+      type: "select",
+      options: ["1", "2", "3"],
+    });
+  });
+
+  it("turns a derived text control into a select for a closed option set", () => {
+    const resolution = resolveVariantComponent({ kind: "text" });
+    expect(componentForInputOptions(resolution, ["yes", "no"])).toEqual({
+      type: "select",
+      options: ["yes", "no"],
+    });
   });
 });
 

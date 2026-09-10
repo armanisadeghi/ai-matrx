@@ -28,7 +28,7 @@ import {
   ArrowLeft,
   Podcast,
   AudioLines,
-  Sparkles,
+  BrainCircuit,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -105,7 +105,7 @@ export function CreateViewA() {
           New episode
         </h1>
         <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-glass-edge bg-glass px-2.5 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur-glass backdrop-saturate-glass">
-          <Sparkles className="h-3 w-3 text-primary" />
+          <BrainCircuit className="h-3 w-3 text-primary" />
           AI-produced
         </span>
       </div>

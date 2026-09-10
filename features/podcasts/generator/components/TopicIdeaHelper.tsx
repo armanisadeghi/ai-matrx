@@ -21,6 +21,7 @@ import { useMandate } from "@/features/mandates/useMandate";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { podcastService } from "@/features/podcasts/service";
 import { topicFromIdea } from "@/features/podcasts/generator/topic-idea";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Bank the whole generated batch on the show (D151). Never throws at the UI. */
 const bankTopicIdeas = (showId: string, value: unknown): Promise<void> =>
@@ -31,7 +32,7 @@ const bankTopicIdeas = (showId: string, value: unknown): Promise<void> =>
  * aidream `mandates/client_mandates.py`, rebound from
  * /administration/mandates). No hardcoded agent id, no silent fallback —
  * if the mandate can't resolve, the affordance disables and says why. */
-const TOPIC_IDEAS_MANDATE_KEY = "podcast_client.topic_ideas";
+const TOPIC_IDEAS_MANDATE_KEY = MANDATE_KEYS.podcast_client__topic_ideas;
 
 // `topicFromIdea` (the D151 "whole idea comes across" flattener) lives in
 // `../topic-idea` — a pure module shared with the parser tests.

@@ -32,8 +32,9 @@ jest.mock("@ai-matrx/agents/catalog/react", () => ({
   // Spread the REAL module: this entry also carries `SORT_OPTIONS`, which the
   // agents-hub surface manifest reads at module scope. Replacing the whole
   // entry with one stub component used to blow up an unrelated import chain.
-  ...jest.requireActual("@ai-matrx/agents/catalog/react"), AgentListDropdown: () => <div data-testid="agent-picker" /> }),
-);
+  ...jest.requireActual("@ai-matrx/agents/catalog/react"),
+  AgentListDropdown: () => <div data-testid="agent-picker" />,
+}));
 jest.mock("@/lib/redux/hooks", () => ({
   // A FAITHFUL dispatch double: the real one returns a thunk promise with
   // `.unwrap()`, and the version control calls it. A double that cannot hold
@@ -82,6 +83,7 @@ const EMPTY_HOLDER = {
 
 let container: HTMLDivElement;
 let root: Root;
+const onRungChange = jest.fn();
 
 function render(
   rung: WorkspaceRung,
@@ -98,7 +100,7 @@ function render(
         allowGlobal={false}
         defaultHolderOffer={OFFER}
         defaultHolderNow={defaultHolderNow}
-        onRungChange={() => undefined}
+        onRungChange={onRungChange}
         holder={EMPTY_HOLDER}
         onHolderChange={() => undefined}
         job={{
@@ -119,6 +121,7 @@ function render(
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
+  onRungChange.mockClear();
 });
 
 describe("standing on a rung ABOVE the job's own default", () => {
@@ -127,23 +130,46 @@ describe("standing on a rung ABOVE the job's own default", () => {
       set: true,
       name: "Research → Slides Generator",
     });
-    expect(text).toContain("The job's own default");
-    expect(text).toContain("Held by Research → Slides Generator today.");
+    expect(text).toContain("Mandate default:");
+    expect(text).toContain("Research → Slides Generator");
+    const edit = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Edit default",
+    );
+    expect(edit).toBeDefined();
+    act(() => edit!.click());
+    expect(onRungChange).toHaveBeenCalledWith("system", null);
+    /**
+     * 🚨 THIS LINE USED TO READ `expect(text).not.toContain("zzz.walk_r6")`,
+     * and it was WRONG — overturned 2026-09-09. `96e45f3aa2` deleted the bar's
+     * JOB cell and added that assertion in the same commit, pinning a deletion
+     * rather than a rule: the bar went on ACCEPTING `job.label`,
+     * `job.offeredCount` and `job.offerSourceLine` and rendering none of them,
+     * which is the fourth law's silent failure at the component boundary. The
+     * job is named on the bar again (see
+     * `scope-holder-bar-renders-every-job-prop.test.tsx`), so what survives
+     * here is the rule that was actually worth guarding — the G2 class: the
+     * KEY never appears without the human LABEL beside it. An identifier
+     * standing in for a name is the defect; an identifier beside its name is
+     * the record.
+     */
+    expect(text).toContain("zzz.walk_r6");
+    expect(text.indexOf("ZZZ WALKR6")).toBeLessThan(text.indexOf("zzz.walk_r6"));
   });
 
   it("says nobody holds it when nobody does — and does not call that unread", () => {
     const text = render("user", { set: false, name: null });
-    expect(text).toContain("Nobody holds it");
+    expect(text).toContain("Not assigned");
+    expect(text).not.toContain("Not loaded");
   });
 
   it("says it is still reading rather than inventing an answer", () => {
     const text = render("user", null);
-    expect(text).toContain("Reading who holds it…");
+    expect(text).toContain("Not loaded");
   });
 
   it("never prints a holder id in place of a name", () => {
     const text = render("user", { set: true, name: null });
-    expect(text).toMatch(/name could not be read/i);
+    expect(text).toContain("Name unavailable");
     expect(text).not.toMatch(
       /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
     );
@@ -153,15 +179,27 @@ describe("standing on a rung ABOVE the job's own default", () => {
 describe("the empty HOLDER cell names the rung it is empty at", () => {
   it("at the user rung, and says the ladder below still answers", () => {
     const text = render("user", { set: true, name: "Slides Generator" });
-    expect(text).toContain("Nothing is set at your own answer yet");
-    expect(text).toContain("a rung below it names is still what runs");
+    expect(text).toContain("Local holder:Not assigned");
+    expect(text).toContain("Source: your own answer");
+    const help = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Help: Local holder"]',
+    );
+    expect(help).not.toBeNull();
+    act(() => help!.click());
+    expect(document.body.textContent).toContain("inherited holder");
     // The subjectless sentence the walker read is gone for good.
     expect(text).not.toContain("No holder yet — pick an agent");
   });
 
   it("at the bottom rung, where nothing below can answer", () => {
     const text = render("system", { set: false, name: null });
-    expect(text).toContain("Nothing is set at Default for Write Target Sandbox yet");
-    expect(text).toContain("the job has no holder of its own at all");
+    expect(text).toContain("Local holder:Not assigned");
+    expect(text).toContain("Default for Write Target Sandbox");
+    const personal = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Personal override",
+    );
+    expect(personal).toBeDefined();
+    act(() => personal!.click());
+    expect(onRungChange).toHaveBeenCalledWith("user", null);
   });
 });

@@ -6,6 +6,7 @@
  */
 
 import { coerceCard, coerceCards, rawCardsOf, setTitleOf } from "../coerce-card";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 const LIVE_SET = {
   __kind: "flashcard_set",
@@ -54,7 +55,7 @@ describe("coerceCard", () => {
     });
     expect(card?.trust?.confidence).toBe("grounded");
     expect(card?.trust?.citations[0]?.sourceId).toBe("chunk_8f2a");
-    expect(card).not.toHaveProperty("__kind");
+    expect(card).not.toHaveProperty(KIND_KEY);
   });
 
   it("drops an entry with neither front nor back; floors missing fields", () => {

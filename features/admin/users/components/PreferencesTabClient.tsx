@@ -26,7 +26,7 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { AdminUserRef } from "./AdminUserRef";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { adminUserMenuSection } from "./admin-user-menu-section";
+import { buildAdminUserMenuSection } from "./admin-user-menu-section";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { cn } from "@/lib/utils";
 import {
@@ -220,7 +220,7 @@ function DriftDashboard() {
             return { content: `Drifted fields: ${row.drifted_fields}` };
           }}
           extraSections={[
-            adminUserMenuSection(clickedRow ? { id: clickedRow.user_id } : null),
+            buildAdminUserMenuSection(clickedRow ? { id: clickedRow.user_id } : null),
           ]}
         >
         <div className="overflow-x-auto rounded-lg border border-border">

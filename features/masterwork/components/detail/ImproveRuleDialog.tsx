@@ -16,7 +16,7 @@
 // lands as a draft and returns to the review queue.
 
 import { useRef, useState } from "react";
-import { ArrowRight, Wand2 } from "lucide-react";
+import { ArrowRight, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ import { RuleDecisionActions } from "../../review/RuleDecisionActions";
 import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import type { RulebookRule, RulebookSections } from "../../types";
 import { SEVERITY_LABELS } from "../../types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export interface ImproveRuleDialogProps {
   open: boolean;
@@ -230,10 +231,10 @@ export function ImproveRuleDialog({
       <DialogContent className="flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="space-y-1 border-b border-border px-6 py-4 text-left">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Wand2 className="h-4 w-4 text-primary" />
+            <Zap className="h-4 w-4 text-primary" />
             {review ? "Review the rewrite" : "Improve this rule"}
             <AgentCredit
-              mandate="masterwork.rule_improver"
+              mandate={MANDATE_KEYS.masterwork__rule_improver}
               agent="Masterwork Rule Improver"
             />
           </DialogTitle>
@@ -363,7 +364,7 @@ export function ImproveRuleDialog({
                 onClick={() => void submit()}
                 disabled={running || !feedback.trim() || !target}
               >
-                <Wand2 className="h-4 w-4" />
+                <Zap className="h-4 w-4" />
                 {running ? "Rewriting…" : "Improve this rule"}
               </Button>
             </>

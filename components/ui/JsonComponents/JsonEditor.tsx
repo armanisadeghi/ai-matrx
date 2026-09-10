@@ -39,6 +39,41 @@ const SAMPLE_ENTRY = {
   YourList: ["Item1", "Item2", "Item3"],
 };
 
+/**
+ * Hoisted to module scope: a component defined inside another component is a
+ * new type on every render, which remounts its subtree and loses focus/state.
+ */
+const IconButton = ({
+  icon: Icon,
+  tooltip,
+  onClick,
+  className = "",
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  tooltip: string;
+  onClick: () => void;
+  className?: string;
+}) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={onClick}
+          className={cn(
+            "p-0 hover:bg-muted rounded-sm transition-colors",
+            className,
+          )}
+        >
+          <Icon className="h-4 w-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{tooltip}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
 export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
   data,
   onChange,
@@ -239,37 +274,6 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
       handleChange(newData);
     }
   };
-  const IconButton = ({
-    icon: Icon,
-    tooltip,
-    onClick,
-    className = "",
-  }: {
-    icon: React.ComponentType<{ className?: string }>;
-    tooltip: string;
-    onClick: () => void;
-    className?: string;
-  }) => (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            onClick={onClick}
-            className={cn(
-              "p-0 hover:bg-muted rounded-sm transition-colors",
-              className,
-            )}
-          >
-            <Icon className="h-4 w-4" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{tooltip}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-
   return (
     <div
       className={cn(

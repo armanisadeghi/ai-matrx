@@ -89,7 +89,7 @@ import type { ConsoleSiteRow, RunConsoleScope, RunOutcome } from "./types";
 import type { RunPlacementRow } from "./data";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import { siteEntityRef, siteMenuSection, type SiteMenuRow } from "./site-menu";
+import { siteEntityRef, buildSiteMenuSection, type SiteMenuRow } from "./site-menu";
 import {
   keywordEntityRef,
   useKeywordAssignSurfaces,
@@ -924,7 +924,7 @@ function TopicPlacementConsole({
                   };
                 }}
                 extraSections={
-                  contextBrandRow ? [siteMenuSection(contextBrandRow)] : []
+                  contextBrandRow ? [buildSiteMenuSection(contextBrandRow)] : []
                 }
               >
                 <MatrxDataTable<BrandTableRow>

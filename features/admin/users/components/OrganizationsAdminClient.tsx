@@ -51,7 +51,7 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
-import { adminUserMenuSection } from "@/features/admin/users/components/admin-user-menu-section";
+import { buildAdminUserMenuSection } from "@/features/admin/users/components/admin-user-menu-section";
 import {
   unavailableHere,
   withAvailability,
@@ -668,7 +668,7 @@ export function OrganizationsAdminClient() {
               }}
               extraSections={[
                 withAvailability(
-                  adminUserMenuSection(
+                  buildAdminUserMenuSection(
                     clickedMember
                       ? {
                           id: clickedMember.user_id,

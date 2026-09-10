@@ -38,15 +38,8 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Copy,
-  Expand,
-  Layers,
-  ShieldCheck,
-  TriangleAlert,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
+import { ArrowLeft, Copy, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -56,11 +49,9 @@ import styles from "./MandateWorkspace.module.css";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { MandateResolutionRibbon } from "../components/MandateResolutionRibbon";
 import { MandateNotesPanel } from "../components/MandateNotesPanel";
 import { MandateLineageLine } from "../components/MandateLineageLine";
 import {
-  TriadFlowMark,
   TriadGoalSection,
   TriadInputSection,
   TriadOutputSection,
@@ -70,18 +61,23 @@ import { splitMandateKey } from "../mandate-key";
 import {
   agentHolderOfBinding,
   holderOfMandate,
-  isFloatingBinding,
-  isFloatingMandate,
 } from "@/lib/supabase/mandateStorage";
 import { OneBindingWorkspace } from "@/features/bindings/OneBindingWorkspace";
 import { hasLiveGlobalBinding } from "@/features/bindings/system-answer-record";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PropertyRow } from "@/components/official/ConfigurationFields";
+import {
+  ConfigurationTable,
+  ConfigurationTableRow,
+  FieldHelp,
+  StatusToken,
+  PropertyRow,
+} from "@/components/official/ConfigurationFields";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import { Section } from "./Section";
 import { EffectiveConfigLayers } from "../components/EffectiveConfigLayers";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { systemRungHealth, type SystemRungHealth } from "./system-rung-health";
+import { MandateCoverageAlert } from "./MandateCoverageAlert";
 import {
   useMandateWorkspaceData,
   type MandateWorkspaceData,
@@ -92,6 +88,7 @@ import { useMandate } from "../useMandate";
 import { MANDATE_WORKSPACE_SURFACE_NAME } from "@/features/surfaces/manifests/mandate-workspace.manifest";
 import type { ResolvedMandate } from "../service";
 import {
+  ladderRowChangesHolder,
   ladderRowIsBroken,
   ladderRowWords,
   useMandateLadder,
@@ -137,6 +134,7 @@ export type MandateWorkspaceTab =
   | "display"
   | "test"
   | "permissions"
+  | "source"
   | "diagnostics"
   | "notes";
 
@@ -151,12 +149,14 @@ const WORKSPACE_TABS: {
   { id: "display", label: "Display Options" },
   { id: "test", label: "Test", admin: true },
   { id: "permissions", label: "Permissions" },
+  { id: "source", label: "Source & Usage", admin: true },
   { id: "diagnostics", label: "Diagnostics", admin: true },
   { id: "notes", label: "Notes" },
 ];
 
 export interface MandateWorkspaceProps {
   adminContent?: (tab: MandateWorkspaceTab) => ReactNode;
+  routeHeader?: (data: MandateWorkspaceData, actions: ReactNode) => ReactNode;
   adminActions?: (
     data: MandateWorkspaceData,
     onChanged: () => void,
@@ -321,67 +321,6 @@ function viewFromVerdict(
  * with a personal override must not see their own agent on a page that binds
  * for everyone.
  */
-function resolveForOrgPrincipal(
-  data: MandateWorkspaceData,
-  orgId: string,
-  orgName: string | null,
-): FulfillmentView {
-  const orgBinding =
-    data.bindings.find((b) => {
-      if (b.principal_type !== "org") return false;
-      if (b.organization_id !== orgId) return false;
-      if (!b.is_enabled) return false;
-      const holder = agentHolderOfBinding(b);
-      return holder.holderId !== null || holder.versionId !== null;
-    }) ?? null;
-
-  // The WINNING layer answers alone: a binding that wins supplies its own
-  // Holder and its own float/pin state, and the mandate default is consulted
-  // only when no binding won at all.
-  const systemHolder = holderOfMandate(data.mandate);
-  const winnerHolder = orgBinding ? agentHolderOfBinding(orgBinding) : null;
-  const versionId = winnerHolder
-    ? winnerHolder.versionId
-    : systemHolder.versionId;
-  const agentIdRaw = winnerHolder
-    ? winnerHolder.holderId
-    : systemHolder.holderId;
-  const useLatest = orgBinding
-    ? isFloatingBinding(orgBinding)
-    : isFloatingMandate(data.mandate);
-
-  const version = versionId ? (data.versionsById[versionId] ?? null) : null;
-  const agentId = version?.agentId ?? agentIdRaw;
-  const agent = agentId ? (data.agentsById[agentId] ?? null) : null;
-
-  const pinned = version?.versionNumber ?? null;
-  const latest = agent?.latestVersion ?? null;
-  const drift =
-    pinned !== null && latest !== null && latest > pinned
-      ? `v${pinned} → v${latest}`
-      : null;
-
-  const who = orgName ?? "This organization";
-  return {
-    rung: orgBinding ? "org" : "system",
-    sentence: orgBinding
-      ? `${who} overrides this job for everyone in it.`
-      : `${who} has no override — its members run the system default.`,
-    agent,
-    agentId,
-    useLatest,
-    pinned,
-    drift,
-    loading: false,
-    refusal: null,
-    freshness: null,
-    // This view answers "what does this ORG get", straight from the binding
-    // rows — it asks the server for no verdict, so it has no drop to report.
-    // The server's own answer, drops included, is the one above.
-    droppedRungs: [],
-  };
-}
-
 /**
  * 🚨 THE WHOLE SCREEN IS ABOUT ONE JOB, SO IT IS KEYED TO THAT JOB (R-O6).
  *
@@ -389,16 +328,21 @@ function resolveForOrgPrincipal(
  * the first job's refusal was still on screen. `OneBindingWorkspace` was the
  * instance it caught, and it is keyed at its own boundary now — but it is not
  * the only slot on this page holding a verdict about one mandate:
- * `RunThisJobSection` holds a run's `result` and `failure`, `TriadSections`
- * hold an unsaved edit, and `useMandateWorkspaceData` holds the previous job's
- * rows until the next fetch lands. Every one of them is wrong the instant the
+ * the admin Test tab's run panel holds a run's `result` and `failure`,
+ * `TriadSections` hold an unsaved edit, and `useMandateWorkspaceData` holds the
+ * previous job's rows until the next fetch lands. Every one of them is wrong the instant the
  * job changes, and none of them opted in to noticing.
  *
  * A key on the whole workspace is the one statement that covers them all, and
  * covers whatever is added below it tomorrow.
  */
 export function MandateWorkspace(props: MandateWorkspaceProps) {
-  return <OneMandateWorkspace key={props.mandateKeyOrId} {...props} />;
+  return (
+    <OneMandateWorkspace
+      key={`${props.mandateKeyOrId}:${props.host}:${props.principal?.kind === "org" ? props.principal.orgId : "user"}`}
+      {...props}
+    />
+  );
 }
 
 function OneMandateWorkspace({
@@ -407,6 +351,7 @@ function OneMandateWorkspace({
   principal = { kind: "user" },
   adminContent,
   adminActions,
+  routeHeader,
 }: MandateWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<MandateWorkspaceTab>("definition");
   useEffect(() => {
@@ -453,13 +398,14 @@ function OneMandateWorkspace({
    * about the platform's own answer, which is this host's entire subject. No
    * other row is read here, and no organization is passed.
    */
-  const ladderKey =
-    data && (perspective === "person" || perspective === "system")
-      ? data.mandate.mandate_key
-      : "";
+  const ladderKey = data ? data.mandate.mandate_key : "";
   const ladder = useMandateLadder(
     ladderKey,
-    perspective === "person" ? activeOrganizationId : null,
+    principal.kind === "org"
+      ? principal.orgId
+      : perspective === "person"
+        ? activeOrganizationId
+        : null,
   );
 
   if (loading && !data) {
@@ -510,22 +456,16 @@ function OneMandateWorkspace({
 
   // The SYSTEM perspective has no `FulfillmentView` at all — "fulfilled by" is
   // a per-caller question, and its own answer rides with the three controls.
-  const resolution: FulfillmentView | null =
-    perspective === "system"
-      ? null
-      : principal.kind === "org"
-        ? resolveForOrgPrincipal(
-            data,
-            principal.orgId,
-            nameOfOrg(principal.orgId),
-          )
-        : viewFromVerdict(
-            data,
-            verdict.mandate,
-            verdict.loading,
-            verdict.error,
-            nameOfOrg,
-          );
+  const resolution =
+    perspective === "person"
+      ? viewFromVerdict(
+          data,
+          verdict.mandate,
+          verdict.loading,
+          verdict.error,
+          nameOfOrg,
+        )
+      : null;
   const feature = splitMandateKey(data.mandate.mandate_key).feature;
   // WHERE, not who: a mandate's goal, its declared inputs and running it are
   // SYSTEM management, so they exist only on the admin route. The user route
@@ -544,43 +484,46 @@ function OneMandateWorkspace({
       )}
     >
       <div className="mx-auto w-full max-w-6xl px-4 pb-12 pt-3 sm:px-6">
-        <header className="mb-5 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="break-words text-xl font-semibold tracking-tight text-foreground">
-                {data.mandate.label?.trim() || "Display name unavailable"}
-              </h2>
+        {host === "route" && !routeHeader ? (
+          <CrumbTrailHeader
+            trail={[
+              ...(principal.kind === "org"
+                ? [
+                    {
+                      label: nameOfOrg(principal.orgId) ?? "Organization",
+                      href: `/organizations/${principal.orgId}`,
+                    },
+                  ]
+                : []),
+              {
+                label: "Mandates",
+                href:
+                  principal.kind === "org"
+                    ? `/organizations/${principal.orgId}/settings/mandates`
+                    : "/mandates",
+              },
+              {
+                label: data.mandate.label?.trim() || "Display name unavailable",
+              },
+            ]}
+          />
+        ) : null}
+        {routeHeader?.(data, authoring ? adminActions?.(data, refresh) : null)}
+        <header
+          className={
+            routeHeader || host === "route" ? "contents" : "mb-5 space-y-3"
+          }
+        >
+          {!routeHeader && host !== "route" && (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="break-words text-xl font-semibold tracking-tight text-foreground">
+                  {data.mandate.label?.trim() || "Display name unavailable"}
+                </h2>
+              </div>
+              {authoring ? adminActions?.(data, refresh) : null}
             </div>
-            {authoring ? adminActions?.(data, refresh) : null}
-          </div>
-          <div className="rounded-lg border border-border bg-card px-3">
-            <PropertyRow
-              label="Scope"
-              value={
-                perspective === "system"
-                  ? "System"
-                  : perspective === "organization"
-                    ? (nameOfOrg(
-                        principal.kind === "org" ? principal.orgId : "",
-                      ) ?? "Organization unavailable")
-                    : "Personal"
-              }
-            />
-            <PropertyRow
-              label="Feature"
-              value={formatVariableDisplayName(feature)}
-            />
-            <PropertyRow
-              label="Enabled"
-              value={
-                data.mandate.is_enabled == null
-                  ? "Unknown"
-                  : data.mandate.is_enabled
-                    ? "Yes"
-                    : "No"
-              }
-            />
-          </div>
+          )}
           {host === "window" ? (
             <Link
               href={`/mandates/${encodeURIComponent(data.mandate.mandate_key)}`}
@@ -590,6 +533,16 @@ function OneMandateWorkspace({
             </Link>
           ) : null}
         </header>
+        {/* 🚨 ABOVE THE TABS, ON EVERY HOST. The list already screams when a
+            Mandate has no Holder; before this the detail page did not, so an
+            admin arriving by link saw nothing wrong with a job that errors on
+            every call. One classification — the server's — see
+            ./MandateCoverageAlert.tsx. */}
+        <MandateCoverageAlert
+          className="mb-4"
+          mandateKey={data.mandate.mandate_key}
+          onAssignHolder={() => setActiveTab("holder")}
+        />
         <Tabs
           value={activeTab}
           onValueChange={(value) => {
@@ -623,6 +576,34 @@ function OneMandateWorkspace({
             hidden={activeTab !== "definition"}
             className={activeTab === "definition" ? "space-y-5" : "hidden"}
           >
+            <div className="rounded-lg border border-border bg-card px-3">
+              <PropertyRow
+                label="Scope"
+                value={
+                  perspective === "system"
+                    ? "System"
+                    : perspective === "organization"
+                      ? (nameOfOrg(
+                          principal.kind === "org" ? principal.orgId : "",
+                        ) ?? "Organization unavailable")
+                      : "Personal"
+                }
+              />
+              <PropertyRow
+                label="Feature"
+                value={formatVariableDisplayName(feature)}
+              />
+              <PropertyRow
+                label="Enabled"
+                value={
+                  data.mandate.is_enabled == null
+                    ? "Unknown"
+                    : data.mandate.is_enabled
+                      ? "Yes"
+                      : "No"
+                }
+              />
+            </div>
             <TriadGoalSection
               data={data}
               onChanged={refresh}
@@ -633,37 +614,50 @@ function OneMandateWorkspace({
               onChanged={refresh}
               authoring={authoring}
             />
-            <TriadOutputSection data={data} />
-            <EffectiveConfigLayers
-              pinsOnly
-              pins={data.pins}
-              bindingOverrides={null}
-            />
-            <MandateLineageLine
-              mandateId={data.mandate.id}
-              sourceMandateId={data.mandate.source_mandate_id ?? null}
-              host={host}
-            />
+            <TriadOutputSection data={data} authoring={authoring} />
+            <div>
+              <EffectiveConfigLayers
+                pinsOnly
+                pins={data.pins}
+                bindingOverrides={null}
+              />
+              <MandateLineageLine
+                mandateId={data.mandate.id}
+                sourceMandateId={data.mandate.source_mandate_id ?? null}
+                host={host}
+              />
+            </div>
           </div>
           {perspective !== "system" ? (
             <div
               hidden={activeTab !== "holder"}
               className={activeTab === "holder" ? "mb-4 space-y-3" : "hidden"}
             >
-              <FulfillmentSection
-                data={data}
-                resolution={resolution as FulfillmentView}
-                onChanged={refresh}
-                authoring={authoring}
-              />
-              {perspective === "person" ? (
-                <LadderSection
-                  ladder={ladder}
-                  agentsById={data.agentsById}
-                  nameOfOrg={nameOfOrg}
-                  activeOrganizationId={activeOrganizationId}
-                />
+              {resolution ? (
+                <FulfillmentSection resolution={resolution} />
               ) : null}
+              {
+                <LadderSection
+                  ladder={
+                    principal.kind === "org"
+                      ? {
+                          ...ladder,
+                          rows: ladder.rows.filter(
+                            (row) => row.rung !== "user",
+                          ),
+                        }
+                      : ladder
+                  }
+                  agentsById={data.agentsById}
+                  allowCopy={perspective === "organization"}
+                  nameOfOrg={nameOfOrg}
+                  activeOrganizationId={
+                    principal.kind === "org"
+                      ? principal.orgId
+                      : activeOrganizationId
+                  }
+                />
+              }
             </div>
           ) : null}
           <div
@@ -882,7 +876,9 @@ function BindingSection({
               ? hasGlobalBinding(data)
                 ? SYSTEM_PERSPECTIVE_RUNGS_GLOBAL_FIRST
                 : SYSTEM_PERSPECTIVE_RUNGS_DEFAULT_FIRST
-              : undefined
+              : perspective === "organization"
+                ? ["org"]
+                : undefined
           }
           onChanged={onChanged}
         />
@@ -897,17 +893,7 @@ function BindingSection({
 // one resolver. Everything it can say is in `FulfillmentView`; this component
 // only paints it, so there is no place left for a second opinion to grow.
 
-function FulfillmentSection({
-  data,
-  resolution,
-  onChanged,
-  authoring = false,
-}: {
-  data: MandateWorkspaceData;
-  resolution: FulfillmentView;
-  onChanged: () => void;
-  authoring?: boolean;
-}) {
+function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
   const { copying, copyAndOpen } = useCopyMandateAgent();
   const {
     agent,
@@ -922,178 +908,102 @@ function FulfillmentSection({
     freshness,
     droppedRungs,
   } = resolution;
-  // A mandate may exist before its intelligence does (user-created, no Holder
-  // yet). That is a normal state, not a read failure — say so plainly.
-  const holderless =
-    agentId === null && holderOfMandate(data.mandate).versionId === null;
-
   return (
-    <Section title="Fulfilled by">
-      <div className="space-y-3 rounded-xl border border-border/60 bg-card p-4">
-        {/* The ribbon carries the four PRECEDENCE layers. `global` is a real
-            rung of its own and is deliberately NOT one of them — relabelling it
-            `system` is exactly the lie this campaign closes — so a global
-            verdict highlights nothing here and the sentence below names it. */}
-        <MandateResolutionRibbon
-          provenance={
-            rung === "user" ||
-            rung === "org" ||
-            rung === "system" ||
-            rung === "run"
-              ? rung
-              : undefined
+    <Section title="Effective holder">
+      <div className="rounded-lg border border-border bg-card px-3">
+        <PropertyRow
+          label="Holder"
+          value={
+            loading ? (
+              <SuspenseLoader />
+            ) : agentId ? (
+              <EntityRef
+                token="agent"
+                id={agentId}
+                name={agent?.name ?? "Display name unavailable"}
+              />
+            ) : (
+              "Not available"
+            )
           }
         />
-        <p className="text-[13px] leading-relaxed text-foreground">
-          {sentence}
-        </p>
-        {refusal ? (
-          <p className="flex items-start gap-1.5 text-[12.5px] leading-relaxed text-destructive">
-            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            {/* The refusal NAMES records — "resolved system agent <id> breaks
-                the mandate contract". THE DOOR LAW applies to a sentence as
-                much as to a cell: the reader opens the accused agent from
-                here, verbatim words intact. */}
-            <span>
+        <PropertyRow
+          label="Source"
+          value={
+            rung
+              ? {
+                  user: "Personal",
+                  org: "Organization",
+                  global: "System binding",
+                  system: "System default",
+                  run: "This run",
+                }[rung]
+              : "Unknown"
+          }
+          help={sentence}
+        />
+        <PropertyRow
+          label="Version"
+          value={
+            loading || refusal
+              ? "Unknown"
+              : useLatest
+                ? "Latest"
+                : pinned !== null
+                  ? `Version ${pinned}`
+                  : "Pinned"
+          }
+        />
+        <PropertyRow
+          label="Status"
+          value={
+            <StatusToken
+              status={loading ? "unknown" : refusal ? "error" : "ok"}
+              label={loading ? "Reading" : refusal ? "Unavailable" : "Resolved"}
+            />
+          }
+          help={
+            refusal ? (
               <TextWithDoors text={refusal} defaultToken="agent" />
-            </span>
-          </p>
-        ) : null}
-        {/* A rung the server SET ASIDE. The job still runs — so this is amber,
-            not destructive — but somebody's deliberate choice is not the thing
-            running, and that has to be on the screen and not only in a log. */}
-        {droppedRungs.map((dropped) => (
-          <p
-            key={`${dropped.rung}:${dropped.reason}`}
-            className="flex items-start gap-1.5 text-[12.5px] leading-relaxed text-amber-700 dark:text-amber-400"
-          >
-            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>
-              <TextWithDoors text={dropped.reason} defaultToken="agent" />
-            </span>
-          </p>
-        ))}
-        <div className="flex flex-wrap items-center gap-2">
-          {loading ? (
-            <SuspenseLoader />
-          ) : refusal ? null : agent ? (
-            <EntityRef
-              token="agent"
-              id={agent.id}
-              name={agent.name}
-              className="text-[13.5px] font-medium"
-            />
-          ) : agentId ? (
-            // The verdict named an agent this page did not load a name for —
-            // the door still opens, and inventing "could not be read" would be
-            // a different, false statement.
-            <EntityRef
-              token="agent"
-              id={agentId}
-              className="text-[13.5px] font-medium"
-            />
-          ) : holderless ? (
-            authoring ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-[13px] text-muted-foreground">
-                  No Holder bound yet — this job is waiting for its
-                  intelligence.
-                </span>
-                {/* THE action for a new mandate — never buried in a fold. */}
-                <Button
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent("matrx:open-mandate-pin"),
-                    )
-                  }
-                >
-                  Bind an agent to this job
-                </Button>
-              </div>
             ) : (
-              <span className="text-[13px] text-muted-foreground">
-                No Holder bound yet — this job is waiting for its intelligence.
-                You can set a personal one in the override section below.
-              </span>
+              (freshness ?? undefined)
             )
-          ) : (
-            <span className="text-[13px] text-destructive">
-              The effective agent could not be read — it may be deleted or not
-              shared with you.
-            </span>
-          )}
-          {agent?.agentType === "builtin" ? (
-            <Badge
-              variant="outline"
-              className="gap-1 py-0 text-[10px] text-muted-foreground"
-            >
-              <ShieldCheck className="h-2.5 w-2.5" />
-              System agent
-            </Badge>
-          ) : null}
-          {agent?.isArchived ? (
-            <Badge
-              variant="outline"
-              className="py-0 text-[10px] text-rose-600 dark:text-rose-400"
-            >
-              Archived
-            </Badge>
-          ) : null}
-          {loading || refusal ? null : (
-            <Badge variant="outline" className="py-0 font-mono text-[10px]">
-              {useLatest ? "latest" : pinned !== null ? `v${pinned}` : "pinned"}
-            </Badge>
-          )}
-          {drift ? (
-            <Badge
-              variant="outline"
-              className="border-amber-500/40 bg-amber-500/10 py-0 font-mono text-[10px] text-amber-700 dark:text-amber-400"
-            >
-              {drift}
-            </Badge>
-          ) : null}
-        </div>
-        {drift ? (
-          <p className="text-[12px] leading-relaxed text-muted-foreground">
-            This job runs the pinned version; the agent has moved on. Updating
-            the pin is {rung === "system" ? "an admin decision" : "yours"} —
-            nothing changes until it is made deliberately.
-          </p>
-        ) : null}
-        {freshness ? (
-          // The server publishes its own staleness bound with the answer. Print
-          // it rather than implying the verdict is instantaneous.
-          <p className="text-[11px] text-muted-foreground/80">
-            Answered by the server, {freshness}.
-          </p>
-        ) : null}
+          }
+        />
+        <PropertyRow
+          label="Archived"
+          value={agent ? (agent.isArchived ? "Yes" : "No") : "Unknown"}
+        />
+        {drift ? <PropertyRow label="Newer version" value={drift} /> : null}
+        {droppedRungs.map((dropped) => (
+          <PropertyRow
+            key={`${dropped.rung}:${dropped.reason}`}
+            label={`${formatVariableDisplayName(dropped.rung)} binding`}
+            value={<StatusToken status="caution" label="Not applied" />}
+            help={<TextWithDoors text={dropped.reason} defaultToken="agent" />}
+          />
+        ))}
         {agent ? (
-          <div>
+          <div className="flex items-center gap-2 py-2">
             <Button
               variant="outline"
               size="sm"
               disabled={copying}
               className="gap-1.5"
-              onClick={() => {
-                void copyAndOpen(
-                  {
-                    defaultAgentId: holderOfMandate(data.mandate).holderId,
-                    defaultAgentVersionId: holderOfMandate(data.mandate)
-                      .versionId,
-                  },
-                  { connect: () => onChanged() },
-                );
-              }}
+              onClick={() =>
+                void copyAndOpen({
+                  defaultAgentId: agentId,
+                  defaultAgentVersionId: null,
+                })
+              }
             >
               <Copy className="h-3.5 w-3.5" />
               {copying ? "Duplicating…" : "Duplicate & customize"}
             </Button>
-            <p className="mt-1.5 text-[11.5px] text-muted-foreground/80">
-              Copies the running agent into your own editable version and opens
-              the builder — modify it, then swap it in below.
-            </p>
+            <FieldHelp label="Duplicate & customize">
+              Copies this resolved agent into your account and opens the
+              builder. Assign the copy in Holder to use it for this mandate.
+            </FieldHelp>
           </div>
         ) : null}
       </div>
@@ -1119,7 +1029,9 @@ function LadderSection({
   agentsById,
   nameOfOrg,
   activeOrganizationId,
+  allowCopy = false,
 }: {
+  allowCopy?: boolean;
   ladder: ReturnType<typeof useMandateLadder>;
   agentsById: Record<string, WorkspaceAgentInfo>;
   nameOfOrg: (id: string) => string | null;
@@ -1140,43 +1052,41 @@ function LadderSection({
       </p>
     );
   }
-  if (!activeOrganizationId) {
-    return (
-      <p className="flex items-start gap-1.5 px-1 text-[12px] leading-relaxed text-muted-foreground">
-        <Layers className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        No workspace is selected, so this job has no organization rung to show —
-        pick a workspace to see how it is decided for you.
-      </p>
-    );
-  }
 
   return (
-    <div className="rounded-lg border border-border/50 bg-card/50">
-      <div className="flex items-center gap-2 border-b border-border/40 px-3 py-2">
-        <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-[12.5px] text-foreground">
-          How this job is decided for you
-        </span>
-      </div>
-      <div className="space-y-2 px-3 py-2.5">
+    <Section title="Configured holders">
+      <ConfigurationTable
+        label="Configured holders"
+        columns={HOLDER_LADDER_COLUMNS}
+      >
         {ladder.rows.map((row) => (
           <LadderRow
             key={`${row.rung}:${row.binding_id ?? "default"}`}
             row={row}
+            allowCopy={allowCopy}
             agentsById={agentsById}
             nameOfOrg={nameOfOrg}
           />
         ))}
-      </div>
-    </div>
+      </ConfigurationTable>
+    </Section>
   );
 }
+
+const HOLDER_LADDER_COLUMNS = [
+  { key: "scope", label: "Scope" },
+  { key: "holder", label: "Holder" },
+  { key: "version", label: "Version" },
+  { key: "status", label: "Status" },
+];
 
 function LadderRow({
   row,
   agentsById,
   nameOfOrg,
+  allowCopy = false,
 }: {
+  allowCopy?: boolean;
   row: MandateLadderRow;
   agentsById: Record<string, WorkspaceAgentInfo>;
   nameOfOrg: (id: string) => string | null;
@@ -1187,32 +1097,75 @@ function LadderRow({
       ? nameOfOrg(row.organization_id)
       : null,
   );
+  const { copying, copyAndOpen } = useCopyMandateAgent();
+  const changesHolder = ladderRowChangesHolder(row);
   const broken = ladderRowIsBroken(row);
   const agent = row.holder_id ? (agentsById[row.holder_id] ?? null) : null;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px]">
-      <span className="font-medium text-foreground">{words.title}</span>
-      {broken ? (
-        <Badge
-          variant="outline"
-          className="gap-1 py-0 text-[10px] text-destructive"
-        >
-          <TriangleAlert className="h-2.5 w-2.5" />
-          Broken
-        </Badge>
-      ) : null}
-      <span className={broken ? "text-destructive" : "text-muted-foreground"}>
-        {words.detail}
-      </span>
-      {!broken && agent ? (
-        <EntityRef
-          token="agent"
-          id={agent.id}
-          name={agent.name}
-          showIcon={false}
-        />
-      ) : null}
-    </div>
+    <ConfigurationTableRow
+      columns={HOLDER_LADDER_COLUMNS}
+      cells={{
+        scope: words.title,
+        holder:
+          !broken && agent ? (
+            <EntityRef
+              token="agent"
+              id={agent.id}
+              name={agent.name}
+              showIcon={false}
+            />
+          ) : row.holder_type === "workflow" ? (
+            "Workflow"
+          ) : changesHolder ? (
+            row.holder_version_id ? (
+              "Pinned holder"
+            ) : (
+              "Unavailable"
+            )
+          ) : (
+            "Inherited"
+          ),
+        version: row.holder_version_id
+          ? "Pinned"
+          : changesHolder
+            ? "Latest"
+            : "Inherited",
+        status: (
+          <span className="inline-flex items-center gap-1">
+            <StatusToken
+              status={
+                broken ? "error" : !row.is_enabled ? "neutral" : "neutral"
+              }
+              label={
+                broken ? "Not applied" : row.is_enabled ? "Enabled" : "Disabled"
+              }
+            />
+            <FieldHelp label={`${words.title} status`}>
+              {words.detail}
+            </FieldHelp>
+            {allowCopy &&
+            !broken &&
+            row.holder_type !== "workflow" &&
+            (row.holder_id || row.holder_version_id) ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Duplicate ${words.title} holder`}
+                disabled={copying}
+                onClick={() =>
+                  void copyAndOpen({
+                    defaultAgentId: row.holder_id,
+                    defaultAgentVersionId: row.holder_version_id,
+                  })
+                }
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            ) : null}
+          </span>
+        ),
+      }}
+    />
   );
 }

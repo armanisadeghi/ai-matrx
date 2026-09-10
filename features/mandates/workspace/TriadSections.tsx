@@ -4,7 +4,7 @@
 //
 // THE TRIAD — the mandate page's spine, in the mandate's own order:
 //
-//     INPUT  →  GOAL  →  OUTPUT
+//     GOAL  →  PROVISION  →  OUTPUT
 //
 // Arman: "INPUT -> Charge (Goal) -> Output. The UI should show this clearly
 // and since the goal lives ONLY HERE, it needs to be easy to read and quickly
@@ -79,6 +79,7 @@ function goalSectionScope(
 }
 import { MandateUserTextLine } from "../components/MandateUserTextLine";
 import { Section, SectionEditAction } from "./Section";
+import { DefinitionEditHelp } from "./DefinitionEditHelp";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toastFailure } from "@/lib/failure/toastFailure";
@@ -211,18 +212,20 @@ export function TriadInputSection({
 
   return (
     <Section
-      title="Inputs"
+      title="Provision"
       actions={
         <SectionEditAction
-          label="Edit inputs"
+          label="Edit provision"
           unavailable={
-            data.offer
-              ? "Defined in code."
-              : !authoring
-                ? "System admin only."
-                : editing
-                  ? "Editor open."
-                  : undefined
+            data.provisionKey || data.offer || !authoring ? (
+              <DefinitionEditHelp
+                data={data}
+                section="Provision"
+                authoring={authoring}
+              />
+            ) : editing ? (
+              "Editor open."
+            ) : undefined
           }
           onEdit={() => {
             setDraft(
@@ -250,7 +253,7 @@ export function TriadInputSection({
                 onClick={() => void save()}
               >
                 <Check className="h-3.5 w-3.5" />
-                {saving ? "Saving…" : "Save inputs"}
+                {saving ? "Saving…" : "Save"}
               </Button>
               <Button
                 variant="ghost"
@@ -267,54 +270,15 @@ export function TriadInputSection({
             </div>
           </div>
         ) : draftInputs.length > 0 ? (
-          <ul className="divide-y divide-border/40">
-            {draftInputs.map((item, index) => (
-              <li key={index} className="py-2">
-                <PropertyRow
-                  label="Input"
-                  value={
-                    item.name
-                      ? displayLabelForKey(item.name)
-                      : "Display name missing"
-                  }
-                  help={item.description || "No description provided."}
-                />
-                <PropertyRow
-                  label="Format"
-                  value={
-                    item.kind ? displayLabelForKey(item.kind) : "Not specified"
-                  }
-                />
-                <PropertyRow label="Always available" value="Unknown" />
-                <PropertyRow label="Retrieval" value="Unknown" />
-                <PropertyRow
-                  label="Automatic context delivery"
-                  value="Unknown"
-                />
-                <PropertyRow
-                  label="Example"
-                  value={item.example || "Not provided"}
-                />
-              </li>
-            ))}
-          </ul>
+          <ProvisionOfferList values={draftInputs} declarationOnly />
         ) : data.contract.requiredVariables.length > 0 ? (
-          <div className="divide-y divide-border/40">
-            {data.contract.requiredVariables.map((name) => (
-              <div key={name} className="py-2">
-                <PropertyRow label="Input" value={displayLabelForKey(name)} />
-                <PropertyRow label="Required" value="Yes" />
-                <PropertyRow label="Format" value="Not specified" />
-                <PropertyRow label="Always available" value="Unknown" />
-                <PropertyRow label="Retrieval" value="Unknown" />
-                <PropertyRow
-                  label="Automatic context delivery"
-                  value="Unknown"
-                />
-                <PropertyRow label="Example" value="Not provided" />
-              </div>
-            ))}
-          </div>
+          <ProvisionOfferList
+            values={data.contract.requiredVariables.map((name) => ({
+              name,
+              required: true,
+            }))}
+            declarationOnly
+          />
         ) : (
           // 🚨 "User text only" is a MEASURED answer, never a fallback. The
           // served input surface is the one thing that knows all four
@@ -385,7 +349,7 @@ function HolderDeclaredInputs({ mandateKey }: { mandateKey: string }) {
       <PropertyRow
         label="Declared inputs"
         value="None"
-        source="Served input surface"
+        source="The job's own answer"
       />
     );
   }
@@ -396,24 +360,17 @@ function HolderDeclaredInputs({ mandateKey }: { mandateKey: string }) {
         value={surface.holderName || "Holder name unavailable"}
       />
       <PropertyRow label="Declared inputs" value={surface.inputs.length} />
-      {surface.inputs.map((input) => (
-        <div key={input.name} className="border-t border-border/40 py-2">
-          <PropertyRow
-            label="Input"
-            value={displayLabelForKey(input.name, input.label)}
-            help={input.help || "No description provided."}
-          />
-          <PropertyRow label="Format" value={displayLabelForKey(input.kind)} />
-          <PropertyRow label="Required" value={input.required ? "Yes" : "No"} />
-          <PropertyRow label="Always available" value="Unknown" />
-          <PropertyRow label="Retrieval" value="Unknown" />
-          <PropertyRow label="Automatic context delivery" value="Unknown" />
-          <PropertyRow
-            label="Example"
-            value={input.example || "Not provided"}
-          />
-        </div>
-      ))}
+      <ProvisionOfferList
+        values={surface.inputs.map((input) => ({
+          name: input.name,
+          label: input.label,
+          kind: input.kind,
+          required: input.required,
+          description: input.help,
+          example: input.example,
+        }))}
+        declarationOnly
+      />
       <ServerNotes
         heading="Input declaration issues"
         notes={surface.notes}
@@ -669,11 +626,15 @@ export function TriadGoalSection({
         <SectionEditAction
           label="Edit goal"
           unavailable={
-            !authoring
-              ? "System admin only."
-              : editing
-                ? "Editor open."
-                : undefined
+            !authoring ? (
+              <DefinitionEditHelp
+                data={data}
+                section="Goal"
+                authoring={authoring}
+              />
+            ) : editing ? (
+              "Editor open."
+            ) : undefined
           }
           onEdit={() => {
             setDraft(goal ?? "");
@@ -727,7 +688,15 @@ export function TriadGoalSection({
               {goal || "Not specified"}
             </p>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <GroundingBadge grounding={grounding} />
+              <div className="flex items-center gap-2">
+                <GroundingBadge grounding={grounding} />
+                {data.mandate.description?.trim() &&
+                data.mandate.description.trim() !== goal?.trim() ? (
+                  <FieldHelp label="Goal context">
+                    {data.mandate.description}
+                  </FieldHelp>
+                ) : null}
+              </div>
               {authoring ? (
                 <AutomationButton
                   mandateKey={GOAL_WRITER_MANDATE_KEY}
@@ -739,12 +708,6 @@ export function TriadGoalSection({
                 />
               ) : null}
             </div>
-            {data.mandate.description?.trim() &&
-            data.mandate.description.trim() !== goal?.trim() ? (
-              <FieldHelp label="Goal context">
-                {data.mandate.description}
-              </FieldHelp>
-            ) : null}
           </>
         )}
       </div>
@@ -760,7 +723,13 @@ const OUTPUT_COLUMNS = [
   { key: "source", label: "Source" },
 ];
 
-export function TriadOutputSection({ data }: { data: MandateWorkspaceData }) {
+export function TriadOutputSection({
+  data,
+  authoring = false,
+}: {
+  data: MandateWorkspaceData;
+  authoring?: boolean;
+}) {
   const constraints = outputConstraintsOf(data.mandate);
   return (
     <Section
@@ -768,7 +737,13 @@ export function TriadOutputSection({ data }: { data: MandateWorkspaceData }) {
       actions={
         <SectionEditAction
           label="Edit output"
-          unavailable="Output editing is not available yet."
+          unavailable={
+            <DefinitionEditHelp
+              data={data}
+              section="Output"
+              authoring={authoring}
+            />
+          }
         />
       }
     >

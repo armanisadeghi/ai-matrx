@@ -21,12 +21,12 @@ Arman's sentence is the spine:
 | File | What it is |
 |---|---|
 | `OneBindingWorkspace.tsx` | The shell. Owns the draft (rung, holder, consumption map, refusals), resolves the offer, runs the agent pre-flight, hosts settings, saves and removes. Every refusal is adjacent to the control it refuses. |
-| `HolderAssignment.tsx` | 🚨 **THE ONE HOLDER CHOOSER.** Three labelled controls and nothing else — **Holder Type** (Agent | Workflow) · **Assigned Agent/Workflow** (ONE dropdown, and only the dropdown: it names the assigned record on its own trigger and carries every fact and door inside it) · **Version** (Latest, or one version, in ONE dropdown; `Latest` stores `default_holder_version_id = NULL`). Version remains a labeled value before selection; workflows explicitly state the current latest-only limitation. Every host mounts this; a second picker anywhere in the mandate/bindings trees fails `features/mandates/workspace/__tests__/holder-assignment.test.tsx`. |
+| `HolderAssignment.tsx` | **THE ONE HOLDER CHOOSER.** Icon-led Agent/Workflow buttons; **Assigned Agent/Workflow** groups the record picker and version dropdown on one row. Version has an accessible label without a separate visible label; no-holder and latest-only workflow states remain disabled and explicit. Latest stores `default_holder_version_id = NULL`. Every host reuses this component. |
 | `ScopeHolderBar.tsx` | RUNG · HOLDER · JOB, where a rung is genuinely a choice. The rung is `ShortcutScopePicker`; the holder cell IS `HolderAssignment`. Under `perspective="system"` (the admin route) it renders the three controls alone, plus the door's verdict — no rung cell (one rung), no job cell (the page's heading is the job). |
 | `OfferedInventoryColumn.tsx` | The offered reference for untabbed hosts; Definition owns this inventory in the tabbed workspace. |
 | `HolderInputsColumn.tsx` | The consuming reference for untabbed hosts; matching rows own these facts in tabbed workspaces. |
 | `BindingMiddle.tsx` | The match. `SurfaceVariableBinding` rendered **VERBATIM**, plus the many-to-one strip, the absence answer and the per-row problems a job binding needs and a surface binding does not. |
-| `AutoRunBar.tsx` | P14. "Run instantly" belongs to Holder/matching, enabled only while the map leaves nothing to ask. Reuses `ShortcutFieldRow` with source, state and eligibility inline; explanations live in field help. `evaluateBindingAutoRun` owns eligibility; `serverNotes` (`BindingResult.notes`) reports the actual write. |
+| `AutoRunBar.tsx` | Run Instantly is **Unavailable** at the top of Holder until mandate-wide pause/resume is enforced across execution callers. Disabled control exposes the reason on hover/focus/tap; no editable switch, inferred effective value, or mapping-eligibility metadata. Stored `auto_run` is preserved. |
 | `consumption-writer.ts` | 🚨 **THE ONE WRITER.** Nothing else builds a `ConsumptionEntry` or mutates a `ConsumptionMap` — the manual row, the many-to-one strip and the AI map's accept all go through it. |
 | `offered-adapter.ts` | `OfferedValue` → `SurfaceValue`, so the shared picker reads a mandate's inventory. |
 | `useHolderInputs.ts` | `buildBindingTargets` for an agent, `useServedRunForm` for a workflow — one hook, no holder-type branch upstream. |
@@ -115,13 +115,15 @@ with `#bind`.
 
 ## The rules this surface must keep
 
-1. **One concept, one place.** Tabbed hosts put the full provision in Definition and holder targets in Matching; source references remain at their point of use. Untabbed hosts retain both inventories.
+Tabbed mandate workspaces show Scope, Feature, and Enabled only inside Definition, below the tabs.
+
+1. **One concept, one place.** Tabbed hosts put the full provision in Definition and holder targets in Provision Mapping; source references remain at their point of use. Untabbed hosts retain both inventories.
 2. **The row is the shared one, verbatim.** If it needs something it does not have, the change
    is made IN `SurfaceVariableBinding` for all five call sites — never forked here.
 3. **Many-to-one is real (D18.2).** Several offered values feed one holder input, joined in
    list order with a blank line. Row 0 is the shared row; the strip owns the rest. Multi-source
    targets take scalar kinds only, and every source of one target agrees on `deliver`.
-4. **Context slots are targets (D18.3)**, symmetric with variables, and each row says which.
+4. **Context policies are targets (D18.3)**, symmetric with variables, and each row says which.
 5. **Described inputs ARE the provision (D18.1).** No provision key is not "no inputs" — the
    served input surface answers, and a mandate that offers nothing still renders the map step
    with an honest sentence. The structural skip is what this build exists to end.
@@ -130,6 +132,10 @@ with `#bind`.
    calls `afterCurrentLayerCloses`, so every Select/Menu caller waits for the current body
    lock to remain released for two consecutive paints before AlertDialog opens. Neither a
    caller opt-in, fixed delay, nor the first unlocked paint is treated as proof of close.
+8. **A closing animation still owns its body lock.** The shared orphan-lock guard distinguishes
+   a closed Radix layer whose Web Animation is still running from a true orphan. It waits for
+   the animation's real state rather than guessing from a fixed duration, then rechecks on
+   `animationend`/`animationcancel` so a failed cleanup still recovers loudly.
 
 ## The four sources, all four real
 
@@ -174,7 +180,7 @@ verbatim — a `logger.warning` is a scream only the server hears.
 
 **Overrides means API model parameters only.** `RunConfigOverrides` edits the selected binding's `config_overrides`; Controls and Advanced are two input modes over the same `instanceModelOverrides` draft. Invalid JSON blocks Save. There is no treatment model editor: `treatment.config.seeds.llm_overrides` has no imperative mandate-launch consumer and must not masquerade as this binding's API overrides.
 
-`BindingOptionsDrawer.section` selects Display Options or Permissions without unmounting the shared treatment draft. `WidgetPicker`, `SettingsSection` and `AdvancedSection` are the canonical shortcut components; their shared `ShortcutFieldRow`/`ShortcutToggleRow` put the control before inline Source/State metadata, with explanation in `FieldHelp`. Narrow layouts stack identical content. False, default and inactive values remain explicit; dependent gate controls remain visible and disabled when inapplicable.
+`BindingOptionsDrawer.section` selects Display Options or Permissions without unmounting the shared treatment draft. It lives above the binding identity key; changing/saving a binding cannot discard it. Treatment preferences belong to the mandate, not the selected user/org binding. Existing-row access is checked with the registered `mandate_treatment` token; absent-row creation remains database-authorized and explicitly labeled. `WidgetPicker`, `SettingsSection` and `AdvancedSection` are the canonical shortcut components; their shared `ShortcutFieldRow`/`ShortcutToggleRow` put the control before inline Source/State metadata, with explanation in `FieldHelp`. Narrow layouts stack identical content. False, default and inactive values remain explicit; dependent gate controls remain visible and disabled when inapplicable.
 
 | UI owner | Stored field | Consumer |
 |---|---|---|
@@ -236,6 +242,18 @@ never become an answer, and absent means the declaration gave none — never inv
 
 ## Change Log
 
+- 2026-09-09 — All scopes use structured scope/holder controls. The shared treatment editor lives above the binding draft key and gates existing-row edits through canonical resource access. Model baselines reuse the resolution ladder for preceding enabled layers, preserving runtime null cancellation and per-field provenance; local API deltas and counts use the existing serializer.
+
+- 2026-09-09 — Disabled Run Instantly across mandate authoring until universal intervention is supported. Moved it to the top of Holder and removed Source/State/Eligibility fields; stored configuration remains unchanged.
+
+- 2026-09-09 — Offered value and When missing share a responsive two-column source detail region. The shared row accepts a consumer-owned policy slot; the existing absence writer and all four choices are unchanged.
+
+- 2026-09-09 — Definition owns Scope/Feature/Enabled. Holder type choices reuse Source styling and the shared 34px `CONFIGURATION_CHOICE_SIZE`; assignment and version pickers share one row, with Version retained as an accessible label. Source pickers use the same baseline and grow only when content wraps.
+
+- 2026-09-09 — Mapping cards have one 12px padding system and separated destination/source/behavior regions. Destination metadata says Type, Name, Required by Holder. Mandate Provision sources use only when_absent controls; their redundant source-required switch is suppressed without changing stored data. Prompt User retains Answer required. Missing-source choices share one compact row, including disabled Not applicable.
+
+- 2026-09-09 — Provision Mapping uses the standard section heading with inline help. Rows identify Holder destinations (variable, context policy, workflow input); source availability lives inside offered-value pickers, including additional-source choices. Removed the transient Name matching display; exact-name draft seeding and consumption-map persistence are unchanged.
+
 - 2026-09-08 — Reconciled configuration with storage/runtime: API model overrides only in Overrides with one Controls/Advanced draft; canonical shortcut display rows/gallery; removed unconsumed mandate treatment/menu editors while preserving data. Automatic context moved to Permissions, Run instantly stays with Holder, disabled missing-source controls and configuration table alignment are consistent.
 
 - 2026-09-08 — Added sectioned binding/treatment presentation for the shared mandate tabs, preserving existing save boundaries. Name-match display no longer invents an unsaved mandate mapping. Preliminary declaration checks are separate from mapping and full validation. Canonical overrides load the exact selected version and rebase retained edits when the holder changes; failed loads cannot initialize a blank default.
@@ -290,6 +308,13 @@ never become an answer, and absent means the declaration gave none — never inv
   body lock when Radix retained the Select lock across later paints. `afterCurrentLayerCloses`
   now waits until `document.body` is no longer pointer-locked before opening the AlertDialog;
   `fix4-guards.test.ts` forces a multi-frame close to prevent another timing-based regression.
+
+- 2026-09-09 — **The orphan-lock guard no longer fights a healthy Select exit.** The package's
+  Select exit lasts 150ms and Radix intentionally retains `pointer-events:none` until Presence
+  unmounts it, while the guard's 50ms quiet window previously repaired and warned on every
+  ordinary choice. The guard now trusts an explicitly closed layer only while `getAnimations()`
+  reports an active exit, and rechecks as soon as that animation ends or is cancelled; a finished
+  layer with the same lock is still repaired and reported.
 
 - 2026-08-31 — **The rung picker closes before its dirty-draft confirm opens.** Both mandate
   routes mount `OneBindingWorkspace`; deferring that shared handoff by one animation frame ends

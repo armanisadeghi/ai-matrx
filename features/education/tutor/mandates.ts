@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 // features/education/tutor/mandates.ts
 //
 // Mandate key for the conversational AI Tutor (P2). This is a MANDATE KEY, not
@@ -22,7 +24,7 @@ export const EDU_TUTOR_MANDATES = {
    * EducationTutorClient every turn. Emits a hidden per-turn TrustEnvelope
    * (`<!--MATRX_TRUST_V1 …-->`) parsed by turnTrust.ts.
    */
-  tutor: "education.tutor_message",
+  tutor: MANDATE_KEYS.education__tutor_message,
 } as const;
 
 export type EduTutorMandateKey = keyof typeof EDU_TUTOR_MANDATES;

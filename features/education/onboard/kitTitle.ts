@@ -29,9 +29,10 @@
 
 import type { AppDispatch, AppStore } from "@/lib/redux/store";
 import { runAgentExtraction } from "@/features/education/convert/runAgentExtraction";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Mandate for the kit namer — swap the agent at /mandates, no deploy. */
-export const KIT_TITLE_MANDATE = "education.kit_title";
+export const KIT_TITLE_MANDATE = MANDATE_KEYS.education__kit_title;
 
 /** How much of the material the namer reads. A title needs the opening, not the book. */
 const NAMER_SAMPLE_CHARS = 4_000;

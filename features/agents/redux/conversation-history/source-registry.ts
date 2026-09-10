@@ -366,9 +366,13 @@ export const SURFACE_DEFAULTS: Record<string, SurfaceSourceDefault> = {
   // (transcription, server runs, sub-agents, generic) is reachable through
   // the filter tree but hidden by default.
   chat: { includeFeatures: ["chat"] },
-  // The floating and full-page agent runner: only conversations created by
-  // the runner itself. Other provenance remains reachable in the filter tree.
-  "agent-runner": { includeFeatures: ["agent-runner"] },
+  // The floating and full-page agent runner. The list is ALREADY scoped to one
+  // agent, so a second (source) filter only hid that agent's own chats that
+  // started elsewhere (its Agent Builder drafts) behind an unexplained "1"
+  // badge — the sidebar read "No conversations yet." for an agent with
+  // history (2026-09-09). Show every conversation with the agent; the filter
+  // tree stays available for narrowing.
+  "agent-runner": { includeFeatures: [] },
   // The /code workspace: code conversations + the agent runs it spawns.
   code: { includeFeatures: ["code-editor", "agent-runner"] },
   // The /education/tutor surface: only the learner's tutor conversations.

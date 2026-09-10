@@ -45,6 +45,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import path from "node:path";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 const ROOT = path.resolve(__dirname, "..");
 
@@ -149,7 +150,7 @@ function scan(): string[] {
     if (!existsSync(livePath) && !existsSync(parkedPath)) continue;
     const sourcePath = existsSync(livePath) ? livePath : parkedPath;
     const source = readFileSync(sourcePath, "utf8");
-    if (!source.includes("__kind") && !source.includes("KIND_KEY")) continue;
+    if (!source.includes(KIND_KEY) && !source.includes("KIND_KEY")) continue;
 
     source.split("\n").forEach((line, i) => {
       const code = line.replace(/\/\/.*$/, "").replace(/^\s*\*.*$/, "");

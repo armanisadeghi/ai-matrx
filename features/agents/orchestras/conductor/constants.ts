@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 // features/agents/orchestras/conductor/constants.ts
 //
 // "Generate an conductor" flow — the ids + markers that stitch the pieces
@@ -25,7 +27,7 @@ export const CONDUCTOR_TEMPLATE_ID = "b06689e3-c651-443a-9059-7e11160d91b4";
  * `services/mandates/client_mandates.py` and is the only sanctioned way to name
  * this agent from code.
  */
-export const ORCHESTRA_ROLE_DESCRIBER_MANDATE_KEY = "orchestras.role_describer";
+export const ORCHESTRA_ROLE_DESCRIBER_MANDATE_KEY = MANDATE_KEYS.orchestras__role_describer;
 
 /** The variable the Orchestra Role Describer reads (the members dump JSON). */
 export const ROLE_DESCRIBER_INPUT_VAR = "agent_config";

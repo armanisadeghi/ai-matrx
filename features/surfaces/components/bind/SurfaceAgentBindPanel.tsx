@@ -370,6 +370,24 @@ export function SurfaceAgentBindPanel({
     }
   };
 
+  /**
+   * 🚨 WHY SAVE CANNOT ACT — the ONE pre-flight, on the control (FIX-11, W10-1).
+   *
+   * This panel had no reading of what it was about to store at all: a mapping
+   * that asks the person a question with no words saved cleanly and asked
+   * nothing at run time. The write seam refuses it now too, but a refusal a
+   * person only meets AFTER pressing Save is a screen that lied on the way in.
+   */
+  // Hoisted above the step-1 early return — RULES OF HOOKS. Pure derivation of
+  // `mappings` / `targets`, so the value is unchanged for step 2.
+  const saveRefusals = useMemo(
+    () =>
+      valueMappingsProblems(mappings, {
+        targets: targets.map((t) => ({ name: t.name, label: t.label })),
+      }),
+    [mappings, targets],
+  );
+
   // ── Step 1: pick agent ──────────────────────────────────────────────────
   if (!agentId) {
     return (
@@ -409,21 +427,6 @@ export function SurfaceAgentBindPanel({
 
   // ── Step 2: scope + mappings ────────────────────────────────────────────
   const agentReady = executionPayload.isReady;
-  /**
-   * 🚨 WHY SAVE CANNOT ACT — the ONE pre-flight, on the control (FIX-11, W10-1).
-   *
-   * This panel had no reading of what it was about to store at all: a mapping
-   * that asks the person a question with no words saved cleanly and asked
-   * nothing at run time. The write seam refuses it now too, but a refusal a
-   * person only meets AFTER pressing Save is a screen that lied on the way in.
-   */
-  const saveRefusals = useMemo(
-    () =>
-      valueMappingsProblems(mappings, {
-        targets: targets.map((t) => ({ name: t.name, label: t.label })),
-      }),
-    [mappings, targets],
-  );
   const agentName = agent?.name ?? "Agent";
   const agentLocked = lockAgent && !!initialAgentId;
 

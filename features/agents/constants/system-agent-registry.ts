@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 /**
  * System agent registry — builtin KEY → MANDATE KEY.
  *
@@ -15,14 +17,14 @@
  */
 
 export const SYSTEM_AGENT_MANDATES = {
-  "prompt-app-auto-create": "agent_apps.auto_create",
-  "prompt-app-auto-create-lightning": "agent_apps.auto_create_lightning",
-  "prompt-app-metadata-generator": "agent_apps.metadata",
-  "prompt-app-ui-editor": "code_editor.prompt_app_ui_edit",
-  "generic-code-editor": "code_editor.code_edit",
-  "code-editor-dynamic-context": "code_editor.dynamic_context_edit",
-  "matrix-custom-chat": "chat.cx_default",
-  "tool-ui-component-generator": "tool_viz.component_generator",
+  "prompt-app-auto-create": MANDATE_KEYS.agent_apps__auto_create,
+  "prompt-app-auto-create-lightning": MANDATE_KEYS.agent_apps__auto_create_lightning,
+  "prompt-app-metadata-generator": MANDATE_KEYS.agent_apps__metadata,
+  "prompt-app-ui-editor": MANDATE_KEYS.code_editor__prompt_app_ui_edit,
+  "generic-code-editor": MANDATE_KEYS.code_editor__code_edit,
+  "code-editor-dynamic-context": MANDATE_KEYS.code_editor__dynamic_context_edit,
+  "matrix-custom-chat": MANDATE_KEYS.chat__cx_default,
+  "tool-ui-component-generator": MANDATE_KEYS.tool_viz__component_generator,
 } as const satisfies Record<string, string>;
 
 export type SystemAgentKey = keyof typeof SYSTEM_AGENT_MANDATES;

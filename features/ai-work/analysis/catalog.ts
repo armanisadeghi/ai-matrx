@@ -1,3 +1,5 @@
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
 /**
  * Conversation-analysis catalog — the five platform reviewers a user can run
  * over ANY canonical conversation (an AI Matrx chat or a provider mirror).
@@ -32,35 +34,35 @@ export const CONVERSATION_ANALYSIS_KINDS: readonly ConversationAnalysisKind[] =
   [
     {
       key: "vision",
-      mandateKey: "conversation.vision_interviewer",
+      mandateKey: MANDATE_KEYS.conversation__vision_interviewer,
       label: "What you asked for",
       description:
         "Collects everything you said you wanted in this conversation, and shows which of it was done and which was not.",
     },
     {
       key: "outcomes",
-      mandateKey: "conversation.outcome_summarizer",
+      mandateKey: MANDATE_KEYS.conversation__outcome_summarizer,
       label: "What came out of it",
       description:
         "Summarizes the end results: what was produced, what was decided, and the facts this conversation established.",
     },
     {
       key: "open-items",
-      mandateKey: "conversation.action_auditor",
+      mandateKey: MANDATE_KEYS.conversation__action_auditor,
       label: "What's still open",
       description:
         "Finds unfinished work, promises that were made, and decisions still waiting on someone.",
     },
     {
       key: "decisions",
-      mandateKey: "conversation.decision_ledger",
+      mandateKey: MANDATE_KEYS.conversation__decision_ledger,
       label: "Decisions and why",
       description:
         "Lists each decision that was made, the reasoning behind it, and the alternatives that were turned down.",
     },
     {
       key: "drift",
-      mandateKey: "conversation.drift_auditor",
+      mandateKey: MANDATE_KEYS.conversation__drift_auditor,
       label: "Ask vs. delivered",
       description:
         "Compares your original request with what was actually delivered, and names where the work drifted.",

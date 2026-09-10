@@ -59,7 +59,7 @@ import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { adminUserMenuSection } from "./admin-user-menu-section";
+import { buildAdminUserMenuSection } from "./admin-user-menu-section";
 import { pushAppHref } from "@/lib/deployment/navigate";
 
 const ROSTER_PAGE_SIZE = 50;
@@ -597,7 +597,7 @@ export function AccountsTableClient() {
             };
           }}
           extraSections={[
-            adminUserMenuSection(
+            buildAdminUserMenuSection(
               clickedRow
                 ? {
                     id: clickedRow.id,

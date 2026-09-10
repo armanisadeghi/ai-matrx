@@ -35,12 +35,15 @@ import {
   FieldHelp,
 } from "@/components/official/ConfigurationFields";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectAllModels,
   selectModelFullyLoaded,
   fetchModelById,
+  retryModelDetail,
+  selectModelDetailError,
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import { useModelControls } from "@/features/agents/hooks/useModelControls";
 import {
@@ -65,6 +68,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { parseRequestOverrides } from "@/features/agents/redux/execution-system/utils/request-overrides";
+import type { LLMParams } from "@/features/agents/types/agent-api-types";
 
 const OVERRIDE_COLUMNS = [
   { key: "setting", label: "Setting" },
@@ -110,6 +114,21 @@ export interface RunConfigOverridesWords {
    * agent. A mandate/job door passes the job vocabulary's own word.
    */
   modelEmptyChoiceLabel?: string;
+  /**
+   * THE BASELINE'S NOUN, in this host's vocabulary — the same O3 defect one
+   * level down. The rows called the thing a setting is inherited FROM
+   * *"Holder"*, and a cleared setting *"Holder default"*, hardcoded on every
+   * door including the shortcut editor, whose whole subject is an AGENT. The
+   * mandate-screen vocabulary sweep reads it as the job system's noun standing
+   * on an agent door, which is exactly what it is.
+   *
+   * Omitted = the agent noun, right on every door whose subject IS an agent. A
+   * mandate/job door passes the job vocabulary's own word (its runner is a
+   * HOLDER, agent or workflow).
+   */
+  baselineSourceLabel?: string;
+  /** What a cleared setting falls back to, in this host's noun. */
+  baselineDefaultLabel?: string;
 }
 
 /** The default for the picker's "no override" choice — see the field above. */
@@ -120,6 +139,8 @@ export const CONVERSATION_OVERRIDE_WORDS: RunConfigOverridesWords = {
   scopeNote:
     "Overrides apply to this conversation only. Resetting a value returns it to the agent default.",
   noModelNote: "No model resolved for this conversation yet.",
+  baselineSourceLabel: "Agent",
+  baselineDefaultLabel: "Agent default",
 };
 
 export function RunConfigOverrides({
@@ -128,6 +149,9 @@ export function RunConfigOverrides({
   structured = false,
   disabled = false,
   onValidationChange,
+  inheritedSources,
+  nullOverrideDefaults,
+  overrideSource = "Binding",
 }: {
   conversationId: string;
   disabled?: boolean;
@@ -135,8 +159,16 @@ export function RunConfigOverrides({
   structured?: boolean;
   /** Omit any key to keep the per-conversation wording. */
   words?: Partial<RunConfigOverridesWords>;
+  /** Provenance of the host's effective baseline, before local changes. */
+  inheritedSources?: Readonly<Record<string, string>>;
+  /** Mandate nulls cancel ancestor overrides and restore authored settings. */
+  nullOverrideDefaults?: Partial<LLMParams>;
+  overrideSource?: string;
 }) {
   const w = { ...CONVERSATION_OVERRIDE_WORDS, ...words };
+  // The host's nouns for the baseline, defaulted to the agent vocabulary.
+  const baselineSourceLabel = w.baselineSourceLabel ?? "Agent";
+  const baselineDefaultLabel = w.baselineDefaultLabel ?? "Agent default";
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const [editorTab, setEditorTab] = useState("controls");
@@ -188,16 +220,25 @@ export function RunConfigOverrides({
   // documented, deliberate contract for this whole file.
   // MATRX-EXCEPTION: settings-catalogue keys are dynamic; LLMParams has no index signature.
   const base = (overrideState?.baseSettings ?? {}) as Record<string, unknown>;
-  // MATRX-EXCEPTION: settings-catalogue keys are dynamic; LLMParams has no index signature.
-  const overrides = (overrideState?.overrides ?? {}) as Record<string, unknown>;
+  // The wire selector is the canonical local delta. A stored draft value may
+  // equal a refreshed inherited baseline: display it as inherited without
+  // deleting its draft intent (it may differ again after a baseline change).
+  const wireOverrides = parseRequestOverrides(overrideJson).overrides ?? {};
+  const overrides = Object.fromEntries(
+    Object.entries(overrideState?.overrides ?? {}).filter(
+      ([key]) => key in wireOverrides,
+    ),
+  );
   const removals = overrideState?.removals ?? [];
-  const effectiveModelId = removals.includes("model")
-    ? ""
-    : typeof overrides.model === "string"
-      ? overrides.model
-      : typeof base.model === "string"
-        ? base.model
-        : "";
+  const nullDefaults =
+    nullOverrideDefaults === undefined
+      ? undefined
+      : Object.fromEntries(Object.entries(nullOverrideDefaults));
+  const effectiveModel = removals.includes("model")
+    ? nullDefaults?.model
+    : (overrides.model ?? base.model);
+  const effectiveModelId =
+    typeof effectiveModel === "string" ? effectiveModel : "";
 
   // The rows need the model's FULL controls. The registry may hold only the
   // lightweight "options" record (no controls), and a picker-triggered
@@ -206,6 +247,9 @@ export function RunConfigOverrides({
   // settles — the fetch thunk is cached/no-ops when already full.
   const isFull = useAppSelector((s) =>
     selectModelFullyLoaded(s, effectiveModelId),
+  );
+  const modelDetailError = useAppSelector((s) =>
+    selectModelDetailError(s, effectiveModelId),
   );
   const registryLoading = useAppSelector((s) => s.modelRegistry.isLoading);
   useEffect(() => {
@@ -235,7 +279,10 @@ export function RunConfigOverrides({
   // Derived in render from the stable override-state ref (React Compiler
   // memoizes); selectCurrentSettings is deliberately NOT subscribed here.
   const merged: Record<string, unknown> = { ...base, ...overrides };
-  for (const key of removals) delete merged[key];
+  for (const key of removals) {
+    if (nullDefaults?.[key] != null) merged[key] = nullDefaults[key];
+    else delete merged[key];
+  }
 
   const groups = buildSettingsRows(controlsMap, merged).filter(
     (g) => g.rows.length > 0,
@@ -250,12 +297,10 @@ export function RunConfigOverrides({
   // Overridden keys the effective model does NOT declare — typically left
   // behind by a per-run model switch. Surfaced loudly, never silently kept.
   const orphanedKeys = Object.keys(overrides).filter(
-    (key) => key !== "model" && !controlsMap?.[key],
+    (key) => isFull && key !== "model" && !controlsMap?.[key],
   );
 
-  const overriddenCount =
-    Object.keys(overrides).filter((k) => k !== "model").length +
-    removals.length;
+  const overriddenCount = Object.keys(wireOverrides).length;
 
   const handleChange = (
     key: string,
@@ -274,10 +319,30 @@ export function RunConfigOverrides({
   // Loading only applies while a known model's full record is in flight; an
   // instance with no base model yet (e.g. the landing's default agent before
   // its snapshot resolves) gets the empty-state message, not a forever-spinner.
-  const rowsLoading = groups.length === 0 && !!effectiveModelId && !isFull;
+  const rowsLoading =
+    groups.length === 0 && !!effectiveModelId && !isFull && !modelDetailError;
 
   return (
     <div className={structured ? "min-w-0" : "border-t border-border"}>
+      {modelDetailError ? (
+        <div role="alert" className="flex items-center gap-2 px-3 py-2 text-sm">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <span>Model controls unavailable</span>
+          <FieldHelp label="Model controls unavailable">
+            {modelDetailError}
+          </FieldHelp>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              dispatch(retryModelDetail(effectiveModelId));
+              void dispatch(fetchModelById(effectiveModelId));
+            }}
+          >
+            Retry
+          </Button>
+        </div>
+      ) : null}
       <div className="flex w-full items-center justify-between px-3 pb-1 pt-2">
         <span
           className={
@@ -303,31 +368,52 @@ export function RunConfigOverrides({
         <TabsContent value="controls" className="mt-0">
           <div className="flex flex-col gap-2.5 px-3 pb-3">
             {structured && (
-              <div className="flex flex-wrap items-center gap-3">
-                <Label className="font-semibold">Model</Label>
-                <ModelListDropdown
-                  value={
-                    typeof overrides.model === "string" ? overrides.model : null
-                  }
-                  onValueChange={(model) =>
-                    dispatch(
-                      setOverrides({ conversationId, changes: { model } }),
-                    )
-                  }
-                  onClear={() =>
-                    dispatch(resetOverride({ conversationId, key: "model" }))
-                  }
-                  emptyOptionLabel={
-                    w.modelEmptyChoiceLabel ?? DEFAULT_MODEL_EMPTY_CHOICE_LABEL
-                  }
-                  placeholder={
-                    w.modelEmptyChoiceLabel ?? DEFAULT_MODEL_EMPTY_CHOICE_LABEL
-                  }
-                  inputModalities={[]}
-                  outputModalities={["text"]}
-                  disabled={disabled}
+              <OverrideRows structured label="Model">
+                <ConfigurationTableRow
+                  columns={OVERRIDE_COLUMNS}
+                  cells={{
+                    setting: <span className="font-semibold">Model</span>,
+                    source:
+                      removals.includes("model") || "model" in overrides
+                        ? overrideSource
+                        : (inheritedSources?.model ??
+                          (base.model != null
+                            ? baselineSourceLabel
+                            : "Model default")),
+                    state: removals.includes("model")
+                      ? nullDefaults
+                        ? baselineDefaultLabel
+                        : "Removed"
+                      : "model" in overrides
+                        ? "Overridden"
+                        : "Inherited",
+                    value: (
+                      <ModelListDropdown
+                        value={effectiveModelId || null}
+                        onValueChange={(model) =>
+                          handleChange("model", null, model)
+                        }
+                        onClear={() =>
+                          dispatch(
+                            resetOverride({ conversationId, key: "model" }),
+                          )
+                        }
+                        emptyOptionLabel={
+                          w.modelEmptyChoiceLabel ??
+                          DEFAULT_MODEL_EMPTY_CHOICE_LABEL
+                        }
+                        placeholder={
+                          w.modelEmptyChoiceLabel ??
+                          DEFAULT_MODEL_EMPTY_CHOICE_LABEL
+                        }
+                        inputModalities={[]}
+                        outputModalities={["text"]}
+                        disabled={disabled}
+                      />
+                    ),
+                  }}
                 />
-              </div>
+              </OverrideRows>
             )}
             {orphanedKeys.length > 0 && (
               <div className="flex flex-col gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
@@ -346,7 +432,7 @@ export function RunConfigOverrides({
                       onClick={() =>
                         dispatch(resetOverride({ conversationId, key }))
                       }
-                      title="Reset to agent default"
+                      title="Reset override"
                       className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
                     >
                       <RotateCcw className="h-3 w-3" />
@@ -388,14 +474,24 @@ export function RunConfigOverrides({
                         row={row}
                         structured={structured}
                         disabled={disabled}
+                        overrideSource={overrideSource}
+                        removedLabel={
+                          nullDefaults ? baselineDefaultLabel : "Removed"
+                        }
                         inheritedSource={
-                          base[row.key] != null ? "Holder" : "Model default"
+                          inheritedSources?.[row.key] ??
+                          (base[row.key] != null
+                            ? baselineSourceLabel
+                            : "Model default")
                         }
                         value={
                           row.key in overrides
                             ? overrides[row.key]
                             : removals.includes(row.key)
-                              ? undefined
+                              ? nullDefaults
+                                ? (nullDefaults[row.key] ??
+                                  row.control?.default)
+                                : undefined
                               : effectiveDefault(row.key, row.control)
                         }
                         isOverridden={row.key in overrides}
@@ -486,6 +582,8 @@ function OverrideRow({
   structured = false,
   disabled = false,
   inheritedSource,
+  overrideSource = "Binding",
+  removedLabel = "Removed",
   row,
   value,
   isOverridden,
@@ -496,6 +594,8 @@ function OverrideRow({
   structured?: boolean;
   disabled?: boolean;
   inheritedSource?: string;
+  overrideSource?: string;
+  removedLabel?: string;
   row: SettingsRow;
   value: unknown;
   isOverridden: boolean;
@@ -523,10 +623,10 @@ function OverrideRow({
           ),
           source:
             isRemoved || isOverridden
-              ? "Binding"
+              ? overrideSource
               : (inheritedSource ?? "Unknown"),
           state: isRemoved
-            ? "Removed"
+            ? removedLabel
             : isOverridden
               ? "Overridden"
               : "Inherited",
@@ -574,7 +674,7 @@ function OverrideRow({
         {row.label}
         {isRemoved && (
           <span className="ml-1 rounded bg-amber-500/15 px-1 text-[9px] font-semibold text-amber-600 dark:text-amber-400">
-            Removed
+            {removedLabel}
           </span>
         )}
       </Label>
@@ -592,7 +692,7 @@ function OverrideRow({
         type="button"
         onClick={onReset}
         disabled={disabled}
-        title="Reset to agent default"
+        title="Reset override"
         className={cn(
           "shrink-0 text-muted-foreground transition-colors hover:text-foreground",
           touched ? "opacity-100" : "pointer-events-none opacity-0",

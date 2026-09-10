@@ -8,7 +8,7 @@
  * the feedback surface has not adopted this yet (future adopter — its own
  * agent owns that file).
  *
- * Plain function, not a hook — same shape as `siteMenuSection`. No entity
+ * Plain function, not a hook — same shape as `buildSiteMenuSection`. No entity
  * ref: `platform.entity_types` has no token for a system announcement today,
  * so Attach To / Copy-as act on the raw content only.
  *
@@ -33,7 +33,7 @@ export interface AnnouncementMenuRow {
   is_active: boolean;
 }
 
-export function announcementMenuSection(
+export function buildAnnouncementMenuSection(
   row: AnnouncementMenuRow | null,
   handlers: {
     onToggleActive: (row: AnnouncementMenuRow) => void;

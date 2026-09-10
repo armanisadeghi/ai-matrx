@@ -22,6 +22,7 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -204,7 +205,7 @@ You can also ACT on the roster: add_entities creates the missing people/sources 
       // The entity-curator Mandate — the same job EntityManager's "Suggest
       // from research" button runs. The DB decides the Holder (re-pointed
       // from a pinned id 2026-08-23).
-      mandateKey: "content_plan.entity_curator",
+      mandateKey: MANDATE_KEYS.content_plan__entity_curator,
       defaultAgentId: null,
       sortOrder: 100,
     },

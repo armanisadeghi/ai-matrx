@@ -67,7 +67,7 @@ that is the exit-test surface.
 | Trigger client | `triggers/useWorkflowTriggers.ts` | THE one path to `/triggers*`, the twin of `useWorkflowRunControls` — every verb a `callApi` config typed against the generated OpenAPI paths. **Never build a scheduler here:** aidream's `CronWatcher` runs inside the deployed workflow worker and is what actually fires. `listFires` returns `null` (not `[]`) on a failed read — "never ran" and "couldn't check" are opposite answers. |
 | Plain-language recurrence | `triggers/recurrence.ts` | PURE `Recurrence` ↔ cron. Our user does not write cron, so the UI authors *every weekday at 9:00 AM* and this derives the expression; `fromCron` reads it back so an edit shows plain language. Anything unrecognized (or hand-typed) round-trips as `advanced`, **verbatim** — a person's own expression is never rewritten. Cron evaluation is NOT reimplemented: `lib/scheduler-client/next-due.ts` (validate + next-N fires, timezone-aware) is the platform primitive every preview uses. Monthly is capped at day 28 so a short month can never silently skip. |
 | Trigger default inputs | `triggers/default-inputs.ts` | 🚨 **FLAT, not per-node, and that is load-bearing.** aidream's `_create_trigger_run` passes `default_inputs` through as the run's BROADCAST inputs and never writes `metadata._settings.node_inputs`; the engine merges broadcast inputs into every source node, so flat keys reach an `io.user_input` node exactly as a hand-started run's values do. Nesting by node id would arrive as one unknown field and park the run. `collidingInputKeys` names the one case flat loses (two user-input nodes sharing a key) so the surface says so instead of guessing. |
-| **Run start form** | `components/RunStartForm.tsx` → `served-form/` (`ServedRunForm`, `useServedRunForm`, `served-input.ts`) | THE start surface, and the one place that decides HOW inputs are asked for. A workflow's inputs are ONE declared surface compiled server-side and served by `GET /workflows/{id}/run-form` (common-docs `systems/workflows/INPUT-SURFACE.md`); `RunStartForm` holds that fetch and renders `ServedRunForm` whenever the surface is genuinely served. Only `input_sources` on that path may claim provenance `human`, and a 409 `inputs_required` reaches the FORM as the server's own gap list — never a toast. **The legacy `deriveRunForm` derivation survives ONLY behind that guard, with a visible banner saying which branch is on screen** (a server predating the compiled surface is a version skew, not a shape of workflow); it is never a silent fork. |
+| **Run start form** | `components/RunStartForm.tsx` → `served-form/` (`ServedRunForm`, `useServedRunForm`, `served-input.ts`) | THE start surface, and the one place that decides HOW inputs are asked for. A workflow's inputs are ONE declared surface compiled server-side and served by `GET /workflows/{id}/run-form` (common-docs `systems/workflows/INPUT-SURFACE.md`); `RunStartForm` holds that fetch and renders `ServedRunForm` whenever the surface is genuinely served. Only `input_sources` on that path may claim provenance `human`, and a 409 `inputs_required` reaches the FORM as the server's own gap list — never a toast. **The legacy `deriveRunForm` derivation survives ONLY behind that guard, with a visible banner saying which branch is on screen** (a server predating the compiled surface is a version skew, not a shape of workflow); it is never a silent fork. **A named variant chooses presentation; the served input's `options` remain its closed value contract.** `componentForInputOptions` joins them so generic picker variants never fall back to free text. |
 | Trigger input UI | `triggers/components/TriggerDefaultInputs.tsx` + `components/RunFormFieldControl.tsx` | The workflow's OWN run form (`deriveRunForm`) authored as "what should it work with, every time" — the field control is shared with `RunStartForm`, never a second input authoring path. Warns when a REQUIRED field is empty: nobody is present when a schedule fires, so a missing answer is a run that parks, not a prompt. |
 | Webhook secret | `triggers/components/NewTriggerForm.tsx` → `WorkflowTriggersPage` | Write-once by contract: the server stores it encrypted and marks it `exclude=True` on every response, so **no read path can return it**. Minted with browser crypto, sent once, shown once, held only in component state — never Redux, storage, or a URL. A card can therefore only say a secret is set; building a reveal would promise what the platform deliberately cannot do. |
 | Fire history | `triggers/components/TriggerFireHistory.tsx` | `GET /triggers/{id}/fires` — THE DOOR LAW: every fire that produced a run opens it at `/workflows/runs/[runId]`. A failed fire shows the server's own reason; a failed READ says so and keeps the last run as a door, and is never rendered as the reassuring "it hasn't run yet". |
@@ -130,6 +130,20 @@ that is the exit-test surface.
    deliberately.
 14. **Transports stop at terminal.** SSE ends via the `end` frame; the poller stops on the
    terminal run event — a finished run never keeps polling.
+15. 🚨 **ONE predicate answers "is this run over?" — `runIsOver(status)` in `types.ts`.** The
+   GENERATED `TERMINAL_RUN_STATUSES` answers the ENGINE's question ("finished forever — no
+   resume, no recovery") and deliberately EXCLUDES `errored`. A watching surface asks a
+   different question, and `errored` answers it like `failed`: the engine never moves an
+   errored run again, so a viewer waiting on the generated set waits forever — clock still
+   running, no failure explained, nothing but a row-poll backstop ever settling the screen.
+   `TryMasterworkBox` shipped exactly that; the census found 17 more surfaces each carrying its
+   own `TERMINAL_RUN_STATUSES.has(s) || s === "errored"` or a private
+   `new Set(["completed","failed","cancelled","errored"])`. All swept 2026-09-09. THREE sites
+   still ask the generated set on purpose, because they ask the ENGINE's question:
+   `components/run/run-controls.ts` (Stop/Cancel stay enabled on an errored run — pinned by its
+   test), `redux/workflow-runs.slice.ts` (row-vs-replay reconciliation) and
+   `redux/adopt-workflow-run.thunk.ts` (transport adoption). Guard:
+   `pnpm check:run-is-over` (`:self-test` proves it can fail), in the release gates.
 
 ## Doctrine
 
@@ -161,6 +175,10 @@ that is the exit-test surface.
   artifact with no runtime consumer is a decision for Arman, not something an agent retires.
 
 ## Change Log
+
+- 2026-09-09 — **Picker values commit after their Radix layer closes.** Production verification caught a synchronous picker update orphaning `pointer-events:none` on the document body. `SelectInput` now waits for the shared measured close boundary, preventing the dead-page interaction class instead of relying on the recovery watchdog.
+
+- 2026-09-09 — **Served picker variants keep the input's legal options.** `componentForInputOptions` joins the registered presentation with each served field's closed option set across run forms, triggers, interrupts, bake-offs, and masterworks. Generic `dropdown` variants no longer degrade to a textarea, and the async registry paint no longer flashes a false unregistered-variant warning.
 
 - 2026-09-08 — **A workflow can be PICKED like an agent (`listings/`).** The mandate
   Holder screen chose a workflow from an always-expanded inline list with no search,

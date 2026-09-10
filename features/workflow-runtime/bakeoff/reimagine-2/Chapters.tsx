@@ -11,7 +11,7 @@
  * the canonical `DbEmitRenderer` — never a hand-rolled body.
  */
 
-import { PackageCheck, Sparkle } from "lucide-react";
+import { PackageCheck, BrainCircuit } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -112,7 +112,7 @@ export function Chapters({
       {emissions.length > 0 ? (
         <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
           <header className="mb-2 flex items-center gap-2">
-            <Sparkle className="h-4 w-4 shrink-0 text-primary" />
+            <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">
               Shown along the way
             </h3>

@@ -77,7 +77,14 @@ export function groundingSearchDisposition(
 const sourceKey = (source: Pick<GroundingSource, "sourceKind" | "sourceId">) =>
   `${source.sourceKind}:${source.sourceId}`;
 
-/** List only root processed documents owned by this exact learner. */
+/**
+ * List only root processed documents owned by this exact learner.
+ *
+ * archived-items-law-exempt: grounding CANDIDATES must be live sources — an
+ * archived document is one the learner removed from their working set, and
+ * grounding an answer in it would resurrect retired material without them
+ * asking. Recorded in ../common-docs/projects/archived-items-law/STATUS.md (F7).
+ */
 export async function listLearnerOwnedGroundingSources(
   userId: string,
 ): Promise<GroundingSource[]> {

@@ -8,7 +8,7 @@
 // AgentConversationColumn's `landingContent` slot while the conversation has
 // zero messages.
 
-import { GraduationCap, ShieldCheck, Sparkles } from "lucide-react";
+import { GraduationCap, ShieldCheck, BrainCircuit } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,7 @@ export function TutorLanding({ conversationId }: TutorLandingProps) {
           Cites your material
         </span>
         <span className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1">
-          <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
+          <BrainCircuit className="h-3.5 w-3.5 text-primary" aria-hidden />
           Remembers your progress
         </span>
       </div>

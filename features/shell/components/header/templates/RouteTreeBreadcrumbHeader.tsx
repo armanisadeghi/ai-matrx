@@ -1,5 +1,6 @@
 "use client";
 
+import { isConcreteRoute } from "@/utils/route-discovery/shared";
 import { usePathname } from "next/navigation";
 import {
   CrumbTrailHeader,
@@ -26,9 +27,7 @@ function normalizePath(path: string) {
 }
 
 function toHref(basePath: string, segments: readonly string[]) {
-  return segments.length === 0
-    ? basePath
-    : `${basePath}/${segments.join("/")}`;
+  return segments.length === 0 ? basePath : `${basePath}/${segments.join("/")}`;
 }
 
 function formatSegment(segment: string) {
@@ -54,12 +53,15 @@ export function RouteTreeBreadcrumbHeader({
   const relativePath = pathname.startsWith(normalizedBase)
     ? pathname.slice(normalizedBase.length)
     : "";
-  const activeSegments = normalizePath(relativePath)
-    .split("/")
-    .filter(Boolean);
-  const routeSegments = routes.map((route) => normalizePath(route).split("/"));
+  const activeSegments = normalizePath(relativePath).split("/").filter(Boolean);
+  const routeSegments = routes
+    .filter(isConcreteRoute)
+    .map((route) => normalizePath(route).split("/"));
 
-  const siblingOptions = (parent: readonly string[], active?: string): CrumbOption[] => {
+  const siblingOptions = (
+    parent: readonly string[],
+    active?: string,
+  ): CrumbOption[] => {
     const candidates = new Map<string, string[]>();
 
     for (const route of routeSegments) {
@@ -105,10 +107,6 @@ export function RouteTreeBreadcrumbHeader({
   ];
 
   return (
-    <CrumbTrailHeader
-      backHref={backHref}
-      trail={trail}
-      fallback={fallback}
-    />
+    <CrumbTrailHeader backHref={backHref} trail={trail} fallback={fallback} />
   );
 }

@@ -3,7 +3,13 @@
  *
  * GET /api/messages/conversations - List a page of conversations for the
  *   current user (`limit`, default 20 / max 50; keyset pagination via
- *   `before_sort_at` + `before_conversation_id`, echoed back as `nextCursor`)
+ *   `before_sort_at` + `before_conversation_id`, echoed back as `nextCursor`).
+ *   `archived=active|archived|all` (default `active`) is THE ARCHIVED-ITEMS
+ *   LAW's tri-state (../common-docs/policies/archived-items.md), passed
+ *   straight through to the RPC's `p_archived` (register row R1). It is a
+ *   REQUEST to the reader, never a post-read sieve, so `total`, `hasMore` and
+ *   `nextCursor` all describe the rows the caller actually asked for. Every
+ *   row also carries `IsArchived`, so a consumer can label what it renders.
  * POST /api/messages/conversations - Create new conversation or return existing
  *
  * Uses dm_ prefixed tables
@@ -86,6 +92,14 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
     const beforeSortAt = searchParams.get("before_sort_at");
     const beforeConversationId = searchParams.get("before_conversation_id");
+    // THE ARCHIVED-ITEMS LAW's tri-state. A boolean cannot say "archived
+    // only", which is why the law names three states; an unknown value falls
+    // back to the default rather than silently widening the list.
+    const archivedParam = searchParams.get("archived");
+    const archived: "active" | "archived" | "all" =
+      archivedParam === "archived" || archivedParam === "all"
+        ? archivedParam
+        : "active";
 
     // Get conversations using the helper function — paginated at the RPC
     // level so the 500+-row unbounded read (D247) is never issued here.
@@ -96,6 +110,7 @@ export async function GET(request: NextRequest) {
         p_limit: limit,
         p_before_sort_at: beforeSortAt ?? undefined,
         p_before_conversation_id: beforeConversationId ?? undefined,
+        p_archived: archived,
       },
     );
 
@@ -107,6 +122,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // R1 landed (`get_dm_conversations_with_details(p_archived)`), so the
+    // archive predicate runs INSIDE the RPC. The interim post-RPC filter that
+    // stood here is deleted: it could return a short page while archived rows
+    // sat inside it, so the count it reported and the paging it advertised
+    // described different sets.
     const pageConversations = conversations ?? [];
     const hasMore = pageConversations.length === limit;
     const lastRow = pageConversations[pageConversations.length - 1];
@@ -146,6 +166,9 @@ export async function GET(request: NextRequest) {
             : conv.group_image_url,
         IsMuted:
           participantsWithUser.find((p) => p.user_id === userId)?.is_muted ||
+          false,
+        IsArchived:
+          participantsWithUser.find((p) => p.user_id === userId)?.is_archived ||
           false,
         LastReadAt: participantsWithUser.find((p) => p.user_id === userId)
           ?.last_read_at,

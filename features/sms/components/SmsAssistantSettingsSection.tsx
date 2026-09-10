@@ -22,6 +22,7 @@ import { selectAgentById } from "@/features/agents/redux/agent-definition/select
 import {
   assistantBlockedReasonLabel,
   SMS_ASSISTANT_OWNER_BETA_MANDATE,
+  smsSenderProgramDisplay,
   smsPermissionLabel,
 } from "@/features/sms/assistant-program";
 import { useSmsAssistantProgram } from "@/features/sms/hooks/useSmsAssistantProgram";
@@ -42,6 +43,7 @@ export function SmsAssistantSettingsSection() {
   const effectiveReady = Boolean(
     state && mandate.mandate && transportBlockedReasons.length === 0,
   );
+  const senderProgram = smsSenderProgramDisplay(state, assistant.loading);
 
   return (
     <>
@@ -92,16 +94,8 @@ export function SmsAssistantSettingsSection() {
         />
         <SettingsReadOnlyValue
           label="Sender and program"
-          description={
-            state?.numberActive && state.globalAssistantEnabled
-              ? "The approved sender and global assistant program are active."
-              : "The operator kill switch is off; assistant replies cannot be delivered."
-          }
-          value={
-            state?.maskedPhone && state.programKey
-              ? `${state.maskedPhone} · ${state.programKey}`
-              : "Not configured"
-          }
+          description={senderProgram.description}
+          value={senderProgram.value}
         />
         <SettingsRow
           label="SMS Mandate Binding"

@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import {
   fetchAgentExecutionFull,
@@ -72,6 +73,8 @@ import {
   selectSettingsOverridesForApi,
 } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { buildInstanceBaseSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/base-settings";
+import { fetchMandateLadder } from "@/features/mandates/workspace/useMandateLadder";
+import { inheritedModelOverrides, MODEL_OVERRIDE_SOURCE } from "./inherited-model-overrides";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import {
@@ -317,6 +320,10 @@ function OneMandateBindingWorkspace({
   // markers and their remaining rows would vanish at the moment they most want
   // to see them.
   const [mode, setMode] = useState<BindingMode>("map");
+  // Treatment state belongs to the mandate, not the selected binding revision.
+  const [jobSurfaceName, setJobSurfaceName] = useState<string | null>(null);
+  const [proposedPolicies, setProposedPolicies] =
+    useState<WritePolicyMap | null>(null);
   // A batch that wrote rows leaves the single-place view stale. Refreshing
   // immediately would remount the draft UNDER the grid the person is still
   // reading, so the refresh waits for them to leave batch mode — and it is
@@ -361,61 +368,95 @@ function OneMandateBindingWorkspace({
   const bindingIdentity = `${data.mandate.id}:${rung}:${organizationId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}`;
 
   return (
-    <BindingDraft
-      key={bindingIdentity}
-      data={data}
-      binding={binding}
-      rung={rung}
-      organizationId={organizationId}
-      allowGlobal={allowGlobal}
-      fixedRung={fixedRung}
-      perspective={perspective}
-      healthNote={healthNote}
-      activeSection={activeSection}
-      mode={mode}
-      onModeChange={(next) => {
-        setMode(next);
-        if (next === "map" && batchWrote) {
-          setBatchWrote(false);
-          onChanged();
+    <>
+      <BindingDraft
+        key={bindingIdentity}
+        jobSurfaceName={jobSurfaceName}
+        onProposedPolicies={setProposedPolicies}
+        data={data}
+        binding={binding}
+        rung={rung}
+        organizationId={organizationId}
+        allowGlobal={allowGlobal}
+        fixedRung={fixedRung}
+        perspective={perspective}
+        healthNote={healthNote}
+        activeSection={activeSection}
+        mode={mode}
+        onModeChange={(next) => {
+          setMode(next);
+          if (next === "map" && batchWrote) {
+            setBatchWrote(false);
+            onChanged();
+          }
+        }}
+        onBatchWrote={() => setBatchWrote(true)}
+        writeReport={writeReport}
+        writtenSignature={writtenSignature}
+        onWrote={(report, signature) => {
+          setWriteReport(report);
+          setWrittenSignature(signature);
+        }}
+        onDraftMoved={() => {
+          setWriteReport(null);
+          setWrittenSignature(null);
+        }}
+        onRungChange={(nextRung, nextOrgId) => {
+          // A pinned host may move only WITHIN the rungs it manages. The bar
+          // offers nothing else, so this is a belt: no path may quietly relocate
+          // the answer this host exists to manage.
+          if (pinned && !pinned.includes(nextRung)) return;
+          setWriteReport(null);
+          setWrittenSignature(null);
+          setRung(nextRung);
+          setOrganizationId(
+            nextRung === "org"
+              ? (nextOrgId ?? organizations[0]?.id ?? null)
+              : null,
+          );
+          // The bottom rung is not a binding, so leaving batch mode with it is
+          // not a preference to preserve: batch WRITES bindings, and standing on
+          // this rung there would be a grid that can save nothing.
+          if (nextRung === DEFAULT_HOLDER_RUNG) setMode("map");
+        }}
+        onChanged={onChanged}
+      />
+      <div
+        className={
+          activeSection === "holder" || activeSection === "overrides"
+            ? "hidden"
+            : "mt-3"
         }
-      }}
-      onBatchWrote={() => setBatchWrote(true)}
-      writeReport={writeReport}
-      writtenSignature={writtenSignature}
-      onWrote={(report, signature) => {
-        setWriteReport(report);
-        setWrittenSignature(signature);
-      }}
-      onDraftMoved={() => {
-        setWriteReport(null);
-        setWrittenSignature(null);
-      }}
-      onRungChange={(nextRung, nextOrgId) => {
-        // A pinned host may move only WITHIN the rungs it manages. The bar
-        // offers nothing else, so this is a belt: no path may quietly relocate
-        // the answer this host exists to manage.
-        if (pinned && !pinned.includes(nextRung)) return;
-        setWriteReport(null);
-        setWrittenSignature(null);
-        setRung(nextRung);
-        setOrganizationId(
-          nextRung === "org"
-            ? (nextOrgId ?? organizations[0]?.id ?? null)
-            : null,
-        );
-        // The bottom rung is not a binding, so leaving batch mode with it is
-        // not a preference to preserve: batch WRITES bindings, and standing on
-        // this rung there would be a grid that can save nothing.
-        if (nextRung === DEFAULT_HOLDER_RUNG) setMode("map");
-      }}
-      onChanged={onChanged}
-    />
+      >
+        <BindingOptionsDrawer
+          section={activeSection === "holder" ? "display" : activeSection}
+          owner={{
+            mandateId: data.mandate.id,
+            organizationId: data.mandate.organization_id,
+            label: data.mandate.label?.trim() || "Display name unavailable",
+            visibility: data.mandate.visibility,
+          }}
+          autoRun={parseBindingWave1(binding).autoRun === true}
+          onSurfaceRead={setJobSurfaceName}
+          proposedWritePolicies={proposedPolicies}
+          onProposalsTaken={() => setProposedPolicies(null)}
+          organizationName={
+            data.mandate.organization_id === SYSTEM_ORGANIZATION_ID
+              ? "System"
+              : (organizations.find(
+                  (o) => o.id === data.mandate.organization_id,
+                )?.name ?? null)
+          }
+        />
+      </div>
+    </>
   );
 }
 
 function BindingDraft({
   data,
+  jobSurfaceName,
+  onProposedPolicies,
   binding,
   rung,
   organizationId,
@@ -434,6 +475,8 @@ function BindingDraft({
   onRungChange,
   onChanged,
 }: {
+  jobSurfaceName: string | null;
+  onProposedPolicies: (policies: WritePolicyMap) => void;
   activeSection?: BindingWorkspaceSection;
   data: MandateWorkspaceData;
   binding: MandateBindingRowDb | null;
@@ -467,6 +510,7 @@ function BindingDraft({
   const store = useAppStore();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const userId = useAppSelector(selectUserId);
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
   const { organizations } = useUserOrganizations();
   const organizationNames = useMemo(
     () =>
@@ -566,13 +610,6 @@ function BindingDraft({
   // F1 — the system rung's awareness gate, mounted between save() and the
   // write exactly as the surface bind panel mounts it.
   const [globalGuardOpen, setGlobalGuardOpen] = useState(false);
-  // F4 — the job's own surface, reported UPWARD by the OPTIONS drawer that
-  // already reads it, so there is exactly one read of the treatment row.
-  const [jobSurfaceName, setJobSurfaceName] = useState<string | null>(null);
-  // F4 — write policies the AI map proposed, handed DOWN to the same editor
-  // the manual path uses. They are never saved from here.
-  const [proposedPolicies, setProposedPolicies] =
-    useState<WritePolicyMap | null>(null);
 
   const storedOverrides = useMemo(
     () =>
@@ -768,6 +805,11 @@ function BindingDraft({
     string | null
   >(null);
   const [settingsRetry, setSettingsRetry] = useState(0);
+  const [overrideBaseline, setOverrideBaseline] = useState<{
+    holderSettings: ReturnType<typeof buildInstanceBaseSettings>;
+    sources: Record<string, string>;
+  }>({ holderSettings: {}, sources: {} });
+  const inheritanceOrganizationId = rung === "org" ? organizationId : activeOrganizationId;
   const settingsVisible =
     settingsOpen || activeSection === "overrides" || overridesReady;
   const selectedVersionId = holder.useLatest ? null : holder.agentVersionId;
@@ -806,10 +848,23 @@ function BindingDraft({
         referenceId,
       );
       if (!payload.isReady) throw new Error("Holder defaults unavailable");
-      const baseSettings = buildInstanceBaseSettings(
+      const holderSettings = buildInstanceBaseSettings(
         payload.settings,
         payload.modelId,
       );
+      if ((rung === "org" || rung === "user") && !inheritanceOrganizationId) {
+        throw new Error("Select an organization to read inherited model settings");
+      }
+      const ladder = rung === "org" || rung === "user"
+        ? await fetchMandateLadder(data.mandate.mandate_key, inheritanceOrganizationId)
+        : [];
+      if (cancelled) return;
+      if ((rung === "org" || rung === "user") && !ladder.some((row) => row.rung === "system")) {
+        throw new Error("Inherited model settings unavailable");
+      }
+      const inherited = inheritedModelOverrides(ladder, rung);
+      const baseSettings = { ...holderSettings, ...inherited.values };
+      setOverrideBaseline({ holderSettings, sources: inherited.sources });
       if (selectInstanceOverrideState(overridesId)(store.getState())) {
         dispatch(
           updateBaseSettings({ conversationId: overridesId, baseSettings }),
@@ -851,6 +906,10 @@ function BindingDraft({
     selectedVersionId,
     overridesId,
     storedOverrides,
+    rung,
+    inheritanceOrganizationId,
+    data.mandate.mandate_key,
+    data.bindings,
     settingsRetry,
     dispatch,
     store,
@@ -1657,6 +1716,18 @@ function BindingDraft({
           activeSection && activeSection !== "holder" ? "hidden" : "space-y-3"
         }
       >
+        {!holderOnlyRung ? (
+          <AutoRunBar
+            targets={holderInputs.targets}
+            map={draftMap}
+            value={autoRun}
+            onChange={setAutoRun}
+            disabled={disabled}
+            // Preserve any real save response; mapping completeness does not
+            // prove that the runtime supports mandate-wide intervention.
+            serverNotes={writeReport?.notes ?? []}
+          />
+        ) : null}
         <ScopeHolderBar
           rung={rung}
           organizationId={organizationId}
@@ -1846,17 +1917,19 @@ function BindingDraft({
                   </div>
                 ) : null}
 
-                <section className="order-1 flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card @5xl:order-none">
-                  <header className="shrink-0 border-b border-border px-3 py-2">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <h3 className="text-[12.5px] font-semibold text-foreground">
-                        Matching
+                <section className="order-1 flex min-h-0 min-w-0 flex-col gap-2 @5xl:order-none">
+                  <header className="shrink-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        Provision Mapping
                       </h3>
-                      {holderInputs.status === "ready" ? (
-                        <span className="rounded bg-muted px-1.5 text-[10px] text-muted-foreground">
-                          {holderInputs.targets.length} inputs
-                        </span>
-                      ) : null}
+                      <FieldHelp label="Provision Mapping">
+                        Each card is a Holder destination. Choose the source for
+                        its variable, context policy or workflow input.
+                        Offered-value availability belongs to the selected
+                        source. Multiple sources are joined in order with a
+                        blank line between them.
+                      </FieldHelp>
                       {/* P11 — the two tabs sit in the middle panel's own header, the
                   way the surface bind panel puts them over its mapping section.
                   AI map PROPOSES into this same editor; it never applies. */}
@@ -1885,13 +1958,8 @@ function BindingDraft({
                         </div>
                       ) : null}
                     </div>
-                    <FieldHelp label="Matching">
-                      Map offered inputs to holder variables or context slots.
-                      Multiple sources are joined in order with a blank line
-                      between them.
-                    </FieldHelp>
                   </header>
-                  <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                  <div className="min-h-0 flex-1">
                     <MiddleBody
                       holderStatus={holderInputs.status}
                       holderMessage={holderInputs.message}
@@ -1950,7 +2018,7 @@ function BindingDraft({
                             // store nobody names is the silent half of the same
                             // defect.
                             const policyCount = Object.keys(policies).length;
-                            if (policyCount > 0) setProposedPolicies(policies);
+                            if (policyCount > 0) onProposedPolicies(policies);
                             toast.success(
                               policyCount > 0
                                 ? `Filled in below — change any line before you save. ${policyCount} write-access ${policyCount === 1 ? "proposal is" : "proposals are"} in OPTIONS › Write access, and save there separately.`
@@ -2151,25 +2219,7 @@ function BindingDraft({
                   : null}
               </ConfigurationTable>
             </div>
-            <div hidden={Boolean(activeSection && activeSection !== "holder")}>
-              {/* P14 — AUTO-RUN, narrating itself as the map changes. It is only
-          meaningful once something is actually mapped: before that the bar
-          would be a control about a promise nobody has made yet. */}
-              {holderChosen && holderInputs.targets.length > 0 ? (
-                <AutoRunBar
-                  targets={holderInputs.targets}
-                  map={draftMap}
-                  value={autoRun}
-                  onChange={setAutoRun}
-                  disabled={disabled}
-                  // The bar's own sentence is the PRE-SAVE preview of the draft;
-                  // these are the server's sentences about what the write stored —
-                  // notably the promise refused down to false. Verbatim, and gone
-                  // the moment the draft moves.
-                  serverNotes={writeReport?.notes ?? []}
-                />
-              ) : null}
-            </div>
+
             <div
               className={
                 activeSection && activeSection !== "overrides"
@@ -2221,7 +2271,10 @@ function BindingDraft({
                           // B14 — the canonical panel, told where it is. Its
                           // default sentence ("this conversation only") is a lie
                           // on a screen that stores a binding.
-                          words={JOB_OVERRIDE_WORDS}
+                          words={{ ...JOB_OVERRIDE_WORDS, modelEmptyChoiceLabel: "Use inherited model" }}
+                          inheritedSources={overrideBaseline.sources}
+                          nullOverrideDefaults={overrideBaseline.holderSettings}
+                          overrideSource={MODEL_OVERRIDE_SOURCE[rung]}
                           structured
                           disabled={disabled}
                           onValidationChange={setOverrideValidationError}
@@ -2251,50 +2304,6 @@ function BindingDraft({
                 />
               ) : null}
             </div>
-            {/* OPTIONS (P16) — the folded stack over the shortcut editor's own
-          sections. Last on the page and folded shut, because the match is what
-          you came here to do and depth beyond it is progressive. It is offered
-          only once a holder is chosen: presentation is how a RUNNING job shows
-          itself, and there is nothing to present until something runs it. */}
-            {holderChosen ? (
-              <div
-                className={
-                  activeSection === "holder" || activeSection === "overrides"
-                    ? "hidden"
-                    : undefined
-                }
-              >
-                <BindingOptionsDrawer
-                  section={
-                    activeSection === "holder" ? "display" : activeSection
-                  }
-                  owner={{
-                    mandateId: data.mandate.id,
-                    organizationId: data.mandate.organization_id,
-                    label: data.mandate.label ?? data.mandate.mandate_key,
-                    visibility: data.mandate.visibility,
-                  }}
-                  autoRun={autoRun === true}
-                  // F4 — ONE read of the treatment row, and it lives here. The
-                  // drawer reports the surface it read; the workspace hands the AI
-                  // map its real write targets and hands accepted proposals back
-                  // into this same editor.
-                  onSurfaceRead={setJobSurfaceName}
-                  proposedWritePolicies={proposedPolicies}
-                  onProposalsTaken={() => setProposedPolicies(null)}
-                  organizationName={
-                    data.mandate.organization_id === SYSTEM_ORGANIZATION_ID
-                      ? "System"
-                      : (organizations.find(
-                          (o) => o.id === data.mandate.organization_id,
-                        )?.name ?? null)
-                  }
-                  disabled={disabled}
-                />
-              </div>
-            ) : activeSection && activeSection !== "holder" ? (
-              <PropertyRow label="Holder" value="Not selected" />
-            ) : null}
           </>
         )}
 
