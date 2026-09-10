@@ -334,6 +334,11 @@ function MessagingArchiveKnob({ knob }: { knob: MessagingArchiveFilter }) {
   const hostRef = useRef(host);
   const filterRef = useRef(archiveFilter);
   filterRef.current = archiveFilter;
+  // `useConversations()` rebuilds its object every render, so this setter is a
+  // fresh function each time. Reading it through a ref keeps the effect below
+  // firing only when the KNOB or the ENGINE actually changes.
+  const setFilterRef = useRef(setArchiveFilter);
+  setFilterRef.current = setArchiveFilter;
 
   useEffect(() => {
     // No engine yet means `setArchiveFilter` is a no-op — recording the knob as
@@ -351,8 +356,8 @@ function MessagingArchiveKnob({ knob }: { knob: MessagingArchiveFilter }) {
         : filterRef.current === appliedRef.current;
     if (!untouched) return;
     appliedRef.current = knob;
-    if (filterRef.current !== knob) setArchiveFilter(knob);
-  }, [host, knob, setArchiveFilter]);
+    if (filterRef.current !== knob) setFilterRef.current(knob);
+  }, [host, knob]);
 
   return null;
 }
