@@ -117,4 +117,65 @@ describe("KeyValueGrid hydration", () => {
       "video",
     ]);
   });
+
+  it("keeps machine plumbing out of the primary table while retaining it in details", async () => {
+    const props = {
+      rows: [
+        {
+          kind: "plain_text",
+          content: "Plate tectonics",
+          chunk_id: "238e9003-b39b-4db9-bb1e-a170ab769608",
+          content_hash: "8fba6bb0d5d6b2c98c0d75d48f7ad6d9",
+          source_metadata: {},
+          source_offset_start: 0,
+        },
+      ],
+      columns: [
+        { key: "kind", label: "Kind" },
+        { key: "content", label: "Content" },
+        { key: "chunk_id", label: "Chunk id" },
+        { key: "content_hash", label: "Content hash" },
+        { key: "source_metadata", label: "Source metadata" },
+        { key: "source_offset_start", label: "Source offset start" },
+      ],
+      density: "full" as const,
+    };
+
+    container.innerHTML = renderToString(<ResultTable {...props} />);
+
+    const primaryHeaders = [...container.querySelectorAll("thead th")].map(
+      (header) => header.textContent,
+    );
+    expect(primaryHeaders).toEqual(["Kind", "Content", "Details"]);
+    expect(container.textContent).toContain("4 details");
+    expect(container.textContent).not.toContain("Content hash");
+    expect(container.textContent).not.toContain("Source offset start");
+
+    await act(async () => {
+      root = hydrateRoot(container, <ResultTable {...props} />);
+    });
+    const detailsButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-expanded="false"]',
+    );
+    expect(detailsButton).not.toBeNull();
+    await act(async () => detailsButton?.click());
+
+    expect(container.textContent).toContain("Content hash");
+    expect(container.textContent).toContain("Source metadata");
+    expect(container.textContent).toContain("Source offset start");
+    expect(container.textContent).toContain("8fba6bb0d5d6b2c98c0d75d48f7ad6d9");
+  });
+
+  it("renders an all-technical table directly when there is no reader column", () => {
+    container.innerHTML = renderToString(
+      <ResultTable
+        rows={[{ chunk_id: "238e9003-b39b-4db9-bb1e-a170ab769608" }]}
+        columns={[{ key: "chunk_id", label: "Chunk id" }]}
+        density="full"
+      />,
+    );
+
+    expect(container.querySelector("thead")?.textContent).toContain("Chunk id");
+    expect(container.querySelector("thead")?.textContent).not.toContain("Details");
+  });
 });
