@@ -79,7 +79,7 @@ import type { HrJurisdiction } from "../types";
  * types render anywhere else in `features/hr`), so this stays inline rather
  * than a registered builder.
  */
-function structureRowMenuSection(
+function buildStructureRowMenuSection(
   row: { id: string; name: string } | null,
   noun: string,
   orgRef: string | null,
@@ -507,7 +507,7 @@ function DepartmentsSection({
             return { content: `${row.name}${row.code ? ` (${row.code})` : ""}` };
           }}
           extraSections={[
-            structureRowMenuSection(
+            buildStructureRowMenuSection(
               clickedRow,
               "department",
               orgRef,
@@ -853,7 +853,7 @@ function LocationsSection({
             return { content: `${row.name} (${row.tz})` };
           }}
           extraSections={[
-            structureRowMenuSection(
+            buildStructureRowMenuSection(
               clickedRow,
               "location",
               orgRef,
@@ -1265,7 +1265,7 @@ function JobTitlesSection({
             return { content: row.title };
           }}
           extraSections={[
-            structureRowMenuSection(
+            buildStructureRowMenuSection(
               clickedRow ? { id: clickedRow.id, name: clickedRow.title } : null,
               "job title",
               orgRef,

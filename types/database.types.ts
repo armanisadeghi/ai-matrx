@@ -65127,7 +65127,7 @@ export type Database = {
         }[]
       }
       agx_get_shared_for_chat: {
-        Args: never
+        Args: { p_archived?: string }
         Returns: {
           id: string
           name: string
@@ -65136,7 +65136,7 @@ export type Database = {
         }[]
       }
       agx_get_shared_with_me: {
-        Args: never
+        Args: { p_archived?: string }
         Returns: {
           agent_type: string
           category: string
@@ -68274,6 +68274,7 @@ export type Database = {
       get_database_schema_json: { Args: never; Returns: Json }
       get_dm_conversations_with_details: {
         Args: {
+          p_archived?: string
           p_before_conversation_id?: string
           p_before_sort_at?: string
           p_limit?: number

@@ -12,7 +12,7 @@ import { Input } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { LUCIDE_ICONS_GALLERY_URL } from "@/utils/icons/lucide-gallery-url";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { browserFrameMenuSection } from "@/features/window-panels/windows/iframe/browser-frame-menu";
+import { buildBrowserFrameMenuSection } from "@/features/window-panels/windows/iframe/browser-frame-menu";
 
 export interface BrowserFrameWindowProps {
   isOpen: boolean;
@@ -138,7 +138,7 @@ function BrowserFrameWindowInner({
         contentSource={{ type: "raw" }}
         contextData={{ content: url }}
         extraSections={[
-          browserFrameMenuSection({
+          buildBrowserFrameMenuSection({
             url,
             title,
             onReload: () => setReloadNonce((n) => n + 1),

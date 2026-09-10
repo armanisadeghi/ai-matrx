@@ -48,7 +48,7 @@ type OpenDrilldown = (opts: OpenGscDrilldownWindowOptions) => unknown;
  * opens the screen where what sets it can be changed. Never an Attach To —
  * there is no row behind it to attach anything to.
  */
-export function classMenuSection(opts: {
+export function buildClassMenuSection(opts: {
   siteId: string;
   siteName: string | null;
   trafficClass: string;
@@ -102,7 +102,7 @@ export function classMenuSection(opts: {
 }
 
 /** A VALUE LEVEL — the same shape as a class, pointed at the value screens. */
-export function levelMenuSection(opts: {
+export function buildLevelMenuSection(opts: {
   siteId: string;
   siteName: string | null;
   band: string;
@@ -173,7 +173,7 @@ export function pageEntityRef(opts: {
  * a GSC dimension row has no dismiss state to speak of, so a disabled row
  * would teach nothing true.
  */
-export function pageMenuSection(opts: {
+export function buildPageMenuSection(opts: {
   siteId: string;
   siteName: string | null;
   url: string;

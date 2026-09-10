@@ -20,7 +20,7 @@ export interface BrowserFrameMenuContext {
   onReload: () => void;
 }
 
-export function browserFrameMenuSection(
+export function buildBrowserFrameMenuSection(
   ctx: BrowserFrameMenuContext,
 ): ContextMenuExtraSection {
   return {

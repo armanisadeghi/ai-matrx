@@ -61,7 +61,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   hrPersonEntityRef,
-  hrPersonMenuSection,
+  buildHrPersonMenuSection,
   leaveBalanceRowTarget,
 } from "@/features/hr/people/hr-person-menu";
 
@@ -471,7 +471,7 @@ export function LeaveBalancesSurface() {
             extraSections={
               contextRow
                 ? [
-                    hrPersonMenuSection(
+                    buildHrPersonMenuSection(
                       leaveBalanceRowTarget(contextRow, orgRef),
                       {
                         onAdjustBalance: list?.canAdjust

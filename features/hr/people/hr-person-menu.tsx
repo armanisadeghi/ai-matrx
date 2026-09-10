@@ -79,7 +79,7 @@ export function leaveBalanceRowTarget(
   };
 }
 
-export function hrPersonMenuSection(
+export function buildHrPersonMenuSection(
   target: HrPersonMenuTarget | null,
   opts?: {
     /** LeaveBalancesSurface only — absent (not disabled) when the caller cannot adjust. */

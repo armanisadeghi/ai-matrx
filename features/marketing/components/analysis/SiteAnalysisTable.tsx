@@ -14,7 +14,7 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import {
   pageEntityRef,
-  pageMenuSection,
+  buildPageMenuSection,
 } from "@/features/marketing/search-console/components/insights/insight-row-menu";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -393,7 +393,7 @@ export function SiteAnalysisTable() {
               },
             ],
           },
-          pageMenuSection({
+          buildPageMenuSection({
             siteId: site.id,
             siteName: site.name,
             url: clickedRow?.page_url ?? "",

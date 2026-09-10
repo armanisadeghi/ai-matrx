@@ -6,8 +6,8 @@
  * `CrawlUrlsTable` (the full ledger) and `CrawlReportWorkspace` (the
  * per-report response-log projection of the same rows).
  *
- * Plain function, not a hook — same shape as `pageMenuSection` /
- * `snapshotMenuSection`: the host keeps the clicked row in STATE and rebuilds
+ * Plain function, not a hook — same shape as `buildPageMenuSection` /
+ * `buildSnapshotMenuSection`: the host keeps the clicked row in STATE and rebuilds
  * `extraSections` off it.
  *
  * 🚨 NO NEW READ OR WRITE PATH LIVES HERE. Both items are navigation: to the
@@ -48,7 +48,7 @@ export function crawlUrlEntityRef(
   };
 }
 
-export function crawlUrlMenuSection(
+export function buildCrawlUrlMenuSection(
   row: CrawlUrlMenuRow | null,
   opts?: {
     label?: string;

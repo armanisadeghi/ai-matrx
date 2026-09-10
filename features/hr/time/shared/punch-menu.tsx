@@ -48,7 +48,7 @@ export interface PunchMenuActions {
  * read-only chain, or the register in its read-only lane) omits `onCorrect`/
  * `onVoid` and gets only the door to the computed lane.
  */
-export function punchMenuSection(
+export function buildPunchMenuSection(
   punch: PunchRow | null,
   orgRef: HrOrgRef,
   actions: PunchMenuActions = {},

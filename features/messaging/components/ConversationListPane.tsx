@@ -25,7 +25,7 @@ import {
   MESSAGES_SURFACE_NAME,
   conversationCopyLines,
   conversationEntityRef,
-  conversationMenuSection,
+  buildConversationMenuSection,
 } from "@/features/messaging/lib/messaging-menu-actions";
 
 export interface ConversationListPaneProps {
@@ -77,7 +77,7 @@ export function ConversationListPane({
         };
       }}
       extraSections={[
-        conversationMenuSection({
+        buildConversationMenuSection({
           conversation: menuConversation,
           ...(onSelect ? { onOpen: onSelect } : {}),
         }),

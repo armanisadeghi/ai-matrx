@@ -48,7 +48,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   attendanceExceptionEntityRef,
-  attendanceExceptionMenuSection,
+  buildAttendanceExceptionMenuSection,
 } from "../shared/exception-actions";
 import { toast } from "@/lib/toast";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
@@ -223,7 +223,7 @@ export function ExceptionsQueue({
               extraSections={
                 contextRow
                   ? [
-                      attendanceExceptionMenuSection(contextRow, orgRef, {
+                      buildAttendanceExceptionMenuSection(contextRow, orgRef, {
                         onAcknowledge: readOnly
                           ? undefined
                           : () => void acknowledgeOne(contextRow),

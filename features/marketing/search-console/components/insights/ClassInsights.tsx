@@ -54,9 +54,9 @@ import {
   useKeywordMenuSection,
 } from "@/features/marketing/seo/keyword/keyword-actions";
 import {
-  classMenuSection,
-  levelMenuSection,
-  pageMenuSection,
+  buildClassMenuSection,
+  buildLevelMenuSection,
+  buildPageMenuSection,
 } from "./insight-row-menu";
 import { ClassChip } from "./ClassChip";
 import {
@@ -297,7 +297,7 @@ export function QualityView({
     if (!contextRow) return [];
     if (contextRow.kind === "class")
       return [
-        classMenuSection({
+        buildClassMenuSection({
           siteId,
           siteName,
           trafficClass: contextRow.row.traffic_class,
@@ -308,7 +308,7 @@ export function QualityView({
       ];
     if (contextRow.kind === "level")
       return [
-        levelMenuSection({
+        buildLevelMenuSection({
           siteId,
           siteName,
           band: contextRow.row.value_band,
@@ -320,7 +320,7 @@ export function QualityView({
     const row = contextRow.row;
     if (dimension === "page")
       return [
-        pageMenuSection({
+        buildPageMenuSection({
           siteId,
           siteName,
           url: row.key,
@@ -1306,7 +1306,7 @@ export function JuiceView({
       extraSections={
         contextRow
           ? [
-              pageMenuSection({
+              buildPageMenuSection({
                 siteId,
                 siteName,
                 url: contextRow.key,

@@ -58,7 +58,7 @@ import {
 } from "@/features/context-menu-v3/types";
 import {
   siteEntityRef,
-  siteMenuSection,
+  buildSiteMenuSection,
 } from "@/features/marketing/seo/run-console/site-menu";
 import { buildSiteMenu } from "@/features/marketing/components/sites/site-actions";
 import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
@@ -416,7 +416,7 @@ export function PlanSitesList({
   /**
    * The pane's right-click menu — the same site identity as `buildRowMenu`
    * (the kebab dropdown), rebuilt in `ContextMenuExtraSection` shape for the
-   * v3 pane wrapper. `siteMenuSection` carries the canonical site doors
+   * v3 pane wrapper. `buildSiteMenuSection` carries the canonical site doors
    * (registry: "Marketing site / brand"); this page-local section adds the
    * content-plan-specific views and record actions the kebab already offers,
    * so right-click parity holds with the visible menu.
@@ -880,7 +880,7 @@ export function PlanSitesList({
           extraSections={
             contextRow
               ? [
-                  siteMenuSection({
+                  buildSiteMenuSection({
                     id: contextRow.site.id,
                     name: contextRow.site.name,
                     brandId: contextRow.site.brand_id,

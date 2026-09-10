@@ -67,7 +67,7 @@ import { bulkDecide } from "@/features/hr/tasks/service";
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import {
   hrTaskStepEntityRef,
-  hrTaskStepMenuSection,
+  buildHrTaskStepMenuSection,
 } from "@/features/hr/tasks/task-step-actions";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
@@ -542,7 +542,7 @@ export function LeaveQueueSurface() {
             extraSections={
               contextRow
                 ? [
-                    hrTaskStepMenuSection(menuRowFor(contextRow)),
+                    buildHrTaskStepMenuSection(menuRowFor(contextRow)),
                     decisionSection(contextRow),
                   ]
                 : []
@@ -663,7 +663,7 @@ export function LeaveQueueSurface() {
                 }}
                 extraSections={
                   othersContextRow
-                    ? [hrTaskStepMenuSection(menuRowFor(othersContextRow))]
+                    ? [buildHrTaskStepMenuSection(menuRowFor(othersContextRow))]
                     : []
                 }
               >

@@ -148,7 +148,7 @@ async function copyOrShow(text: string, label: string, title: string) {
  * The shared conversation-row section. `onOpen` lets a host that must not
  * navigate (the floating window) select the conversation in place instead.
  */
-export function conversationMenuSection(args: {
+export function buildConversationMenuSection(args: {
   conversation: ConversationSummary | null;
   onOpen?: (conversationId: string) => void;
 }): ContextMenuExtraSection {
@@ -217,7 +217,7 @@ export function conversationMenuSection(args: {
  * composer (a read-only transcript) simply doesn't get the item, rather than
  * getting one that silently does nothing.
  */
-export function messageMenuSection(args: {
+export function buildMessageMenuSection(args: {
   message: Message | null;
   onReply?: (quoted: string) => void;
 }): ContextMenuExtraSection {

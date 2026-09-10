@@ -12,7 +12,7 @@ import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface"
 import { AdminUserRef } from "./AdminUserRef";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
-  adminUserMenuSection,
+  buildAdminUserMenuSection,
   type AdminUserMenuRow,
 } from "./admin-user-menu-section";
 import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
@@ -510,7 +510,7 @@ export function UserAcquisitionTableClient() {
             };
           }}
           extraSections={[
-            adminUserMenuSection(
+            buildAdminUserMenuSection(
               clickedRow?.user_id
                 ? ({
                     id: clickedRow.user_id,

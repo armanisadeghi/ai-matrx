@@ -14,7 +14,7 @@
  * own dialogs; folding them into this shared module would mean threading
  * leave-shaped callbacks through a generic task-row builder used by flows
  * that are not leave. A future adopter with its own decision UI grows this
- * file the same way `pageMenuSection` grew onDismiss/onRestore: an optional
+ * file the same way `buildPageMenuSection` grew onDismiss/onRestore: an optional
  * host-supplied callback, present only where it applies.
  *
  * 🚨 NO NEW READ OR WRITE PATH LIVES HERE. The one item opens `deep_link`,
@@ -44,7 +44,7 @@ export function hrTaskStepEntityRef(
   return { type: "hr_workflow_step", id: row.stepId, title: row.label };
 }
 
-export function hrTaskStepMenuSection(
+export function buildHrTaskStepMenuSection(
   row: HrTaskStepMenuRow | null,
 ): ContextMenuExtraSection {
   const items: ContextMenuExtraItem[] = [

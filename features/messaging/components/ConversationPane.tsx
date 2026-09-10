@@ -42,7 +42,7 @@ import {
   conversationEntityRef,
   messageCopyLines,
   messageEntityRef,
-  messageMenuSection,
+  buildMessageMenuSection,
 } from "@/features/messaging/lib/messaging-menu-actions";
 import { useMessagingAiDemand } from "@/features/messaging/lib/messagingAiDemand";
 
@@ -108,7 +108,7 @@ export function ConversationPane({
           content: messageCopyLines(message),
         };
       }}
-      extraSections={[messageMenuSection({ message: menuMessage })]}
+      extraSections={[buildMessageMenuSection({ message: menuMessage })]}
     >
       <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
         <ConversationView

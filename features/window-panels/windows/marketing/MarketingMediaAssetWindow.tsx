@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ImageViewer } from "@/features/window-panels/windows/image/ImageViewerWindow";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { mediaAssetMenuSection } from "@/features/marketing/components/media/media-asset-actions";
+import { buildMediaAssetMenuSection } from "@/features/marketing/components/media/media-asset-actions";
 import { fileHandler } from "@/features/files/handler/handler";
 import {
   LoadingSurface,
@@ -201,7 +201,7 @@ function MarketingMediaAssetWindowContent({
   const error = site.error ?? media.error;
   const siteRow = site.data ?? null;
   const standards = siteRow ? parseSiteMediaStandards(siteRow.settings) : null;
-  const menuSection = mediaAssetMenuSection(
+  const menuSection = buildMediaAssetMenuSection(
     asset ? { src: asset.src, alt: asset.alt } : null,
     {
       onCopyUrl: () => actionsRef.current?.copySrc(),

@@ -10,11 +10,11 @@
  * operator could not open. This is the fix, extracted once so a third engine
  * inherits it for free instead of copying the table.
  *
- * Plain function, not a hook — same shape as `classMenuSection` /
- * `pageMenuSection` in `insight-row-menu.tsx`: the host keeps the clicked row
+ * Plain function, not a hook — same shape as `buildClassMenuSection` /
+ * `buildPageMenuSection` in `insight-row-menu.tsx`: the host keeps the clicked row
  * in STATE (never a ref — these are `link` items, so their `href` must be
  * correct at render time, not resolved lazily at select time) and rebuilds
- * `extraSections` off it, e.g. `extraSections={contextRow ? [siteMenuSection(contextRow)] : []}`.
+ * `extraSections` off it, e.g. `extraSections={contextRow ? [buildSiteMenuSection(contextRow)] : []}`.
  *
  * 🚨 NO NEW WRITE PATH LIVES HERE. Both items are navigation to a route that
  * already exists (`marketingRoutes.site` / `marketingRoutes.keywordResearch`).
@@ -51,7 +51,7 @@ export function siteEntityRef(row: SiteMenuRow | null): ContextMenuEntityRef | n
  * fresh off the host's clicked-row state (`row === null` disables both doors
  * rather than omitting them, so the section's shape never shifts).
  */
-export function siteMenuSection(
+export function buildSiteMenuSection(
   row: SiteMenuRow | null,
   opts?: {
     label?: string;

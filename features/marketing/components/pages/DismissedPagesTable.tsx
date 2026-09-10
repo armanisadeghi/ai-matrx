@@ -10,7 +10,7 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
 import {
   pageEntityRef,
-  pageMenuSection,
+  buildPageMenuSection,
 } from "@/features/marketing/search-console/components/insights/insight-row-menu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
@@ -163,7 +163,7 @@ export function DismissedPagesTable() {
       extraSections={
         contextRow
           ? [
-              pageMenuSection({
+              buildPageMenuSection({
                 siteId: site.id,
                 siteName: site.name,
                 url: contextRow.url,

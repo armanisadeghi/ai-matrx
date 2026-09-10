@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { ConversationListHeader } from "./ConversationListHeader";
 import { ConversationSearch } from "./ConversationSearch";
 import {
@@ -27,6 +28,11 @@ export function ConversationListPane({
 }: ConversationListPaneProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
+  // THE ARCHIVED-ITEMS LAW (../common-docs/policies/archived-items.md):
+  // archived chats are hidden by default and one click away. Before this,
+  // `dm_conversation_participants.is_archived` was written by the archive
+  // action and read by NOTHING — archiving a chat did nothing visible.
+  const [showArchived, setShowArchived] = useState(false);
 
   const filtered = useMemo(() => {
     let list = conversations;
@@ -45,6 +51,9 @@ export function ConversationListPane({
     return list;
   }, [conversations, filter, search]);
 
+  const activeChats = filtered.filter((c) => !c.isArchived);
+  const archivedChats = filtered.filter((c) => c.isArchived);
+
   return (
     <div className="flex h-full flex-col bg-card">
       <ConversationListHeader onNewChat={onNewChat} />
@@ -52,7 +61,7 @@ export function ConversationListPane({
       <ConversationFilterChips active={filter} onChange={setFilter} />
       <ScrollArea className="flex-1">
         <div className="flex flex-col">
-          {filtered.map((c) => (
+          {activeChats.map((c) => (
             <ConversationRow
               key={c.id}
               conversation={c}
@@ -60,7 +69,25 @@ export function ConversationListPane({
               onSelect={() => onSelect(c.id)}
             />
           ))}
-          {filtered.length === 0 ? (
+
+          <ArchivedDisclosure
+            count={archivedChats.length}
+            open={showArchived}
+            onOpenChange={setShowArchived}
+            label="Archived chats"
+            className="px-2"
+          >
+            {archivedChats.map((c) => (
+              <ConversationRow
+                key={c.id}
+                conversation={c}
+                selected={selectedId === c.id}
+                onSelect={() => onSelect(c.id)}
+              />
+            ))}
+          </ArchivedDisclosure>
+
+          {activeChats.length === 0 && archivedChats.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
               <span className="text-[13px] text-muted-foreground">
                 {conversations.length === 0

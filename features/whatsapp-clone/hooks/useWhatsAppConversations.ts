@@ -46,6 +46,11 @@ function adaptConversation(
     lastMessageIsOwn:
       selfUserId !== null && summary.lastMessageSenderId === selfUserId,
     unreadCount: summary.unreadCount,
+    // THE ARCHIVED-ITEMS LAW: the viewer's own `is_archived` flag on the
+    // participant row. The engine already projects it; nothing read it, so an
+    // archived thread sat unlabelled among the active ones.
+    isArchived: summary.isArchived,
+    isMuted: summary.isMuted,
     online: false,
   };
 }

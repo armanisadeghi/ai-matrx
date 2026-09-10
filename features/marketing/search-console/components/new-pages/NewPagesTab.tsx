@@ -34,7 +34,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import { pageMenuSection } from "@/features/marketing/search-console/components/insights/insight-row-menu";
+import { buildPageMenuSection } from "@/features/marketing/search-console/components/insights/insight-row-menu";
 import {
   humanLines,
   webLocation,
@@ -402,7 +402,7 @@ export function NewPagesTab({
       ].join("\n"),
     };
   };
-  const sitePageSection = pageMenuSection({
+  const sitePageSection = buildPageMenuSection({
     siteId,
     siteName,
     url: clickedRow?.url ?? "",

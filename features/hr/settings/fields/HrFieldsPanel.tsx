@@ -29,6 +29,7 @@
 import { useEffect, useState } from "react";
 import { BrainCircuit, ClipboardList, Info, Lock } from "lucide-react";
 
+import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -63,6 +64,11 @@ export function HrFieldsPanel() {
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [reload, setReload] = useState(0);
+  // THE ARCHIVED-ITEMS LAW (../common-docs/policies/archived-items.md): this
+  // table used to render archived and live definitions mixed together with
+  // nothing but a badge to tell them apart. Archived rows are now hidden by
+  // default and one click away — the count is the real number.
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     if (!organizationId) return;
@@ -83,6 +89,10 @@ export function HrFieldsPanel() {
       cancelled = true;
     };
   }, [organizationId, reload]);
+
+  const liveDefinitions = definitions.filter((row) => !row.archived_at);
+  const archivedDefinitions = definitions.filter((row) => Boolean(row.archived_at));
+  const visibleDefinitions = showArchived ? definitions : liveDefinitions;
 
   const columns: MatrxColumnDef<HrCustomFieldDefinition>[] = [
     {
@@ -244,7 +254,16 @@ export function HrFieldsPanel() {
 
         {/* The registry itself */}
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">Fields defined here</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-foreground">Fields defined here</h2>
+            <ArchivedDisclosure
+              count={archivedDefinitions.length}
+              open={showArchived}
+              onOpenChange={setShowArchived}
+              label="Archived fields"
+              className="w-auto"
+            />
+          </div>
           <NonEditableContextMenu
             sourceFeature="internal"
             contentSource={{ type: "raw" }}
@@ -253,7 +272,7 @@ export function HrFieldsPanel() {
               const id = (target as HTMLElement | null)
                 ?.closest("[data-row-id]")
                 ?.getAttribute("data-row-id");
-              const row = (id && definitions.find((r) => r.id === id)) || null;
+              const row = (id && visibleDefinitions.find((r) => r.id === id)) || null;
               if (!row) return null;
               return {
                 [CONTEXT_MENU_ENTITY_KEY]: {
@@ -273,7 +292,7 @@ export function HrFieldsPanel() {
             }}
           >
           <MatrxDataTable
-            data={definitions}
+            data={visibleDefinitions}
             columns={columns}
             getRowId={(row) => row.id}
             pageSize={25}

@@ -15,7 +15,7 @@ import type { HrInboxRow } from "@/features/hr/tasks/types";
 import { HR_NOT_PROVIDED } from "@/features/hr/constants";
 import {
   hrTaskStepEntityRef,
-  hrTaskStepMenuSection,
+  buildHrTaskStepMenuSection,
   type HrTaskStepMenuRow,
 } from "@/features/hr/tasks/task-step-actions";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -210,7 +210,7 @@ export function HrTaskTable({
                 };
             }}
             extraSections={
-                contextRow ? [hrTaskStepMenuSection(menuRowFor(contextRow))] : []
+                contextRow ? [buildHrTaskStepMenuSection(menuRowFor(contextRow))] : []
             }
         >
         <MatrxDataTable<HrInboxRow>

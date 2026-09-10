@@ -21,7 +21,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   pageEntityRef,
-  pageMenuSection,
+  buildPageMenuSection,
 } from "@/features/marketing/search-console/components/insights/insight-row-menu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { Button } from "@/components/ui/button";
@@ -530,7 +530,7 @@ export function PagesTable() {
           extraSections={
             contextRow
               ? [
-                  pageMenuSection({
+                  buildPageMenuSection({
                     siteId: site.id,
                     siteName: site.name,
                     url: contextRow.url,

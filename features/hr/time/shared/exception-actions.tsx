@@ -12,7 +12,7 @@
  * that stays a loop of single resolutions, never a bulk RPC) and stays out
  * of this generic module rather than threading a resolve-dialog opener
  * through every consumer; a future adopter with the dialog already mounted
- * can grow this the same way `pageMenuSection` grew `onDismiss`/`onRestore`.
+ * can grow this the same way `buildPageMenuSection` grew `onDismiss`/`onRestore`.
  *
  * 🚨 NO NEW READ OR WRITE PATH LIVES HERE. "Open timesheet" is an existing
  * route; "Acknowledge" calls the same `hr.attendance_exception_resolve` RPC
@@ -48,7 +48,7 @@ export function attendanceExceptionEntityRef(
   };
 }
 
-export function attendanceExceptionMenuSection(
+export function buildAttendanceExceptionMenuSection(
   row: AttendanceExceptionMenuRow | null,
   orgRef: HrOrgRef,
   opts?: {

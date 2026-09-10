@@ -28,7 +28,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   snapshotEntityRef,
-  snapshotMenuSection,
+  buildSnapshotMenuSection,
   type SnapshotMenuRow,
 } from "@/features/marketing/components/pages/snapshot-actions";
 
@@ -253,7 +253,7 @@ export function CrawlSnapshotsInspectionTable({
               };
             }}
             extraSections={[
-              snapshotMenuSection(
+              buildSnapshotMenuSection(
                 clickedRow ? toSnapshotMenuRow(clickedRow) : null,
               ),
             ]}

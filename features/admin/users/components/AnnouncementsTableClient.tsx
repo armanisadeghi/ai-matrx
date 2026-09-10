@@ -31,7 +31,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { announcementMenuSection } from "./announcement-menu-section";
+import { buildAnnouncementMenuSection } from "./announcement-menu-section";
 
 const TYPE_CLASS: Record<string, string> = {
   info: "text-sky-600 border-sky-500/40 bg-sky-500/10",
@@ -180,7 +180,7 @@ export function AnnouncementsTableClient() {
             };
           }}
           extraSections={[
-            announcementMenuSection(clickedRow, {
+            buildAnnouncementMenuSection(clickedRow, {
               onToggleActive: (r) => void toggleActive(r as SystemAnnouncement),
               onDelete: (r) => void remove(r as SystemAnnouncement),
             }),

@@ -32,7 +32,7 @@ export function leavePolicyMenuContent(policy: LeavePolicy | null): string {
     .join("\n");
 }
 
-export function leavePolicyMenuSection(
+export function buildLeavePolicyMenuSection(
   policy: LeavePolicy | null,
   orgRef: HrOrgRef,
 ): ContextMenuExtraSection {

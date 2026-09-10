@@ -43,7 +43,7 @@ import {
   leavePolicyHref,
 } from "../manager/routes";
 import { ACCRUAL_METHOD_LABEL, LEAVE_KIND_LABEL } from "./policy-form";
-import { leavePolicyMenuContent, leavePolicyMenuSection } from "./leave-policy-menu";
+import { leavePolicyMenuContent, buildLeavePolicyMenuSection } from "./leave-policy-menu";
 
 /**
  * The accrual summary cell. This is FORMATTING of values the server sent, not arithmetic:
@@ -261,7 +261,7 @@ export function LeavePolicyListSurface() {
             if (!policy) return null;
             return { content: leavePolicyMenuContent(policy) };
           }}
-          extraSections={[leavePolicyMenuSection(clickedPolicy, orgRef)]}
+          extraSections={[buildLeavePolicyMenuSection(clickedPolicy, orgRef)]}
         >
           <MatrxDataTable<LeavePolicy>
             data={list?.policies ?? []}

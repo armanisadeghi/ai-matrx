@@ -8,10 +8,10 @@
  * inline name door (`features/admin/users/components/AdminUserRef.tsx`), so
  * the right-click menu and the name's own dropdown never drift apart.
  *
- * Plain function, not a hook — same shape as `siteMenuSection` /
- * `pageMenuSection`: the host keeps the clicked row in STATE and rebuilds
+ * Plain function, not a hook — same shape as `buildSiteMenuSection` /
+ * `buildPageMenuSection`: the host keeps the clicked row in STATE and rebuilds
  * `extraSections` off it, e.g.
- * `extraSections={[adminUserMenuSection(clickedRow)]}`.
+ * `extraSections={[buildAdminUserMenuSection(clickedRow)]}`.
  *
  * No entity ref: `platform.entity_types` has no token for a Supabase auth
  * user today, so Attach To / Copy-as act on the raw content only (same
@@ -48,7 +48,7 @@ export interface AdminUserMenuRow {
   displayName?: string | null;
 }
 
-export function adminUserMenuSection(
+export function buildAdminUserMenuSection(
   row: AdminUserMenuRow | null,
   opts?: {
     label?: string;

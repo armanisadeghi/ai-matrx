@@ -7,8 +7,8 @@
  * adopters — they render the same `PlanNodeRow` shape and currently have no
  * menu of their own).
  *
- * Plain function, not a hook — same shape as `pageMenuSection` /
- * `siteMenuSection`: the host keeps the clicked row in STATE and rebuilds
+ * Plain function, not a hook — same shape as `buildPageMenuSection` /
+ * `buildSiteMenuSection`: the host keeps the clicked row in STATE and rebuilds
  * `extraSections` off it.
  *
  * 🚨 NO NEW READ OR WRITE PATH LIVES HERE. Every item opens a door that
@@ -51,7 +51,7 @@ export function planNodeEntityRef(
   return { type: "plan_node", id: row.id, title: row.label };
 }
 
-export function planNodeMenuSection(
+export function buildPlanNodeMenuSection(
   row: PlanNodeMenuRow | null,
   opts?: {
     label?: string;

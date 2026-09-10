@@ -9,7 +9,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   snapshotEntityRef,
-  snapshotMenuSection,
+  buildSnapshotMenuSection,
 } from "@/features/marketing/components/pages/snapshot-actions";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
@@ -307,8 +307,8 @@ export function SnapshotCompare({
       contextData={{ content: copy.human() }}
       entity={snapshotEntityRef(afterRow) ?? undefined}
       extraSections={[
-        snapshotMenuSection(beforeRow, { label: "Before snapshot" }),
-        snapshotMenuSection(afterRow, { label: "After snapshot" }),
+        buildSnapshotMenuSection(beforeRow, { label: "Before snapshot" }),
+        buildSnapshotMenuSection(afterRow, { label: "After snapshot" }),
       ]}
     >
     <SectionCard

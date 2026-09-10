@@ -3,7 +3,12 @@
  *
  * GET /api/messages/conversations - List a page of conversations for the
  *   current user (`limit`, default 20 / max 50; keyset pagination via
- *   `before_sort_at` + `before_conversation_id`, echoed back as `nextCursor`)
+ *   `before_sort_at` + `before_conversation_id`, echoed back as `nextCursor`).
+ *   `include_archived=true` reveals conversations the caller has archived;
+ *   the default HIDES them (THE ARCHIVED-ITEMS LAW,
+ *   ../common-docs/policies/archived-items.md). Every row now also carries
+ *   `IsArchived`, so a consumer can label what it renders instead of mixing
+ *   archived threads in unmarked.
  * POST /api/messages/conversations - Create new conversation or return existing
  *
  * Uses dm_ prefixed tables
@@ -86,6 +91,9 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
     const beforeSortAt = searchParams.get("before_sort_at");
     const beforeConversationId = searchParams.get("before_conversation_id");
+    // THE ARCHIVED-ITEMS LAW: default hides archived, the caller opts in.
+    const includeArchived =
+      searchParams.get("include_archived") === "true";
 
     // Get conversations using the helper function — paginated at the RPC
     // level so the 500+-row unbounded read (D247) is never issued here.
@@ -107,9 +115,29 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const pageConversations = conversations ?? [];
-    const hasMore = pageConversations.length === limit;
-    const lastRow = pageConversations[pageConversations.length - 1];
+    const allRows = conversations ?? [];
+
+    // The archive predicate is applied HERE, after the RPC, because
+    // `get_dm_conversations_with_details` has no archive parameter yet — that
+    // is row R1 of the archived-items campaign (a
+    // `p_include_archived boolean default false` argument on the RPC). The
+    // RPC does return each participant's `is_archived` inside `participants`,
+    // so the filter is exact, not a guess. It is applied to the page the RPC
+    // returned, so a page can come back SHORT while archived rows sit inside
+    // it — `hasMore`/`nextCursor` still describe the RPC's own paging, which
+    // is what a caller must keep following. R1 removes this whole block.
+    const archiveFilteredRows = includeArchived
+      ? allRows
+      : allRows.filter((conv) => {
+          const self = parseConversationParticipants(conv.participants).find(
+            (p) => p.user_id === userId,
+          );
+          return !self?.is_archived;
+        });
+
+    const pageConversations = archiveFilteredRows;
+    const hasMore = allRows.length === limit;
+    const lastRow = allRows[allRows.length - 1];
     const nextCursor = hasMore && lastRow
       ? {
           before_sort_at: lastRow.last_message_at ?? lastRow.conversation_updated_at,
@@ -146,6 +174,9 @@ export async function GET(request: NextRequest) {
             : conv.group_image_url,
         IsMuted:
           participantsWithUser.find((p) => p.user_id === userId)?.is_muted ||
+          false,
+        IsArchived:
+          participantsWithUser.find((p) => p.user_id === userId)?.is_archived ||
           false,
         LastReadAt: participantsWithUser.find((p) => p.user_id === userId)
           ?.last_read_at,
