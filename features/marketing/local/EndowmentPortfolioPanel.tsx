@@ -48,6 +48,7 @@ import {
   type PortfolioArtifact,
   type PortfolioPlatform,
   type RegistryMatch,
+  type RegistryMatchReason,
 } from "@/features/marketing/local/endowment-portfolio";
 import {
   PUBLISHER_API_ACCESS_LABELS,
@@ -531,7 +532,7 @@ function PlatformAction({
 }: {
   state: RowState;
   existingSlug: string | null;
-  matchedBy: "domain" | "slug" | null;
+  matchedBy: RegistryMatchReason | null;
   disabled: boolean;
   onAdd: () => void;
 }) {
@@ -547,7 +548,13 @@ function PlatformAction({
     return (
       <span
         className="text-xs text-muted-foreground"
-        title={`Matched an existing registry row by ${matchedBy}`}
+        title={
+          matchedBy === "surface"
+            ? "Matched an existing registry row by claimable surface (domain + claim URL)"
+            : matchedBy === "domain-unclaimed"
+              ? "This domain already has a row with NO claim URL recorded, so the registry cannot tell these apart. Confirm whether this is the same surface — if it is a second one, record the existing row's claim URL first."
+              : "Matched an existing registry row by slug"
+        }
       >
         Already tracked
       </span>
