@@ -23,7 +23,7 @@ way a surface does; the binding maps them onto the Holder. The rules, all live:
    `/administration/mandates/[mandateKey]`, and inside `MandateWindow`'s Yours
    pane. Named deliberate divergences only: the window's scope list + Admin pane, the
    admin route's header offset, and the `authoring` rule in rule 8.
-4. **Tabs separate concerns:** Definition (Goal, Provision, Output), Holder (selection, matching, preliminary checks), Overrides (API model parameters only), Display Options (launch presentation), Test, Permissions (write/context access), Diagnostics and Notes. Test and Diagnostics remain admin-only.
+4. **Tabs separate concerns:** Definition (Goal, Provision, Output), Holder (selection, matching, preliminary checks), Overrides (API model parameters only), Display Options (launch presentation), Test, Permissions (write/context access), Source & Usage (declaration locations and partial call-site discovery), Diagnostics and Notes. Test, Source & Usage and Diagnostics remain admin-only.
 5. **Keep draft owners mounted across tabs.** One binding save owns holder/mapping/API model overrides; one treatment save owns shared display preferences/write policies. Goal, draft inputs and context gating retain their immediate-save paths. `ConfigurationFields` supplies labeled values, explicit state and accessible help. Full validation remains not evaluated until exact-version-and-mapping evidence exists.
 6. **Version binding is first-class**: latest (auto-updates, risks breaks) or pin
    (`agent_version_id`); pinned-and-behind MUST show drift. The bind endpoint always
@@ -42,7 +42,7 @@ way a surface does; the binding maps them onto the Holder. The rules, all live:
    (`features/mandates/admin/`) is now the LIST only — its row click, coverage board,
    drift strip, right-click menu and `?mandate=` all land on the admin workspace page, and
    its old side-panel drawer (`MandateDetailPanel`) is off every default path; it still
-   renders the operational depth, inside that page's Test, Permissions and Diagnostics tabs.
+   renders the operational depth, inside that page's Test, Permissions, Source & Usage and Diagnostics tabs.
 
 ## What lives here
 
@@ -350,6 +350,8 @@ The Test surface distinguishes **server/API tests** from **actual display launch
 Deferred contract gaps: reusable Agent Builder test-data fill; exact-version-and-mapping full validation; demonstrated enforcement of declared pins; product decisions on treatment seed/menu fields absent from the imperative mandate consumer. None is represented as a working control or a passed verdict.
 
 ## Change Log
+
+- 2026-09-09 — Moved declaration locations and discovered call sites into Source & Usage, with a persistent incomplete-data warning and explicit unknown states. Diagnostics retains contract checks; neither missing call sites nor missing source metadata establishes non-use.
 
 - 2026-09-09 — Admin table refinement: compact coverage/pin/health/binding columns, wider input/output summaries, user text shares input chips and overflow counts. Row clicks navigate without selecting the generic inspector; raw inspection is an explicit trailing window action. Phone coverage uses the filter buttons and table rather than duplicate named strips.
 

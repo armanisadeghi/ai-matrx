@@ -134,6 +134,7 @@ export type MandateWorkspaceTab =
   | "display"
   | "test"
   | "permissions"
+  | "source"
   | "diagnostics"
   | "notes";
 
@@ -148,6 +149,7 @@ const WORKSPACE_TABS: {
   { id: "display", label: "Display Options" },
   { id: "test", label: "Test", admin: true },
   { id: "permissions", label: "Permissions" },
+  { id: "source", label: "Source & Usage", admin: true },
   { id: "diagnostics", label: "Diagnostics", admin: true },
   { id: "notes", label: "Notes" },
 ];

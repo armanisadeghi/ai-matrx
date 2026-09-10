@@ -274,11 +274,14 @@ function AdminControls({
   if (!isSuperAdmin) return null;
 
   const visible =
+    activeTab === "source" ||
     activeTab === "diagnostics" ||
     activeTab === "test" ||
     activeTab === "permissions";
   const section =
-    activeTab === "test" || activeTab === "permissions"
+    activeTab === "test" ||
+    activeTab === "permissions" ||
+    activeTab === "source"
       ? activeTab
       : "diagnostics";
   return (
