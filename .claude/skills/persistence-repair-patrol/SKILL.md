@@ -128,7 +128,11 @@ Project tool results before displaying or saving parent state: retain identifier
 class tokens/cursors, counts/times, coverage flags, and an error-summary head capped
 at 400 characters. A list row's `error_text` can contain an embedded stack or payload;
 never print the full response or retain its raw text/variants in parent memory.
-Keep bounded member IDs for closure; delegates retrieve exact detail themselves.
+Keep bounded member IDs in compact evidence for closure; omit those arrays from
+routine display. Display counts and at most ten candidate heads per call, then
+inspect further candidates in bounded batches. Build an explicit field allowlist
+instead of printing a response envelope: nested text content can duplicate the
+entire result and bypass string truncation. Delegates retrieve exact detail themselves.
 
 ## Measure and select
 
@@ -285,6 +289,9 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 - Separated retained closure IDs from displayed candidates after three
+  bounded queue samples still produced a 75,000-token response.
 
 - 2026-09-10 - Added explicit thinking effort and the shared cross-provider ladder pointer.
 
