@@ -67,6 +67,11 @@ task-hygiene's promotion waits do not require another approval for these repairs
    is a recovery/coordination problem to investigate, not a reason to repeat blind
    skips. After a tool wait or context restore, confirm renewal succeeds before
    further mutations.
+   When resuming an interrupted run, reconcile finished delegate evidence and
+   exact mutations with current live state before admitting more work. Preserve
+   the original run identity, completed sweep, and closure receipts; record the
+   reacquired ownership separately. Refresh stale pending-verification prose in
+   both checkpoint files immediately, without advancing unmeasured coverage.
 3. Discover callable `persistence_watchdog`, `system_errors`, and `app_log_errors`.
    Read each discovered schema before calling it; tools do not necessarily share
    a request envelope. Correct argument-shape errors and retry the real operation.
@@ -261,6 +266,9 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 — Added interrupted-run reconciliation after completed runtime
+  evidence outlived the prior ownership lease and stale checkpoint prose.
 
 - 2026-09-10 — Required explicit canary persistence mode and diagnostic side-effect
   checks after a patrol read-only probe unintentionally queued a parentless write.
