@@ -25,14 +25,14 @@ regret later."* A self-review is not an attack: the author is blind to what they
 |---|---|
 | Single-surface sub-feature, no new contract/table | None — inline check: coverage + the placeholder list below |
 | Sub-feature with a new contract, table, or cross-surface change | 1 reviewer, `standard` |
-| feature-deep-dive plan · scope list · register → build mode | 2 in parallel: REGRET + BUILDABILITY, `standard` |
-| vision-to-fleet brief set | 1 BUILDABILITY reviewer per brief + 1 cross-brief CONTRACTS reviewer, `standard`; `deep` only for conflicting evidence or consequential design, reason stated |
+| `feature-deep-dive` plan (every repo but matrx-ship) · scope list · register → build mode | 2 in parallel: REGRET + BUILDABILITY, `standard` |
+| matrx-frontend `vision-to-fleet` brief set | 1 BUILDABILITY reviewer per brief + 1 cross-brief CONTRACTS reviewer, `standard`; `deep` only for conflicting evidence or consequential design, reason stated |
 
 ## Dispatch rules
 
 - Fresh agent, zero authorship, lane named ([subagent-model-ladder](/policies/subagent-model-ladder.md)).
   Read-only; it may read code and the live DB.
-- Pass **pointers, never your summary**: plan path, EVERY vision doc from the vision sweep (`take`),
+- Pass **pointers, never your summary**: plan path, EVERY vision doc from the vision sweep (the `take` skill: aidream, matrx-frontend, common-docs),
   not just the node's VISION.md, the settled-rulings path, repos. The reviewer judges the document,
   not your intent.
 

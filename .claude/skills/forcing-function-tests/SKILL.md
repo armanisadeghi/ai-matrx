@@ -83,7 +83,7 @@ from reality:
 - **Complete.** Every field the real thing carries, not just the ones this test reads. A partial
   double passes while integration breaks.
 - **Typed against generated contracts.** TS fixtures `satisfies` the generated DB/API type — never
-  `as` / `as unknown as` a partial object (`type-safety`). Python fixtures go through the real
+  `as` / `as unknown as` a partial object (matrx-frontend `type-safety` skill). Python fixtures go through the real
   Pydantic model.
 - **Environment conspiracy** (nondeterministic systems — agents, schedulers, solvers): choose stubbed
   dependency values whose composition leaves exactly one correct output. The SUT must consume,

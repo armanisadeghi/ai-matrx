@@ -17,7 +17,7 @@ timestamp: 2026-09-10T00:00:00Z
 
 Mechanic adapted from Matt Pocock's `grilling`, tuned to Arman's contract: he runs ~20 sessions,
 answers cold, and must be able to reply "yes to your rec" in seconds. Talking to him follows the
-check-in contract (`take`); guided human steps follow
+check-in contract (the `take` skill: aidream, matrx-frontend, common-docs); guided human steps follow
 [human-steps-are-guided-sessions](/policies/human-steps-are-guided-sessions.md).
 
 ## 1. Build the tree, then prune it (before any question)

@@ -103,7 +103,7 @@ A reviewer's finding is a lead, exactly like a builder's report. For each, in or
 5. Unclear items: clarify ALL before fixing ANY — half-understood related findings produce wrong fixes.
 
 Technical rulings are yours and live in the ledger/register; only genuine vision rulings reach Arman,
-batched per the check-in contract (`take`).
+batched per the check-in contract (the `take` skill: aidream, matrx-frontend, common-docs).
 
 ## 6. Before YOU claim done
 

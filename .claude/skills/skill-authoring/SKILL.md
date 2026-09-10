@@ -16,21 +16,25 @@ timestamp: 2026-09-10T00:00:00Z
 # skill-authoring — skills that fire, fit, and are proven
 
 A skill is a **guard on agent behavior**, so fix-the-class applies: a skill you never watched
-fail-then-pass is not a guard. These rules sit on top of the target repo's `context-docs` skill
-(full-document review, voice, never lose a rule) — read that too.
+fail-then-pass is not a guard. These rules sit on top of the `context-docs` skill (full-document
+review, voice, never lose a rule; in aidream, matrx-frontend, common-docs) — read that too.
 
 ## 1. The description is the trigger — and the listing is capped
 
-How Claude Code loads skills (official docs, checked 2026-09-10):
+How Claude Code loads skills ([official docs](https://code.claude.com/docs/en/skills), checked 2026-09-10):
 - The model sees only each skill's `name` + `description` (+ `when_to_use`) until it invokes the skill.
-  That combined text is **truncated at 1,536 chars** per skill in the listing.
-- The **whole listing is budget-capped** — measured in the Claude Code 2.1.263 source, not the docs:
-  budget = context window × 4 chars/token × 1% (8,000 chars at 200k, ~40,000 at 1M;
-  `SLASH_COMMAND_TOOL_CHAR_BUDGET` or the `skillListingBudgetFraction` setting overrides). Over budget,
-  **every entry still costs its name + 2 chars**, and descriptions are admitted greedily in order of
-  **usage score** (use count, 7-day half-life); a skill that doesn't fit arrives **name-only**. So
-  every character you add pushes another skill's trigger out, and every duplicate entry (a synced copy
-  listed as `aidream:x`) burns budget even with no description.
+  That combined text is **truncated at 1,536 chars** per skill in the listing (`skillListingMaxDescChars`
+  changes the cap).
+- The **whole listing is budget-capped** at 1% of the context window (`skillListingBudgetFraction`, or
+  `SLASH_COMMAND_TOOL_CHAR_BUDGET` as a fixed char count, raises it). The listing **always keeps every
+  skill name**; on overflow Claude Code **drops descriptions starting with the skills invoked least**, and
+  a `skillOverrides` entry of `"name-only"` drops one on purpose. A skill without its description can
+  still be invoked but is rarely chosen on its own — every character you add can push another skill's
+  trigger out.
+- Measured in the Claude Code 2.1.263 source, beyond the docs: 4 chars/token (8,000 chars at 200k,
+  ~40,000 at 1M); **every entry still costs its name + 2 chars**; descriptions are admitted greedily by
+  **usage score** (use count, 7-day half-life). So every duplicate entry (a synced copy listed as
+  `aidream:x`) burns budget even with no description.
 - Skills in `.claude/skills` of subdirectories below the launch dir load **lazily**, the first time a
   file there is read or edited. That is why repo-scoped duplicates (`aidream:x`, `matrx-frontend:x`)
   appear mid-session, each one another listing entry.
@@ -39,7 +43,8 @@ How Claude Code loads skills (official docs, checked 2026-09-10):
 
 Rules:
 - **Recipe:** `<what it is — one noun phrase>. Use when <trigger>, <trigger>, … .` Primary use case
-  first. Target **≤300 chars**, hard **500** (the docs recommend under ~200).
+  first. Target **≤300 chars**, hard **500** — our rule, stricter than the docs, which set only the
+  1,536 cap and say to put the key use case first.
 - **Triggers are what the agent will actually see:** situations, symptoms, file paths/globs, error
   strings, the user's words.
 - **Never the procedure.** No "Covers / Encodes / Enforces / pipeline", no step lists — an agent handed
@@ -63,10 +68,10 @@ Rules:
   provider, one variant, a long API reference) into a sibling file named for the branch, with a
   pointer that says **when** to read it: `Stage V only → read stage-v.md.`
 - **A routing list is read as complete.** A "read only the branch your run reaches" list names
-  **every** companion, pre-existing ones included; an unlisted file is never opened (surface-authoring
-  evals E1: 0/3 reps opened the one reference the list omitted and lost its completion gate). Never end
+  **every** companion, pre-existing ones included; an unlisted file is never opened (matrx-frontend
+  `surface-authoring` evals E1: 0/3 reps opened the one reference the list omitted and lost its completion gate). Never end
   a route with "nothing else": pointers inside a branch file (e.g. "run the `safe-cutover` skill first")
-  still bind, and 2/3 data-to-kinds reps skipped one citing those words.
+  still bind, and 2/3 common-docs `data-to-kinds` reps skipped one citing those words.
 - **One level deep.** SKILL.md → file, never file → file. A reference file over 100 lines opens with a
   contents list.
 - **Point at `--help` or a script** instead of restating flags or deterministic steps.
@@ -130,5 +135,5 @@ description rewrite. Exempt: typo, path, and pointer fixes.
 - [ ] Guidance form matches the observed failure (§3).
 - [ ] Discipline skill: rationalization rows and red flags come from observed failures.
 - [ ] §5 run done (or exempt) and `evals.md` updated.
-- [ ] Target repo's `context-docs` checklist passed. Canonical skill? Edit `common-docs/skills/`, run
+- [ ] `context-docs` checklist passed (aidream, matrx-frontend, common-docs). Canonical skill? Edit `common-docs/skills/`, run
   `sync_skills.py`, commit every touched repo.

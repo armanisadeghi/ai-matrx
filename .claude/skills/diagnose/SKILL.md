@@ -21,8 +21,9 @@ story, patch it, see the symptom move, ship with the real cause still in place. 
 name the command that shows this bug red, you are guessing.** Read the owning repo's CLAUDE.md and
 the area's FEATURE.md first. Credential values never enter output.
 
-Siblings: scheduled queue patrol → `persistence-repair-patrol`; wiring capture for an error class →
-`error-capture`; test quality → `forcing-function-tests`.
+Siblings: scheduled queue patrol → `persistence-repair-patrol` (aidream, matrx-frontend, common-docs);
+wiring capture for an error class → `error-capture` (aidream, matrx-frontend); test quality →
+`forcing-function-tests`.
 
 ## 0. Start from what the platform already captured
 
@@ -33,7 +34,7 @@ Reports, ledgers, and other agents' findings are leads — reproduce them agains
 |---|---|
 | Any recorded error | AI Dream MCP `errors` tool, `action='surfaces'` first (system_error, write_failure, app_log, stuck_rows, shape/tool-UI incidents) |
 | A provider/LLM call | the failed request's `cx_request_snapshot.request_payload` — the exact wire payload; replay it (aidream `error-capture`) |
-| A tool call | aidream `inspect-call` · `triage-tool-traces` |
+| A tool call | aidream `inspect-call` · AI Dream MCP `debug_traces` tool (`cx_tool_trace`) |
 | A browser surface | the admin Error Inspector (`captureError`), AdminIndicator "Copy Full Context", console + network via browser tools |
 | Rows stuck / never landed | MCP `persistence_watchdog` |
 | Fleet, deploy, containers | matrx-ship `fleet-incident` |
@@ -45,7 +46,7 @@ deployed SHA vs HEAD, env/config, and the live definition of any DB object — t
 not enough ([verify-live-state](/policies/verify-live-state.md)).
 
 **A failure a user saw that no lane captured is a second defect in the same bug.** The fix includes
-structured capture at that boundary (`error-capture`).
+structured capture at that boundary (aidream / matrx-frontend `error-capture`).
 
 ## 1. Build a red-capable loop (the core of the skill)
 
