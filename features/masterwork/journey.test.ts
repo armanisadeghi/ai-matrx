@@ -159,6 +159,45 @@ describe("the journey", () => {
     );
   });
 
+  // THE ARCHIVED-ITEMS LAW half. Twins: test_journey.py's
+  // `test_a_live_masterwork_beside_an_archived_one_is_the_only_one_named` and
+  // `test_an_archived_release_never_counts_as_released`. The all-archived
+  // headline cases live in `archivedItemsLaw.test.ts` beside the surfaces.
+  it("names only the LIVE Masterwork when an archived one sits beside it", () => {
+    const j = computeJourney(
+      facts({
+        liveRules: 10,
+        approvedRules: 10,
+        masterworks: [mw({ id: "live", name: "The live one" })],
+        archivedMasterworks: 1,
+      }),
+      NOW,
+    );
+    expect(keys(j)).not.toContain("conductor_ready");
+    expect(j.stage).toBe("audition_due");
+    expect(j.headline).toContain("The live one");
+  });
+
+  it("never counts an ARCHIVED release as a release", () => {
+    // An archived Masterwork is off Encore (`releasedBase()` excludes it), so
+    // its release may not suppress the ask for a live draft. The archive split
+    // keeps it out of `masterworks` entirely — this asserts the consequence.
+    const j = computeJourney(
+      facts({
+        liveRules: 10,
+        approvedRules: 10,
+        masterworks: [mw({ id: "live", name: "Still a draft" })],
+        archivedMasterworks: 1,
+        latestAudition: audition(),
+      }),
+      NOW,
+    );
+    expect(keys(j)).toContain("release_ready");
+    expect(
+      j.moves.find((m) => m.key === "release_ready")?.headline,
+    ).toContain("Still a draft");
+  });
+
   it("waits for a passing Audition before asking for a release", () => {
     const ready = computeJourney(
       facts({

@@ -98,11 +98,15 @@ export interface JourneyFacts {
    * the other half here, or `conductor_ready` prints "no Masterwork yet" at an
    * Expert who has two — the exact lie the law exists to kill.
    *
-   * MIRROR NOTE: `journey.py` has no archive axis at all — its Masterwork read
-   * returns archived and live together, so `real_masterworks` is already the
-   * whole corpus and the fact is 0 there. That keeps the two halves saying the
-   * same sentence today; the day the server splits, it computes this the same
-   * way. Recorded in `/projects/archived-items-law/STATUS.md` (row F10).
+   * MIRROR: the server SPLIT on 2026-09-10 (aidream `27e1b8464`, row F10's open
+   * aidream-lane item). `journey.py`'s `real_masterworks` is now the LIVE half
+   * too — not an Understudy, not archived — `JourneyFacts.archived_masterworks`
+   * is the other half, and `Journey.archived_masterworks` carries the count out
+   * of the server. So there is ONE authority per surface and no drift: a client
+   * computing the journey itself (this page, which reads the Rulebook's own
+   * Masterworks and never calls the server for a verdict) fills this from its
+   * own archive split; a surface handed a SERVER journey prints that payload's
+   * `archived_masterworks` and never re-derives it here.
    */
   archivedMasterworks: number;
   latestAudition: JourneyAudition | null;
@@ -251,7 +255,9 @@ export function computeJourney(
     // Masterwork archived the same move is still true — the Conductor can
     // build — but the sentence must name what already exists (row F10 live
     // review, 2026-09-10). Same key, same rank, same precedence: only the
-    // words change, and only in a case `journey.py` cannot reach.
+    // words change. `journey.py` emits this sentence word-for-word since its
+    // own archive split (aidream `27e1b8464`), so the page's line and the
+    // improvement brain's chip say one thing in the all-archived state.
     const archived = facts.archivedMasterworks;
     moves.push({
       key: "conductor_ready",
