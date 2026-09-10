@@ -61,6 +61,7 @@ import {
   type MandateDefinitionRow,
 } from "./service";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
 interface CompletedRun {
@@ -105,7 +106,10 @@ export function TryItNowPanel({
   mandate,
   defaultAgentId,
   onSavedTestCase,
+  allowPrincipalSelection = false,
 }: {
+  /** Explicitly opt in on a host that supports testing another principal. */
+  allowPrincipalSelection?: boolean;
   mandate: MandateDefinitionRow;
   defaultAgentId: string | null;
   passesUserInput: boolean | undefined;
@@ -300,14 +304,6 @@ export function TryItNowPanel({
     { key: "delivery", label: "Entry" },
     { key: "source", label: "Source" },
   ];
-  const scopeColumns = [
-    { key: "declaration", label: "Input scope" },
-    {
-      key: "match",
-      label: "Scope match",
-      help: "Input declarations use your signed-in organization. The input endpoint cannot select the test principal; matching that declaration to the tested holder has not been verified.",
-    },
-  ];
 
   return (
     <section className="min-w-0 space-y-4">
@@ -328,7 +324,7 @@ export function TryItNowPanel({
       </div>
       <PropertyRow
         label="Test mode"
-        help="Server test returns execution diagnostics. Display test launches the saved presentation using your effective holder, including organization and personal bindings. Surfaces that explicitly choose their own layout can override the saved display."
+        help="Server test executes the system default and returns diagnostics. My display preview executes your resolved holder with saved display defaults; it does not reproduce the original feature. Test inputs come from the signed-in organization, so cross-principal input compatibility has not been verified."
         value={
           <Select
             value={testMode}
@@ -341,46 +337,39 @@ export function TryItNowPanel({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="server">Server test</SelectItem>
-              <SelectItem value="display">Display test</SelectItem>
+              <SelectItem value="display">My display preview</SelectItem>
             </SelectContent>
           </Select>
         }
       />
-      <PropertyRow
-        label="Test context"
-        value={
-          testMode === "display" ? (
-            "My effective holder"
-          ) : (
-            <Select
-              value={testContext}
-              onValueChange={(value: "system" | "viewer") =>
-                setTestContext(value)
-              }
-            >
-              <SelectTrigger
-                className={`${CONFIGURATION_CHOICE_SIZE} w-full max-w-72`}
+      {allowPrincipalSelection ? (
+        <PropertyRow
+          label="Test context"
+          value={
+            testMode === "display" ? (
+              "My effective holder"
+            ) : (
+              <Select
+                value={testContext}
+                onValueChange={(value: "system" | "viewer") =>
+                  setTestContext(value)
+                }
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="system">System default</SelectItem>
-                <SelectItem value="viewer">My effective holder</SelectItem>
-              </SelectContent>
-            </Select>
-          )
-        }
-        help="System default preserves the administrator bench. My effective holder includes your organization and personal binding overrides. Both execute as the signed-in administrator."
-      />
-      <ConfigurationTable label="Test scope" columns={scopeColumns}>
-        <ConfigurationTableRow
-          columns={scopeColumns}
-          cells={{
-            declaration: "Signed-in organization",
-            match: <StatusToken status="unknown" label="Not verified" />,
-          }}
+                <SelectTrigger
+                  className={`${CONFIGURATION_CHOICE_SIZE} w-full max-w-72`}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="system">System default</SelectItem>
+                  <SelectItem value="viewer">My effective holder</SelectItem>
+                </SelectContent>
+              </Select>
+            )
+          }
+          help="System default preserves the administrator bench. My effective holder includes your organization and personal binding overrides. Both execute as the signed-in administrator."
         />
-      </ConfigurationTable>
+      ) : null}
       {surfaceState.status === "loading" ? (
         <div role="status" className="flex items-center gap-2 text-sm">
           <Loader2 className="size-4 animate-spin" />
@@ -399,7 +388,7 @@ export function TryItNowPanel({
         testId="test-input-surface-notes"
         folded
       />
-      <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+      <div className="grid min-w-0 gap-3">
         {fields.map((field) => {
           const definition = agentDefinitions.find(
             (item) => item.name === field.name,
@@ -448,7 +437,7 @@ export function TryItNowPanel({
                   }
                 />
               ) : structured ? (
-                <ProTextarea
+                <ProJsonTextarea
                   aria-label={label}
                   value={
                     typeof currentValue(field) === "string"
@@ -462,7 +451,24 @@ export function TryItNowPanel({
                     }))
                   }
                   placeholder="JSON value"
-                  className="min-h-24 font-mono text-sm"
+                  className="min-h-32 text-sm"
+                  minHeight={128}
+                  enableTextStats={false}
+                  autoFocus={false}
+                />
+              ) : ["text", "string", "markdown"].includes(field.kind) ? (
+                <ProTextarea
+                  aria-label={label}
+                  value={String(currentValue(field))}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      [field.name]: event.target.value,
+                    }))
+                  }
+                  placeholder={label}
+                  className="min-h-32 text-sm"
+                  minHeight={128}
                   autoFocus={false}
                 />
               ) : (
@@ -490,22 +496,45 @@ export function TryItNowPanel({
       {surface && fields.length === 0 ? (
         <PropertyRow label="Declared inputs" value="None" />
       ) : null}
-      <PropertyRow
-        label="User message accepted"
-        value={surface ? (surface.acceptsUserInput ? "Yes" : "No") : "Unknown"}
-      />
-      {surface?.acceptsUserInput ? (
-        <label className="block space-y-1 text-sm">
-          <span>User message</span>
+      <div className="min-w-0 space-y-2 rounded-lg border border-border p-3">
+        <h4 className="flex items-center gap-2 text-sm font-medium">
+          User message
+          <FieldHelp label="User message">
+            Optional text from the person running the test. Provision values are
+            sent separately.
+          </FieldHelp>
+        </h4>
+        <ConfigurationTable
+          label="User message properties"
+          columns={inputColumns}
+        >
+          <ConfigurationTableRow
+            columns={inputColumns}
+            cells={{
+              format: "Text",
+              required: "No",
+              delivery: "Manual",
+              source: "User",
+            }}
+          />
+        </ConfigurationTable>
+        {surface?.acceptsUserInput ? (
           <ProTextarea
+            aria-label="User message"
             value={userInput}
             onChange={(event) => setUserInput(event.target.value)}
             placeholder="User message"
-            className="min-h-20"
+            className="min-h-32 text-sm"
+            minHeight={128}
             autoFocus={false}
           />
-        </label>
-      ) : null}
+        ) : (
+          <PropertyRow
+            label="User message"
+            value={surface ? "Not accepted" : "Unknown"}
+          />
+        )}
+      </div>
       <Button
         size="sm"
         disabled={running || !surface}
