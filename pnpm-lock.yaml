@@ -39,7 +39,7 @@ importers:
         version: 0.11.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.2.8)
       '@ai-matrx/design-system':
         specifier: latest
-        version: 0.13.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 0.14.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@ai-matrx/diff':
         specifier: latest
         version: 0.3.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -896,8 +896,8 @@ packages:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
 
-  '@ai-matrx/design-system@0.13.0':
-    resolution: {integrity: sha512-fdCSUsUTUhKdEFbl/qaTmRhlJJwct4CSw9CwpaESAZlwZjBh3qz0JxcCx9MATwwKtC1buj5V2nnzOIvxLfFiZg==}
+  '@ai-matrx/design-system@0.14.0':
+    resolution: {integrity: sha512-IyHBpao8k/+1BJ2aw1BxGHJauXU6L9vaWwqKe4McKHAhTuv3wKxn1IbSeVuNNIcMDEUtlPY10uUHfFV3wm4Sfw==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -12626,7 +12626,7 @@ snapshots:
   '@ai-matrx/agents@0.10.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@ai-matrx/data': 0.11.0(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.2.8)
-      '@ai-matrx/design-system': 0.13.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@ai-matrx/design-system': 0.14.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
     optionalDependencies:
       react: 19.2.8
     transitivePeerDependencies:
@@ -12637,7 +12637,7 @@ snapshots:
 
   '@ai-matrx/associations@0.8.2(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
-      '@ai-matrx/design-system': 0.13.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@ai-matrx/design-system': 0.14.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@ai-matrx/kit': 0.9.0(react@19.2.8)
     optionalDependencies:
       react: 19.2.8
@@ -12715,7 +12715,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@ai-matrx/design-system@0.13.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@ai-matrx/design-system@0.14.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@ai-matrx/kit': 0.9.0(react@19.2.8)
       '@radix-ui/react-accordion': 1.2.20(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
