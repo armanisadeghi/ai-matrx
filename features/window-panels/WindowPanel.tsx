@@ -1191,7 +1191,14 @@ export function WindowPanel({
                 {sidebar}
               </div>
             </ResizablePanel>
-            <ResizableHandle />
+            {/* A collapsed sidebar is 0px wide, so its handle would draw a
+                stray line down the window's left edge. Keep it in the panel
+                group (the library measures it) but make it invisible. */}
+            <ResizableHandle
+              className={
+                sidebarOpen ? undefined : "w-0 opacity-0 pointer-events-none"
+              }
+            />
           </>
         )}
         <ResizablePanel id="body" minSize={200} className="min-h-0">

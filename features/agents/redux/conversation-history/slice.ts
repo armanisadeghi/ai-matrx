@@ -305,6 +305,57 @@ const slice = createSlice({
         scope.items[idx] = { ...scope.items[idx], ...patch };
       }
     },
+    /**
+     * Inserts a JUST-CREATED conversation into every scope whose filters would
+     * have returned it — the sidebar's live half. Without this, a scope fetched
+     * at mount never learns about the conversation the user is typing in until
+     * a manual refresh, which is how the agent-run window showed "No
+     * conversations yet." above its own live chat (2026-09-09). `agentId` is
+     * the canonical agent id (parent for version snapshots) — the same value
+     * the fetch filters `initial_agent_id` against.
+     */
+    upsertConversationIntoScopes(
+      state,
+      action: PayloadAction<{ row: ConversationListItem; agentId: string }>,
+    ) {
+      const { row, agentId } = action.payload;
+      for (const scope of Object.values(state.scopes)) {
+        if (scope.agentIds.length > 0 && !scope.agentIds.includes(agentId)) {
+          continue;
+        }
+        const feature = row.sourceFeature ?? "";
+        if (scope.excludeSourceFeatures.includes(feature)) continue;
+        const hasAllowList =
+          scope.includeSourceFeatures.length > 0 ||
+          scope.includeSourceApps.length > 0 ||
+          scope.includeEmptySource;
+        if (hasAllowList) {
+          const admitted =
+            scope.includeSourceFeatures.includes(feature) ||
+            (row.sourceApp != null &&
+              scope.includeSourceApps.includes(row.sourceApp)) ||
+            (scope.includeEmptySource && feature === "");
+          if (!admitted) continue;
+        }
+        const origins = scope.includeOriginClasses ?? [];
+        // A conversation minted from a client surface is `human` server-side;
+        // the row carries no origin until the next fetch, so match on that.
+        if (
+          origins.length > 0 &&
+          !origins.includes(row.originClass ?? "human")
+        ) {
+          continue;
+        }
+        const idx = scope.items.findIndex(
+          (i) => i.conversationId === row.conversationId,
+        );
+        if (idx === -1) {
+          scope.items = sortByUpdated([{ ...row, agentId }, ...scope.items]);
+        } else {
+          scope.items[idx] = { ...scope.items[idx], ...row, agentId };
+        }
+      }
+    },
     removeConversationFromScopes(
       state,
       action: PayloadAction<{ conversationId: string }>,
@@ -353,6 +404,7 @@ export const {
   setScopePageSuccess,
   patchConversationInScopes,
   removeConversationFromScopes,
+  upsertConversationIntoScopes,
   clearScope,
   setSourceFacetsStatus,
   setSourceFacets,
