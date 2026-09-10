@@ -77484,6 +77484,8 @@ export interface components {
              * @default false
              */
             is_deprecated?: boolean;
+            /** Successor Id */
+            successor_id?: string | null;
             /**
              * Output Type
              * @default text

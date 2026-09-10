@@ -174733,6 +174733,17 @@
             "title": "Is Deprecated",
             "default": false
           },
+          "successor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Successor Id"
+          },
           "output_type": {
             "type": "string",
             "enum": [
