@@ -182,6 +182,14 @@ fixes need current verification; they are not new work by this patrol.
 - An independent reviewer verifies against the original failure and real surface
   or runtime. A healthy page is not proof of subscription delivery; an in-process
   test is not provider acceptance. Fix rejected evidence or code and verify again.
+- Declare each canary's persistence mode before execution. A read-only tool probe
+  without a real conversation/request uses the runtime's existing nonpersisting
+  mode explicitly; never inherit its default persistence setting. A persistence
+  canary instead creates valid, scoped identities and verifies the intended writes.
+  Check the sanctioned diagnostic lanes for side effects before calling either
+  canary clean. Attribute and repair accidental test writes; dismiss an invalid
+  write honestly through the approved service rather than replaying missing parents
+  or marking it recovered. Save the corrected probe and cleanup evidence.
 
 ## Close only what is proved
 
@@ -253,6 +261,9 @@ engineering work are not blockers and must remain owned and repaired by agents. 
 not relabel them as Arman involvement because a run ended or the next action is hard.
 
 ## Changelog
+
+- 2026-09-10 — Required explicit canary persistence mode and diagnostic side-effect
+  checks after a patrol read-only probe unintentionally queued a parentless write.
 
 - 2026-09-10 — Limited task messaging to necessary coordination after the owner
   reported confusing message traffic; explicit current browser restrictions win.
