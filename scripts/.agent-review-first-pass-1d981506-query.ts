@@ -38,4 +38,7 @@ async function main(): Promise<void> {
   console.log(JSON.stringify(data, null, 2));
 }
 
-void main();
+void main().catch((error: unknown) => {
+  console.error(JSON.stringify(error, null, 2));
+  process.exitCode = 1;
+});
