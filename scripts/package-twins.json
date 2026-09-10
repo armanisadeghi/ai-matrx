@@ -683,6 +683,18 @@
       "package": "@ai-matrx/design-system",
       "why": "The Accordion family (design-system 0.8.0, census row 19c). The fork at components/ui/accordion.tsx was the fleet's only real implementation — workflow-studio's DB-authored scope was standing four bare <div>s in for it. Three fork defects died with it: a chevron-rotation selector that matched any icon passed as a direct trigger child instead of the chevron, a trigger with no focus-visible ring, and an open/close transition built on animate-accordion-down/-up — host-only Tailwind utilities, now package-owned .matrx-accordion-content CSS. Density is the `size` prop; the host binds nothing because its fork drew the package default (md).",
       "allow": []
+    },
+    {
+      "name": "ArchiveFilter",
+      "package": "@ai-matrx/design-system",
+      "why": "THE ARCHIVED-ITEMS LAW's tri-state control (design-system 0.13.0): active | archived | all, default active, one click to reveal. `lib/entity-list`'s Filters & Sort panel rendered its own RadioSelect over a local ARCH_OPTIONS table until 2026-09-10; the panel keeps the URL/preference plumbing and `query.archived` is still a real server-side RPC parameter, but the control and its WORDS are the package's, so the frontend, workflow-studio, the dashboard and the desktop cannot drift apart. `lib/entity-list`'s `ArchivedFilter` type is now an alias of the package's `ArchiveFilterValue`. A local tri-state archive segmented control or option table anywhere in this repo is a twin.",
+      "allow": []
+    },
+    {
+      "name": "ArchivedDisclosure",
+      "package": "@ai-matrx/design-system",
+      "why": "THE ARCHIVED-ITEMS LAW's card-list control (design-system 0.14.0): the one-click \"Archived (N)\" reveal, closed by default, with `countLabel` for a capped/absent count and `keepWhileOpen` for a surface whose open state IS the archive view. Proven in Transcript Studio, lived at components/official/ArchivedDisclosure.tsx, deleted 2026-09-10 when the package took it — the law says the control is the same primitive everywhere, and a second home for half of it was the defect. Fourteen surfaces (masterwork ×4, pdf-extractor ×2, pdf scanner, page-extraction, canvas, hr fields, whatsapp-clone, organizations, agent templates, transcript-studio) import it from the package.",
+      "allow": []
     }
   ]
 }

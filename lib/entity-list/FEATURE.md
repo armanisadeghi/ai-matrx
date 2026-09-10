@@ -50,11 +50,18 @@ state, and a pasted link reproduces the list exactly.
 THE ARCHIVED-ITEMS LAW (`../../../common-docs/policies/archived-items.md`,
 Arman 2026-09-09): every list over an entity that can be archived carries an
 archive control, the default HIDES archived rows, and revealing them is one or
-two clicks. This shell's Archived radio (Active only / Archived only / Active +
-archived, in the Filters & Sort panel, a real server-side RPC parameter) is one
-of exactly TWO allowed implementations platform-wide. The other is
-`components/official/ArchivedDisclosure` — an "Archived (N)" disclosure for card
-lists that are not entity-list shaped. There is never a third.
+two clicks. This shell's Archived section renders `<ArchiveFilter>` from
+`@ai-matrx/design-system` (Active only / Archived only / Active + archived, in
+the Filters & Sort panel) — this shell owns the URL and preference plumbing and
+`query.archived` is still a real server-side RPC parameter, but the CONTROL and
+its words are the package's, so this panel, workflow-studio, the dashboard and
+the desktop cannot drift apart. `ArchivedFilter` here is an alias of the
+package's `ArchiveFilterValue`. It is one of exactly TWO allowed implementations
+platform-wide; the other is `ArchivedDisclosure` from the same package — an
+"Archived (N)" disclosure for card lists that are not entity-list shaped (it
+lived at `components/official/ArchivedDisclosure` until 2026-09-10, when the
+package took it and the local file was deleted). There is never a third, and
+never a local copy: `pnpm check:package-twins` fails on one.
 
 The INITIAL value of the axis is a user knob, not code taste (law §6):
 `userPreferences.lists.archivedDefault` (`"active"` platform default, Settings →

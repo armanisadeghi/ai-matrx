@@ -16,7 +16,7 @@ import {
   Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { formatDistanceToNow } from "date-fns";
 import type { CanvasItemRow } from "@/features/canvas/services/canvasItemsService";
 

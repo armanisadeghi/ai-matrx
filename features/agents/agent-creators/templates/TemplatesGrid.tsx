@@ -5,7 +5,7 @@ import { TemplateCard } from "./TemplateCard";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast-service";
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 interface Template {
   id: string;

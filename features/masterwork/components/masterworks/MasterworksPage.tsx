@@ -38,7 +38,6 @@ import {
   MasterworkKpiStrip,
   type MasterworkKpiFilter,
 } from "../detail/RulebookKpiStrip";
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import {
   listMasterworksForRulebook,
   listRecentRunsForMasterworks,
@@ -47,6 +46,7 @@ import {
   type MasterworkRun,
 } from "../../service";
 import type { Masterwork, Rulebook } from "../../types";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 function runDuration(run: MasterworkRun): string | null {
   if (!run.started_at || !run.completed_at) return null;

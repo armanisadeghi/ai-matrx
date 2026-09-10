@@ -30,7 +30,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@ai-matrx/design-system";
+import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
   Tooltip,
@@ -57,7 +57,6 @@ import {
   useSurfaceWriteHandlers,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { fetchAssistLaunch, MASTERWORK_RULEBOOK_SURFACE } from "../../assists";
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import {
   getRulebook,
   listMasterworksForRulebook,

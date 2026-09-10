@@ -29,7 +29,6 @@
 import React from "react";
 import Link from "next/link";
 import { Eye, Loader2 } from "lucide-react";
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { Card } from "@/components/ui/card";
@@ -41,6 +40,7 @@ import {
   getShareableResource,
   type ResourceType,
 } from "@/utils/permissions/registry";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 export interface ResourceCardData {
   id: string;

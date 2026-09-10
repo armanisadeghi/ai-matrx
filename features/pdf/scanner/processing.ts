@@ -100,7 +100,8 @@ export interface RecentScanRow {
  * `archived_at` and splits, exactly like the PDF Studio sidebar
  * (`features/pdf-extractor/studio/hooks/usePdfStudioDocs.ts`): ONE read, the
  * archive column projected, the surface hiding `archived` behind the shared
- * `<ArchivedDisclosure>` — one click, never a second pattern.
+ * `<ArchivedDisclosure>` (@ai-matrx/design-system) — one click, never a second
+ * pattern and never a local copy.
  */
 export interface RecentScans {
   active: RecentScanRow[];

@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import type { MessagingArchiveFilter } from "@ai-matrx/messaging";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { ConversationListHeader } from "./ConversationListHeader";
 import { ConversationSearch } from "./ConversationSearch";
 import {
@@ -13,6 +12,7 @@ import {
 } from "./ConversationFilterChips";
 import { ConversationRow } from "./ConversationRow";
 import type { WAConversation } from "../types";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 interface ConversationListPaneProps {
   /**

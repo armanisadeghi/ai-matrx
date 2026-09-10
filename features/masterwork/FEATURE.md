@@ -159,7 +159,9 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   reads were archive-blind — no predicate, no column — so an archived Masterwork rendered as a
   live one everywhere. Now `MASTERWORK_SELECT_COLUMNS` carries `is_archived`, each read takes
   `includeArchived` defaulting to FALSE, and `splitMasterworksByArchive` is the one split every
-  surface uses. Four card surfaces gained the shared `ArchivedDisclosure` — the Masterworks lane,
+  surface uses. Four card surfaces gained the shared `ArchivedDisclosure` (from
+  `@ai-matrx/design-system` since 2026-09-10; `components/official/ArchivedDisclosure` was
+  deleted when the package took it) — the Masterworks lane,
   the Rulebook page's Masterworks section, the browse cards (per Rulebook), and the home grid —
   closed by default, one click, count honest, revealed rows labelled "Archived". Every count
   (KPI strip, built count, journey facts, browse "N built", the lane's `masterwork_count`) is now

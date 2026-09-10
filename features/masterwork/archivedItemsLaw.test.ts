@@ -146,6 +146,7 @@ describe("THE DEFAULT HIDES — the three Masterwork list reads", () => {
 describe("ONE OR TWO CLICKS — every Masterwork list surface carries the control", () => {
   // The two allowed implementations and no third: `lib/entity-list`'s Archived
   // radio for entity-list-shaped surfaces, `ArchivedDisclosure` for card lists.
+  // Both live in `@ai-matrx/design-system` (0.13.0 / 0.14.0), never in this repo.
   // All four of these are card lists.
   const SURFACES = [
     "components/masterworks/MasterworksPage.tsx",
@@ -156,8 +157,10 @@ describe("ONE OR TWO CLICKS — every Masterwork list surface carries the contro
 
   it.each(SURFACES)("%s renders <ArchivedDisclosure>", (file) => {
     const text = source(file);
-    expect(text).toContain(
-      'import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure"',
+    // THE ONE control, from the package (design-system 0.14.0). A local
+    // re-implementation of it in this repo is what `check:package-twins` fails.
+    expect(text).toMatch(
+      /import \{[^}]*\bArchivedDisclosure\b[^}]*\} from "@ai-matrx\/design-system"/,
     );
     expect(text).toContain("<ArchivedDisclosure");
   });

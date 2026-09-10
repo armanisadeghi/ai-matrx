@@ -45,7 +45,6 @@ import { UploadContextPrompt } from "@/features/scopes/components/context-assign
 
 import { MediaThumbnail } from "@ai-matrx/media/react";
 
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 
 import {
   fetchRecentScans,
@@ -60,6 +59,7 @@ import { CaptureView } from "../CaptureView";
 import { CropSheet, type CropEnhance } from "../CropSheet";
 import { ProcessingView } from "../ProcessingView";
 import { DesktopReview } from "./DesktopReview";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 type DesktopView = "home" | "review";
 

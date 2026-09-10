@@ -15,6 +15,7 @@
 // See features/agents/browse/FEATURE.md for the worked implementation and
 // lib/list-scope/FEATURE.md for the scope vocabulary + RPC template rules.
 
+import type { ArchiveFilterValue } from "@ai-matrx/design-system";
 import type { ListScope, ListScopeKind } from "@/lib/list-scope/types";
 import { DEFAULT_LIST_SCOPE } from "@/lib/list-scope/types";
 
@@ -39,7 +40,15 @@ export type EntityFilterValue =
 /** Keyed by COLUMN ID, so the server predicate and the header agree by name. */
 export type EntityFilters = Record<string, EntityFilterValue>;
 
-export type ArchivedFilter = "active" | "archived" | "all";
+/**
+ * THE ARCHIVED-ITEMS LAW's tri-state, from the ONE place it is defined:
+ * `@ai-matrx/design-system`'s `ArchiveFilterValue` (`active` | `archived` |
+ * `all`). This alias exists only so the ~200 call sites that already say
+ * `ArchivedFilter` keep reading naturally — the vocabulary itself is the
+ * package's, never this repo's, so the words on screen and the words in the
+ * type can never drift apart.
+ */
+export type ArchivedFilter = ArchiveFilterValue;
 
 export interface EntityListQuery {
   scope: ListScope;

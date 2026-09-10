@@ -34,10 +34,9 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@ai-matrx/design-system";
+import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ItemMenu, ItemContextMenu } from "@/components/official/item/ItemMenu";
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { FileRowContextMenu } from "@/features/files/components/core/RowContextMenu/RowContextMenu";
 import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";

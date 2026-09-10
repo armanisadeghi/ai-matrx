@@ -35,7 +35,6 @@ import {
   type DistillationApproach,
 } from "../browse/approaches";
 import { ApproachCard } from "@/features/masterwork/browse/ApproachCard";
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { splitMasterworksByArchive } from "../service";
 import {
   fetchMasterworkHome,
@@ -45,6 +44,7 @@ import {
 import { HowItsImprovingPanel } from "./HowItsImprovingPanel";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { MASTERWORK_RULEBOOK_SURFACE } from "../assists";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 function when(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();

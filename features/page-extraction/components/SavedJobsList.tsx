@@ -18,7 +18,6 @@
 import { useState } from "react";
 import { Loader2, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -38,6 +37,7 @@ import {
   selectViewedJobForFile,
 } from "@/features/page-extraction/redux/selectors";
 import type { PageExtractionJob } from "@/features/page-extraction/types";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 export function SavedJobsList({ fileId }: { fileId: string }) {
   const { jobs, archivedJobs, loading, refetch } = useExtractionJobs(fileId);

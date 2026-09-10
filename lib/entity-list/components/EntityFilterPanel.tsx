@@ -18,6 +18,7 @@ import { useState } from "react";
 import { useScrollFade } from "@ai-matrx/design-system";
 import { SlidersHorizontal, RotateCcw, Star, ArrowUpDown } from "lucide-react";
 import {
+  ArchiveFilter,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -42,7 +43,6 @@ import {
   countActiveFilters,
   facetCount,
   facetValues,
-  type ArchivedFilter,
   type EntityFacets,
   type EntityFilters,
   type EntityListQuery,
@@ -63,12 +63,6 @@ const FAV_OPTIONS = [
   { value: "only", label: "Favorites only" },
   { value: "exclude", label: "Not favorites" },
 ] as const;
-
-const ARCH_OPTIONS: { value: ArchivedFilter; label: string }[] = [
-  { value: "active", label: "Active only" },
-  { value: "archived", label: "Archived only" },
-  { value: "all", label: "Active + archived" },
-];
 
 interface Props<TRow> {
   query: EntityListQuery;
@@ -307,19 +301,36 @@ export function EntityFilterPanel<TRow>({
               label="Archived"
               active={query.archived !== "active"}
             >
-              <RadioSelect<ArchivedFilter>
+              {/* THE ONE archive control (@ai-matrx/design-system 0.13.0).
+                  This panel owns the URL/preference plumbing — `query.archived`
+                  is still a real server-side RPC parameter — but the CONTROL is
+                  the platform's, so the words and the shape here are the words
+                  and the shape in workflow-studio, the dashboard and the
+                  desktop. THE ARCHIVED-ITEMS LAW, Arman 2026-09-09. */}
+              <ArchiveFilter
                 value={query.archived}
-                onChange={(v) => onPatchQuery({ archived: v })}
-                options={ARCH_OPTIONS.map((o) =>
-                  o.value === "archived"
-                    ? {
-                        ...o,
-                        hint: String(
-                          facetCount(facets, "archived", "archived"),
-                        ),
-                      }
-                    : o,
-                )}
+                onValueChange={(v) => onPatchQuery({ archived: v })}
+                // A count only while the facets were READ under a filter that
+                // includes archived rows. Facets are fetched with the current
+                // `archived` value (useEntityList), so under "Active only" the
+                // archived facet is 0 BY CONSTRUCTION even when archived rows
+                // exist — printing it would be a screen that lies, and the
+                // package's contract is explicit: pass a count only when it
+                // describes what the list would actually render. (The old
+                // RadioSelect printed that 0 as a hint; this is the fix.)
+                counts={
+                  query.archived === "active"
+                    ? undefined
+                    : { archived: facetCount(facets, "archived", "archived") }
+                }
+                // Shorter WORDING for a ~180px panel whose section is already
+                // headed "Archived" — never a different meaning (the package
+                // sanctions exactly this and owns the full wording elsewhere).
+                // At full length the three segments wrap to two lines each and
+                // the count lands beside a broken phrase.
+                labels={{ active: "Active", archived: "Archived", all: "All" }}
+                className="w-full"
+                aria-label="Archived"
               />
             </FilterSection>
           )}

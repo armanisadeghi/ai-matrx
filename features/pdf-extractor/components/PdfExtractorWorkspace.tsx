@@ -33,7 +33,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 // Legacy openFilePreview removed in Phase 11 — we just open the source URL
@@ -64,6 +63,7 @@ import { PDF_EXTRACTOR_SURFACE_NAME as PDF_EXTRACTOR_SURFACE } from "@/features/
 // `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
 // census H1 2026-09-07). This surface previously carried a local copy.
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 // ─── Sub-tab type for per-extraction view ────────────────────────────────────
 

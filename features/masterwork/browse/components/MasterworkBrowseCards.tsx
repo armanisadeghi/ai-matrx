@@ -17,13 +17,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { BookOpen, Hammer, Play, MoreHorizontal, BrainCircuit } from "lucide-react";
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
 import type { Masterwork, RulebookListRow } from "../../types";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 interface Props {
   rows: RulebookListRow[];

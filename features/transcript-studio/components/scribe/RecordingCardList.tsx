@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Trash2, X } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectArchivedRecordingSegments,
@@ -12,6 +11,7 @@ import {
 import { deleteRecordingSegmentThunk } from "../../redux/thunks";
 import { RecordingCard } from "./RecordingCard";
 import type { TranscriptSection } from "./FullTranscriptDrawer";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 interface RecordingCardListProps {
   sessionId: string;

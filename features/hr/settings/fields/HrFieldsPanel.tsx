@@ -29,7 +29,6 @@
 import { useEffect, useState } from "react";
 import { BrainCircuit, ClipboardList, Info, Lock } from "lucide-react";
 
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +41,7 @@ import { useHrContext } from "../../shared/useHrContext";
 import { fetchHrCustomFieldRegistry } from "../service";
 import { HrSettingsShell } from "../HrSettingsShell";
 import type { HrCustomFieldDefinition, HrCustomFieldTarget } from "../types";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 /** Human names for the HR tokens that participate in the tier-1 kit. */
 const TOKEN_LABEL: Record<string, string> = {

@@ -11,11 +11,17 @@
  *    away … this is a system wide decision for every single item everywhere in
  *    our system, for every single table and every single page."
  *
- * The two ALLOWED implementations, and no third:
- *   • `lib/entity-list`'s `ArchivedFilter` (active | archived | all, default
- *     active, a real server-side RPC parameter) for table/browse surfaces.
- *   • `components/official/ArchivedDisclosure` ("Archived (N)", one click,
- *     closed by default) for card lists that are not entity-list shaped.
+ * The two ALLOWED implementations, and no third — BOTH of them live in
+ * `@ai-matrx/design-system`, never in this repo (0.13.0 / 0.14.0):
+ *   • `ArchiveFilter` (active | archived | all, default active) for
+ *     table/browse surfaces. `lib/entity-list` renders it in Filters & Sort and
+ *     keeps the URL plumbing, so `query.archived` stays a real server-side RPC
+ *     parameter.
+ *   • `ArchivedDisclosure` ("Archived (N)", one click, closed by default) for
+ *     card lists that are not entity-list shaped.
+ * A LOCAL definition of either name is a re-grown twin, which is
+ * `pnpm check:package-twins`' job, not this guard's — this one only asks
+ * whether a control is PRESENT.
  *
  * WHAT THIS GUARD FAILS ON
  *
@@ -52,7 +58,8 @@
  *   • `deleted_at` (soft delete). Deletion is not archiving — db-rules §6d.
  *   • Writes (`.update`, `.insert`, `.upsert`, `.delete`).
  *   • A query whose file carries a real control (`includeArchived`,
- *     `showArchived`, `archiveFilter`, `ArchivedFilter`, `ArchivedDisclosure`,
+ *     `showArchived`, `archiveFilter`, `ArchiveFilter`, `ArchivedFilter`,
+ *     `ArchivedDisclosure`,
  *     `p_include_archived`, …). The guard checks that a control EXISTS and is
  *     wired to the predicate; whether the pixels are right is a browser
  *     verification, not a static one.
@@ -108,8 +115,16 @@ const CONTROL_SIGNALS: readonly RegExp[] = [
   /\bshow_?[Aa]rchived\b/,
   /\bwith_?[Aa]rchived\b/,
   /\barchive[dD]?Filter\b/,
+  // The package's own export names (@ai-matrx/design-system 0.13.0 / 0.14.0).
+  // A surface adopting the ONE control imports THESE — a detector that only
+  // knew the deleted local names would have started reading adoption as
+  // absence the moment the components moved into the package.
   /\bArchivedFilter\b/,
+  /\bArchiveFilter\b/,
+  /\bArchiveFilterValue\b/,
   /\bArchivedDisclosure\b/,
+  /\bDEFAULT_ARCHIVE_FILTER\b/,
+  /\btoArchiveFilter\b/,
   /\bp_include_archived\b/,
   /\barchivedDefault\b/,
   /\bvisibleArchived\b/,
@@ -514,7 +529,7 @@ if (!opts.includeArchived) {
 
 /** GREEN — client-side split, whole corpus loaded, disclosure renders it. */
 const GREEN_DISCLOSURE = `
-import { ArchivedDisclosure } from "@/components/official/ArchivedDisclosure";
+import { ArchivedDisclosure } from "@ai-matrx/design-system";
 const { data } = await supabase.from("canvas_items").select("id, is_archived");
 `;
 
@@ -740,11 +755,12 @@ function main(): void {
     "\nEvery list over an archivable entity carries an archive control, the default\n" +
       "hides archived rows, and revealing them is one or two clicks — Arman, 2026-09-09\n" +
       "(../common-docs/policies/archived-items.md).\n\n" +
-      "Two implementations, no third:\n" +
-      "  • table/browse  → lib/entity-list `supportsArchived` + the Archived radio\n" +
+      "Two implementations, no third — BOTH from @ai-matrx/design-system:\n" +
+      "  • table/browse  → lib/entity-list `supportsArchived` + <ArchiveFilter>\n" +
       "                    (a real server-side RPC parameter)\n" +
-      "  • card lists    → components/official/ArchivedDisclosure — \"Archived (N)\",\n" +
-      "                    closed by default, one click\n\n" +
+      "  • card lists    → <ArchivedDisclosure> — \"Archived (N)\", closed by\n" +
+      "                    default, one click\n" +
+      "Import them; never define them here (pnpm check:package-twins).\n\n" +
       "An internal reader that is genuinely not a user-facing list declares it at the\n" +
       "query: `// archived-items-law-exempt: <reason>` (12+ characters of reason).\n",
   );
