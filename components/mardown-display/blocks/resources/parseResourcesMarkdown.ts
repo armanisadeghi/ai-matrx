@@ -1,3 +1,4 @@
+import type { KIND_KEY } from "@ai-matrx/content-ir";
 import type {
   ResourceCategory as ResourceCategoryKind,
   ResourceCollection,
@@ -5,17 +6,17 @@ import type {
 } from "@/features/content-ir/kinds/generated/kinds.generated";
 
 /** THE SHAPES COME FROM THE REGISTRY; the parser only guarantees the render key. */
-export type ResourceItem = Omit<ResourceItemKind, "__kind" | "id"> &
+export type ResourceItem = Omit<ResourceItemKind, typeof KIND_KEY | "id"> &
   Required<Pick<ResourceItemKind, "description" | "type">> & { id: string };
 
 export type ResourceCategory = Omit<
   ResourceCategoryKind,
-  "__kind" | "id" | "resources"
+  typeof KIND_KEY | "id" | "resources"
 > & { id: string; resources: ResourceItem[] };
 
 export type ResourceCollectionData = Omit<
   ResourceCollection,
-  "__kind" | "categories"
+  typeof KIND_KEY | "categories"
 > & { categories: ResourceCategory[] };
 
 /**

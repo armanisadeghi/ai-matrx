@@ -200,7 +200,7 @@ describe("planMaterialization — the raw kindState gate (2026-08-31 audit)", ()
     // marks kindState "raw"; before the gate, the envelope branch declined it
     // and the parse fallback then happily planned a typed artifact from the
     // same broken bytes.
-    const broken = `{"${"__kind"}": "flashcard_set", "title": 123, "cards": "nope"}`;
+    const broken = `{"${KIND_KEY}": "flashcard_set", "title": 123, "cards": "nope"}`;
     const plan = planMaterialization([
       textBlock(`Result:\n\n\`\`\`json\n${broken}\n\`\`\`\n`),
     ]);

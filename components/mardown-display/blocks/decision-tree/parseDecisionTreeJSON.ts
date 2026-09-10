@@ -1,3 +1,4 @@
+import type { KIND_KEY } from "@ai-matrx/content-ir";
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
 import type {
@@ -6,7 +7,7 @@ import type {
 } from "@/features/content-ir/kinds/generated/kinds.generated";
 export type DecisionNode = Omit<
   DecisionNodeKind,
-  "__kind" | "yes" | "no" | "priority"
+  typeof KIND_KEY | "yes" | "no" | "priority"
 > & {
   /** A render key the wire format has no reason to carry. */
   id: string;
@@ -18,7 +19,7 @@ export type DecisionNode = Omit<
 
 export type DecisionTreeData = Omit<
   DecisionTree,
-  "__kind" | "root" | "additionalDetails"
+  typeof KIND_KEY | "root" | "additionalDetails"
 > & { root: DecisionNode };
 
 /**

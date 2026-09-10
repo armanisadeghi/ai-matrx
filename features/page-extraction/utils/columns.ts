@@ -14,6 +14,7 @@
  * the table inherits the agent's schema / infers from data instead.
  */
 
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import type {
   ColumnSource,
   ColumnType,
@@ -198,7 +199,7 @@ export function inferColumnsFromRows(
  * healed columns. (`__text__` is deliberately NOT here — it IS the data for a
  * text/fallback row and renders as the "Response" column.)
  */
-export const CONTENT_IR_META_KEYS = new Set(["__kind"]);
+export const CONTENT_IR_META_KEYS = new Set([KIND_KEY]);
 
 /**
  * Self-heal a declared column set against the ACTUAL rows. Returns the declared

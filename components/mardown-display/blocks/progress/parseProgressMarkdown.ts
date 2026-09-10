@@ -1,3 +1,4 @@
+import type { KIND_KEY } from "@ai-matrx/content-ir";
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
 import type {
@@ -7,16 +8,16 @@ import type {
 } from "@/features/content-ir/kinds/generated/kinds.generated";
 
 
-export type ProgressItem = Omit<ProgressStep, "__kind" | "id"> & { id: string };
+export type ProgressItem = Omit<ProgressStep, typeof KIND_KEY | "id"> & { id: string };
 
 export type ProgressCategory = Omit<
   ProgressPhase,
-  "__kind" | "id" | "steps"
+  typeof KIND_KEY | "id" | "steps"
 > & { id: string; steps: ProgressItem[] };
 
 export type ProgressTrackerData = Omit<
   ProgressTracker,
-  "__kind" | "phases"
+  typeof KIND_KEY | "phases"
 > & { phases: ProgressCategory[] };
 
 /**

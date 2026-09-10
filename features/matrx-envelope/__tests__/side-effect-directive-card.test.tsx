@@ -31,6 +31,7 @@ import { setStoreSingleton } from "@/lib/redux/store-singleton";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import { matrxDirectiveItemKind } from "@/features/matrx-envelope/directiveHost";
 import AGENT_DEFINITION_ITEM from "@/app/(dev)/demos/kind-directives/agent-definition-item.json";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -91,7 +92,7 @@ describe("THE DIRECTIVE⇄KIND SEAM, as this host supplies it", () => {
   it("stamps __kind FIRST so a consumer types the item from its own first key", () => {
     const stamped = asKindInstance({ name: "X" }, matrxDirectiveItemKind(AGENT_SLUG));
     expect(stamped).not.toBeNull();
-    expect(Object.keys(stamped!)[0]).toBe("__kind");
+    expect(Object.keys(stamped!)[0]).toBe(KIND_KEY);
     expect(stamped!.__kind).toBe("agent_definition");
   });
 

@@ -35,7 +35,7 @@ import { Braces, Check, Copy } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
-import { reconstructRegionValue } from "@ai-matrx/content-ir";
+import { KIND_KEY, reconstructRegionValue } from "@ai-matrx/content-ir";
 import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
 import { useClipboard } from "@/hooks/useClipboard";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
@@ -187,7 +187,7 @@ export const MetaStrip: React.FC<{
   omit: readonly string[];
   className?: string;
 }> = ({ value, omit, className }) => {
-  const skip = new Set<string>([...omit, "__kind"]);
+  const skip = new Set<string>([...omit, KIND_KEY]);
   const entries = Object.entries(value).filter(
     ([key, item]) =>
       !skip.has(key) &&
@@ -237,7 +237,7 @@ export const LeftoverFields: React.FC<{
   omit: readonly string[];
   label?: string;
 }> = ({ value, omit, label = "Also returned" }) => {
-  const skip = new Set<string>([...omit, "__kind"]);
+  const skip = new Set<string>([...omit, KIND_KEY]);
   const rest = Object.entries(value).filter(
     ([key, item]) =>
       !skip.has(key) &&

@@ -1,3 +1,4 @@
+import type { KIND_KEY } from "@ai-matrx/content-ir";
 import type {
   TroubleshootingGuide,
   TroubleshootingIssue as TroubleshootingIssueKind,
@@ -12,7 +13,7 @@ import type {
  */
 export type TroubleshootingStep = Omit<
   TroubleshootingStepKind,
-  "__kind" | "links" | "difficulty"
+  typeof KIND_KEY | "links" | "difficulty"
 > & {
   id: string;
   links?: { title: string; url: string }[];
@@ -21,7 +22,7 @@ export type TroubleshootingStep = Omit<
 
 export type TroubleshootingSolution = Omit<
   TroubleshootingSolutionKind,
-  "__kind" | "steps" | "priority"
+  typeof KIND_KEY | "steps" | "priority"
 > & {
   id: string;
   steps: TroubleshootingStep[];
@@ -30,7 +31,7 @@ export type TroubleshootingSolution = Omit<
 
 export type TroubleshootingIssue = Omit<
   TroubleshootingIssueKind,
-  "__kind" | "solutions" | "severity"
+  typeof KIND_KEY | "solutions" | "severity"
 > & {
   id: string;
   solutions: TroubleshootingSolution[];
@@ -39,7 +40,7 @@ export type TroubleshootingIssue = Omit<
 
 export type TroubleshootingData = Omit<
   TroubleshootingGuide,
-  "__kind" | "issues"
+  typeof KIND_KEY | "issues"
 > & { issues: TroubleshootingIssue[] };
 
 /**

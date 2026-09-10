@@ -34,6 +34,7 @@
  *    person.
  */
 
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
 import { valueTypeFromJsonSchema } from "../served-form/kind-source";
 
@@ -159,7 +160,7 @@ export function plainContextEntries(
   // The whole map WAS the kind instance — it has no leftover plain entries.
   if (kindName === null && str(context.__kind).trim()) return [];
   return Object.entries(context)
-    .filter(([name]) => name !== kindName && name !== "__kind")
+    .filter(([name]) => name !== kindName && name !== KIND_KEY)
     .map(([name, value]) => ({ name, value }));
 }
 
