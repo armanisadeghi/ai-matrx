@@ -56,7 +56,6 @@ function provisionalDocFromFile(params: {
     sourceKind: "cld_file",
     sourceId: params.fileId,
     parentProcessedId: null,
-    archivedAt: null,
     derivationKind: "initial_extract",
     derivationMetadata: null,
     structuredJson: null,

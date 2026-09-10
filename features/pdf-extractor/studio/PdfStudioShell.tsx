@@ -124,7 +124,6 @@ function summaryToProvisionalDoc(s: StudioDocSummary): PdfDocument {
     sourceKind: s.sourceKind,
     sourceId: s.sourceId,
     parentProcessedId: s.parentProcessedId,
-    archivedAt: null,
     derivationKind: s.derivationKind,
     derivationMetadata: null,
     structuredJson: null,
