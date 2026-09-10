@@ -940,7 +940,7 @@ export default function TableConfigModal({
                   ? "You have unsaved changes"
                   : "No changes made"}
             </div>
-            <div className="flex shrink-0 justify-end gap-2">
+            <div className="flex shrink-0 flex-wrap justify-end gap-2">
               <ShareButton
                 resourceType="dataset"
                 resourceId={tableId}
