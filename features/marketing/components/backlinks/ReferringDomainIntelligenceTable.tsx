@@ -19,7 +19,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   referringDomainEntityRef,
-  useReferringDomainMenuSection,
+  buildReferringDomainMenuSection,
   type ReferringDomainMenuRow,
 } from "@/features/marketing/components/backlinks/referring-domain-actions";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -288,7 +288,7 @@ export function ReferringDomainIntelligenceTable({
   const [outreachRow, setOutreachRow] = useState<ReferringDomainProfileRow | null>(
     null,
   );
-  const referringDomainSection = useReferringDomainMenuSection({
+  const referringDomainSection = buildReferringDomainMenuSection({
     brandId,
     siteId,
     getRow: (): ReferringDomainMenuRow | null =>

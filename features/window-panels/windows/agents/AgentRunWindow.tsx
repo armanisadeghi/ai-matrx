@@ -69,7 +69,7 @@ import { setUserVariableValues } from "@/features/agents/redux/execution-system/
 import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 
 const SOURCE_FEATURE: SourceFeature = "agent-runner";
@@ -578,7 +578,7 @@ function AgentRunBodyMenu({
 }) {
   const dispatch = useAppDispatch();
   const agentName = useAppSelector((state: RootState) => selectAgentName(state, agentId) ?? null);
-  const agentSection = useAgentMenuSection({
+  const agentSection = buildAgentMenuSection({
     agentId,
     agentName,
     onRefresh: () => dispatch(fetchFullAgent(agentId)),

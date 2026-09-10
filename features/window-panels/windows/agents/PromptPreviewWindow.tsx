@@ -19,7 +19,7 @@ import { selectInstanceAgentId } from "@/features/agents/redux/execution-system/
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 
 interface PromptPreviewWindowProps {
   isOpen: boolean;
@@ -40,7 +40,7 @@ export default function PromptPreviewWindow({
   const agentName = useAppSelector((s) =>
     agentId ? (selectAgentName(s, agentId) ?? null) : null,
   );
-  const agentSection = useAgentMenuSection({
+  const agentSection = buildAgentMenuSection({
     agentId: agentId ?? "",
     agentName,
     onRefresh: agentId ? () => dispatch(fetchFullAgent(agentId)) : undefined,

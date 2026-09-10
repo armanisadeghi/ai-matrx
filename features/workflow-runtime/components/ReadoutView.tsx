@@ -44,7 +44,7 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 
-import { useWorkflowRunMenuSection } from "../run-actions";
+import { buildWorkflowRunMenuSection } from "../run-actions";
 import {
   describeSource,
   type Readout,
@@ -708,7 +708,7 @@ export function ReadoutView({
 }) {
   const title = readout.title ?? describeSource(readout.source);
   const definitionId = useAppSelector(selectRunDefinitionId(runId));
-  const runMenuSection = useWorkflowRunMenuSection({
+  const runMenuSection = buildWorkflowRunMenuSection({
     getRow: () => ({ runId, definitionId, workflowName: null }),
     label: "This readout",
   });

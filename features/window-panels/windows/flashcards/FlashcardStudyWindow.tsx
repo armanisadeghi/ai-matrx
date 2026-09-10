@@ -31,7 +31,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
-  useFlashcardMenuSection,
+  buildFlashcardMenuSection,
   flashcardEntityRef,
 } from "@/features/flashcards/components/flashcard-menu";
 import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
@@ -102,9 +102,10 @@ export function FlashcardStudyWindow({
     showMobileStudy || (isOpen && completed && isMobile && !mobileDismissed),
   );
 
-  // Hooks stay above the early returns — RULES OF HOOKS. `current` and the
-  // menu section are cheap, pure derivations of `study`, so computing them
-  // here (instead of after the returns) is behaviour-identical.
+  // Hooks stay above the early returns — RULES OF HOOKS (`useOpenFlashcard-
+  // ItemWindow` below is a real hook). `current` and the menu section are
+  // cheap, pure derivations of `study` — `buildFlashcardMenuSection` is a PURE
+  // builder, not a hook (see SECTIONS.md) — so their position is free.
   const current = study.cards[study.currentIndex];
   const openItemWindow = useOpenFlashcardItemWindow();
   const cardRow = current
@@ -116,7 +117,7 @@ export function FlashcardStudyWindow({
         setTitle: study.set?.name ?? null,
       }
     : null;
-  const flashcardSection = useFlashcardMenuSection({
+  const flashcardSection = buildFlashcardMenuSection({
     getRow: () => cardRow,
     actions: {
       onFlip: () => study.flip(),

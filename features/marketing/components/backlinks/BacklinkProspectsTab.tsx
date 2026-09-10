@@ -49,7 +49,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   prospectDomainEntityRef,
-  useProspectDomainMenuSection,
+  buildProspectDomainMenuSection,
   type ProspectDomainMenuRow,
 } from "@/features/marketing/components/backlinks/prospect-actions";
 import {
@@ -359,7 +359,7 @@ export function BacklinkProspectsTab({
     const partyId = prospects.partyByDomainId[id];
     return partyId ? [partyId] : [];
   });
-  const prospectMenuSection = useProspectDomainMenuSection({
+  const prospectMenuSection = buildProspectDomainMenuSection({
     getRow: (): ProspectDomainMenuRow | null =>
       clickedRow
         ? {

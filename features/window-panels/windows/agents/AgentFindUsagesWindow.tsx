@@ -22,7 +22,7 @@ import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks"
 import type { RootState } from "@/lib/redux/store";
 import { AgentUsagesEngine } from "@/features/agents/components/usages/AgentUsagesEngine";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 
 interface AgentFindUsagesWindowProps {
@@ -40,7 +40,7 @@ export function AgentFindUsagesWindow({ isOpen, onClose, agentId }: AgentFindUsa
   );
   const dispatch = useAppDispatch();
   const openAgentContentWindow = useOpenAgentContentWindow();
-  const agentSection = useAgentMenuSection({
+  const agentSection = buildAgentMenuSection({
     agentId: effectiveId ?? "",
     agentName,
     onRefresh: effectiveId ? () => dispatch(fetchFullAgent(effectiveId)) : undefined,

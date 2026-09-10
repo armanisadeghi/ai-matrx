@@ -11,7 +11,7 @@
  * chat-artifact table) and `QuickDataWindow`'s `QuickDataSheet` (table picker
  * + inline preview) — both windows in `features/window-panels/windows/`, both
  * previously answering a right-click with whatever page sat underneath. This
- * module is the fix: a host calls `useDatasetTableMenuSection` with a
+ * module is the fix: a host calls `buildDatasetTableMenuSection` with a
  * `getRow` reading its own selected-table state and gets the same actions
  * everywhere. Future adopters: `DataTableDetailClient` (`/data/[id]`),
  * `OrgResourceList`, `DatasetPeek` — same `udt_datasets` row, no menu of
@@ -53,7 +53,7 @@ export function datasetTableEntityRef(
   };
 }
 
-export function useDatasetTableMenuSection(opts: {
+export function buildDatasetTableMenuSection(opts: {
   /** The table the menu was opened on (or the window's single table). */
   getRow: () => DatasetTableMenuRow | null;
   /** Label for the section heading. */

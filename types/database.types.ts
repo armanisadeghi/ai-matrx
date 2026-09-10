@@ -53280,6 +53280,7 @@ export type Database = {
           pinned_context: Json
           pins: Json
           provision_key: string | null
+          renamed_from_key: string | null
           required_context_policies: string[]
           required_output_keys: string[]
           source_mandate_id: string | null
@@ -53317,6 +53318,7 @@ export type Database = {
           pinned_context?: Json
           pins?: Json
           provision_key?: string | null
+          renamed_from_key?: string | null
           required_context_policies?: string[]
           required_output_keys?: string[]
           source_mandate_id?: string | null
@@ -53354,6 +53356,7 @@ export type Database = {
           pinned_context?: Json
           pins?: Json
           provision_key?: string | null
+          renamed_from_key?: string | null
           required_context_policies?: string[]
           required_output_keys?: string[]
           source_mandate_id?: string | null
@@ -53380,6 +53383,91 @@ export type Database = {
           {
             foreignKeyName: "definition_source_mandate_id_fkey"
             columns: ["source_mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+        ]
+      }
+      observation: {
+        Row: {
+          attempted_count: number
+          created_at: string
+          created_by: string | null
+          deployed_revision: string | null
+          executed_count: number
+          first_observed_at: string
+          id: string
+          last_observed_at: string
+          mandate_id: string
+          mandate_key: string
+          metadata: Json
+          organization_id: string
+          repo_slug: string | null
+          resolved_count: number
+          site_identity_hash: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          attempted_count?: number
+          created_at?: string
+          created_by?: string | null
+          deployed_revision?: string | null
+          executed_count?: number
+          first_observed_at?: string
+          id?: string
+          last_observed_at?: string
+          mandate_id: string
+          mandate_key: string
+          metadata?: Json
+          organization_id: string
+          repo_slug?: string | null
+          resolved_count?: number
+          site_identity_hash?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          attempted_count?: number
+          created_at?: string
+          created_by?: string | null
+          deployed_revision?: string | null
+          executed_count?: number
+          first_observed_at?: string
+          id?: string
+          last_observed_at?: string
+          mandate_id?: string
+          mandate_key?: string
+          metadata?: Json
+          organization_id?: string
+          repo_slug?: string | null
+          resolved_count?: number
+          site_identity_hash?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "observation_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observation_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "observation_mandate_id_fkey"
+            columns: ["mandate_id"]
             isOneToOne: false
             referencedRelation: "vw_shortcut"
             referencedColumns: ["mandate_id"]
@@ -53441,6 +53529,206 @@ export type Database = {
           provision_key?: string
           updated_at?: string
           updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      reference: {
+        Row: {
+          caller_identity_hash: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          file_path: string | null
+          flag: string
+          id: string
+          identity_hash: string
+          language: string | null
+          line: number | null
+          mandate_id: string | null
+          mandate_key: string
+          metadata: Json
+          occurrence_n: number | null
+          organization_id: string
+          package_name: string | null
+          package_path: string | null
+          presence: string
+          reference_type_id: string
+          repo_slug: string | null
+          revision: string
+          revision_kind: string
+          scan_id: string | null
+          symbol: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          caller_identity_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          file_path?: string | null
+          flag?: string
+          id?: string
+          identity_hash: string
+          language?: string | null
+          line?: number | null
+          mandate_id?: string | null
+          mandate_key: string
+          metadata?: Json
+          occurrence_n?: number | null
+          organization_id: string
+          package_name?: string | null
+          package_path?: string | null
+          presence?: string
+          reference_type_id: string
+          repo_slug?: string | null
+          revision: string
+          revision_kind: string
+          scan_id?: string | null
+          symbol?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          caller_identity_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          file_path?: string | null
+          flag?: string
+          id?: string
+          identity_hash?: string
+          language?: string | null
+          line?: number | null
+          mandate_id?: string | null
+          mandate_key?: string
+          metadata?: Json
+          occurrence_n?: number | null
+          organization_id?: string
+          package_name?: string | null
+          package_path?: string | null
+          presence?: string
+          reference_type_id?: string
+          repo_slug?: string | null
+          revision?: string
+          revision_kind?: string
+          scan_id?: string | null
+          symbol?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "scan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scan: {
+        Row: {
+          coverage: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          finding_counts: Json
+          finished_at: string | null
+          id: string
+          languages: string[]
+          metadata: Json
+          observer: string | null
+          organization_id: string
+          package_name: string | null
+          package_path: string
+          repo_slug: string
+          revision: string
+          revision_kind: string
+          scanner_version: string
+          started_at: string | null
+          updated_at: string
+          updated_by: string | null
+          verification_status: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          coverage?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          finding_counts?: Json
+          finished_at?: string | null
+          id?: string
+          languages?: string[]
+          metadata?: Json
+          observer?: string | null
+          organization_id: string
+          package_name?: string | null
+          package_path: string
+          repo_slug: string
+          revision: string
+          revision_kind: string
+          scanner_version: string
+          started_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_status: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          coverage?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          finding_counts?: Json
+          finished_at?: string | null
+          id?: string
+          languages?: string[]
+          metadata?: Json
+          observer?: string | null
+          organization_id?: string
+          package_name?: string | null
+          package_path?: string
+          repo_slug?: string
+          revision?: string
+          revision_kind?: string
+          scanner_version?: string
+          started_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_status?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -53539,6 +53827,68 @@ export type Database = {
           placement_type: string | null
         }
         Relationships: []
+      }
+      reference_latest_deployed: {
+        Row: {
+          caller_identity_hash: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          file_path: string | null
+          flag: string | null
+          id: string | null
+          identity_hash: string | null
+          language: string | null
+          line: number | null
+          mandate_id: string | null
+          mandate_key: string | null
+          metadata: Json | null
+          occurrence_n: number | null
+          organization_id: string | null
+          package_name: string | null
+          package_path: string | null
+          presence: string | null
+          reference_type_id: string | null
+          repo_slug: string | null
+          revision: string | null
+          revision_kind: string | null
+          scan_id: string | null
+          symbol: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "shortcut_key_map"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shortcut"
+            referencedColumns: ["mandate_id"]
+          },
+          {
+            foreignKeyName: "reference_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "scan"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shortcut_key_map: {
         Row: {
@@ -53673,6 +54023,7 @@ export type Database = {
         Args: { p_label: string; p_surface: string }
         Returns: string
       }
+      mandate_references: { Args: { p_mandate_key: string }; Returns: Json }
       missing_output_keys: {
         Args: { p_output_schema: Json; p_required_output_keys: string[] }
         Returns: string[]
@@ -53734,6 +54085,7 @@ export type Database = {
       sanitize_shortcut_segment: { Args: { p_seg: string }; Returns: string }
       shortcut_slug: { Args: { p_text: string }; Returns: string }
       shortcut_treatment_config: { Args: { p_row: Json }; Returns: Json }
+      submit_scan_report: { Args: { p_report: Json }; Returns: Json }
       validate_treatment_config: {
         Args: { p_config: Json; p_tier: string }
         Returns: boolean

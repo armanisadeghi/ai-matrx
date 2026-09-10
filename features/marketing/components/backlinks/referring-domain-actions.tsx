@@ -47,7 +47,7 @@ export function referringDomainEntityRef(
   };
 }
 
-export function useReferringDomainMenuSection(opts: {
+export function buildReferringDomainMenuSection(opts: {
   brandId?: string | null;
   siteId: string;
   /** The row the menu was opened on, resolved at select time. */

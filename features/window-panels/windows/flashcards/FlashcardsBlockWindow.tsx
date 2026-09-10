@@ -28,7 +28,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
-  useFlashcardMenuSection,
+  buildFlashcardMenuSection,
   flashcardEntityRef,
   resolveFlashcardGridIndex,
   type FlashcardMenuRow,
@@ -92,9 +92,10 @@ export function FlashcardsBlockWindow({
     isOpen && isMobileView && set.flashcards.length > 0,
   );
 
-  // Hooks stay above the early return — RULES OF HOOKS. The menu section is a
-  // pure derivation of state already computed above.
-  const flashcardSection = useFlashcardMenuSection({
+  // The menu section is a PURE builder (`build*`, not `use*` — see
+  // SECTIONS.md), a derivation of state already computed above. It sits here
+  // for readability, not because of any hook-order rule.
+  const flashcardSection = buildFlashcardMenuSection({
     getRow: () => clickedCard,
     actions: {
       onOpenItem: (row) =>

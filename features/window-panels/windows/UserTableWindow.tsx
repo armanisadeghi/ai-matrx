@@ -15,7 +15,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   datasetTableEntityRef,
-  useDatasetTableMenuSection,
+  buildDatasetTableMenuSection,
   type DatasetTableMenuRow,
 } from "@/features/data-tables/dataset-table-actions";
 
@@ -49,7 +49,7 @@ function UserTableWindowBody({
   const row: DatasetTableMenuRow | null = tableId
     ? { id: tableId, name: title !== "Table" ? title : null }
     : null;
-  const datasetSection = useDatasetTableMenuSection({ getRow: () => row });
+  const datasetSection = buildDatasetTableMenuSection({ getRow: () => row });
 
   return (
     <WindowPanel

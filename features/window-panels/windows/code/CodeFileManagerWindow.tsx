@@ -47,7 +47,7 @@ import type { CodeFileRecord } from "@/features/code-files/redux/code-files.type
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
-  useCodeFileMenuSection,
+  buildCodeFileMenuSection,
   codeFileEntityRef,
   type CodeFileMenuRow,
 } from "@/features/code-files/file-menu";
@@ -165,7 +165,7 @@ export function CodeFileManagerWindow({
   // ── Right-click menu (`code_file` identity, shared with LibraryTreeNode's
   // `/code` workspace tree via features/code-files/file-menu.tsx) ───────────
   const [clickedFile, setClickedFile] = useState<CodeFileRecord | null>(null);
-  const codeFileSection = useCodeFileMenuSection({
+  const codeFileSection = buildCodeFileMenuSection({
     getRow: () => clickedFile,
     actions: {
       onOpen: (row) => {

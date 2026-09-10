@@ -21,7 +21,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
-  useFlashcardMenuSection,
+  buildFlashcardMenuSection,
   flashcardEntityRef,
   resolveFlashcardGridIndex,
   type FlashcardMenuRow,
@@ -54,7 +54,7 @@ export function FlashcardSubcardsWindow({
     null,
   );
   const openItemWindow = useOpenFlashcardItemWindow();
-  const flashcardSection = useFlashcardMenuSection({
+  const flashcardSection = buildFlashcardMenuSection({
     getRow: () => clickedCard,
     actions: {
       onOpenItem: (row) =>

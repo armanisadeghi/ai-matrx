@@ -35,7 +35,7 @@ import { RunStatusChip, runStatusLabel } from "../../run-status";
 import {
   runEntityRef,
   runMenuContent,
-  useWorkflowRunMenuSection,
+  buildWorkflowRunMenuSection,
   type WorkflowRunMenuRow,
 } from "../../run-actions";
 import { runDurationMs, runHref, type RunListRow } from "../runs";
@@ -163,7 +163,7 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
     },
   ];
 
-  const runMenuSection = useWorkflowRunMenuSection({
+  const runMenuSection = buildWorkflowRunMenuSection({
     getRow: (): WorkflowRunMenuRow | null =>
       clickedRow
         ? {

@@ -68,7 +68,10 @@ function IndeterminateBar({ className }: { className?: string }) {
   return (
     <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
       <div
-        className={cn("h-full w-1/3 animate-[kit-slide_1.4s_ease-in-out_infinite] rounded-full", className)}
+        className={cn(
+          "h-full w-1/3 animate-[kit-slide_1.4s_ease-in-out_infinite] rounded-full",
+          className,
+        )}
       />
       <style>{`@keyframes kit-slide{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}`}</style>
     </div>
@@ -88,7 +91,8 @@ export function KitBoard({
     (t) => t.status === "success" && !t.stillGenerating,
   ).length;
   const stillWorking = kit.targets.filter(
-    (t) => t.status === "running" || (t.status === "success" && t.stillGenerating),
+    (t) =>
+      t.status === "running" || (t.status === "success" && t.stillGenerating),
   ).length;
   const failed = kit.targets.filter((t) => t.status === "error").length;
 
@@ -182,9 +186,7 @@ function SourceStage({
   const pct =
     p?.ratio !== undefined ? Math.round(Math.min(1, p.ratio) * 100) : null;
   const elapsed =
-    kit.startedAt !== null
-      ? (kit.ingestFinishedAt ?? now) - kit.startedAt
-      : 0;
+    kit.startedAt !== null ? (kit.ingestFinishedAt ?? now) - kit.startedAt : 0;
 
   return (
     <div
@@ -214,7 +216,8 @@ function SourceStage({
           </p>
           <p className="truncate text-xs text-muted-foreground">
             {ingesting ? (
-              (p?.detail ?? "This can take a moment for big files — it's working.")
+              (p?.detail ??
+              "This can take a moment for big files — it's working.")
             ) : kit.source ? (
               <>
                 {kit.source.meta.pages
@@ -257,9 +260,8 @@ function SourceStage({
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
             Your document is longer than one kit can read, so this kit covers
-            only the first{" "}
-            {kit.source.meta.chars.toLocaleString()} characters of it. Split the
-            rest into a second upload to cover the whole thing.
+            only the first {kit.source.meta.chars.toLocaleString()} characters
+            of it. Split the rest into a second upload to cover the whole thing.
           </span>
         </p>
       )}

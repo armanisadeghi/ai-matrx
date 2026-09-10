@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 
 type PanelView = "info" | "surface";
@@ -100,7 +100,7 @@ export default function AgentSettingsWindow({
     activeTabId ? (selectAgentName(s, activeTabId) ?? null) : null,
   );
   const openAgentContentWindow = useOpenAgentContentWindow();
-  const agentSection = useAgentMenuSection({
+  const agentSection = buildAgentMenuSection({
     agentId: activeTabId ?? "",
     agentName: activeAgentName,
     onRefresh: activeTabId ? () => dispatch(fetchFullAgent(activeTabId)) : undefined,

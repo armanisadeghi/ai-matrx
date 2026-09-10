@@ -82,7 +82,7 @@ export function resolveFlashcardGridIndex(
   return idx >= 0 ? idx : null;
 }
 
-export function useFlashcardMenuSection(opts: {
+export function buildFlashcardMenuSection(opts: {
   /** The card the menu was opened on, resolved at select time. */
   getRow: () => FlashcardMenuRow | null;
   actions?: FlashcardMenuActions;

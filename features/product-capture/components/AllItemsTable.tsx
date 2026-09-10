@@ -37,7 +37,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   captureItemEntityRef,
-  useCaptureItemMenuSection,
+  buildCaptureItemMenuSection,
   type CaptureItemMenuRow,
 } from "../item-actions";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -280,10 +280,10 @@ export function AllItemsTable() {
     },
   ];
 
-  // Hoisted above the mobile early return — RULES OF HOOKS. The menu section
-  // is a pure derivation of state already computed above; the desktop branch
-  // consumes exactly the same value it did before.
-  const captureItemMenuSection = useCaptureItemMenuSection({
+  // `build*MenuSection` is a PURE builder, not a hook (see SECTIONS.md — the
+  // naming law). It sits above the mobile early return only because the
+  // desktop branch below is its only consumer; no hook-order rule applies.
+  const captureItemMenuSection = buildCaptureItemMenuSection({
     getRow: (): CaptureItemMenuRow | null =>
       clickedRow
         ? { id: clickedRow.id, code: clickedRow.code, status: clickedRow.status }

@@ -16,7 +16,7 @@ import {
 import { AgentSamplesManager } from "@/features/agents/components/samples/AgentSamplesManager";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { useAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
+import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
@@ -42,7 +42,7 @@ export default function AgentTestCasesWindow({
   const agentName = useAppSelector((s: RootState) => selectAgentName(s, agentId) ?? null);
   const openAgentContentWindow = useOpenAgentContentWindow();
 
-  const agentSection = useAgentMenuSection({
+  const agentSection = buildAgentMenuSection({
     agentId,
     agentName,
     onRefresh: () => dispatch(fetchFullAgent(agentId)),

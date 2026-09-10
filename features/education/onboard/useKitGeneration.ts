@@ -71,7 +71,9 @@ export function useKitGeneration(): UseKitGeneration {
 
   const [kitTitle, setKitTitle] = useState<KitTitle | null>(null);
   const [phase, setPhase] = useState<KitPhase>("idle");
-  const [ingestProgress, setIngestProgress] = useState<IngestProgress | null>(null);
+  const [ingestProgress, setIngestProgress] = useState<IngestProgress | null>(
+    null,
+  );
   const [targets, setTargets] = useState<KitTargetState[]>([]);
   const [source, setSource] = useState<NormalizedIngest | null>(null);
   const [error, setError] = useState<string | null>(null);

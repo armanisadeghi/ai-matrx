@@ -21,7 +21,7 @@ import type { FaceImageRef } from "@/components/mardown-display/blocks/flashcard
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
-  useFlashcardMenuSection,
+  buildFlashcardMenuSection,
   flashcardEntityRef,
 } from "@/features/flashcards/components/flashcard-menu";
 import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
@@ -68,10 +68,11 @@ export function FlashcardItemWindow({
     isOpen && isMobileView && Boolean(front),
   );
 
-  // Hooks stay above the early return — RULES OF HOOKS. The menu section is a
-  // pure derivation of the props, so building it here is behaviour-identical.
+  // Hooks stay above the early return — RULES OF HOOKS. The menu section
+  // itself is a PURE builder (`build*`, not `use*` — see SECTIONS.md), so its
+  // position is a readability choice, not a hook-order constraint.
   const cardRow = { front, back, index };
-  const flashcardSection = useFlashcardMenuSection({
+  const flashcardSection = buildFlashcardMenuSection({
     getRow: () => cardRow,
     unavailable: {
       "flashcard-flip": unavailableHere("the flashcard grid"),

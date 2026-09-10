@@ -14,7 +14,7 @@
  *
  * Usage:
  *
- *   const section = useAgentMenuSection({
+ *   const section = buildAgentMenuSection({
  *     agentId,
  *     agentName,
  *     onRefresh: () => dispatch(fetchFullAgent(agentId)),
@@ -61,7 +61,7 @@ export interface AgentMenuSectionArgs {
   unavailable?: AvailabilityMap;
 }
 
-export function useAgentMenuSection({
+export function buildAgentMenuSection({
   agentId,
   agentName,
   onRefresh,
