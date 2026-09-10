@@ -47,6 +47,18 @@ file by hand is the only recovery, and it must be redone after every sync.
 problem — it hits every cross-repo feature the moment the backend half merges first, which
 is the normal order.
 
+**Second-order damage — the parking reflex.** The dropped types read as "this UI has no
+contract", and the lane was then deleted a SECOND time on that reading
+(`aa877c239f` — "park reference UI until live contract", same file set as `4ac345621a`;
+restored again). Parking is the wrong remedy twice over: the contract exists in aidream
+`main` (`ea79e334f`) and is checked into this repo from aidream's own working-tree
+`openapi.json`, so `pnpm type-check` is green with the lane present; and the surfaces
+degrade HONESTLY without the endpoint — "The reference report failed. This list is not
+empty — it is unknown." plus the verbatim error — which is exactly what a screen is
+supposed to do while the deploy train catches up. **Do not delete a lane because its
+backend half has not shipped yet;** re-add the paths from
+`../aidream/aidream/api/generated/openapi.json` and let the honest failure state do its job.
+
 ### D301 — the route-manifest chain is broken at both links, and the half that has a guard runs nowhere
 
 Found by the `dedupe-and-verify` rotation pass on the `route-liveness` node, 2026-09-09.
