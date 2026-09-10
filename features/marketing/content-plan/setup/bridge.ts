@@ -260,12 +260,14 @@ const STAGE_STATES: readonly SiteStageState[] = [
 export async function fetchSitePipeline(
   dispatch: AppDispatch,
   siteId: string,
+  organizationId: string,
 ): Promise<SitePipelineData> {
   const result = await dispatch(
     callApi({
       path: "/content-plan/sites/{site_id}/pipeline",
       method: "GET",
       pathParams: { site_id: siteId },
+      scopeOverrides: { organization_id: organizationId },
     }),
   );
   const data = requireBody(result, "site pipeline");

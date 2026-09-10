@@ -17,24 +17,31 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { planKeys } from "../data/hooks";
 import { fetchSitePipeline, type SitePipelineData } from "../setup/bridge";
 
-export function useSitePipeline(siteId: string | null) {
+export function useSitePipeline(
+  siteId: string | null,
+  organizationId: string | null,
+) {
   const dispatch = useAppDispatch();
 
   const query = useQuery<SitePipelineData>({
     queryKey: planKeys.sitePipeline(siteId ?? "none"),
-    enabled: Boolean(siteId),
+    enabled: Boolean(siteId && organizationId),
     retry: false,
     staleTime: 60_000,
     queryFn: () => {
-      if (!siteId) throw new Error("A plan site is required for the pipeline.");
-      return fetchSitePipeline(dispatch, siteId);
+      if (!siteId || !organizationId) {
+        throw new Error(
+          "The plan site and its organization are required for the pipeline.",
+        );
+      }
+      return fetchSitePipeline(dispatch, siteId, organizationId);
     },
   });
 
   return {
     /** null until loaded — the strip renders nothing rather than lying zeros. */
     pipeline: query.data ?? null,
-    isLoading: query.isLoading,
+    isLoading: Boolean(siteId && !organizationId) || query.isLoading,
     error: query.error,
     refetch: query.refetch,
   };

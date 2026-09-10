@@ -231,7 +231,7 @@ export function ContentPlanWorkbench({
   // The SITE-level pipeline (Arman, 2026-08-21: the page rail's steps, at the
   // top level) — server-derived from live rows, rendered in the toolbar's KPI
   // zone. Each stage chip jumps to the view where that stage's work happens.
-  const sitePipeline = useSitePipeline(siteId);
+  const sitePipeline = useSitePipeline(siteId, site?.organization_id ?? null);
   const handlePipelineStage = useCallback(
     (key: string) => {
       const target: PlanView =
@@ -844,6 +844,8 @@ export function ContentPlanWorkbench({
               <SitePipelineStrip
                 stages={sitePipeline.pipeline?.stages ?? null}
                 isLoading={sitePipeline.isLoading}
+                error={sitePipeline.error}
+                onRetry={() => void sitePipeline.refetch()}
                 onSelectStage={handlePipelineStage}
               />
             }

@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import {
   Tooltip,
   TooltipContent,
@@ -46,10 +47,7 @@ function StageIcon({ state }: { state: SitePipelineStage["state"] }) {
       );
     case "in_progress":
       return (
-        <Circle
-          className="h-3 w-3 fill-primary/30 text-primary"
-          aria-hidden
-        />
+        <Circle className="h-3 w-3 fill-primary/30 text-primary" aria-hidden />
       );
     default:
       return <Circle className="h-3 w-3 text-muted-foreground" aria-hidden />;
@@ -59,22 +57,41 @@ function StageIcon({ state }: { state: SitePipelineStage["state"] }) {
 export function SitePipelineStrip({
   stages,
   isLoading,
+  error,
+  onRetry,
   onSelectStage,
 }: {
   stages: SitePipelineStage[] | null;
   isLoading: boolean;
+  error: unknown;
+  onRetry: () => void;
   /** Jump to where this stage's work happens. */
   onSelectStage?: (key: string) => void;
 }) {
+  if (error) {
+    return (
+      <InlineQueryError
+        what="the site's pipeline"
+        error={error}
+        onRetry={onRetry}
+      />
+    );
+  }
   if (!stages || stages.length === 0) {
-    // Honesty over decoration: no zeros while loading, nothing on error —
-    // the toolbar simply has no pipeline zone until the truth arrives.
+    // Honesty over decoration: no zeros while loading. A settled empty
+    // response is still visible because the server contract promises stages.
     return isLoading ? (
       <span className="flex items-center gap-1 text-xs text-muted-foreground">
         <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
         Reading the site's pipeline…
       </span>
-    ) : null;
+    ) : (
+      <InlineQueryError
+        what="the site's pipeline"
+        error={new Error("The server returned no pipeline stages.")}
+        onRetry={onRetry}
+      />
+    );
   }
   return (
     <span className="flex min-w-0 items-center gap-0.5 overflow-x-auto">

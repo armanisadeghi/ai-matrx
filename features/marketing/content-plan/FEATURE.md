@@ -2,7 +2,7 @@
 
 **Status:** active
 **Tier:** 1
-**Last updated:** 2026-08-29
+**Last updated:** 2026-09-10
 
 ## Draft brief — SERVER-side, persisted on arrival
 
@@ -312,6 +312,9 @@ research"` and keyword #1 is the page's target query; at most ONE more is
    level: Copy plus the canonical Copy-for-AI dropdown. JSON, view variants,
    and the whole-page Groomer live inside that one AI menu; a standalone JSON
    icon, adjacent Groomer launcher, or text-labeled copy button is forbidden.
+   The site pipeline read binds `web.site.organization_id` explicitly because
+   the picker spans every visible organization. A failed or empty pipeline is
+   `InlineQueryError` with Retry, never a toolbar zone that silently vanishes.
    1b. **Table view** (`PlanNodesTable.tsx`, `?view=table`): every planned URL
    as one `MatrxDataTable` row — CONTROLLED mode over the canonical local
    engine (`filterAndSortRows`) since the plan is fully client-loaded.
@@ -880,6 +883,12 @@ No new server capability was added: `cms-align` always took a node-id array,
 always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
+
+- 2026-09-10 — **The site pipeline survives cross-organization navigation and
+  fails visibly.** `useSitePipeline` waits for and binds the viewed site's own
+  organization on the backend request; `SitePipelineStrip` renders the shared
+  retryable `InlineQueryError` for failed or contract-empty reads instead of
+  removing the eight-stage KPI zone.
 
 - 2026-09-09 — Request-only floating runs now replace their last server phase
   with the terminal request status, so a completed review says `Done` instead
