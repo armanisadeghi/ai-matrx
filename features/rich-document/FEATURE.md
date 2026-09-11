@@ -135,6 +135,11 @@ This is a formatting boundary, not another content-recognition pass. Never mount
 
 Guards: `components/mardown-display/blocks/xml/XmlBlock.test.tsx` exercises the real Markdown core and literal-content boundaries; `components/mardown-display/chat-markdown/__tests__/xmlRenderingPaths.test.tsx` checks rendered Markdown across ingress adapters (its unrelated block leaves are stubbed); `components/mardown-display/chat-markdown/block-registry/__tests__/block-dispatch.test.tsx` checks dispatch separately. These guards complement browser verification rather than replacing it.
 
+The broader [nested rendering audit](./NESTED_RENDERING_AUDIT.md) records tested
+container/child combinations, confirmed sibling defects, intentional literal
+boundaries, and remaining coverage limits. New prose leaves need actual DOM
+assertions in addition to the Content IR route matrix.
+
 ## Related features
 
 - **Depends on:** `components/mardown-display/` (the content engine), `lib/redux/slices/overlaySlice.ts` (overlay dispatch), `features/overlays/` (overlay registration), `components/icons/tap-buttons` (button primitives for inline variants), `features/tts/components/StreamingSpeakerButton` (TTS inline button), `features/notes/service/notesApi` (save-to-notes), `features/code-files/service/codeFilesApi` (save-to-code), `features/tasks/redux/taskAssociationsSlice` (save-to-task).
@@ -189,6 +194,8 @@ Guards: `components/mardown-display/blocks/xml/XmlBlock.test.tsx` exercises the 
 ## Change log
 
 Newest first.
+
+- `2026-09-11` — Added the bounded nested-rendering census and strict seeded container/child regression matrix, including real renderer-facing streaming adapters rather than synthesized blocks. Shared result-list/table prose bypasses are covered by DOM guards. Static splitting and the Redux accumulator share the generic XML boundary tracker and linear tag reader; literal fragments split by tools cannot independently promote nested kinds. Same-line continuation uses an iterative queue to avoid stack overflow.
 
 - `2026-09-11` — Generic XML text now renders GFM through the shared Markdown core, with contiguous table/list text, literal code boundaries, retained XML controls, and rendering assertions across direct, stored, Redux, and event inputs. Rich-kind and artifact recognition stays in the outer pipeline.
 

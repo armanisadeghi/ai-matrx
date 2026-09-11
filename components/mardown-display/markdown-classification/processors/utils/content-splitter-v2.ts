@@ -47,6 +47,7 @@ import {
 import { splitAroundEmbeddedKindJson } from "@/features/content-ir/surfaces/embedded-kind-json";
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
+import { readXmlTag } from "@/components/mardown-display/blocks/xml/readXmlTag";
 
 /**
  * All block type strings this splitter can emit — the union of:
@@ -56,9 +57,7 @@ import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdow
  *                                 stream-events.ts ServerOnlyRenderBlock)
  */
 type SplitterBlockType =
-  | TypedRenderBlock["type"]
-  | ClientOnlyBlockType
-  | ServerOnlyBlockType;
+  TypedRenderBlock["type"] | ClientOnlyBlockType | ServerOnlyBlockType;
 
 /**
  * SplitterBlock — the output type of splitContentIntoBlocksV2.
@@ -166,13 +165,21 @@ export function recoverEmbeddedKindJsonBlocks(
       block.type === "artifact" ||
       block.type === "matrx" ||
       block.type === "matrx_file" ||
+      // Incomplete generic XML owns all nested bytes until a matching root
+      // close confirms a recoverable container. Do not extract a directive or
+      // kind from malformed/in-flight XML through a later adapter pass.
+      (block.type === "code" &&
+        block.language === "xml" &&
+        block.metadata?.isComplete === false) ||
       blockHasResolvedRootKind(block)
     ) {
       recovered.push(block);
       continue;
     }
 
-    const pieces = splitAroundEmbeddedKindJson(block.content);
+    const pieces = splitAroundEmbeddedKindJson(block.content, {
+      excludeLiteralContexts: block.metadata?.genericXmlContainer === true,
+    });
     if (pieces.length === 1 && pieces[0]?.type === "container") {
       recovered.push(block);
       continue;
@@ -214,7 +221,6 @@ export function recoverEmbeddedKindJsonBlocks(
 
   return recovered;
 }
-
 
 /**
  * Code-fence languages that promote to a first-class block type (the fence
@@ -586,9 +592,6 @@ const KNOWN_XML_TAG_NAMES: ReadonlySet<string> = new Set([
   ...ATTRIBUTE_XML_BLOCKS,
 ]);
 
-const STRICT_XML_TAG_PATTERN =
-  /<(\/?)([A-Za-z][\w.-]*)(?:\s+(?:[\w.-]+\s*=\s*(?:"[^"]*"|'[^']*')\s*)*)?(\/?)>/g;
-
 /** Extracts key="value" pairs from an XML opening tag string. */
 export function parseXmlAttributes(openingTag: string): Record<string, string> {
   const attrs: Record<string, string> = {};
@@ -882,30 +885,56 @@ interface UnrecognizedXmlStart {
  * It only balances the unknown root tag and deliberately ignores lookalike tags
  * inside fenced code, inline code spans, comments, and CDATA.
  */
+function isEscapedBacktick(line: string, offset: number): boolean {
+  let slashes = 0;
+  for (let i = offset - 1; line[i] === "\\"; i--) slashes++;
+  return slashes % 2 === 1;
+}
+
 class XmlContainerTracker implements UnrecognizedXmlContainerTracker {
   private depth = 0;
   private inComment = false;
   private inCdata = false;
   private inlineTicks = 0;
-  private fenceTicks = 0;
+  private fenceMarker: { char: "`" | "~"; ticks: number } | null = null;
 
   constructor(readonly rootTag: string) {}
 
   consumeLine(line: string, startOffset = 0): number | null {
-    const trimmed = line.trimStart();
-    const fence = /^(\`{3,})/.exec(trimmed);
-    if (fence && !this.inComment && !this.inCdata && this.inlineTicks === 0) {
-      const ticks = fence[1].length;
-      if (this.fenceTicks === 0) {
-        this.fenceTicks = ticks;
+    const fence = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(line);
+    if (!this.inComment && !this.inCdata && this.inlineTicks === 0 && fence) {
+      const marker = fence[1];
+      const char = marker[0] as "`" | "~";
+      const suffix = fence[2];
+      if (marker.length >= 3) {
+        if (!this.fenceMarker) {
+          this.fenceMarker = { char, ticks: marker.length };
+          return null;
+        }
+        if (
+          char === this.fenceMarker.char &&
+          marker.length >= this.fenceMarker.ticks &&
+          suffix.trim() === ""
+        ) {
+          this.fenceMarker = null;
+        }
         return null;
       }
-      if (ticks >= this.fenceTicks) this.fenceTicks = 0;
-      return null;
     }
-    if (this.fenceTicks > 0) return null;
+    if (this.fenceMarker) return null;
 
     for (let i = startOffset; i < line.length; i++) {
+      // A code span owns all bytes until its matching delimiter. In particular,
+      // comment/CDATA-looking bytes inside it cannot change XML scanner state.
+      if (this.inlineTicks > 0) {
+        if (line[i] === "`") {
+          let end = i;
+          while (line[end] === "`") end++;
+          if (end - i === this.inlineTicks) this.inlineTicks = 0;
+          i = end - 1;
+        }
+        continue;
+      }
       if (this.inComment) {
         const end = line.indexOf("-->", i);
         if (end === -1) return null;
@@ -930,25 +959,20 @@ class XmlContainerTracker implements UnrecognizedXmlContainerTracker {
         i += 8;
         continue;
       }
-      if (line[i] === "`") {
+      if (line[i] === "`" && !isEscapedBacktick(line, i)) {
         let end = i;
         while (line[end] === "`") end++;
-        const ticks = end - i;
-        if (this.inlineTicks === 0) this.inlineTicks = ticks;
-        else if (ticks === this.inlineTicks) this.inlineTicks = 0;
+        this.inlineTicks = end - i;
         i = end - 1;
         continue;
       }
-      if (this.inlineTicks > 0 || line[i] !== "<") continue;
-      const tag =
-        /^<\/?([A-Za-z][\w.-]*)(?:\s+(?:[\w.-]+\s*=\s*(?:"[^"]*"|'[^']*')\s*)*)?(\/?)>/.exec(
-          line.slice(i),
-        );
+      if (line[i] !== "<") continue;
+      const tag = readXmlTag(line, i);
       if (!tag) continue;
-      const tagEnd = i + tag[0].length;
-      if (tag[1] === this.rootTag) {
-        if (tag[0].startsWith("</")) this.depth--;
-        else if (tag[2] !== "/") this.depth++;
+      const tagEnd = i + tag.raw.length;
+      if (tag.tagName === this.rootTag) {
+        if (tag.isClosing) this.depth--;
+        else if (!tag.isSelfClosing) this.depth++;
         if (this.depth === 0) return tagEnd;
       }
       i = tagEnd - 1;
@@ -962,11 +986,9 @@ export function startUnrecognizedXmlContainer(
   line: string,
 ): UnrecognizedXmlStart | null {
   const firstTrimmed = line.trimStart();
-  const openingMatch = firstTrimmed.match(
-    /^<([A-Za-z][\w.-]*)(?:\s+(?:[\w.-]+\s*=\s*(?:"[^"]*"|'[^']*')\s*)*)?(\/?)>/,
-  );
-  if (!openingMatch) return null;
-  const rootTag = openingMatch[1];
+  const openingTag = readXmlTag(firstTrimmed, 0);
+  if (!openingTag || openingTag.isClosing) return null;
+  const rootTag = openingTag.tagName;
   if (
     KNOWN_XML_TAG_NAMES.has(rootTag) ||
     ALLOWED_RAW_HTML_TAGS.has(rootTag.toLowerCase())
@@ -1010,7 +1032,7 @@ function extractUnrecognizedXmlBlock(
     return {
       content: contentLines.join("\n").trim(),
       nextIndex: lineIndex + 1,
-      metadata: { isComplete: true },
+      metadata: { isComplete: true, genericXmlContainer: true },
     };
   }
   return null;
@@ -2263,6 +2285,27 @@ export const splitContentIntoBlocksV2 = (
       });
 
       i = unrecognizedXml.nextIndex;
+      continue;
+    }
+
+    // An unknown, line-leading XML opener owns the remaining source even when
+    // its close never arrives. Keeping it as XML code prevents downstream
+    // text expansion from extracting directive/kind-looking JSON from a
+    // malformed container while preserving every literal byte.
+    const incompleteUnrecognizedXml =
+      startUnrecognizedXmlContainer(processedLine);
+    if (incompleteUnrecognizedXml) {
+      if (currentText.trim()) {
+        blocks.push({ type: "text", content: currentText.trimEnd() });
+        currentText = "";
+      }
+      blocks.push({
+        type: "code",
+        content: lines.slice(i).map(normalizeLine).join("\n").trim(),
+        language: "xml",
+        metadata: { isComplete: false, genericXmlContainer: true },
+      });
+      i = lines.length;
       continue;
     }
 

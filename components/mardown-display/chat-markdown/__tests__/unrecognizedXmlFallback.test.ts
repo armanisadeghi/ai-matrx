@@ -23,7 +23,7 @@ describe("unrecognized XML fallback", () => {
         content:
           '<custom_response status="ok">\n  <value>42</value>\n</custom_response>',
         language: "xml",
-        metadata: { isComplete: true },
+        metadata: { isComplete: true, genericXmlContainer: true },
       },
       { type: "text", content: "After" },
     ]);
@@ -59,14 +59,16 @@ describe("unrecognized XML fallback", () => {
     expect(splitContentIntoBlocksV2("Use <Widget> in this sentence.")).toEqual([
       { type: "text", content: "Use <Widget> in this sentence." },
     ]);
-    expect(splitContentIntoBlocksV2("<custom_response>\nstill streaming")).toEqual(
-      [
-        {
-          type: "text",
-          content: "<custom_response>\nstill streaming",
-        },
-      ],
-    );
+    expect(
+      splitContentIntoBlocksV2("<custom_response>\nstill streaming"),
+    ).toEqual([
+      {
+        type: "code",
+        content: "<custom_response>\nstill streaming",
+        language: "xml",
+        metadata: { isComplete: false, genericXmlContainer: true },
+      },
+    ]);
     expect(
       splitContentIntoBlocksV2(
         "```typescript\nconst value = '<custom>xml</custom>';\n```",
@@ -96,7 +98,7 @@ describe("unrecognized XML fallback", () => {
         type: "code",
         content: "<node><node>child</node></node>",
         language: "xml",
-        metadata: { isComplete: true },
+        metadata: { isComplete: true, genericXmlContainer: true },
       },
       { type: "text", content: "trailing" },
     ]);
@@ -107,14 +109,19 @@ describe("unrecognized XML fallback", () => {
     const complete = `${partial}\n</custom_response>`;
 
     expect(splitContentIntoBlocksV2(partial)).toEqual([
-      { type: "text", content: partial },
+      {
+        type: "code",
+        content: partial,
+        language: "xml",
+        metadata: { isComplete: false, genericXmlContainer: true },
+      },
     ]);
     expect(splitContentIntoBlocksV2(complete)).toEqual([
       {
         type: "code",
         content: complete,
         language: "xml",
-        metadata: { isComplete: true },
+        metadata: { isComplete: true, genericXmlContainer: true },
       },
     ]);
   });
@@ -134,10 +141,9 @@ describe("unrecognized XML fallback", () => {
     expect(splitContentIntoBlocksV2(textBlock.content)).toEqual([
       {
         type: "code",
-        content:
-          "<custom_response>\n<value>42</value>\n</custom_response>",
+        content: "<custom_response>\n<value>42</value>\n</custom_response>",
         language: "xml",
-        metadata: { isComplete: true },
+        metadata: { isComplete: true, genericXmlContainer: true },
       },
     ]);
   });
@@ -168,33 +174,28 @@ describe("unrecognized XML fallback", () => {
     expect(expandTextBlocksInList(renderBlocks)).toEqual([
       expect.objectContaining({
         type: "code",
-        content:
-          "<custom_response>\n<value>42</value>\n</custom_response>",
+        content: "<custom_response>\n<value>42</value>\n</custom_response>",
         language: "xml",
       }),
     ]);
   });
 
   it("promotes XML in preprocessed/server text blocks without changing typed blocks", () => {
-    const xml =
-      "<custom_response>\n<value>42</value>\n</custom_response>";
+    const xml = "<custom_response>\n<value>42</value>\n</custom_response>";
     const alreadyTyped = {
       type: "timeline",
       content: "# Launch",
-      metadata: { isComplete: true },
+      metadata: { isComplete: true, genericXmlContainer: true },
     } as const;
 
     expect(
-      expandTextBlocksInList([
-        { type: "text", content: xml },
-        alreadyTyped,
-      ]),
+      expandTextBlocksInList([{ type: "text", content: xml }, alreadyTyped]),
     ).toEqual([
       {
         type: "code",
         content: xml,
         language: "xml",
-        metadata: { isComplete: true },
+        metadata: { isComplete: true, genericXmlContainer: true },
         isStreamingBlock: undefined,
       },
       alreadyTyped,
@@ -229,6 +230,10 @@ describe("unrecognized XML accumulator container boundaries", () => {
       "comment and CDATA",
       "<!-- </custom> -->\n<![CDATA[</custom>]]>\n`</custom>`",
     ],
+    [
+      "inline comment syntax and tilde fence",
+      "`<!-- </custom> -->`\n~~~js\n</custom>\n~~~ trailing\n~~~",
+    ],
   ])("keeps %s inside the generic XML container", (_name, body) => {
     const source = `<custom><inner>\n${body}\n</inner></custom>`;
     const live = accumulated(source);
@@ -244,17 +249,24 @@ describe("unrecognized XML accumulator container boundaries", () => {
   it("keeps an incomplete generic XML payload lossless on the text path", () => {
     const source = "<custom>\n| a | b |\n| - | - |";
     expect(accumulated(source)).toEqual([
-      expect.objectContaining({ type: "text", content: source }),
+      expect.objectContaining({
+        type: "code",
+        content: source,
+        language: "xml",
+      }),
     ]);
   });
 });
 
 it("keeps same-line trailing prose outside the streamed generic XML block", () => {
   const latestById = new Map<string, RenderBlockPayload>();
-  const accumulator = new StreamBlockAccumulator("xml-trailing-test", (payload) => {
-    latestById.set(payload.block.blockId, payload.block);
-    return payload;
-  });
+  const accumulator = new StreamBlockAccumulator(
+    "xml-trailing-test",
+    (payload) => {
+      latestById.set(payload.block.blockId, payload.block);
+      return payload;
+    },
+  );
   const dispatch = (action: unknown) => action;
   accumulator.ingest("<custom>value</custom> trailing\n", dispatch);
   accumulator.finalize(dispatch);
@@ -270,4 +282,137 @@ it("keeps same-line trailing prose outside the streamed generic XML block", () =
     }),
     expect.objectContaining({ type: "text", content: "trailing" }),
   ]);
+});
+
+describe("unrecognized XML accumulator remainders", () => {
+  it("handles thousands of adjacent same-line containers without recursion", () => {
+    const latestById = new Map<string, RenderBlockPayload>();
+    const accumulator = new StreamBlockAccumulator(
+      "xml-adjacent-test",
+      (payload) => {
+        latestById.set(payload.block.blockId, payload.block);
+        return payload;
+      },
+    );
+    const dispatch = (action: unknown) => action;
+    expect(() =>
+      accumulator.ingest("<x/>".repeat(5000) + "\n", dispatch),
+    ).not.toThrow();
+    accumulator.finalize(dispatch);
+    const blocks = [...latestById.values()].filter((block) => block.content);
+    expect(blocks).toHaveLength(5000);
+    expect(
+      blocks.every(
+        (block) => block.type === "code" && block.data?.language === "xml",
+      ),
+    ).toBe(true);
+  });
+
+  it("does not promote a kind-like JSON fence split by a tool boundary", () => {
+    const latestById = new Map<string, RenderBlockPayload>();
+    const accumulator = new StreamBlockAccumulator(
+      "xml-fence-break-test",
+      (payload) => {
+        latestById.set(payload.block.blockId, payload.block);
+        return payload;
+      },
+    );
+    const dispatch = (action: unknown) => action;
+    accumulator.ingest('```json\n{"__kind":"flashcard_set",\n', dispatch);
+    accumulator.breakTextBlock(dispatch);
+    accumulator.ingest('"cards":[]}\n```\n', dispatch);
+    accumulator.finalize(dispatch);
+    const blocks = [...latestById.values()].filter((block) => block.content);
+    expect(blocks).toHaveLength(2);
+    expect(blocks.every((block) => block.type === "code")).toBe(true);
+    // The first partial retains its already-open parser envelope; the resumed
+    // fragment must not claim a whole kind without the opening JSON bytes.
+    expect(blocks[1].metadata?.__ir).toBeUndefined();
+  });
+});
+
+it("keeps a complete kind-looking object literal inside a generic XML fence interrupted by a tool", () => {
+  const latest = new Map<string, RenderBlockPayload>();
+  const accumulator = new StreamBlockAccumulator(
+    "xml-code-continuation",
+    (payload) => {
+      latest.set(payload.block.blockId, payload.block);
+      return payload;
+    },
+  );
+  const dispatch = (action: unknown) => action;
+  accumulator.ingest("<custom>\n```json\n", dispatch);
+  accumulator.breakTextBlock(dispatch);
+  accumulator.ingest(
+    '{"__kind":"flashcard_set","cards":[]}\n```\n</custom>\n',
+    dispatch,
+  );
+  accumulator.finalize(dispatch);
+  const blocks = [...latest.values()].filter((block) => block.content);
+  expect(blocks).toHaveLength(2);
+  expect(blocks.every((block) => block.data?.language === "xml")).toBe(true);
+  expect(blocks.every((block) => block.metadata?.__ir === undefined)).toBe(
+    true,
+  );
+});
+
+it("keeps directive-like JSON inside incomplete generic XML on the XML-code path", () => {
+  const source = '<x>\n{"__kind":"directive_v","value":"kept?"}';
+  const staticBlocks = splitContentIntoBlocksV2(source);
+  expect(staticBlocks).toEqual([
+    expect.objectContaining({
+      type: "code",
+      content: source,
+      language: "xml",
+      metadata: { isComplete: false, genericXmlContainer: true },
+    }),
+  ]);
+  expect(expandTextBlocksInList(staticBlocks)).toEqual(staticBlocks);
+
+  const latest = new Map<string, RenderBlockPayload>();
+  const accumulator = new StreamBlockAccumulator(
+    "xml-incomplete-directive",
+    (payload) => {
+      latest.set(payload.block.blockId, payload.block);
+      return payload;
+    },
+  );
+  const dispatch = (action: unknown) => action;
+  accumulator.ingest(`${source}\n`, dispatch);
+  accumulator.finalize(dispatch);
+  const live = [...latest.values()].filter((block) => block.content);
+  expect(live).toEqual([
+    expect.objectContaining({
+      type: "code",
+      content: source,
+      data: { language: "xml" },
+      metadata: undefined,
+    }),
+  ]);
+});
+
+it("keeps incomplete generic XML fragments unpromoted across a tool boundary", () => {
+  const latest = new Map<string, RenderBlockPayload>();
+  const accumulator = new StreamBlockAccumulator(
+    "xml-incomplete-tool",
+    (payload) => {
+      latest.set(payload.block.blockId, payload.block);
+      return payload;
+    },
+  );
+  const dispatch = (action: unknown) => action;
+  accumulator.ingest("<x>\n", dispatch);
+  accumulator.breakTextBlock(dispatch);
+  accumulator.ingest('{"__kind":"directive_v","value":"kept?"}\n', dispatch);
+  accumulator.finalize(dispatch);
+  const blocks = [...latest.values()].filter((block) => block.content);
+  expect(blocks).toHaveLength(2);
+  expect(
+    blocks.every(
+      (block) => block.type === "code" && block.data?.language === "xml",
+    ),
+  ).toBe(true);
+  expect(blocks.every((block) => block.metadata?.__ir === undefined)).toBe(
+    true,
+  );
 });

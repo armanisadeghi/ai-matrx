@@ -438,6 +438,13 @@ export class StreamBlockAccumulator {
     requestId: string;
     block: RenderBlockPayload;
   }) => unknown;
+  /** Same-line remainders are queued, never recursively reclassified. */
+  private lineQueue: Array<{ rawLine: string; dispatch: DispatchFn }> = [];
+  private isProcessingLineQueue = false;
+  /** Incomplete generic XML must never promote embedded JSON on finalize. */
+  private genericXmlRecoverySuppressed = false;
+  /** Only the unused text slot opened after a clean generic XML close is omitted. */
+  private suppressEmptyGenericXmlTrailingSlot = false;
 
   constructor(
     requestId: string,
@@ -563,12 +570,12 @@ export class StreamBlockAccumulator {
       this.processLine(this.pendingLineFragment, dispatch);
       this.pendingLineFragment = "";
     }
-    // An unknown XML opener gains XML chrome only after its matching close.
-    // A truncated/malformed stream must keep its bytes on the ordinary text
-    // path, matching the one-shot splitter's incomplete-container behavior.
+    // A truncated generic XML container remains XML code rather than falling
+    // back to text, because downstream text expansion may otherwise promote
+    // directive/kind-looking JSON from an incomplete container. Its bytes stay
+    // intact and embedded-kind recovery stays explicitly suppressed.
     if (this.subState.kind === "generic_xml") {
-      this.currentBlockType = "text";
-      this.subState = { kind: "none" };
+      this.genericXmlRecoverySuppressed = true;
     }
     // If the stream ended while still inside a bare JSON block (unbalanced braces),
     // run a final type detection pass so we at least get the right block type.
@@ -619,6 +626,10 @@ export class StreamBlockAccumulator {
     this.fenceClosedCleanly = false;
     this.xmlClosedCleanly = false;
     this.regionContinuesAfterClose = false;
+    this.lineQueue = [];
+    this.isProcessingLineQueue = false;
+    this.genericXmlRecoverySuppressed = false;
+    this.suppressEmptyGenericXmlTrailingSlot = false;
   }
 
   /**
@@ -678,6 +689,9 @@ export class StreamBlockAccumulator {
         ? this.subState
         : null;
 
+    // Preserve the original specialized fence type (mermaid, chart, etc.)
+    // when its continuation gets a fresh block after the external timeline row.
+    const resumeBlockType = this.currentBlockType;
     // The first half of a split region is NOT a completed region: its emit
     // must not carry `isComplete: true` (a truncated `<decision>` would
     // otherwise render as a finished card with half its options).
@@ -689,7 +703,7 @@ export class StreamBlockAccumulator {
       this.openBlock(
         openRegion.kind === "xml_tag"
           ? mapXmlTagToBlockType(openRegion.tagName)
-          : "code",
+          : resumeBlockType,
         dispatch,
       );
       // Same region, fresh block: the closing tag / fence detection in
@@ -708,6 +722,20 @@ export class StreamBlockAccumulator {
   }
 
   private processLine(rawLine: string, dispatch: DispatchFn): void {
+    this.lineQueue.push({ rawLine, dispatch });
+    if (this.isProcessingLineQueue) return;
+    this.isProcessingLineQueue = true;
+    try {
+      while (this.lineQueue.length > 0) {
+        const next = this.lineQueue.shift();
+        if (next) this.processLineNow(next.rawLine, next.dispatch);
+      }
+    } finally {
+      this.isProcessingLineQueue = false;
+    }
+  }
+
+  private processLineNow(rawLine: string, dispatch: DispatchFn): void {
     const trimmed = rawLine.trim();
 
     // If we're inside a multi-line sub-state, delegate to the appropriate handler
@@ -735,6 +763,7 @@ export class StreamBlockAccumulator {
         this.openBlock("text", dispatch);
         const remainder = source.slice(rootEnd).trim();
         if (remainder) this.processLine(remainder, dispatch);
+        else this.suppressEmptyGenericXmlTrailingSlot = true;
       }
       return;
     }
@@ -1175,6 +1204,7 @@ export class StreamBlockAccumulator {
         this.openBlock("text", dispatch);
         const remainder = rawLine.slice(rootEnd).trim();
         if (remainder) this.processLine(remainder, dispatch);
+        else this.suppressEmptyGenericXmlTrailingSlot = true;
         return;
       }
 
@@ -1514,6 +1544,7 @@ export class StreamBlockAccumulator {
   // ── Block lifecycle helpers ─────────────────────────────────────────
 
   private appendToCurrentBlock(line: string): void {
+    this.suppressEmptyGenericXmlTrailingSlot = false;
     // Join on "\n" from the second line onward. Keyed off the line COUNT (not
     // whether content is currently empty) so a leading blank line is preserved
     // verbatim — matching V2's `currentText += line + "\n"` accumulation.
@@ -1617,6 +1648,16 @@ export class StreamBlockAccumulator {
     if (this.currentBlockType === "artifact" || this.irEnvelope?.root.kind) {
       return false;
     }
+    // A generic XML segment split by an external timeline item carries only a
+    // fragment of the source. It has no independent outer-container context,
+    // so JSON inside it remains XML bytes rather than becoming a kind/artifact.
+    if (
+      this.genericXmlRecoverySuppressed ||
+      (this.subState.kind === "generic_xml" &&
+        !isCompleteUnrecognizedXmlContainer(this.currentBlockContent))
+    ) {
+      return false;
+    }
 
     // The one-shot XML extractor returns the body without boundary whitespace;
     // match it so recovered fragment bytes agree across persisted and Redux
@@ -1625,7 +1666,9 @@ export class StreamBlockAccumulator {
       this.subState.kind === "xml_tag" && !this.subState.isAttrXml
         ? this.currentBlockContent.trim()
         : this.currentBlockContent;
-    const pieces = splitAroundEmbeddedKindJson(recoverySource);
+    const pieces = splitAroundEmbeddedKindJson(recoverySource, {
+      excludeLiteralContexts: this.subState.kind === "generic_xml",
+    });
     if (pieces.length === 1 && pieces[0]?.type === "container") return false;
 
     const recoveredXmlContainer =
@@ -1687,6 +1730,8 @@ export class StreamBlockAccumulator {
     this.currentBlockLineCount = 0;
     this.currentBlockEmitted = false;
     this.pendingMediaData = null;
+    this.genericXmlRecoverySuppressed = false;
+    this.suppressEmptyGenericXmlTrailingSlot = false;
   }
 
   private emitCurrentBlock(
@@ -1732,10 +1777,14 @@ export class StreamBlockAccumulator {
     }
 
     if (!content && status === "streaming") return;
-    // A generic XML container can close on its final line and open a fresh
-    // text slot for a possible same-line/next-line remainder. Do not persist a
-    // never-used empty slot at stream end.
-    if (!content && status === "complete" && !this.currentBlockEmitted) return;
+    // Preserve ordinary empty completion tombstones. Only omit the never-used
+    // text slot explicitly opened after a clean generic XML container close.
+    if (
+      !content &&
+      status === "complete" &&
+      this.suppressEmptyGenericXmlTrailingSlot
+    )
+      return;
 
     this.emitCount++;
 

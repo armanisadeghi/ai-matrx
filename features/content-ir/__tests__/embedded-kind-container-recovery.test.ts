@@ -46,9 +46,7 @@ const KEYWORD_BATCH = JSON.stringify(
 const FLASHCARDS = JSON.stringify({
   __kind: "flashcard_set",
   title: "Recovered { braces } and [arrays] inside strings",
-  cards: [
-    { __kind: "flashcard", front: "Question", back: "Answer" },
-  ],
+  cards: [{ __kind: "flashcard", front: "Question", back: "Answer" }],
 });
 
 const REPORTED_FAILURE = [
@@ -123,7 +121,8 @@ describe("embedded __kind recovery across every arrival container", () => {
     );
 
     expect(kindBlock).toBeDefined();
-    if (!kindBlock) throw new Error("classification kind block was not recovered");
+    if (!kindBlock)
+      throw new Error("classification kind block was not recovered");
     expect(kindBlock.content).toBe(KEYWORD_BATCH);
     expect(
       applyIrKindRoute({
@@ -131,9 +130,9 @@ describe("embedded __kind recovery across every arrival container", () => {
         metadata: kindBlock.metadata,
       }).type,
     ).toBe("keyword_classification_batch");
-    expect(blocks.some((block) => block.content.includes("Output contract"))).toBe(
-      true,
-    );
+    expect(
+      blocks.some((block) => block.content.includes("Output contract")),
+    ).toBe(true);
   });
 
   it.each([
@@ -141,7 +140,10 @@ describe("embedded __kind recovery across every arrival container", () => {
     ["recognized XML", `<thinking>\nbefore\n${FLASHCARDS}\nafter\n</thinking>`],
     ["unrecognized XML", `<custom>\nbefore\n${FLASHCARDS}\nafter\n</custom>`],
     ["inline prose", `before ${FLASHCARDS} after`],
-    ["nested in anonymous JSON", `\`\`\`json\n{"payload":${FLASHCARDS}}\n\`\`\``],
+    [
+      "nested in anonymous JSON",
+      `\`\`\`json\n{"payload":${FLASHCARDS}}\n\`\`\``,
+    ],
     [
       "two kinds in one container",
       `\`\`\`text\n${FLASHCARDS}\nmiddle\n${KEYWORD_BATCH}\n\`\`\``,
@@ -183,11 +185,41 @@ describe("embedded __kind recovery across every arrival container", () => {
   });
 
   it("keeps a direct root kind as one canonical block", () => {
-    const [block] = splitContentIntoBlocksV2(`\`\`\`json\n${FLASHCARDS}\n\`\`\``);
+    const [block] = splitContentIntoBlocksV2(
+      `\`\`\`json\n${FLASHCARDS}\n\`\`\``,
+    );
     expect(block?.content).toBe(FLASHCARDS);
     expect(readEnvelope(block?.metadata)?.root.kind).toBe("flashcard_set");
-    expect(splitContentIntoBlocksV2(`\`\`\`json\n${FLASHCARDS}\n\`\`\``)).toHaveLength(
-      1,
-    );
+    expect(
+      splitContentIntoBlocksV2(`\`\`\`json\n${FLASHCARDS}\n\`\`\``),
+    ).toHaveLength(1);
   });
 });
+
+it("does not let a fence marker inside a multiline XML comment suppress a following kind", () => {
+  const source = `<!--\n\`\`\`json\n-->\n${FLASHCARDS}`;
+  expect(
+    findEmbeddedKindJsonRegions(source, { excludeLiteralContexts: true }),
+  ).toEqual([expect.objectContaining({ content: FLASHCARDS })]);
+});
+
+it.each([
+  ["backtick fence", `\`\`\`json\n${FLASHCARDS}\n\`\`\``],
+  ["tilde fence", `~~~json\n${FLASHCARDS}\n~~~`],
+  ["inline code", `\`${FLASHCARDS}\``],
+  ["comment", `<!--\n${FLASHCARDS}\n-->`],
+  ["CDATA", `<![CDATA[\n${FLASHCARDS}\n]]>`],
+])(
+  "keeps %s kind examples literal inside generic XML across static and Redux inputs",
+  (_name, example) => {
+    const source = `<custom>\n**Nested result**\n${example}\n</custom>`;
+    const expected = [
+      { type: "code", language: "xml", content: source, kind: null },
+    ];
+    expect(splitterBlocks(source)).toEqual(expected);
+    for (const seed of [1, 17, 90211])
+      expect(reduxBlocks(source, seed).filter((b) => b.content)).toEqual(
+        expected,
+      );
+  },
+);

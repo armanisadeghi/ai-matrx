@@ -111,6 +111,8 @@ jest.mock(
 import { EnhancedChatMarkdownInternal } from "../EnhancedChatMarkdown";
 import { StreamAwareChatMarkdown } from "../StreamAwareChatMarkdown";
 import type { TypedStreamEvent } from "../types";
+import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 
 // Controlled guard fixture: generic wrappers must retain author Markdown
 // semantics instead of downgrading the XML body to literal/XML-token text.
@@ -216,23 +218,23 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
     expectRichXmlFallback(container);
   });
 
-  it("renders the XML body held in the Redux render-block path", async () => {
+  it("renders XML and its table from actual accumulator output through Redux", async () => {
+    const latest = new Map<string, RenderBlockPayload>();
+    const accumulator = new StreamBlockAccumulator("redux-xml", payload => {
+      latest.set(payload.block.blockId, payload.block);
+      return payload;
+    });
+    const dispatch = (action: unknown) => action;
+    for (let offset = 0; offset < XML.length; offset += 7) {
+      accumulator.ingest(XML.slice(offset, offset + 7), dispatch);
+    }
+    accumulator.finalize(dispatch);
     mockReduxState = {
       activeRequests: {
         byRequestId: {
           "redux-xml": {
-            renderBlockOrder: ["xml-block"],
-            renderBlocks: {
-              "xml-block": {
-                blockId: "xml-block",
-                blockIndex: 0,
-                type: "code",
-                status: "complete",
-                content: "**Strong result** with `inline_code`\n\n| Name | Score |\n| --- | ---: |\n| Ada | 42 |",
-                data: { language: "xml" },
-                metadata: {},
-              },
-            },
+            renderBlockOrder: [...latest.keys()],
+            renderBlocks: Object.fromEntries(latest),
             editedText: null,
             timeline: [],
             isTextStreaming: false,

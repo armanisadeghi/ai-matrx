@@ -69,7 +69,11 @@ function matchingJsonObjectEnd(source: string, start: number): number | null {
 function declaredKind(candidate: string): string | null {
   try {
     const parsed: unknown = JSON.parse(candidate);
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
       return null;
     }
     const kind = (parsed as Record<string, unknown>).__kind;
@@ -79,13 +83,117 @@ function declaredKind(candidate: string): string | null {
   }
 }
 
+/** Literal markdown/XML regions do not grant embedded JSON a new render owner. */
+function literalRanges(source: string): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  let fence: { start: number; char: "`" | "~"; ticks: number } | null = null;
+  let cursor = 0;
+  const lineEndAt = (offset: number) => {
+    const newline = source.indexOf("\n", offset);
+    return newline === -1 ? source.length : newline;
+  };
+  while (cursor < source.length) {
+    const lineEnd = lineEndAt(cursor);
+    if (fence) {
+      const line = source.slice(cursor, lineEnd);
+      const marker = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(line);
+      if (
+        marker &&
+        marker[1][0] === fence.char &&
+        marker[1].length >= fence.ticks &&
+        marker[2].trim() === ""
+      ) {
+        ranges.push([
+          fence.start,
+          lineEnd < source.length ? lineEnd + 1 : lineEnd,
+        ]);
+        fence = null;
+      }
+      cursor = lineEnd < source.length ? lineEnd + 1 : lineEnd;
+      continue;
+    }
+    if (source.startsWith("<!--", cursor)) {
+      const end = source.indexOf("-->", cursor + 4);
+      const rangeEnd = end === -1 ? source.length : end + 3;
+      ranges.push([cursor, rangeEnd]);
+      cursor = rangeEnd;
+      continue;
+    }
+    if (source.startsWith("<![CDATA[", cursor)) {
+      const end = source.indexOf("]]>", cursor + 9);
+      const rangeEnd = end === -1 ? source.length : end + 3;
+      ranges.push([cursor, rangeEnd]);
+      cursor = rangeEnd;
+      continue;
+    }
+    // Fence openings exist only at a physical line start (after indentation).
+    const lineStart = cursor === 0 || source[cursor - 1] === "\n";
+    if (lineStart) {
+      const marker = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(
+        source.slice(cursor, lineEnd),
+      );
+      if (marker) {
+        fence = {
+          start: cursor,
+          char: marker[1][0] as "`" | "~",
+          ticks: marker[1].length,
+        };
+        cursor = lineEnd < source.length ? lineEnd + 1 : lineEnd;
+        continue;
+      }
+    }
+    if (source[cursor] === "`") {
+      let markerEnd = cursor;
+      while (source[markerEnd] === "`") markerEnd++;
+      let slashes = 0;
+      for (let slash = cursor - 1; source[slash] === "\\"; slash--) slashes++;
+      if (slashes % 2 === 0) {
+        const ticks = markerEnd - cursor;
+        let close = markerEnd;
+        while (close < source.length) {
+          if (source[close] !== "`") {
+            close++;
+            continue;
+          }
+          let closeEnd = close;
+          while (source[closeEnd] === "`") closeEnd++;
+          if (closeEnd - close === ticks) break;
+          close = closeEnd;
+        }
+        const rangeEnd = close >= source.length ? source.length : close + ticks;
+        ranges.push([cursor, rangeEnd]);
+        cursor = rangeEnd;
+        continue;
+      }
+    }
+    cursor++;
+  }
+  if (fence) ranges.push([fence.start, source.length]);
+  return ranges;
+}
+
 /** Outermost complete self-described objects, in source order. */
 export function findEmbeddedKindJsonRegions(
   source: string,
+  options: { excludeLiteralContexts?: boolean } = {},
 ): EmbeddedKindJsonRegion[] {
   const regions: EmbeddedKindJsonRegion[] = [];
+  const excluded = options.excludeLiteralContexts ? literalRanges(source) : [];
+  let excludedIndex = 0;
 
   for (let start = 0; start < source.length; start++) {
+    while (
+      excludedIndex < excluded.length &&
+      excluded[excludedIndex][1] <= start
+    ) {
+      excludedIndex++;
+    }
+    if (
+      excludedIndex < excluded.length &&
+      start >= excluded[excludedIndex][0] &&
+      start < excluded[excludedIndex][1]
+    )
+      continue;
     if (source[start] !== "{") continue;
     const end = matchingJsonObjectEnd(source, start);
     if (end === null) continue;
@@ -104,15 +212,19 @@ export function findEmbeddedKindJsonRegions(
 /** Losslessly partition a container around every recovered kind region. */
 export function splitAroundEmbeddedKindJson(
   source: string,
+  options: { excludeLiteralContexts?: boolean } = {},
 ): EmbeddedKindJsonPiece[] {
-  const regions = findEmbeddedKindJsonRegions(source);
+  const regions = findEmbeddedKindJsonRegions(source, options);
   if (regions.length === 0) return [{ type: "container", content: source }];
 
   const pieces: EmbeddedKindJsonPiece[] = [];
   let cursor = 0;
   for (const region of regions) {
     if (region.start > cursor) {
-      pieces.push({ type: "container", content: source.slice(cursor, region.start) });
+      pieces.push({
+        type: "container",
+        content: source.slice(cursor, region.start),
+      });
     }
     pieces.push({ type: "kind", content: region.content, kind: region.kind });
     cursor = region.end;
