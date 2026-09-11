@@ -47,6 +47,16 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function waitUntil(predicate: () => boolean, timeoutMs = 2_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!predicate()) {
+    if (Date.now() >= deadline) {
+      throw new Error(`Condition was not met within ${timeoutMs}ms`);
+    }
+    await wait(10);
+  }
+}
+
 describe("createSyncMiddleware warm-cache branch", () => {
   beforeEach(async () => {
     window.localStorage.clear();
@@ -220,7 +230,7 @@ describe("createSyncMiddleware warm-cache branch", () => {
     });
 
     store.dispatch({ type: "warm/push", payload: "pre-swap" });
-    await wait(FAST_DEBOUNCE + 40);
+    await waitUntil(() => remoteCalls.length === 1);
     expect(remoteCalls).toHaveLength(1);
     expect(inflightSignal!.aborted).toBe(false);
 
@@ -241,6 +251,10 @@ describe("createSyncMiddleware warm-cache branch", () => {
     // Confirm IDB record is stamped with the new identity.
     const record = await readSlice("auth:u2", "warm", 1);
     expect(record).not.toBeNull();
+
+    // Let the second write finish so no async work leaks into the next test.
+    release?.();
+    await wait(5);
   });
 
   it("does NOT schedule a debounced write when the first post-boot action leaves the slice reference unchanged", async () => {
