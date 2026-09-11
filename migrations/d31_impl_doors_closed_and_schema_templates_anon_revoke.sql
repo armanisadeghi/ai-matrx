@@ -12,18 +12,40 @@
 --      The `_impl` body carries no `iam.has_access` call and no owner check —
 --      the check lives in the wrapper, which `anon` was able to walk around.
 --
--- ROOT CAUSE OF (2), and it is a class, not an instance:
---   `supabase/migrations/20260715044723_d31_workbench_rpc_access_guards.sql` (D31)
---   already revoked client EXECUTE from all six workbench `_d31_impl_*` functions.
---   The grant came BACK because a later `CREATE OR REPLACE FUNCTION` in `public`
---   re-applies the schema's default privileges (EXECUTE to PUBLIC) — aidream
---   `db/migrations/0457_udt_dataset_detail_impl_hides_tombstones.sql` did exactly
---   that to `_d31_impl_get_user_table_complete`.
---   The db-rules §6d-4 event trigger `platform.enforce_definer_client_grants`
---   exists to re-revoke precisely this, but every `_d31_impl_*` function is listed
---   in `platform.definer_client_grant_grandfather` (they predate 2026-08-28), so
---   the guard deliberately stood down. A grandfather row on a function that is NOT
---   a client door is a permanently re-openable hole.
+-- WHY (2) WAS OPEN — corrected 2026-09-11 after independent verification (V-6 §B5).
+--   Only these facts are verified, and the first cut of this header asserted more
+--   than them. What is TRUE:
+--     * The client EXECUTE grants were live on 12 of the 15 `public._d31_impl_*`
+--       functions, measured directly. That is the hole, whatever its history.
+--     * `platform.definer_client_grant_grandfather` holds a row for every
+--       `_d31_impl_*` function (they predate the 2026-08-28 cutoff), and for a
+--       listed function the db-rules §6d-4 event trigger
+--       `platform.enforce_definer_client_grants` DELIBERATELY STANDS DOWN. So
+--       nothing was ever going to take those grants back on its own.
+--   What is NOT established, and must not be repeated as if it were:
+--     * An identical `CREATE OR REPLACE FUNCTION` does NOT re-apply the schema's
+--       default privileges — it PRESERVES the existing ACL. Measured in a
+--       rolled-back transaction on `_d31_impl_get_user_table_complete`:
+--       acl before = `{postgres=X/postgres}`, acl after = `{postgres=X/postgres}`.
+--       Default privileges apply at a fresh `CREATE` (i.e. after a `DROP`) or
+--       while the ACL is still NULL.
+--     * `aidream/db/migrations/0457_udt_dataset_detail_impl_hides_tombstones.sql`
+--       contains one `create or replace function` and NO `DROP` and NO `GRANT`,
+--       so it did not re-open anything.
+--     * `supabase/migrations/20260715044723_d31_workbench_rpc_access_guards.sql`
+--       (D31) does contain six matching revokes on disk, but NEITHER ledger
+--       records it as applied: `public._schema_migrations` has no D31 row and
+--       `supabase_migrations.schema_migrations`' oldest version is
+--       `20260820182802` — no July rows at all. The likeliest reading is that the
+--       July revoke never landed and the functions simply carried their
+--       birth-time default EXECUTE until today. Not chased; not asserted.
+--
+-- THE RULE THIS LEAVES, which IS proven:
+--   A grandfather row on a function that is NOT a declared client door is a
+--   permanently re-openable hole. The guard stands down for it, so ANY path that
+--   establishes a client grant — a fresh `CREATE` after a `DROP`, a hand-written
+--   `GRANT` — re-opens the door with no warning and no `ddl_guard_log` row.
+--   Deleting the grandfather row is the fix; revoking alone is not.
 --
 -- THE FIX HAS TWO HALVES:
 --   A. Revoke client EXECUTE from ALL 15 `public._d31_impl_*` functions (census
@@ -34,10 +56,24 @@
 --      working. Three of the 15 (`_d31_impl_reply_to_user_review`,
 --      `_d31_impl_send_user_review_message`, `_d31_impl_admin_reply_user_review`)
 --      already had no client EXECUTE and are live proof the pattern holds.
---   B. DELETE their grandfather rows, so from now on the §6d-4 guard re-revokes
---      automatically on the next `CREATE OR REPLACE` and writes a
---      `platform.ddl_guard_log` row under `definer_client_grant_revoked`.
---      This is what turns the instance fix into a class fix.
+--   B. DELETE their grandfather rows, so the §6d-4 guard stops standing down for
+--      this family. Proven live (V-6 §A3): an explicit
+--      `grant execute on function public._d31_impl_add_data_row_to_user_table(uuid, jsonb)
+--       to anon, authenticated` is taken back INSIDE the GRANT statement —
+--      `anon EXECUTE = false` afterwards — and a durable `platform.ddl_guard_log`
+--      row is written under `definer_client_grant_revoked`. This is what turns
+--      the instance fix into a class fix.
+--      (An identical `CREATE OR REPLACE` also fires the guard, but its revoke is
+--      a no-op, because that statement never re-granted anything. The explicit
+--      GRANT above is the probe that actually proves the door stays shut.)
+--
+--   The grandfather half is itself guarded by nothing in the database — a
+--   re-INSERT would silently restore the stand-down — so it is held by a repo
+--   gate: `pnpm check:impl-doors[:strict]` (`scripts/check-impl-doors.ts`),
+--   which asserts against the live DB that no `public.%_impl_%` definer is
+--   client-callable, that no grandfather row names an undeclared function
+--   (baseline `scripts/impl-doors/grandfather-baseline.json`, may only shrink),
+--   and that `anon` holds no privilege on `workbench.schema_templates`.
 --
 -- `workbench.schema_templates`:
 --   It is NOT registered in `platform.entity_types`, so `iam.apply_rls` cannot be
