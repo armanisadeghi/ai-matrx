@@ -112,9 +112,9 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
     dispatch(setActiveView("sandboxes"));
   }, [dispatch]);
 
-  // Subtitle gives the user one-glance confirmation of what they're
-  // looking at without us shouting "Mock Project" or other dev jargon.
-  const subtitle = sandboxConnected ? filesystem.label : "Your cloud files";
+  // The connected sandbox is already named in the workspace shell. Keeping
+  // only the cloud-mode label leaves the compact header room for its controls.
+  const subtitle = sandboxConnected ? undefined : "Your cloud files";
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>

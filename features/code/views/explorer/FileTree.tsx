@@ -21,7 +21,13 @@ import {
   useDirectoryVersion,
   useInvalidateDirectory,
 } from "./FileTreeWatcher";
-import { ancestorPathsForFile, isPathWithinRoot } from "./fileTreePaths";
+import {
+  ancestorPathsForFile,
+  isCurrentFilesystemTab,
+  isPathWithinRoot,
+  normalizeExplorerPath,
+  validateFilesystemEntryName,
+} from "./fileTreePaths";
 
 const SEARCH_DEBOUNCE_MS = 200;
 const SEARCH_MAX_RESULTS = 200;
@@ -69,21 +75,50 @@ const FileTreeBody: React.FC<{
   // refetch the root listing.
   const rootVersion = useDirectoryVersion(rootPath);
   const invalidateDirectory = useInvalidateDirectory();
+  const lastRevealedTabRef = useRef<string | null>(null);
 
   // Tabs can be opened by the editor, search, agent actions, or the session
   // report bootstrap. Reveal every sandbox-backed active file through this one
   // observer rather than relying on any individual opener to manage tree UI.
   useEffect(() => {
-    const activePath = activeTab?.path;
-    if (!activePath?.startsWith("/")) return;
-    if (!isPathWithinRoot(activePath, filesystem.rootPath)) return;
-
-    if (!isPathWithinRoot(activePath, rootPath)) {
-      dispatch(setExplorerRootOverride(null));
+    if (!activeTab || !isCurrentFilesystemTab(activeTab, filesystem.id)) {
       return;
     }
-    expandAll(ancestorPathsForFile(activePath, rootPath));
-  }, [activeTab?.path, dispatch, expandAll, filesystem.rootPath, rootPath]);
+    const activePath = activeTab.path;
+    const revealKey = `${activeTab.id}:${activePath}`;
+    if (lastRevealedTabRef.current === revealKey) return;
+    lastRevealedTabRef.current = revealKey;
+
+    // A path outside the adapter's default worktree (for example `/tmp`) is
+    // still a legitimate sandbox file. Reveal it from `/`; otherwise restore
+    // the adapter root when the user had been browsing a narrower folder.
+    const revealRoot = isPathWithinRoot(activePath, filesystem.rootPath)
+      ? filesystem.rootPath
+      : "/";
+    const destinationRoot = isPathWithinRoot(activePath, rootPath)
+      ? rootPath
+      : revealRoot;
+    if (
+      normalizeExplorerPath(destinationRoot) !== normalizeExplorerPath(rootPath)
+    ) {
+      dispatch(
+        setExplorerRootOverride(
+          normalizeExplorerPath(destinationRoot) ===
+            normalizeExplorerPath(filesystem.rootPath)
+            ? null
+            : destinationRoot,
+        ),
+      );
+    }
+    expandAll(ancestorPathsForFile(activePath, destinationRoot));
+  }, [
+    activeTab,
+    dispatch,
+    expandAll,
+    filesystem.id,
+    filesystem.rootPath,
+    rootPath,
+  ]);
 
   const [pendingRootCreate, setPendingRootCreate] = useState<
     "file" | "directory" | null
@@ -121,17 +156,26 @@ const FileTreeBody: React.FC<{
   const commitRootCreate = async () => {
     if (rootCreateCommittingRef.current) return;
     const name = rootCreateValue.trim();
-    if (!pendingRootCreate || !name) {
+    if (!pendingRootCreate) {
       cancelRootCreate();
+      return;
+    }
+    const invalidName = validateFilesystemEntryName(name);
+    if (invalidName) {
+      toast.error(invalidName);
       return;
     }
     const path = `${rootPath.replace(/\/$/, "")}/${name}`;
     rootCreateCommittingRef.current = true;
     try {
+      const existing = await filesystem.listChildren(rootPath);
+      if (existing.some((entry) => entry.name === name)) {
+        throw new Error(`A file or folder named “${name}” already exists.`);
+      }
       if (pendingRootCreate === "file") {
         if (!filesystem.writeFile) throw new Error("writeFile not supported");
         await filesystem.writeFile(path, "");
-        await handleOpen(path);
+        await openFile(path);
       } else {
         if (!filesystem.mkdir) throw new Error("mkdir not supported");
         await filesystem.mkdir(path, true);

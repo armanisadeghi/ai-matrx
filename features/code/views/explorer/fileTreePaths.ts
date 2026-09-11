@@ -31,3 +31,24 @@ export function ancestorPathsForFile(path: string, root: string): string[] {
   }
   return ancestors;
 }
+
+export function isCurrentFilesystemTab(
+  tab: { id: string; path: string } | null,
+  filesystemId: string,
+): boolean {
+  if (!tab || !tab.path.startsWith("/")) return false;
+  if (tab.id.startsWith(`${filesystemId}:`)) return true;
+  return (
+    filesystemId.startsWith("sandbox:") &&
+    tab.id === `session-report:${filesystemId.slice("sandbox:".length)}`
+  );
+}
+
+export function validateFilesystemEntryName(name: string): string | null {
+  if (!name) return "Enter a name.";
+  if (name === "." || name === "..") return "Choose a file or folder name.";
+  if (name.includes("/") || name.includes("\0")) {
+    return "Names cannot contain a path separator.";
+  }
+  return null;
+}

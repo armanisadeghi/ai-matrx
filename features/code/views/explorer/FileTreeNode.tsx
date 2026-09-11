@@ -39,6 +39,7 @@ import {
 import { useDirectoryVersion, useInvalidateDirectory } from "./FileTreeWatcher";
 import { Button } from "@/components/ui/button";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
+import { validateFilesystemEntryName } from "./fileTreePaths";
 
 interface FileTreeNodeProps {
   node: FilesystemNode;
@@ -387,6 +388,11 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
   const commitCreate = useCallback(async () => {
     if (!pendingCreate) return;
     const name = createValue.trim();
+    const invalidName = validateFilesystemEntryName(name);
+    if (invalidName) {
+      toast.error(invalidName);
+      return;
+    }
     if (!name) {
       cancelCreate();
       return;
@@ -394,6 +400,10 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
     const targetPath = joinPath(node.path, name);
     setBusy(true);
     try {
+      const existing = await adapter.listChildren(node.path);
+      if (existing.some((entry) => entry.name === name)) {
+        throw new Error(`A file or folder named “${name}” already exists.`);
+      }
       if (pendingCreate.kind === "file") {
         if (!adapter.writeFile) throw new Error("writeFile not supported");
         await adapter.writeFile(targetPath, "");
