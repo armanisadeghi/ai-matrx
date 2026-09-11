@@ -1,10 +1,16 @@
 "use client";
 
-import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { useRef, useState } from "react";
+import { Activity, CheckCircle2, RefreshCw, RotateCcw } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { SandboxDiagnosticsPanel } from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  SandboxDiagnosticsPanel,
+  type SandboxDiagnosticsHandle,
+  type SandboxDiagnosticsStatus,
+} from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
 
 export interface SandboxManagementWindowProps {
   isOpen: boolean;
@@ -24,7 +30,51 @@ export default function SandboxManagementWindow({
   sandboxId,
   title,
 }: SandboxManagementWindowProps) {
+  const diagnosticsRef = useRef<SandboxDiagnosticsHandle>(null);
+  const [status, setStatus] = useState<SandboxDiagnosticsStatus | null>(null);
+
   if (!isOpen) return null;
+
+  const footer = (
+    <div className="flex min-h-11 items-center justify-between gap-2 px-3 py-1.5">
+      <div className="flex min-w-0 items-center gap-2">
+        {status?.overallOk ? (
+          <Badge
+            variant="outline"
+            className="shrink-0 gap-1 border-green-300 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-300"
+          >
+            <CheckCircle2 className="h-3 w-3" /> Ready
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="shrink-0 gap-1 text-muted-foreground">
+            <Activity className="h-3 w-3 animate-pulse" /> Checking
+          </Badge>
+        )}
+        {status && (
+          <span className="truncate text-xs text-muted-foreground">
+            {status.template ?? "default"} · {status.tier}
+          </span>
+        )}
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => diagnosticsRef.current?.requestRebuild()}
+          title="Replace the container with its configured template and resources. Your persistent home is kept unless you explicitly erase it."
+        >
+          <RotateCcw className="mr-1 h-3.5 w-3.5" /> Rebuild
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => diagnosticsRef.current?.refresh()}
+        >
+          <RefreshCw className="mr-1 h-3.5 w-3.5" /> Refresh
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <WindowPanel
@@ -38,6 +88,8 @@ export default function SandboxManagementWindow({
       height={680}
       position="center"
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      footer={footer}
+      footerVariant="rich"
     >
       <NonEditableContextMenu
         sourceFeature="code-editor"
@@ -45,20 +97,13 @@ export default function SandboxManagementWindow({
         contextData={{ content: title?.trim() || sandboxId }}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-1">
-            <span className="text-xs text-muted-foreground">
-              Sandbox controls
-            </span>
-            <Link
-              href={`/sandbox/${encodeURIComponent(sandboxId)}`}
-              onClick={onClose}
-              className="inline-flex min-h-9 items-center gap-1.5 text-xs font-medium hover:underline max-lg:min-h-11"
-            >
-              Full management <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
-          </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            <SandboxDiagnosticsPanel sandboxId={sandboxId} />
+            <SandboxDiagnosticsPanel
+              ref={diagnosticsRef}
+              sandboxId={sandboxId}
+              compact
+              onStatusChange={setStatus}
+            />
           </div>
         </div>
       </NonEditableContextMenu>

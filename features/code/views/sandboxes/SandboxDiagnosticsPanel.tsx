@@ -28,7 +28,15 @@
  *     can see exactly what's happening at any time.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -142,6 +150,18 @@ type LogSource = (typeof LOG_SOURCES)[number];
  */
 export type SandboxDiagnosticsView = "all" | "status" | "filesystem" | "env";
 
+export interface SandboxDiagnosticsStatus {
+  overallOk: boolean;
+  sandboxId: string;
+  template: string | null;
+  tier: string | null;
+}
+
+export interface SandboxDiagnosticsHandle {
+  refresh: () => void;
+  requestRebuild: () => void;
+}
+
 interface Props {
   /** Sandbox row UUID (NOT the sbx-XXX short id). */
   sandboxId: string;
@@ -166,6 +186,13 @@ interface Props {
    * an "Inspector" mega-tab.
    */
   view?: SandboxDiagnosticsView;
+  /**
+   * Condenses status, image freshness, and readiness checks behind a disclosure.
+   * Used by the controls window, where filesystem and terminal tabs are primary.
+   */
+  compact?: boolean;
+  /** Lets a window place the current readiness and controls in WindowPanel slots. */
+  onStatusChange?: (status: SandboxDiagnosticsStatus | null) => void;
 }
 
 // ── Agent filesystem types (matches matrx_agent /fs/list response) ──────────
@@ -206,16 +233,24 @@ interface AgentEnvResponse {
   aidream_pid?: number;
 }
 
-export function SandboxDiagnosticsPanel({
-  sandboxId,
-  showLogs = true,
-  unhealthyPollSeconds = 2,
-  healthyPollSeconds = 30,
-  onReady,
-  showResetButton = true,
-  onReset,
-  view = "all",
-}: Props) {
+export const SandboxDiagnosticsPanel = forwardRef<
+  SandboxDiagnosticsHandle,
+  Props
+>(function SandboxDiagnosticsPanel(
+  {
+    sandboxId,
+    showLogs = true,
+    unhealthyPollSeconds = 2,
+    healthyPollSeconds = 30,
+    onReady,
+    showResetButton = true,
+    onReset,
+    view = "all",
+    compact = false,
+    onStatusChange,
+  },
+  ref,
+) {
   // Section gates — derived from `view`. Keep these as plain booleans so the
   // JSX below stays readable.
   const showStatus = view === "all" || view === "status";
@@ -285,6 +320,38 @@ export function SandboxDiagnosticsPanel({
       setLoading(false);
     }
   }, [sandboxId, onReady]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      refresh: () => void fetchDiagnostics(),
+      requestRebuild: () => setResetOpen(true),
+    }),
+    [fetchDiagnostics],
+  );
+
+  const onStatusChangeRef = useRef(onStatusChange);
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange;
+  }, [onStatusChange]);
+
+  useEffect(() => {
+    onStatusChangeRef.current?.(
+      diag
+        ? {
+            overallOk: diag.overall_ok,
+            sandboxId: diag.sandbox_id,
+            template: diag.sandbox.template,
+            tier: diag.sandbox.tier,
+          }
+        : null,
+    );
+  }, [
+    diag?.overall_ok,
+    diag?.sandbox.tier,
+    diag?.sandbox.template,
+    diag?.sandbox_id,
+  ]);
 
   const fetchLogs = useCallback(async () => {
     setLogsLoading(true);
@@ -594,6 +661,8 @@ export function SandboxDiagnosticsPanel({
     <div className="space-y-3 text-sm">
       {showStatus && (
         <>
+          {!compact && (
+            <>
           {/* Top status bar */}
           <div className="flex items-center justify-between border-b border-border pb-2 gap-2 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
@@ -686,6 +755,48 @@ export function SandboxDiagnosticsPanel({
               {...formatPassthroughCheck(diag.container)}
             />
           </div>
+            </>
+          )}
+
+          {compact && (
+            <details className="rounded-md border border-border bg-muted/20">
+              <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-2 px-3 text-xs font-medium">
+                <span>Diagnostics summary</span>
+                <span className="truncate font-mono text-muted-foreground">
+                  {diag.sandbox.template ?? "default"} · {diag.sandbox.tier}
+                </span>
+              </summary>
+              <div className="space-y-3 border-t border-border p-3">
+                <SandboxVersionHealthCard
+                  sandboxId={sandboxId}
+                  onMigrated={fetchDiagnostics}
+                />
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                  <CheckCard
+                    label="Container"
+                    {...formatContainerCheck(diag.container)}
+                  />
+                  <CheckCard
+                    label="Matrx agent · :8000"
+                    {...formatCheck(diag.checks.matrx_agent_8000)}
+                  />
+                  <CheckCard
+                    label="AI Dream health · :8001"
+                    {...formatCheck(diag.checks.aidream_health_8001)}
+                  />
+                  <CheckCard
+                    label="AI Dream ready · :8001"
+                    {...formatCheck(diag.checks.aidream_ready_8001)}
+                    colSpan="md:col-span-2"
+                  />
+                  <CheckCard
+                    label="Env passthrough"
+                    {...formatPassthroughCheck(diag.container)}
+                  />
+                </div>
+              </div>
+            </details>
+          )}
         </>
       )}
 
@@ -1150,7 +1261,7 @@ export function SandboxDiagnosticsPanel({
       />
     </div>
   );
-}
+});
 
 function FsTree({
   node,
