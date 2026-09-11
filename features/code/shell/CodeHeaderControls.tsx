@@ -10,15 +10,27 @@
 // header stays in sync with manual panel drags/collapses.
 
 import {
+  CopyTapButton,
   PanelLeftTapButton,
   MessageTapButton,
   HistoryTapButton,
 } from "@ai-matrx/tap-target/buttons";
+import { ExternalLink } from "lucide-react";
+import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import type { SandboxDetailResponse } from "@/types/sandbox";
+import { sandboxDisplayName } from "@/lib/sandbox/format";
+import {
+  getEffectiveStatus,
+  STATUS_LABELS,
+  statusPillClasses,
+} from "@/lib/sandbox/status";
 import {
   selectSideOpen,
   selectRightOpen,
   selectFarRightOpen,
+  selectActiveSandbox,
+  setActiveSandbox,
   setSideOpen,
   setRightOpen,
   setFarRightOpen,
@@ -29,6 +41,48 @@ export function CodeHeaderControls() {
   const sideOpen = useAppSelector(selectSideOpen);
   const rightOpen = useAppSelector(selectRightOpen);
   const farRightOpen = useAppSelector(selectFarRightOpen);
+  const activeSandbox = useAppSelector(selectActiveSandbox);
+
+  useEffect(() => {
+    if (!activeSandbox) return undefined;
+    let current = true;
+    const refresh = async () => {
+      try {
+        const response = await fetch(`/api/sandbox/${activeSandbox.id}`);
+        if (!response.ok) {
+          console.warn(
+            "[CodeHeaderControls] active sandbox refresh failed:",
+            response.status,
+          );
+          return;
+        }
+        const data: SandboxDetailResponse = await response.json();
+        if (current) dispatch(setActiveSandbox(data.instance));
+      } catch (error) {
+        console.warn(
+          "[CodeHeaderControls] active sandbox refresh failed:",
+          error,
+        );
+      }
+    };
+    const interval = window.setInterval(() => void refresh(), 15_000);
+    return () => {
+      current = false;
+      window.clearInterval(interval);
+    };
+  }, [activeSandbox?.id, dispatch]);
+
+  const status = activeSandbox ? getEffectiveStatus(activeSandbox) : null;
+  const resources = activeSandbox?.config?.resources;
+  const resourceLabel = resources
+    ? [
+        resources.cpu ? `${resources.cpu} CPU` : null,
+        resources.memory_mb ? `${resources.memory_mb} MB` : null,
+        resources.disk_mb ? `${resources.disk_mb} MB disk` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
 
   return (
     <div className="flex items-center w-full min-w-0 gap-0 p-0 space-x-0 space-y-0">
@@ -57,6 +111,52 @@ export function CodeHeaderControls() {
       <h1 className="ml-0 md:ml-2 text-sm font-medium text-foreground truncate">
         Code
       </h1>
+      {activeSandbox && status && (
+        <div className="ml-3 hidden min-w-0 items-center gap-2 border-l border-border pl-3 lg:flex">
+          <div
+            className="min-w-0 leading-tight"
+            title={sandboxDisplayName(activeSandbox)}
+          >
+            <div className="truncate text-xs font-medium text-foreground">
+              {sandboxDisplayName(activeSandbox)}
+            </div>
+            <div
+              className="truncate font-mono text-[10px] text-muted-foreground"
+              title={activeSandbox.hot_path ?? undefined}
+            >
+              {activeSandbox.hot_path ?? "Root unavailable"}
+            </div>
+          </div>
+          <span
+            className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${statusPillClasses(status)}`}
+          >
+            {STATUS_LABELS[status]}
+          </span>
+          {(activeSandbox.tier || resourceLabel) && (
+            <span
+              className="max-w-48 truncate text-[10px] text-muted-foreground"
+              title={[activeSandbox.tier, resourceLabel]
+                .filter(Boolean)
+                .join(" · ")}
+            >
+              {[activeSandbox.tier, resourceLabel].filter(Boolean).join(" · ")}
+            </span>
+          )}
+          <CopyTapButton
+            variant="transparent"
+            ariaLabel={`Copy sandbox ID ${activeSandbox.id}`}
+            tooltip="Copy sandbox ID"
+            onClick={() => void navigator.clipboard.writeText(activeSandbox.id)}
+          />
+          <a
+            href={`/sandbox/${encodeURIComponent(activeSandbox.id)}`}
+            className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+            title="Open sandbox details"
+          >
+            Manage <ExternalLink className="size-3" aria-hidden />
+          </a>
+        </div>
+      )}
     </div>
   );
 }

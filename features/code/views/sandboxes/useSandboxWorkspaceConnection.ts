@@ -7,12 +7,15 @@ import { sandboxDisplayName } from "@/lib/sandbox/format";
 import { getEffectiveStatus } from "@/lib/sandbox/status";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { SandboxFilesystemAdapter } from "../../adapters/SandboxFilesystemAdapter";
-import { SandboxProcessAdapter } from "../../adapters/SandboxProcessAdapter";
+import {
+  MockProcessAdapter,
+  SandboxProcessAdapter,
+} from "../../adapters/SandboxProcessAdapter";
+import { MockFilesystemAdapter } from "../../adapters/MockFilesystemAdapter";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 import { openSessionReportTab } from "../../runtime/openSessionReport";
 import {
-  setActiveSandboxId,
-  setActiveSandboxProxyUrl,
+  setActiveSandbox,
   setActiveView,
 } from "../../redux/codeWorkspaceSlice";
 import {
@@ -27,6 +30,11 @@ interface UseSandboxWorkspaceConnectionOptions {
   onConnected?: (instance: SandboxInstance) => void;
 }
 
+export interface SandboxWorkspaceConnectOptions {
+  /** A URL restoration reconnects the sandbox without replacing restored UI state. */
+  restore?: boolean;
+}
+
 /** The sole path for connecting a sandbox to a CodeWorkspace. */
 export function useSandboxWorkspaceConnection({
   onError,
@@ -39,8 +47,7 @@ export function useSandboxWorkspaceConnection({
   const [connectingId, setConnectingId] = useState<string | null>(null);
 
   const wireInstance = (instance: SandboxInstance) => {
-    dispatch(setActiveSandboxId(instance.id));
-    dispatch(setActiveSandboxProxyUrl(instance.proxy_url ?? null));
+    dispatch(setActiveSandbox(instance));
     const label = sandboxDisplayName(instance);
     const rootPath = instance.hot_path || "/home/agent";
     const filesystem = new SandboxFilesystemAdapter(
@@ -57,21 +64,33 @@ export function useSandboxWorkspaceConnection({
     });
   };
 
-  const connect = (instance: SandboxInstance) => {
+  /** Disconnect without selecting a replacement view or terminal tab. */
+  const disconnect = () => {
+    dispatch(setActiveSandbox(null));
+    setFilesystem(new MockFilesystemAdapter());
+    setProcess(new MockProcessAdapter());
+  };
+
+  const connect = async (
+    instance: SandboxInstance,
+    options: SandboxWorkspaceConnectOptions = {},
+  ): Promise<boolean> => {
     const effective = getEffectiveStatus(instance);
     if (!ACTIVE_SANDBOX_STATUSES.includes(effective)) {
       onError(
         `Sandbox ${sandboxDisplayName(instance)} is ${effective}. Start it, then try again.`,
       );
-      return;
+      return false;
     }
 
     setConnectingId(instance.id);
     wireInstance(instance);
     onConnected?.(instance);
-    dispatch(setActiveView("explorer"));
-    dispatch(setBottomOpen(true));
-    dispatch(setBottomActiveTab("terminal"));
+    if (!options.restore) {
+      dispatch(setActiveView("explorer"));
+      dispatch(setBottomOpen(true));
+      dispatch(setBottomActiveTab("terminal"));
+    }
 
     void (async () => {
       try {
@@ -82,8 +101,7 @@ export function useSandboxWorkspaceConnection({
         const probe = (await response.json()) as SandboxProbeResponse;
         onProbe?.(instance.id, probe);
         if (probe.aliveness === "gone") {
-          dispatch(setActiveSandboxId(null));
-          dispatch(setActiveSandboxProxyUrl(null));
+          disconnect();
           onError(
             `Sandbox ${sandboxDisplayName(instance)} no longer exists. Choose another sandbox to open its files.`,
           );
@@ -100,7 +118,9 @@ export function useSandboxWorkspaceConnection({
         );
       }
     })();
+
+    return true;
   };
 
-  return { connect, connectingId, wireInstance };
+  return { connect, connectingId, wireInstance, disconnect };
 }

@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { ActivityViewId } from "../types";
+import type { SandboxInstance } from "@/types/sandbox";
 
 /**
  * Where the editor is currently sourcing files from.
@@ -26,6 +27,12 @@ export interface CodeWorkspaceState {
   farRightOpen: boolean;
   /** The last instanceId the user selected from the Sandboxes view. */
   activeSandboxId: string | null;
+  /**
+   * The decorated server-backed identity of the active sandbox. The workspace
+   * adapters only need its row id, while the shell needs a truthful name,
+   * lifecycle status, tier, and root path without inventing a second cache.
+   */
+  activeSandbox: SandboxInstance | null;
   /**
    * Public proxy URL for the active sandbox's in-container Python server.
    * Mirrored from `SandboxInstance.proxy_url` when the user connects to
@@ -82,6 +89,7 @@ const initialState: CodeWorkspaceState = {
   rightOpen: true,
   farRightOpen: false,
   activeSandboxId: null,
+  activeSandbox: null,
   activeSandboxProxyUrl: null,
   explorerRootOverride: null,
   activeFilesystemId: null,
@@ -166,6 +174,15 @@ const slice = createSlice({
       // it via `setActiveSandboxProxyUrl` below.
       if (action.payload === null) {
         state.activeSandboxProxyUrl = null;
+        state.activeSandbox = null;
+      }
+    },
+    setActiveSandbox(state, action: PayloadAction<SandboxInstance | null>) {
+      state.activeSandbox = action.payload;
+      state.activeSandboxId = action.payload?.id ?? null;
+      state.activeSandboxProxyUrl = action.payload?.proxy_url ?? null;
+      if (action.payload === null) {
+        state.explorerRootOverride = null;
       }
     },
     setActiveSandboxProxyUrl(state, action: PayloadAction<string | null>) {
@@ -212,6 +229,7 @@ export const {
   setRightOpen,
   setFarRightOpen,
   setActiveSandboxId,
+  setActiveSandbox,
   setActiveSandboxProxyUrl,
   setExplorerRootOverride,
   setActiveFilesystem,
@@ -237,6 +255,8 @@ export const selectFarRightOpen = (state: WithCodeWorkspace) =>
   selectCodeWorkspace(state).farRightOpen;
 export const selectActiveSandboxId = (state: WithCodeWorkspace) =>
   selectCodeWorkspace(state).activeSandboxId;
+export const selectActiveSandbox = (state: WithCodeWorkspace) =>
+  selectCodeWorkspace(state).activeSandbox;
 export const selectActiveSandboxProxyUrl = (state: WithCodeWorkspace) =>
   selectCodeWorkspace(state).activeSandboxProxyUrl;
 export const selectExplorerRootOverride = (state: WithCodeWorkspace) =>
