@@ -66,17 +66,18 @@ export default function SandboxManagementWindow({
 
   const footer = (
     <div className="flex min-h-11 items-center justify-between gap-2 px-3 py-1.5">
-      <div className="flex min-w-0 items-center gap-2">
-        {statusBadge}
-        {status && (
-          <span className="truncate text-xs text-muted-foreground">
-            {status.template ?? "default"} · {status.tier}
-          </span>
-        )}
-      </div>
+      <div className="flex min-w-0 items-center gap-2">{statusBadge}</div>
       <div className="flex shrink-0 items-center gap-1.5">
-        <Button asChild variant="ghost" size="icon" title="Open full sandbox management">
-          <Link href={`/sandbox/${encodeURIComponent(sandboxId)}`} aria-label="Open full sandbox management">
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          title="Open full sandbox management"
+        >
+          <Link
+            href={`/sandbox/${encodeURIComponent(sandboxId)}`}
+            aria-label="Open full sandbox management"
+          >
             <ExternalLink className="h-4 w-4" />
           </Link>
         </Button>
@@ -92,10 +93,13 @@ export default function SandboxManagementWindow({
         <Button
           variant="outline"
           size="sm"
+          aria-label="Refresh sandbox diagnostics"
+          title="Refresh sandbox diagnostics"
           onClick={() => diagnosticsRef.current?.refresh()}
           disabled={status?.busy}
         >
-          <RefreshCw className="mr-1 h-3.5 w-3.5" /> Refresh
+          <RefreshCw className="h-3.5 w-3.5 sm:mr-1" />{" "}
+          <span className="hidden sm:inline">Refresh</span>
         </Button>
       </div>
     </div>
