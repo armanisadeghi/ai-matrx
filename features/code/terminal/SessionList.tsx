@@ -21,6 +21,7 @@ import {
   setActiveSession,
   type TerminalSession,
 } from "../redux/terminalSessionsSlice";
+import { ACTIVE_ROW } from "../styles/tokens";
 import { selectActiveSandboxId } from "../redux/codeWorkspaceSlice";
 
 interface SessionListProps {
@@ -105,7 +106,7 @@ export const SessionList: React.FC<SessionListProps> = ({ className }) => {
                   key={s.id}
                   className={cn(
                     "group flex items-center",
-                    isActive && "bg-primary/10 text-primary",
+                    isActive && ACTIVE_ROW,
                   )}
                 >
                   <button
@@ -115,7 +116,7 @@ export const SessionList: React.FC<SessionListProps> = ({ className }) => {
                     className={cn(
                       "flex min-h-11 lg:min-h-7 min-w-0 flex-1 items-center gap-1.5 px-2 py-1 text-left text-xs",
                       isActive
-                        ? "text-primary"
+                        ? "text-accent-foreground"
                         : "text-foreground hover:bg-accent",
                     )}
                   >
