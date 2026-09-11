@@ -3,10 +3,11 @@
  * Scope access membrane liveness — can somebody read a record they were never given?
  *
  * WHAT IT PROTECTS: the B-7 membrane installed by
- * migrations/ctx_scope_access_membrane_b7.sql — `context._scope_readable` /
- * `_scope_readable_for` / `_assert_scope_readable`, the eight SECURITY DEFINER
- * doors that serve a scope's cell values, and the generated `component` RLS lane
- * on `context.context_item_values` over its parent `scope`.
+ * migrations/ctx_scope_access_membrane_b7.sql and ..._fix1.sql — the five
+ * `context._*` helpers, the eleven SECURITY DEFINER doors that serve a scope's
+ * cell values or LIST scopes, the decision recorded for every other door in
+ * `context.scope_door_registry`, and the generated `component` RLS lane on
+ * `context.context_item_values` over its parent `scope`.
  *
  * WHY IT EXISTS (live, 2026-09-11, rolled-back probes on brsgrqvjdzwihsvnfqkf):
  * a scope marked `personal` was correctly invisible to a non-creator member at
@@ -31,15 +32,20 @@
  *   pnpm check:scope-access-membrane            # loud, exit 0
  *   pnpm check:scope-access-membrane:strict     # exit 1 on ANY finding (CI)
  *
- * PROVEN FAILING (2026-09-11, one rolled-back transaction, four injected
- * regressions): the membrane stripped out of `get_scope_context`, a new
- * unreviewed DEFINER door created, `select` granted back to `anon`, and the
- * generated `std_select` replaced by a hand-written organization-wide predicate.
- * The gate returned `value_doors_carry_membrane` FAIL naming
- * `public.get_scope_context`, `no_unreviewed_scope_doors` FAIL naming
- * `public.b7_fake_new_door`, `values_policies_are_generated_component_lane` FAIL
- * and `no_anon_grants_on_values` FAIL naming SELECT. After rollback: six of six
- * green.
+ * PROVEN FAILING (2026-09-11, rolled-back transactions). Round 1: the membrane
+ * stripped out of `get_scope_context`, a new unmembraned DEFINER door, `select`
+ * re-granted to `anon`, and the generated `std_select` replaced by a hand-written
+ * organization-wide predicate — four checks red, each naming its offender.
+ * Round 2 (after V-7 B-F2 defeated the substring test) against four decoys:
+ *   1. the verifier's exact comment-only door — `all_scope_doors_registered` and
+ *      `value_doors_are_membraned` both FAIL naming `public.v7_fake_door2`;
+ *   2. the real call lifted out of `get_scope_context`, leaving the word in a
+ *      comment — `membraned_doors_carry_a_real_call` FAILs naming it;
+ *   3. the comment-only door REGISTERED as `membraned` to talk past the registry —
+ *      `membraned_doors_carry_a_real_call` FAILs;
+ *   4. the same door registered as `org_lane` to park it in a class that skips the
+ *      assert — `value_doors_are_membraned` FAILs naming its class.
+ * Rolled back; nine of nine green afterwards.
  *
  * 🚨 UNMEASURED IS NOT PASSED — same rule as check-soft-delete-cascade.ts: when
  * the live pull cannot run, this reports UNMEASURED and fails under --strict,
@@ -66,18 +72,32 @@ const STRICT = process.argv.includes("--strict");
  * measures less would otherwise read as a clean pass.
  */
 const EXPECTED_CHECKS = [
-  // The three helpers exist and are SECURITY DEFINER. As INVOKER they would ask
-  // the question through the caller's own RLS and answer "no" to everybody.
+  // The five helpers exist and are SECURITY DEFINER. As INVOKER they would ask the
+  // question through the caller's own RLS and answer "no" to everybody.
   "membrane_helpers_installed",
-  // THE CLASS: every DEFINER door whose body names context.context_item_values
-  // calls the membrane. This is the check that would have caught the original
-  // defect on the day it shipped.
-  "value_doors_carry_membrane",
-  // THE FUTURE: a DEFINER function reading the scopes tables that is neither
-  // membraned nor on the reviewed list in the migration. Education functions,
-  // scope-type/org-lane functions and create/own functions are listed there WITH
-  // the reason each does not need the assert.
-  "no_unreviewed_scope_doors",
+  // THE STRUCTURAL RULE (fix round 1). Every SECURITY DEFINER function whose body
+  // references the scopes tables has a row in context.scope_door_registry. A door
+  // nobody has decided about fails on its ABSENCE, so no body text can talk it
+  // past — round 1's substring test was defeated by a door whose entire membrane
+  // was a comment (V-7 B-F2).
+  "all_scope_doors_registered",
+  // A registry row naming a function that no longer exists is a decision about
+  // nothing, and it would quietly excuse a future function that reuses the name.
+  "registry_has_no_stale_rows",
+  // A door registered `membraned` still CALLS the membrane, tested after comments,
+  // string literals and dollar-quoted blocks are stripped out of its live body.
+  // This is what catches the membrane being lifted back out of a known door.
+  "membraned_doors_carry_a_real_call",
+  // Anything that touches cell values is `membraned` or provably `unreachable`.
+  // `education` and `org_lane` excuse an assert on a door that serves record
+  // IDENTITY; they are never a reason to hand out somebody's cell values.
+  "value_doors_are_membraned",
+  // THE LIST AND THE RECORD AGREE. list_scopes / get_scope_tree / search_scopes
+  // filter on context._readable_scope_ids(), so a list can never name a record the
+  // record itself refuses to open (V-7 B-F1: all three returned a `personal`
+  // scope's complete row — name, slug, creator, visibility — to a member who got
+  // 0 rows from the table).
+  "list_doors_filter_the_readable_set",
   // context.context_item_values is registered as a component of `scope`, with
   // exactly ONE composition parent. A second parent (context_item) would OR an
   // org-wide id set back into the read lane and undo the membrane.

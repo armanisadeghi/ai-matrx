@@ -55,7 +55,12 @@ this directory.
     `iam.apply_rls(…,'component')` lane. Adding a door without the membrane, or hand-writing a
     policy over the generated one, is caught by `pnpm check:scope-access-membrane` — a live pull,
     because a function body lives in the catalog, not on disk.
-    Migration: `migrations/ctx_scope_access_membrane_b7.sql`.
+    A door that LISTS scopes filters on `context._readable_scope_ids()` — the list and the record
+    must agree: if a list names a record, opening it works; if opening refuses, it was never
+    listed. Every DEFINER function that reads these tables is registered in
+    `context.scope_door_registry` with its class and the reason, and the gate fails a door on its
+    ABSENCE from that table, so a new one cannot ship undecided.
+    Migrations: `migrations/ctx_scope_access_membrane_b7.sql` + `..._b7_fix1.sql`.
     **Do NOT make `context_items` a component of `scope_type`:** `context.scope_types` has no
     `created_by` and no `visibility`, so `iam.accessible_entity_ids('scope_type','viewer')` returns
     zero ids while RLS shows an ordinary member 4 rows — the field definitions would go from 57
@@ -275,6 +280,17 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   not the same axis.
 
 ## Change Log
+
+- 2026-09-11 — **B-7 fix round 1** (independent verification V-7). `list_scopes`, `get_scope_tree`
+  and `search_scopes` were handing a non-creator member the **complete row** of a `personal` scope —
+  name, slug, visibility, `created_by` — in the same breath as the table gave them 0 rows; all three
+  now filter on `context._readable_scope_ids()` (measured: the personal scope goes from PRESENT to
+  absent for the member, stays PRESENT for the creator, totals 15→14 with only that one removed, and
+  **zero** (member, org) pairs platform-wide lose a scope). The guard's class test was a substring
+  match a comment defeated, and is now structural: `context.scope_door_registry` plus a call-shaped
+  test on the body with comments, literals and dollar-quoted blocks stripped — proven RED on all four
+  decoy routes. `set_context_value` no longer tells a user who cannot view the record that they can
+  view it (one function, `context._scope_denial_message`, chooses both sentences).
 
 - 2026-09-11 — **B-7: the scope access membrane.** The leak was never in the table policy
   (`context_item_values_select`'s subquery over `context.scopes` is itself RLS-filtered, so a
