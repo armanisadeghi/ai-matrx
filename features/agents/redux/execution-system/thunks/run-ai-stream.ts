@@ -49,7 +49,7 @@ import { toast } from "@/lib/toast";
  */
 export type StreamDispatch = (action: unknown) => unknown;
 
-import { processStream } from "./process-stream";
+import { hasRetainedTransportConsumer, processStream } from "./process-stream";
 import { captureStreamClientError } from "@/lib/diagnostics/captureStreamError";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
@@ -739,6 +739,7 @@ export async function runAiStream(
     const isTransportLost = isStreamTransportLost(error);
     /** Both classes mean "our connection died, the run did not" — reconnect. */
     const isConnectionLoss = isHeartbeat || isTransportLost;
+    const retainedProcessor = isConnectionLoss && hasRetainedTransportConsumer(requestId);
     const errorType:
       | "heartbeat_timeout"
       | "total_timeout"
@@ -757,7 +758,7 @@ export async function runAiStream(
     // Feed the systemwide Error Inspector — a dead stream (heartbeat loss,
     // total-timeout, fetch failure) is a server-origin failure the admin wants
     // to see, but it arrives as a thrown exception, not a stream event.
-    if (shouldCaptureStreamFailure(error)) {
+    if (!retainedProcessor && shouldCaptureStreamFailure(error)) {
       captureStreamClientError({
         cause: error,
         errorType,
@@ -769,7 +770,7 @@ export async function runAiStream(
       });
     }
 
-    dispatch(
+    if (!retainedProcessor) dispatch(
       setRequestStatus({
         requestId,
         status: "error",
@@ -784,7 +785,7 @@ export async function runAiStream(
         },
       }),
     );
-    dispatch(setInstanceStatus({ conversationId, status: "error" }));
+    if (!retainedProcessor) dispatch(setInstanceStatus({ conversationId, status: "error" }));
 
     // Self-heal: the server runs detached and persists the turn even though
     // our connection died. Ask the canonical /runtime reconnect surface for
@@ -810,7 +811,7 @@ export async function runAiStream(
     // Force-terminal any tool that the stream left mid-flight. Without this,
     // LiveToolCallCard keeps shimmering "Using tool …" forever because the
     // toolLifecycle entry never receives its terminal event.
-    dispatch(
+    if (!retainedProcessor) dispatch(
       failPendingToolLifecycle({
         requestId,
         errorType,

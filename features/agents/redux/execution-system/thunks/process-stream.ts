@@ -18,7 +18,7 @@ import type { CompletionStats } from "@/features/agents/types/instance.types";
 import type { ClientMetrics } from "@/features/agents/types/request.types";
 import type { ToolLifecycleStatus } from "@/features/agents/types/request.types";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
-import { isStreamTransportLost } from "@/lib/api/errors";
+import { isStreamTransportLost, StreamTransportError } from "@/lib/api/errors";
 import { monitorStream } from "@ai-matrx/data/net";
 import {
   isChunkEvent,
@@ -341,6 +341,10 @@ const retainedTransportConsumers = new Map<
   (response: Response, controller?: AbortController) => Promise<ProcessStreamResult>
 >();
 
+export function hasRetainedTransportConsumer(requestId: string): boolean {
+  return retainedTransportConsumers.has(requestId);
+}
+
 // =============================================================================
 // Processor
 // =============================================================================
@@ -370,6 +374,7 @@ export async function processStream({
   // Redux conversationId is used everywhere. See the param docstring above.
   const owningConvId = (wireConvId: string | undefined | null): string =>
     forceLocalConversationId ? conversationId : (wireConvId ?? conversationId);
+  let activeAbortController = abortController;
   const jsonTracker = jsonExtraction?.enabled
     ? new StreamingJsonTracker({
         maxResults: jsonExtraction.maxResults,
@@ -596,7 +601,7 @@ export async function processStream({
   const POST_TERMINAL_GRACE_MS = 30_000;
   let postTerminalGraceTimer: ReturnType<typeof setTimeout> | null = null;
   const armPostTerminalGrace = (terminalSignal: string) => {
-    if (!abortController || postTerminalGraceTimer !== null) return;
+    if (!activeAbortController || postTerminalGraceTimer !== null) return;
     postTerminalGraceTimer = setTimeout(() => {
       console.error(
         `[stream:${requestId.slice(0, 8)}] server declared the request terminal (${terminalSignal}) but never closed the stream within ${POST_TERMINAL_GRACE_MS}ms — ending it locally so the client promise settles. SERVER DEFECT: the response was held open after terminal.`,
@@ -611,7 +616,7 @@ export async function processStream({
         requestId,
         conversationId,
       });
-      abortController.abort("post-terminal-grace");
+      activeAbortController.abort("post-terminal-grace");
     }, POST_TERMINAL_GRACE_MS);
   };
 
@@ -624,6 +629,7 @@ export async function processStream({
     nextResponse: Response,
     nextAbortController?: AbortController,
   ): Promise<ProcessStreamResult> => {
+    activeAbortController = nextAbortController;
     const { events: rawEvents } = parseNdjsonStream(nextResponse);
     const events = nextAbortController
       ? monitorStream(rawEvents, {
@@ -633,6 +639,7 @@ export async function processStream({
         })
       : rawEvents;
     streamFailure = null;
+    let sawTerminalEvent = false;
   try {
     for await (const event of events) {
       const transportCursor = readTransportCursor(event);
@@ -2331,6 +2338,7 @@ export async function processStream({
         // If the close never arrives, settle locally.
         armPostTerminalGrace("fatal error event");
       } else if (isEndEvent(event)) {
+        sawTerminalEvent = true;
         otherEvents++;
         const currentState = getState();
         const currentRequest =
@@ -2549,6 +2557,13 @@ export async function processStream({
     // Stream died mid-flight. Capture and fall through to the commit path —
     // partial content preservation is non-negotiable. Re-thrown below.
     streamFailure = err instanceof Error ? err : new Error(String(err));
+  }
+
+  if (streamFailure === null && !sawTerminalEvent) {
+    streamFailure = new StreamTransportError({
+      detail: "NDJSON transport closed before a terminal end event.",
+      requestId,
+    });
   }
 
   // The stream is over (naturally, by failure, or via the terminal guard's
