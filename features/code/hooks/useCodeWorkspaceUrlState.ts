@@ -69,6 +69,9 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   const appliedLocationRef = useRef<string | null>(null);
   const initialSandboxRef = useRef(initialSandboxId);
   const hasNormalizedRef = useRef(false);
+  // `popstate` selects an existing history entry. Any serializer work while
+  // applying it may only replace that entry; pushing here destroys Forward.
+  const isHistoryNavigationRef = useRef(false);
   const fileRestoreAbortRef = useRef<AbortController | null>(null);
 
   const { connect, disconnect } = useSandboxWorkspaceConnection({
@@ -104,7 +107,10 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     setLocationSearch(params?.toString() ?? "");
   }, [params]);
   useEffect(() => {
-    const onPopState = () => setLocationSearch(window.location.search.slice(1));
+    const onPopState = () => {
+      isHistoryNavigationRef.current = true;
+      setLocationSearch(window.location.search.slice(1));
+    };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
@@ -254,14 +260,18 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
       bottomTab,
     });
     const nextSearch = next.toString();
-    if (nextSearch === currentSearch) return;
+    if (nextSearch === currentSearch) {
+      isHistoryNavigationRef.current = false;
+      return;
+    }
     const href = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
-    if (hasNormalizedRef.current) {
+    if (hasNormalizedRef.current && !isHistoryNavigationRef.current) {
       window.history.pushState(window.history.state, "", href);
     } else {
       window.history.replaceState(window.history.state, "", href);
       hasNormalizedRef.current = true;
     }
+    isHistoryNavigationRef.current = false;
     appliedLocationRef.current = nextSearch;
     // `history.pushState` does not update Next's search-param hook. Keep the
     // restore authority aligned with the URL we just wrote so a later render
