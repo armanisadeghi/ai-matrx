@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   closeTab,
@@ -10,12 +10,14 @@ import {
 } from "../redux/tabsSlice";
 import { EditorTab } from "./EditorTab";
 import { useOpenRenderPreview } from "../hooks/useOpenRenderPreview";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export const EditorTabs: React.FC = () => {
   const dispatch = useAppDispatch();
   const { byId, order } = useAppSelector(selectCodeTabs);
   const activeId = useAppSelector(selectActiveTabId);
   const openRenderPreview = useOpenRenderPreview();
+  const [closeConfirmationId, setCloseConfirmationId] = useState<string | null>(null);
 
   const handleSelect = useCallback(
     (id: string) => {
@@ -26,9 +28,13 @@ export const EditorTabs: React.FC = () => {
 
   const handleClose = useCallback(
     (id: string) => {
-      dispatch(closeTab(id));
+      if (byId[id]?.dirty) {
+        setCloseConfirmationId(id);
+      } else {
+        dispatch(closeTab(id));
+      }
     },
-    [dispatch],
+    [byId, dispatch],
   );
 
   const handleOpenPreview = useCallback(
@@ -53,10 +59,11 @@ export const EditorTabs: React.FC = () => {
   }
 
   return (
-    <div
+    <>
+      <div
       role="tablist"
       className="flex h-full w-full items-stretch overflow-x-auto"
-    >
+      >
       {order.map((id) => {
         const tab = byId[id];
         if (!tab) return null;
@@ -76,6 +83,21 @@ export const EditorTabs: React.FC = () => {
           />
         );
       })}
-    </div>
+      </div>
+      <ConfirmDialog
+        open={closeConfirmationId !== null}
+        onOpenChange={(open) => {
+          if (!open) setCloseConfirmationId(null);
+        }}
+        title="Discard unsaved changes?"
+        description="This file has edits that have not been saved. Closing it will permanently discard those edits."
+        confirmLabel="Discard changes"
+        variant="destructive"
+        onConfirm={() => {
+          if (closeConfirmationId) dispatch(closeTab(closeConfirmationId));
+          setCloseConfirmationId(null);
+        }}
+      />
+    </>
   );
 };

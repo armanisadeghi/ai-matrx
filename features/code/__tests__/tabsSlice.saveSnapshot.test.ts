@@ -1,0 +1,41 @@
+import reducer, {
+  markTabSaved,
+  openTab,
+  updateTabContent,
+} from "../redux/tabsSlice";
+
+const file = {
+  id: "sandbox:old:/workspace/app.ts",
+  path: "/workspace/app.ts",
+  name: "app.ts",
+  language: "typescript",
+  content: "one",
+  pristineContent: "one",
+} as const;
+
+describe("tab save snapshots", () => {
+  it("keeps an edit made while a save is in flight dirty", () => {
+    let state = reducer(undefined, openTab(file));
+    state = reducer(state, updateTabContent({ id: file.id, content: "two" }));
+    // The async writer persisted `two`, then the user typed `three` before
+    // its completion callback arrived.
+    state = reducer(state, updateTabContent({ id: file.id, content: "three" }));
+    state = reducer(state, markTabSaved({ id: file.id, savedContent: "two" }));
+
+    expect(state.byId[file.id]).toMatchObject({
+      content: "three",
+      pristineContent: "one",
+      dirty: true,
+    });
+  });
+
+  it("marks the exact saved snapshot clean", () => {
+    let state = reducer(undefined, openTab(file));
+    state = reducer(state, updateTabContent({ id: file.id, content: "two" }));
+    state = reducer(state, markTabSaved({ id: file.id, savedContent: "two" }));
+    expect(state.byId[file.id]).toMatchObject({
+      pristineContent: "two",
+      dirty: false,
+    });
+  });
+});

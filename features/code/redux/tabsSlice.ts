@@ -112,11 +112,20 @@ const slice = createSlice({
       tab.dirty = tab.content !== tab.pristineContent;
       tab.lastMutationSource = action.payload.source ?? "user";
     },
-    markTabSaved(state, action: PayloadAction<string>) {
-      const tab = state.byId[action.payload];
+    markTabSaved(
+      state,
+      action: PayloadAction<string | { id: string; savedContent: string }>,
+    ) {
+      const id = typeof action.payload === "string" ? action.payload : action.payload.id;
+      const savedContent = typeof action.payload === "string" ? undefined : action.payload.savedContent;
+      const tab = state.byId[id];
       if (!tab) return;
-      tab.pristineContent = tab.content;
-      tab.dirty = false;
+      // An edit can land while a write is in flight. Only the exact snapshot
+      // sent to persistence becomes pristine; later keystrokes stay dirty.
+      if (savedContent === undefined || tab.content === savedContent) {
+        tab.pristineContent = savedContent ?? tab.content;
+        tab.dirty = false;
+      }
       tab.lastSavedAt = new Date().toISOString();
     },
     /** Refresh the `remoteUpdatedAt` stored alongside a tab — used by

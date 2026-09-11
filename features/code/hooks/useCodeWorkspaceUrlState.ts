@@ -124,7 +124,10 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
           );
           if (!instance) throw new Error("The sandbox is unavailable or no longer belongs to you.");
           if (generation !== requestGenerationRef.current) return;
-          const connected = await connect(instance, { restore: true });
+          const connected = await connect(instance, {
+            restore: true,
+            openSessionReport: !state.filePath,
+          });
           if (!connected && generation === requestGenerationRef.current) {
             // `connect` reports a non-runnable sandbox as a handled false
             // result. Finish this restore so later UI changes can still

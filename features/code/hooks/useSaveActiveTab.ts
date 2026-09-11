@@ -17,6 +17,7 @@ import { useCodeWorkspace } from "../CodeWorkspaceProvider";
 import { codeFileIdFromTabId, isLibraryTabId } from "./useOpenLibraryFile";
 import { getAdapterForTabId } from "../library-sources/registry";
 import { isRemoteConflictError } from "../library-sources/types";
+import { isCurrentFilesystemTab } from "../views/explorer/fileTreePaths";
 
 export interface SaveResult {
   tabId: string;
@@ -90,7 +91,7 @@ export function useSaveActiveTab() {
         }
         try {
           await dispatch(saveFileNow({ id: codeFileId })).unwrap();
-          dispatch(markTabSaved(tab.id));
+          dispatch(markTabSaved({ id: tab.id, savedContent: tab.content }));
           return { tabId: tab.id, ok: true };
         } catch (err) {
           const message = extractErrorMessage(err);
@@ -123,7 +124,7 @@ export function useSaveActiveTab() {
             // a remote-updated row.
             expectedUpdatedAt: force ? undefined : tab.remoteUpdatedAt,
           });
-          dispatch(markTabSaved(tab.id));
+          dispatch(markTabSaved({ id: tab.id, savedContent: tab.content }));
           dispatch(
             setTabRemoteUpdatedAt({
               id: tab.id,
@@ -147,6 +148,20 @@ export function useSaveActiveTab() {
       }
 
       // Branch 3: filesystem-adapter tab → writeFile to the adapter.
+      if (!isCurrentFilesystemTab(tab, filesystem.id)) {
+        return {
+          tabId: tab.id,
+          ok: false,
+          error: "This file belongs to a different sandbox. Reconnect that sandbox before saving it.",
+        };
+      }
+      if (filesystem.id.startsWith("mock")) {
+        return {
+          tabId: tab.id,
+          ok: false,
+          error: "This is a temporary mock workspace and cannot save files.",
+        };
+      }
       if (!filesystem.writable || !filesystem.writeFile) {
         return {
           tabId: tab.id,
@@ -156,7 +171,7 @@ export function useSaveActiveTab() {
       }
       try {
         await filesystem.writeFile(tab.path, tab.content);
-        dispatch(markTabSaved(tab.id));
+        dispatch(markTabSaved({ id: tab.id, savedContent: tab.content }));
         return { tabId: tab.id, ok: true };
       } catch (err) {
         const message = extractErrorMessage(err);
