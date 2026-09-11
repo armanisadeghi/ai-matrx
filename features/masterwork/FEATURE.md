@@ -188,6 +188,10 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   "not built yet" and the browse CARDS view's "Not built into a system yet." took the same fix.
   Ten forcing tests, four of them proven RED against the pre-fix code.
 
+- 2026-09-10 — Source-ingest and body-of-work completion summaries lead with any chunks the
+  distiller could not read, including the approximate missing word count and a direct retry
+  remedy; successful draft counts never conceal partial source loss.
+
 - 2026-09-10 — **`features/masterwork/home/` deleted** (`MasterworkHomePage`,
   `HowItsImprovingPanel`, the home service). `/masterwork` has redirected signed-in Experts to
   `/masterwork/all` — the canonical entity-list surface — since 2026-08-21, so nothing rendered

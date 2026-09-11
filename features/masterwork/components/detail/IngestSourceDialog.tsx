@@ -121,18 +121,23 @@ export function describeIngest({
   failedChunks,
   skippedWords,
 }: IngestSummary): string {
-  const missing =
-    failedChunks > 0
-      ? `Not all of it could be read: ${failedChunks} ${failedChunks === 1 ? "part" : "parts"} of your source (about ${skippedWords} words) failed even after being split smaller, so the rules from ${failedChunks === 1 ? "that part are" : "those parts are"} missing — paste ${failedChunks === 1 ? "it" : "them"} again on ${failedChunks === 1 ? "its" : "their"} own. `
-      : "";
+  const missing = describeMissingIngestParts({ failedChunks, skippedWords });
   return (
-    missing +
+    (missing ? `${missing} ` : "") +
     `${added} suggested ${added === 1 ? "rule" : "rules"} added as drafts` +
     (duplicatesSkipped ? `, ${duplicatesSkipped} duplicates skipped` : "") +
     (quotesUnverified
       ? `. ${quotesUnverified} ${quotesUnverified === 1 ? "quote" : "quotes"} could not be verified word-for-word — those rules are flagged for your review.`
       : ". Every quote verified word-for-word against your source.")
   );
+}
+
+export function describeMissingIngestParts({
+  failedChunks,
+  skippedWords,
+}: Pick<IngestSummary, "failedChunks" | "skippedWords">): string | null {
+  if (failedChunks === 0) return null;
+  return `Not all of it could be read: ${failedChunks} ${failedChunks === 1 ? "part" : "parts"} of your source (about ${skippedWords} words) failed even after being split smaller, so the rules from ${failedChunks === 1 ? "that part are" : "those parts are"} missing — paste ${failedChunks === 1 ? "it" : "them"} again on ${failedChunks === 1 ? "its" : "their"} own.`;
 }
 
 /** Human size — a 3 KB file reading "0.0 MB" looks like a broken upload. */

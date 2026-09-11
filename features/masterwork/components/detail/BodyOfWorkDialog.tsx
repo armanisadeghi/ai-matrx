@@ -25,6 +25,7 @@ import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { describeMissingIngestParts } from "./IngestSourceDialog";
 
 /**
  * "Everything you've published" — the `body_of_work` Distillation Approach.
@@ -60,6 +61,8 @@ interface CorpusSummary {
   added: number;
   duplicatesSkipped: number;
   quotesUnverified: number;
+  failedChunks: number;
+  skippedWords: number;
 }
 
 function parseCorpusSummary(raw: unknown): CorpusSummary | null {
@@ -262,6 +265,9 @@ export function BodyOfWorkDialog({
   };
 
   const summary = run.result;
+  const missingChunkSummary = summary
+    ? describeMissingIngestParts(summary)
+    : null;
   const failedPieces = board.filter(
     (p) => p.status === "failed" || p.status === "dead_letter",
   );
@@ -297,6 +303,11 @@ export function BodyOfWorkDialog({
     <>
         {summary ? (
           <div className="space-y-3">
+            {missingChunkSummary ? (
+              <p className="text-sm text-destructive">
+                {missingChunkSummary}
+              </p>
+            ) : null}
             <p className="text-sm text-foreground">
               {summary.added} suggested{" "}
               {summary.added === 1 ? "rule" : "rules"} added as drafts
