@@ -14,17 +14,37 @@
  *   3. Admins add and remove admins and members. Only the owner is untouchable
  *      by admins.
  *   4. A user cannot leave, be removed from, or delete their LAST remaining
- *      organization.
+ *      organization — and nor can anyone else do it to them.
+ *   5. Changing the organization's own row follows the owner/admin membership
+ *      role, never `created_by` (DD-048 fix round 1).
  *
  * Every probe is a REAL PostgREST / RPC call with a REAL minted user JWT for a
  * REAL throwaway user created through the GoTrue admin API (which fires the
  * live signup trigger chain). No mocks, no manufactured rows in our own code
- * path. Fixtures are torn down in a finally block.
+ * path.
+ *
+ * 🚨 THIS GUARD WRITES TO THE ONE SHARED PRODUCTION DATABASE, SO ITS CLEANUP IS
+ * PART OF THE CONTRACT, NOT AN AFTERTHOUGHT. The first version tore down in a
+ * `finally` that never inspected a single response: 34 organizations, 19 users
+ * and 50 memberships accumulated over four runs before an independent verifier
+ * found them, and one of them manufactured a false entry in FOUND_DEFECTS.
+ * Three things now prevent that, and none of them may be removed:
+ *   (a) EVERY fixture row carries FIXTURE_PREFIX, including the organizations
+ *       the signup trigger creates on its own — so a sweep can always find them;
+ *   (b) teardown checks the HTTP status of every delete it issues;
+ *   (c) teardown then VERIFIES that zero prefixed rows remain, and a survivor
+ *       fails the whole run — NOT gated on --strict, because leaking into the
+ *       shared database is never advisory.
+ * Deletes here are slow and can time out (FOUND_DEFECTS D307: `iam.organizations`
+ * is the target of 655 foreign keys, 240 unindexed; `auth.users` is worse). If
+ * teardown reports survivors, sweep them with a direct psql/psycopg session and
+ * `statement_timeout = 0` before running this guard again — the failure message
+ * prints the exact statements.
  *
  * Usage: pnpm check:org-ownership [--strict]
- *   exit 0  all cases hold, OR credentials absent (never a silent green:
- *           UNMEASURED is printed loudly)
- *   exit 1  a case failed and --strict
+ *   exit 0  all cases hold AND nothing leaked, OR credentials absent (never a
+ *           silent green: UNMEASURED is printed loudly)
+ *   exit 1  a case failed and --strict, OR anything leaked (always)
  *   exit 2  the harness itself could not run
  */
 

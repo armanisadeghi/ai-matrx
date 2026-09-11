@@ -35,16 +35,23 @@ or give organization deletion an explicit soft-delete/retire path instead of a h
 census query lives in the DD-048 report at
 `/private/tmp/claude-501/-Users-armanisadeghi-code/5ab899a7-360c-46e8-8f3b-1767ae55c8b7/scratchpad/reports/B-1-org-ownership.md`.
 
-### D308 — 4 organizations have no owner at all, and 1 organization's creator is not its owner
+### D308 — 4 organizations have no owner and no members at all
 
-Found 2026-09-11 during the DD-048 census (live, `brsgrqvjdzwihsvnfqkf`). Of 392 organizations,
-**4 have no active `role='owner'` membership** and **1 has a `created_by` who holds no owner
-membership**. Nothing produces this today that we found; they are historical.
+Found 2026-09-11 during the DD-048 census; **corrected 2026-09-11 after independent verification**.
+Of the organizations live that day, **4 have no active `role='owner'` membership**: `442f1f09`
+"user-0d93e63e's Workspace", `b56b15fe` "user-553564f6's Workspace", `ec5ae32a`
+"d20-oauth-test's Workspace" (all personal, `created_by` NULL) and `39c38960` "Matrx System".
+**Every one of them has ZERO membership rows at all** — not merely zero owners — so they are
+orphans, not organizations somebody is locked out of. Impact today: none. Since
+`migrations/iam_org_ownership_rulings_dd048.sql` keys delete on the owner membership, only a
+platform admin can remove them, which is the correct posture for an orphan.
 
-It matters now because as of `migrations/iam_org_ownership_rulings_dd048.sql` the DELETE policy is
-keyed on the owner membership: those 4 organizations can no longer be deleted by anyone except a
-platform admin, and for the 1 mismatched organization the delete right just moved from its creator
-to its actual owner (which is the intended fix, but it is a live behaviour change for that row).
+**Correction to the original filing.** It also claimed "1 organization whose `created_by` is not
+its owner" and that "nothing produces this today". Both were wrong: that row (and three more like
+it) was the DD-048 guard's own leaked fixture — the post-transfer state it creates on every run
+and, until the fix round, failed to clean up. The guard produced one per run. No real organization
+is in that state. The leak itself is fixed (verifying teardown + a fixture prefix) and every leaked
+row was swept on 2026-09-11.
 
 Fix: decide per organization — appoint an owner via `admin_manage_organization_membership`
 ('set_role', owner), or retire the row. Census:
