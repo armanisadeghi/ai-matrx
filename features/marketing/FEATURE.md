@@ -681,6 +681,8 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 - 2026-09-10 — Codex: **Industry-pack review controls retain their dense desktop geometry and meet the shared 44px touch floor on tablet and phone.** The review root now opts into `matrx-touch-targets`, covering per-section all/none actions, keyword doors, rationale disclosures, navigation, and the sticky adoption footer. Row checkboxes keep their 14px visual chrome while gaining an invisible 44px hit area, matching the canonical table and research patterns. A source contract guards both pieces so later pack rows cannot silently shrink the interaction surface again.
 
+- 2026-09-10 — Codex: **Reset-to-pack comparisons speak the current meaning-item contract.** The live status RPC now emits `meaning` items, but the dialog still formatted only the retired `rule` shape, leaving every destructive comparison blank after “you have” and “pack says.” Meaning rows now name current versus proposed worth and phrase counts, archived rows stay explicit, the shared type mirrors the live kind, and the top bulk selector meets the phone touch floor.
+
 - 2026-09-10 — **Keyword Value editors use one readable phone scroll surface.**
   Rule, service-area, and combination editors now let the form and live impact
   preview flow through one mobile scroller while retaining independent desktop

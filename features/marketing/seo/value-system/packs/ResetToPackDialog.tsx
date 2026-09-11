@@ -25,7 +25,7 @@ import { cn } from "@/styles/themes/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { adoptStarterPack } from "../data";
-import { humanizeSlug } from "../lib";
+import { describeWorth, humanizeSlug } from "../lib";
 import type {
   StarterPackPart,
   StarterPackSiteStatus,
@@ -33,7 +33,7 @@ import type {
 } from "../types";
 
 const KIND_LABEL: Record<string, string> = {
-  rule: "Rule",
+  meaning: "Meaning",
   value_band: "Value band",
   geo_band: "Geo band",
   geo_area: "Service area",
@@ -41,18 +41,35 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 /** One line each: what the pack says vs what the site has. */
-function itemDelta(item: StarterPackStatusItem): { pack: string; site: string } {
+export function itemDelta(item: StarterPackStatusItem): {
+  pack: string;
+  site: string;
+} {
   const p = item.pack;
   const s = item.site ?? {};
   switch (item.kind) {
-    case "rule":
-      return {
-        pack: `×${String(p.value_multiplier ?? 1)}${p.pattern ? ` · “${String(p.pattern)}”` : ""}${p.match_facet ? ` · ${humanizeSlug(String(p.match_facet))}` : ""}`,
-        site:
-          item.state === "archived"
-            ? "archived"
-            : `×${String(s.value_multiplier ?? 1)}${s.pattern ? ` · “${String(s.pattern)}”` : ""}${s.match_facet ? ` · ${humanizeSlug(String(s.match_facet))}` : ""}`,
+    case "meaning": {
+      const packMatchers = Array.isArray(p.matchers) ? p.matchers.length : 0;
+      const siteMatchers =
+        typeof s.matchers === "number" && Number.isFinite(s.matchers)
+          ? s.matchers
+          : 0;
+      const summarize = (value: Record<string, unknown>, matchers: number) => {
+        const rawEffect = value.worth_effect;
+        const effect =
+          rawEffect === "add" || rawEffect === "scale" || rawEffect === "never"
+            ? rawEffect
+            : null;
+        const amount =
+          typeof value.worth_amount === "number" ? value.worth_amount : null;
+        return `${describeWorth(effect, amount)} · ${matchers} phrase${matchers === 1 ? "" : "s"}`;
       };
+      return {
+        pack: summarize(p, packMatchers),
+        site:
+          item.state === "archived" ? "archived" : summarize(s, siteMatchers),
+      };
+    }
     case "value_band": {
       const pc = (p.config ?? {}) as Record<string, unknown>;
       const sc = (s.config ?? {}) as Record<string, unknown>;
@@ -117,7 +134,9 @@ export function ResetToPackDialog({
 
   const allOn = candidates.length > 0 && ticked.size === candidates.length;
   const toggleAll = () =>
-    setTicked(allOn ? new Set() : new Set(candidates.map((c) => `${c.kind}:${c.ref}`)));
+    setTicked(
+      allOn ? new Set() : new Set(candidates.map((c) => `${c.kind}:${c.ref}`)),
+    );
 
   const reset = useMutation({
     mutationFn: async () => {
@@ -163,7 +182,8 @@ export function ResetToPackDialog({
       void queryClient.invalidateQueries({ queryKey: ["marketing"] });
       onClose();
     },
-    onError: (error) => toast.error(`Could not reset: ${extractErrorMessage(error)}`),
+    onError: (error) =>
+      toast.error(`Could not reset: ${extractErrorMessage(error)}`),
   });
 
   return (
@@ -190,8 +210,12 @@ export function ResetToPackDialog({
         candidates.length === 0 ? null : (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between px-1">
-              <label className="inline-flex items-center gap-2 text-[11px] text-muted-foreground">
-                <Checkbox checked={allOn} onCheckedChange={toggleAll} aria-label="Select all" />
+              <label className="inline-flex min-h-11 items-center gap-2 text-[11px] text-muted-foreground lg:min-h-0">
+                <Checkbox
+                  checked={allOn}
+                  onCheckedChange={toggleAll}
+                  aria-label="Select all"
+                />
                 {allOn ? "All selected" : "Select all"}
               </label>
               <span className="text-[11px] text-muted-foreground">
@@ -208,7 +232,9 @@ export function ResetToPackDialog({
                     <label
                       className={cn(
                         "flex cursor-pointer items-start gap-2 rounded-md border px-2.5 py-2 transition-colors",
-                        on ? "border-primary/40 bg-primary/5" : "border-border bg-card",
+                        on
+                          ? "border-primary/40 bg-primary/5"
+                          : "border-border bg-card",
                       )}
                     >
                       <Checkbox
@@ -234,11 +260,18 @@ export function ResetToPackDialog({
                           </span>
                         </span>
                         <span className="mt-0.5 grid grid-cols-[auto_1fr] gap-x-2 text-[11px] leading-4">
-                          <span className="text-muted-foreground">you have</span>
+                          <span className="text-muted-foreground">
+                            you have
+                          </span>
                           <span className="text-foreground">{delta.site}</span>
-                          <span className="text-muted-foreground">pack says</span>
+                          <span className="text-muted-foreground">
+                            pack says
+                          </span>
                           <span className="inline-flex items-center gap-1 text-foreground">
-                            <RotateCcw className="h-3 w-3 text-primary" aria-hidden />
+                            <RotateCcw
+                              className="h-3 w-3 text-primary"
+                              aria-hidden
+                            />
                             {delta.pack}
                           </span>
                         </span>

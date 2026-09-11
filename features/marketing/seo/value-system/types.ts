@@ -520,7 +520,7 @@ export type PackItemState =
   "missing" | "as_adopted" | "changed" | "archived" | "yours";
 
 export type PackItemKind =
-  "rule" | "value_band" | "geo_band" | "geo_area" | "topic";
+  "meaning" | "value_band" | "geo_band" | "geo_area" | "topic";
 
 export interface StarterPackStatusItem {
   kind: PackItemKind;
