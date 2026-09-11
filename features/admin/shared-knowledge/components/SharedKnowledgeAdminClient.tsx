@@ -3,7 +3,7 @@
 // features/admin/shared-knowledge/components/SharedKnowledgeAdminClient.tsx
 //
 // Client shell for /administration/shared-knowledge — the super-admin
-// issuance cockpit for Shared Knowledge Resources. Four tabs:
+// issuance cockpit for Shared Knowledge Resources. Five tabs:
 //   Industries      — taxonomy CRUD (industry_upsert) + org assign/unassign
 //   Stores & grants — every kind='library' store; publish/revoke all three
 //                     audiences via the grant RPC family
@@ -21,7 +21,14 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, FileUp, Layers, Library, Package, SearchCheck } from "lucide-react";
+import {
+  Building2,
+  FileUp,
+  Layers,
+  Library,
+  Package,
+  SearchCheck,
+} from "lucide-react";
 import type { SharedKnowledgeDirectory } from "../types";
 import { IndustriesTab } from "./IndustriesTab";
 import { StoresGrantsTab } from "./StoresGrantsTab";
@@ -39,7 +46,10 @@ export function SharedKnowledgeAdminClient({
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab");
   const [tab, setTab] = useState(
-    initialTab && ["industries", "stores", "packs", "ingest", "explorer"].includes(initialTab)
+    initialTab &&
+      ["industries", "stores", "packs", "ingest", "explorer"].includes(
+        initialTab,
+      )
       ? initialTab
       : "industries",
   );
@@ -53,8 +63,8 @@ export function SharedKnowledgeAdminClient({
             Shared Knowledge
           </h1>
           <p className="text-xs text-muted-foreground">
-            Industry taxonomy, library stores, starter packs, grant issuance, and
-            access provenance
+            Industry taxonomy, library stores, starter packs, grant issuance,
+            and access provenance
           </p>
         </div>
       </div>
@@ -64,22 +74,37 @@ export function SharedKnowledgeAdminClient({
         onValueChange={setTab}
         className="flex min-h-0 flex-1 flex-col"
       >
-        {/* Mobile: taller triggers (finger-size targets) + horizontal scroll
-            so all four tabs stay reachable on narrow screens. */}
+        {/* Mobile: 44px, non-shrinking triggers + horizontal scroll so every
+            tab remains readable and reachable on narrow screens. */}
         <TabsList className="h-auto w-fit max-w-full overflow-x-auto">
-          <TabsTrigger value="industries" className="px-3 py-2.5 sm:py-1.5">
+          <TabsTrigger
+            value="industries"
+            className="min-h-11 shrink-0 whitespace-nowrap px-3 py-2.5 sm:min-h-0 sm:py-1.5"
+          >
             <Layers className="mr-1.5 h-3.5 w-3.5" /> Industries
           </TabsTrigger>
-          <TabsTrigger value="stores" className="px-3 py-2.5 sm:py-1.5">
+          <TabsTrigger
+            value="stores"
+            className="min-h-11 shrink-0 whitespace-nowrap px-3 py-2.5 sm:min-h-0 sm:py-1.5"
+          >
             <Building2 className="mr-1.5 h-3.5 w-3.5" /> Stores & grants
           </TabsTrigger>
-          <TabsTrigger value="packs" className="px-3 py-2.5 sm:py-1.5">
+          <TabsTrigger
+            value="packs"
+            className="min-h-11 shrink-0 whitespace-nowrap px-3 py-2.5 sm:min-h-0 sm:py-1.5"
+          >
             <Package className="mr-1.5 h-3.5 w-3.5" /> Starter packs
           </TabsTrigger>
-          <TabsTrigger value="ingest" className="px-3 py-2.5 sm:py-1.5">
+          <TabsTrigger
+            value="ingest"
+            className="min-h-11 shrink-0 whitespace-nowrap px-3 py-2.5 sm:min-h-0 sm:py-1.5"
+          >
             <FileUp className="mr-1.5 h-3.5 w-3.5" /> Ingest
           </TabsTrigger>
-          <TabsTrigger value="explorer" className="px-3 py-2.5 sm:py-1.5">
+          <TabsTrigger
+            value="explorer"
+            className="min-h-11 shrink-0 whitespace-nowrap px-3 py-2.5 sm:min-h-0 sm:py-1.5"
+          >
             <SearchCheck className="mr-1.5 h-3.5 w-3.5" /> Access explorer
           </TabsTrigger>
         </TabsList>
