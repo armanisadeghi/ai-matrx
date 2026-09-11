@@ -73,7 +73,7 @@ export default function ProviderSyncPolicyDialog({
 }: {
   target: ProviderSyncPolicyTarget | null;
   onClose: () => void;
-  onSaved: (providerId: string, policy: ProviderSyncPolicy) => void;
+  onSaved: (providerId: string, policy: ProviderSyncPolicy) => Promise<void>;
 }) {
   const [cutoff, setCutoff] = useState("");
   const [excluded, setExcluded] = useState<string[]>([]);
@@ -147,7 +147,7 @@ export default function ProviderSyncPolicyDialog({
           notes: notes.trim() === "" ? null : notes.trim(),
         },
       );
-      onSaved(target.providerId, saved);
+      await onSaved(target.providerId, saved);
       toast.success(`${target.providerName} sync policy saved`);
       onClose();
     } catch (err) {

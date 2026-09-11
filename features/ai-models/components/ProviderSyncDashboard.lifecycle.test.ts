@@ -8,6 +8,10 @@ const pageSource = readFileSync(
   "app/(admin)/administration/ai/ai-models/provider-sync/page.tsx",
   "utf8",
 );
+const policyDialogSource = readFileSync(
+  "features/ai-models/components/ProviderSyncPolicyDialog.tsx",
+  "utf8",
+);
 
 describe("Provider Sync loading lifecycle", () => {
   it("does not ask the parent to reload from the dashboard mount loader", () => {
@@ -24,5 +28,14 @@ describe("Provider Sync loading lifecycle", () => {
     expect(pageSource).toContain("const [loadedOnce, setLoadedOnce] = useState(false)");
     expect(pageSource).toContain("setLoadedOnce(true)");
     expect(pageSource).toContain("if (loading && !loadedOnce)");
+  });
+
+  it("does not report a policy save before its classification reload finishes", () => {
+    expect(policyDialogSource).toContain(
+      "onSaved: (providerId: string, policy: ProviderSyncPolicy) => Promise<void>",
+    );
+    expect(policyDialogSource).toContain(
+      "await onSaved(target.providerId, saved)",
+    );
   });
 });
