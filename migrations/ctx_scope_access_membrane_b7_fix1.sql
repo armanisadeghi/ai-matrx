@@ -516,4 +516,74 @@ comment on table context.context_item_values is
   'real debt — metadata jsonb is absent, organization_id and its FK are absent (and need the WRITER '
   'to supply the org, per NO DB-ASSIGNED ORG, not a new inheritance trigger). The fourth, '
   'trg_touch_row, must STAY absent: `version` here is a per-cell revision index, and _touch_row '
-  'renumbers it (aidream 0621, DD-061). Retires into custom.record under DD-030.';
+  'renumbers it (aidream 0621, DD-061). Register: DD-099-r1. Retires into custom.record under DD-030.';
+
+update platform.entity_types
+   set notes = notes || ' CONVERGE (DD-099-r1): iam.canonical_certify_ok is FALSE on '
+                        'base_organization_id, base_org_fk, base_metadata and trg_touch_row. The '
+                        'first three are real base-contract debt and need the WRITER to supply '
+                        'organization_id (NO DB-ASSIGNED ORG — never a new inheritance trigger) plus '
+                        'a db-types regeneration; trg_touch_row must STAY absent because `version` '
+                        'here is a per-cell revision index that _touch_row renumbers (aidream 0621, '
+                        'DD-061).'
+ where token = 'context_item_value'
+   and notes not like '%DD-099-r1%';
+
+-- ============================================================================
+-- POSTCONDITION — this file verifies itself, at its own end
+-- ============================================================================
+--
+-- WHY THIS BLOCK EXISTS, and why every migration in this family should carry one.
+-- On 2026-09-11 this file was hand-applied in chunks through the Supabase MCP and the LAST
+-- statement in it — the `comment on table` above — was never in any chunk. The ledger row was then
+-- written by hand with the SHA-256 of the WHOLE FILE, so `public._schema_migrations` asserted that
+-- this file had run while what actually ran was what a person pasted. `pnpm check:migrations`
+-- compares file-checksum to ledger-checksum and was perfectly green throughout: in that failure mode
+-- the two numbers are the same number.
+--
+-- The repo's real applier (aidream/db/apply_migrations.py) cannot produce this: it does one
+-- `cur.execute(sql)` with the entire file and records the SHA-256 of the bytes it actually executed,
+-- and its own header forbids a self-written ledger row for exactly this reason. The gap is the
+-- HAND-APPLY path the frontend CLAUDE.md sanctions (MCP + write the ledger row yourself), which has
+-- no link at all between the bytes ledgered and the bytes executed.
+--
+-- A postcondition block closes it from inside the file: whatever applied this — a runner, an agent,
+-- half an agent — the file refuses to be considered applied unless its own effects are there.
+do $post$
+declare
+  v_missing text[] := '{}';
+begin
+  if to_regprocedure('context._readable_scope_ids()') is null then
+    v_missing := array_append(v_missing, 'context._readable_scope_ids()');
+  end if;
+  if to_regprocedure('context._scope_denial_message(uuid,text)') is null then
+    v_missing := array_append(v_missing, 'context._scope_denial_message(uuid,text)');
+  end if;
+  if to_regprocedure('context._strip_sql_noise(text)') is null then
+    v_missing := array_append(v_missing, 'context._strip_sql_noise(text)');
+  end if;
+  if to_regclass('context.scope_door_registry') is null then
+    v_missing := array_append(v_missing, 'context.scope_door_registry');
+  elsif (select count(*) from context.scope_door_registry) < 60 then
+    v_missing := array_append(v_missing, 'context.scope_door_registry rows (< 60)');
+  end if;
+  if coalesce(obj_description('context.context_item_values'::regclass), '') not like '%DD-099-r1%' then
+    v_missing := array_append(v_missing, 'the CONVERGE comment on context.context_item_values');
+  end if;
+  if coalesce((select notes from platform.entity_types where token = 'context_item_value'), '')
+     not like '%DD-099-r1%' then
+    v_missing := array_append(v_missing, 'the CONVERGE note on platform.entity_types.context_item_value');
+  end if;
+  if exists (select 1 from public.__scope_access_membrane_conformance() where not ok) then
+    v_missing := array_append(v_missing,
+      'the access-membrane conformance gate is RED: ' ||
+      (select string_agg(check_key, ', ') from public.__scope_access_membrane_conformance() where not ok));
+  end if;
+
+  if cardinality(v_missing) > 0 then
+    raise exception
+      'ctx_scope_access_membrane_b7_fix1.sql did NOT fully apply — missing: %. Do not ledger this file until every item is present.',
+      array_to_string(v_missing, '; ');
+  end if;
+end
+$post$;
