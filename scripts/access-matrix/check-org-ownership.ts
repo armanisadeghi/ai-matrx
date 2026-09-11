@@ -196,24 +196,250 @@ async function rlsDeleteRows(
 }
 
 /**
- * THE FIXTURE PREFIX — the one string that makes this guard's litter findable.
+ * THE FIXTURE COHORT — why this guard creates NOTHING new on a second run.
  *
- * Every row this guard creates carries it: user emails are
- * `<prefix><tag>-<uuid8>@matrx-test.invalid`, and every organization's slug
- * starts with it (the ones we create explicitly AND the ones the signup trigger
- * auto-creates, because that slug is derived from the email local part).
+ * This guard must exercise REAL identities against the ONE shared production
+ * database, and on this platform a fixture there is effectively permanent:
+ * `auth.users` is the target of ~500 foreign keys and `iam.organizations` of
+ * 655 (240 of them unindexed — FOUND_DEFECTS D307/D309), so deleting one user
+ * takes MINUTES of foreign-key checking and can never complete inside an HTTP
+ * request. The first version of this guard minted five throwaway users and five
+ * organizations per run and "tore them down" without looking at a single
+ * response: 34 organizations, 19 users and 50 memberships accumulated over four
+ * runs before an independent verifier found them, and one of them manufactured
+ * a false entry in FOUND_DEFECTS.
  *
- * So a complete sweep is always two predicates, and they are the same two
- * `verifyNoFixturesRemain()` runs at the end of every run:
+ * So the fixtures are a FIXED, NAMED COHORT instead: five users at five fixed
+ * addresses and five organizations at five fixed slugs, created on the first run
+ * and reused by every run afterwards. Each run RESETS them to a documented
+ * baseline before it probes anything, and resets them again when it finishes.
+ * The footprint is bounded, unmistakable, and greppable:
  *
- *   auth.users          where email like 'dd048-%@matrx-test.invalid'
- *   iam.organizations   where slug  like 'dd048-%'
+ *   auth.users          where email like 'dd048-%@matrx-test.invalid'   -> exactly 5
+ *   iam.organizations   where slug  like 'dd048-%'                      -> exactly 10
+ *                          (5 the guard creates + 5 the signup trigger creates)
  *
- * Never change this without changing the sweep, and never create a fixture row
- * that does not carry it.
+ * `verifyCohortOnly()` asserts exactly that at the end of every run, and ANY
+ * extra row fails the run — not gated on --strict, because leaking into the
+ * shared database is never advisory. If you add a probe that needs another
+ * organization, add it to COHORT_ORGS; never create one inline.
  */
 const FIXTURE_PREFIX = "dd048-";
 const FIXTURE_EMAIL_DOMAIN = "@matrx-test.invalid";
+
+const COHORT_USERS = ["owner", "admina", "adminb", "joiner", "solo"] as const;
+type CohortUserTag = (typeof COHORT_USERS)[number];
+
+/** Fixed organization slugs. `fx` keeps them distinct from the auto-created ones. */
+const COHORT_ORGS = ["shared", "rename", "orgy", "orgz", "solo"] as const;
+type CohortOrgTag = (typeof COHORT_ORGS)[number];
+
+const fixtureEmail = (tag: CohortUserTag) =>
+  `${FIXTURE_PREFIX}${tag}${FIXTURE_EMAIL_DOMAIN}`;
+const fixtureSlug = (tag: CohortOrgTag) => `${FIXTURE_PREFIX}fx-${tag}`;
+
+const EXPECTED_FIXTURE_ORGS = COHORT_USERS.length + COHORT_ORGS.length; // 5 personal + 5 named
+
+interface TestUser {
+  id: string;
+  email: string;
+  jwt: string;
+}
+
+type Cohort = {
+  users: Record<CohortUserTag, TestUser>;
+  orgs: Record<CohortOrgTag, string>;
+};
+
+// ───────────────────────── cohort construction ─────────────────────────
+
+async function svcRpc<T>(env: Env, fn: string, args: Record<string, unknown>): Promise<T> {
+  const res = await fetch(`${env.url}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    headers: {
+      apikey: env.secretKey,
+      Authorization: `Bearer ${env.secretKey}`,
+      "Content-Type": "application/json",
+      "Content-Profile": "public",
+    },
+    body: JSON.stringify(args),
+  });
+  if (!res.ok) throw new Error(`rpc ${fn} -> ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  return (await res.json()) as T;
+}
+
+/** The cohort user for `tag`, created only if it does not exist yet. */
+async function ensureUser(env: Env, tag: CohortUserTag): Promise<TestUser> {
+  const email = fixtureEmail(tag);
+
+  const found = await svcRpc<{ id?: string; user_id?: string }[]>(
+    env,
+    "lookup_user_by_email",
+    { lookup_email: email },
+  ).catch(() => [] as { id?: string; user_id?: string }[]);
+  let id = found?.[0]?.id ?? found?.[0]?.user_id;
+
+  if (!id) {
+    const res = await fetch(`${env.url}/auth/v1/admin/users`, {
+      method: "POST",
+      headers: {
+        apikey: env.secretKey,
+        Authorization: `Bearer ${env.secretKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password: `Dd048!${randomUUID().slice(0, 12)}`,
+        email_confirm: true,
+        user_metadata: { display_name: `DD048 ${tag}` },
+      }),
+    });
+    if (!res.ok) {
+      throw new Error(
+        `create cohort user ${tag} -> ${res.status}: ${(await res.text()).slice(0, 300)}`,
+      );
+    }
+    const body = (await res.json()) as { id?: string };
+    if (!body.id) throw new Error(`create cohort user ${tag} returned no id`);
+    id = body.id;
+  }
+
+  return { id, email, jwt: await mintUserJwt(env, id) };
+}
+
+/** The cohort organization for `tag`, created (as `owner`) only if absent. */
+async function ensureOrg(
+  env: Env,
+  owner: TestUser,
+  tag: CohortOrgTag,
+): Promise<string> {
+  const slug = fixtureSlug(tag);
+  const res = await svcFetch(env, `organizations?slug=eq.${slug}&select=id`, {
+    method: "GET",
+    schema: "iam",
+  });
+  if (res.ok) {
+    const rows = (await res.json()) as { id: string }[];
+    if (rows.length > 0) return rows[0].id;
+  }
+  const probe = await rlsRpc(env, owner.jwt, "org_create", {
+    p_name: `DD048 ${tag}`,
+    p_slug: slug,
+  });
+  if (!probe.ok) throw new Error(`org_create(${tag}) refused: ${probe.error}`);
+  const org = probe.data as { id?: string } | null;
+  if (!org?.id) throw new Error(`org_create(${tag}) returned no id`);
+  return org.id;
+}
+
+/** Hard-delete every membership row of an organization (service key, fixtures only). */
+async function svcClearMemberships(env: Env, orgId: string): Promise<void> {
+  const res = await svcFetch(env, `memberships?container_id=eq.${orgId}`, {
+    method: "DELETE",
+    schema: "iam",
+  });
+  if (!res.ok) {
+    throw new Error(`clear memberships of ${orgId} -> ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+}
+
+/** Insert a membership directly (service key) — fixture shaping, never a probe. */
+async function svcAddMembership(
+  env: Env,
+  orgId: string,
+  userId: string,
+  role: "owner" | "admin" | "member",
+): Promise<void> {
+  // UPSERT, not insert: (container_type, container_id, user_id) is unique
+  // REGARDLESS of deleted_at, so a membership a probe soft-deleted earlier in
+  // the run still occupies the slot and a plain INSERT returns 23505.
+  const res = await svcFetch(env, `memberships?on_conflict=container_type,container_id,user_id`, {
+    method: "POST",
+    schema: "iam",
+    headers: { Prefer: "return=representation,resolution=merge-duplicates" },
+    body: JSON.stringify({
+      container_type: "organization",
+      container_id: orgId,
+      organization_id: orgId,
+      user_id: userId,
+      role,
+      status: "active",
+      deleted_at: null,
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(
+      `seed membership ${role} ${userId}@${orgId} -> ${res.status}: ${(await res.text()).slice(0, 200)}`,
+    );
+  }
+}
+
+/** Every live organization membership of a user (service key). */
+async function svcOrgIds(env: Env, userId: string): Promise<string[]> {
+  const res = await svcFetch(
+    env,
+    `memberships?container_type=eq.organization&user_id=eq.${userId}&deleted_at=is.null&status=eq.active&select=container_id`,
+    { method: "GET", schema: "iam" },
+  );
+  if (!res.ok) return [];
+  const rows = (await res.json()) as { container_id: string }[];
+  return rows.map((r) => r.container_id);
+}
+
+/** Service-key soft-delete of a membership — fixture shaping, not a probe. */
+async function svcDropMembership(env: Env, userId: string, orgId: string) {
+  const res = await svcFetch(
+    env,
+    `memberships?container_type=eq.organization&container_id=eq.${orgId}&user_id=eq.${userId}&deleted_at=is.null&select=id`,
+    { method: "PATCH", schema: "iam", body: JSON.stringify({ deleted_at: new Date().toISOString() }) },
+  );
+  if (!res.ok) throw new Error(`fixture drop membership -> ${res.status}: ${(await res.text()).slice(0, 200)}`);
+}
+
+/**
+ * THE BASELINE. Every run starts here and ends here, so a run never depends on
+ * what the previous one left behind and never leaves a half-mutated cohort.
+ *
+ *   fx-shared : owner=owner, admina=admin, adminb=admin
+ *   fx-rename : owner=owner, admina=admin, joiner=member
+ *   fx-orgy   : owner=owner, joiner=member
+ *   fx-orgz   : owner=owner, joiner=member
+ *   fx-solo   : owner=solo
+ *
+ * `joiner` and `solo` additionally have their auto-created personal membership
+ * dropped, because the last-organization rules can only be reached by someone
+ * who genuinely has one organization left. `owner`/`admina`/`adminb` keep
+ * theirs, so they are never the orphan in a probe that is about someone else.
+ */
+async function resetCohort(env: Env, c: Cohort): Promise<void> {
+  const baseline: Record<CohortOrgTag, [CohortUserTag, "owner" | "admin" | "member"][]> = {
+    shared: [["owner", "owner"], ["admina", "admin"], ["adminb", "admin"]],
+    rename: [["owner", "owner"], ["admina", "admin"], ["joiner", "member"]],
+    orgy: [["owner", "owner"], ["joiner", "member"]],
+    orgz: [["owner", "owner"], ["joiner", "member"]],
+    solo: [["solo", "owner"]],
+  };
+
+  for (const tag of COHORT_ORGS) {
+    const orgId = c.orgs[tag];
+    await svcClearMemberships(env, orgId);
+    for (const [userTag, role] of baseline[tag]) {
+      await svcAddMembership(env, orgId, c.users[userTag].id, role);
+    }
+  }
+
+  // Personal memberships: dropped for the two users whose probes require a
+  // single organization, restored (as owner of their own personal org) for the
+  // rest. A personal org that lost its membership is re-seeded, never orphaned.
+  for (const tag of COHORT_USERS) {
+    const user = c.users[tag];
+    for (const orgId of await svcOrgIds(env, user.id)) {
+      if (!Object.values(c.orgs).includes(orgId) && (tag === "joiner" || tag === "solo")) {
+        await svcDropMembership(env, user.id, orgId);
+      }
+    }
+  }
+}
 
 /** TRUE-RLS rename of an organization as a specific user — the update door. */
 async function rlsRename(
@@ -222,21 +448,18 @@ async function rlsRename(
   orgId: string,
   name: string,
 ): Promise<WriteRows<{ id: string }>> {
-  const res = await fetch(
-    `${env.url}/rest/v1/organizations?id=eq.${orgId}&select=id`,
-    {
-      method: "PATCH",
-      headers: {
-        apikey: env.publishableKey,
-        Authorization: `Bearer ${jwt}`,
-        "Content-Profile": "iam",
-        "Accept-Profile": "iam",
-        "Content-Type": "application/json",
-        Prefer: "return=representation",
-      },
-      body: JSON.stringify({ name }),
+  const res = await fetch(`${env.url}/rest/v1/organizations?id=eq.${orgId}&select=id`, {
+    method: "PATCH",
+    headers: {
+      apikey: env.publishableKey,
+      Authorization: `Bearer ${jwt}`,
+      "Content-Profile": "iam",
+      "Accept-Profile": "iam",
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
     },
-  );
+    body: JSON.stringify({ name }),
+  });
   const text = await res.text();
   if (!res.ok) {
     let message = text.slice(0, 400);
@@ -258,77 +481,7 @@ async function rlsRename(
   return { status: res.status, rows: data.length, data };
 }
 
-interface TestUser {
-  id: string;
-  email: string;
-  jwt: string;
-}
-
-/**
- * Everything this run created, so teardown can reach ALL of it — including the
- * organizations the signup trigger makes on its own, which the first version of
- * this guard never even added to its cleanup list.
- */
-const fixtures = {
-  users: [] as TestUser[],
-  orgs: new Set<string>(),
-};
-
-async function createUser(env: Env, tag: string): Promise<TestUser> {
-  const email = `${FIXTURE_PREFIX}${tag}-${randomUUID().slice(0, 8)}${FIXTURE_EMAIL_DOMAIN}`;
-  const res = await fetch(`${env.url}/auth/v1/admin/users`, {
-    method: "POST",
-    headers: {
-      apikey: env.secretKey,
-      Authorization: `Bearer ${env.secretKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email,
-      password: `Dd048!${randomUUID().slice(0, 12)}`,
-      email_confirm: true,
-      user_metadata: { display_name: `DD048 ${tag}` },
-    }),
-  });
-  if (!res.ok) {
-    throw new Error(`create user ${tag} -> ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  }
-  const body = (await res.json()) as { id?: string };
-  if (!body.id) throw new Error(`create user ${tag} returned no id`);
-  const jwt = await mintUserJwt(env, body.id);
-  const user = { id: body.id, email, jwt };
-  fixtures.users.push(user);
-  // The signup trigger chain creates an organization for this user. It is a
-  // fixture too — registering it here is what the first version of this guard
-  // failed to do, which is most of why 34 organizations leaked into the shared
-  // database before anyone noticed.
-  for (const orgId of await svcOrgIds(env, user.id)) fixtures.orgs.add(orgId);
-  return user;
-}
-
-/** Returns the HTTP status so a failed delete can never pass unnoticed. */
-async function deleteUser(env: Env, userId: string): Promise<number> {
-  const res = await fetch(`${env.url}/auth/v1/admin/users/${userId}`, {
-    method: "DELETE",
-    headers: { apikey: env.secretKey, Authorization: `Bearer ${env.secretKey}` },
-  });
-  return res.status;
-}
-
-/** Create a normal (non-auto-created) organization as `user`, via the real RPC. */
-async function createOrg(env: Env, user: TestUser, tag: string): Promise<string> {
-  const slug = `${FIXTURE_PREFIX}${tag}-${randomUUID().slice(0, 8)}`;
-  const probe = await rlsRpc(env, user.jwt, "org_create", {
-    p_name: `DD048 ${tag}`,
-    p_slug: slug,
-  });
-  if (!probe.ok) throw new Error(`org_create(${tag}) refused: ${probe.error}`);
-  const org = probe.data as { id?: string } | null;
-  if (!org?.id) throw new Error(`org_create(${tag}) returned no id`);
-  fixtures.orgs.add(org.id);
-  return org.id;
-}
-
+/** Add a member through the REAL RPC, as a real actor — fixture shaping inside a run. */
 async function addMember(
   env: Env,
   actor: TestUser,
@@ -346,118 +499,58 @@ async function addMember(
   if (!probe.ok) throw new Error(`mbr_add(${role}) refused: ${probe.error}`);
 }
 
-/** Service-key soft-delete of a membership — fixture shaping, not a probe. */
-async function svcDropMembership(env: Env, userId: string, orgId: string) {
+/** Collect every organization carrying the fixture prefix (service key). */
+async function svcFixtureOrgIds(env: Env): Promise<{ id: string; slug: string }[]> {
   const res = await svcFetch(
     env,
-    `memberships?container_type=eq.organization&container_id=eq.${orgId}&user_id=eq.${userId}&deleted_at=is.null&select=id`,
-    { method: "PATCH", schema: "iam", body: JSON.stringify({ deleted_at: new Date().toISOString() }) },
-  );
-  if (!res.ok) throw new Error(`fixture drop membership -> ${res.status}: ${(await res.text()).slice(0, 200)}`);
-}
-
-/** Every live organization membership of a user (service key). */
-async function svcOrgIds(env: Env, userId: string): Promise<string[]> {
-  const res = await svcFetch(
-    env,
-    `memberships?container_type=eq.organization&user_id=eq.${userId}&deleted_at=is.null&status=eq.active&select=container_id`,
+    `organizations?slug=like.${FIXTURE_PREFIX}*&select=id,slug`,
     { method: "GET", schema: "iam" },
   );
   if (!res.ok) return [];
-  const rows = (await res.json()) as { container_id: string }[];
-  return rows.map((r) => r.container_id);
+  return (await res.json()) as { id: string; slug: string }[];
 }
 
-/** Returns the HTTP status so a failed delete can never pass unnoticed. */
-async function svcDeleteOrg(env: Env, orgId: string): Promise<number> {
-  const res = await svcFetch(env, `organizations?id=eq.${orgId}`, {
-    method: "DELETE",
-    schema: "iam",
-  });
-  return res.status;
-}
+async function buildCohort(env: Env): Promise<Cohort> {
+  const users = {} as Record<CohortUserTag, TestUser>;
+  for (const tag of COHORT_USERS) users[tag] = await ensureUser(env, tag);
 
-/** Hard-delete every membership row of an organization (service key, fixtures only). */
-async function svcPurgeMemberships(env: Env, orgId: string): Promise<number> {
-  const res = await svcFetch(env, `memberships?container_id=eq.${orgId}`, {
-    method: "DELETE",
-    schema: "iam",
-  });
-  return res.status;
+  const orgs = {} as Record<CohortOrgTag, string>;
+  for (const tag of COHORT_ORGS) {
+    orgs[tag] = await ensureOrg(env, tag === "solo" ? users.solo : users.owner, tag);
+  }
+
+  const c: Cohort = { users, orgs };
+  await resetCohort(env, c);
+  return c;
 }
 
 /**
- * TEARDOWN, AND THEN PROOF THAT IT WORKED.
- *
- * The first version of this guard tore down in a `finally` with a bare
- * `svcDeleteOrg` that never looked at the response, so every failure was
- * swallowed — and 34 organizations, 19 users and 50 memberships accumulated in
- * the ONE shared production database over four runs before an independent
- * verifier found them. The lesson is not "delete harder", it is: a cleanup that
- * does not VERIFY is not a cleanup.
- *
- * Returns the number of fixture rows still standing. Non-zero is a hard failure
- * of the whole run, whatever the probes said.
+ * THE PROOF THAT NOTHING LEAKED. Not "did my deletes return 2xx" — "is the set
+ * of fixture-prefixed rows in the shared database exactly the declared cohort".
+ * Returns the number of unexpected rows; non-zero fails the run outright.
  */
-async function teardownAndVerify(env: Env): Promise<number> {
-  const problems: string[] = [];
-
-  // Order matters: memberships (they FK the organization), then the users
-  // (which cascades users.profiles, whose organization_id FK blocks the
-  // organization delete), then the organizations themselves.
-  for (const orgId of fixtures.orgs) {
-    const st = await svcPurgeMemberships(env, orgId);
-    if (st >= 300) problems.push(`memberships of org ${orgId} -> HTTP ${st}`);
-  }
-  for (const u of fixtures.users) {
-    const st = await deleteUser(env, u.id);
-    if (st >= 300) problems.push(`user ${u.email} -> HTTP ${st}`);
-  }
-  for (const orgId of fixtures.orgs) {
-    const st = await svcDeleteOrg(env, orgId);
-    if (st >= 300) problems.push(`org ${orgId} -> HTTP ${st}`);
-  }
-
-  // THE PROOF. Not "did my deletes return 2xx" — "is anything carrying the
-  // fixture prefix still in the database".
-  const orgsLeft = await baselineCount(
-    env,
-    "iam",
-    "organizations",
-    `slug=like.${FIXTURE_PREFIX}*`,
-  );
-  let usersLeft = 0;
-  for (const u of fixtures.users) {
-    const res = await fetch(`${env.url}/auth/v1/admin/users/${u.id}`, {
-      headers: { apikey: env.secretKey, Authorization: `Bearer ${env.secretKey}` },
-    });
-    if (res.ok) usersLeft += 1;
-  }
-
-  const remaining = Math.max(orgsLeft, 0) + usersLeft;
-  if (remaining === 0) {
+async function verifyCohortOnly(env: Env): Promise<number> {
+  const orgs = await svcFixtureOrgIds(env);
+  const cohortDrift = Math.abs(orgs.length - EXPECTED_FIXTURE_ORGS);
+  if (cohortDrift === 0) {
     console.log(
-      `${C.dim}  fixtures cleaned: ${fixtures.users.length} user(s), ${fixtures.orgs.size} organization(s) — verified zero remain.${C.reset}`,
+      `${C.dim}  cohort verified: ${orgs.length} fixture organization(s), the ${EXPECTED_FIXTURE_ORGS} declared ones — nothing new was left behind.${C.reset}`,
     );
     return 0;
   }
 
   console.log("");
+  console.log(`${C.red}${C.bold}ORG OWNERSHIP GUARD LEAKED INTO THE SHARED DATABASE${C.reset}`);
   console.log(
-    `${C.red}${C.bold}ORG OWNERSHIP GUARD LEAKED FIXTURES INTO THE SHARED DATABASE${C.reset}`,
+    `  ${orgs.length} organizations carry the '${FIXTURE_PREFIX}' prefix; exactly ${EXPECTED_FIXTURE_ORGS} are declared.`,
   );
+  console.log(`  Slugs: ${orgs.map((o) => o.slug).join(", ")}`);
   console.log(
-    `  ${orgsLeft} organization(s) with a '${FIXTURE_PREFIX}' slug and ${usersLeft} '${FIXTURE_PREFIX}…${FIXTURE_EMAIL_DOMAIN}' user(s) are still live on brsgrqvjdzwihsvnfqkf.`,
-  );
-  for (const p of problems) console.log(`  - ${p}`);
-  console.log(
-    `  ${C.bold}Do not run this guard again until they are gone.${C.reset} A hard DELETE of an organization
+    `  ${C.bold}Sweep the extras before running this guard again.${C.reset} Deleting an organization or a
 ` +
-      `  walks 655 foreign keys (240 unindexed — FOUND_DEFECTS D307) and can exceed the HTTP
+      `  user here walks hundreds of foreign keys (FOUND_DEFECTS D307/D309) and CANNOT finish inside
 ` +
-      `  statement timeout, which is the usual cause. Sweep it from a direct psql/psycopg session
-` +
-      `  with statement_timeout = 0, using the two predicates at the top of this file:
+      `  an HTTP request — use a direct psql/psycopg session with statement_timeout = 0:
 ` +
       `    delete from iam.memberships   where container_id in (select id from iam.organizations where slug like '${FIXTURE_PREFIX}%');
 ` +
@@ -465,11 +558,11 @@ async function teardownAndVerify(env: Env): Promise<number> {
 ` +
       `    delete from iam.organizations where slug  like '${FIXTURE_PREFIX}%';
 ` +
-      `  (Dependent rows that block those deletes are purged first by the same sweep — see the
+      `  (Dependent rows block those three — the crm.party / crm.contact_medium /
 ` +
-      `  DD-048 fix-round-1 report.)`,
+      `  crm.party_contact_point chain and users.profiles — delete them first.)`,
   );
-  return remaining;
+  return cohortDrift;
 }
 
 // ───────────────────────────── the probes ─────────────────────────────
@@ -488,17 +581,18 @@ async function main(): Promise<number> {
   console.log(`${C.bold}Organization ownership forcing tests (DD-048 / Doctrine R21)${C.reset}`);
 
   let leaked = 0;
+  let cohort: Cohort | null = null;
 
   try {
-    const owner = await createUser(env, "owner");
-    const adminA = await createUser(env, "admina");
-    const adminB = await createUser(env, "adminb");
-    const joiner = await createUser(env, "joiner");
+    cohort = await buildCohort(env);
+    const owner = cohort.users.owner;
+    const adminA = cohort.users.admina;
+    const adminB = cohort.users.adminb;
+    const joiner = cohort.users.joiner;
 
-    // ── Fixture 1: a shared organization owned by `owner`, with two admins.
-    const orgX = await createOrg(env, owner, "shared");
-    await addMember(env, owner, orgX, adminA, "admin");
-    await addMember(env, owner, orgX, adminB, "admin");
+    // ── Fixture 1: a shared organization owned by `owner`, with two admins
+    //    (the baseline resetCohort() just re-established).
+    const orgX = cohort.orgs.shared;
 
     // T1 — ONE OWNER: a second owner cannot be minted by a role update.
     {
@@ -650,9 +744,7 @@ async function main(): Promise<number> {
     //    Same `created_by` class as delete, one policy over. Needs its own
     //    fixture because T4 destroyed orgX.
     {
-      const orgR = await createOrg(env, owner, "rename");
-      await addMember(env, owner, orgR, adminA, "admin");
-      await addMember(env, owner, orgR, joiner, "member");
+      const orgR = cohort.orgs.rename; // baseline: owner=owner, admina=admin, joiner=member
       // owner transfers to adminA: now adminA is owner, `owner` is an admin,
       // and `owner` is still the organization's created_by.
       const t = await rlsRpc(env, owner.jwt, "transfer_organization_ownership", {
@@ -741,12 +833,17 @@ async function main(): Promise<number> {
     //    them auto-created. (The auto-created one is dropped with the service
     //    key so the LAST-ORGANIZATION rule can be reached at all — with it in
     //    place the pre-existing personal-org guard answers first.)
-    const orgY = await createOrg(env, owner, "orgy");
-    const orgZ = await createOrg(env, owner, "orgz");
-    await addMember(env, owner, orgY, joiner, "member");
-    await addMember(env, owner, orgZ, joiner, "member");
+    const orgY = cohort.orgs.orgy;
+    const orgZ = cohort.orgs.orgz;
+    // The baseline puts `joiner` in orgY and orgZ and nowhere else, but the
+    // rename block above moved them around, so re-shape from live state.
     for (const oid of await svcOrgIds(env, joiner.id)) {
       if (oid !== orgY && oid !== orgZ) await svcDropMembership(env, joiner.id, oid);
+    }
+    for (const target of [orgY, orgZ]) {
+      if (!(await svcOrgIds(env, joiner.id)).includes(target)) {
+        await svcAddMembership(env, target, joiner.id, "member");
+      }
     }
     const joinerOrgs = await svcOrgIds(env, joiner.id);
     if (joinerOrgs.length !== 2) {
@@ -816,8 +913,8 @@ async function main(): Promise<number> {
     }
     // T8 — DELETING your last organization is refused, with a human sentence.
     {
-      const solo = await createUser(env, "solo");
-      const orgS = await createOrg(env, solo, "solo");
+      const solo = cohort.users.solo;
+      const orgS = cohort.orgs.solo;
       for (const oid of await svcOrgIds(env, solo.id)) {
         if (oid !== orgS) await svcDropMembership(env, solo.id, oid);
       }
@@ -835,10 +932,14 @@ async function main(): Promise<number> {
     }
   } catch (e) {
     console.error(`${C.red}harness error:${C.reset} ${(e as Error).message}`);
-    leaked = await teardownAndVerify(env);
+    if (cohort) await resetCohort(env, cohort).catch(() => undefined);
+    await verifyCohortOnly(env);
     return 2;
   } finally {
-    if (leaked === 0) leaked = await teardownAndVerify(env);
+    // Leave the cohort exactly as the next run expects to find it, then PROVE
+    // that nothing outside it was created. Both halves are the contract.
+    if (cohort) await resetCohort(env, cohort);
+    leaked = await verifyCohortOnly(env);
   }
 
   const failed = results.filter((r) => !r.ok);

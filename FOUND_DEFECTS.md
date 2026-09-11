@@ -15,6 +15,31 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D309 — deleting an `auth.users` row takes MINUTES and cannot finish inside an HTTP request
+
+Found 2026-09-11 while sweeping the DD-048 guard's leaked fixtures. Deleting 19 throwaway users
+ran for **25 minutes** under `statement_timeout = 0` on a direct psycopg session and was then
+killed by the platform (`AdminShutdown`) while checking one constraint against
+`seo.search_performance_daily`. Same root cause as D307, different parent table: `auth.users` is
+referenced by hundreds of foreign keys, most `NO ACTION` on a `created_by`-shaped column with no
+index on the referencing side, so every delete sequentially scans all of them.
+
+Consequences today, both real:
+- **GoTrue's `DELETE /auth/v1/admin/users/{id}` cannot complete** — any test harness, offboarding
+  flow, or GDPR erasure path that deletes a user over HTTP will time out and, unless it checks the
+  response, will silently believe it succeeded. That is exactly how the DD-048 guard leaked 19
+  users into production.
+- A real user asking to be deleted cannot be deleted by any product surface we have.
+
+Workaround used for the sweep (do NOT generalize it without thought): delete every known dependent
+explicitly with foreign keys still enforced, then `set session_replication_role = replica` for the
+single `delete from auth.users` and restore it immediately. That is safe only because everything
+referencing those rows had just been removed under full enforcement.
+
+Fix: index the referencing column on the foreign keys that lack one (`CREATE INDEX CONCURRENTLY`),
+on `auth.users` and `iam.organizations` (D307) together — they are one defect class. Census:
+`select c.conrelid::regclass::text, a.attname from pg_constraint c join pg_attribute a on a.attrelid=c.conrelid and a.attnum=c.conkey[1] where c.contype='f' and c.confrelid in ('auth.users'::regclass,'iam.organizations'::regclass) and not exists (select 1 from pg_index i where i.indrelid=c.conrelid and i.indkey[0]=c.conkey[1]);`
+
 ### D307 — Hard-deleting an organization exceeds the statement timeout (655 FKs, 240 without a leading index)
 
 Found 2026-09-11 while proving the DD-048 delete rulings (`pnpm check:org-ownership`). A `DELETE`
