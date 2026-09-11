@@ -67,7 +67,9 @@ in aidream `services/mandates/client_mandates.py`. Rebind them per organization 
 
 🚨 **A job with no Holder is ABSENT, never a dead button.** An unresolved mandate leaves its
 capability out of the identity map and the package renders no chip for it, with a loud console
-error carrying the remedy. **As of 2026-09-07 all four are unresolved**: the four Holder agents
+error carrying the remedy. **As of 2026-09-11 all four resolve and answer live** (four chips at
+`/messages/<id>`, "Catch me up" returned a real answer; the run found the squeezed-answer
+stylesheet defect, released as messaging 0.11.2). *History — 2026-09-07, all four were unresolved*: the four Holder agents
 could not be authored because the platform's agent-authoring door
 (`agent_factory.structure_builder`) is pinned to `claude-opus-5` with `model_tiers` NULL and the
 Anthropic account is out of credit. The four mandates are declared and recorded as
