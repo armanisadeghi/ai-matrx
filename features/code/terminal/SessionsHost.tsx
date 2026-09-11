@@ -93,7 +93,7 @@ export const SessionsHost: React.FC<SessionsHostProps> = ({
   }, [activeSandboxId, dispatch, lastAutoSpawnedSandboxId]);
 
   return (
-    <div className={cn("flex h-full min-h-0", className)}>
+    <div className={cn("flex h-full min-h-0 flex-col lg:flex-row", className)}>
       {/* Left: viewports for every session, only the active one visible. */}
       <div className="relative min-w-0 flex-1">
         {sessions.length === 0 ? (

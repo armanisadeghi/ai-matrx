@@ -63,11 +63,11 @@ export const SessionList: React.FC<SessionListProps> = ({ className }) => {
   return (
     <div
       className={cn(
-        "flex h-full w-44 shrink-0 flex-col border-l border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900",
+        "flex h-auto max-h-40 w-full shrink-0 flex-col border-t border-border bg-muted/30 lg:h-full lg:max-h-none lg:w-36 lg:border-l lg:border-t-0",
         className,
       )}
     >
-      <div className="flex h-7 shrink-0 items-center justify-between border-b border-neutral-200 px-2 text-[10px] uppercase tracking-wider text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
+      <div className="flex min-h-11 lg:min-h-7 shrink-0 items-center justify-between border-b border-border px-2 text-[10px] uppercase tracking-wider text-muted-foreground">
         <span>Terminals</span>
         <div className="flex items-center gap-0.5">
           {activeSandboxId && (
@@ -75,7 +75,7 @@ export const SessionList: React.FC<SessionListProps> = ({ className }) => {
               type="button"
               onClick={handleAddLogs}
               title="New logs viewer"
-              className="flex h-5 w-5 items-center justify-center rounded-sm text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+              className="flex h-11 w-11 lg:h-6 lg:w-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <ScrollText size={12} />
             </button>
@@ -84,7 +84,7 @@ export const SessionList: React.FC<SessionListProps> = ({ className }) => {
             type="button"
             onClick={handleAddShell}
             title="New shell"
-            className="flex h-5 w-5 items-center justify-center rounded-sm text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+            className="flex h-11 w-11 lg:h-6 lg:w-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             <Plus size={13} />
           </button>
@@ -101,40 +101,45 @@ export const SessionList: React.FC<SessionListProps> = ({ className }) => {
               const isActive = s.id === activeId;
               const Icon = s.kind === "logs" ? ScrollText : TerminalSquare;
               return (
-                <li key={s.id}>
+                <li
+                  key={s.id}
+                  className={cn(
+                    "group flex items-center",
+                    isActive && "bg-primary/10 text-primary",
+                  )}
+                >
                   <button
                     type="button"
                     onClick={() => dispatch(setActiveSession(s.id))}
                     title={`${KIND_LABEL[s.kind]} · ${s.label}`}
                     className={cn(
-                      "group flex w-full items-center gap-1.5 px-2 py-1 text-left text-[12px]",
+                      "flex min-h-11 lg:min-h-7 min-w-0 flex-1 items-center gap-1.5 px-2 py-1 text-left text-xs",
                       isActive
-                        ? "bg-blue-100/60 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
-                        : "text-neutral-700 hover:bg-neutral-200/60 dark:text-neutral-300 dark:hover:bg-neutral-800/60",
+                        ? "text-primary"
+                        : "text-foreground hover:bg-accent",
                     )}
                   >
                     <Icon size={12} className="shrink-0 opacity-70" />
                     <span className="min-w-0 flex-1 truncate">{s.label}</span>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`Close ${s.label}`}
-                      title="Close terminal"
-                      onClick={(e) => {
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Close ${s.label}`}
+                    title="Close terminal"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dispatch(removeSession(s.id));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
                         e.stopPropagation();
                         dispatch(removeSession(s.id));
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          dispatch(removeSession(s.id));
-                        }
-                      }}
-                      className="ml-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm opacity-0 transition-opacity hover:bg-neutral-300/60 group-hover:opacity-100 dark:hover:bg-neutral-700/60"
-                    >
-                      <X size={11} />
-                    </span>
+                      }
+                    }}
+                    className="ml-0.5 flex h-11 w-11 lg:h-7 lg:w-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground lg:opacity-0 lg:group-hover:opacity-100 focus-visible:opacity-100"
+                  >
+                    <X size={11} />
                   </button>
                 </li>
               );
