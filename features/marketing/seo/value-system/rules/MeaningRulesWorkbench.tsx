@@ -98,6 +98,7 @@ import {
   reviewWindow,
   rowOrigin,
   RULEBOOK_SOURCE_QUERY,
+  starterPackStatusRowIds,
 } from "../lib";
 import { SourceChip, type SourceChipState } from "../SourceChip";
 import { BandVocabularyEditor } from "../vocabulary/BandVocabularyEditor";
@@ -551,8 +552,8 @@ export function MeaningRulesWorkbench() {
     const adoption = adoptions.data?.[i];
     if (!q.data || !adoption) return;
     for (const item of q.data.items) {
-      if (item.site_row_id) {
-        bySiteRow.set(item.site_row_id, {
+      for (const rowId of starterPackStatusRowIds(item)) {
+        bySiteRow.set(rowId, {
           packId: adoption.pack_id,
           packName: adoption.name,
           packSlug: adoption.slug,

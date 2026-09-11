@@ -529,6 +529,8 @@ export interface StarterPackStatusItem {
   topic_id?: string;
   label: string;
   site_row_id: string | null;
+  /** Rulebook row aliases for meaning items converted from legacy pack rules. */
+  rule_row_ids?: string[];
   /** The pack's values for this item (shape depends on `kind`). */
   pack: Record<string, unknown>;
   /** The site's values, or null when `missing`. */

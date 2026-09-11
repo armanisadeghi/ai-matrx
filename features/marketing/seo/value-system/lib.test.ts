@@ -1,4 +1,7 @@
-import { starterPackMatchesBrandIndustry } from "./lib";
+import {
+  starterPackMatchesBrandIndustry,
+  starterPackStatusRowIds,
+} from "./lib";
 
 const ITAD_PACK = {
   industry: "IT Asset Disposition & Electronics Recycling",
@@ -32,5 +35,23 @@ describe("starterPackMatchesBrandIndustry", () => {
     expect(
       starterPackMatchesBrandIndustry(ITAD_PACK, "Artificial Intelligence"),
     ).toBe(false);
+  });
+});
+
+describe("starterPackStatusRowIds", () => {
+  test("indexes the canonical site row and every Rulebook alias", () => {
+    expect(
+      starterPackStatusRowIds({
+        kind: "meaning",
+        ref: "meaning-1",
+        label: "Business",
+        site_row_id: "worth-1",
+        rule_row_ids: ["rule-1", "rule-2", "rule-1"],
+        pack: {},
+        site: {},
+        state: "changed",
+        sort: 1,
+      }),
+    ).toEqual(["worth-1", "rule-1", "rule-2"]);
   });
 });

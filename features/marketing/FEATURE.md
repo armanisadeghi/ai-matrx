@@ -683,6 +683,8 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 - 2026-09-10 — Codex: **Reset-to-pack comparisons speak the current meaning-item contract.** The live status RPC now emits `meaning` items, but the dialog still formatted only the retired `rule` shape, leaving every destructive comparison blank after “you have” and “pack says.” Meaning rows now name current versus proposed worth and phrase counts, archived rows stay explicit, the shared type mirrors the live kind, and the top bulk selector meets the phone touch floor.
 
+- 2026-09-10 — Codex: **Converted pack meanings keep their Rulebook provenance door.** `starter_pack_site_status` remains the one provenance read and now returns the concrete Rulebook row aliases it already resolves from each meaning item's conversion metadata. The Rulebook indexes those aliases alongside the canonical worth row, so opening a changed adopted rule once again shows pack-versus-current evidence and the existing one-click Revert path instead of silently dropping both after the rule-to-meaning cutover.
+
 - 2026-09-10 — **Keyword Value editors use one readable phone scroll surface.**
   Rule, service-area, and combination editors now let the form and live impact
   preview flow through one mobile scroller while retaining independent desktop

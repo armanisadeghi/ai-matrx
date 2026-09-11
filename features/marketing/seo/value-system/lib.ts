@@ -15,6 +15,7 @@
  */
 
 import type {
+  StarterPackStatusItem,
   StarterPackSummary,
   ValueBandDef,
   ValueSummaryRow,
@@ -23,6 +24,23 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { PackProvenance, SiteGeoArea } from "./types";
 
 // ── Brand-scoped industry packs ─────────────────────────────────────────────
+
+/** Every live row identity represented by one pack-status item. */
+export function starterPackStatusRowIds(item: StarterPackStatusItem): string[] {
+  const aliases = Array.isArray(item.rule_row_ids)
+    ? item.rule_row_ids.filter(
+        (value): value is string =>
+          typeof value === "string" && value.length > 0,
+      )
+    : [];
+  return Array.from(
+    new Set(
+      [item.site_row_id, ...aliases].filter((value): value is string =>
+        Boolean(value),
+      ),
+    ),
+  );
+}
 
 const INDUSTRY_MATCH_STOP_WORDS = new Set([
   "and",
