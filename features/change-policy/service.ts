@@ -18,6 +18,7 @@ export interface OrgChangePolicyRow {
     timeout_minutes: number | null;
     timeout_expiry: TimeoutExpiry | null;
     updated_at: string;
+    // CONVERGE: actor tier literal code|ai|human; target vocabulary system|agent|user — declared 2026-09-10, Data Doctrine §1.5/§7. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-064
     updated_by_tier: string | null;
     created_by_tier: string | null;
 }

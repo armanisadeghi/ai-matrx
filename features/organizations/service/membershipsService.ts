@@ -342,6 +342,7 @@ export const membershipsService = {
         p_organization_id: args.organizationId,
         p_role: args.role ?? "member",
         p_status: args.status ?? "active",
+        // CONVERGE: C-7 — caller-supplied metadata written with no reserved-key guard; metadata is system-only — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-060
         p_metadata: args.metadata ?? {},
       });
       if (error) return err(...mapPgErrorPair(error));

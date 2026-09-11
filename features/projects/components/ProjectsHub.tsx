@@ -163,6 +163,7 @@ export function ProjectsHub({
   }
 
   // A project is "personal" iff its owning org is the user's personal org.
+  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
   // ctx_projects.is_personal no longer exists; personal-ness is org-derived.
   const isPersonalProject = (organizationId: string | null) =>
     !!organizationId && orgMap.get(organizationId)?.isPersonal === true;

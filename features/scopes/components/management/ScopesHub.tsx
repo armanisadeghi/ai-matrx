@@ -75,6 +75,7 @@ export function ScopesHub() {
   const orderedOrgs = [...organizations].sort((a, b) => {
     if (a.id === active.organizationId) return -1;
     if (b.id === active.organizationId) return 1;
+    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
     if (a.is_personal !== b.is_personal) return a.is_personal ? -1 : 1;
     return a.name.localeCompare(b.name);
   });

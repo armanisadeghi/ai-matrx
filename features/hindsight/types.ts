@@ -41,6 +41,7 @@ export type ChangeHistory = components["schemas"]["ChangeHistoryOut"];
 export type FindingEffectiveness =
   components["schemas"]["FindingEffectivenessRow"];
 export type ChangeRole = ChangeHistoryRow["change_role"];
+// CONVERGE: actor tier literal code|ai|human; target vocabulary system|agent|user — declared 2026-09-10, Data Doctrine §1.5/§7. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-064
 export type ActorTier = NonNullable<ChangeHistoryRow["actor_tier"]>;
 export type UnitToken = ChangeHistoryRow["unit_token"];
 

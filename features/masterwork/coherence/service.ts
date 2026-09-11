@@ -78,6 +78,7 @@ export async function settleTension(opts: {
       } as never)
       // CAS on the version we just read — but we never WRITE a new version.
       .eq("id", opts.rulebookId)
+      // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
       .eq("version", row.version)
       .is("deleted_at", null)
       .select("id")

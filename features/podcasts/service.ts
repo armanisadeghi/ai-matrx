@@ -126,8 +126,10 @@ export const podcastService = {
         supabase
           .schema("podcast")
           .from("pc_shows")
+          // CONVERGE: C-7 — caller-supplied metadata written with no reserved-key guard; metadata is system-only — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-060
           .update({ metadata: value as never, version: nextVersion } as never)
           .eq("id", showId)
+          // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
           .eq("version", expectedVersion)
           .select(SELECT)
           .maybeSingle<PcShowMetadataRow>(),
@@ -288,6 +290,7 @@ export const podcastService = {
         : {};
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
+      // CONVERGE: C-7 — caller-supplied metadata written with no reserved-key guard; metadata is system-only — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-060
       .update({ metadata: { ...base, chapters } })
       .eq("id", id)
       .select()

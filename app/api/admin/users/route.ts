@@ -107,6 +107,7 @@ export async function GET() {
       abbreviation: organization.abbreviation,
       slug: organization.slug,
       role: membership.role,
+      // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
       is_personal: organization.is_personal,
       is_system: organization.is_system,
     });

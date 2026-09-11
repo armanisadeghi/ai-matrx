@@ -417,6 +417,7 @@ export default function OrganizationsPage() {
           description: o.description ?? null,
           website: o.website ?? null,
           role: o.role,
+          // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
           is_personal: o.isPersonal,
           member_count: o.memberCount ?? null,
           created_at: o.createdAt,

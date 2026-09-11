@@ -287,6 +287,7 @@ export function PackDetail({
         entityName={pack.name}
         recipientHint="Organizations in the audience can adopt this pack onto their sites — every row becomes their own starting position. Industry and Everyone need a ratified pack; Organization is the pilot lane."
         organizationOptions={directory.organizations
+          // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
           .filter((o) => !o.is_personal)
           .map((o) => ({ id: o.id, name: o.name }))
           .sort((a, b) => a.name.localeCompare(b.name))}

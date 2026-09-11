@@ -276,6 +276,7 @@ export async function getPersonalProjectBySlug(
  * one pass — the canonical replacement for the old project-member junction
  * join (`role` + project). Reads
  * memberships from `membershipsService.forUser('project')`, loads those
+ // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
  * projects from `ctx_projects` (joining `organizations(is_personal)` so the
  * personal filter works), and batches member counts via
  * `membershipsService.counts` (replacing the per-project N+1 count queries).

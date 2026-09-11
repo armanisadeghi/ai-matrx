@@ -239,6 +239,7 @@ export function OrgWorkspace() {
       org_abbreviation: organization.abbreviation,
       org_description: organization.description ?? undefined,
       org_website: organization.website ?? undefined,
+      // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
       org_is_personal: organization.isPersonal,
       org_created_at: organization.createdAt,
       org_summary: {

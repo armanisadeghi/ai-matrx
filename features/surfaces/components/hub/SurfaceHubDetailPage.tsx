@@ -85,6 +85,7 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
   // on ui_surface_agent_pref / ui_surface_config). Only offer write scopes the
   // user can actually write — a member-org pill would 42501 on every save.
   const realOrgs = orgs.filter(
+    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
     (o) => !o.is_personal && (o.role === "owner" || o.role === "admin"),
   );
   const memberOnlyOrgCount = orgs.filter(

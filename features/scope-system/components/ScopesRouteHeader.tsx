@@ -188,6 +188,7 @@ export function ScopesRouteHeader() {
     : null;
 
   async function handleDeleteOrg() {
+    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
     if (!org || org.is_personal) return;
     const ok = await confirm({
       title: `Delete ${org.name}?`,

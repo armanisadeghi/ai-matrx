@@ -153,6 +153,7 @@ export async function saveRules(opts: {
   const { data, error } = await rulebookTable()
     .update(patch as never)
     .eq("id", opts.rulebookId)
+    // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
     .eq("version", opts.expectedVersion)
     .select("*")
     .maybeSingle();
@@ -297,6 +298,7 @@ export interface RulebookVersionEntry {
   operation: string;
   occurred_at: string;
   actor_id: string | null;
+  // CONVERGE: actor tier literal code|ai|human; target vocabulary system|agent|user — declared 2026-09-10, Data Doctrine §1.5/§7. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-064
   actor_tier: string | null;
   rule_count: number;
 }

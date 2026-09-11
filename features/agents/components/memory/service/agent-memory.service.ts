@@ -72,6 +72,7 @@ export async function createAgentMemory(
         key,
         content: input.content,
         importance: input.importance,
+        // CONVERGE: C-7 — caller-supplied metadata written with no reserved-key guard; metadata is system-only — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-060
         metadata: { title: input.title },
       })
       .select("*")

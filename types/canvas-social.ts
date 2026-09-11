@@ -275,6 +275,7 @@ export interface SubmitScoreResponse {
   score: CanvasScore;
   rank: number;
   is_high_score: boolean;
+  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
   is_personal_best: boolean;
   xp_earned: number;
   achievements_unlocked: AchievementType[];

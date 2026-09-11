@@ -81,6 +81,7 @@ export function ScoreSubmissionDialog({
             setHasSubmitted(true);
 
             // Celebrate high scores!
+            // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
             if (result.is_high_score || result.is_personal_best) {
                 // Fire confetti for achievements!
                 confetti({

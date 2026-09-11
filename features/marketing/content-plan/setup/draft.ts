@@ -390,6 +390,7 @@ async function writeDraftOnce(
     .from("site")
     .update({ settings })
     .eq("id", siteId)
+    // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
     .eq("version", fresh.version)
     .is("deleted_at", null)
     .select("id")

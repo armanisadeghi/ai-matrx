@@ -287,6 +287,7 @@ export async function reconcileBatchState(
     .from("label_batch")
     .update({ state: derived, version: batch.version + 1 })
     .eq("id", batch.id)
+    // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
     .eq("version", batch.version)
     .select(BATCH_COLUMNS)
     .maybeSingle();

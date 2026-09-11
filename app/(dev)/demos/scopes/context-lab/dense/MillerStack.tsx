@@ -208,6 +208,7 @@ export function MillerStack({
                 key={o.id}
                 label={o.name}
                 meta={
+                  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
                   o.is_personal ? "personal" : `${o.scope_types.length} types`
                 }
                 tone="font-medium"

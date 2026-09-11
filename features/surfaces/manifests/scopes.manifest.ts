@@ -159,6 +159,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "organizations_summary",
     label: "Your organizations",
     description:
+      // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
       "One entry per organization in the loaded scope tree: { id, name, slug, abbreviation, is_personal, role, scope_type_count, scope_count }. Absent until the tree has loaded; an org with no scope types still appears (with zeroes).",
     valueType: "array",
     alwaysAvailable: false,

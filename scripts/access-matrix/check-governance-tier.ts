@@ -108,6 +108,7 @@ async function main(): Promise<void> {
   const shareeId = await userIdByEmail(env, SHAREE_EMAIL);
   const orgs = await svc<Array<{ id: string; created_by: string }>>(
     env,
+    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
     `organizations?select=id,created_by&is_personal=is.true&created_by=in.(${ownerId},${shareeId})`,
     { schema: "iam" },
   );

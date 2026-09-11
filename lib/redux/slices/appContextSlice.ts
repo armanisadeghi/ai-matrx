@@ -60,6 +60,7 @@ export interface AppContextState {
   organization_name: string | null;
 
   /**
+   // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
    * The user's PERSONAL organization id (is_personal = true). Set once at
    * shell hydration by the active-org bootstrap; it is NOT the active org and
    * is NEVER reset by setOrganization. It identifies the personal workspace

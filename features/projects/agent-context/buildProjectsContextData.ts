@@ -233,6 +233,7 @@ export function buildProjectsContextData(
   const hasSelection = selectionText.length > 0;
   const description = project?.description ?? "";
 
+  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
   // `is_personal_project` follows the project's own flag first; fall back to
   // the resolved org's personal flag when the project flag is unset.
   const isPersonal = projectOpen

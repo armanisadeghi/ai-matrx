@@ -136,6 +136,7 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "org_identity",
   },
   {
+    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
     name: "org_is_personal",
     label: "Is personal workspace",
     description:

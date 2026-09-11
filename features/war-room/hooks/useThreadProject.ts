@@ -64,6 +64,7 @@ export function useThreadProject(threadId: string) {
           slug: cached.slug,
           description: cached.description ?? null,
           organizationId: cached.organization_id,
+          // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
           isPersonal: cached.is_personal,
           status: "active",
           createdAt: cached.created_at ?? "",

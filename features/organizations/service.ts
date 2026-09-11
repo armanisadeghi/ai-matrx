@@ -221,6 +221,7 @@ export async function deleteOrganization(
     const { data: org } = await supabase
       .schema("iam")
       .from("organizations")
+      // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
       .select("is_personal")
       .eq("id", orgId)
       .single();

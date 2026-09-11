@@ -92,6 +92,7 @@ export function TopicSettingsForm({
   const projectOptions = useMemo<ProjectOption[]>(() => {
     const out: ProjectOption[] = [];
     for (const org of orgs) {
+      // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
       const isPersonalOrg = org.is_personal === true;
       for (const p of org.projects) {
         out.push({

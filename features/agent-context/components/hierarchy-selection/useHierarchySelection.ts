@@ -170,6 +170,7 @@ export function useHierarchySelection(
   const orgs: HierarchyOption[] = rawOrgs.map((o) => ({
     id: o.id,
     name: o.name,
+    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
     isPersonal: o.is_personal,
     role: o.role,
   }));

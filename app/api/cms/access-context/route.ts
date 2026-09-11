@@ -209,6 +209,7 @@ async function resolvedPayload(
     const { data, error } = await admin
       .schema("iam")
       .from("organizations")
+      // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
       .select("id, name, is_personal")
       .eq("id", target.site.organization_id)
       .maybeSingle();

@@ -103,6 +103,7 @@ export const fcService = {
           topic: input.topic ?? null,
           lesson: input.lesson ?? null,
           difficulty: input.difficulty ?? null,
+          // CONVERGE: C-7 — caller-supplied metadata written with no reserved-key guard; metadata is system-only — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-060
           metadata: input.metadata ?? {},
         })
         .select("*")
@@ -204,6 +205,7 @@ export const fcService = {
           .from("fc_set")
           .update({ metadata: value, version: nextVersion })
           .eq("id", setId)
+          // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
           .eq("version", expectedVersion)
           .select(SELECT)
           .maybeSingle<SetMetadataRow>(),
@@ -333,6 +335,7 @@ export const fcService = {
         // Columnless extras (e.g. tags) ride the jsonb metadata — never dropped.
         // The P0 TrustEnvelope (citations + confidence) persists under
         // metadata.trust so the card viewer can render <SourceCitations/>.
+        // CONVERGE: C-7 — caller-supplied metadata written with no reserved-key guard; metadata is system-only — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-060
         metadata: {
           ...(c.metadata ?? {}),
           ...(c.trust ? { trust: c.trust } : {}),

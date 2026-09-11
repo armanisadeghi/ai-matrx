@@ -305,6 +305,7 @@ function IdentitySection({
         // Only sent when the admin actually typed a new one. An empty box must never
         // be read as "clear the EIN".
         ...(einCheck?.ok ? { ein: einCheck.value } : {}),
+        // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
         expected_version: profile.version,
       },
     });

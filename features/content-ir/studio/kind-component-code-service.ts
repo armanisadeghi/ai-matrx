@@ -136,6 +136,7 @@ export async function saveKindComponentCode(
           .eq("id", args.component.id)
           .eq("kind_definition_id", args.component.kindDefinitionId)
           .eq("source", "db")
+          // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
           .eq("version", expectedVersion)
           .is("deleted_at", null)
           .select(CODE_COLUMNS)
