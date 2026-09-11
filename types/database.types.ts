@@ -77033,6 +77033,116 @@ export type Database = {
           },
         ]
       }
+      operation_stream: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          failure: Json | null
+          id: string
+          last_seq: number
+          metadata: Json
+          organization_id: string
+          request_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          failure?: Json | null
+          id?: string
+          last_seq?: number
+          metadata?: Json
+          organization_id: string
+          request_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          failure?: Json | null
+          id?: string
+          last_seq?: number
+          metadata?: Json
+          organization_id?: string
+          request_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      operation_stream_batch: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          first_seq: number
+          id: string
+          last_seq: number
+          metadata: Json
+          organization_id: string
+          stream_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          wire: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          first_seq: number
+          id?: string
+          last_seq: number
+          metadata?: Json
+          organization_id: string
+          stream_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          wire: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          first_seq?: number
+          id?: string
+          last_seq?: number
+          metadata?: Json
+          organization_id?: string
+          stream_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          wire?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operation_stream_batch_stream_id_fkey"
+            columns: ["stream_id"]
+            isOneToOne: false
+            referencedRelation: "operation_stream"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_item: {
         Row: {
           attempts: number
