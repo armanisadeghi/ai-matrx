@@ -128017,10 +128017,16 @@
                   "$ref": "#/components/schemas/AddNodeOp-Input"
                 },
                 {
+                  "$ref": "#/components/schemas/ReplaceNodeOp-Input"
+                },
+                {
                   "$ref": "#/components/schemas/RemoveNodeOp"
                 },
                 {
                   "$ref": "#/components/schemas/AddEdgeOp"
+                },
+                {
+                  "$ref": "#/components/schemas/ReplaceEdgeOp"
                 },
                 {
                   "$ref": "#/components/schemas/RemoveEdgeOp"
@@ -128040,6 +128046,8 @@
                   "remove_edge": "#/components/schemas/RemoveEdgeOp",
                   "remove_node": "#/components/schemas/RemoveNodeOp",
                   "remove_variable": "#/components/schemas/RemoveVariableOp",
+                  "replace_edge": "#/components/schemas/ReplaceEdgeOp",
+                  "replace_node": "#/components/schemas/ReplaceNodeOp-Input",
                   "set_variable": "#/components/schemas/SetVariableOp",
                   "update_node_data": "#/components/schemas/UpdateNodeDataOp",
                   "update_node_type": "#/components/schemas/UpdateNodeTypeOp"
@@ -128086,10 +128094,16 @@
                   "$ref": "#/components/schemas/AddNodeOp-Output"
                 },
                 {
+                  "$ref": "#/components/schemas/ReplaceNodeOp-Output"
+                },
+                {
                   "$ref": "#/components/schemas/RemoveNodeOp"
                 },
                 {
                   "$ref": "#/components/schemas/AddEdgeOp"
+                },
+                {
+                  "$ref": "#/components/schemas/ReplaceEdgeOp"
                 },
                 {
                   "$ref": "#/components/schemas/RemoveEdgeOp"
@@ -128109,6 +128123,8 @@
                   "remove_edge": "#/components/schemas/RemoveEdgeOp",
                   "remove_node": "#/components/schemas/RemoveNodeOp",
                   "remove_variable": "#/components/schemas/RemoveVariableOp",
+                  "replace_edge": "#/components/schemas/ReplaceEdgeOp",
+                  "replace_node": "#/components/schemas/ReplaceNodeOp-Output",
                   "set_variable": "#/components/schemas/SetVariableOp",
                   "update_node_data": "#/components/schemas/UpdateNodeDataOp",
                   "update_node_type": "#/components/schemas/UpdateNodeTypeOp"
@@ -205560,6 +205576,66 @@
           "new_order"
         ],
         "title": "ReorderPagesRequest"
+      },
+      "ReplaceEdgeOp": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "replace_edge",
+            "title": "Op",
+            "default": "replace_edge"
+          },
+          "edge": {
+            "$ref": "#/components/schemas/EdgeDef"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "edge"
+        ],
+        "title": "ReplaceEdgeOp",
+        "description": "Replace an existing edge WHOLE (source, target, handles, data).\n\nThe edge id must already exist (``add_edge`` creates a new one)."
+      },
+      "ReplaceNodeOp-Input": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "replace_node",
+            "title": "Op",
+            "default": "replace_node"
+          },
+          "node": {
+            "$ref": "#/components/schemas/NodeDef"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node"
+        ],
+        "title": "ReplaceNodeOp",
+        "description": "Replace an existing node WHOLE — type, position and data all become\nwhat this op carries. The counterpart to ``update_node_data``'s merge:\nuse this when the author is restating the node as it should now be, and\n``update_node_data`` when they are tweaking one key in place.\n\nThe node id must already exist (``add_node`` creates a new one). Edges\nare untouched — replacing a node never re-wires the graph around it."
+      },
+      "ReplaceNodeOp-Output": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "replace_node",
+            "title": "Op",
+            "default": "replace_node"
+          },
+          "node": {
+            "$ref": "#/components/schemas/NodeDef"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node"
+        ],
+        "title": "ReplaceNodeOp",
+        "description": "Replace an existing node WHOLE — type, position and data all become\nwhat this op carries. The counterpart to ``update_node_data``'s merge:\nuse this when the author is restating the node as it should now be, and\n``update_node_data`` when they are tweaking one key in place.\n\nThe node id must already exist (``add_node`` creates a new one). Edges\nare untouched — replacing a node never re-wires the graph around it."
       },
       "ReplaceRequest": {
         "properties": {

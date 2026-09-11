@@ -56158,7 +56158,7 @@ export interface components {
              */
             summary?: string;
             /** Ops */
-            ops: (components["schemas"]["UpdateNodeDataOp"] | components["schemas"]["UpdateNodeTypeOp"] | components["schemas"]["AddNodeOp-Input"] | components["schemas"]["RemoveNodeOp"] | components["schemas"]["AddEdgeOp"] | components["schemas"]["RemoveEdgeOp"] | components["schemas"]["SetVariableOp"] | components["schemas"]["RemoveVariableOp"])[];
+            ops: (components["schemas"]["UpdateNodeDataOp"] | components["schemas"]["UpdateNodeTypeOp"] | components["schemas"]["AddNodeOp-Input"] | components["schemas"]["ReplaceNodeOp-Input"] | components["schemas"]["RemoveNodeOp"] | components["schemas"]["AddEdgeOp"] | components["schemas"]["ReplaceEdgeOp"] | components["schemas"]["RemoveEdgeOp"] | components["schemas"]["SetVariableOp"] | components["schemas"]["RemoveVariableOp"])[];
         };
         /**
          * DefinitionPatch
@@ -56178,7 +56178,7 @@ export interface components {
              */
             summary?: string;
             /** Ops */
-            ops: (components["schemas"]["UpdateNodeDataOp"] | components["schemas"]["UpdateNodeTypeOp"] | components["schemas"]["AddNodeOp-Output"] | components["schemas"]["RemoveNodeOp"] | components["schemas"]["AddEdgeOp"] | components["schemas"]["RemoveEdgeOp"] | components["schemas"]["SetVariableOp"] | components["schemas"]["RemoveVariableOp"])[];
+            ops: (components["schemas"]["UpdateNodeDataOp"] | components["schemas"]["UpdateNodeTypeOp"] | components["schemas"]["AddNodeOp-Output"] | components["schemas"]["ReplaceNodeOp-Output"] | components["schemas"]["RemoveNodeOp"] | components["schemas"]["AddEdgeOp"] | components["schemas"]["ReplaceEdgeOp"] | components["schemas"]["RemoveEdgeOp"] | components["schemas"]["SetVariableOp"] | components["schemas"]["RemoveVariableOp"])[];
         };
         /**
          * DefinitionRecord
@@ -91511,6 +91511,56 @@ export interface components {
             local_path?: string | null;
             /** New Order */
             new_order: number[];
+        };
+        /**
+         * ReplaceEdgeOp
+         * @description Replace an existing edge WHOLE (source, target, handles, data).
+         *
+         *     The edge id must already exist (``add_edge`` creates a new one).
+         */
+        ReplaceEdgeOp: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "replace_edge";
+            edge: components["schemas"]["EdgeDef"];
+        };
+        /**
+         * ReplaceNodeOp
+         * @description Replace an existing node WHOLE — type, position and data all become
+         *     what this op carries. The counterpart to ``update_node_data``'s merge:
+         *     use this when the author is restating the node as it should now be, and
+         *     ``update_node_data`` when they are tweaking one key in place.
+         *
+         *     The node id must already exist (``add_node`` creates a new one). Edges
+         *     are untouched — replacing a node never re-wires the graph around it.
+         */
+        "ReplaceNodeOp-Input": {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "replace_node";
+            node: components["schemas"]["NodeDef"];
+        };
+        /**
+         * ReplaceNodeOp
+         * @description Replace an existing node WHOLE — type, position and data all become
+         *     what this op carries. The counterpart to ``update_node_data``'s merge:
+         *     use this when the author is restating the node as it should now be, and
+         *     ``update_node_data`` when they are tweaking one key in place.
+         *
+         *     The node id must already exist (``add_node`` creates a new one). Edges
+         *     are untouched — replacing a node never re-wires the graph around it.
+         */
+        "ReplaceNodeOp-Output": {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "replace_node";
+            node: components["schemas"]["NodeDef"];
         };
         /** ReplaceRequest */
         ReplaceRequest: {
