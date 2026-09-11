@@ -10,6 +10,7 @@ import { HOVER_ROW, ROW_HEIGHT } from "../../styles/tokens";
 import { extractErrorMessage } from "@/utils/errors";
 import { selectExplorerRootOverride } from "../../redux/codeWorkspaceSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { parsePyprojectScripts, pyprojectEntrypointCommand } from "./pyprojectScripts";
 
 interface RunPanelProps {
   className?: string;
@@ -69,12 +70,11 @@ export const RunPanel: React.FC<RunPanelProps> = ({ className }) => {
         root === "/" ? "/pyproject.toml" : `${root}/pyproject.toml`,
       );
       if (pyproject) {
-        for (const { name, module } of parsePyprojectScripts(pyproject)) {
-          found.push({
-            source: "pyproject.toml",
-            name,
-            command: `python -m ${module}`,
-          });
+        for (const script of parsePyprojectScripts(pyproject)) {
+          const command = pyprojectEntrypointCommand(script.entrypoint);
+          if (command) {
+            found.push({ source: "pyproject.toml", name: script.name, command });
+          }
         }
       }
 
@@ -203,24 +203,6 @@ export const RunPanel: React.FC<RunPanelProps> = ({ className }) => {
     </div>
   );
 };
-
-function parsePyprojectScripts(content: string): Array<{ name: string; module: string }> {
-  const result: Array<{ name: string; module: string }> = [];
-  const lines = content.split("\n");
-  let inScriptsSection = false;
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (line.startsWith("[")) {
-      inScriptsSection =
-        line === "[project.scripts]" || line === "[tool.poetry.scripts]";
-      continue;
-    }
-    if (!inScriptsSection) continue;
-    const match = line.match(/^([A-Za-z0-9_-]+)\s*=\s*["']([^:"']+)/);
-    if (match) result.push({ name: match[1], module: match[2] });
-  }
-  return result;
-}
 
 function parseMakefileTargets(content: string): string[] {
   const targets: string[] = [];
