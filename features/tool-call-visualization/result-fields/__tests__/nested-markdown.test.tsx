@@ -11,6 +11,7 @@ jest.mock("next/dynamic", () => ({
 }));
 
 import { ResultValue } from "../ResultValue";
+import { looksLikeMarkdown } from "../shape";
 
 describe("ResultValue nested Markdown", () => {
   let container: HTMLDivElement;
@@ -23,6 +24,28 @@ describe("ResultValue nested Markdown", () => {
   afterEach(() => {
     act(() => root.unmount());
     container.remove();
+  });
+
+  it.each([
+    ["*emphasis*.", "em", "emphasis"],
+    ["_emphasis_", "em", "emphasis"],
+    ["__bold__", "strong", "bold"],
+    ["~~removed~~", "del", "removed"],
+    ["~~~text\nliteral\n~~~", "pre code", "literal"],
+  ])("recognizes %s through the same scalar and list detector", async (value, selector, expected) => {
+    await act(async () => root.render(<>
+      <ResultValue value={value} density="full" />
+      <ResultValue value={[value]} density="full" />
+    </>));
+    const nodes = [...container.querySelectorAll(selector)];
+    expect(nodes).toHaveLength(2);
+    expect(nodes.every(node => node.textContent?.trim() === expected)).toBe(true);
+  });
+
+  it("keeps ordinary identifiers and spaced multiplication on the plain path", () => {
+    for (const value of ["snake_case_name", "price_per_unit", "2 * 3 * 4", "plain text"]) {
+      expect(looksLikeMarkdown(value)).toBe(false);
+    }
   });
 
   it.each(["inline", "full"] as const)("formats scalar, list and object prose in %s density", async (density) => {

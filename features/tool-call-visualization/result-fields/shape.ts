@@ -224,9 +224,14 @@ export function looksLikeMarkdown(value: string): boolean {
         /^\d+\.\s+\S/m, // ordered list item
         /^>\s+\S/m, // blockquote
         /```/, // fenced code
+        /^ {0,3}~{3,}/m, // tilde code fence
         /\[[^\]]+\]\([^)]+\)/, // [text](link)
         /!\[[^\]]*\]\([^)]+\)/, // image
         /\*\*[^*\n]+\*\*/, // bold
+        /__[^_\n]+__/, // underscore bold
+        /(^|[^\w])\*[^*\s](?:[^*\n]*[^*\s])?\*(?=$|[^\w])/, // emphasis
+        /(^|[^\w])_[^_\s](?:[^_\n]*[^_\s])?_(?=$|[^\w])/, // underscore emphasis, not snake_case
+        /~~[^~\n]+~~/, // GFM strikethrough
         /(^|\s)`[^`\n]+`/, // inline code
         /^\|.+\|.*$/m, // table row
         /^\s*[-*_]{3,}\s*$/m, // thematic break

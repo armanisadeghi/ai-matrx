@@ -303,7 +303,7 @@ Historical planning and analysis docs from the pre-consolidation era have been a
 
 ## Change log
 
-- `2026-09-11` — Nested Markdown census found literal-output bypasses in scalar lists, long table text, and short table-list chips. All now reuse the existing Markdown detector/renderer; DOM guards cover both densities, object/table nesting, expansion, scalar preservation, and inert fenced artifact payloads.
+- `2026-09-11` — Nested Markdown census found literal-output bypasses in scalar lists, long table text, and short table-list chips. All now reuse the existing Markdown detector/renderer, with conservative emphasis, strikethrough, and tilde-fence detection; DOM guards cover both densities, object/table nesting, expansion, scalar preservation, and inert fenced artifact payloads.
 
 - `2026-09-09` — codex: **Plural media URL fields keep their element type across attachment lists.** The explicit field-name hint grammar now recognizes plural URL tokens (`urls`, `uris`, `srcs`, `hrefs`, `links`) as well as singular ones. `video_urls` therefore supplies the existing `video` hint to every durable item in its attachment list instead of leaving ID-only videos on the media client's first-render image default. Exact regression coverage uses both production file identities from the Podcast Episode run; canonical MIME/extension evidence remains authoritative.
 
