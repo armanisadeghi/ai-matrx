@@ -11,7 +11,7 @@
  * the one that lives in the shell header once results are on screen.
  */
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,12 +34,14 @@ export function SearchBox({
   const router = useRouter();
   const [isNavigating, startTransition] = useTransition();
   const [draft, setDraft] = useState(currentQuery);
+  const [sourceQuery, setSourceQuery] = useState(currentQuery);
 
   // Back/forward (and any other URL change) is the source of truth — the box
   // follows the address bar, never the other way around.
-  useEffect(() => {
+  if (currentQuery !== sourceQuery) {
+    setSourceQuery(currentQuery);
     setDraft(currentQuery);
-  }, [currentQuery]);
+  }
 
   const runSearch = () => {
     const trimmed = draft.trim();
@@ -87,7 +89,6 @@ export function SearchBox({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={onKeyDown}
-          // eslint-disable-next-line jsx-a11y/no-autofocus -- the hero state IS the search box; the caret belongs in it
           autoFocus={hero}
           aria-label="Search the web"
           placeholder="Search the web…"
@@ -95,16 +96,17 @@ export function SearchBox({
             "pl-10",
             hero
               ? "h-14 rounded-full text-base md:text-lg"
-              : "h-9 rounded-full",
+              : "h-11 rounded-full sm:h-9",
           )}
         />
       </div>
       <Button
         type="submit"
+        aria-label="Search the web"
         disabled={!draft.trim() || isNavigating}
         className={cn(
           "rounded-full",
-          hero ? "h-14 px-6 text-base" : "h-9 px-4",
+          hero ? "h-14 px-6 text-base" : "h-11 px-4 sm:h-9",
         )}
       >
         {isNavigating ? (

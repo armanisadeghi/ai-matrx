@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-27`
+**Last updated:** `2026-09-11`
 
 ---
 
@@ -123,6 +123,9 @@ same query through the `attempt` nonce.
   `search.public_providers` knob is the authority. There is no provider picker
   on this surface on purpose — see the access model in
   `common-docs/operations/search-kinds-pilot.md`.
+- **Compact search controls stay 44px tall on mobile and the icon-only submit
+  button retains an accessible name.** Desktop returns to the 36px header density
+  at `sm` and above.
 - **A refused search does not clear the previous one** — `outcome` is cleared
   only when a new query starts, so the error state never blanks the page a user
   was reading.
@@ -167,6 +170,9 @@ same query through the `attempt` nonce.
 
 ## Change log
 
+- `2026-09-11` — Kept both compact search controls at the 44px mobile touch
+  floor, named the icon-only submit button for assistive technology, and kept
+  URL-driven draft synchronization within render instead of an effect.
 - `2026-08-27` — The Web Scraper keyword-search result pane now adapts its
   standalone transport rows into `web_search_results` and delegates to this
   feature's canonical kind renderer. No second result-card or selected-result
