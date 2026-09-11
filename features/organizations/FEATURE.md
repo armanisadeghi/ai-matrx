@@ -8,9 +8,14 @@
 
 ---
 
+**Declared organization model** (one owner type, no "personal" organization, the default organization as a user preference, `{First name}'s Org` naming): `/Users/armanisadeghi/code/common-docs/systems/platform/organizations/DECISIONS.md` — the AI Matrx Data Doctrine rulings (Arman, 2026-09-10), with the observed state beside each. Live code in this feature still carries `is_personal`, `personal_organization_id` and `<handle>'s Workspace`; that gap is convergence work (`/projects/data-doctrine-adoption/REGISTER.md`, DD-040…DD-048), not a bug to fix in passing.
+
+
 ## Purpose
 
 Organizations are the top-level multi-tenant scope in the app — every user belongs to exactly one personal org, and teams are additional orgs that bundle members, projects, tasks, and shared resources. Invitations are the email-based flow that brings a new user into an existing org or project.
+
+<!-- CONVERGE: Organizations are all equal; there is no "personal organization"; the default organization is the user preference `users.user_preferences.default_organization_id`; the auto-created organization is named `{First name}'s Org` — declared 2026-09-10, AI Matrx Data Doctrine R9/R11/R12, §1.6, §5.2. Observed here: "every user belongs to exactly one personal org" stated as the feature's purpose. Reconcile when you next change this for another reason. Do NOT escalate. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-040 -->
 
 ---
 
@@ -116,6 +121,8 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 **Database tables** (Supabase)
 
 - `iam.organizations` — `id, name, abbreviation, slug (unique), description, logo_url, website, created_by, is_personal, settings, created_at, updated_at`. `abbreviation` is 2–3 uppercase ASCII letters, intentionally non-unique; personal orgs are always `ME`. RLS: members can SELECT; owners/admins can UPDATE; only owners DELETE.
+
+<!-- CONVERGE: Organizations are all equal; there is no "personal organization"; the default organization is the user preference `users.user_preferences.default_organization_id`; the auto-created organization is named `{First name}'s Org` — declared 2026-09-10, AI Matrx Data Doctrine R9/R11/R12, §1.6, §5.2. Observed here: `is_personal` as a live column on `iam.organizations`. Reconcile when you next change this for another reason. Do NOT escalate. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045 -->
 - `iam.memberships` — canonical membership for orgs + projects (`container_type` / `container_id`). Sole chokepoint: `membershipsService` → authenticated-only `mbr_*` RPCs. **No direct client grant and no anonymous RPC execution.** Every idempotent membership read uses the shared one-shot session recovery; a missing browser JWT produces an attributable `401`, never a successful empty membership set.
 - `iam.invitations` — canonical invitations for orgs + projects + **scopes** (`target_type` / `target_id`; scope targets added 2026-08-18 for education class invites — `migrations/edu_class_invites_and_join_codes.sql` extended `iam._container_authz` with a scope branch, `inv_create` accepts `'scope'` **member-role-only**, `inv_get_by_token` resolves the scope name; consumer: `features/education/classes`, accept page `/invitations/class/accept/[token]`, email route `/api/education/class-invite`). Sole chokepoint: `invitationsService` → `inv_*` RPCs. **No direct client grant** — every read/write goes through `inv_list` / `inv_create` / `inv_accept` / `inv_revoke` / `inv_resend` / `inv_for_me` / `inv_get_by_token`; server email routes use manager-guarded `inv_get_managed`.
 - `workspace.projects` — project rows, scoped by `organization_id`
@@ -208,8 +215,12 @@ The `mbr_*`, `inv_*`, and ownership RPCs enforce these at the database layer aga
 
 - **Slug is globally unique, URL-safe, and lowercase.** `isSlugAvailable()` runs before insert; DB also has a unique constraint. Slug is not in `UpdateOrganizationOptions` — treat as immutable.
 - **Abbreviation is compact identity, not a key.** It is always 2–3 uppercase ASCII letters and is deliberately not unique. Shared/system orgs start with deterministic initials and owners/admins may edit them. Personal organizations are fixed to `ME`; the database trigger normalizes every insert/update path and constraints enforce both rules.
+
+<!-- CONVERGE: Organizations are all equal; there is no "personal organization"; the default organization is the user preference `users.user_preferences.default_organization_id`; the auto-created organization is named `{First name}'s Org` — declared 2026-09-10, AI Matrx Data Doctrine R9/R11/R12, §1.6, §5.2. Observed here: personal organizations pinned to the abbreviation `ME` as an organization property. Reconcile when you next change this for another reason. Do NOT escalate. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-040 -->
 - **Every org must have at least one owner.** `updateMemberRole` and `removeMember` block the last-owner case explicitly (pre-check + select-count of `role = 'owner'`). `leaveOrganization` just calls `removeMember(self)` so the same guard applies — a sole owner cannot leave their own org.
-- **Personal orgs (`is_personal = true`) cannot be deleted.** `deleteOrganization` pre-checks and returns `error: 'Cannot delete personal organization'`. Every user gets a personal org at signup via the `on_auth_user_created` trigger on `auth.users`, which calls `public.create_personal_organization()`, which delegates to the idempotent `public.ensure_personal_organization(uuid)` RPC. The trigger does NOT block user creation on failure — failures land in `public.system_personal_org_failures` (super-admin readable) for detection + repair. The `ensure_personal_organization(uuid)` RPC is callable by `authenticated` and `service_role`; the frontend may call it defensively if a missing personal org is ever detected.
+- **Personal orgs (`is_personal = true`) cannot be deleted.** `deleteOrganization` pre-checks and returns `error: 'Cannot delete personal organization'`. Every user gets a personal org at signup via the `on_auth_user_created` trigger on `auth.users`, which calls `public._provision_new_user_personal_org()` (verified live in `pg_trigger`, 2026-09-10 — the older name `public.create_personal_organization()` this doc carried no longer exists), which delegates to the idempotent `public.ensure_personal_organization(uuid)` RPC and from there to `public._d31_impl_ensure_personal_organization(uuid)`. The trigger does NOT block user creation on failure — failures land in `public.system_personal_org_failures` (super-admin readable) for detection + repair. The `ensure_personal_organization(uuid)` RPC is callable by `authenticated` and `service_role`; the frontend may call it defensively if a missing personal org is ever detected.
+
+<!-- CONVERGE: Organizations are all equal; there is no "personal organization"; the default organization is the user preference `users.user_preferences.default_organization_id`; the auto-created organization is named `{First name}'s Org` — declared 2026-09-10, AI Matrx Data Doctrine R9/R11/R12, §1.6, §5.2. Observed here: the personal-org delete block and the signup provisioning path, both keyed on `is_personal` rather than on the last-organization rule. Reconcile when you next change this for another reason. Do NOT escalate. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-044 -->
 - **Invitation tokens expire in 7 days.** Minted by `inv_create` / refreshed by `inv_resend`. Expiry is enforced in the accept RPC and checked client-side on the accept page.
 - **`iam.invitations` has NO direct client grant.** Every read/write goes through `invitationsService` → `inv_*` RPCs. Direct `.from("invitations")` is a bug (42501). Invite/resend routes accept only `invitationId` and derive stored delivery data through `inv_get_managed`.
 - **Invitation uniqueness is per target + email.** `inv_create` refreshes an existing pending invite rather than duplicating. Use `resendInvitation` to bump expiry + token.
@@ -261,6 +272,8 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 ---
 
 ## Change log
+
+- `2026-09-10` — **Doctrine pointer + `CONVERGE:` stamps added** by the Data Doctrine adoption program. The AI Matrx Data Doctrine (Arman, 2026-09-10) rules that organizations are all equal, that `is_personal` is dropped, that the default organization is a user preference, and that the auto-created organization is named `{First name}'s Org`; none of that is built yet, so nothing here was rewritten — the passages that assert "personal org" as a property are stamped and pointed at the new node `/systems/platform/organizations/` in common-docs. One factual correction settled by the live database: the `on_auth_user_created` trigger calls `public._provision_new_user_personal_org()`, not the `public.create_personal_organization()` this doc named (verified in `pg_trigger`/`pg_proc`, 2026-09-10). No code change.
 
 - `2026-09-10` — Unified the blocked-action picker with the header membership cache, added in-place list retry, and resumed pending actions when organization hydration or selection completes. Regression guards cover late selection, cached memberships without a token, cancellation, preserving the pending conversation, and failed-read recovery.
 
