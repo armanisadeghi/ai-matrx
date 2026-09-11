@@ -152,6 +152,8 @@ container.
 
 ## Change log
 
+- `2026-09-11` — Sandbox Status and diagnostics report image freshness only after an exact running/current image-ID comparison. An owner can run the advertised in-place image update after an interruption warning; it preserves `/home/agent`, retains unsaved editor buffers, and recreates PTY sessions through the sandbox runtime revision. Manager and installed-tool freshness remain explicitly unknown. Verified on the admin account's owned hosted sandbox: image became current, workspace file persisted, terminal reconnected, and an existing dirty editor buffer saved successfully.
+
 - `2026-09-11` — Sandbox sidebar links to management and opens the canonical movable controls window. Window identity survives reload and diagnostics sections scroll on phones. Rebuild help accurately distinguishes configured-template recreation from image updates and explicitly identifies the account-shared home volume wipe.
 
 - `2026-09-11` — **Mobile xterm glyph metrics now remain accurate.** The global narrow-viewport `* { max-width: 100% }` rule had clamped xterm’s off-screen width-cache measurement spans to their zero-width parent, making each rendered terminal glyph receive excess letter spacing. The xterm measurement span is exempted from that generic cap. `TerminalTab` waits for the first visible native workspace-tools disclosure before booting, then keeps the PTY mounted across later closes and refreshes rows on reveal.
