@@ -2096,7 +2096,8 @@ export function ModelListDropdown({
           maxHeight: LIST_MAX_HEIGHT,
         }}
       >
-        <div className="flex h-full">
+        <div className="h-full overflow-x-auto overflow-y-hidden">
+          <div className="flex h-full" style={{ minWidth: popoverWidth }}>
           <div
             className="flex h-full min-h-0 shrink-0 flex-col border-r border-border"
             style={{ width: LIST_WIDTH }}
@@ -2162,6 +2163,7 @@ export function ModelListDropdown({
               )}
             </div>
           )}
+          </div>
         </div>
       </PopoverContent>
     </Popover>
