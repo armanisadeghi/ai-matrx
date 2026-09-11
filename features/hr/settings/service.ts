@@ -379,18 +379,32 @@ export async function fetchHrKnobMetadata(): Promise<HrResult<HrKnobMetadata[]>>
 // ── Route 73 — the custom-field registry, READ ONLY ─────────────────────────
 
 /**
- * The HR tables that participate in the tier-1 custom-field kit (SPEC-EMPLOYEES §7.4).
- * These are ENTITY TOKENS, matching `platform.custom_field_definition.target_token`.
+ * 🚨 THE ENABLEMENT ROWS ARE READ, NEVER LISTED IN CODE (DD-097).
+ *
+ * Until 2026-09-11 this file exported a HAND-WRITTEN list of seven HR tokens and
+ * asked the database only about those. Live `platform.custom_field_target` enables
+ * FIVE tokens — `hr_candidate`, `hr_employee`, `hr_position_assignment`,
+ * `hr_requisition`, `hr_training_assignment` — and only two of them were on the
+ * list. Three record types were switched on in the database and invisible on the
+ * settings page, while four that were never enabled were asked about every load.
+ * The page then told the admin "No HR record type has custom fields switched on
+ * yet", which was false.
+ *
+ * The class fix: ask for EVERY `hr_` token by prefix and let the rows answer. A
+ * token added to `platform.entity_types` and switched on in `custom_field_target`
+ * appears here with no code change, which is the only arrangement in which the
+ * page cannot go stale.
+ *
+ * The backslash escapes LIKE's single-character wildcard, so the pattern matches
+ * `hr_` as literal text and can never widen to `hrX…`. PostgREST passes the
+ * pattern to Postgres unchanged (proven live 2026-09-11 against
+ * `db.matrxserver.com`).
  */
-export const HR_CUSTOM_FIELD_TOKENS = [
-  "hr_employee",
-  "hr_employment",
-  "hr_position_assignment",
-  "hr_location",
-  "hr_department",
-  "hr_job_title",
-  "hr_incident",
-] as const;
+export const HR_CUSTOM_FIELD_TOKEN_LIKE = "hr\\_%";
+
+/** `platform.custom_field_target.organization_id` goes into a PostgREST `or=` string, so it is checked first. */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Read the custom-field registry for this org's HR tokens.
@@ -407,9 +421,20 @@ export const HR_CUSTOM_FIELD_TOKENS = [
 export async function fetchHrCustomFieldRegistry(args: {
   organizationId: string;
 }): Promise<
-  HrResult<{ definitions: HrCustomFieldDefinition[]; targets: HrCustomFieldTarget[] }>
+  HrResult<{
+    definitions: HrCustomFieldDefinition[];
+    targets: HrCustomFieldTarget[];
+    /** `entity_types.token` → `entity_types.label`, read live. Never a hand-written map. */
+    labels: Record<string, string>;
+  }>
 > {
-  const tokens = [...HR_CUSTOM_FIELD_TOKENS];
+  if (!UUID_RE.test(args.organizationId)) {
+    return failed(
+      `This employer could not be identified, so the custom-field registry was not read.`,
+      "hr_custom_fields_bad_org_id",
+      `organizationId is not a UUID: ${args.organizationId}`,
+    );
+  }
 
   const [definitionsResult, targetsResult] = await Promise.all([
     supabase
@@ -419,8 +444,10 @@ export async function fetchHrCustomFieldRegistry(args: {
       .select(
         "id, target_token, field_key, display_name, field_type, field_order, is_required, is_multi, sensitivity_tier, ai_exposure, reference_target_token, archived_at, options",
       )
+      // DECLARED SCOPE (db-rules THE VIEW LAW): a DEFINITION belongs to the employer
+      // that wrote it, so the scope is `mine` — this employer's rows only.
       .eq("organization_id", args.organizationId)
-      .in("target_token", tokens)
+      .like("target_token", HR_CUSTOM_FIELD_TOKEN_LIKE)
       .is("deleted_at", null)
       .order("target_token", { ascending: true })
       .order("field_order", { ascending: true }),
@@ -428,10 +455,17 @@ export async function fetchHrCustomFieldRegistry(args: {
       .schema("platform")
       .from("custom_field_target")
       .select(
-        "id, target_token, is_enabled, max_fields, max_custom_bytes, sensitivity_ceiling, ai_exposure_ceiling, validation_mode, notes",
+        "id, organization_id, target_token, is_enabled, max_fields, max_custom_bytes, sensitivity_ceiling, ai_exposure_ceiling, validation_mode, notes",
       )
-      .eq("organization_id", args.organizationId)
-      .in("target_token", tokens)
+      // DECLARED SCOPE: an ENABLEMENT row is not the same shape as a definition.
+      // Every one of the five live rows sits in the Matrx System org at
+      // `visibility = 'public'` — they are PLATFORM DEFAULTS that every employer
+      // inherits, which is why the old `eq(organization_id)` filter returned ZERO
+      // rows for a real employer and the page said nothing was switched on. The
+      // scope is therefore stated as: this employer's own rows, PLUS the public
+      // platform defaults. RLS remains the ceiling; this is the narrower claim.
+      .or(`organization_id.eq.${args.organizationId},visibility.eq.public`)
+      .like("target_token", HR_CUSTOM_FIELD_TOKEN_LIKE)
       .is("deleted_at", null)
       .order("target_token", { ascending: true }),
   ]);
@@ -465,11 +499,44 @@ export async function fetchHrCustomFieldRegistry(args: {
   // This is a plain RLS-checked PostgREST read: `platform` IS in the `authenticator`
   // role's `pgrst.db_schemas`, and `hr` genuinely is NOT (checked live in
   // `pg_db_role_setting`), which is the standing reason the `hr` reads above use doors.
-  return {
-    ok: true,
-    data: {
-      definitions: (definitionsResult.data ?? []) as HrCustomFieldDefinition[],
-      targets: (targetsResult.data ?? []) as HrCustomFieldTarget[],
-    },
-  };
+  const definitions = (definitionsResult.data ?? []) as HrCustomFieldDefinition[];
+  const targets = (targetsResult.data ?? []) as HrCustomFieldTarget[];
+
+  // THE RECORD-TYPE NAMES COME FROM THE REGISTRY, NOT FROM A MAP IN A COMPONENT.
+  // `platform.entity_types.label` is the one place a token's human name is written;
+  // a `Record<string, string>` in a panel is a second one that goes stale the day a
+  // token is added. `entity_types` is readable by any signed-in user (policy
+  // `et_read`), so this is the same RLS-checked PostgREST read as the two above.
+  const tokens = Array.from(
+    new Set([
+      ...targets.map((row) => row.target_token),
+      ...definitions
+        .map((row) => row.target_token)
+        .filter((token): token is string => Boolean(token)),
+    ]),
+  );
+
+  let labels: Record<string, string> = {};
+  if (tokens.length > 0) {
+    const labelsResult = await supabase
+      .schema("platform")
+      .from("entity_types")
+      .select("token, label")
+      .in("token", tokens);
+
+    if (labelsResult.error) {
+      // NOTHING SILENT: without the registry the page would print raw tokens at an
+      // admin and call them record types. It says the read failed instead.
+      return failed(
+        `The record-type names did not arrive.`,
+        labelsResult.error.code ?? null,
+        labelsResult.error.message ?? null,
+      );
+    }
+    labels = Object.fromEntries(
+      (labelsResult.data ?? []).map((row) => [row.token, row.label]),
+    );
+  }
+
+  return { ok: true, data: { definitions, targets, labels } };
 }

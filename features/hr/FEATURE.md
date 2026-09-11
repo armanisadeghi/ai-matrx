@@ -174,6 +174,27 @@ wrapper added in another lane's file.
 
 ## Change log
 
+- **2026-09-11 (the HR Fields page shows what the database actually enables, DD-097)** —
+  `features/hr/settings/service.ts` asked `platform.custom_field_target` about a
+  hand-written list of seven `hr_*` tokens, filtered to the active employer. Live,
+  the table holds five rows — `hr_candidate`, `hr_employee`,
+  `hr_position_assignment`, `hr_requisition`, `hr_training_assignment` — all
+  switched on, all owned by the Matrx System org at `visibility='public'`, i.e.
+  platform defaults every employer inherits. Two were on the list; the org filter
+  excluded all five anyway, so the query returned zero rows for a real employer and
+  `HrFieldsPanel` printed "No HR record type has custom fields switched on yet" — a
+  false sentence in an admin surface. The page now reads every `hr_` token by
+  prefix (`HR_CUSTOM_FIELD_TOKEN_LIKE`), declares its scope as this employer's own
+  rows plus the public platform defaults, labels each row "Set by this employer" or
+  "Platform default", and takes record-type names live from
+  `platform.entity_types.label` instead of a second map in the component. Where the
+  capability genuinely is not usable yet it says so plainly — enabled for N record
+  types, defining a field not available — instead of claiming nothing is enabled.
+  Guard: `pnpm check:hr-custom-field-targets` (static: no token list may return;
+  live: signs in as the test admin and proves every enabled row reaches the page for
+  a real employer that owns none of its own). `--self-test` replays the retired
+  query shape against the live database and requires it to come back short.
+
 - **2026-08-29 (the deep-link landing states its employer)** — the substitution
   notice lived in `HrShell` alone, and thirteen `/hr` routes do not mount it —
   `/hr/tasks`, `/hr/tasks/[instanceId]` (the landing every HR notification deep-links

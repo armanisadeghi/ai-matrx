@@ -43,16 +43,11 @@ import { HrSettingsShell } from "../HrSettingsShell";
 import type { HrCustomFieldDefinition, HrCustomFieldTarget } from "../types";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
-/** Human names for the HR tokens that participate in the tier-1 kit. */
-const TOKEN_LABEL: Record<string, string> = {
-  hr_employee: "Employee",
-  hr_employment: "Employment spell",
-  hr_position_assignment: "Position assignment",
-  hr_location: "Location",
-  hr_department: "Department",
-  hr_job_title: "Job title",
-  hr_incident: "Incident",
-};
+// THE RECORD-TYPE NAMES ARE READ, NOT WRITTEN HERE (DD-097). This file used to
+// carry a seven-entry `TOKEN_LABEL` map that matched a seven-entry token list in
+// `service.ts`; live `platform.custom_field_target` enables five tokens, three of
+// which appeared in neither. `platform.entity_types.label` is the one place a
+// token's human name lives, and `fetchHrCustomFieldRegistry` reads it.
 
 export function HrFieldsPanel() {
   const { active } = useHrContext();
@@ -60,6 +55,7 @@ export function HrFieldsPanel() {
 
   const [definitions, setDefinitions] = useState<HrCustomFieldDefinition[]>([]);
   const [targets, setTargets] = useState<HrCustomFieldTarget[]>([]);
+  const [labels, setLabels] = useState<Record<string, string>>({});
   // Derived, never set synchronously in an effect body (react-hooks/set-state-in-effect).
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -79,6 +75,7 @@ export function HrFieldsPanel() {
       if (result.ok) {
         setDefinitions(result.data.definitions);
         setTargets(result.data.targets);
+        setLabels(result.data.labels);
         setError(null);
       } else {
         setError(result);
@@ -89,6 +86,12 @@ export function HrFieldsPanel() {
       cancelled = true;
     };
   }, [organizationId, reload]);
+
+  // A token with no registry label renders as the token itself — the true
+  // identifier, never a prettified guess at what it means.
+  const labelFor = (token: string | null) =>
+    token ? (labels[token] ?? token) : "—";
+  const enabledTargets = targets.filter((row) => row.is_enabled);
 
   const liveDefinitions = definitions.filter((row) => !row.archived_at);
   const archivedDefinitions = definitions.filter((row) => Boolean(row.archived_at));
@@ -112,8 +115,7 @@ export function HrFieldsPanel() {
     },
     {
       id: "target",
-      accessorFn: (row) =>
-        row.target_token ? TOKEN_LABEL[row.target_token] ?? row.target_token : "—",
+      accessorFn: (row) => labelFor(row.target_token),
       header: "On which record",
       filter: "select",
     },
@@ -198,10 +200,13 @@ export function HrFieldsPanel() {
               Creating and editing fields is built on the platform, not inside HR
             </h2>
             <p className="text-sm text-muted-foreground">
+              {enabledTargets.length > 0
+                ? `Custom fields are enabled for ${enabledTargets.length} HR ${enabledTargets.length === 1 ? "record type" : "record types"}, listed below; defining a field is not available yet.`
+                : "Custom fields are not enabled for any HR record type yet, so there is nothing a field could be added to."}{" "}
               Custom fields are a platform capability shared by every part of the
               product, so one editor serves all of them rather than each area growing
-              its own. This page shows the fields that exist here and how they are
-              governed; the editor arrives with the platform kit.
+              its own. This page shows what is switched on, the fields that exist here
+              and how they are governed; the editor arrives with the platform kit.
             </p>
             <Button
               type="button"
@@ -224,30 +229,47 @@ export function HrFieldsPanel() {
                 What each record type allows
               </h2>
               <p className="text-sm text-muted-foreground">
-                The ceilings a custom field on that record cannot exceed.
+                Every HR record type the database has switched on, and the ceilings a
+                custom field on that record cannot exceed.
               </p>
             </div>
           </header>
           {targets.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">
-              No HR record type has custom fields switched on yet. Until one does,
-              nothing can be added to any of them.
+              No HR record type has custom fields switched on — not for this employer,
+              and not as a platform default. Until one does, nothing can be added to
+              any of them.
             </p>
           ) : (
             <ul className="divide-y divide-border">
-              {targets.map((target) => (
-                <li key={target.id} className="flex flex-wrap gap-2 p-4 text-sm">
-                  <span className="min-w-0 flex-1 font-medium text-foreground">
-                    {TOKEN_LABEL[target.target_token] ?? target.target_token}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {target.is_enabled ? "Enabled" : "Off"} · up to{" "}
-                    {target.max_fields ?? "unlimited"} fields · sensitivity ceiling{" "}
-                    {target.sensitivity_ceiling} · AI ceiling{" "}
-                    {target.ai_exposure_ceiling} · validation {target.validation_mode}
-                  </span>
-                </li>
-              ))}
+              {targets.map((target) => {
+                // Which of the two this row is. Every live row today is a platform
+                // default inherited by every employer; an employer's own row would
+                // carry its own organization_id. Saying which is the difference
+                // between "we decided this" and "the platform decided this".
+                const isOwnRow = target.organization_id === organizationId;
+                return (
+                  <li key={target.id} className="flex flex-wrap gap-2 p-4 text-sm">
+                    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                      <span className="font-medium text-foreground">
+                        {labelFor(target.target_token)}
+                      </span>
+                      <Badge variant={target.is_enabled ? "secondary" : "outline"}>
+                        {target.is_enabled ? "Enabled" : "Off"}
+                      </Badge>
+                      <Badge variant="outline">
+                        {isOwnRow ? "Set by this employer" : "Platform default"}
+                      </Badge>
+                    </span>
+                    <span className="text-muted-foreground">
+                      up to {target.max_fields ?? "unlimited"} fields · sensitivity
+                      ceiling {target.sensitivity_ceiling} · AI ceiling{" "}
+                      {target.ai_exposure_ceiling} · validation{" "}
+                      {target.validation_mode}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
@@ -315,7 +337,9 @@ export function HrFieldsPanel() {
                 : {
                     title: "No custom fields on HR records",
                     description:
-                      "Nothing has been added beyond the built-in fields. When the platform field editor arrives, what you create with it appears here.",
+                      enabledTargets.length > 0
+                        ? `Nothing has been added beyond the built-in fields. ${enabledTargets.length === 1 ? "One record type is" : `${enabledTargets.length} record types are`} switched on above and ready for fields; the editor that creates them is not available yet.`
+                        : "Nothing has been added beyond the built-in fields, and no HR record type is switched on to receive any.",
                   }
             }
           />
