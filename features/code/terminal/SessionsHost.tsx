@@ -26,7 +26,10 @@ import {
   selectLastAutoSpawnedSandboxId,
   setLastAutoSpawnedSandboxId,
 } from "../redux/terminalSessionsSlice";
-import { selectActiveSandboxId } from "../redux/codeWorkspaceSlice";
+import {
+  selectActiveSandboxId,
+  selectSandboxRuntimeRevision,
+} from "../redux/codeWorkspaceSlice";
 import { TerminalTab } from "./TerminalTab";
 import { SimpleTerminal } from "./SimpleTerminal";
 import { SandboxLogsView } from "./SandboxLogsView";
@@ -47,6 +50,9 @@ export const SessionsHost: React.FC<SessionsHostProps> = ({
   const sessions = useAppSelector(selectAllSessions);
   const activeId = useAppSelector(selectActiveSessionId);
   const activeSandboxId = useAppSelector(selectActiveSandboxId);
+  const runtimeRevision = useAppSelector((state) =>
+    selectSandboxRuntimeRevision(state, activeSandboxId),
+  );
   const lastAutoSpawnedSandboxId = useAppSelector(
     selectLastAutoSpawnedSandboxId,
   );
@@ -105,7 +111,7 @@ export const SessionsHost: React.FC<SessionsHostProps> = ({
             const isActive = s.id === activeId;
             return (
               <div
-                key={s.id}
+                key={`${s.id}:${s.sandboxId === activeSandboxId ? runtimeRevision : 0}`}
                 aria-hidden={!isActive}
                 className={cn("absolute inset-0", !isActive && "hidden")}
               >

@@ -17,6 +17,8 @@ import type { SandboxInstance } from "@/types/sandbox";
 export type EditorMode = "sandbox" | "cloud" | "mock";
 
 export interface CodeWorkspaceState {
+  /** Reconnect live sessions after a container replacement without reloading editor buffers. */
+  sandboxRuntimeRevisions: Record<string, number>;
   /** Which activity-bar view is currently selected. */
   activeView: ActivityViewId;
   /** Whether the side panel (file tree / search / etc.) is visible. */
@@ -84,6 +86,7 @@ export interface CodeWorkspaceState {
 }
 
 const initialState: CodeWorkspaceState = {
+  sandboxRuntimeRevisions: {},
   activeView: "library",
   sideOpen: true,
   rightOpen: true,
@@ -105,6 +108,11 @@ const slice = createSlice({
   name: "codeWorkspace",
   initialState,
   reducers: {
+    sandboxRuntimeReplaced(state, action: PayloadAction<string>) {
+      state.sandboxRuntimeRevisions ??= {};
+      state.sandboxRuntimeRevisions[action.payload] =
+        (state.sandboxRuntimeRevisions[action.payload] ?? 0) + 1;
+    },
     setActiveView(state, action: PayloadAction<ActivityViewId>) {
       // Toggle behavior: clicking the active icon collapses the side panel.
       // Used by the in-workspace ActivityBar and the shell CodeSidebarMenu.
@@ -138,7 +146,10 @@ const slice = createSlice({
      */
     focusLibraryFolder(
       state,
-      action: PayloadAction<{ folderId: string; ancestorIds: readonly string[] }>,
+      action: PayloadAction<{
+        folderId: string;
+        ancestorIds: readonly string[];
+      }>,
     ) {
       const { folderId, ancestorIds } = action.payload;
       state.focusedFolderId = folderId;
@@ -220,6 +231,7 @@ const slice = createSlice({
 });
 
 export const {
+  sandboxRuntimeReplaced,
   setActiveView,
   revealView,
   focusLibraryFolder,
@@ -279,7 +291,8 @@ export const selectFocusedFolderId = (state: WithCodeWorkspace) =>
 export const selectFolderForcedExpanded = (
   state: WithCodeWorkspace,
   folderId: string,
-): boolean => selectCodeWorkspace(state).forcedExpandedFolderIds[folderId] === true;
+): boolean =>
+  selectCodeWorkspace(state).forcedExpandedFolderIds[folderId] === true;
 
 /**
  * Derive an `EditorMode` from a filesystem adapter id. Lives here (not
@@ -301,3 +314,11 @@ export function classifyEditorMode(filesystemId: string): EditorMode {
   }
   return "cloud";
 }
+
+export const selectSandboxRuntimeRevision = (
+  state: WithCodeWorkspace,
+  sandboxId: string | null,
+) =>
+  sandboxId
+    ? (selectCodeWorkspace(state).sandboxRuntimeRevisions?.[sandboxId] ?? 0)
+    : 0;

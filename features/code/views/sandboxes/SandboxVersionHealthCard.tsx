@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/toast";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import type { SandboxMigrateResponse, SandboxVersionHealth } from "@/types/sandbox";
+import { sandboxRuntimeReplaced } from "../../redux/codeWorkspaceSlice";
 
 interface SandboxVersionHealthCardProps {
   sandboxId: string;
@@ -81,6 +83,7 @@ export function SandboxVersionHealthCard({
   sandboxId,
   onMigrated,
 }: SandboxVersionHealthCardProps) {
+  const dispatch = useAppDispatch();
   const [loadState, setLoadState] = useState<LoadState>({ state: "loading" });
   const [updating, setUpdating] = useState(false);
   const [confirmUpdateOpen, setConfirmUpdateOpen] = useState(false);
@@ -136,6 +139,7 @@ export function SandboxVersionHealthCard({
           ? "Sandbox already uses the current image."
           : "Sandbox image updated. Your workspace was kept.",
       );
+      dispatch(sandboxRuntimeReplaced(sandboxId));
       onMigrated?.();
       await refresh();
     } catch (error) {
