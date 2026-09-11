@@ -52,6 +52,16 @@
  *       `test@test.com`. SELECT is deliberately not checked — reference data is
  *       meant to be read.
  *
+ *   D5  No `SECURITY DEFINER`, non-trigger function that `anon` can EXECUTE is
+ *       missing a `platform.client_callable_door` row. THIS IS THE CLASS GUARD
+ *       for DD-110/B-14: D1 protects one naming convention, D5 protects the
+ *       whole anonymous surface. An anon-executable definer with no door row is
+ *       a function the published anon key can call that nobody ever declared
+ *       safe for a caller with no account — which is how
+ *       `public.execute_admin_query(text)` came to run arbitrary SQL as
+ *       `postgres` for anyone holding that key (proven live as `anon`,
+ *       2026-09-11, before the B-14 migration closed it).
+ *
  * D2 is deliberately WIDER than the `_d31_impl_*` family this was born from:
  * fix the class, not the instance. It is expected to report a large
  * pre-existing population — the 2026-08-28 grandfather snapshot is ~1,788 rows,
@@ -59,6 +69,11 @@
  * (`scripts/impl-doors/grandfather-baseline.json`) and fails only on GROWTH.
  * The baseline may only shrink; that is the same contract
  * `migration_checksum_honesty_guard` uses for its UNVERIFIABLE list.
+ *
+ * D5 carries the same kind of shrink-only baseline
+ * (`scripts/impl-doors/anon-definer-baseline.json`) for the same reason: 370
+ * undeclared anonymous doors remain after B-14, and a gate that fails on all
+ * of them every run is a gate nobody reads. It fails on GROWTH.
  *
  * D1, D3 and D4 have no baseline and no allowlist. They are absolutes.
  *
@@ -227,6 +242,38 @@ interface ClientWriteRow {
   privilege_type: string;
 }
 
+// ─── D5: every anon-callable SECURITY DEFINER declares its door ──────────────
+//
+// db-rules §6d-4 says a new client door MUST declare itself. The grandfathered
+// population (D2) is the set where the event trigger stands down, so nothing in
+// the database asserts this for them. D5 asserts the end state directly: if
+// `anon` can execute it and it is SECURITY DEFINER, there is a row saying why an
+// anonymous caller may reach it. Trigger functions are excluded (a trigger is
+// not called by a client); extension-owned `pgsodium.*` is left to Supabase.
+const UNDECLARED_ANON_DEFINER_QUERY = `
+  select n.nspname || '.' || p.proname as fn,
+         pg_get_function_identity_arguments(p.oid) as args
+  from pg_catalog.pg_proc p
+  join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+  where p.prosecdef
+    and p.prokind = 'f'
+    and p.prorettype <> 'trigger'::regtype
+    and n.nspname not in ('pg_catalog', 'information_schema')
+    and has_function_privilege('anon', p.oid, 'EXECUTE')
+    and not exists (
+      select 1 from platform.client_callable_door d
+      where d.schema_name = n.nspname
+        and d.function_name = p.proname
+        and d.identity_args = pg_get_function_identity_arguments(p.oid)
+    )
+  order by 1, 2
+`;
+
+interface AnonDefinerRow {
+  fn: string;
+  args: string;
+}
+
 // ─── Baseline for D2 (may only shrink) ───────────────────────────────────────
 
 interface Baseline {
@@ -235,8 +282,10 @@ interface Baseline {
   capturedAt: string;
 }
 
-function loadBaseline(): Baseline | null {
-  const p = resolve(ROOT, "scripts/impl-doors/grandfather-baseline.json");
+function loadBaseline(
+  file = "scripts/impl-doors/grandfather-baseline.json",
+): Baseline | null {
+  const p = resolve(ROOT, file);
   if (!existsSync(p)) return null;
   try {
     return JSON.parse(readFileSync(p, "utf8")) as Baseline;
@@ -283,6 +332,7 @@ async function main(): Promise<number> {
   let undeclared: GrandfatherRow[];
   let anonPrivs: PrivRow[];
   let clientWrites: ClientWriteRow[];
+  let anonDefiners: AnonDefinerRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -296,6 +346,10 @@ async function main(): Promise<number> {
     clientWrites = await q<ClientWriteRow>(
       CLIENT_TEMPLATE_WRITE_QUERY,
       "D4 client write grants on workbench.schema_templates",
+    );
+    anonDefiners = await q<AnonDefinerRow>(
+      UNDECLARED_ANON_DEFINER_QUERY,
+      "D5 undeclared anon-callable SECURITY DEFINER functions",
     );
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
@@ -436,6 +490,61 @@ async function main(): Promise<number> {
     console.log(
       `${C.dim}       revoke insert, update, delete on table workbench.schema_templates from <role>;${C.reset}`,
     );
+  }
+
+  // ── D5 ────────────────────────────────────────────────────────────────────
+  const anonBaseline = loadBaseline("scripts/impl-doors/anon-definer-baseline.json");
+  const a = anonDefiners.length;
+  if (!anonBaseline) {
+    findings += 1;
+    console.log(
+      `${TAG.warn}D5 ${a} anon-executable SECURITY DEFINER function(s) have no platform.client_callable_door row — no baseline file to compare against`,
+    );
+    console.log(
+      `${C.dim}       Create scripts/impl-doors/anon-definer-baseline.json with {"count": ${a}, "why": "...", "capturedAt": "..."}.${C.reset}`,
+    );
+  } else if (a > anonBaseline.count) {
+    findings += a - anonBaseline.count;
+    console.log(
+      `${TAG.fail}D5 undeclared ANONYMOUS definer doors GREW: ${anonBaseline.count} → ${a} (+${a - anonBaseline.count})`,
+    );
+    console.log(
+      `${C.dim}       A SAMPLE of the ${a}-function population follows — the baseline stores a count, not a${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       list, so the new door is not necessarily one of these. Find it with:${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       select * from platform.ddl_guard_log where rule = 'definer_client_grant_revoked' order by id desc;${C.reset}`,
+    );
+    for (const r of anonDefiners.slice(0, 5)) {
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       Something granted anon EXECUTE on a SECURITY DEFINER function that declares no door.${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       Either an anonymous caller must reach it by design — then declare it, in the same${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       migration, BEFORE the grant: insert into platform.client_callable_door${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       (schema_name, function_name, identity_args, reason) values (...);${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       — or it must not, and then: revoke all on function <fn>(<args>) from public, anon;${C.reset}`,
+    );
+  } else {
+    const shrank = anonBaseline.count - a;
+    console.log(
+      `${TAG.ok}D5 undeclared anonymous definer doors ${a} ${C.dim}(baseline ${anonBaseline.count}${shrank > 0 ? `, ${shrank} fewer` : ""} — may only shrink)${C.reset}`,
+    );
+    if (shrank > 0) {
+      console.log(
+        `${C.dim}       Lower the baseline to ${a} in scripts/impl-doors/anon-definer-baseline.json so the win is held.${C.reset}`,
+      );
+    }
   }
 
   if (findings === 0) {

@@ -1,7 +1,7 @@
 {
-  "count": 1735,
-  "why": "platform.definer_client_grant_grandfather rows whose function has no platform.client_callable_door row. This is the 2026-08-28 snapshot (db-rules FEATURE.md §6d-4): every SECURITY DEFINER function alive that day was grandfathered so day one stripped zero live doors, and almost none of them was ever declared a door. A grandfather row means the §6d-4 event trigger STANDS DOWN for that function, so each of these is a place where a future default or hand-written GRANT re-opens a client door silently. That is exactly how DD-098 happened. This number may only SHRINK - never raise it to clear a finding. Shrink it by declaring the door (platform.client_callable_door) when the function really is client-callable, or by deleting the grandfather row when it is not. Lower this file to match whenever the count drops.",
+  "count": 1590,
+  "why": "platform.definer_client_grant_grandfather rows whose function has no platform.client_callable_door row. This is the 2026-08-28 snapshot (db-rules FEATURE.md \u00a76d-4): every SECURITY DEFINER function alive that day was grandfathered so day one stripped zero live doors, and almost none of them was ever declared a door. A grandfather row means the \u00a76d-4 event trigger STANDS DOWN for that function, so each of these is a place where a future default or hand-written GRANT re-opens a client door silently. That is exactly how DD-098 happened. This number may only SHRINK - never raise it to clear a finding. Shrink it by declaring the door (platform.client_callable_door) when the function really is client-callable, or by deleting the grandfather row when it is not. Lower this file to match whenever the count drops. Lowered 1735 -> 1590 by B-14/DD-110 (145 grandfather rows deleted for the 159-function class-C sweep).",
   "capturedAt": "2026-09-11",
-  "capturedBy": "DD-098 / B-6 fix round 1",
-  "totalGrandfatherRowsAtCapture": 1770
+  "capturedBy": "DD-098 / B-6 fix round 1; lowered by B-14 / DD-110",
+  "totalGrandfatherRowsAtCapture": 1625
 }
