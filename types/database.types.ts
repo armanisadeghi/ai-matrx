@@ -59452,19 +59452,19 @@ export type Database = {
           created_at: string
           key: string
           reason: string
-          table_token: string | null
+          table_token: string
         }
         Insert: {
           created_at?: string
           key: string
           reason: string
-          table_token?: string | null
+          table_token: string
         }
         Update: {
           created_at?: string
           key?: string
           reason?: string
-          table_token?: string | null
+          table_token?: string
         }
         Relationships: []
       }
@@ -70110,6 +70110,7 @@ export type Database = {
           token: string
         }[]
       }
+      inv_peek_invited_email: { Args: { p_token: string }; Returns: string }
       inv_resend: {
         Args: { p_expires_at?: string; p_invitation_id: string }
         Returns: string
