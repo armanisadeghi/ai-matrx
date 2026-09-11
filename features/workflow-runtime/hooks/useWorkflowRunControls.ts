@@ -23,6 +23,7 @@ import { useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi, type ApiCallConfig, type ApiCallResult } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
+import { parseCallApiError } from "@/lib/api/errors";
 
 export interface StartRunArgs {
   definitionId: string;
@@ -116,7 +117,14 @@ export function useWorkflowRunControls(): WorkflowRunControls {
   /** Toast + boolean for a fire-and-forget lifecycle verb. */
   const settle = (label: string, result: ApiCallResult): boolean => {
     if (result.error) {
-      toast.error(`Could not ${label}.`);
+      // The server's own reason rides along — "Could not send the answer."
+      // alone hid a 422 that named the exact field (2026-09-10).
+      const detail = parseCallApiError(result.error).message;
+      toast.error(
+        detail && detail !== result.error.message
+          ? `Could not ${label}: ${detail}`
+          : `Could not ${label}. ${result.error.message ?? ""}`.trim(),
+      );
       return false;
     }
     return true;

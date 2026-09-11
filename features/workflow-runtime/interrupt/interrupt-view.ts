@@ -251,6 +251,58 @@ export function answerFieldsOf(
   return fields.length > 0 ? fields : [FREE_TEXT_FIELD];
 }
 
+/**
+ * Coerce collected answer values to the types the schema hint declares —
+ * THE send boundary for an interrupt answer.
+ *
+ * 2026-09-10: a boolean field rendered as a switch handed back the string
+ * "Yes"; the server refused the resume with 422 (`'Yes' is not of type
+ * 'boolean'`), the toast said only "Could not send the answer.", and the
+ * human's work sat unsent. A field's declared type, not its widget's
+ * display value, is the contract.
+ */
+export function coerceAnswerValues(
+  fields: readonly InterruptAnswerField[],
+  values: Record<string, unknown>,
+): Record<string, unknown> {
+  const byName = new Map(fields.map((f) => [f.name, f] as const));
+  const out: Record<string, unknown> = {};
+  for (const [name, raw] of Object.entries(values)) {
+    const field = byName.get(name);
+    out[name] = field ? coerceToValueType(field.valueType, raw) : raw;
+  }
+  return out;
+}
+
+const TRUE_WORDS = new Set(["true", "yes", "y", "on", "1"]);
+const FALSE_WORDS = new Set(["false", "no", "n", "off", "0"]);
+
+function coerceToValueType(valueType: ContextValueType, raw: unknown): unknown {
+  if (raw === null || raw === undefined) return raw;
+  switch (valueType) {
+    case "boolean": {
+      if (typeof raw === "boolean") return raw;
+      if (typeof raw === "number") return raw !== 0;
+      if (typeof raw === "string") {
+        const word = raw.trim().toLowerCase();
+        if (TRUE_WORDS.has(word)) return true;
+        if (FALSE_WORDS.has(word)) return false;
+      }
+      return raw;
+    }
+    case "number": {
+      if (typeof raw === "number") return raw;
+      if (typeof raw === "string" && raw.trim() !== "") {
+        const n = Number(raw);
+        return Number.isFinite(n) ? n : raw;
+      }
+      return raw;
+    }
+    default:
+      return raw;
+  }
+}
+
 /** THE one definition of "no value entered" — mirrors the run form's. */
 export function missingAnswer(value: unknown): boolean {
   return value === null || value === undefined || value === "";

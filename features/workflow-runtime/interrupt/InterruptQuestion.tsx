@@ -57,6 +57,7 @@ import {
   unansweredFields,
   type InterruptAnswerField,
   type InterruptQuestionView,
+  coerceAnswerValues,
 } from "./interrupt-view";
 
 /**
@@ -370,7 +371,7 @@ function AnswerControl({
         type="button"
         data-interrupt-send
         disabled={sending || gaps.length > 0}
-        onClick={() => onSend(values)}
+        onClick={() => onSend(coerceAnswerValues(fields, values))}
         className="inline-flex min-h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
       >
         {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
