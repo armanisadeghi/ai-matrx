@@ -1,3 +1,4 @@
+import { NetError } from "@ai-matrx/data/net";
 import {
   registerAbortController,
   unregisterAbortController,
@@ -23,6 +24,25 @@ describe("read-only reconnect retries", () => {
     await jest.runAllTimersAsync();
     expect(await result).toBe(value);
     expect(attempt).toHaveBeenCalledTimes(3);
+  });
+  test("retries the actual shared transport NetError after socket loss", async () => {
+    const attempt = jest
+      .fn()
+      .mockRejectedValueOnce(new NetError("network", "Failed to fetch"))
+      .mockRejectedValueOnce(new NetError("offline", "Offline"))
+      .mockResolvedValue("rejoined");
+    const result = retryReconnect(attempt, new AbortController().signal);
+    await jest.runAllTimersAsync();
+    expect(await result).toBe("rejoined");
+    expect(attempt).toHaveBeenCalledTimes(3);
+  });
+  test("does not retry a shared transport abort", async () => {
+    const error = new NetError("aborted", "Cancelled");
+    const attempt = jest.fn().mockRejectedValue(error);
+    await expect(
+      retryReconnect(attempt, new AbortController().signal),
+    ).rejects.toBe(error);
+    expect(attempt).toHaveBeenCalledTimes(1);
   });
   test("does not retry authorization failures", async () => {
     const error = Object.assign(new Error("forbidden"), { status: 403 });

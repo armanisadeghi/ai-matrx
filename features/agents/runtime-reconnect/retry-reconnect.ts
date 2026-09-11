@@ -1,5 +1,21 @@
+import { isNetError } from "@ai-matrx/data/net";
 /** Retries only read-only runtime lookup/rejoin delivery, never agent execution. */
 export function isTransientReconnectError(error: unknown): boolean {
+  if (isNetError(error)) {
+    return (
+      [
+        "network",
+        "offline",
+        "connect-timeout",
+        "total-timeout",
+        "heartbeat-timeout",
+      ].includes(error.code) ||
+      (error.code === "http" &&
+        typeof error.status === "number" &&
+        error.status >= 500 &&
+        error.status <= 599)
+    );
+  }
   if (error instanceof TypeError) return true; // fetch network failure
   if (!error || typeof error !== "object") return false;
   const value = error as { name?: string; status?: number };
@@ -71,7 +87,7 @@ export async function fetchRejoin(
         await response.body?.cancel();
         throw new DOMException("Reconnect superseded", "AbortError");
       }
-      if (response.status >= 500) {
+      if (response.status >= 500 && response.status <= 599) {
         await response.body?.cancel();
         throw Object.assign(new Error(`Rejoin HTTP ${response.status}`), {
           status: response.status,
