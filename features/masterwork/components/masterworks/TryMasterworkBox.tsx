@@ -292,10 +292,17 @@ export function TryMasterworkBox({
   );
   const declared =
     served.status === "ready" ? served.form.inputs : EMPTY_SERVED_INPUTS;
-  const usingFallback = declared.length === 0;
-  const inputs: readonly ServedInput[] = usingFallback
-    ? fallbackInputs
-    : declared;
+  // While the served surface is still LOADING there is no answer yet — the
+  // fallback pair must not stand in for it. 2026-09-10: the box rendered
+  // "The text to check / Facts that must not change" for a desk with five
+  // declared fields, and a run was started against the wrong shape.
+  const servedLoading = served.status === "loading";
+  const usingFallback = !servedLoading && declared.length === 0;
+  const inputs: readonly ServedInput[] = servedLoading
+    ? EMPTY_SERVED_INPUTS
+    : usingFallback
+      ? fallbackInputs
+      : declared;
 
   const { values, touched, setValue } = useServedInputValues(inputs);
   const { kinds, error: kindError } = useServedInputKinds(inputs);
@@ -374,6 +381,14 @@ export function TryMasterworkBox({
       {kindError ? (
         <ServedFormScream title="Kind registry gap" body={kindError} />
       ) : null}
+      {servedLoading ? (
+        <p
+          className="text-xs text-muted-foreground"
+          data-masterwork-intake="loading"
+        >
+          Loading what this Masterwork asks for…
+        </p>
+      ) : null}
 
       {/* ── The builder's own fields ────────────────────────────────────── */}
       {inputs.map((input) => (
@@ -406,7 +421,7 @@ export function TryMasterworkBox({
         <Button
           size="sm"
           onClick={() => void start()}
-          disabled={starting || running}
+          disabled={starting || running || servedLoading}
           aria-label={submitLabel ?? `Run ${whatItRuns}`}
           title={submitLabel ?? `Run ${whatItRuns}`}
         >
