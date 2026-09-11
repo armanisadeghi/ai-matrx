@@ -11,8 +11,10 @@ import { useMandateChain } from "@/features/mandates/useMandateChain";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import { useOpenQuickChatSheet } from "@/features/overlays/openers/quickChat";
+import { useAuthGuardedAction } from "@/features/auth/components/useAuthGuardedAction";
 import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 
 export interface ScrollAssistantLauncherImplProps {
@@ -24,7 +26,42 @@ export interface ScrollAssistantLauncherImplProps {
  * conversation, lets the canonical SmartAgentInput own the draft/submit, and
  * hands that same conversation to Quick Chat when the first turn is accepted.
  */
-export default function ScrollAssistantLauncherImpl({
+function GuestAmbientAssistant({
+  onDismiss,
+}: {
+  onDismiss: () => void;
+}) {
+  const requestSignIn = useAuthGuardedAction(() => undefined, {
+    featureName: "AI Matrx assistant",
+    featureDescription:
+      "Sign in to ask the AI Matrx assistant about the page you are viewing.",
+  });
+
+  return (
+    <div className="ambient-assistant-dock pointer-events-none fixed left-1/2 z-[35] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+      <Button
+        type="button"
+        variant="ghost"
+        className="pointer-events-auto h-9 w-full justify-start rounded-xl border border-border bg-glass px-4 text-sm text-muted-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass hover:bg-glass-hover hover:text-foreground"
+        onClick={requestSignIn}
+      >
+        Ask AI Matrx
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="pointer-events-auto absolute -right-2 -top-2 h-7 w-7 rounded-full border border-glass-edge bg-card shadow-glass"
+        onClick={onDismiss}
+        aria-label="Dismiss assistant until refresh"
+      >
+        <X className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
+
+function AuthenticatedAmbientAssistant({
   inputVariant = "single-line",
 }: ScrollAssistantLauncherImplProps) {
   const pathname = usePathname();
@@ -143,4 +180,17 @@ export default function ScrollAssistantLauncherImpl({
       </Button>
     </div>
   );
+}
+
+export default function ScrollAssistantLauncherImpl(
+  props: ScrollAssistantLauncherImplProps,
+) {
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed) return null;
+  if (!isAuthenticated) {
+    return <GuestAmbientAssistant onDismiss={() => setDismissed(true)} />;
+  }
+  return <AuthenticatedAmbientAssistant {...props} />;
 }

@@ -5,6 +5,10 @@ const source = readFileSync(
   join(__dirname, "../ScrollVoiceAssistantLauncherImpl.tsx"),
   "utf8",
 );
+const textSource = readFileSync(
+  join(__dirname, "../ScrollAssistantLauncherImpl.tsx"),
+  "utf8",
+);
 
 describe("guest ambient assistant boundary", () => {
   it("keeps mandate resolution inside the authenticated subtree", () => {
@@ -19,5 +23,16 @@ describe("guest ambient assistant boundary", () => {
     expect(source).toContain(
       "if (!isAuthenticated) {\n    return <GuestAmbientVoiceAssistant",
     );
+  });
+
+  it("keeps the text assistant's mandate resolution inside its authenticated subtree", () => {
+    const guestStart = textSource.indexOf("function GuestAmbientAssistant");
+    const activeStart = textSource.indexOf("function AuthenticatedAmbientAssistant");
+    const guestSource = textSource.slice(guestStart, activeStart);
+
+    expect(guestSource).not.toContain("useMandateChain(");
+    expect(guestSource).not.toContain("useAgentLauncher(");
+    expect(textSource).toContain("function AuthenticatedAmbientAssistant");
+    expect(textSource).toContain("if (!isAuthenticated) {");
   });
 });
