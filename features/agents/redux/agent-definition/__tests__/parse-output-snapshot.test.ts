@@ -1,3 +1,4 @@
+import transcriptSchema from "./fixtures/transcript-cleaner-output-schema.json";
 import {
   parseAgentOutputSchema,
   parseAgentVersionSnapshot,
@@ -125,7 +126,7 @@ describe("parseAgentOutputSchema", () => {
     expect(notices).toHaveLength(1);
   });
 
-  it("lifts a bare JSON Schema into the editor envelope", () => {
+  it("adapts a supported bare schema without reporting damaged data", () => {
     const notices: Array<{ message: string; recovery: string }> = [];
 
     expect(
@@ -140,11 +141,31 @@ describe("parseAgentOutputSchema", () => {
         properties: { answer: { type: "string" } },
       },
     });
-    expect(notices).toHaveLength(1);
+    expect(notices).toHaveLength(0);
   });
 });
 
 describe("parseAgentVersionSnapshot", () => {
+  // Captured from agent 26c05422-1b6c-47a9-8a6a-a4c5e48fe8ea on 2026-09-11.
+  it("loads a supported bare schema from a version without a false incident", () => {
+    const raw = validSnapshotRow();
+    raw.output_schema = transcriptSchema;
+    const parsed = parseAgentVersionSnapshot(raw);
+    expect(parsed.output_schema).toEqual({ name: "structured_output", schema: transcriptSchema });
+    expect(parsed.data_issues ?? []).toEqual([]);
+  });
+
+  it("still diagnoses malformed nested fields in a bare schema", () => {
+    const raw = validSnapshotRow();
+    raw.output_schema = { type: "object", properties: { answer: { type: "broken" } } };
+    const parsed = parseAgentVersionSnapshot(raw);
+    expect(parsed.output_schema).toBeNull();
+    expect(parsed.data_issues).toEqual([expect.objectContaining({
+      field: "output_schema",
+      message: expect.stringContaining("output_schema.properties.answer.type"),
+    })]);
+  });
+
   it("returns a fully parsed generated RPC row", () => {
     const raw = validSnapshotRow();
 

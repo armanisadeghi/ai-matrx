@@ -1,3 +1,4 @@
+import transcriptSchema from "./fixtures/transcript-cleaner-output-schema.json";
 import { dbRowToAgentDefinition } from "../converters";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 
@@ -60,6 +61,15 @@ function liveResearchSlidesRow(): AgentRow {
 }
 
 describe("dbRowToAgentDefinition recovery boundary", () => {
+  it("loads the captured transcript schema without a false data issue", () => {
+    const row = liveResearchSlidesRow();
+    row.id = "26c05422-1b6c-47a9-8a6a-a4c5e48fe8ea";
+    row.output_schema = transcriptSchema;
+    const definition = dbRowToAgentDefinition(row);
+    expect(definition.outputSchema).toEqual({ name: "structured_output", schema: transcriptSchema });
+    expect(definition.dataIssues ?? []).toEqual([]);
+  });
+
   it("opens the exact live bare-schema class without losing its schema", () => {
     const row = liveResearchSlidesRow();
     const definition = dbRowToAgentDefinition(row);
@@ -68,9 +78,7 @@ describe("dbRowToAgentDefinition recovery boundary", () => {
       name: "structured_output",
       schema: row.output_schema,
     });
-    expect(definition.dataIssues?.map((issue) => issue.field)).toEqual([
-      "output_schema",
-    ]);
+    expect(definition.dataIssues ?? []).toEqual([]);
   });
 
   it("isolates malformed fields so none can crash the rest of the definition", () => {

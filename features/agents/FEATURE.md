@@ -341,9 +341,10 @@ Stored definitions and version snapshots are also fail-soft at the shared read
 boundary. `dbRowToAgentDefinition` and `parseAgentVersionSnapshot` recover each
 JSON/config field independently, retain valid sibling fields, and attach
 `dataIssues` diagnostics for every fallback. A bare JSON Schema in
-`output_schema` is a supported legacy/runtime shape and is lifted losslessly to
-the frontend `{name, schema}` envelope; a bad envelope name receives the safe
-`structured_output` name. Detail surfaces must show the recovery notice, and
+`output_schema` is a supported authoring/runtime shape and is lifted losslessly to
+the frontend `{name, schema}` envelope without a data issue. A bad envelope name
+receives the safe `structured_output` name with a recovery diagnostic; malformed
+schema fields still fail validation. Detail surfaces show actual recovery notices, and
 route-level error boundaries remain the final protection for truly unexpected
 render failures. Malformed stored data may reduce one field to its safe default;
 it must never take down the agent route.
@@ -440,6 +441,8 @@ model overrides.
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+
+- `2026-09-11` — Valid bare output schemas no longer generate false data-shape incidents during live-definition or version hydration. Recursive validation and diagnostics for malformed schemas and invalid envelope names remain active. Verified against the captured Transcript Cleaner Test schema.
 
 - `2026-09-10` — Agent version comparisons pass both selected versions' saved timestamps to the shared diff viewer, displaying local date, time, and timezone beneath each side's heading. History timestamps take precedence; missing history uses the snapshot timestamp, or the current agent's update timestamp for the live side.
 

@@ -1,0 +1,64 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "summary",
+    "instructions",
+    "constraints",
+    "open_questions",
+    "instructions_text"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Short title for the work described."
+    },
+    "summary": {
+      "type": "string",
+      "description": "Plain-language summary of what the speaker wants built."
+    },
+    "instructions": {
+      "type": "array",
+      "description": "Ordered actionable development instructions.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "step_number",
+          "instruction",
+          "detail"
+        ],
+        "properties": {
+          "step_number": {
+            "type": "integer"
+          },
+          "instruction": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "description": "Hard rules and exclusions the speaker stated.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "description": "Genuine ambiguities that need the speaker's answer.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "instructions_text": {
+      "type": "string",
+      "description": "The whole result rendered as clean readable markdown."
+    }
+  }
+}

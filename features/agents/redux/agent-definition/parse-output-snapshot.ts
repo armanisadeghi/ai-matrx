@@ -276,22 +276,12 @@ export function parseAgentOutputSchema(
   if (raw === null) return null;
   if (!isRecord(raw)) fail("output_schema", "null or an object");
 
-  // The server execution boundary intentionally accepts BOTH stored forms:
-  //   1. provider envelope: { name, schema, strict? }
-  //   2. bare JSON Schema:  { type, properties, required, ... }
-  // `matrx_ai.agents.output.resolve_output_schema` and
-  // `matrx_ai.kinds.agent_output_contract` both unwrap either form. Refusing
-  // form 2 here took every route that hydrated one of 209 live agents down.
-  // Lift it losslessly into the frontend's editor envelope and keep the
-  // recovery visible to the admin rather than throwing during RSC render.
+  // Both bare schemas and provider envelopes are supported by the authoring
+  // and execution boundaries. Adapting valid data for the editor is not a
+  // recovery; recursive validation still rejects malformed schema fields.
   const hasSchemaEnvelope = Object.prototype.hasOwnProperty.call(raw, "schema");
   if (!hasSchemaEnvelope) {
     const schema = parseSchemaNode(raw, "output_schema");
-    onRecovery?.({
-      message: "output_schema is stored as a bare JSON Schema",
-      recovery:
-        'Read it losslessly as { name: "structured_output", schema: <stored value> }. Re-save the Output Schema to normalize the row.',
-    });
     return { name: "structured_output", schema };
   }
 
