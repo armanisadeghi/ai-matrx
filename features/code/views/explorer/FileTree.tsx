@@ -2,49 +2,65 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { toast } from "@/lib/toast";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 import { useOpenFile } from "../../hooks/useOpenFile";
 import type { FilesystemNode } from "../../types";
 import { FileIcon } from "../../styles/file-icon";
 import { selectActiveTab } from "../../redux/tabsSlice";
-import { selectExplorerRootOverride } from "../../redux/codeWorkspaceSlice";
+import {
+  selectExplorerRootOverride,
+  setExplorerRootOverride,
+} from "../../redux/codeWorkspaceSlice";
 import { FileTreeNode } from "./FileTreeNode";
 import { useFileTreeExpansion } from "./useFileTreeExpansion";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   FileTreeWatcherProvider,
   useDirectoryVersion,
+  useInvalidateDirectory,
 } from "./FileTreeWatcher";
+import { ancestorPathsForFile, isPathWithinRoot } from "./fileTreePaths";
 
 const SEARCH_DEBOUNCE_MS = 200;
 const SEARCH_MAX_RESULTS = 200;
 
 interface FileTreeProps {
   refreshKey?: number;
+  createRequest?: { id: number; kind: "file" | "directory" } | null;
 }
 
-export const FileTree: React.FC<FileTreeProps> = ({ refreshKey = 0 }) => {
+export const FileTree: React.FC<FileTreeProps> = ({
+  refreshKey = 0,
+  createRequest = null,
+}) => {
   const { filesystem } = useCodeWorkspace();
   const override = useAppSelector(selectExplorerRootOverride);
   const rootPath = override ?? filesystem.rootPath;
 
   return (
     <FileTreeWatcherProvider rootPath={rootPath}>
-      <FileTreeBody rootPath={rootPath} refreshKey={refreshKey} />
+      <FileTreeBody
+        rootPath={rootPath}
+        refreshKey={refreshKey}
+        createRequest={createRequest}
+      />
     </FileTreeWatcherProvider>
   );
 };
 
-const FileTreeBody: React.FC<{ rootPath: string; refreshKey: number }> = ({
-  rootPath,
-  refreshKey,
-}) => {
+const FileTreeBody: React.FC<{
+  rootPath: string;
+  refreshKey: number;
+  createRequest: FileTreeProps["createRequest"];
+}> = ({ rootPath, refreshKey, createRequest }) => {
   const { filesystem } = useCodeWorkspace();
+  const dispatch = useAppDispatch();
   const openFile = useOpenFile();
   const activeTab = useAppSelector(selectActiveTab);
 
-  const { isExpanded, toggle } = useFileTreeExpansion([rootPath]);
+  const { isExpanded, toggle, expandAll } = useFileTreeExpansion([rootPath]);
   const [roots, setRoots] = useState<FilesystemNode[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,6 +68,85 @@ const FileTreeBody: React.FC<{ rootPath: string; refreshKey: number }> = ({
   // top-level entry changes (e.g. a new file was created at the root) we
   // refetch the root listing.
   const rootVersion = useDirectoryVersion(rootPath);
+  const invalidateDirectory = useInvalidateDirectory();
+
+  // Tabs can be opened by the editor, search, agent actions, or the session
+  // report bootstrap. Reveal every sandbox-backed active file through this one
+  // observer rather than relying on any individual opener to manage tree UI.
+  useEffect(() => {
+    const activePath = activeTab?.path;
+    if (!activePath?.startsWith("/")) return;
+    if (!isPathWithinRoot(activePath, filesystem.rootPath)) return;
+
+    if (!isPathWithinRoot(activePath, rootPath)) {
+      dispatch(setExplorerRootOverride(null));
+      return;
+    }
+    expandAll(ancestorPathsForFile(activePath, rootPath));
+  }, [activeTab?.path, dispatch, expandAll, filesystem.rootPath, rootPath]);
+
+  const [pendingRootCreate, setPendingRootCreate] = useState<
+    "file" | "directory" | null
+  >(null);
+  const [rootCreateValue, setRootCreateValue] = useState("");
+  const rootCreateInputRef = useRef<HTMLInputElement | null>(null);
+  const handledCreateRequestRef = useRef<number | null>(null);
+  const rootCreateCommittingRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      !createRequest ||
+      handledCreateRequestRef.current === createRequest.id
+    ) {
+      return;
+    }
+    handledCreateRequestRef.current = createRequest.id;
+    setPendingRootCreate(createRequest.kind);
+    setRootCreateValue(
+      createRequest.kind === "file" ? "untitled.txt" : "new-folder",
+    );
+  }, [createRequest]);
+
+  useEffect(() => {
+    if (!pendingRootCreate) return;
+    rootCreateInputRef.current?.focus();
+    rootCreateInputRef.current?.select();
+  }, [pendingRootCreate]);
+
+  const cancelRootCreate = () => {
+    setPendingRootCreate(null);
+    setRootCreateValue("");
+  };
+
+  const commitRootCreate = async () => {
+    if (rootCreateCommittingRef.current) return;
+    const name = rootCreateValue.trim();
+    if (!pendingRootCreate || !name) {
+      cancelRootCreate();
+      return;
+    }
+    const path = `${rootPath.replace(/\/$/, "")}/${name}`;
+    rootCreateCommittingRef.current = true;
+    try {
+      if (pendingRootCreate === "file") {
+        if (!filesystem.writeFile) throw new Error("writeFile not supported");
+        await filesystem.writeFile(path, "");
+        await handleOpen(path);
+      } else {
+        if (!filesystem.mkdir) throw new Error("mkdir not supported");
+        await filesystem.mkdir(path, true);
+      }
+      invalidateDirectory(rootPath);
+      toast.success(
+        `Created ${name}${pendingRootCreate === "directory" ? "/" : ""}`,
+      );
+      cancelRootCreate();
+    } catch (err) {
+      toast.error(`Create failed: ${extractErrorMessage(err)}`);
+    } finally {
+      rootCreateCommittingRef.current = false;
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -62,8 +157,7 @@ const FileTreeBody: React.FC<{ rootPath: string; refreshKey: number }> = ({
         if (!cancelled) setRoots(list);
       })
       .catch((err) => {
-        if (!cancelled)
-          setError(extractErrorMessage(err));
+        if (!cancelled) setError(extractErrorMessage(err));
       });
     return () => {
       cancelled = true;
@@ -184,6 +278,22 @@ const FileTreeBody: React.FC<{ rootPath: string; refreshKey: number }> = ({
           />
         ) : (
           <>
+            {pendingRootCreate && (
+              <div className="flex items-center gap-1 px-2 py-0.5 text-[12px]">
+                <input
+                  ref={rootCreateInputRef}
+                  value={rootCreateValue}
+                  onChange={(event) => setRootCreateValue(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") void commitRootCreate();
+                    if (event.key === "Escape") cancelRootCreate();
+                  }}
+                  onBlur={() => void commitRootCreate()}
+                  className="min-w-0 flex-1 rounded-sm bg-card px-1 font-mono outline outline-1 outline-blue-400"
+                  aria-label={`New ${pendingRootCreate === "file" ? "file" : "folder"} name`}
+                />
+              </div>
+            )}
             {roots === null && !error && (
               <div className="px-3 py-1 text-[11px] text-neutral-500">
                 Loading…
@@ -240,9 +350,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   }
   if (!results || results.length === 0) {
     return (
-      <div className="px-3 py-1 text-[11px] text-neutral-500">
-        No matches.
-      </div>
+      <div className="px-3 py-1 text-[11px] text-neutral-500">No matches.</div>
     );
   }
   return (
@@ -257,9 +365,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
               onClick={() => onOpen(path)}
               className={
                 "flex w-full items-center gap-1.5 px-2 py-0.5 text-left text-[12px] hover:bg-neutral-100 dark:hover:bg-neutral-800 " +
-                (isActive
-                  ? "bg-blue-100/60 dark:bg-blue-900/30"
-                  : "")
+                (isActive ? "bg-blue-100/60 dark:bg-blue-900/30" : "")
               }
               title={path}
             >

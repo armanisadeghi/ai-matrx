@@ -35,6 +35,16 @@ export function useFileTreeExpansion(initialExpanded: string[] = ["/"]) {
     });
   }, []);
 
+  const expandAll = useCallback((paths: readonly string[]) => {
+    setExpanded((prev) => {
+      const missingPath = paths.some((path) => !prev.has(path));
+      if (!missingPath) return prev;
+      const next = new Set(prev);
+      for (const path of paths) next.add(path);
+      return next;
+    });
+  }, []);
+
   const collapse = useCallback((path: string) => {
     setExpanded((prev) => {
       if (!prev.has(path)) return prev;
@@ -44,5 +54,5 @@ export function useFileTreeExpansion(initialExpanded: string[] = ["/"]) {
     });
   }, []);
 
-  return { isExpanded, toggle, expand, collapse };
+  return { isExpanded, toggle, expand, expandAll, collapse };
 }

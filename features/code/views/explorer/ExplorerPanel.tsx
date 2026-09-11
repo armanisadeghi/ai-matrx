@@ -6,7 +6,7 @@ import {
   FilePlus,
   FolderPlus,
   Home,
-  MoreHorizontal,
+  Pencil,
   Plug,
   RefreshCw,
   Server,
@@ -30,8 +30,6 @@ import { EditHistorySection } from "./EditHistorySection";
 interface ExplorerPanelProps {
   className?: string;
 }
-
-const QUICK_ROOTS = ["/", "/home", "/workspace", "/data", "/tmp"];
 
 /**
  * Single Explorer panel that swaps its body based on what the workspace is
@@ -62,6 +60,10 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [editing, setEditing] = useState(false);
   const [draftPath, setDraftPath] = useState(rootPath);
+  const [createRequest, setCreateRequest] = useState<{
+    id: number;
+    kind: "file" | "directory";
+  } | null>(null);
   const { refresh: refreshCloudTree } = useCloudTree(userId);
 
   // A sandbox is "connected" when the workspace has been pointed at one
@@ -135,25 +137,34 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
                 onClick={openSandboxes}
               />
             )}
-            <SidePanelAction
-              icon={FilePlus}
-              label="New File"
-              onClick={() => undefined}
-            />
-            <SidePanelAction
-              icon={FolderPlus}
-              label="New Folder"
-              onClick={() => undefined}
-            />
+            {sandboxConnected && (
+              <>
+                <SidePanelAction
+                  icon={FilePlus}
+                  label="New file in this folder"
+                  onClick={() =>
+                    setCreateRequest((previous) => ({
+                      id: (previous?.id ?? 0) + 1,
+                      kind: "file",
+                    }))
+                  }
+                />
+                <SidePanelAction
+                  icon={FolderPlus}
+                  label="New folder in this folder"
+                  onClick={() =>
+                    setCreateRequest((previous) => ({
+                      id: (previous?.id ?? 0) + 1,
+                      kind: "directory",
+                    }))
+                  }
+                />
+              </>
+            )}
             <SidePanelAction
               icon={RefreshCw}
               label="Refresh Explorer"
               onClick={refresh}
-            />
-            <SidePanelAction
-              icon={MoreHorizontal}
-              label="More"
-              onClick={() => undefined}
             />
           </>
         }
@@ -198,17 +209,21 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
                 className="h-5 flex-1 rounded-sm border border-blue-500 bg-white px-1 font-mono text-[11px] outline-none dark:bg-neutral-900"
               />
             ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setDraftPath(rootPath);
-                  setEditing(true);
-                }}
-                className="flex min-w-0 flex-1 items-center truncate font-mono text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
-                title="Click to edit path"
-              >
+              <>
                 <BreadcrumbRow segments={segments} onJump={navigate} />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftPath(rootPath);
+                    setEditing(true);
+                  }}
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+                  title="Edit location"
+                  aria-label="Edit location"
+                >
+                  <Pencil size={10} />
+                </button>
+              </>
             )}
             <button
               type="button"
@@ -221,26 +236,7 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
             </button>
           </div>
 
-          {/* Quick-jump row — one-click hops to filesystem roots we expect to exist */}
-          <div className="flex shrink-0 flex-wrap gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
-            {QUICK_ROOTS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => navigate(p)}
-                className={cn(
-                  "rounded-sm px-1.5 py-[1px] font-mono text-[10px]",
-                  rootPath === p
-                    ? "bg-blue-500 text-white"
-                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-700/60",
-                )}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-
-          <FileTree refreshKey={refreshKey} />
+          <FileTree refreshKey={refreshKey} createRequest={createRequest} />
         </>
       ) : (
         <CloudFilesExplorer className="min-h-0 flex-1" />
@@ -257,43 +253,40 @@ function BreadcrumbRow({
   onJump: (path: string) => void;
 }) {
   if (segments.length === 0) {
-    return <span className="text-neutral-500">/</span>;
+    return <span className="min-w-0 flex-1 text-neutral-500">/</span>;
   }
   return (
-    <span className="flex min-w-0 items-center truncate">
-      <span
-        className="cursor-pointer hover:text-blue-600"
-        onClick={(e) => {
-          e.stopPropagation();
-          onJump("/");
-        }}
+    <div className="flex min-w-0 flex-1 items-center overflow-hidden font-mono text-neutral-600 dark:text-neutral-400">
+      <button
+        type="button"
+        className="shrink-0 hover:text-blue-600"
+        onClick={() => onJump("/")}
+        aria-label="Go to filesystem root"
       >
         /
-      </span>
+      </button>
       {segments.map((s, i) => (
         <React.Fragment key={s.path}>
           <ChevronRight
             size={10}
             className="mx-[1px] shrink-0 text-neutral-400"
           />
-          <span
+          <button
+            type="button"
             className={cn(
-              "truncate",
+              "min-w-0 truncate",
               i === segments.length - 1
                 ? "font-medium text-neutral-900 dark:text-neutral-100"
                 : "hover:text-blue-600",
             )}
-            onClick={(e) => {
-              if (i === segments.length - 1) return;
-              e.stopPropagation();
-              onJump(s.path);
-            }}
+            onClick={() => onJump(s.path)}
+            aria-current={i === segments.length - 1 ? "page" : undefined}
           >
             {s.name}
-          </span>
+          </button>
         </React.Fragment>
       ))}
-    </span>
+    </div>
   );
 }
 

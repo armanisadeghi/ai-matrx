@@ -114,6 +114,14 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
   const rowRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    if (activePath !== node.path) return;
+    const frame = window.requestAnimationFrame(() => {
+      rowRef.current?.scrollIntoView({ block: "nearest" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activePath, node.path]);
+
+  useEffect(() => {
     let cancelled = false;
     if (!isDir || !expanded) return undefined;
     adapter
