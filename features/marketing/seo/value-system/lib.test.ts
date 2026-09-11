@@ -1,7 +1,33 @@
 import {
+  describePackMeaningValue,
   starterPackMatchesBrandIndustry,
   starterPackStatusRowIds,
 } from "./lib";
+
+describe("describePackMeaningValue", () => {
+  test("formats the canonical Business pack and site status payloads", () => {
+    expect(
+      describePackMeaningValue({
+        worth_effect: "add",
+        worth_amount: 120,
+        matchers: [],
+      }),
+    ).toBe("+120 points · 0 phrases");
+    expect(
+      describePackMeaningValue({
+        worth_effect: "scale",
+        worth_amount: 2.2,
+        matchers: 0,
+      }),
+    ).toBe("×2.2 — worth 2.2 times more · 0 phrases");
+  });
+
+  test("never emits NaN for an incomplete status payload", () => {
+    expect(describePackMeaningValue({ worth_effect: "scale" })).toBe(
+      "worth not available · 0 phrases",
+    );
+  });
+});
 
 const ITAD_PACK = {
   industry: "IT Asset Disposition & Electronics Recycling",

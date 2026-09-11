@@ -25,7 +25,7 @@ import { cn } from "@/styles/themes/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { adoptStarterPack } from "../data";
-import { describeWorth, humanizeSlug } from "../lib";
+import { describePackMeaningValue, humanizeSlug } from "../lib";
 import type {
   StarterPackPart,
   StarterPackSiteStatus,
@@ -49,25 +49,10 @@ export function itemDelta(item: StarterPackStatusItem): {
   const s = item.site ?? {};
   switch (item.kind) {
     case "meaning": {
-      const packMatchers = Array.isArray(p.matchers) ? p.matchers.length : 0;
-      const siteMatchers =
-        typeof s.matchers === "number" && Number.isFinite(s.matchers)
-          ? s.matchers
-          : 0;
-      const summarize = (value: Record<string, unknown>, matchers: number) => {
-        const rawEffect = value.worth_effect;
-        const effect =
-          rawEffect === "add" || rawEffect === "scale" || rawEffect === "never"
-            ? rawEffect
-            : null;
-        const amount =
-          typeof value.worth_amount === "number" ? value.worth_amount : null;
-        return `${describeWorth(effect, amount)} · ${matchers} phrase${matchers === 1 ? "" : "s"}`;
-      };
       return {
-        pack: summarize(p, packMatchers),
+        pack: describePackMeaningValue(p),
         site:
-          item.state === "archived" ? "archived" : summarize(s, siteMatchers),
+          item.state === "archived" ? "archived" : describePackMeaningValue(s),
       };
     }
     case "value_band": {

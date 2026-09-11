@@ -1536,3 +1536,4 @@ placement` / `User-posted`), and `r412` renders as `Authority 412`. The
 ## Realtime
 
 `useSiteCrawlActivity` moved onto `@ai-matrx/realtime` (2026-09-07), deleting ~55 lines of reconnect ladder, attempt counter and backoff-reset timer. `CrawlRealtimeStatus` is now an alias of the package's `RealtimeStatus`, so the polling fallback cannot drift from the real channel state, and the catch-up read fires on tab wake and network restore rather than only after a channel error.
+- 2026-09-10: Rulebook pack provenance formats the canonical meaning status payload (`worth_effect`, `worth_amount`, and matcher count) through the same helper as Reset to pack, so current-versus-pack values cannot regress to `NaN` through the retired multiplier shape.

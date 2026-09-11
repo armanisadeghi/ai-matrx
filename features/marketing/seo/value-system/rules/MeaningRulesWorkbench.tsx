@@ -93,6 +93,7 @@ import {
   areaNeedsPlaces,
   buildBandMeta,
   describeMultiplier,
+  describePackMeaningValue,
   describeRuleMatch,
   humanizeSlug,
   reviewWindow,
@@ -261,15 +262,7 @@ function chipState(state: PackItemState): SourceChipState {
 }
 
 function ruleSummary(v: Record<string, unknown>): string {
-  return `${describeMultiplier(typeof v.value_multiplier === "number" ? v.value_multiplier : Number(v.value_multiplier))}${
-    v.pattern
-      ? ` · ${describeRuleMatch({ pattern: String(v.pattern), match_kind: String(v.match_kind ?? "contains"), match_facet: null, match_facet_value: null })}`
-      : ""
-  }${
-    v.match_facet
-      ? ` · ${describeRuleMatch({ pattern: null, match_kind: null, match_facet: String(v.match_facet), match_facet_value: String(v.match_facet_value ?? "") })}`
-      : ""
-  }`;
+  return describePackMeaningValue(v);
 }
 
 function areaSummary(v: Record<string, unknown>): string {

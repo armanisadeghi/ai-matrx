@@ -548,6 +548,36 @@ export function describeWorth(
   return "labels it, changes nothing";
 }
 
+/**
+ * Human-readable worth and phrase count from a canonical pack-status meaning
+ * payload. Both the reset receipt and Rulebook provenance consume this exact
+ * wire shape; keeping the formatter here prevents either surface from drifting
+ * back to the retired `value_multiplier` rule shape.
+ */
+export function describePackMeaningValue(
+  value: Record<string, unknown>,
+): string {
+  const rawEffect = value.worth_effect;
+  const effect =
+    rawEffect === "add" || rawEffect === "scale" || rawEffect === "never"
+      ? rawEffect
+      : null;
+  const numericAmount = Number(value.worth_amount);
+  const amount = Number.isFinite(numericAmount) ? numericAmount : null;
+  const matcherCount = Array.isArray(value.matchers)
+    ? value.matchers.length
+    : typeof value.matchers === "number" && Number.isFinite(value.matchers)
+      ? value.matchers
+      : Array.isArray(value.patterns)
+        ? value.patterns.length
+        : 0;
+  const worth =
+    effect !== null && effect !== "never" && amount === null
+      ? "worth not available"
+      : describeWorth(effect, amount);
+  return `${worth} · ${matcherCount} phrase${matcherCount === 1 ? "" : "s"}`;
+}
+
 /** The short form for a chip: "+120", "−90", "×0.2", "never". */
 export function shortWorth(
   effect: "add" | "scale" | "never" | null | undefined,
