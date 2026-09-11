@@ -61,7 +61,6 @@ import {
   type MemoryObserverCompletedData,
   type MemoryReflectorCompletedData,
   type UntypedDataPayload,
-  type TypedStreamEvent,
 } from "@/types/python-generated/stream-events";
 import {
   appendChunk,

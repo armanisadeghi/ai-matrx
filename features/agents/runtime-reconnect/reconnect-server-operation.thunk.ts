@@ -353,7 +353,7 @@ export const reconnectServerOperation = createAsyncThunk<
           { conversationId, executionId: op.execution_id },
         );
         captureError({
-          source: "runtime-reconnect",
+          source: "agent-stream-warning",
           code: "live_replay_unavailable",
           message:
             "A running response could not replay its live NDJSON; following durable lifecycle until the saved result is available.",
