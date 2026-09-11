@@ -66,6 +66,16 @@ const EXPECTED_CHECKS = [
   // stops reaching RLS-protected children for real users while every privileged
   // test stays green.
   "functions_security_definer",
+  // A cascade edge whose child table has no `deleted_at` is a cascade that can
+  // never fire: the parent is removed and every part stays live. Until
+  // 2026-09-11 this was an unspoken assumption inside
+  // platform.soft_delete_orphan_census(), which built `ch.deleted_at is null`
+  // into its SQL — so the first legitimate non-soft-deletable child
+  // (mandate.observation, migration 0607) did not produce a finding, it raised
+  // 42703 and took ALL FIVE checks down with it. This gate then reported the
+  // cascade UNMEASURED on every CI run for two days. The assumption is now a
+  // check, and it is listed here so that dropping it is a failure, not silence.
+  "cascade_child_is_soft_deletable",
   // Zero live rows under a removed parent on any declared cascade edge — the
   // original defect, measured rather than assumed.
   "no_live_orphans",

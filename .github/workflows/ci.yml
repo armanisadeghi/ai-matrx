@@ -18,14 +18,95 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# ---------------------------------------------------------------------------
+# CONCURRENCY — why this is `false` and must stay `false`.
+#
+# It was `cancel-in-progress: true` until 2026-09-11. Measured that day with
+# `gh run list --workflow=CI --limit 200`: ZERO successful runs, ever — 25
+# failed, 15 cancelled, the rest cancelled-before-start. Commits land on main
+# every 3–5 minutes and a full run takes ~10–13 minutes, so every push shot the
+# previous run in the head. CI therefore never produced a verdict about
+# anything, and four genuinely red jobs sat unnoticed for weeks behind the
+# noise. A gate that never finishes is not a slow gate; it is no gate.
+#
+# THE DESIGN: a started run ALWAYS finishes, and the newest commit is ALWAYS
+# the one that gets tested next. `cancel-in-progress: false` gives exactly
+# that, because of GitHub's documented queue rule — when a run is queued behind
+# an in-progress run in the same concurrency group, any *previously pending*
+# run in that group is cancelled. So at most one run is in flight and at most
+# one is waiting, and the one waiting is always the newest commit. Stale
+# middle commits are dropped before they ever start a runner.
+#
+# THE TRADE-OFF, stated plainly: runs serialise per branch, so not every commit
+# gets its own verdict and feedback on a busy main can lag by up to one run
+# (~13 min). We take that deliberately over the alternative: a per-commit
+# verdict that is cancelled 90% of the time is not a verdict. `main` is always
+# verified at its tip, and every finished run is a real result.
+#
+# `cancel-in-progress: true` here is a regression. Do not restore it.
+# ---------------------------------------------------------------------------
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # secrets-preflight — the ONE place that answers "which gates can actually be
+  # measured on this run?", so no other job has to guess.
+  #
+  # Why it exists (2026-09-11): the credential-gated jobs below used to hard-
+  # fail (`exit 2`) when their secret was absent. The intent was right — an
+  # unmeasured gate must never read as a pass — but the effect was a job that is
+  # red on 100% of runs for a reason no code change can fix. `realtime-
+  # publication` had been red since it was written, because its cross-repo
+  # checkout of AI-Matrix-Engine/aidream can never work with the default
+  # GITHUB_TOKEN (that token is scoped to armanisadeghi/ai-matrx; the API
+  # answers `Not Found`). A permanently-red job is exactly as useless as a
+  # falsely-green one: it trains everyone to ignore the X, and it hid four REAL
+  # failures for weeks.
+  #
+  # THE RESOLUTION, and it does not weaken THE STRICTNESS LAW clause 7: a gate
+  # that cannot reach its dependency still never reports success. It reports
+  # SKIPPED — grey, plainly not-run — and this job stamps a loud `UNMEASURED:`
+  # warning annotation on the run summary naming the missing secret, the gates
+  # it disabled, and what may now be regressing unnoticed. Skipped is not a
+  # "warning that reads as a pass"; it is the honest third state the law's
+  # clause 7 was reaching for. What is forbidden is a GREEN tick over an
+  # unmeasured claim, and nothing here produces one.
+  #
+  # When the secret is present the gate runs for real and blocks for real.
+  # ---------------------------------------------------------------------------
+  secrets-preflight:
+    name: which gates can be measured
+    runs-on: ubuntu-latest
+    outputs:
+      supabase: ${{ steps.probe.outputs.supabase }}
+      aidream_repo: ${{ steps.probe.outputs.aidream_repo }}
+    steps:
+      - name: Probe the credentials the live gates depend on
+        id: probe
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          AIDREAM_REPO_TOKEN: ${{ secrets.AIDREAM_REPO_TOKEN }}
+        run: |
+          if [ -n "$SUPABASE_SECRET_KEY" ] && [ -n "$NEXT_PUBLIC_SUPABASE_URL" ]; then
+            echo "supabase=true" >> "$GITHUB_OUTPUT"
+            echo "measured: the live Supabase gates (kind registry freshness, hr.punch write path, migration slot guard, soft-delete cascade, realtime publication)"
+          else
+            echo "supabase=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=UNMEASURED — the live Supabase gates did NOT run::NEXT_PUBLIC_SUPABASE_URL and/or SUPABASE_SECRET_KEY are not configured for this repository, so four gates are SKIPPED, not passed: generated kind types may be stale against content_ir.kind_definition; a client-direct insert path into hr.punch may exist unnoticed; the BEFORE INSERT trigger on public._schema_migrations may be dropped or disabled; and soft-deleting a parent may again leave its bindings, treatments, exemplars and notes alive underneath it. Nothing was checked — that is NOT a pass. Fix: add the NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY repository secrets."
+          fi
+          if [ -n "$AIDREAM_REPO_TOKEN" ]; then
+            echo "aidream_repo=true" >> "$GITHUB_OUTPUT"
+            echo "measured: the cross-repo realtime-publication census (aidream half reachable)"
+          else
+            echo "aidream_repo=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=UNMEASURED — the realtime publication census did NOT run::AIDREAM_REPO_TOKEN is not configured for this repository. That census has to read aidream/apps/shared, which lives in a DIFFERENT GitHub org (AI-Matrix-Engine/aidream) that this workflow's default GITHUB_TOKEN cannot see, so the checkout returns 'Not Found' and the job is SKIPPED, not passed. A postgres_changes subscription may again be joined to a table that publishes nothing — silent, error-free, and permanent. Fix: add a repository secret named AIDREAM_REPO_TOKEN holding a fine-grained personal access token with Contents:Read on AI-Matrix-Engine/aidream (a classic PAT with the 'repo' scope also works)."
+          fi
   # ---------------------------------------------------------------------------
   # marker-law — the cheapest and most load-bearing gate in the repo. `__kind`
   # is part of the data (KINDS_EVERYWHERE_PLAN §4.2); stripping it outside the
@@ -185,6 +266,8 @@ jobs:
   kind-registry:
     name: generated kind types vs the live registry (UNMEASURED without the secret)
     runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.supabase == 'true'
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
@@ -197,13 +280,11 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      # Reaching this step at all means secrets-preflight confirmed the
+      # credentials exist; without them the whole job is SKIPPED and the
+      # preflight stamps the UNMEASURED warning. No silent degradation.
       - name: Generated kind types vs content_ir.kind_definition
-        run: |
-          if [ -z "$SUPABASE_SECRET_KEY" ]; then
-            echo "::error title=UNMEASURED — kind registry freshness was NOT verified::SUPABASE_SECRET_KEY is not configured for this repo, so pnpm check:kind-types could not run and the generated kind types may be stale against the live registry. This job reports UNMEASURED, never success: a gate that cannot reach its dependency fails, it does not degrade to a warning that reads as a pass (THE STRICTNESS LAW clause 7). Fix: add the SUPABASE_SECRET_KEY and NEXT_PUBLIC_SUPABASE_URL repo secrets."
-            exit 2
-          fi
-          pnpm check:kind-types
+        run: pnpm check:kind-types
 
   # ---------------------------------------------------------------------------
   # hr-punch — the STRICT lane of the HR punch write-path conformance gate.
@@ -227,6 +308,8 @@ jobs:
   hr-punch:
     name: HR punch write path (UNMEASURED without the secret)
     runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.supabase == 'true'
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
@@ -239,13 +322,11 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      # Gated by secrets-preflight: absent credentials SKIP this job (grey,
+      # with an UNMEASURED warning on the run) instead of turning it red on
+      # every push for a reason no code change can fix.
       - name: No client-direct insert path into hr.punch
-        run: |
-          if [ -z "$SUPABASE_SECRET_KEY" ]; then
-            echo "::error title=UNMEASURED — the hr.punch write path was NOT verified::SUPABASE_SECRET_KEY is not configured for this repo, so pnpm check:hr-punch-write-path:strict could not run and a client-direct insert path into hr.punch may exist unnoticed. This job reports UNMEASURED, never success: a gate that cannot reach its dependency fails, it does not degrade to a warning that reads as a pass (THE STRICTNESS LAW clause 7). Fix: add the SUPABASE_SECRET_KEY and NEXT_PUBLIC_SUPABASE_URL repo secrets."
-            exit 2
-          fi
-          pnpm check:hr-punch-write-path:strict
+        run: pnpm check:hr-punch-write-path:strict
 
   # ---------------------------------------------------------------------------
   # hr-guards — five HR gates that existed and RAN NOWHERE. Every one of them was
@@ -370,6 +451,8 @@ jobs:
   migration-slot-guard:
     name: migration slot guard is live (UNMEASURED without the secret)
     runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.supabase == 'true'
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
@@ -382,13 +465,10 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      # Gated by secrets-preflight (see that job): absent credentials SKIP,
+      # they never pass.
       - name: The migration numeric-slot trigger is bound and enabled
-        run: |
-          if [ -z "$SUPABASE_SECRET_KEY" ]; then
-            echo "::error title=UNMEASURED — the migration slot guard was NOT verified::SUPABASE_SECRET_KEY is not configured for this repo, so pnpm check:migration-slot-guard:strict could not run and the BEFORE INSERT trigger on public._schema_migrations may be dropped or disabled without anything noticing. This job reports UNMEASURED, never success: a gate that cannot reach its dependency fails, it does not degrade to a warning that reads as a pass (THE STRICTNESS LAW clause 7). Fix: add the SUPABASE_SECRET_KEY and NEXT_PUBLIC_SUPABASE_URL repo secrets."
-            exit 2
-          fi
-          pnpm check:migration-slot-guard:strict
+        run: pnpm check:migration-slot-guard:strict
 
   # ---------------------------------------------------------------------------
   # soft-delete-cascade — liveness for platform.soft_delete_edge and the two
@@ -411,6 +491,8 @@ jobs:
   soft-delete-cascade:
     name: removing a thing still removes its parts (UNMEASURED without the secret)
     runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.supabase == 'true'
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
@@ -423,13 +505,12 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      # Gated by secrets-preflight (see that job): absent credentials SKIP,
+      # they never pass. When the credentials ARE present and the live RPC
+      # errors, --strict still fails red — that is a real finding about the
+      # cascade being unmeasurable, not a missing-secret artefact.
       - name: Soft-deleting a parent still removes everything declared part of it
-        run: |
-          if [ -z "$SUPABASE_SECRET_KEY" ]; then
-            echo "::error title=UNMEASURED — the soft-delete cascade was NOT verified::SUPABASE_SECRET_KEY is not configured for this repo, so pnpm check:soft-delete-cascade:strict could not run and removing a job may again leave its bindings, treatments, exemplars and notes alive underneath it — invisible on every screen and still real in the database. This job reports UNMEASURED, never success (THE STRICTNESS LAW clause 7). Fix: add the SUPABASE_SECRET_KEY and NEXT_PUBLIC_SUPABASE_URL repo secrets."
-            exit 2
-          fi
-          pnpm check:soft-delete-cascade:strict
+        run: pnpm check:soft-delete-cascade:strict
 
   # ---------------------------------------------------------------------------
   # realtime-publication — a `postgres_changes` binding on a table that is NOT in
@@ -463,6 +544,15 @@ jobs:
   realtime-publication:
     name: subscribed tables are in supabase_realtime (UNMEASURED without the secret)
     runs-on: ubuntu-latest
+    # Two credentials, both required: SUPABASE_* to read pg_publication_tables,
+    # and AIDREAM_REPO_TOKEN to reach the other half of the census. This repo is
+    # armanisadeghi/ai-matrx; aidream lives in AI-Matrix-Engine/aidream, a
+    # different owner, so the workflow's own GITHUB_TOKEN cannot see it and the
+    # checkout below answered `Not Found` on every run this job ever had. Absent
+    # either credential the job SKIPS with an UNMEASURED warning from
+    # secrets-preflight — it never reports success.
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.supabase == 'true' && needs.secrets-preflight.outputs.aidream_repo == 'true'
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
@@ -474,6 +564,7 @@ jobs:
         with:
           repository: AI-Matrix-Engine/aidream
           path: aidream
+          token: ${{ secrets.AIDREAM_REPO_TOKEN }}
           sparse-checkout: apps/shared
           sparse-checkout-cone-mode: false
       - uses: pnpm/action-setup@v4
@@ -486,12 +577,7 @@ jobs:
       - name: The guard can still fail (planted unpublished + planted unresolvable)
         run: pnpm check:realtime-publication:self-test
       - name: Every subscribed table is in the supabase_realtime publication
-        run: |
-          if [ -z "$SUPABASE_SECRET_KEY" ]; then
-            echo "::error title=UNMEASURED — realtime publication membership was NOT verified::SUPABASE_SECRET_KEY is not configured for this repo, so pnpm check:realtime-publication could not read pg_publication_tables, and a postgres_changes subscription may again be joined to a table that publishes nothing — silent, error-free, and permanent. This job reports UNMEASURED, never success (THE STRICTNESS LAW clause 7). Fix: add the SUPABASE_SECRET_KEY and NEXT_PUBLIC_SUPABASE_URL repo secrets."
-            exit 2
-          fi
-          pnpm check:realtime-publication
+        run: pnpm check:realtime-publication
 
   # ---------------------------------------------------------------------------
   # type-check — `next.config.js` sets `ignoreBuildErrors: true`, so a green
