@@ -37,6 +37,10 @@ import {
 } from "@/lib/communications/voice/recording-readiness";
 import { evaluateConversationRelayReadiness } from "@/lib/communications/voice/conversation-relay-readiness";
 import {
+  getConversationRelayRuntimeReadiness,
+  type ConversationRelayRuntimeReadiness,
+} from "@/lib/communications/voice/conversation-relay-runtime-readiness";
+import {
   CONVERSATION_RELAY_PUBLIC_URL,
   prepareConversationRelaySession,
   recordConversationRelayPreparationFailure,
@@ -432,6 +436,20 @@ export async function GET(): Promise<NextResponse> {
     canonical_file_ingest_ready: storageCanary.ready,
     retention_access_deletion_ready: storageCanary.ready,
   });
+  let conversationRelayRuntime: ConversationRelayRuntimeReadiness = {
+    public_route_mounted: false,
+    code_switch_enabled: false,
+    provider_switch_enabled: false,
+    program_switch_enabled: false,
+    owned_number_routed: false,
+    routing_configuration_ready: false,
+    owner_beta_ready: false,
+  };
+  try {
+    conversationRelayRuntime = await getConversationRelayRuntimeReadiness();
+  } catch {
+    // The public backend readiness response is unavailable; retain safe false facts.
+  }
   const conversationRelayReadiness = evaluateConversationRelayReadiness({
     strict_wire_contract_ready: true,
     signed_admission_ready: true,
@@ -442,11 +460,11 @@ export async function GET(): Promise<NextResponse> {
     provider_playback_decoder_ready: false,
     canonical_call_lifecycle_ready: callLifecyclePersistenceReady,
     playback_activity_persistence_ready: true,
-    public_route_mounted: true,
-    owned_number_routed: false,
-    code_switch_enabled: false,
-    provider_switch_enabled: false,
-    program_switch_enabled: false,
+    public_route_mounted: conversationRelayRuntime.public_route_mounted,
+    owned_number_routed: conversationRelayRuntime.owned_number_routed,
+    code_switch_enabled: conversationRelayRuntime.code_switch_enabled,
+    provider_switch_enabled: conversationRelayRuntime.provider_switch_enabled,
+    program_switch_enabled: conversationRelayRuntime.program_switch_enabled,
   });
 
   return NextResponse.json({
@@ -457,8 +475,14 @@ export async function GET(): Promise<NextResponse> {
     recordingStarted: false,
     conversationRelayConnected: false,
     conversationRelay: {
-      enabled: false,
-      mode: "mounted_hard_disabled",
+      enabled:
+        conversationRelayReadiness.ready &&
+        conversationRelayRuntime.owner_beta_ready,
+      mode:
+        conversationRelayReadiness.ready &&
+        conversationRelayRuntime.owner_beta_ready
+          ? "owner_beta_ready"
+          : "runtime_gate_blocked",
       durableSystemOfRecord: "crm.interaction + platform.activity_log",
       readiness: conversationRelayReadiness,
     },

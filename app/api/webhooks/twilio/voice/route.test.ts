@@ -2,6 +2,8 @@
 
 import twilio from "twilio";
 
+jest.mock("server-only", () => ({}));
+
 import {
   authorizeVoiceOwnerBetaCall,
   inspectVoiceOwnerBetaProgram,
@@ -19,6 +21,7 @@ import {
   prepareConversationRelaySession,
   recordConversationRelayPreparationFailure,
 } from "@/lib/communications/voice/conversation-relay-preparation";
+import { getConversationRelayRuntimeReadiness } from "@/lib/communications/voice/conversation-relay-runtime-readiness";
 import { OWNER_BETA_VOICE_DISCLOSURE_VERSION } from "@/lib/communications/providers/twilio/voice-twiml";
 
 import { GET, POST } from "./route";
@@ -43,6 +46,12 @@ jest.mock("@/lib/communications/voice/conversation-relay-preparation", () => ({
   prepareConversationRelaySession: jest.fn(),
   recordConversationRelayPreparationFailure: jest.fn(),
 }));
+jest.mock(
+  "@/lib/communications/voice/conversation-relay-runtime-readiness",
+  () => ({
+    getConversationRelayRuntimeReadiness: jest.fn(),
+  }),
+);
 jest.mock(
   "@/lib/communications/voice/provider-configuration-readiness",
   () => ({
@@ -119,6 +128,15 @@ describe("POST /api/webhooks/twilio/voice", () => {
       verifiedAt: null,
       providerAccountVerified: false,
       externalStorageConfigured: false,
+    });
+    jest.mocked(getConversationRelayRuntimeReadiness).mockResolvedValue({
+      public_route_mounted: true,
+      code_switch_enabled: true,
+      provider_switch_enabled: true,
+      program_switch_enabled: true,
+      owned_number_routed: true,
+      routing_configuration_ready: true,
+      owner_beta_ready: true,
     });
     jest.mocked(resolveVoiceOwnerCallContext).mockResolvedValue({
       party_id: "party-1",
@@ -701,12 +719,13 @@ describe("POST /api/webhooks/twilio/voice", () => {
     });
     expect(body.consent.persistence).toBe("durable_activity_ledger_ready");
     expect(body.conversationRelay).toMatchObject({
-      enabled: false,
-      mode: "mounted_hard_disabled",
+      enabled: true,
+      mode: "owner_beta_ready",
       durableSystemOfRecord: "crm.interaction + platform.activity_log",
       readiness: {
-        ready: false,
-        passedGateCount: 9,
+        ready: true,
+        optionalPlaybackEvidenceReady: false,
+        passedGateCount: 13,
         totalGateCount: 14,
       },
     });
@@ -725,7 +744,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
           passed: true,
         }),
         expect.objectContaining({ key: "public_route_mounted", passed: true }),
-        expect.objectContaining({ key: "code_switch_enabled", passed: false }),
+        expect.objectContaining({ key: "code_switch_enabled", passed: true }),
       ]),
     );
     expect(body.recording.storageCanary).toEqual({
@@ -850,7 +869,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
 
     expect(body.conversationRelay.readiness).toMatchObject({
       ready: false,
-      passedGateCount: 8,
+      passedGateCount: 12,
       totalGateCount: 14,
     });
     expect(body.conversationRelay.readiness.gates).toEqual(

@@ -102,12 +102,12 @@ future-dated evidence fails closed. It keeps the disclosure-proof gate false unt
 actual v2 consented recording proves the complete live path; the POST route independently requires
 that exact disclosure and durable consent before it can emit capture TwiML.
 
-The main Voice GET also exposes the ConversationRelay launch inventory through the same readiness
-primitive. It reports the six inert aidream foundations, canonical call lifecycle, durable bounded
-playback-activity claim, and hard-disabled public WSS mount as ready. Exact provider playback
-decoding, owned-number routing, and all three launch switches remain false, so the route refuses
-before reference consumption or paid execution. This is readiness only: no token/transcript/audio
-content, phone, provider URL, session reference, signature, or credential is returned.
+The main Voice GET reads the secret-free ConversationRelay runtime facts from aidream rather than
+inventing switch values. Owner-beta readiness requires the public route and its live code/provider/
+program/routing gates; the unverified optional provider playback decoder and its durable playback
+activity consumer are reported separately and do not block the basic owner beta. This is readiness
+only: no token/transcript/audio content, phone, provider URL, session reference, signature, or
+credential is returned.
 
 ## Change log
 
@@ -119,6 +119,9 @@ content, phone, provider URL, session reference, signature, or credential is ret
 - **2026-09-11** — Kept exact provider and custody receipts as fail-closed configuration evidence,
   while removing invented 24-hour expiry gates. ConversationRelay preparation failures now create
   a secret-free structured error rather than silently dropping the connection.
+
+- **2026-09-11** — Replaced hard-coded ConversationRelay launch status with aidream's secret-free
+  runtime response and separated basic owner-beta admission from optional playback evidence.
 
 - **2026-08-17** — Completed the first-call handoff: the signed webhook forwards exact signed form
   material through the typed backend client, aidream independently revalidates and prepares the

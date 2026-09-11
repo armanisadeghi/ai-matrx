@@ -41,6 +41,7 @@ const GATE_DEFINITIONS = [
     label: "Played-audio evidence",
     blockedReason:
       "The exact provider tokens-played and speaker event payloads have not been verified and decoded.",
+    optional: true,
   },
   {
     key: "canonical_call_lifecycle_ready",
@@ -53,6 +54,7 @@ const GATE_DEFINITIONS = [
     label: "Playback lifecycle visibility",
     blockedReason:
       "Playback and session aggregates are not yet durably attached to the canonical CRM interaction and activity ledger.",
+    optional: true,
   },
   {
     key: "public_route_mounted",
@@ -98,6 +100,7 @@ export interface ConversationRelayReadinessGate {
 
 export interface ConversationRelayReadiness {
   ready: boolean;
+  optionalPlaybackEvidenceReady: boolean;
   passedGateCount: number;
   totalGateCount: number;
   gates: ConversationRelayReadinessGate[];
@@ -116,12 +119,25 @@ export function evaluateConversationRelayReadiness(
       blockedReason: passed ? null : definition.blockedReason,
     };
   });
-  const blockedReasons = gates.flatMap((gate) =>
+  const requiredGates = gates.filter(
+    (gate) =>
+      !GATE_DEFINITIONS.find((definition) => definition.key === gate.key)
+        ?.optional,
+  );
+  const blockedReasons = requiredGates.flatMap((gate) =>
     gate.blockedReason === null ? [] : [gate.blockedReason],
   );
+  const optionalPlaybackEvidenceReady = gates
+    .filter(
+      (gate) =>
+        GATE_DEFINITIONS.find((definition) => definition.key === gate.key)
+          ?.optional,
+    )
+    .every((gate) => gate.passed);
   return {
     ready: blockedReasons.length === 0,
-    passedGateCount: gates.length - blockedReasons.length,
+    optionalPlaybackEvidenceReady,
+    passedGateCount: gates.filter((gate) => gate.passed).length,
     totalGateCount: gates.length,
     gates,
     blockedReasons,

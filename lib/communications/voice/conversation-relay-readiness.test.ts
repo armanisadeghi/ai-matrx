@@ -21,13 +21,14 @@ describe("ConversationRelay readiness", () => {
 
     expect(readiness).toMatchObject({
       ready: false,
+      optionalPlaybackEvidenceReady: false,
       passedGateCount: 7,
       totalGateCount: 14,
     });
-    expect(readiness.blockedReasons).toHaveLength(7);
+    expect(readiness.blockedReasons).toHaveLength(5);
   });
 
-  test("requires every independent gate", () => {
+  test("keeps optional playback evidence separate from owner-beta readiness", () => {
     const readiness = evaluateConversationRelayReadiness({
       strict_wire_contract_ready: true,
       signed_admission_ready: true,
@@ -35,9 +36,9 @@ describe("ConversationRelay readiness", () => {
       canonical_runtime_ready: true,
       bounded_session_host_ready: true,
       secret_free_telemetry_ready: true,
-      provider_playback_decoder_ready: true,
+      provider_playback_decoder_ready: false,
       canonical_call_lifecycle_ready: true,
-      playback_activity_persistence_ready: true,
+      playback_activity_persistence_ready: false,
       public_route_mounted: true,
       owned_number_routed: true,
       code_switch_enabled: true,
@@ -46,7 +47,8 @@ describe("ConversationRelay readiness", () => {
     });
 
     expect(readiness.ready).toBe(true);
-    expect(readiness.passedGateCount).toBe(14);
+    expect(readiness.optionalPlaybackEvidenceReady).toBe(false);
+    expect(readiness.passedGateCount).toBe(12);
     expect(readiness.blockedReasons).toEqual([]);
   });
 });
