@@ -63,6 +63,8 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   const restoringSearchRef = useRef<string | null>(null);
   const requestGenerationRef = useRef(0);
   const appliedLocationRef = useRef<string | null>(null);
+  const initialSandboxRef = useRef(initialSandboxId);
+  const hasNormalizedRef = useRef(false);
 
   const { connect, disconnect } = useSandboxWorkspaceConnection({
     // URL restoration must remain honest without replacing the workspace with
@@ -106,7 +108,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
       if (
         state.sandboxId &&
         state.sandboxId !== activeSandboxId &&
-        state.sandboxId !== initialSandboxId
+        state.sandboxId !== initialSandboxRef.current
       ) {
         try {
           const response = await fetch("/api/sandbox");
@@ -140,7 +142,6 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     applyNonFilesystemState,
     connect,
     disconnect,
-    initialSandboxId,
     locationSearch,
   ]);
 
@@ -153,20 +154,34 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     if (state.sandboxId && activeFilesystemId !== `sandbox:${state.sandboxId}`) return;
     if (!state.sandboxId && activeSandboxId) return;
 
-    if (state.explorerRoot) {
-      dispatch(
-        setExplorerRootOverride(
-          state.explorerRoot === filesystem.rootPath ? null : state.explorerRoot,
-        ),
-      );
-    }
+    dispatch(
+      setExplorerRootOverride(
+        state.explorerRoot && state.explorerRoot !== filesystem.rootPath
+          ? state.explorerRoot
+          : null,
+      ),
+    );
     if (state.filePath) {
       void openFile(state.filePath).catch((error) => {
         console.error("[code URL restore] file", state.filePath, error);
+      }).finally(() => {
+        // Do not let the serializer observe an interim auto-opened session
+        // report and erase the requested file before its read finishes.
+        if (restoringSearchRef.current === targetSearch) {
+          appliedLocationRef.current = targetSearch;
+          restoringSearchRef.current = null;
+          if (state.sandboxId === initialSandboxRef.current) {
+            initialSandboxRef.current = null;
+          }
+        }
       });
+      return;
     }
     appliedLocationRef.current = targetSearch;
     restoringSearchRef.current = null;
+    if (state.sandboxId && state.sandboxId === initialSandboxRef.current) {
+      initialSandboxRef.current = null;
+    }
   }, [activeFilesystemId, activeSandboxId, dispatch, filesystem, locationSearch, openFile]);
 
   // Reflect normal workspace interaction back into the current route without
@@ -192,7 +207,12 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     const nextSearch = next.toString();
     if (nextSearch === current.toString()) return;
     const href = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
-    window.history.replaceState(window.history.state, "", href);
+    if (hasNormalizedRef.current) {
+      window.history.pushState(window.history.state, "", href);
+    } else {
+      window.history.replaceState(window.history.state, "", href);
+      hasNormalizedRef.current = true;
+    }
     appliedLocationRef.current = nextSearch;
   }, [
     activeSandboxId,

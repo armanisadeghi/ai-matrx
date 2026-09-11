@@ -22,7 +22,7 @@ export function SandboxDeepLinkConnection({
   useEffect(() => {
     if (connectedId.current === instance.id) return;
     connectedId.current = instance.id;
-    connect(instance);
+    void connect(instance, { restore: true });
   }, [connect, instance]);
 
   return null;
