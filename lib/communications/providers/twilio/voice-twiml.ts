@@ -20,8 +20,11 @@ export const OWNER_BETA_REJECTION_MESSAGE =
 export const OWNER_BETA_ACCEPTED_NON_RECORDING_MESSAGE =
   "Thank you. Your consent was received, but recording is not available right now. Nothing was recorded. Goodbye.";
 
-export const OWNER_BETA_RECORDING_STARTED_MESSAGE =
-  "Thank you. Your consent was received. Recording starts now. The A.I. Matrix recording test is working correctly. Goodbye.";
+export const OWNER_BETA_CONVERSATION_RELAY_GREETING =
+  "Recording has started. How can I help you?";
+
+export const OWNER_BETA_CONVERSATION_RELAY_UNAVAILABLE_MESSAGE =
+  "Thank you. Your consent was received. Recording has started, but the A.I. assistant could not connect. This call will end now. Goodbye.";
 
 export interface OwnerBetaRecordingStart {
   recordingStatusCallbackUrl: string;
@@ -87,7 +90,7 @@ export function buildOwnerBetaConsentAcceptedTwiml(
     const connect = response.connect();
     const relay = connect.conversationRelay({
       url: options.conversationRelay.url,
-      welcomeGreeting: OWNER_BETA_RECORDING_STARTED_MESSAGE,
+      welcomeGreeting: OWNER_BETA_CONVERSATION_RELAY_GREETING,
     });
     relay.parameter({
       name: "sessionReference",
@@ -96,7 +99,10 @@ export function buildOwnerBetaConsentAcceptedTwiml(
     return response.toString();
   }
 
-  response.say({ voice: VOICE }, OWNER_BETA_RECORDING_STARTED_MESSAGE);
+  response.say(
+    { voice: VOICE },
+    OWNER_BETA_CONVERSATION_RELAY_UNAVAILABLE_MESSAGE,
+  );
   response.hangup();
   return response.toString();
 }

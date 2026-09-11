@@ -68,7 +68,9 @@ long-lived media and agent execution stay in aidream.
   signature/routing, resolves `voice.owner_beta` for the canonical actor and organization, creates
   the durable chat conversation, and idempotently issues the short-lived reference. Preparation
   failure is persisted as a structured `ops.system_error`, preserves recording, and omits the connection; absent recording readiness refuses both
-  because the disclosed owner-beta program promised capture after consent.
+  because the disclosed owner-beta program promised capture after consent. A connected relay greets
+  the caller with `Recording has started. How can I help you?`; a preparation failure says the AI
+  could not connect and ends the recorded call. Neither path claims the test worked.
 - `storage-canary-readiness.ts` reads the latest owner-program pass/fail receipt from the existing
   `platform.activity_log` ledger and validates the exact bucket, prefix, writer ARN, retention
   policy, deny checks, application HEAD/read/hash, and canonical index/access/delete receipts. An
@@ -122,6 +124,9 @@ credential is returned.
 
 - **2026-09-11** — Replaced hard-coded ConversationRelay launch status with aidream's secret-free
   runtime response and separated basic owner-beta admission from optional playback evidence.
+
+- **2026-09-11** — Separated the live AI welcome greeting from the honest recorded-but-unconnected
+  terminal response; neither caller-facing path claims the recording test succeeded.
 
 - **2026-08-17** — Completed the first-call handoff: the signed webhook forwards exact signed form
   material through the typed backend client, aidream independently revalidates and prepares the

@@ -75,7 +75,7 @@ describe("Twilio Voice provider adapter", () => {
     }
   });
 
-  test("starts dual-channel recording only in the explicitly enabled accepted response", () => {
+  test("ends honestly when recording starts but ConversationRelay is unavailable", () => {
     const twiml = buildOwnerBetaConsentAcceptedTwiml({
       recording: {
         recordingStatusCallbackUrl:
@@ -95,8 +95,11 @@ describe("Twilio Voice provider adapter", () => {
     );
     expect(twiml).toContain('recordingStatusCallbackMethod="POST"');
     expect(twiml.indexOf("<Start>")).toBeLessThan(
-      twiml.indexOf("Recording starts now"),
+      twiml.indexOf("A.I. assistant could not connect"),
     );
+    expect(twiml).toContain("Recording has started");
+    expect(twiml).toContain("This call will end now");
+    expect(twiml).not.toContain("working correctly");
     expect(twiml).toContain("<Hangup/>");
     expect(twiml).not.toContain("<Connect");
     expect(twiml).not.toContain("<Stream");
@@ -122,8 +125,10 @@ describe("Twilio Voice provider adapter", () => {
       '<Parameter name="sessionReference" value="owner-beta-one-time-reference"/>',
     );
     expect(twiml).toContain(
-      'welcomeGreeting="Thank you. Your consent was received. Recording starts now.',
+      'welcomeGreeting="Recording has started. How can I help you?"',
     );
+    expect(twiml).not.toContain("Goodbye");
+    expect(twiml).not.toContain("working correctly");
     expect(twiml).not.toContain(" events=");
     expect(twiml).not.toContain("<Hangup");
   });
