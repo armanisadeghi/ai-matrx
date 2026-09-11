@@ -246,7 +246,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             }}
             className={cn("min-w-0 border-r", PANE_BORDER, SIDE_PANEL_BG)}
           >
-            <SidePanelRouter />
+            <div className="h-full" inert={!sideOpen} aria-hidden={!sideOpen}>
+              <SidePanelRouter />
+            </div>
           </ResizablePanel>
           <ResizableHandle />
 
@@ -283,7 +285,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   if (open !== terminalOpen) dispatch(setTerminalOpen(open));
                 }}
               >
-                <BottomPanel />
+                <div className="h-full" inert={!terminalOpen} aria-hidden={!terminalOpen}>
+                  <BottomPanel />
+                </div>
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
@@ -304,7 +308,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 }}
                 className={cn("min-w-0 border-l", PANE_BORDER)}
               >
-                <div className="h-full overflow-hidden">
+                <div className="h-full overflow-hidden" inert={!rightOpen} aria-hidden={!rightOpen}>
                   {decoratedRightSlot}
                 </div>
               </ResizablePanel>
@@ -327,7 +331,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 }}
                 className={cn("min-w-0 border-l", PANE_BORDER)}
               >
-                <div className="h-full overflow-hidden">
+                <div className="h-full overflow-hidden" inert={!farRightOpen} aria-hidden={!farRightOpen}>
                   {decoratedFarRightSlot}
                 </div>
               </ResizablePanel>
