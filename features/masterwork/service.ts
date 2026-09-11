@@ -144,25 +144,31 @@ export async function saveRules(opts: {
    */
   metadata?: Record<string, unknown>;
 }): Promise<Rulebook> {
+  // `version` is supplied by guardedUpdate's `nextVersion` below — the CAS
+  // helper owns the bump, and platform._touch_row re-derives it server-side.
   const patch: Record<string, unknown> = {
     rules: opts.rules,
-    version: opts.expectedVersion + 1,
   };
   if (opts.sections) patch.sections = opts.sections;
   if (opts.metadata) patch.metadata = opts.metadata;
-  const { data, error } = await rulebookTable()
-    .update(patch as never)
-    .eq("id", opts.rulebookId)
-    // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
-    .eq("version", opts.expectedVersion)
-    .select("*")
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) {
+  const result = await guardedUpdate<RulebookRow & { version: number }>({
+    expectedVersion: opts.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      rulebookTable()
+        .update({ ...patch, version: nextVersion } as never)
+        .eq("id", opts.rulebookId)
+        .eq("version", expectedVersion)
+        .select("*")
+        .maybeSingle(),
+    fetchCurrent: () =>
+      rulebookTable().select("*").eq("id", opts.rulebookId).maybeSingle(),
+  });
+  if (result.status !== "saved") {
     throw new Error(
       "This Rulebook changed while you were editing (someone else saved a newer version). Reload to get the latest rules — your changes are still on screen.",
     );
   }
+  const data = result.row;
   // ONE funnel covers every FE rules write (editor, wizard, approve-all,
   // checkup apply): the Understudy rebuilds — free, in place — so the Expert
   // watches the running system get better as approvals land.

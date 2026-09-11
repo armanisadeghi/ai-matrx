@@ -11,6 +11,7 @@ import type { Json } from "@/types/database.types";
 import type { MarketingSite } from "@/features/marketing/types";
 import { createClient } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import { guardedUpdate } from "@ai-matrx/data/db";
 
 export interface UpdateSiteIntegrationsInput {
   siteId: string;
@@ -38,23 +39,30 @@ export async function updateSiteIntegrations(
   input: UpdateSiteIntegrationsInput,
 ): Promise<MarketingSite> {
   const supabase = createClient();
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
-    .from("site")
-    .update({ integrations: input.integrations })
-    .eq("id", input.siteId)
-    // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
-    .eq("version", input.expectedVersion)
-    .is("deleted_at", null)
-    .select(SITE_COLUMNS)
-    .maybeSingle();
-
-  if (response.error) throw new Error(response.error.message);
-  if (!response.data) {
+  const db = await authenticatedWebDb(supabase);
+  const result = await guardedUpdate<MarketingSite & { version: number }>({
+    expectedVersion: input.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("site")
+        .update({ integrations: input.integrations, version: nextVersion })
+        .eq("id", input.siteId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select(SITE_COLUMNS)
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("site")
+        .select(SITE_COLUMNS)
+        .eq("id", input.siteId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+  });
+  if (result.status !== "saved") {
     throw new SiteVersionConflictError();
   }
-  return response.data;
+  return result.row;
 }
 
 async function getCurrentSite(siteId: string): Promise<MarketingSite> {

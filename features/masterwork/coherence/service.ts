@@ -12,6 +12,7 @@
 // human-authored work (common-docs/systems/platform/provenance/FEATURE.md).
 
 import { supabase } from "@/utils/supabase/client";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import type { RulebookRow } from "../types";
 import { allTensions, type TensionState } from "./types";
 
@@ -72,19 +73,28 @@ export async function settleTension(opts: {
         : t,
     );
 
-    const { data: saved, error: saveError } = await rulebookTable()
-      .update({
-        metadata: { ...baseMeta, coherence: { ...block, tensions: next } },
-      } as never)
-      // CAS on the version we just read — but we never WRITE a new version.
-      .eq("id", opts.rulebookId)
-      // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
-      .eq("version", row.version)
-      .is("deleted_at", null)
-      .select("id")
-      .maybeSingle();
-    if (saveError) throw saveError;
-    if (saved) return { status: "saved" };
+    const result = await guardedUpdate<{ id: string; version: number }>({
+      expectedVersion: row.version,
+      applyUpdate: ({ expectedVersion, nextVersion }) =>
+        rulebookTable()
+          .update({
+            metadata: { ...baseMeta, coherence: { ...block, tensions: next } },
+            version: nextVersion,
+          } as never)
+          .eq("id", opts.rulebookId)
+          .eq("version", expectedVersion)
+          .is("deleted_at", null)
+          .select("id, version")
+          .maybeSingle(),
+      fetchCurrent: () =>
+        rulebookTable()
+          .select("id, version")
+          .eq("id", opts.rulebookId)
+          .is("deleted_at", null)
+          .maybeSingle(),
+    });
+    if (result.status === "saved") return { status: "saved" };
+    if (result.status === "not_found") return { status: "not_found" };
   }
   return { status: "conflict" };
 }

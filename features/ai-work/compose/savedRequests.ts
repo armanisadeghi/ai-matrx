@@ -292,7 +292,6 @@ export async function updateSavedRequest(
           version: nextVersion,
         })
         .eq("id", id)
-        // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
         .eq("version", expected)
         .is("deleted_at", null)
         .select(SAVED_REQUEST_COLUMNS)

@@ -1,6 +1,7 @@
 /** Live Cloud Browser data and control-plane client. */
 import { getJson, postJson } from "@/lib/python-client";
 import { supabase } from "@/utils/supabase/client";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import { getResourceAccess } from "@/utils/permissions/access";
 import { canViewAccess } from "@/utils/permissions/access-core";
 import type { Database, Json } from "@/types/database.types";
@@ -1250,17 +1251,26 @@ async function mergeMetadata(
     .single();
   if (current.error) throw current.error;
   const metadata = { ...jsonObject(current.data.metadata), [key]: value };
-  const updated = await supabase
-    .schema("browser")
-    .from("profile")
-    .update({ metadata })
-    .eq("id", profileId)
-    // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
-    .eq("version", current.data.version)
-    .select("id")
-    .maybeSingle();
-  if (updated.error) throw updated.error;
-  if (!updated.data)
+  const result = await guardedUpdate<{ id: string; version: number }>({
+    expectedVersion: current.data.version,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      supabase
+        .schema("browser")
+        .from("profile")
+        .update({ metadata, version: nextVersion })
+        .eq("id", profileId)
+        .eq("version", expectedVersion)
+        .select("id, version")
+        .maybeSingle(),
+    fetchCurrent: () =>
+      supabase
+        .schema("browser")
+        .from("profile")
+        .select("id, version")
+        .eq("id", profileId)
+        .maybeSingle(),
+  });
+  if (result.status !== "saved")
     throw new Error("The browser profile changed. Reload and try again.");
 }
 export async function saveConsent(

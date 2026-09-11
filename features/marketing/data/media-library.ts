@@ -17,6 +17,7 @@ import { isJsonRecord } from "@/features/marketing/types";
 import type { MarketingSite } from "@/features/marketing/types";
 import { SITE_COLUMNS } from "@/features/marketing/data/service";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { guardedUpdate } from "@ai-matrx/data/db";
 
 // ============================================================================
 // Research images — inspiration + reuse candidates for this brand's org
@@ -221,20 +222,29 @@ export async function saveSiteMediaStandards(input: {
       notes: input.standards.notes,
     },
   };
-  const response = await db
-    .from("site")
-    .update({ settings: nextSettings })
-    .eq("id", input.siteId)
-    // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
-    .eq("version", input.expectedVersion)
-    .is("deleted_at", null)
-    .select(SITE_COLUMNS)
-    .maybeSingle();
-  if (response.error) throw response.error;
-  if (!response.data) {
+  const result = await guardedUpdate<MarketingSite & { version: number }>({
+    expectedVersion: input.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("site")
+        .update({ settings: nextSettings, version: nextVersion })
+        .eq("id", input.siteId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select(SITE_COLUMNS)
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("site")
+        .select(SITE_COLUMNS)
+        .eq("id", input.siteId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+  });
+  if (result.status !== "saved") {
     throw new Error(
       "This site changed in another session. Reload and try again.",
     );
   }
-  return response.data;
+  return result.row;
 }

@@ -35,6 +35,7 @@ import type {
 } from "@/features/marketing/content-plan/types";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import { extractErrorMessage } from "@/utils/errors";
 
 import {
@@ -268,17 +269,27 @@ export async function recordSiteArchetype(args: {
   block[SITE_ARCHETYPE_KEY] = entry;
   settings[SITE_SETTINGS_KEY] = block;
 
-  const response = await (await authenticatedWebDb(supabase))
-    .from("site")
-    .update({ settings })
-    .eq("id", args.siteId)
-    // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
-    .eq("version", args.expectedVersion)
-    .is("deleted_at", null)
-    .select("id")
-    .maybeSingle();
-  if (response.error) throw response.error;
-  if (!response.data) {
+  const db = await authenticatedWebDb(supabase);
+  const result = await guardedUpdate<{ id: string; version: number }>({
+    expectedVersion: args.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("site")
+        .update({ settings, version: nextVersion })
+        .eq("id", args.siteId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select("id, version")
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("site")
+        .select("id, version")
+        .eq("id", args.siteId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+  });
+  if (result.status !== "saved") {
     throw new Error(
       "The site record changed in another session — the pages were created, but the committed counts were not recorded. Refresh and commit again to record them.",
     );

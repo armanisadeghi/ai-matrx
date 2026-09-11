@@ -18,6 +18,7 @@
  */
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import { guardedUpdate } from "@ai-matrx/data/db";
 
 import {
   coerceEntityAttachPlan,
@@ -384,19 +385,27 @@ async function writeDraftOnce(
   mutate(block);
   settings[SITE_SETTINGS_KEY] = block;
 
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
-    .from("site")
-    .update({ settings })
-    .eq("id", siteId)
-    // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
-    .eq("version", fresh.version)
-    .is("deleted_at", null)
-    .select("id")
-    .maybeSingle();
-  if (response.error) throw response.error;
-  return Boolean(response.data);
+  const db = await authenticatedWebDb(supabase);
+  const result = await guardedUpdate<{ id: string; version: number }>({
+    expectedVersion: fresh.version,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("site")
+        .update({ settings, version: nextVersion })
+        .eq("id", siteId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select("id, version")
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("site")
+        .select("id, version")
+        .eq("id", siteId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+  });
+  return result.status === "saved";
 }
 
 /**

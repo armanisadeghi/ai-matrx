@@ -287,7 +287,11 @@ export async function reconcileBatchState(
     .from("label_batch")
     .update({ state: derived, version: batch.version + 1 })
     .eq("id", batch.id)
-    // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
+    // CONVERGE: C-6 — NOT converted to guardedUpdate() on purpose: this is a
+    // best-effort reconcile-on-read that deliberately swallows both the conflict
+    // AND the error (the derived state is returned locally either way), while
+    // guardedUpdate() rethrows the driver error. Converting it would change
+    // behaviour. Data Doctrine §3.2, Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
     .eq("version", batch.version)
     .select(BATCH_COLUMNS)
     .maybeSingle();

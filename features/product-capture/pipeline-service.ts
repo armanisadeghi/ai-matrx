@@ -148,7 +148,6 @@ export async function setItemStage(
       items()
         .update({ stage, version: nextVersion })
         .eq("id", item.id)
-        // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
         .eq("version", expectedVersion)
         .select(ITEM_COLUMNS)
         .maybeSingle(),

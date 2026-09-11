@@ -205,7 +205,6 @@ export const fcService = {
           .from("fc_set")
           .update({ metadata: value, version: nextVersion })
           .eq("id", setId)
-          // CONVERGE: C-6 — hand-rolled optimistic-lock check; the base contract expects the shared guardedUpdate() — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-061
           .eq("version", expectedVersion)
           .select(SELECT)
           .maybeSingle<SetMetadataRow>(),
