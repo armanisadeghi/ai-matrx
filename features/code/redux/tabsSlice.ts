@@ -120,12 +120,11 @@ const slice = createSlice({
       const savedContent = typeof action.payload === "string" ? undefined : action.payload.savedContent;
       const tab = state.byId[id];
       if (!tab) return;
-      // An edit can land while a write is in flight. Only the exact snapshot
-      // sent to persistence becomes pristine; later keystrokes stay dirty.
-      if (savedContent === undefined || tab.content === savedContent) {
-        tab.pristineContent = savedContent ?? tab.content;
-        tab.dirty = false;
-      }
+      // An edit can land while a write is in flight. The persisted snapshot
+      // is always the new baseline; later keystrokes remain dirty relative to
+      // that snapshot rather than to an older disk version.
+      tab.pristineContent = savedContent ?? tab.content;
+      tab.dirty = tab.content !== tab.pristineContent;
       tab.lastSavedAt = new Date().toISOString();
     },
     /** Refresh the `remoteUpdatedAt` stored alongside a tab — used by

@@ -24,7 +24,7 @@ describe("tab save snapshots", () => {
 
     expect(state.byId[file.id]).toMatchObject({
       content: "three",
-      pristineContent: "one",
+      pristineContent: "two",
       dirty: true,
     });
   });

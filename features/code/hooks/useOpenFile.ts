@@ -7,6 +7,8 @@ import { openTab, setActiveTab } from "../redux/tabsSlice";
 import { languageFromFilename } from "../styles/file-icon";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 
+const SESSION_REPORT_PATH = "/home/agent/.matrx/session-report.md";
+
 /**
  * Returns a callback that opens a file from the active filesystem adapter
  * into a new (or existing) editor tab.
@@ -40,14 +42,20 @@ export function useOpenFile() {
       if (signal?.aborted) return;
       const name = path.split("/").pop() ?? path;
       const id = `${filesystem.id}:${path}`;
+      // The recovery opener intentionally gives this one file a stable
+      // `session-report:<sandboxId>` tab id. Treat it as the same physical
+      // file as the Explorer path so clicking it cannot create a twin tab.
+      const legacySessionReportId = filesystem.id.startsWith("sandbox:") && path === SESSION_REPORT_PATH
+        ? `session-report:${filesystem.id.slice("sandbox:".length)}`
+        : null;
       // URL restore and explorer/search selection both converge here. An
       // existing tab may carry unsaved edits, so activate it rather than
       // reading the filesystem again and replacing its buffer.
       // `openTab` also avoids replacement today, but this explicit branch
       // keeps that dirty-buffer guarantee local to the filesystem read.
       const existing = store.getState().codeTabs?.byId?.[id];
-      if (existing) {
-        dispatch(setActiveTab(id));
+      if (existing || (legacySessionReportId && store.getState().codeTabs?.byId?.[legacySessionReportId])) {
+        dispatch(setActiveTab(existing ? id : legacySessionReportId!));
         return;
       }
       const profile = getFilePreviewProfile(name, null, null);
