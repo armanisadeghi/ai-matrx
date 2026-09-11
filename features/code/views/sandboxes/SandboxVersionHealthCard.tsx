@@ -6,9 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/toast";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { SandboxMigrateResponse, SandboxVersionHealth } from "@/types/sandbox";
-import { sandboxRuntimeReplaced } from "../../redux/codeWorkspaceSlice";
+import {
+  sandboxRuntimeReplaced,
+  selectSandboxRuntimeRevision,
+} from "../../redux/codeWorkspaceSlice";
 
 interface SandboxVersionHealthCardProps {
   sandboxId: string;
@@ -84,6 +87,9 @@ export function SandboxVersionHealthCard({
   onMigrated,
 }: SandboxVersionHealthCardProps) {
   const dispatch = useAppDispatch();
+  const runtimeRevision = useAppSelector((state) =>
+    selectSandboxRuntimeRevision(state, sandboxId),
+  );
   const [loadState, setLoadState] = useState<LoadState>({ state: "loading" });
   const [updating, setUpdating] = useState(false);
   const [confirmUpdateOpen, setConfirmUpdateOpen] = useState(false);
@@ -152,7 +158,7 @@ export function SandboxVersionHealthCard({
   useEffect(() => {
     void refresh();
     return () => requestRef.current.controller.abort();
-  }, [sandboxId]);
+  }, [sandboxId, runtimeRevision]);
 
   if (loadState.state === "loading") {
     return (

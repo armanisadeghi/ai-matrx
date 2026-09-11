@@ -27,12 +27,22 @@ export async function POST(
     response = await fetch(`${lookup.orchestrator.url}/sandboxes/${lookup.sandboxId}/migrate`, {
       method: "POST",
       headers: orchestratorJsonHeaders(lookup.orchestrator),
-      signal: AbortSignal.timeout(60_000),
+      // Migration drains and replaces a live container, then waits for its
+      // readiness checks. The orchestrator itself budgets up to 90 seconds
+      // for verification, so this proxy must not report a false failure first.
+      signal: AbortSignal.timeout(180_000),
     });
   } catch (error) {
+    const timedOut =
+      error instanceof DOMException && error.name === "TimeoutError";
     return NextResponse.json(
-      { error: "Sandbox update could not reach the orchestrator", details: error instanceof Error ? error.message : String(error) },
-      { status: 502 },
+      {
+        error: timedOut
+          ? "Sandbox update did not finish within three minutes. Check freshness before trying again."
+          : "Sandbox update could not reach the orchestrator",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: timedOut ? 504 : 502 },
     );
   }
 
