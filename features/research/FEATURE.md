@@ -111,6 +111,12 @@ via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a rese
 
 ## Change log
 
+- 2026-09-11 — Media gallery file naming is the package's ruling end to end: the display
+  label is `fileNameFromUrl` (`@ai-matrx/data/files`) → source host → raw URL; a UUID or
+  extension-less segment is never shown as a name (previously the fallback still surfaced
+  it). `fileExt` reads the recognized name, else the raw path segment. The upload filename
+  uses the recognizer directly so a host label can never become a `.com` "file name"; the
+  document card prefers its caption before the host label and does not print the host twice.
 - 2026-09-08 — Outputs Studio's `PresentationDeck` / `SeoPackage` types are now DERIVED from
   the generated kind registry (`KindPayload<"presentation_deck" | "seo_package">`), never
   re-declared (One-Type Law). Flattening audit: every `research_client.output_*` mandate the

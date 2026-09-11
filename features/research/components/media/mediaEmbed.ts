@@ -44,38 +44,41 @@ export function videoPoster(item: ResearchMedia): string | null {
 }
 
 /**
- * A DISPLAY LABEL for a media URL. The recognizer itself is
- * `fileNameFromUrl` in `@ai-matrx/data/files` (which correctly answers null
- * for a path segment that is not a name — a UUID is an id, not a file name);
- * this adds only the gallery's display fallback, so a row always renders
- * something a human can read.
+ * A DISPLAY LABEL for a media URL: the recognized file name from
+ * `@ai-matrx/data/files` (`response-content-disposition` name, else the last
+ * path segment only when it carries an extension), otherwise the source host,
+ * otherwise the raw URL. The package's ruling stands here: a segment that
+ * does not look like a real name — a UUID, `report`, `download` — is NOT a
+ * name and is never shown as one; the host is the honest label instead.
  */
 export function mediaLabelFromUrl(url: string): string {
-  const recognized = fileNameFromUrl(url);
-  if (recognized) return recognized;
+  return fileNameFromUrl(url) ?? hostLabel(url) ?? url;
+}
+
+/** Last raw path segment (query/hash stripped, decoded), or "". */
+function rawPathSegment(url: string): string {
+  const last = url.split(/[?#]/)[0]?.split("/").filter(Boolean).pop() ?? "";
   try {
-    const u = new URL(url);
-    const last = decodeURIComponent(
-      u.pathname.split("/").filter(Boolean).pop() ?? "",
-    );
-    return last || u.hostname;
+    return decodeURIComponent(last);
   } catch {
-    return url.split("/").pop() || url;
+    return last;
   }
 }
 
-/** Lowercase file extension from a URL path, or "". */
+/** Lowercase file extension from a URL, or "": the recognized file name's
+ * extension, else the raw path segment's (covers a disposition name that
+ * carries no extension while the path does). */
 export function fileExt(url: string): string {
-  const name = mediaLabelFromUrl(url);
+  const name = fileNameFromUrl(url) ?? rawPathSegment(url);
   const m = name.match(/\.([a-z0-9]{1,5})$/i);
   return m ? m[1].toLowerCase() : "";
 }
 
-/** Host without `www.`, for a source label. */
-export function hostLabel(url: string): string {
+/** Host without `www.`, for a source label; null when `url` is not a URL. */
+export function hostLabel(url: string): string | null {
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    return new URL(url).hostname.replace(/^www\./, "") || null;
   } catch {
-    return "";
+    return null;
   }
 }
