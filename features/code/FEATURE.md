@@ -2,9 +2,9 @@
 
 **Status:** `active` — incremental enhancement (resource pills + error inspection + unified context menu in flight)
 **Tier:** `1`
-**Last updated:** `2026-08-30`
+**Last updated:** `2026-09-11`
 
-> The standalone, VSCode-style code workspace mounted at [`/code`](<../../app/(a)/code/page.tsx>). Distinct from [`features/code-editor/`](../code-editor/FEATURE.md), which is the **embedded** editor surface used by the agent builder, prompt-app editor, notes, and friends. The two share the `vsc_*` UI-context contract; everything else is independent.
+> The standalone, VSCode-style code workspace mounted at [`/code`](<../../app/(core)/code/page.tsx>). Distinct from [`features/code-editor/`](../code-editor/FEATURE.md), which is the **embedded** editor surface used by the agent builder, prompt-app editor, notes, and friends. The two share the `vsc_*` UI-context contract; everything else is independent.
 
 > **Architectural truth source:** [`SYSTEM_STATE.md`](./SYSTEM_STATE.md) is the authoritative deep-dive — entry points, panel layout, adapter interfaces, sandbox APIs, persistence, terminal, source control, agent-context bridge, library sources, type environments. Read it before touching anything substantive. This FEATURE.md is the index.
 
@@ -21,7 +21,8 @@ A first-class in-app coding environment that runs against either a remote sandbo
 - **Route:** [`app/(core)/code/page.tsx`](<../../app/(core)/code/page.tsx>) → [`CodeWorkspaceRoute`](./host/CodeWorkspaceRoute.tsx) → [`CodeWorkspace`](./CodeWorkspace.tsx) → [`WorkspaceLayout`](./layout/WorkspaceLayout.tsx).
 - **Shell sidebar:** [`shell/CodeSidebarMenu.tsx`](./shell/CodeSidebarMenu.tsx) registered in [`route-menu-registry`](../shell/constants/route-menu-registry.ts) — activity-view icons inject into the main sidebar (same pattern as `/chat`). File trees stay in the workspace side panel. Lazy-loaded only on `/code`.
 - **Layout:** [`app/(core)/code/layout.tsx`](<../../app/(core)/code/layout.tsx>). **Loading skeleton:** [`app/(core)/code/loading.tsx`](<../../app/(core)/code/loading.tsx>).
-- **No sub-routes** — the workspace is a single SPA-style surface; deep state lives in URL params and Redux. **The complete param list is `?open=` + `?folder=` + `?agentId=` + `?conversationId=` — there is no other.**
+- **No sub-routes** — the workspace is a single SPA-style surface; location and panel state live in URL params and Redux. [`url-state.ts`](./url-state.ts) owns the URL codec: `sandbox` is the owned sandbox row UUID; `file` is an absolute sandbox file path; `root` is the Explorer location; `view` chooses the activity view; `side`, `chat`, `history`, and `bottom` use `1`/`0`; `bottomTab` chooses a workspace tool. Existing `open`, `folder`, `agentId`, and `conversationId` retain their contracts. File contents and credentials never enter the URL.
+- **Only the route host synchronizes workspace URLs.** `CodeWorkspaceRoute` opts into `syncUrlState`; windows and embedded workspaces do not rewrite their host route. [`useCodeWorkspaceUrlState`](./hooks/useCodeWorkspaceUrlState.ts) restores the owned sandbox before reading its file, preserves already-open dirty buffers, and cancels superseded restores. Filesystem paths are locations inside the sandbox, not permission grants; the sandbox API remains the authority.
 - 🚨 **`?open=<code_file_id>` is THE deep link to a specific file, and the ONLY one.** It is what `entityRegistry.code_file.hrefFor` and the sharing registry's `url_path_template` must emit — every Open door for a code file (EntityRef, peek, org sharing surfaces, share links) rides this param. [`useOpenCodeFileFromUrl`](./hooks/useOpenCodeFileFromUrl.ts) → [`useOpenLibraryFile`](./hooks/useOpenLibraryFile.ts) opens the `code.code_files` row as a Monaco tab and flips the side panel to Library. **Never invent a second shape** — a `?tab=code-file:{id}` that nothing read sat in both route registries and silently broke every code-file door, and it survived the D138 route audit because `/code` is a real path and the audit only checked paths. Changing this param means changing the hook, the entity registry, `utils/permissions/registry.ts`, the live `platform.shareable_resource_registry` row, and the committed snapshot **in one commit** (parity test: `utils/permissions/__tests__/registry.parity.test.ts`).
 - 🚨 **`?folder=<code_folder_id>` is THE deep link to a `code.code_file_folders` record.** [`useFocusCodeFolderFromUrl`](./hooks/useFocusCodeFolderFromUrl.ts) expands the folder's whole ancestor chain in the Library tree, highlights the row, and scrolls it into view. It carries the same one-commit contract as `?open=` above. **There is no `/code/folders/{id}` and there must never be one** — the workspace has no sub-routes, so a folder's destination is a state inside the Library tree, not a page.
   - The focus lives in `codeWorkspaceSlice` (`focusedFolderId` + `forcedExpandedFolderIds`), **not** in tree-local `useState`, because [`SidePanelRouter`](./views/SidePanelRouter.tsx) remounts every view on switch — local state would be destroyed the first time the user visited Explorer and came back. A hand-collapse drops the forced-open flag so the chevron never feels stuck.
@@ -124,6 +125,10 @@ container.
 
 ## Invariants & gotchas
 
+- **Explorer follows file activation, not every navigation.** Active filesystem tabs expand their ancestors, select the matching row, and scroll it into view. The tab must belong to the active adapter. Explicit folder browsing remains where the user navigates until another file is activated. New-file and new-folder actions validate the name and reject existing entries rather than overwriting them.
+- **Sandbox identity is visible in the route header at every viewport.** The connected instance supplies its stored name, effective status, detail link, and copyable ID; desktop also shows the root and supplied resource metadata. The ownership-scoped detail read refreshes this metadata. A delayed report or probe from a prior sandbox cannot change the newly selected sandbox.
+- **Compact workspaces stack their tools below the editor.** Below `lg`, `MobilePanelShell` uses its opt-in `stacked` presentation; native disclosures keep terminal children mounted while collapsed. Workspace tools use one selector, terminal sessions stack below the terminal, and desktop-only panel toggles are hidden. Desktop keeps resizable panes.
+- **Problems and Output show collected data.** Problems reads diagnostics for open tabs; it does not claim a clean build. Output includes commands and results emitted by workspace tools. Debug Console directs users to the terminal and states that interactive debugger output is not integrated.
 - **Two editor surfaces share the `vsc_*` contract; do not split it.** A Shortcut written for one editor must work in the other. Adding/renaming a `vsc_*` key updates both [`features/code-editor/FEATURE.md`](../code-editor/FEATURE.md) and this doc.
 - **The chat panel uses the new agent system — never legacy `cx-conversation`.** If you find yourself importing from `features/cx-conversation/` here, you are off-path.
 - **Patches are the integration model, not widgets.** Agent output that changes files goes through [`codePatchesSlice`](./redux/codePatchesSlice.ts), not `widget_text_*`. Widget tools belong in the embedded editor.
@@ -147,6 +152,7 @@ container.
 
 ## Change log
 
+- `2026-09-11` — Code workspace clarity pass: active-file reveal, one location row, working safe create actions, visible sandbox context, URL-restorable locations/panels, compact stacked access, real diagnostics/task output, and larger starting terminal/chat panes. Verification uses the admin test account's own sandbox; localhost evidence does not imply production certification.
 - `2026-09-11` — `/code?sandbox=<row UUID>` opens the selected sandbox through the existing connection flow. Chat Options supplies the new-tab link and inline rename; unnamed display labels include a short ID, and successful renames refresh mounted compute pickers.
 
 - 2026-09-11 — Access-token minting now retries transient 502/503/504 upstream
