@@ -475,6 +475,13 @@ const CodeWorkspaceWindow = lazyOverlay(
     })),
   { ssr: false },
 );
+const SandboxManagementWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/sandboxes/SandboxManagementWindow"
+    ),
+  { ssr: false },
+);
 const ContentEditorListWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/content-editors/ContentEditorListWindow").then(
@@ -1522,6 +1529,9 @@ export default function OverlayController() {
     keywordQuickAnswersWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "keywordQuickAnswersWindow"),
     ),
+    sandboxManagementWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "sandboxManagementWindow"),
+    ),
   };
 
   const dataById = {
@@ -1560,6 +1570,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     googleConnectWindow: useAppSelector((s) =>
       selectOverlayData(s, "googleConnectWindow"),
+    ) as Record<string, unknown> | null,
+    sandboxManagementWindow: useAppSelector((s) =>
+      selectOverlayData(s, "sandboxManagementWindow"),
     ) as Record<string, unknown> | null,
     agentDataStorageWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentDataStorageWindow"),
@@ -2440,6 +2453,28 @@ export default function OverlayController() {
             siteId={(data?.siteId as string | null) ?? null}
             siteLabel={(data?.siteLabel as string | null) ?? null}
             dimensionSlug={(data?.dimensionSlug as string | null) ?? null}
+          />
+        );
+      })()}
+
+      {/* sandboxManagementWindow */}
+      {(() => {
+        const isOpen = isOpenById.sandboxManagementWindow;
+        const data = dataById.sandboxManagementWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        const sandboxId =
+          typeof data?.sandboxId === "string" ? data.sandboxId : null;
+        if (!isOpen || !sandboxId) return null;
+        return (
+          <SandboxManagementWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "sandboxManagementWindow" }))
+            }
+            sandboxId={sandboxId}
+            title={typeof data?.title === "string" ? data.title : undefined}
           />
         );
       })()}

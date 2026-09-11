@@ -334,6 +334,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  sandboxManagementWindow: {
+    label: "Sandbox management",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   contentEditorListWindow: {
     label: "Content Editor List Window",
     instanceMode: "multi",

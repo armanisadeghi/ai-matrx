@@ -69,6 +69,21 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
 
+  // ── Sandbox management ───────────────────────────────────────────────────
+  {
+    slug: "sandbox-management-window",
+    overlayId: "sandboxManagementWindow",
+    kind: "window",
+    label: "Sandbox management",
+    defaultData: { sandboxId: null, title: null },
+    mobilePresentation: "fullscreen",
+    instanceMode: "singleton",
+    preservation: {
+      dataKeys: ["sandboxId", "title"],
+      requiredDataKeys: ["sandboxId"],
+    },
+  },
+
   // ── Code Editor ───────────────────────────────────────────────────────────
   {
     slug: "code-editor-window",
