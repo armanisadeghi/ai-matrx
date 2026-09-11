@@ -34,6 +34,8 @@ interface UseSandboxWorkspaceConnectionOptions {
 export interface SandboxWorkspaceConnectOptions {
   /** A URL restoration reconnects the sandbox without replacing restored UI state. */
   restore?: boolean;
+  /** Open the persisted recovery report after connection. Defaults off for a URL file restore. */
+  openSessionReport?: boolean;
 }
 
 /** The sole path for connecting a sandbox to a CodeWorkspace. */
@@ -65,7 +67,7 @@ export function useSandboxWorkspaceConnection({
     // A URL restore has an explicit file target. Do not let this optional,
     // delayed report replace it; ordinary user-driven connections still get
     // the recovery report as before.
-    if (!options.restore) {
+    if (options.openSessionReport ?? !options.restore) {
       void openSessionReportTab({
         adapter: filesystem,
         sandboxId: instance.id,

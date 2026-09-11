@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import type { SandboxInstance } from "@/types/sandbox";
 import { useSandboxWorkspaceConnection } from "./useSandboxWorkspaceConnection";
 
@@ -16,14 +17,18 @@ export function SandboxDeepLinkConnection({
   onError,
   onConnected,
 }: SandboxDeepLinkConnectionProps) {
+  const searchParams = useSearchParams();
   const connectedId = useRef<string | null>(null);
   const { connect } = useSandboxWorkspaceConnection({ onError, onConnected });
 
   useEffect(() => {
     if (connectedId.current === instance.id) return;
     connectedId.current = instance.id;
-    void connect(instance, { restore: true });
-  }, [connect, instance]);
+    void connect(instance, {
+      restore: true,
+      openSessionReport: !searchParams.get("file"),
+    });
+  }, [connect, instance, searchParams]);
 
   return null;
 }
