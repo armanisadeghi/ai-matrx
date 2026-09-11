@@ -96,6 +96,23 @@ must obey.
   always stays listed), the admin variant always shows them badged, and a **retired** row is
   visible-but-unselectable everywhere (`refuseIfRetired` guards every selection path).
 
+- `2026-09-11` — **Provider Sync renders the DATABASE's classification, and the policy is editable.**
+  The screen used to decide "excluded" from a hardcoded constant
+  (`constants/excluded-provider-models.ts`, now DELETED, no shim) while the model sync agent read
+  `ai.provider.sync_policy` — two answers that could drift, neither changeable without a deploy.
+  `utils/providerSyncComparison.ts` now maps `ai.provider_sync_candidates.status` (matched /
+  excluded / before_cutoff / missing) verbatim; the only row kind computed here is `extra_local`,
+  which the view cannot produce. `ProviderSyncPolicyDialog` edits the per-provider cutoff date and
+  exclusion list (also reachable from a row's **Exclude** / **Un-exclude**), writing
+  `ai.provider.sync_policy` direct via supabase-js behind a confirm that names the consequence.
+  Every row also shows the preferred offering's tier-0 price per MTok with its usage basis and a
+  verification badge from `ai.offering.pricing_verified_at` — a column that does not exist yet, so
+  the badge reads **not tracked** rather than implying a check happened; Groq's own per-token
+  price is converted ×1e6 and a drift shows both numbers. `no offering` and `no price` are distinct
+  visible states. Per-provider snapshot age replaces the raw timestamp and flags past 24h.
+  ⚠️ OPEN: aidream is landing `POST /admin/ai-catalog/provider-models/refresh`; when it is live,
+  point Sync Now at it and delete this repo's `POST /api/ai-models/provider-sync` fetchers.
+
 - `2026-08-30` — Provider Sync now gives its mobile toolbar distinct stats,
   legend, and action rows plus the canonical coarse-pointer touch floor while
   preserving the compact desktop toolbar.
