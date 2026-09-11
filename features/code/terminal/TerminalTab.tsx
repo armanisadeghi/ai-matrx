@@ -475,6 +475,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
   useEffect(() => {
     if (!hasVisibleBounds) return undefined;
     let cancelled = false;
+    let pendingMeasureObserver: ResizeObserver | null = null;
 
     const boot = async () => {
       if (!containerRef.current) return;
@@ -498,11 +499,6 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       term.loadAddon(fit);
       term.loadAddon(new linksModule.WebLinksAddon());
       term.open(containerRef.current);
-      try {
-        fit.fit();
-      } catch {
-        /* container may not be sized yet */
-      }
 
       const session: SessionState = {
         term,
@@ -550,20 +546,56 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       const expectsPty = Boolean(processRef.current.openPty);
       term.options.disableStdin = expectsPty;
 
-      term.write(
-        `${BOLD}Matrx Terminal${RESET}${DIM} — ${processRef.current.isReady ? "connected" : "no process adapter"}${RESET}\r\n`,
+      // `Terminal.open` creates this span, but xterm does not retry its
+      // character measurement after it was opened under `display:none`.
+      // Its public `resize` deliberately remeasures when called with the
+      // current dimensions. Wait until that span itself has a layout box,
+      // then remeasure before fitting or allocating the remote PTY.
+      const measureElement = containerRef.current.querySelector<HTMLElement>(
+        ".xterm-char-measure-element",
       );
-      if (expectsPty) {
-        term.write(`${DIM}[connecting interactive terminal…]${RESET}`);
-      } else {
-        writePromptFor(session);
-      }
-      setReady(true);
+      let initialized = false;
+      const initializeWhenMeasurable = () => {
+        if (
+          cancelled ||
+          initialized ||
+          (measureElement
+            ? measureElement.offsetWidth <= 0 ||
+              measureElement.offsetHeight <= 0
+            : !containerRef.current ||
+              containerRef.current.clientWidth <= 0 ||
+              containerRef.current.clientHeight <= 0)
+        ) {
+          return;
+        }
+        initialized = true;
+        pendingMeasureObserver?.disconnect();
 
-      // Try to upgrade to a real PTY in the background. If the adapter
-      // doesn't expose `openPty` (Mock) or the WebSocket can't connect
-      // fails, we visibly retain the buffered fallback.
-      void attachPty(session);
+        // Public xterm API: a same-size resize retries CharSizeService.measure
+        // when the initial hidden-host measurement was invalid.
+        term.resize(term.cols, term.rows);
+        fit.fit();
+
+        term.write(
+          `${BOLD}Matrx Terminal${RESET}${DIM} — ${processRef.current.isReady ? "connected" : "no process adapter"}${RESET}\r\n`,
+        );
+        if (expectsPty) {
+          term.write(`${DIM}[connecting interactive terminal…]${RESET}`);
+        } else {
+          writePromptFor(session);
+        }
+        setReady(true);
+
+        // Try to upgrade to a real PTY only after the true terminal geometry
+        // is known, so the daemon receives correct initial cols and rows.
+        void attachPty(session);
+      };
+
+      if (measureElement) {
+        pendingMeasureObserver = new ResizeObserver(initializeWhenMeasurable);
+        pendingMeasureObserver.observe(measureElement);
+      }
+      requestAnimationFrame(initializeWhenMeasurable);
     };
 
     /** Attempt to attach xterm directly to a PTY WebSocket. */
@@ -643,6 +675,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
 
     return () => {
       cancelled = true;
+      pendingMeasureObserver?.disconnect();
       const s = sessionRef.current;
       if (s) {
         // Abort any in-flight stream so the orchestrator stops the
