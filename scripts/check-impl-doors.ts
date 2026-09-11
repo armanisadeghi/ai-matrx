@@ -305,14 +305,46 @@ interface AnonDefinerRow {
 // mentioning a visibility column in a comment is a lie a human must still catch;
 // a door that satisfies nothing is caught here.
 //
+// TWO BLIND SPOTS, BOTH FOUND BY THE DD-116 INDEPENDENT VERIFIER AND BOTH FIXED
+// HERE (DD-116 fix 1, 2026-09-11):
+//
+//  (a) UNQUALIFIED TABLE NAMES WERE INVISIBLE. The table match was
+//      `schema.table` only, so a body that says `from definition d` under
+//      `SET search_path TO 'agent','public'` — which is how several of these
+//      functions are actually written — matched no table and was never
+//      examined at all. A door could drop its gate AND stay green just by not
+//      schema-qualifying. The query now reads each function's own
+//      `proconfig` search_path and matches a bare table name when that table's
+//      schema is on it. Bare-name matching over-matches a little (a table named
+//      `definition` matches the word in a comment too); that direction only ever
+//      ADDS examinations, which is the safe direction for a security gate.
+//
+//  (b) THE GATE VOCABULARY WAS A GUESS AND IT WAS WRONG. It listed four names
+//      off the top of an agent's head and missed `iam.has_org_access`, which is
+//      exactly how `public.cmt_list` — whose body ends
+//      `and iam.has_org_access(c.organization_id)` — was reported as ungated.
+//      A false positive in a gate is not harmless: it is the thing that teaches
+//      people to raise the baseline. The vocabulary is now DERIVED from the
+//      live database — every boolean / `uuid[]` / `SETOF uuid` function in the
+//      `iam` schema whose name starts with an access-predicate prefix — so a new
+//      platform gate is understood the day it ships, without editing this file.
+//
 // Shrink-only baseline (`scripts/impl-doors/anon-door-visibility-baseline.json`)
-// for the same reason D5 has one: 8 declared anon doors are in this state after
-// DD-116, each needing its own judgement, and a gate that screams about all of
-// them every run is a gate nobody reads. It fails on GROWTH.
+// for the same reason D5 has one: 6 declared anon doors are in this state after
+// DD-116 fix 1, each needing its own judgement, and a gate that screams about
+// all of them every run is a gate nobody reads. It fails on GROWTH.
 const UNGATED_ANON_DOOR_QUERY = `
   with doors as (
     select d.schema_name, d.function_name, d.identity_args,
-           pg_get_functiondef(p.oid) as def
+           pg_get_functiondef(p.oid) as def,
+           -- The function's OWN search_path, so an unqualified table name in its
+           -- body can be resolved the way Postgres resolves it.
+           coalesce((
+             select string_to_array(
+                      replace(replace(split_part(cfg, '=', 2), '"', ''), ' ', ''), ',')
+             from unnest(p.proconfig) cfg
+             where cfg like 'search\\_path=%'
+           ), array['public']) as spath
     from platform.client_callable_door d
     join pg_catalog.pg_proc p on p.proname = d.function_name
     join pg_catalog.pg_namespace n on n.oid = p.pronamespace and n.nspname = d.schema_name
@@ -323,20 +355,32 @@ const UNGATED_ANON_DOOR_QUERY = `
       and has_function_privilege('anon', p.oid, 'EXECUTE')
   ),
   vis_tables as (
-    select distinct c.table_schema || '.' || c.table_name as t
+    select distinct c.table_schema as sch, c.table_name as tbl
     from information_schema.columns c
     where c.column_name in ('visibility', 'card_visibility')
       and c.table_schema not in ('information_schema', 'pg_catalog')
+  ),
+  -- The gate vocabulary, READ from the live database rather than guessed: every
+  -- access predicate the iam schema actually publishes.
+  gate_rx as (
+    select '(' || array_to_string(array_agg(distinct p.proname), '|')
+               || '|has_permission|resolve_share_token|card_visibility|\\mvisibility\\M)' as rx
+    from pg_catalog.pg_proc p
+    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'iam'
+      and pg_get_function_result(p.oid) in ('boolean', 'uuid[]', 'SETOF uuid')
+      and p.proname ~ '^(has_|is_|can_|my_|org_|accessible_|discoverable_|membership_|runnable_|scraper_)'
   )
   select d.schema_name || '.' || d.function_name as fn,
          d.identity_args as args
-  from doors d
+  from doors d cross join gate_rx g
   where exists (
       select 1 from vis_tables v
-      where d.def ~* ('\\m' || replace(v.t, '.', '\\.') || '\\M')
+      where d.def ~* ('\\m' || replace(v.sch || '.' || v.tbl, '.', '\\.') || '\\M')
+         or (v.sch = any(d.spath) and d.def ~* ('\\m' || v.tbl || '\\M'))
     )
-    and d.def !~* '(card_visibility|\\mvisibility\\M|has_access|has_permission|resolve_share_token|accessible_entity_ids)'
-    and d.identity_args !~* '(secret|token|code|pin|password|passcode)'
+    and d.def !~* g.rx
+    and d.identity_args !~* '(secret|token|code|pin|password|passcode|session)'
     and d.def !~* 'auth\\.uid\\(\\)'
   order by 1, 2
 `;
