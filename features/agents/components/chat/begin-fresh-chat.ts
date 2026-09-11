@@ -108,7 +108,7 @@ export async function beginFreshChat({
 }): Promise<void> {
   const state = getState();
   let defaultAgentId: string | null = null;
-  if (state.userAuth.id !== null) {
+  if (state.userAuth.id !== null && !state.userAuth.isAnonymous) {
     try {
       defaultAgentId = (await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY))
         .agentId;

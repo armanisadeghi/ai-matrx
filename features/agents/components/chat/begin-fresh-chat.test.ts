@@ -49,7 +49,11 @@ describe("beginFreshChat guest boundary", () => {
       router: { push } as never,
       pathname: "/chat/a/guest-agent",
       getState: () =>
-        ({ userAuth: { id: null } }) as RootState,
+        ({
+          // A server-minted anonymous guest has an auth UUID. Checking only
+          // `id === null` regresses the organization-admission failure.
+          userAuth: { id: "guest-auth-user", isAnonymous: true },
+        }) as RootState,
     });
 
     expect(resolveMandateMock).not.toHaveBeenCalled();
@@ -72,6 +76,25 @@ describe("beginFreshChat guest boundary", () => {
     });
 
     expect(resolveMandateMock).not.toHaveBeenCalled();
+    expect(push).toHaveBeenCalledWith("/chat/new");
+  });
+
+  it("resolves the mandate for an authenticated user and routes its default agent to /chat/new", async () => {
+    const dispatch = jest.fn();
+    const push = jest.fn();
+    resolveMandateMock.mockResolvedValue({ agentId: "default-agent" } as never);
+
+    await beginFreshChat({
+      dispatch,
+      router: { push } as never,
+      pathname: "/chat/a/default-agent",
+      getState: () =>
+        ({
+          userAuth: { id: "authenticated-user", isAnonymous: false },
+        }) as RootState,
+    });
+
+    expect(resolveMandateMock).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledWith("/chat/new");
   });
 });

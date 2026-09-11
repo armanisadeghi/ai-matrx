@@ -111,7 +111,7 @@ first message is required.
 
 ### Flow 3 — `+` new chat
 
-- `ChatSidebarMenu` `+` calls `beginFreshChat()` (now async — it resolves the `chat.default_new_chat` mandate first so "am I on the default agent" compares against what the mandate actually resolves to) — clears stale surface focus, bumps `chatRoute.freshSessionNonce`, routes to `/chat/a/[activeAgentId]` (or `/chat/new` for the default agent). Both destinations start fresh (Flow 1). `useAgentLauncher` receives `preferFresh` + the nonce so it remints even when the URL stays on `/chat/new`.
+- `ChatSidebarMenu` `+` calls `beginFreshChat()` (now async — authenticated users resolve the `chat.default_new_chat` mandate first so "am I on the default agent" compares against what the mandate actually resolves to; anonymous guests never invoke that organization-scoped resolver and retain a known route agent or use `/chat/new`) — clears stale surface focus, bumps `chatRoute.freshSessionNonce`, routes to `/chat/a/[activeAgentId]` (or `/chat/new` for the default agent). Both destinations start fresh (Flow 1). `useAgentLauncher` receives `preferFresh` + the nonce so it remints even when the URL stays on `/chat/new`.
 
 ### Flow 3a — Attach a stored PDF
 
