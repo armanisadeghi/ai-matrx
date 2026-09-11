@@ -442,6 +442,8 @@ model overrides.
 
 ## Change Log
 
+- `2026-09-11` — Comparison headings use data-only timestamps and locale-aware relative age from the shared diff viewer; removed the duplicate older-version timestamp and clock from the toolbar.
+
 - `2026-09-11` — Codex: Older-history fetching rechecks the top after a page or display-window advance and after the cold-history lock opens. Collapsed assistant/tool batches no longer require repeated down/up scrolling to reach earlier messages. The shared sentinel preserves the scroll anchor and stops when the viewer leaves the top or history is exhausted; loading-state changes alone do not cause automatic retry loops. Initial page sizes and initial-turn selection are unchanged. Guard: `components/shared/__tests__/OlderMessagesSentinel.test.tsx`.
 
 - `2026-09-11` — Valid bare output schemas no longer generate false data-shape incidents during live-definition or version hydration. Recursive validation and diagnostics for malformed schemas and invalid envelope names remain active. Verified against the captured Transcript Cleaner Test schema.

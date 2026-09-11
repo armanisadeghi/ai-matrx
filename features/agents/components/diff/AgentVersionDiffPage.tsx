@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Loader2,
-  Clock,
   ArrowUpCircle,
   CheckCircle2,
   GitCompareArrows,
@@ -519,10 +518,6 @@ export function AgentVersionDiffPage({
 
               {selectedVersionItem && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="w-3 h-3" />
-                    {new Date(selectedVersionItem.changed_at).toLocaleString()}
-                  </div>
                   <VersionIdBadge versionId={selectedVersionItem.version_id} />
                 </div>
               )}
