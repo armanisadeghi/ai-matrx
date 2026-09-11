@@ -92,6 +92,14 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
   }, [process]);
 
   const [ready, setReady] = useState(false);
+  // The mobile disclosure keeps this component mounted while its host is
+  // hidden. Boot once on its first real reveal, then retain that PTY/session
+  // across later disclosure closes.
+  const [hasBeenVisible, setHasBeenVisible] = useState(visible);
+
+  useEffect(() => {
+    if (visible) setHasBeenVisible(true);
+  }, [visible]);
 
   // ── Prompt writing helpers ──────────────────────────────────────────────
   const writePromptFor = useCallback((state: SessionState) => {
@@ -450,6 +458,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
 
   // ── Boot xterm once ─────────────────────────────────────────────────────
   useEffect(() => {
+    if (!hasBeenVisible) return undefined;
     let cancelled = false;
 
     const boot = async () => {
@@ -630,7 +639,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         sessionRef.current = null;
       }
     };
-  }, []);
+  }, [hasBeenVisible]);
 
   // ── Resize observer ─────────────────────────────────────────────────────
   useEffect(() => {
