@@ -19,6 +19,16 @@
  * Only TRANSPORT is stubbed: the adapter thunk is replaced by one that
  * attaches the run the way the real adapter's first step does, and the test
  * then folds a real `run_errored` event through the real reducer.
+ *
+ * ── WALL W15 (Expert Book Challenge, 2026-09-10) ───────────────────────────
+ * The box remembered the last run id in sessionStorage and RE-ATTACHED to it
+ * on mount without asking whether it was still going. A run that had errored
+ * or completed came back wearing "Working…", with nothing on screen to say it
+ * was old; and when the Expert pressed Run, the new run started server-side
+ * while the box stayed on the dead id. So the remembered id is a CANDIDATE
+ * now: the row is read first, a run that `runIsOver` is forgotten rather than
+ * adopted, a freshly started run always replaces it, and the box says which
+ * run it is showing. The added tests below guard exactly that.
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -137,32 +147,55 @@ function runErrored(runId: string, message: string): WorkflowRunEvent {
   } as WorkflowRunEvent;
 }
 
-it("settles an errored run from its live terminal event without the row-poll recovery alarm", async () => {
-  const masterworkId = "11111111-1111-4111-8111-111111111111";
-  const runId = "22222222-2222-4222-8222-222222222222";
-  sessionStorage.setItem(`matrx.masterwork.run.${masterworkId}`, runId);
-  // The run ROW's recorded error is what the box reads once it has settled.
-  getMasterworkRunVerdict.mockResolvedValue({
-    status: "errored",
-    error: { message: "The worker rejected the input." },
-  });
-  const onRunFinished = jest.fn();
-  const consoleError = jest.spyOn(console, "error").mockImplementation();
+const MASTERWORK_ID = "11111111-1111-4111-8111-111111111111";
+const RUN_ID = "22222222-2222-4222-8222-222222222222";
 
-  await act(async () => {
+function renderBox(onRunFinished: jest.Mock) {
+  return act(async () => {
     root.render(
       <Provider store={store}>
         <TryMasterworkBox
-          masterworkId={masterworkId}
+          masterworkId={MASTERWORK_ID}
           masterworkKind="edit"
           onRunFinished={onRunFinished}
         />
       </Provider>,
     );
   });
+}
 
-  // The remembered run is rejoined on the first render — no effect cascade.
+/** The re-attach check reads the run row before adopting anything. */
+async function settle() {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+it("settles an errored run from its live terminal event without the row-poll recovery alarm", async () => {
+  const masterworkId = MASTERWORK_ID;
+  const runId = RUN_ID;
+  sessionStorage.setItem(`matrx.masterwork.run.${masterworkId}`, runId);
+  // The remembered run is still GOING — that is what makes it rejoinable at
+  // all. Its row is read once to decide that, and again for the explanation
+  // once the live terminal event lands.
+  getMasterworkRunVerdict
+    .mockResolvedValueOnce({ status: "running", error: null })
+    .mockResolvedValue({
+      status: "errored",
+      error: { message: "The worker rejected the input." },
+    });
+  const onRunFinished = jest.fn();
+  const consoleError = jest.spyOn(console, "error").mockImplementation();
+
+  await renderBox(onRunFinished);
+  await settle();
+
+  // A LIVE remembered run is rejoined, and the box says which run it is.
   expect(adoptedRunId).toBe(runId);
+  expect(container.textContent).toContain(
+    "Rejoined the run you started earlier",
+  );
   expect(onRunFinished).not.toHaveBeenCalled();
 
   await act(async () => {
@@ -177,10 +210,52 @@ it("settles an errored run from its live terminal event without the row-poll rec
   });
 
   expect(onRunFinished).toHaveBeenCalledTimes(1);
-  // Settled by the EVENT: exactly one row read, and it is the explanation
-  // read, not a recovery poll that had to notice on its own.
-  expect(getMasterworkRunVerdict).toHaveBeenCalledTimes(1);
+  // Settled by the EVENT: the SECOND row read is the explanation read (the
+  // first was the re-attach check), not a recovery poll that had to notice on
+  // its own.
+  expect(getMasterworkRunVerdict).toHaveBeenCalledTimes(2);
   expect(container.textContent).toContain("Your Masterwork stopped");
   expect(container.textContent).toContain("The worker rejected the input.");
   expect(consoleError).not.toHaveBeenCalled();
+});
+
+it("never re-attaches to a remembered run that is already OVER", async () => {
+  sessionStorage.setItem(`matrx.masterwork.run.${MASTERWORK_ID}`, RUN_ID);
+  // THE DEFECT: this run errored minutes ago. The box used to adopt it on the
+  // first render and wear "Working…" with nothing to say it was old.
+  getMasterworkRunVerdict.mockResolvedValue({
+    status: "errored",
+    error: { message: "The worker rejected the input." },
+  });
+  const onRunFinished = jest.fn();
+
+  await renderBox(onRunFinished);
+  await settle();
+
+  expect(adoptedRunId).toBeNull();
+  // Forgotten, so a later mount cannot resurrect it either.
+  expect(
+    sessionStorage.getItem(`matrx.masterwork.run.${MASTERWORK_ID}`),
+  ).toBeNull();
+  expect(container.textContent).not.toContain("Working…");
+  expect(container.textContent).not.toContain("Rejoined the run");
+  // Nothing finished while this box was watching, so nobody is told one did.
+  expect(onRunFinished).not.toHaveBeenCalled();
+  // The re-attach question is CLOSED, not left hanging — the other half of
+  // the defect was a box still holding a dead id when the Expert pressed Run.
+  expect(container.textContent).not.toContain("Checking");
+});
+
+it("forgets a remembered run whose row cannot be read at all", async () => {
+  sessionStorage.setItem(`matrx.masterwork.run.${MASTERWORK_ID}`, RUN_ID);
+  getMasterworkRunVerdict.mockResolvedValue(null);
+
+  await renderBox(jest.fn());
+  await settle();
+
+  expect(adoptedRunId).toBeNull();
+  expect(
+    sessionStorage.getItem(`matrx.masterwork.run.${MASTERWORK_ID}`),
+  ).toBeNull();
+  expect(container.textContent).not.toContain("Working…");
 });

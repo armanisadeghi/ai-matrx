@@ -50,7 +50,10 @@ import {
   selectNodeAggregatePhases,
   selectRunStatus,
 } from "@/features/workflow-runtime/redux/workflow-runs.selectors";
-import { runIsOver } from "@/features/workflow-runtime/types";
+import {
+  runIsOver,
+  type WorkflowRunStatus,
+} from "@/features/workflow-runtime/types";
 import {
   InterruptCard,
   InvocationBody,
@@ -203,11 +206,34 @@ export function TryMasterworkBox({
   const isEdit = masterworkKind !== "generate";
 
   const [steps, setSteps] = useState<RunStepPresentation[]>([]);
-  const [runId, setRunId] = useState<string | null>(() => recallRun(masterworkId));
+  const [runId, setRunId] = useState<string | null>(null);
+  /** Where the run on screen came from — said out loud beside it. */
+  const [runOrigin, setRunOrigin] = useState<"fresh" | "rejoined" | null>(null);
+  /**
+   * TRUE WHILE THE REMEMBERED RUN IS BEING CHECKED. The box used to ADOPT that
+   * id on the first render and ask no questions: a run that had errored or
+   * completed came back wearing "Working…" with nothing to say it was old, and
+   * pressing Run then started a real run server-side that this box never
+   * attached to, because it was still holding the dead id (wall W15,
+   * 2026-09-10). So the id is a CANDIDATE now, not a run.
+   */
+  const [rejoining, setRejoining] = useState<boolean>(
+    () => recallRun(masterworkId) !== null,
+  );
+  /** Which Masterwork the state above belongs to — a different one resets the
+   *  re-attach question during render (the documented adjust-on-prop-change
+   *  pattern), never synchronously inside the effect. */
+  const [rejoinFor, setRejoinFor] = useState(masterworkId);
   const [failure, setFailure] = useState<RunFailureExplanation | null>(null);
   /** Terminal handling fires exactly once per run — a ref, so settling it
    *  never schedules another render. */
   const notifiedFor = useRef<string | null>(null);
+  /**
+   * Bumped every time the person starts a run. A re-attach check still in
+   * flight compares against it and stands down — the freshly started run
+   * ALWAYS wins, and can never be replaced by the id it just superseded.
+   */
+  const startGeneration = useRef(0);
 
   // ── THE ONE ADOPTION. Replay + live SSE + lanes, all of it. ──────────────
   useWorkflowRun(runId);
@@ -236,12 +262,52 @@ export function TryMasterworkBox({
     };
   }, [masterworkId]);
 
+  // ── REJOIN, BUT ONLY A RUN THAT IS STILL GOING ─────────────────────────
   // A refresh mid-run rejoins: the adapter REPLAYS the durable event log, so
-  // simply naming the run is enough — no bespoke catch-up path.
-  // A refresh mid-run rejoins: `runId` is SEEDED from the remembered id in
-  // useState's initializer (above), so the adapter adopts and REPLAYS the
-  // durable event log on the very first render — no effect, no cascade, no
-  // bespoke catch-up path.
+  // naming the run is enough — no bespoke catch-up path. What the id alone
+  // cannot say is whether that run is still ALIVE, so the row is read first.
+  // A run that is over is forgotten instead of adopted: a finished run belongs
+  // in Past runs, not in the box that is waiting for one.
+  if (rejoinFor !== masterworkId) {
+    setRejoinFor(masterworkId);
+    setRunId(null);
+    setRunOrigin(null);
+    setRejoining(recallRun(masterworkId) !== null);
+  }
+
+  useEffect(() => {
+    // `rejoining` is already false when nothing was remembered (the useState
+    // initializer, and the render-time reset above), so there is nothing to
+    // settle here.
+    const remembered = recallRun(masterworkId);
+    if (!remembered) return;
+    const generation = startGeneration.current;
+    let alive = true;
+    const stale = () => !alive || startGeneration.current !== generation;
+    void getMasterworkRunVerdict(remembered)
+      .then((row) => {
+        if (stale()) return;
+        const status = (row?.status ?? null) as WorkflowRunStatus | null;
+        if (!row || runIsOver(status)) {
+          forgetRun(masterworkId);
+          setRejoining(false);
+          return;
+        }
+        setRunId(remembered);
+        setRunOrigin("rejoined");
+        setRejoining(false);
+      })
+      .catch(() => {
+        // The row could not be read, so this box cannot claim the run is
+        // alive. It says nothing rather than something false.
+        if (stale()) return;
+        forgetRun(masterworkId);
+        setRejoining(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [masterworkId]);
 
   // The steps worth showing, and the one that carries the deliverable. The
   // input step is never shown — the person just filled it in.
@@ -317,8 +383,12 @@ export function TryMasterworkBox({
     }
     setFailure(null);
     notifiedFor.current = null;
+    // From here on, any re-attach check still in flight is stale.
+    startGeneration.current += 1;
+    setRejoining(false);
     forgetRun(masterworkId);
     setRunId(null);
+    setRunOrigin(null);
 
     // AN UNTOUCHED FIELD IS OMITTED, NEVER SENT AS "" (2026-08-26).
     // Sending "" for everything is fine for free text and FATAL for a choice:
@@ -345,8 +415,11 @@ export function TryMasterworkBox({
       toast.error(outcome.message);
       return;
     }
+    // THE FRESH RUN ALWAYS REPLACES THE REMEMBERED ONE — both in storage and
+    // on screen.
     rememberRun(masterworkId, outcome.runId);
     setRunId(outcome.runId);
+    setRunOrigin("fresh");
   }, [inputs, values, touched, masterworkId, startServedRun]);
 
   // The Audition judges the WORK, so it wants the deliverable when there is a
@@ -421,12 +494,18 @@ export function TryMasterworkBox({
         <Button
           size="sm"
           onClick={() => void start()}
-          disabled={starting || running || servedLoading}
+          disabled={starting || running || servedLoading || rejoining}
           aria-label={submitLabel ?? `Run ${whatItRuns}`}
           title={submitLabel ?? `Run ${whatItRuns}`}
         >
           <Play className={submitLabel ? "mr-1 h-4 w-4" : "h-4 w-4"} />
-          {starting ? "Starting…" : running ? "Working…" : (submitLabel ?? "")}
+          {rejoining
+            ? "Checking…"
+            : starting
+              ? "Starting…"
+              : running
+                ? "Working…"
+                : (submitLabel ?? "")}
         </Button>
         {onCompare && !candidateText ? (
           <span className="text-xs text-muted-foreground">
@@ -434,6 +513,28 @@ export function TryMasterworkBox({
           </span>
         ) : null}
       </div>
+
+      {/* ── WHICH RUN IS THIS? Never leave the reader guessing whether the
+          thing on screen is the one they just started (wall W15). ───────── */}
+      {rejoining ? (
+        <p
+          className="text-[11px] text-muted-foreground"
+          data-masterwork-run="checking"
+        >
+          Checking the run you started earlier…
+        </p>
+      ) : runId ? (
+        <p
+          className="text-[11px] text-muted-foreground"
+          data-masterwork-run={runOrigin ?? "fresh"}
+        >
+          {runOrigin === "rejoined"
+            ? "Rejoined the run you started earlier"
+            : "This run"}
+          {" · "}
+          <span className="font-mono">{runId.slice(0, 8)}</span>
+        </p>
+      ) : null}
 
       {/* ── The steps, straight from the run adapter's phases ───────────── */}
       {runId && visibleSteps.length > 0 ? (

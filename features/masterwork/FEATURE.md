@@ -74,7 +74,12 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     generated `TERMINAL_RUN_STATUSES` answers the engine's resume question and excludes it. Asking
     that set directly is how a run that errored left the box "Working…" forever, with nothing told
     to the caller until a row poll happened to notice. Guarded by `TryMasterworkBox.test.tsx`
-    (proven failing-then-passing 2026-09-09).
+    (proven failing-then-passing 2026-09-09). It also **never re-attaches to a run that is
+    over**: the remembered sessionStorage id is a CANDIDATE, its row is read first, and a run
+    `runIsOver` answers true for is FORGOTTEN rather than adopted — a finished run belongs in Past
+    runs, not in the box that is waiting for one. A freshly started run always replaces the
+    remembered id (a re-attach check still in flight stands down against a start generation), and
+    the box SAYS which run it is showing. Wall W15, 2026-09-10.
 18. **Every Rulebook door adopts the Rulebook's own organization** — `RulebookLaneRoute` and
     `RulebookDetailPage` both call `useAdoptRecordOrganization`
     (`features/organizations/useAdoptRecordOrganization.ts`) and hold their body until it answers.
