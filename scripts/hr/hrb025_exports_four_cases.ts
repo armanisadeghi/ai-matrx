@@ -298,11 +298,25 @@ function main(): number {
     typeof envelope.file_id === "string" && typeof envelope.sha256 === "string",
     `sha256 ${String(envelope.sha256).slice(0, 12)}…`,
   );
+  // E-23/E-53 dropped `signed_url` / `cdn_url` / `expires_at` on 2026-09-11 (aidream 6dfceff69,
+  // this repo 5cf23a6e1a): the envelope is now a DURABLE reference — `download_url` is
+  // `{PUBLIC_URL}/files/{file_id}/download`, authenticated on every request, and it never expires.
+  // The old assertion here demanded an expiry, which is now the shape of a BUG: an expiring or
+  // signed URL in this envelope means somebody re-grew the retired contract, and every surface
+  // that persisted the envelope would hand the user a dead link. So the assertion inverts rather
+  // than disappears — it asserts the durable handle is present AND that no expiring twin came back.
+  const retiredExpiringFields = ["expires_at", "signed_url", "cdn_url"].filter(
+    (k) => envelope[k] !== undefined,
+  );
   rec(
     "9 artifact envelope",
-    "carries an expiry, so the surface can say the link dies",
-    typeof envelope.expires_at === "string",
-    String(envelope.expires_at),
+    "carries a DURABLE download_url and no expiring/signed twin of it",
+    typeof envelope.download_url === "string" &&
+      envelope.download_url.length > 0 &&
+      retiredExpiringFields.length === 0,
+    retiredExpiringFields.length > 0
+      ? `retired expiring field(s) are back: ${retiredExpiringFields.join(", ")}`
+      : `download_url ${String(envelope.download_url)}`,
   );
 
   // ── 10. Download availability follows §4.5 ──────────────────────────────────────────────────

@@ -1016,6 +1016,7 @@
                         "reported_anonymously",
                         "reporter_employment_id",
                         "return_to_work_on",
+                        "subject_employee_id",
                         "subject_employment_id",
                         "subject_excluded",
                         "summary",
@@ -1060,6 +1061,19 @@
             },
             "jsonb_params": {}
         },
+        "hr_incident_void": {
+            "args": {
+                "p_incident_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_reason": {
+                    "ord": 2,
+                    "required": true
+                }
+            },
+            "jsonb_params": {}
+        },
         "hr_invite_accept": {
             "args": {
                 "p_token": {
@@ -1068,6 +1082,54 @@
                 }
             },
             "jsonb_params": {}
+        },
+        "hr_jurisdiction_evaluate": {
+            "args": {
+                "p_as_of": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_facts": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_input": {
+                    "ord": 5,
+                    "required": true
+                },
+                "p_jurisdiction_key": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_kind": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 6,
+                    "required": true
+                },
+                "p_subject_id": {
+                    "ord": 8,
+                    "required": false
+                },
+                "p_subject_type": {
+                    "ord": 7,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_facts": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                },
+                "p_input": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
         },
         "hr_jurisdiction_rule_set_status": {
             "args": {
@@ -2559,9 +2621,15 @@
                 "p_filter": {
                     "analyzable": false,
                     "reads": [
-                        "case_kind"
+                        "assignee_employment_id",
+                        "case_kind",
+                        "from",
+                        "osha_recordable",
+                        "state",
+                        "subject_employment_id",
+                        "to"
                     ],
-                    "unresolved_refs": 2
+                    "unresolved_refs": 1
                 }
             }
         },
@@ -2609,6 +2677,45 @@
                 }
             },
             "jsonb_params": {}
+        },
+        "hr_resolve_rules_for_subject": {
+            "args": {
+                "p_as_of": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_classes": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_facts": {
+                    "ord": 5,
+                    "required": true
+                },
+                "p_jurisdiction_key": {
+                    "ord": 7,
+                    "required": false
+                },
+                "p_organization_id": {
+                    "ord": 6,
+                    "required": true
+                },
+                "p_subject_id": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_subject_type": {
+                    "ord": 1,
+                    "required": true
+                }
+            },
+            "jsonb_params": {
+                "p_facts": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
         },
         "hr_restricted_get": {
             "args": {
@@ -3480,13 +3587,120 @@
                 }
             },
             "jsonb_params": {}
+        },
+        "hr_write_calculation_snapshot": {
+            "args": {
+                "p_actor_id": {
+                    "ord": 14,
+                    "required": false
+                },
+                "p_actor_type": {
+                    "ord": 13,
+                    "required": true
+                },
+                "p_applicability_facts": {
+                    "ord": 10,
+                    "required": true
+                },
+                "p_as_of": {
+                    "ord": 6,
+                    "required": true
+                },
+                "p_calculation_kind": {
+                    "ord": 4,
+                    "required": true
+                },
+                "p_clamps": {
+                    "ord": 16,
+                    "required": false
+                },
+                "p_employment_id": {
+                    "ord": 15,
+                    "required": false
+                },
+                "p_engine_key": {
+                    "ord": 7,
+                    "required": true
+                },
+                "p_engine_version": {
+                    "ord": 8,
+                    "required": true
+                },
+                "p_inputs": {
+                    "ord": 11,
+                    "required": true
+                },
+                "p_jurisdiction_key": {
+                    "ord": 5,
+                    "required": true
+                },
+                "p_organization_id": {
+                    "ord": 1,
+                    "required": true
+                },
+                "p_outputs": {
+                    "ord": 12,
+                    "required": true
+                },
+                "p_prospective": {
+                    "ord": 17,
+                    "required": false
+                },
+                "p_recalculation_batch_id": {
+                    "ord": 19,
+                    "required": false
+                },
+                "p_resolution": {
+                    "ord": 9,
+                    "required": true
+                },
+                "p_subject_id": {
+                    "ord": 3,
+                    "required": true
+                },
+                "p_subject_type": {
+                    "ord": 2,
+                    "required": true
+                },
+                "p_supersedes_id": {
+                    "ord": 18,
+                    "required": false
+                }
+            },
+            "jsonb_params": {
+                "p_applicability_facts": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                },
+                "p_clamps": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                },
+                "p_inputs": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                },
+                "p_outputs": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                },
+                "p_resolution": {
+                    "analyzable": false,
+                    "reads": [],
+                    "unresolved_refs": 1
+                }
+            }
         }
     },
     "doors_with_no_args": [
         "hr_jurisdiction_rules_admin_data",
         "hr_my_verification_consents"
     ],
-    "generated_at": "2026-08-30T00:50:24.183542+00:00",
+    "generated_at": "2026-09-11T17:59:16.498012+00:00",
     "regenerate": "pnpm hr:door-snapshot  (scripts/hr/hr_door_snapshot.sql)",
     "source": "pg_proc / hr._door_spec / platform.entity_types on db.matrxserver.com (project brsgrqvjdzwihsvnfqkf)",
     "tokens": {
