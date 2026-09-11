@@ -441,6 +441,8 @@ model overrides.
 
 ## Change Log
 
+- `2026-09-10` — Agent version comparisons pass both selected versions' saved timestamps to the shared diff viewer, displaying local date, time, and timezone beneath each side's heading. History timestamps take precedence; missing history uses the snapshot timestamp, or the current agent's update timestamp for the live side.
+
 ### 2026-09-08 — THE ONE AGENT PICKER moved into `@ai-matrx/agents/catalog`
 
 Wave 2 of the agent-picker unification (design: `common-docs/projects/npm-package-extraction/AGENT-PICKER-DESIGN.md`, row P3).

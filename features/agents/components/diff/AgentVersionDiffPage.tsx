@@ -354,6 +354,11 @@ export function AgentVersionDiffPage({
   const selectedVersionItem = versions.find(
     (v) => v.version_number === leftVersion,
   );
+  const comparedVersionItem = versions.find(
+    (v) =>
+      v.version_number ===
+      (rightVersion === "current" ? liveAgent?.version : rightVersion),
+  );
 
   const leftLabel = leftSnapshot
     ? `Version ${leftSnapshot.version}`
@@ -718,6 +723,20 @@ export function AgentVersionDiffPage({
               newAgent={rightAgent}
               oldLabel={leftLabel}
               newLabel={rightLabel}
+              temporalMetadata={{
+                old: {
+                  label: "Saved",
+                  timestamp:
+                    selectedVersionItem?.changed_at ?? leftSnapshot.changedAt,
+                },
+                new: {
+                  label: "Saved",
+                  timestamp:
+                    comparedVersionItem?.changed_at ??
+                    rightAgent.changedAt ??
+                    (rightVersion === "current" ? rightAgent.updatedAt : null),
+                },
+              }}
               className="h-full"
             />
           ) : (
