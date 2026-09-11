@@ -27,7 +27,8 @@ function discoverAcceptPages(root: string): string[] {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const full = join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+        if (entry.name === "node_modules" || entry.name.startsWith("."))
+          continue;
         walk(full);
       } else if (entry.isFile() && /^page\.tsx?$/.test(entry.name)) {
         const rel = relative(root, full).split(/[\\/]/);

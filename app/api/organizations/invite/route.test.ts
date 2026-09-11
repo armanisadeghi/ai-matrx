@@ -147,3 +147,7 @@ test("REFUSAL: the emailed accept link carries the token and NOTHING else — no
   expect(html).not.toContain("email=");
   expect(html).not.toContain("dana@example.com");
 });
+
+// This file is a module (its own scope) — several route tests declare the
+// same mock names.
+export {};

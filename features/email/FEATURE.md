@@ -77,6 +77,19 @@ Reset-password email template must use `{{ .ConfirmationURL }}` (not `{{ .SiteUR
 
 ## Change Log
 
+- **2026-09-11** — DD-091 fix round 1: `emailErrorMessage`
+  (`lib/email/error-message.ts`, re-exported by `lib/email/client.ts`) is now
+  THE coercion every route applies before reporting a delivery failure to a
+  client. `sendEmail` never returns a string — its failures are `new Error(...)`
+  (EMAIL_FROM missing), Resend's `{name,message}`, and whatever the `catch`
+  caught (RESEND_API_KEY missing) — so `error || "fallback"` left an object in
+  `emailError`, `JSON.stringify` turned an `Error` into `{}`, and React threw
+  `Objects are not valid as a React child` while drawing the honest banner: the
+  screen dying in the exact failure it exists to report. The panel also re-checks
+  at the render seam. Route tests now feed the REAL provider shapes (a string
+  reason is a shape the real code cannot produce, which is why the first guard
+  stayed green), and both resend routes gained tests.
+
 - **2026-09-10** — DD-091: an invitation email that fails to send is never
   reported as sent. Every invitation email route (organization + project invite
   and resend, class invite) answers `{success:true, emailSent:false,

@@ -281,6 +281,16 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-09-11` — **DD-091 fix round 1** (from independent verification).
+  (1) The honest banner could CRASH in the exact failure it reports: `sendEmail`
+  returns `Error` / `{name,message}` objects, never strings, so `emailError`
+  reached React as an object. Normalized at every route through
+  `emailErrorMessage` and re-checked at the render seam. (2) Chair ruling: the
+  invited address must not travel in a URL. `?email=` is gone everywhere;
+  invitation links carry the token only and sign-up resolves the address through
+  the new anonymous-safe `public.inv_peek_invited_email`. (3) Both resend routes
+  now have tests; the accept-page class guard discovers pages from disk.
+
 - `2026-09-10` — **DD-091, the invite flow tells the truth in both directions.**
   (1) An anonymous visitor on `/invitations/organization/accept/[token]` now
   goes to SIGN-UP (`invitationSignUpHref`, `utils/auth/invitation-links.ts`)

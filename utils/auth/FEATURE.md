@@ -101,11 +101,18 @@ sales page after signing in.
 - **An invitee goes to SIGN-UP, never `/login`.** An invitation link's whole
   point is reaching someone who does not have an account yet.
   [`invitation-links.ts`](./invitation-links.ts) owns the shape: every accept
-  page calls `invitationSignUpHref(acceptPath, invitedEmail)`, and every
-  invitation link (emailed or copied) carries `?email=` — the address it was
-  sent to — which the sign-up and login pages prefill and NAME. That value is
-  display data only: acceptance is still gated by `inv_get_by_token` matching
-  the signed-in `auth.email()`.
+  page calls `invitationSignUpHref(acceptPath, token)`.
+- 🚨 **The TOKEN travels; the invited ADDRESS never does.** An invitation link —
+  emailed or copied — carries the token and nothing else, and the auth URL
+  carries `?invite=<token>`. An address in a query string is stable PII that
+  outlives the token in browser history and in every edge/CDN log, and it is
+  what every champion avoids (GitHub, Slack, Notion, Google Workspace and
+  Supabase's own invite all resolve the address server-side). Sign-up and login
+  resolve it through [`invited-email-lookup.ts`](./invited-email-lookup.ts) →
+  `public.inv_peek_invited_email(p_token)`, an anonymous-callable door that
+  returns ONLY the email and only for a pending, unaccepted, unexpired
+  invitation. It grants nothing: acceptance is still gated by
+  `inv_get_by_token` matching the signed-in `auth.email()`.
 - **A remembered account is display data, never authority.**
   [`remembered-account.ts`](./remembered-account.ts) stores only a display name,
   optional avatar URL, and timestamp. Tokens, ids, email addresses, roles, and
@@ -161,6 +168,15 @@ links and the nonexistent `/signup` route. `pnpm check:auth-destinations` runs
 the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
+
+- **2026-09-11** — DD-091 fix round 1 (independent verification): the invited
+  address no longer travels in any URL. `?email=` is gone from every invitation
+  link and auth URL, replaced by `?invite=<token>` plus the new anonymous-safe
+  door `public.inv_peek_invited_email` (`migrations/inv_peek_invited_email.sql`,
+  applied + ledgered 2026-09-11, `platform.client_callable_door` row declared
+  before the grant per db-rules §6d-4). The class guard now DISCOVERS the accept
+  pages from disk instead of listing them, and additionally refuses any
+  `?email=` in a built link.
 
 - **2026-09-10** — DD-091: invitation accept pages no longer dead-end an
   anonymous invitee at `/login`. New primitive `invitation-links.ts`
