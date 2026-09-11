@@ -1,3 +1,7 @@
+import {
+  fetchRejoin,
+  isTransientReconnectError,
+} from "../../../runtime-reconnect/retry-reconnect";
 /**
  * runAiStream — the single shared stream runner.
  *
@@ -66,6 +70,8 @@ import type { JsonExtractionConfig } from "./process-stream";
 import { logApiTarget } from "@/lib/api/log-api-target";
 import {
   registerAbortController,
+  ownsAbortController,
+  hasAbortController,
   unregisterAbortController,
 } from "./abort-registry";
 import type { BackendChannel } from "./resolve-base-url";
@@ -472,11 +478,16 @@ export async function runAiStream(
         conversationId,
       });
     };
-    response = await fetchThroughDeploymentDrain(
-      url,
-      fetchInit,
-      abortController.signal,
-    );
+    response =
+      kind === "rejoin"
+        ? await fetchRejoin(url, fetchInit, abortController.signal, () =>
+            ownsAbortController(conversationId, abortController),
+          )
+        : await fetchThroughDeploymentDrain(
+            url,
+            fetchInit,
+            abortController.signal,
+          );
     if (
       attemptV1Fallback &&
       response.headers.get("X-Matrx-Drain") !== "deployment" &&
@@ -533,7 +544,6 @@ export async function runAiStream(
 
       const code = response.status;
       if (kind === "rejoin" && (code === 404 || code === 409)) {
-        unregisterAbortController(conversationId);
         throw new StreamRejoinUnavailableError(serverMessage);
       }
       if (code === 409) {
@@ -552,10 +562,10 @@ export async function runAiStream(
           //     ≥1 cx_tool_call rows still in status='delegated'; the user
           //     hasn't answered everything. Keep the waiting-on-user
           //     affordance; the next /tool_results POST re-triggers resume.
-          unregisterAbortController(conversationId);
           if (errorCode === "resume_conflict") {
             throw new ResumeConflictError(serverMessage);
           }
+          unregisterAbortController(conversationId, abortController);
           if (errorCode === "not_resumable") {
             console.warn(
               `[runAiStream] resume rejected — request is terminal (${serverMessage})`,
@@ -573,7 +583,6 @@ export async function runAiStream(
           // The server's turn lock — a run is still live (an interrupted run
           // winding down, or another device racing us). Retryable; the caller
           // owns the bounded backoff. No error statuses, no composer clear.
-          unregisterAbortController(conversationId);
           throw new RunInFlightError(serverMessage);
         }
         // Only a GENUINE id collision may claim this sentence.
@@ -694,10 +703,21 @@ export async function runAiStream(
       maxLifetimeMs,
     });
 
-    unregisterAbortController(conversationId);
+    unregisterAbortController(conversationId, abortController);
     return { requestId, conversationId };
-  } catch (error) {
-    unregisterAbortController(conversationId);
+  } catch (caught) {
+    if (
+      hasAbortController(conversationId) &&
+      !ownsAbortController(conversationId, abortController)
+    ) {
+      discardRetainedTransportConsumer(requestId);
+      throw new StreamCancelledError();
+    }
+    const error =
+      kind === "rejoin" && isTransientReconnectError(caught)
+        ? new StreamRejoinUnavailableError("Live replay retry budget exhausted")
+        : caught;
+    unregisterAbortController(conversationId, abortController);
 
     // Keep the lexical parser only while a reconnectable transport failure is
     // actively handing it to the durable rejoin path. HTTP rejoin refusal,
@@ -797,20 +817,20 @@ export async function runAiStream(
 
     if (!retainedProcessor)
       dispatch(
-      setRequestStatus({
-        requestId,
-        status: "error",
-        error: {
-          error_type: errorType,
-          message,
-          // Heartbeat loss and a dropped socket both mean the CONNECTION died —
-          // the server detaches and finishes the turn regardless
-          // (detach_on_disconnect). Say so, instead of implying the response
-          // itself failed.
-          ...(isConnectionLoss && { user_message: connectionLossMessage }),
-        },
-      }),
-    );
+        setRequestStatus({
+          requestId,
+          status: "error",
+          error: {
+            error_type: errorType,
+            message,
+            // Heartbeat loss and a dropped socket both mean the CONNECTION died —
+            // the server detaches and finishes the turn regardless
+            // (detach_on_disconnect). Say so, instead of implying the response
+            // itself failed.
+            ...(isConnectionLoss && { user_message: connectionLossMessage }),
+          },
+        }),
+      );
     if (!retainedProcessor)
       dispatch(setInstanceStatus({ conversationId, status: "error" }));
 
@@ -840,16 +860,16 @@ export async function runAiStream(
     // toolLifecycle entry never receives its terminal event.
     if (!retainedProcessor)
       dispatch(
-      failPendingToolLifecycle({
-        requestId,
-        errorType,
-        errorMessage: isConnectionLoss
-          ? "The connection dropped — reconnecting to the response."
-          : isTotal
-            ? "Stream exceeded its maximum lifetime."
-            : message,
-      }),
-    );
+        failPendingToolLifecycle({
+          requestId,
+          errorType,
+          errorMessage: isConnectionLoss
+            ? "The connection dropped — reconnecting to the response."
+            : isTotal
+              ? "Stream exceeded its maximum lifetime."
+              : message,
+        }),
+      );
 
     // Pre-persistence failure (e.g. "Failed to fetch"): clear the hidden input
     // so the failed message doesn't linger in the box. It survives as the

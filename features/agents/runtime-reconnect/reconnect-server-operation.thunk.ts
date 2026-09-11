@@ -1,3 +1,5 @@
+import { retryReconnect } from "./retry-reconnect";
+import { discardRetainedTransportConsumer } from "../redux/execution-system/thunks/process-stream";
 /**
  * reconnectServerOperation — SERVER-truth reconnect for a chat conversation,
  * on aidream's canonical `/runtime` reconnect surface (2026-08-10).
@@ -112,6 +114,7 @@ export const reconnectServerOperation = createAsyncThunk<
       const rid =
         requestId ?? selectLatestRequestId(conversationId)(getState());
       if (!rid) return;
+      discardRetainedTransportConsumer(rid);
       void dispatch(recoverDroppedStream({ conversationId, requestId: rid }));
     };
 
@@ -138,11 +141,36 @@ export const reconnectServerOperation = createAsyncThunk<
       return noFollow;
     }
 
+    stopFollower(conversationId);
+    const ctrl = new AbortController();
+    followers.set(conversationId, ctrl);
+    const stillOwner = () =>
+      followers.get(conversationId) === ctrl &&
+      !hasAbortController(conversationId) &&
+      getState().conversations.byConversationId[conversationId]?.status !==
+        "cancelled";
+    const clearFollower = () => {
+      if (followers.get(conversationId) === ctrl)
+        followers.delete(conversationId);
+    };
     let op: RuntimeOperationView | null = null;
+    let settledWhileDisconnected = false;
     try {
-      const byLink = await fetchOperationsByLink(backend, conversationId);
+      const byLink = await retryReconnect(
+        () => fetchOperationsByLink(backend, conversationId, ctrl.signal),
+        ctrl.signal,
+        stillOwner,
+      );
+      if (!stillOwner()) {
+        clearFollower();
+        return noFollow;
+      }
       op = byLink?.operations.find((o) => !o.is_terminal) ?? null;
+      settledWhileDisconnected = !op && Boolean(byLink?.operations.length);
     } catch (err) {
+      const superseded = ctrl.signal.aborted || !stillOwner();
+      clearFollower();
+      if (superseded) return noFollow;
       console.warn(
         "[runtime-reconnect] operations-by-link fetch failed — falling back to legacy recovery.",
         { conversationId, err },
@@ -152,16 +180,15 @@ export const reconnectServerOperation = createAsyncThunk<
     }
 
     if (!op) {
+      clearFollower();
       // Nothing non-terminal on the spine. For a dropped stream that can mean
       // the settle raced our check OR the turn ran off-spine — the legacy
-      // poll covers both. For a cold load it simply means nothing to show.
+      // poll covers both. A cold load may have settled during offline retries.
       if (source === "stream-loss") fallbackToLegacyRecovery();
+      else if (settledWhileDisconnected)
+        await dispatch(loadConversation({ conversationId })).unwrap();
       return noFollow;
     }
-
-    stopFollower(conversationId);
-    const ctrl = new AbortController();
-    followers.set(conversationId, ctrl);
 
     console.warn(
       "[runtime-reconnect] non-terminal server operation found — following its event stream.",
@@ -321,7 +348,15 @@ export const reconnectServerOperation = createAsyncThunk<
           },
         });
 
-        const refreshed = await fetchOperationsByLink(backend, conversationId);
+        const refreshed = await retryReconnect(
+          () => fetchOperationsByLink(backend, conversationId, ctrl.signal),
+          ctrl.signal,
+          stillOwner,
+        );
+        if (!stillOwner()) {
+          clearFollower();
+          return noFollow;
+        }
         const stillLive = refreshed?.operations.find(
           (operation) => !operation.is_terminal,
         );

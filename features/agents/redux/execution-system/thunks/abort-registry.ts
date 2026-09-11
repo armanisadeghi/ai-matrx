@@ -15,8 +15,19 @@ export function registerAbortController(
   registry.set(conversationId, controller);
 }
 
-export function unregisterAbortController(conversationId: string): void {
-  registry.delete(conversationId);
+export function ownsAbortController(
+  conversationId: string,
+  controller: AbortController,
+): boolean {
+  return registry.get(conversationId) === controller;
+}
+
+export function unregisterAbortController(
+  conversationId: string,
+  controller?: AbortController,
+): void {
+  if (!controller || ownsAbortController(conversationId, controller))
+    registry.delete(conversationId);
 }
 
 export function abortConversation(conversationId: string): void {
