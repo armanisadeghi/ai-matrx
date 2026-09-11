@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 510 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 512 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "aa8dbe766b86";
+export const KIND_REGISTRY_FINGERPRINT = "44ae90088515";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2148,6 +2148,20 @@ export interface ImageConceptKind {
 }
 
 /**
+ * Mirrors ``MetadataContainers`` — which metadata blocks the file carries.
+ *  *
+ *  * From kind `image_metadata_report`.
+ */
+export interface ImageMetadataContainers {
+  xmp: boolean;
+  exif: boolean;
+  iptc: boolean;
+  comment: boolean;
+  png_text: boolean;
+  icc_profile: boolean;
+}
+
+/**
  * One ready-to-execute image prompt from ``ai.image.prompt_write``.
  *  *
  *  * From kind `image_prompts_result`.
@@ -2400,7 +2414,7 @@ export interface ItemSpecific {
 }
 
 /**
- * * Shared by 64 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
+ * * Shared by 65 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
  */
 export type JsonValue = unknown;
 
@@ -4401,6 +4415,42 @@ export interface ResourceItem {
   isFavorite?: boolean;
   description?: string;
   isCompleted?: boolean;
+}
+
+/**
+ * Mirrors ``ReverseImageMatch`` — closed, because the node normalises each
+ * engine's payload INTO this shape rather than passing provider keys through.
+ *  *
+ *  * From kind `reverse_image_search_results`.
+ */
+export interface ReverseImageMatchItem {
+  /**
+   * ISO-8601 UTC; null when unparseable.
+   */
+  date?: string | null;
+  link?: string | null;
+  image?: string | null;
+  title?: string | null;
+  /**
+   * SerpAPI engine that returned this match.
+   */
+  engine: string;
+  source?: string | null;
+  snippet?: string | null;
+  position?: number | null;
+  /**
+   * Date exactly as Google wrote it.
+   */
+  date_text?: string | null;
+  thumbnail?: string | null;
+  /**
+   * 'exact' (the page carries this image) or 'visual' (merely similar).
+   */
+  match_type: string;
+  image_width?: number | null;
+  image_height?: number | null;
+  displayed_link?: string | null;
+  date_is_approximate?: boolean;
 }
 
 /**
@@ -9336,6 +9386,72 @@ export interface ImageMetadata {
 }
 
 /**
+ * What an image file says about itself — camera, capture time, GPS, writing
+ * software, dimensions, and whether the metadata survived. Output of
+ * ``image.metadata.read`` and the ``image_metadata`` tool.
+ *
+ * Facts only. There is deliberately no authenticity field: EXIF absence is
+ * normal on every social network, so a verdict here would be a guess wearing
+ * a data field's clothes.
+ *  *
+ *  * Kind `image_metadata_report` (registry v2).
+ */
+export interface ImageMetadataReport {
+  width: number;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "image_metadata_report";
+  artist?: string | null;
+  format?: string | null;
+  height: number;
+  file_id?: string | null;
+  has_exif: boolean;
+  raw_tags?: Record<string, JsonValue>;
+  /**
+   * The app that last wrote the file — often the giveaway.
+   */
+  software?: string | null;
+  copyright?: string | null;
+  image_url?: string | null;
+  mime_type?: string | null;
+  tag_count?: number;
+  color_mode: string;
+  containers: ImageMetadataContainers;
+  elapsed_ms?: number;
+  lens_model?: string | null;
+  size_bytes?: number | null;
+  camera_make?: string | null;
+  frame_count?: number;
+  orientation?: number | null;
+  camera_model?: string | null;
+  /**
+   * Signed decimal degrees; negative is south.
+   */
+  gps_latitude?: number | null;
+  /**
+   * Signed decimal degrees; negative is west.
+   */
+  gps_longitude?: number | null;
+  gps_timestamp?: string | null;
+  stripped_note: string;
+  gps_altitude_m?: number | null;
+  datetime_modified?: string | null;
+  /**
+   * ISO-8601 capture time. Null when absent — never inferred.
+   */
+  datetime_original?: string | null;
+  image_description?: string | null;
+  /**
+   * True = a format that normally carries EXIF had none. False = EXIF present. Null = the format does not normally carry EXIF. An observation, never a verdict.
+   */
+  metadata_stripped?: boolean | null;
+  datetime_digitized?: string | null;
+  raw_tags_truncated?: boolean;
+  datetime_original_text?: string | null;
+}
+
+/**
  * Output of ``ai.image.prompt_write``.
  *  *
  *  * Kind `image_prompts_result` (registry v6).
@@ -14026,6 +14142,49 @@ export interface RetrievedChunk {
   derivation_kind?: string | null;
   parent_chunk_id?: string | null;
   extraction_run_id?: string | null;
+}
+
+/**
+ * Where else an image appears online — exact matches and visual matches
+ * kept apart, with an earliest-seen hint. Output of
+ * ``web.google.reverse_image_search`` and the ``reverse_image_search`` tool.
+ *  *
+ *  * Kind `reverse_image_search_results` (registry v2).
+ */
+export interface ReverseImageSearchResults {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "reverse_image_search_results";
+  file_id?: string | null;
+  /**
+   * The caller's own external image URL. Null for one of our files: the URL handed to Google there is a short-lived provider handoff, never an identity.
+   */
+  image_url?: string | null;
+  elapsed_ms?: number;
+  /**
+   * 'url' or 'file_id' — how the caller supplied the image.
+   */
+  source_kind: string;
+  engines_used?: string[];
+  /**
+   * ISO-8601 UTC of the oldest dated match. A hint, not a fact.
+   */
+  earliest_seen?: string | null;
+  /**
+   * Pages Google reports as CONTAINING this image.
+   */
+  exact_matches?: ReverseImageMatchItem[];
+  /**
+   * Visually similar images — leads, not proof.
+   */
+  visual_matches?: ReverseImageMatchItem[];
+  dated_match_count?: number;
+  exact_match_count?: number;
+  earliest_seen_link?: string | null;
+  visual_match_count?: number;
+  earliest_seen_date_text?: string | null;
+  earliest_seen_is_approximate?: boolean;
 }
 
 /**
@@ -21131,6 +21290,7 @@ export type GeneratedKindSlug =
   | "image_concepts_result"
   | "image_edit_result"
   | "image_metadata"
+  | "image_metadata_report"
   | "image_prompts_result"
   | "image_qc_result"
   | "image_qc_verdict"
@@ -21297,6 +21457,7 @@ export type GeneratedKindSlug =
   | "resell_research_report"
   | "resource_collection"
   | "retrieved_chunk"
+  | "reverse_image_search_results"
   | "review_verdict"
   | "reviewer_result_card"
   | "rule_governed_variant_set"
@@ -21644,6 +21805,7 @@ export interface KindPayloadBySlug {
   "image_concepts_result": ImageConceptsResult;
   "image_edit_result": ImageEditResult;
   "image_metadata": ImageMetadata;
+  "image_metadata_report": ImageMetadataReport;
   "image_prompts_result": ImagePromptsResult;
   "image_qc_result": ImageQcResult;
   "image_qc_verdict": ImageQcVerdict;
@@ -21810,6 +21972,7 @@ export interface KindPayloadBySlug {
   "resell_research_report": ResellResearchReport;
   "resource_collection": ResourceCollection;
   "retrieved_chunk": RetrievedChunk;
+  "reverse_image_search_results": ReverseImageSearchResults;
   "review_verdict": ReviewVerdict;
   "reviewer_result_card": ReviewerResultCard;
   "rule_governed_variant_set": RuleGovernedVariantSet;
@@ -22161,6 +22324,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "image_concepts_result",
   "image_edit_result",
   "image_metadata",
+  "image_metadata_report",
   "image_prompts_result",
   "image_qc_result",
   "image_qc_verdict",
@@ -22327,6 +22491,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "resell_research_report",
   "resource_collection",
   "retrieved_chunk",
+  "reverse_image_search_results",
   "review_verdict",
   "reviewer_result_card",
   "rule_governed_variant_set",

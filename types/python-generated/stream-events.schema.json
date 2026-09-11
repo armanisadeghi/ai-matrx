@@ -7276,6 +7276,16 @@
         "title": "Quotes Unverified",
         "type": "integer"
       },
+      "failed_chunks": {
+        "default": 0,
+        "title": "Failed Chunks",
+        "type": "integer"
+      },
+      "skipped_words": {
+        "default": 0,
+        "title": "Skipped Words",
+        "type": "integer"
+      },
       "followup_seed": {
         "anyOf": [
           {

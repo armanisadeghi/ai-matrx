@@ -981,6 +981,8 @@ export interface MasterworkIngestCompleteData {
   duplicates_skipped?: number;
   quotes_verified?: number;
   quotes_unverified?: number;
+  failed_chunks?: number;
+  skipped_words?: number;
   followup_seed?: string | null;
 }
 
