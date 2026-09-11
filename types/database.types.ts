@@ -58243,8 +58243,11 @@ export type Database = {
           min_value: number | null
           overridable_by: string[]
           override_direction: string
+          propagation: string
           review_due: string | null
           set_by: string
+          taxonomy_node_id: string | null
+          ui: Json
           unit: string | null
           updated_at: string
           updated_by: string | null
@@ -58265,8 +58268,11 @@ export type Database = {
           min_value?: number | null
           overridable_by?: string[]
           override_direction?: string
+          propagation?: string
           review_due?: string | null
           set_by?: string
+          taxonomy_node_id?: string | null
+          ui?: Json
           unit?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -58287,15 +58293,26 @@ export type Database = {
           min_value?: number | null
           overridable_by?: string[]
           override_direction?: string
+          propagation?: string
           review_due?: string | null
           set_by?: string
+          taxonomy_node_id?: string | null
+          ui?: Json
           unit?: string | null
           updated_at?: string
           updated_by?: string | null
           value?: Json
           value_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "feature_knob_taxonomy_node_id_fkey"
+            columns: ["taxonomy_node_id"]
+            isOneToOne: false
+            referencedRelation: "taxonomy_node"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       flexible_data: {
         Row: {
