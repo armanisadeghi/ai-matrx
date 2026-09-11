@@ -53,11 +53,11 @@ export interface WorkspaceLayoutProps {
 /** Preferred percentages each horizontal panel snaps to whenever it
  *  re-opens after the user has not manually resized it. */
 const DEFAULT_SIDE = 18;
-const DESIRED_RIGHT = 20;
+const DESIRED_RIGHT = 25;
 const DESIRED_FAR_RIGHT = 16;
 
 /** Center vertical-group split between editor and the small bottom terminal. */
-const DESIRED_TERMINAL = 15;
+const DESIRED_TERMINAL = 25;
 const DESIRED_EDITOR = 100 - DESIRED_TERMINAL;
 
 const PANEL_IDS = {
@@ -275,7 +275,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 panelRef={bottomRef}
                 id="bottom"
                 defaultSize={`${terminalDefault}%`}
-                minSize="10%"
+                minSize="8rem"
                 collapsible
                 collapsedSize="0%"
                 onResize={(size) => {
@@ -295,7 +295,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <ResizablePanel
                 id={PANEL_IDS.RIGHT}
                 defaultSize={`${rightDefault}%`}
-                minSize="12%"
+                minSize="18rem"
                 collapsible
                 collapsedSize="0%"
                 onResize={(size) => {
