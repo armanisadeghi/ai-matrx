@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-08-30`
+**Last updated:** `2026-09-10`
 
 > Combined doc for `features/organizations/` and `features/invitations/`. Orgs are the multi-tenant primitive; invitations are the flow that admits users to orgs (and, in mirrored form, to projects). Architecture mirrors `features/projects/`.
 
@@ -95,6 +95,11 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `POST /api/projects/invite` — same email-only pattern for projects
 - `POST /api/projects/invitations/resend` — same email-only pattern for projects
 - `GET/PATCH /api/admin/invitation-requests[/id]` — admin triage of signup-access requests (separate "request an invite" flow, not org-member invites)
+
+**Action-time organization gate**
+
+- `gate/OrganizationGateDialog.tsx` hosts the shared `ensureOrganizationContext` promise bridge used by chat, API calls, and uploads. It reads the same `scopesTree` memberships as the header, fetching through `ensureScopeTree` only when opened. Cached memberships remain visible without waiting for a second auth-gated list request. A failed list read exposes an in-place retry.
+- The gate subscribes to the provider's store: a selected organization arriving after an action was blocked resumes that action and closes the dialog. Confirmation uses `resolveOrganizationForBlockedAction`, preserving the pending conversation; cancellation settles without submitting. The gate never selects the personal workspace as a fallback.
 
 **Redux**
 
@@ -214,7 +219,7 @@ The `mbr_*`, `inv_*`, and ownership RPCs enforce these at the database layer aga
 - **`features/invitations/emailService.ts` is a different flow.** It handles the "request access to sign up" admin approval/rejection emails (see `/api/admin/invitation-requests`), not org-member invitations. Do not wire it into org flows.
 - **`iam.memberships` mutations go through `membershipsService` only.** Never direct table writes; last-owner guards live in the service layer.
 - **Team organization creation goes through `org_create` only.** Authenticated direct INSERT on `iam.organizations` is revoked; the RPC atomically creates the row and its first owner. Personal-org provisioning remains the separate service/trigger flow.
-- **No Redux cache for org data.** Each hook refetches from Supabase. `refresh()` is exposed on every list hook — call it after any mutation (the operation hooks in `hooks.ts` already do this internally; external callers of `service.ts` directly must do it themselves).
+- **Global organization pickers share the Redux scope tree.** The header and action gate use `useScopeTree` / `ensureScopeTree`; organization-management hooks in `hooks.ts` fetch their own richer records from Supabase. `refresh()` is exposed on every list hook — call it after any mutation (the operation hooks in `hooks.ts` already do this internally; external callers of `service.ts` directly must do it themselves).
 - **`lookup_user_by_email` is an RPC, not a table read.** Never query `profiles.email` directly — email lives in `auth.users` which is not directly selectable from the client.
 - **Member and invitation pickers never become a global directory.** They pass only the current container roster or the caller's existing contacts into `UserSearchField`; the super-admin directory mode is forbidden on ordinary organization/project surfaces.
 
@@ -256,6 +261,8 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 ---
 
 ## Change log
+
+- `2026-09-10` — Unified the blocked-action picker with the header membership cache, added in-place list retry, and resumed pending actions when organization hydration or selection completes. Regression guards cover late selection, cached memberships without a token, cancellation, preserving the pending conversation, and failed-read recovery.
 
 - `2026-08-26` — Serialized organization workspace authorization ahead of the member-directory read, preventing rejected PostgREST calls and duplicate console capture for non-members.
 - `2026-08-26` — Added the organization-home door to the normal nested

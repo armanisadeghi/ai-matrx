@@ -20,7 +20,7 @@
  * is an action wedged forever.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Dialog,
@@ -31,70 +31,88 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useAppDispatch } from "@/lib/redux/hooks";
-// eslint-disable-next-line no-restricted-syntax -- Surface A: this IS the first-org-choice writer
-import { resolveOrganizationForBlockedAction } from "@/lib/redux/slices/appContextSlice";
-import { useUserOrganizations } from "@/features/organizations/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
+  resolveOrganizationForBlockedAction,
+  selectOrganizationId,
+} from "@/lib/redux/slices/appContextSlice";
+import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  hasPendingOrganizationRequest,
   registerOrganizationPicker,
   settleOrganizationSelection,
 } from "@/lib/organization/organization-gate";
 
 export function OrganizationGateDialog() {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const [open, setOpen] = useState(false);
   const [chosenId, setChosenId] = useState<string | null>(null);
-  const { organizations, loading, error } = useUserOrganizations();
+  const userId = useAppSelector(selectUserId);
+  // The header and this action gate must see the SAME membership list. A
+  // second component-local fetch can remain pending while the header is ready.
+  const { organizations, status, error, refresh } = useScopeTree();
+  const loading =
+    organizations.length === 0 && (status === "idle" || status === "loading");
 
-  // Register the opener so the gate can ask. Unregistering on unmount matters:
-  // with no picker reachable, `ensureOrganizationContext` re-throws the plain
-  // fail-closed error instead of awaiting a dialog that will never appear.
   useEffect(() => {
-    registerOrganizationPicker(() => setOpen(true));
-    return () => registerOrganizationPicker(null);
-  }, []);
+    if (open && userId) void dispatch(ensureScopeTree({}));
+  }, [open, userId, dispatch]);
 
-  // A dialog that unmounts mid-question must not strand the awaiting action.
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    const resumeSelectedOrganization = () => {
+      if (!hasPendingOrganizationRequest()) return false;
+      const state = store.getState();
+      const activeOrgId = selectOrganizationId(state);
+      if (!selectUserId(state) || !activeOrgId) return false;
+      // The selected org can arrive AFTER send opens the dialog. Subscribe to
+      // the same store as the header and resume the parked action immediately.
+      settleOrganizationSelection(activeOrgId);
+      setOpen(false);
+      setChosenId(null);
+      return true;
+    };
+    registerOrganizationPicker(() => {
+      if (!resumeSelectedOrganization()) setOpen(true);
+    });
+    const unsubscribe = store.subscribe(resumeSelectedOrganization);
+    return () => {
+      unsubscribe();
+      registerOrganizationPicker(null);
       settleOrganizationSelection(null);
-    },
-    [],
-  );
+    };
+  }, [store]);
 
-  const sorted = useMemo(
-    () =>
-      [...organizations].sort((a, b) => {
-        // Personal last: this dialog exists because personal was being chosen
-        // silently, so it must never be the eye's default landing spot.
-        if (a.isPersonal !== b.isPersonal) return a.isPersonal ? 1 : -1;
-        return (a.name ?? "").localeCompare(b.name ?? "");
-      }),
-    [organizations],
-  );
+  const sorted = [...organizations].sort((a, b) => {
+    if (a.is_personal !== b.is_personal) return a.is_personal ? 1 : -1;
+    return a.name.localeCompare(b.name);
+  });
 
-  const cancel = useCallback(() => {
+  const cancel = () => {
     setOpen(false);
     setChosenId(null);
     settleOrganizationSelection(null);
-  }, []);
+  };
 
-  const confirm = useCallback(() => {
-    if (!chosenId) return;
+  const confirm = () => {
+    if (!chosenId || !userId) return;
     const org = sorted.find((o) => o.id === chosenId);
+    if (!org) return;
     // Commit globally FIRST so the answer outlives this one action — the next
     // thing they do already knows the workspace, exactly as if they had chosen
     // it from the switcher.
     dispatch(
       resolveOrganizationForBlockedAction({
         id: chosenId,
-        name: org?.name ?? null,
+        name: org.name,
       }),
     );
     setOpen(false);
     setChosenId(null);
     settleOrganizationSelection(chosenId);
-  }, [chosenId, dispatch, sorted]);
+  };
 
   return (
     <Dialog
@@ -107,19 +125,28 @@ export function OrganizationGateDialog() {
         <DialogHeader>
           <DialogTitle>Which workspace is this for?</DialogTitle>
           <DialogDescription>
-            You don&apos;t have an organization selected yet. Pick one and we
-            &apos;ll finish what you started — it becomes your active workspace
-            from here on.
+            Choose the workspace for this action. We&apos;ll continue where you
+            left off and use it as your active workspace.
           </DialogDescription>
         </DialogHeader>
 
         <div className="max-h-72 space-y-1 overflow-y-auto py-1">
-          {loading ? (
+          {!userId ? (
+            <p role="alert" className="px-1 py-6 text-sm text-destructive">
+              Your session is unavailable. Sign in again to continue; nothing
+              has been submitted.
+            </p>
+          ) : error && organizations.length === 0 ? (
+            <div role="alert" className="space-y-2 px-1 py-6">
+              <p className="text-sm text-destructive">{error}</p>
+              <Button variant="outline" onClick={() => void refresh()}>
+                Try again
+              </Button>
+            </div>
+          ) : loading ? (
             <p className="px-1 py-6 text-sm text-muted-foreground">
               Loading your organizations…
             </p>
-          ) : error ? (
-            <p className="px-1 py-6 text-sm text-destructive">{error}</p>
           ) : sorted.length === 0 ? (
             <p className="px-1 py-6 text-sm text-muted-foreground">
               You don&apos;t belong to any organization yet.
@@ -140,7 +167,7 @@ export function OrganizationGateDialog() {
                   }`}
                 >
                   <span className="truncate font-medium">{org.name}</span>
-                  {org.isPersonal ? (
+                  {org.is_personal ? (
                     <span className="ml-2 shrink-0 text-xs text-muted-foreground">
                       Personal
                     </span>
@@ -155,7 +182,10 @@ export function OrganizationGateDialog() {
           <Button variant="ghost" onClick={cancel}>
             Cancel
           </Button>
-          <Button onClick={confirm} disabled={!chosenId}>
+          <Button
+            onClick={confirm}
+            disabled={!userId || !sorted.some((org) => org.id === chosenId)}
+          >
             Continue
           </Button>
         </DialogFooter>
