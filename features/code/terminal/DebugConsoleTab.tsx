@@ -3,6 +3,9 @@
 import React from "react";
 import { Bug } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setActiveTab } from "../redux/terminalSlice";
+import { Button } from "@/components/ui/button";
 
 interface DebugConsoleTabProps {
   className?: string;
@@ -10,19 +13,29 @@ interface DebugConsoleTabProps {
 
 export const DebugConsoleTab: React.FC<DebugConsoleTabProps> = ({
   className,
-}) => (
-  <div
-    className={cn(
-      "flex h-full items-center justify-center bg-white text-neutral-500 dark:bg-[#181818] dark:text-neutral-400",
-      className,
-    )}
-  >
-    <div className="flex flex-col items-center gap-2 text-center">
-      <Bug size={28} strokeWidth={1.2} />
-      <p className="text-xs">No active debug session.</p>
-      <p className="text-[11px] text-neutral-400">
-        Attaching a debugger to the sandbox will populate this view.
-      </p>
+}) => {
+  const dispatch = useAppDispatch();
+  return (
+    <div
+      className={cn(
+        "flex h-full items-center justify-center bg-background p-4 text-muted-foreground",
+        className,
+      )}
+    >
+      <div className="flex flex-col items-center gap-2 text-center">
+        <Bug size={28} strokeWidth={1.2} />
+        <p className="text-sm">Run your debugger in the terminal.</p>
+        <p className="text-xs">
+          This panel does not receive interactive debugger output yet.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => dispatch(setActiveTab("terminal"))}
+        >
+          Open terminal
+        </Button>
+      </div>
     </div>
-  </div>
-);
+  );
+};

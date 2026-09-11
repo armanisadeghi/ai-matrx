@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectTerminalLines } from "../redux/terminalSlice";
@@ -11,21 +11,20 @@ interface OutputTabProps {
 
 export const OutputTab: React.FC<OutputTabProps> = ({ className }) => {
   const lines = useAppSelector(selectTerminalLines);
-  const outputLines = useMemo(
-    () => lines.filter((l) => l.tab === "output"),
-    [lines],
+  const outputLines = lines.filter(
+    (line) => line.tab === "output" || line.source === "agent",
   );
 
   return (
     <div
       className={cn(
-        "h-full overflow-y-auto bg-white px-3 py-2 font-mono text-[12px] text-neutral-800 dark:bg-[#181818] dark:text-neutral-200",
+        "h-full overflow-y-auto bg-background px-3 py-2 font-mono text-xs text-foreground",
         className,
       )}
     >
       {outputLines.length === 0 ? (
-        <div className="text-neutral-500">
-          No output. Workspace tasks (build, lint, test) will stream here.
+        <div className="text-muted-foreground">
+          No task output yet. Commands run by workspace tools appear here.
         </div>
       ) : (
         outputLines.map((line) => (
