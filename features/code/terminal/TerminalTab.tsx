@@ -92,6 +92,10 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
   }, [process]);
 
   const [ready, setReady] = useState(false);
+  // xterm measures its glyph cell when `open()` runs. Its persistent mobile
+  // host can be mounted inside a closed native <details>, whose contents have
+  // no layout box. Wait for a real box so that first measurement is accurate.
+  const [hasVisibleBounds, setHasVisibleBounds] = useState(false);
 
   // ── Prompt writing helpers ──────────────────────────────────────────────
   const writePromptFor = useCallback((state: SessionState) => {
@@ -448,8 +452,28 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
     [refreshLine, runCommand, writePromptFor],
   );
 
+  // Establish a real layout box before xterm measures its character cell.
+  // `details` keeps its child mounted while closed, but its child has zero
+  // dimensions until disclosed.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return undefined;
+
+    const markVisible = (width: number, height: number) => {
+      if (width > 0 && height > 0) setHasVisibleBounds(true);
+    };
+
+    markVisible(container.clientWidth, container.clientHeight);
+    const ro = new ResizeObserver(([entry]) => {
+      if (entry) markVisible(entry.contentRect.width, entry.contentRect.height);
+    });
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, []);
+
   // ── Boot xterm once ─────────────────────────────────────────────────────
   useEffect(() => {
+    if (!hasVisibleBounds) return undefined;
     let cancelled = false;
 
     const boot = async () => {
@@ -630,44 +654,65 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         sessionRef.current = null;
       }
     };
-  }, []);
+  }, [hasVisibleBounds]);
 
   // ── Resize observer ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!containerRef.current) return undefined;
-    const ro = new ResizeObserver(() => {
+    const container = containerRef.current;
+    if (!container) return undefined;
+    const ro = new ResizeObserver(([entry]) => {
       const s = sessionRef.current;
-      if (!s) return;
+      if (
+        !s ||
+        !entry ||
+        entry.contentRect.width <= 0 ||
+        entry.contentRect.height <= 0
+      ) {
+        return;
+      }
       try {
         s.fit.fit();
       } catch {
-        /* noop */
+        /* xterm is still painting */
       }
-      // Tell the remote PTY about the new viewport so line wrapping and
+      // Tell the remote PTY about the visible viewport so line wrapping and
       // full-screen apps (vim/top) stay correct.
       if (s.pty?.isOpen) {
         try {
           s.pty.resize(s.term.cols, s.term.rows);
         } catch {
-          /* ignore */
+          /* connection changed while fitting */
         }
       }
     });
-    ro.observe(containerRef.current);
+    ro.observe(container);
     return () => ro.disconnect();
   }, []);
 
-  // When the panel becomes visible again, refit + refocus.
+  // Tab switches do not always change the container's dimensions. Refit on
+  // the next frame after a visible terminal tab, but only if layout exists.
   useEffect(() => {
-    if (!visible) return;
-    const s = sessionRef.current;
-    if (!s) return;
-    try {
-      s.fit.fit();
-    } catch {
-      /* noop */
-    }
-    s.term.focus();
+    if (!visible) return undefined;
+    const frame = requestAnimationFrame(() => {
+      const container = containerRef.current;
+      const s = sessionRef.current;
+      if (
+        !container ||
+        !s ||
+        container.clientWidth <= 0 ||
+        container.clientHeight <= 0
+      ) {
+        return;
+      }
+      try {
+        s.fit.fit();
+        if (s.pty?.isOpen) s.pty.resize(s.term.cols, s.term.rows);
+      } catch {
+        /* xterm or the PTY can be between frames */
+      }
+      s.term.focus();
+    });
+    return () => cancelAnimationFrame(frame);
   }, [visible]);
 
   // ── Theme swap ──────────────────────────────────────────────────────────
