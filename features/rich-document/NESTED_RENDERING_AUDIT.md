@@ -1,6 +1,6 @@
 # Nested rendering audit — 2026-09-11
 
-Scope: frontend container recognition, static/Redux rendering adapters, and nested prose leaves. This is a bounded census and deterministic adversarial test set, not a claim that every possible document or DB-authored component has been executed.
+Scope: frontend container recognition, static/Redux rendering adapters, server block production, and nested prose leaves. This is a bounded census and deterministic adversarial test set, not a claim that every possible document or DB-authored component has been executed.
 
 ## Coverage and evidence
 
@@ -11,7 +11,7 @@ Scope: frontend container recognition, static/Redux rendering adapters, and nest
 - DOM checks use actual `MarkdownCoreImpl`, `ResultMarkdown`, and `BasicMarkdownContent`. Only the Next chunk boundary is replaced. The result-field guard covers inline/full, nested objects/lists/tables, expansion, null/boolean/number retention, and inert artifact-shaped fenced code.
 - A temporary localhost page mounted the actual result components. Browser DOM showed bold list text, GFM table cells, revealed list items, long table prose, expanded nested cells, and a literal artifact JSON code block. The page and browser tab were removed after verification. A second temporary page mounted the actual full dispatcher for direct content and real accumulator output; both the owner and an independent reviewer observed formatted XML prose/table with literal fenced kind JSON and no promoted shape. This page and the verification tabs were also removed.
 
-Final focused validation: the expanded CI rendering command passes **166 tests**; the separate existing stream/accumulator regression selection passes **80 tests**. Repository type checking and tracked TypeScript parse checking pass.
+Final focused validation: the expanded CI rendering command passes **169 tests**; the separate existing stream/accumulator regression selection passes **88 tests**. Repository type checking and tracked TypeScript parse checking pass.
 
 ## Decisions
 
@@ -29,6 +29,8 @@ Final focused validation: the expanded CI rendering command passes **166 tests**
 Additional adversarial guards cover 5,000 adjacent XML tags without recursive stack growth, quoted attributes, comment/CDATA/code boundaries, and tool-interrupted XML fences. Incomplete XML retains XML-code ownership through later adapters, so it cannot promote kind-shaped examples without complete container context. Source bytes and tool chronology remain intact. The existing CI `test:render-matrix` command now includes the nesting matrix, XML guards, ingress DOM checks, and result-field DOM checks.
 
 The real browser dispatcher also exposed a case where both parsers agreed incorrectly: a fenced `__kind` JSON example inside complete XML became a shape. Generic XML now excludes literal contexts from embedded-kind recovery while retaining bare, complete kind-object recovery. This is a separate ownership assertion, not merely a parity comparison.
+
+The Python producer follows the same literal ownership contract, including unfinished opening tags and JSON in quoted attributes. All **176 server block-processing tests** pass, including transient stream-event checks. A shared lazy scanner also preserves 5,000 adjacent roots without rescanning the remaining document (local measurement: 8.099 seconds before, 0.034 seconds after). Frontend guards check every prefix of an attribute example and the actual Redux adapters for prefixed partial tags.
 
 ## Evidence corrections
 

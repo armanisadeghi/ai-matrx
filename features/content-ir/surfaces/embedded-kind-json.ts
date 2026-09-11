@@ -6,10 +6,13 @@
  * object is its own Content IR region even when an outer parser already
  * classified the surrounding bytes as code, XML, or prose.
  *
- * The scanner is deliberately syntax-agnostic about the OUTER container. It
- * only promotes candidates that independently pass JSON.parse and carry a
+ * Generic XML opts into literal-context exclusion so tag attributes, code,
+ * comments, and CDATA remain examples owned by their container. Otherwise the
+ * scanner is syntax-agnostic about the outer container. It only promotes candidates that independently pass JSON.parse and carry a
  * direct string discriminator. Failed/malformed candidates remain untouched.
  */
+
+import { readXmlTag } from "@/components/mardown-display/blocks/xml/readXmlTag";
 
 export interface EmbeddedKindJsonRegion {
   start: number;
@@ -93,7 +96,8 @@ function literalRanges(source: string): Array<[number, number]> {
     return newline === -1 ? source.length : newline;
   };
   while (cursor < source.length) {
-    const lineEnd = lineEndAt(cursor);
+    const lineStart = cursor === 0 || source[cursor - 1] === "\n";
+    const lineEnd = fence || lineStart ? lineEndAt(cursor) : cursor;
     if (fence) {
       const line = source.slice(cursor, lineEnd);
       const marker = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(line);
@@ -127,7 +131,6 @@ function literalRanges(source: string): Array<[number, number]> {
       continue;
     }
     // Fence openings exist only at a physical line start (after indentation).
-    const lineStart = cursor === 0 || source[cursor - 1] === "\n";
     if (lineStart) {
       const marker = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(
         source.slice(cursor, lineEnd),
@@ -139,6 +142,15 @@ function literalRanges(source: string): Array<[number, number]> {
           ticks: marker[1].length,
         };
         cursor = lineEnd < source.length ? lineEnd + 1 : lineEnd;
+        continue;
+      }
+    }
+    if (source[cursor] === "<") {
+      const tag = readXmlTag(source, cursor);
+      if (tag) {
+        const end = cursor + tag.raw.length;
+        ranges.push([cursor, end]);
+        cursor = end;
         continue;
       }
     }

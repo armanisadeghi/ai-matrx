@@ -31,6 +31,7 @@ import {
   detectVideoMarkdown,
   detectMatrxFileMarkdown,
   isCompleteUnrecognizedXmlContainer,
+  isUnclosedGenericXmlOpening,
   startUnrecognizedXmlContainer,
   type UnrecognizedXmlContainerTracker,
   normalizeCodeLanguage,
@@ -1653,6 +1654,10 @@ export class StreamBlockAccumulator {
     // so JSON inside it remains XML bytes rather than becoming a kind/artifact.
     if (
       this.genericXmlRecoverySuppressed ||
+      (this.currentBlockType === "text" &&
+        this.currentBlockContent
+          .split("\n")
+          .some(isUnclosedGenericXmlOpening)) ||
       (this.subState.kind === "generic_xml" &&
         !isCompleteUnrecognizedXmlContainer(this.currentBlockContent))
     ) {
@@ -1787,15 +1792,19 @@ export class StreamBlockAccumulator {
       return;
 
     this.emitCount++;
+    const unclosedXmlOpening =
+      this.currentBlockType === "text" && isUnclosedGenericXmlOpening(content);
 
     const block: RenderBlockPayload = {
       blockId: this.currentBlockId,
       blockIndex: this.currentBlockIndex,
-      type: this.currentBlockType,
+      type: unclosedXmlOpening ? "code" : this.currentBlockType,
       status,
       content: content || null,
-      data: this.buildBlockData(),
-      metadata: this.buildBlockMetadata(status, content),
+      data: unclosedXmlOpening ? { language: "xml" } : this.buildBlockData(),
+      metadata: unclosedXmlOpening
+        ? { isComplete: false, genericXmlContainer: true }
+        : this.buildBlockMetadata(status, content),
     };
 
     dispatch(this.upsertAction({ requestId: this.requestId, block }));

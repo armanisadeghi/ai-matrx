@@ -1,3 +1,5 @@
+import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
+import { expandTextBlocksInList } from "@/components/mardown-display/markdown-classification/processors/utils/expand-text-blocks";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
@@ -223,3 +225,71 @@ it.each([
       );
   },
 );
+
+it("keeps XML attributes literal even before the opening tag completes", () => {
+  const source = `<custom value='${FLASHCARDS}'>**Body**</custom>`;
+  for (let end = 1; end <= source.length; end++) {
+    const prefix = source.slice(0, end);
+    expect(
+      splitterBlocks(prefix).some(
+        (block) => block.kind || block.language === "json",
+      ),
+    ).toBe(false);
+  }
+  expect(splitterBlocks(source)).toEqual([
+    { type: "code", language: "xml", content: source, kind: null },
+  ]);
+  expect(reduxBlocks(source, 17).filter((block) => block.content)).toEqual(
+    splitterBlocks(source),
+  );
+  const partial = `<custom value='${FLASHCARDS}`;
+  expect(reduxBlocks(partial, 17).filter((block) => block.content)).toEqual(
+    splitterBlocks(partial),
+  );
+});
+
+it("recovers a bare kind after an attribute example without promoting the attribute", () => {
+  const source = `<custom value='${FLASHCARDS}'>\n${KEYWORD_BATCH}\n</custom>`;
+  const recovered = splitterBlocks(source).filter(
+    (block) => block.language === "json",
+  );
+  expect(recovered.map((block) => block.content)).toEqual([KEYWORD_BATCH]);
+});
+
+it("keeps prefixed partial XML aligned through the actual Redux rendering adapters", () => {
+  const source = `Prefix\n<custom value='${FLASHCARDS}`;
+  const latest = new Map<string, RenderBlockPayload>();
+  const accumulator = new StreamBlockAccumulator(
+    "partial-attribute-prefix",
+    (payload) => {
+      latest.set(payload.block.blockId, payload.block);
+      return payload;
+    },
+  );
+  for (const char of source) {
+    accumulator.ingest(char, (action) => action);
+    const visible = expandTextBlocksInList(
+      [...latest.values()].map(renderBlockToContentBlock),
+    );
+    expect(
+      visible.some(
+        (block) =>
+          readEnvelope(block.metadata)?.root.kind || block.language === "json",
+      ),
+    ).toBe(false);
+  }
+  accumulator.finalize((action) => action);
+  const visible = expandTextBlocksInList(
+    [...latest.values()].map(renderBlockToContentBlock),
+  );
+  expect(
+    visible
+      .filter((block) => block.content)
+      .map((block) => ({
+        type: block.type,
+        content: block.content,
+        language: block.language ?? null,
+        kind: readEnvelope(block.metadata)?.root.kind || null,
+      })),
+  ).toEqual(splitterBlocks(source));
+});

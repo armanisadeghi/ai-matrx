@@ -981,6 +981,26 @@ class XmlContainerTracker implements UnrecognizedXmlContainerTracker {
   }
 }
 
+/** Protect tag attributes while an opening tag is still arriving. */
+export function isUnclosedGenericXmlOpening(source: string): boolean {
+  const text = source.trimStart();
+  const prefix = /^<([A-Za-z_][\w.:-]*)(?=\s|\/|$)/.exec(text);
+  if (
+    !prefix ||
+    KNOWN_XML_TAG_NAMES.has(prefix[1]) ||
+    ALLOWED_RAW_HTML_TAGS.has(prefix[1].toLowerCase())
+  )
+    return false;
+  let quote: string | null = null;
+  for (let i = prefix[0].length; i < text.length; i++) {
+    if (quote) {
+      if (text[i] === quote) quote = null;
+    } else if (text[i] === "'" || text[i] === '"') quote = text[i];
+    else if (text[i] === ">") return false;
+  }
+  return true;
+}
+
 /** Starts a line-leading generic XML container, after known/raw-HTML ownership. */
 export function startUnrecognizedXmlContainer(
   line: string,
@@ -2293,7 +2313,8 @@ export const splitContentIntoBlocksV2 = (
     // text expansion from extracting directive/kind-looking JSON from a
     // malformed container while preserving every literal byte.
     const incompleteUnrecognizedXml =
-      startUnrecognizedXmlContainer(processedLine);
+      startUnrecognizedXmlContainer(processedLine) ||
+      isUnclosedGenericXmlOpening(processedLine);
     if (incompleteUnrecognizedXml) {
       if (currentText.trim()) {
         blocks.push({ type: "text", content: currentText.trimEnd() });
