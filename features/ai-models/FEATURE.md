@@ -74,6 +74,10 @@ must obey.
 
 ## Change log
 
+- `2026-09-11` — `ModelListDropdown` keeps every fixed desktop column reachable
+  below its 808px/1208px user/admin widths by scrolling the inner panel
+  horizontally inside its viewport-clamped popover; list/detail/offering panes
+  retain their own vertical scrollports.
 - `2026-09-11` — All finite admin selectors now import directly from
   `@ai-matrx/design-system`; the deprecated-model replacement control now uses
   `ModelListDropdown` with its active-model allowlist, so it retains the full

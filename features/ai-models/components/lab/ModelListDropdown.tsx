@@ -2098,71 +2098,71 @@ export function ModelListDropdown({
       >
         <div className="h-full overflow-x-auto overflow-y-hidden">
           <div className="flex h-full" style={{ minWidth: popoverWidth }}>
-          <div
-            className="flex h-full min-h-0 shrink-0 flex-col border-r border-border"
-            style={{ width: LIST_WIDTH }}
-          >
-            {listPanel}
-          </div>
-          <div
-            className="flex h-full min-h-0 shrink-0 flex-col overflow-hidden"
-            style={{ width: DETAIL_WIDTH }}
-          >
-            {rightPanel === "filters" ? (
-              <FiltersPanel
-                filters={filters}
-                setFilters={setFilters}
-                variant={variant}
-                makerOptions={makerOptions}
-                serviceOptions={serviceOptions}
-                vendorOptions={vendorOptions}
-                apiOptions={apiOptions}
-              />
-            ) : rightPanel === "detail" && hovered ? (
-              <div
-                key={hovered.id}
-                className="h-full animate-in fade-in-0 duration-300"
-              >
-                <ModelDetailCard
-                  model={hovered}
-                  tier={costRatingTier(hovered.costRating)}
-                  variant={variant}
-                  onSelect={() => handleSelect(hovered.id)}
-                  isCurrentModel={hovered.id === value}
-                  pinnedOfferingId={pinnedOfferingId}
-                  onPinOffering={
-                    onOfferingPinChange ? handlePinOffering : undefined
-                  }
-                />
-              </div>
-            ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-                <MousePointerClick className="h-6 w-6 text-muted-foreground/40" />
-                <p className="text-xs leading-relaxed text-muted-foreground/70">
-                  Hover a model to preview its details, or click to select.
-                </p>
-              </div>
-            )}
-          </div>
-          {/* Admin extension column — the LARGE total-transparency section. */}
-          {variant === "admin" && (
             <div
-              className="flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-l border-border"
-              style={{ width: ADMIN_PANEL_WIDTH }}
+              className="flex h-full min-h-0 shrink-0 flex-col border-r border-border"
+              style={{ width: LIST_WIDTH }}
             >
-              {adminPanelModel ? (
-                <AdminOfferingsSection model={adminPanelModel} />
+              {listPanel}
+            </div>
+            <div
+              className="flex h-full min-h-0 shrink-0 flex-col overflow-hidden"
+              style={{ width: DETAIL_WIDTH }}
+            >
+              {rightPanel === "filters" ? (
+                <FiltersPanel
+                  filters={filters}
+                  setFilters={setFilters}
+                  variant={variant}
+                  makerOptions={makerOptions}
+                  serviceOptions={serviceOptions}
+                  vendorOptions={vendorOptions}
+                  apiOptions={apiOptions}
+                />
+              ) : rightPanel === "detail" && hovered ? (
+                <div
+                  key={hovered.id}
+                  className="h-full animate-in fade-in-0 duration-300"
+                >
+                  <ModelDetailCard
+                    model={hovered}
+                    tier={costRatingTier(hovered.costRating)}
+                    variant={variant}
+                    onSelect={() => handleSelect(hovered.id)}
+                    isCurrentModel={hovered.id === value}
+                    pinnedOfferingId={pinnedOfferingId}
+                    onPinOffering={
+                      onOfferingPinChange ? handlePinOffering : undefined
+                    }
+                  />
+                </div>
               ) : (
                 <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-                  <Shield className="h-6 w-6 text-muted-foreground/40" />
+                  <MousePointerClick className="h-6 w-6 text-muted-foreground/40" />
                   <p className="text-xs leading-relaxed text-muted-foreground/70">
-                    Hover a model to see every offering&apos;s real vendor, api,
-                    provider model id and $ pricing.
+                    Hover a model to preview its details, or click to select.
                   </p>
                 </div>
               )}
             </div>
-          )}
+            {/* Admin extension column — the LARGE total-transparency section. */}
+            {variant === "admin" && (
+              <div
+                className="flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-l border-border"
+                style={{ width: ADMIN_PANEL_WIDTH }}
+              >
+                {adminPanelModel ? (
+                  <AdminOfferingsSection model={adminPanelModel} />
+                ) : (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+                    <Shield className="h-6 w-6 text-muted-foreground/40" />
+                    <p className="text-xs leading-relaxed text-muted-foreground/70">
+                      Hover a model to see every offering&apos;s real vendor,
+                      api, provider model id and $ pricing.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </PopoverContent>
