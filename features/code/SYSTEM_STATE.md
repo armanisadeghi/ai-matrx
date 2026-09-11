@@ -75,7 +75,7 @@ The previous `app/(authenticated)/code/page.tsx` was deleted when the route move
 
 ```
 features/code/
-  CodeWorkspaceRoute.tsx          ← top‑level, mounts providers + layout
+  host/CodeWorkspaceRoute.tsx     ← route host, sandbox handoff + URL synchronization
   CodeWorkspace.tsx               ← inner shell, holds activity bar + side panel + editor + bottom panel
   layout/WorkspaceLayout.tsx      ← <ResizablePanelGroup> orchestration; injects `rightmost` prop
   styles/tokens.ts                ← AVATAR_RESERVE = "pr-14", shared sizing tokens
@@ -83,8 +83,14 @@ features/code/
 
 `WorkspaceLayout` is responsible for:
 
-- Imperatively expanding/collapsing panels via the `ImperativePanelHandle`s, then calling `setLayout(...)` inside `requestAnimationFrame`. This avoids the panel‑library footgun where layout fights collapse state.
+- Applying one horizontal `GroupImperativeHandle.setLayout()` update for side/chat/history toggles, so adjacent collapsible panels do not re-expand each other. The bottom panel uses its own imperative handle. Collapsed contents stay mounted but are inert and hidden from accessibility navigation.
 - Cloning each slot child and injecting a `rightmost` boolean prop so whichever panel currently sits flush against the top‑right corner reserves space (`AVATAR_RESERVE`) for the floating user avatar.
+
+Desktop starts with an 18% Explorer, 25% chat pane, and 25% bottom tool pane; users can resize them. Below 1024px, `MobilePanelShell` renders the editor above controlled, stacked disclosures for the active side view, chat, history, and workspace tools. Their open state shares the desktop Redux flags and URL parameters. Terminal session controls stack beneath the terminal at compact widths.
+
+The route-only `useCodeWorkspaceUrlState` bridge serializes sandbox identity, active filesystem path, Explorer root, activity view, and panel choices (`sandbox`, `file`, `root`, `view`, `side`, `chat`, `history`, `bottom`, `bottomTab`). Library records retain their canonical `open`/`folder` links. File bytes never enter the URL. Restoration waits for the correct sandbox adapter, cancels stale reads, and preserves existing dirty buffers. Browser history restoration replaces only its selected entry when normalization is needed, preserving Forward history.
+
+`CodeHeaderControls` keeps the active sandbox name, status, copyable row ID, and detail link visible independently of the selected side view. `FileTree` reveals the active physical file, expands its parents, and scrolls its selected row into view; a manual root change remains until the next file activation. Session reports reuse their existing tab when opened from Explorer. Save completion records the actual persisted snapshot while preserving any edits made during the write.
 
 ### 1.3 Activity bar + side panels
 
@@ -103,7 +109,7 @@ features/code/views/
   history/                 ← ConversationHistorySidebar host
 ```
 
-The five views currently registered are: `explorer`, `sandboxes`, `library`, `chat`, `history`. Each renders inside `SidePanelChrome`, which provides the consistent header/scroll behavior.
+The activity views are `explorer`, `sandboxes`, `library`, `search`, `source-control`, `run`, and `extensions`; `activity-views.ts` owns their labels and icons. Chat and history are separate optional layout slots. Side views use `SidePanelChrome` for their shared frame.
 
 ### 1.4 Editor
 
