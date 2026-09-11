@@ -9,9 +9,9 @@ must obey.
 ## Where things are
 
 - Admin routes: `app/(admin)/administration/ai/ai-models/{page,audit,deprecated-audit,provider-sync,providers,endpoints,offerings,settings,aliases}` (display metadata in `features/admin/constants/admin-{categories,navigation}.ts`).
-- API routes: `GET /api/ai-models` (CDN-cached 12h/24h SWR), `POST|GET /api/ai-models/provider-sync`, `POST /api/ai-models/revalidate`, `POST /api/admin/ai-models/replace-references`.
+- API routes: `GET /api/ai-models` (CDN-cached 12h/24h SWR), `POST /api/ai-models/revalidate`, `POST /api/admin/ai-models/replace-references`. `app/api/ai-models/provider-sync` is DELETED (2026-09-11) — Provider Sync's model refresh is server-side now (aidream `POST /admin/ai-catalog/provider-models/refresh`), never a Next.js middle tier.
 - No barrel: import from `components/…`, `service.ts`, `types.ts`, `hooks/…`, `redux/…`, `audit/…`, `server/…`, `controls/…`, `capabilities/…`, `usageBasis.ts`, `format.ts`.
-- Slice `redux/modelRegistrySlice.ts` · service `service.ts` · reload thunk `catalogReload.ts` · SSR reader `server/ai-models-server.ts` · identity display `components/official/entity-ref/AiIdentityRef.tsx`.
+- Slice `redux/modelRegistrySlice.ts` · service `service.ts` · reload thunk `catalogReload.ts` · provider-models refresh thunk `providerModelsRefresh.ts` · SSR reader `server/ai-models-server.ts` · identity display `components/official/entity-ref/AiIdentityRef.tsx`.
 
 ## 🚨 Rules
 
@@ -116,8 +116,19 @@ must obey.
   the badge reads **not tracked** rather than implying a check happened; Groq's own per-token
   price is converted ×1e6 and a drift shows both numbers. `no offering` and `no price` are distinct
   visible states. Per-provider snapshot age replaces the raw timestamp and flags past 24h.
-  ⚠️ OPEN: aidream is landing `POST /admin/ai-catalog/provider-models/refresh`; when it is live,
-  point Sync Now at it and delete this repo's `POST /api/ai-models/provider-sync` fetchers.
+  RESOLVED 2026-09-11 (see below): Sync Now now calls aidream's server-side refresh.
+
+- `2026-09-11` — **Provider Sync's model refresh moved server-side; the duplicate Next.js
+  fetchers are gone.** Sync Now now dispatches `providerModelsRefresh.ts` (`refreshProviderModels`,
+  mirroring `catalogReload.ts`) against aidream's `POST /admin/ai-catalog/provider-models/refresh`
+  — the on-demand half of its daily `provider_models_refresh` system task, and the ONLY writer of
+  `ai.provider.provider_models_cache` now. `app/api/ai-models/provider-sync` (both the four
+  provider-API fetchers and the GET summary endpoint) is DELETED, no shim — the dashboard's
+  provider summaries now derive directly from the `providers` prop (already a plain supabase-js
+  read owned by the parent page), and Refresh re-pulls it via `onModelsChanged`. The server
+  supports xAI, which the old Next route never did. A `missing_key` / `no_provider_row` / `failed`
+  result is a reported row from the server, shown as the sync error for that provider — never
+  hidden or silently retried.
 
 - `2026-08-30` — Provider Sync now gives its mobile toolbar distinct stats,
   legend, and action rows plus the canonical coarse-pointer touch floor while

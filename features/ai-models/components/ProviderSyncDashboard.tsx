@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { extractErrorMessage } from "@/utils/errors";
 import { compareTimestamps, parseTimestamp } from "@/utils/datetime";
 import {
@@ -51,6 +52,7 @@ import ProviderSyncPolicyDialog, {
   type ProviderSyncPolicyTarget,
 } from "./ProviderSyncPolicyDialog";
 import { aiModelService } from "../service";
+import { refreshProviderModels } from "../providerModelsRefresh";
 import type {
   AiModel,
   AiProvider,
@@ -75,6 +77,24 @@ type ProviderSummary = {
   is_supported: boolean;
   provider_key: string | null;
 };
+
+// `ai.provider.slug` values the server's provider-models refresh knows how to
+// fetch (aidream/services/ai_catalog/provider_models_refresh.py). Keep in
+// sync with that module's `_FETCHERS` registry.
+const SUPPORTED_PROVIDER_SLUGS = ["openai", "anthropic", "groq", "google", "xai"];
+
+function summarizeProvider(provider: AiProvider): ProviderSummary {
+  const cache = provider.provider_models_cache;
+  return {
+    id: provider.id,
+    name: provider.name,
+    has_cache: cache != null,
+    fetched_at: cache?.fetched_at ?? null,
+    model_count: cache?.models.length ?? 0,
+    is_supported: provider.slug != null && SUPPORTED_PROVIDER_SLUGS.includes(provider.slug),
+    provider_key: provider.slug ?? null,
+  };
+}
 
 type ComparisonStatus = ProviderSyncComparisonStatus;
 type ModelComparison = ProviderSyncComparison;
@@ -1432,7 +1452,8 @@ export default function ProviderSyncDashboard({
   providers,
   onModelsChanged,
 }: Props) {
-  const [summaries, setSummaries] = useState<ProviderSummary[]>([]);
+  const dispatch = useAppDispatch();
+  const summaries = useMemo(() => providers.map(summarizeProvider), [providers]);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
@@ -1459,21 +1480,17 @@ export default function ProviderSyncDashboard({
   const loadSummaries = useCallback(async () => {
     setLoading(true);
     try {
-      // The Next route owns only the provider-API fetchers + their cache
-      // metadata (a secret-keyed admin concern). The CLASSIFICATION and the
-      // registry rows come straight from the database, as they must: the sync
-      // agent reads the same view.
-      const [summaryRes, candidateRows, offerings, aliases] = await Promise.all(
-        [
-          fetch("/api/ai-models/provider-sync"),
-          aiModelService.fetchProviderSyncCandidates(),
-          aiModelService.fetchOfferings(),
-          aiModelService.fetchAliases(),
-        ],
-      );
-      if (!summaryRes.ok) throw new Error(await summaryRes.text());
-      const json = (await summaryRes.json()) as { providers: ProviderSummary[] };
-      setSummaries(json.providers);
+      // `summaries` derives from the `providers` prop (direct supabase-js
+      // reads, owned by the parent page) — refreshing it here means asking
+      // the parent to re-fetch providers alongside our own classification +
+      // registry rows, which come straight from the database, as they must:
+      // the sync agent reads the same view.
+      const [candidateRows, offerings, aliases] = await Promise.all([
+        aiModelService.fetchProviderSyncCandidates(),
+        aiModelService.fetchOfferings(),
+        aiModelService.fetchAliases(),
+        Promise.resolve(onModelsChanged?.()),
+      ]);
       setCandidates(candidateRows);
       setRegistry({ offerings, aliases });
     } catch (err) {
@@ -1484,7 +1501,7 @@ export default function ProviderSyncDashboard({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [onModelsChanged]);
 
   useEffect(() => {
     loadSummaries();
@@ -1585,18 +1602,12 @@ export default function ProviderSyncDashboard({
   };
 
   /**
-   * Pull this provider's models API into `ai.provider.provider_models_cache`.
-   *
-   * ⚠️ MIGRATION POINT (2026-09-11): aidream is landing
-   * `POST /admin/ai-catalog/provider-models/refresh`, the on-demand half of its
-   * daily `provider_models_refresh` task — the same five provider contracts
-   * this Next route keeps a second copy of. At the time of writing that
-   * endpoint exists only in the aidream working tree and answers 404 on the
-   * live server, so wiring this button to it would have broken the only
-   * working refresh path. When it is live: swap this fetch for
-   * `dispatch(callApi({ path: "/admin/ai-catalog/provider-models/refresh", ... }))`
-   * keyed by `ai.provider.slug`, and DELETE `app/api/ai-models/provider-sync`'s
-   * POST half with its fetchers — no twin.
+   * Pull this provider's models API into `ai.provider.provider_models_cache`
+   * — server-side, via aidream's `POST /admin/ai-catalog/provider-models/refresh`
+   * (landed 2026-09-11; the on-demand half of its daily
+   * `provider_models_refresh` system task, same fetchers the scheduled run
+   * uses). The response names every provider it tried, so a missing API key
+   * or an outage is a reported result, never a silent no-op.
    */
   const handleSync = async (summary: ProviderSummary) => {
     if (!summary.provider_key) return;
@@ -1604,28 +1615,30 @@ export default function ProviderSyncDashboard({
     setSyncError(null);
     setSyncSuccess(null);
     try {
-      const res = await fetch("/api/ai-models/provider-sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider_id: summary.id,
-          provider_key: summary.provider_key,
-        }),
-      });
-      const json = (await res.json()) as {
-        success?: boolean;
-        error?: string;
-        model_count?: number;
-      };
-      if (!res.ok || json.error) {
-        setSyncError(json.error ?? `Sync failed (${res.status})`);
-      } else {
-        setSyncSuccess(
-          `Synced ${json.model_count ?? 0} models from ${summary.name}`,
-        );
-        await loadSummaries();
-        onModelsChanged?.();
+      const result = await dispatch(refreshProviderModels([summary.provider_key]));
+      if (result === null) {
+        setSyncError(`Sync failed for ${summary.name ?? summary.provider_key} — request could not complete`);
+        return;
       }
+      const row = result.results?.find((r) => r.provider_slug === summary.provider_key);
+      if (!row) {
+        setSyncError(
+          `${summary.name ?? summary.provider_key} was not in the server's response — nothing refreshed`,
+        );
+      } else if (row.status === "refreshed") {
+        setSyncSuccess(`Synced ${row.model_count} models from ${summary.name}`);
+      } else if (row.status === "missing_key") {
+        setSyncError(
+          `${summary.name ?? summary.provider_key} has no API key configured on the server — nothing to sync`,
+        );
+      } else if (row.status === "no_provider_row") {
+        setSyncError(
+          `${summary.name ?? summary.provider_key} has no matching ai.provider row on the server`,
+        );
+      } else {
+        setSyncError(row.detail ?? `Sync failed for ${summary.name ?? summary.provider_key}`);
+      }
+      onModelsChanged?.();
     } catch (err) {
       setSyncError(extractErrorMessage(err));
     } finally {
