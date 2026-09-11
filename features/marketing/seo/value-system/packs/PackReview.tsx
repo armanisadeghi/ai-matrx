@@ -99,6 +99,9 @@ const GUARD_LABELS: Record<string, string> = {
   actively_avoided: "you actively avoid this",
 };
 
+const CHECKBOX_TAP_AREA =
+  "relative max-lg:before:absolute max-lg:before:left-1/2 max-lg:before:top-1/2 max-lg:before:h-11 max-lg:before:w-11 max-lg:before:-translate-x-1/2 max-lg:before:-translate-y-1/2 max-lg:before:content-['']";
+
 function keyOf(kind: string, ref: string): ItemKey {
   return `${kind}:${ref}`;
 }
@@ -293,7 +296,7 @@ function Row({
           checked={checked}
           disabled={disabled}
           onCheckedChange={onToggle}
-          className="mt-0.5"
+          className={cn("mt-0.5", CHECKBOX_TAP_AREA)}
           aria-label={label}
         />
         <div className="min-w-0 flex-1">{children}</div>
@@ -590,7 +593,7 @@ export function PackReview({
     : 0;
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="matrx-touch-targets flex h-full min-h-0 flex-col">
       {/* ── header ── */}
       <div className="shrink-0 border-b border-border bg-card px-3 py-2.5 sm:px-4">
         <button
