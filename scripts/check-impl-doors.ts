@@ -274,6 +274,78 @@ interface AnonDefinerRow {
   args: string;
 }
 
+// ─── D6: a declared ANONYMOUS door that reads visibility-bearing rows must gate on it ──
+//
+// DD-116 / B-15 (2026-09-11). D5 asks whether a door was DECLARED. D6 asks
+// whether the declaration is HONEST. `public.get_agent_public(uuid)` was a
+// properly declared anonymous door whose entire body was
+// `where d.id = p_agent_id and d.deleted_at is null` — no visibility test at
+// all. Proven live as `anon` in a rolled-back transaction: it returned the name,
+// description, launch variables and context policies of a `card_visibility=
+// 'internal'` agent (628 of 1,040 live agents were in that class) to anyone
+// holding the published anon key and a UUID. Declaring a door is a claim that an
+// anonymous caller may reach it; it is not a claim that every ROW behind it is
+// public, and nothing in the database was checking the difference.
+//
+// THE RULE. A declared anon door whose body names a table that carries a
+// `visibility` or `card_visibility` column must show ONE of:
+//   * a visibility test in its own body (`visibility` / `card_visibility`);
+//   * the platform's access resolver (`iam.has_access`, `has_permission`,
+//     `resolve_share_token`, `accessible_entity_ids`);
+//   * a credential-shaped argument — `secret` / `token` / `code` / `pin` /
+//     `password` (hr_l3_70's structural rule: an anonymous caller may reach a
+//     door only when the door carries its own credential); or
+//   * `auth.uid()`, i.e. the body resolves the caller's identity itself.
+//
+// IT IS A TEXT TEST OVER THE LIVE BODY, AND THAT IS DELIBERATE. It cannot prove
+// a gate is CORRECT — only that one is present. It is exactly strong enough to
+// catch the defect class it was born from (a door with no gate at all), it reads
+// `pg_get_functiondef` on the live database rather than a file, and it cannot go
+// green because someone edited a migration. A door that satisfies it by
+// mentioning a visibility column in a comment is a lie a human must still catch;
+// a door that satisfies nothing is caught here.
+//
+// Shrink-only baseline (`scripts/impl-doors/anon-door-visibility-baseline.json`)
+// for the same reason D5 has one: 8 declared anon doors are in this state after
+// DD-116, each needing its own judgement, and a gate that screams about all of
+// them every run is a gate nobody reads. It fails on GROWTH.
+const UNGATED_ANON_DOOR_QUERY = `
+  with doors as (
+    select d.schema_name, d.function_name, d.identity_args,
+           pg_get_functiondef(p.oid) as def
+    from platform.client_callable_door d
+    join pg_catalog.pg_proc p on p.proname = d.function_name
+    join pg_catalog.pg_namespace n on n.oid = p.pronamespace and n.nspname = d.schema_name
+    where p.prosecdef
+      and p.prokind = 'f'
+      and p.prorettype <> 'trigger'::regtype
+      and pg_get_function_identity_arguments(p.oid) = d.identity_args
+      and has_function_privilege('anon', p.oid, 'EXECUTE')
+  ),
+  vis_tables as (
+    select distinct c.table_schema || '.' || c.table_name as t
+    from information_schema.columns c
+    where c.column_name in ('visibility', 'card_visibility')
+      and c.table_schema not in ('information_schema', 'pg_catalog')
+  )
+  select d.schema_name || '.' || d.function_name as fn,
+         d.identity_args as args
+  from doors d
+  where exists (
+      select 1 from vis_tables v
+      where d.def ~* ('\\m' || replace(v.t, '.', '\\.') || '\\M')
+    )
+    and d.def !~* '(card_visibility|\\mvisibility\\M|has_access|has_permission|resolve_share_token|accessible_entity_ids)'
+    and d.identity_args !~* '(secret|token|code|pin|password|passcode)'
+    and d.def !~* 'auth\\.uid\\(\\)'
+  order by 1, 2
+`;
+
+interface UngatedDoorRow {
+  fn: string;
+  args: string;
+}
+
 // ─── Baseline for D2 (may only shrink) ───────────────────────────────────────
 
 interface Baseline {
@@ -333,6 +405,7 @@ async function main(): Promise<number> {
   let anonPrivs: PrivRow[];
   let clientWrites: ClientWriteRow[];
   let anonDefiners: AnonDefinerRow[];
+  let ungatedDoors: UngatedDoorRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -350,6 +423,10 @@ async function main(): Promise<number> {
     anonDefiners = await q<AnonDefinerRow>(
       UNDECLARED_ANON_DEFINER_QUERY,
       "D5 undeclared anon-callable SECURITY DEFINER functions",
+    );
+    ungatedDoors = await q<UngatedDoorRow>(
+      UNGATED_ANON_DOOR_QUERY,
+      "D6 declared anon doors with no visibility gate",
     );
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
@@ -543,6 +620,61 @@ async function main(): Promise<number> {
     if (shrank > 0) {
       console.log(
         `${C.dim}       Lower the baseline to ${a} in scripts/impl-doors/anon-definer-baseline.json so the win is held.${C.reset}`,
+      );
+    }
+  }
+
+  // ── D6 ────────────────────────────────────────────────────────────────────
+  const doorBaseline = loadBaseline("scripts/impl-doors/anon-door-visibility-baseline.json");
+  const g = ungatedDoors.length;
+  if (!doorBaseline) {
+    findings += 1;
+    console.log(
+      `${TAG.warn}D6 ${g} declared ANONYMOUS door(s) read visibility-bearing rows with no gate of any kind — no baseline file to compare against`,
+    );
+    console.log(
+      `${C.dim}       Create scripts/impl-doors/anon-door-visibility-baseline.json with {"count": ${g}, "why": "...", "capturedAt": "..."}.${C.reset}`,
+    );
+  } else if (g > doorBaseline.count) {
+    findings += g - doorBaseline.count;
+    console.log(
+      `${TAG.fail}D6 ungated ANONYMOUS doors GREW: ${doorBaseline.count} → ${g} (+${g - doorBaseline.count})`,
+    );
+    for (const r of ungatedDoors) {
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       A declared door says "an anonymous caller may reach this function". It does NOT say${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       "every row behind it is public" — DD-116: public.get_agent_public was a properly${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       declared door whose body was 'where id = $1 and deleted_at is null', and it handed${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       628 internal agents to anyone holding the anon key. Fix, in the body: filter on the${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       table's visibility/card_visibility for anonymous callers and route signed-in ones${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       through iam.has_access(<token>, id, 'viewer') — never a hand-written membership test,${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       and return ZERO ROWS, never an error that confirms the row exists (access DECISIONS${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       2026-08-11). Model: migrations/dd116_agent_public_door_visibility_gate.sql.${C.reset}`,
+    );
+  } else {
+    const shrank = doorBaseline.count - g;
+    console.log(
+      `${TAG.ok}D6 ungated anonymous doors ${g} ${C.dim}(baseline ${doorBaseline.count}${shrank > 0 ? `, ${shrank} fewer` : ""} — may only shrink)${C.reset}`,
+    );
+    if (shrank > 0) {
+      console.log(
+        `${C.dim}       Lower the baseline to ${g} in scripts/impl-doors/anon-door-visibility-baseline.json so the win is held.${C.reset}`,
       );
     }
   }
