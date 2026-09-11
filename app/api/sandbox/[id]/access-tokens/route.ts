@@ -5,6 +5,50 @@ import {
   orchestratorJsonHeaders,
 } from "@/lib/sandbox/orchestrator-routing";
 
+const TRANSIENT_UPSTREAM_STATUSES = new Set([502, 503, 504]);
+const TOKEN_MINT_MAX_ATTEMPTS = 3;
+const TOKEN_MINT_RETRY_MS = 250;
+
+type FetchLike = typeof fetch;
+
+const sleep = (milliseconds: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
+
+/**
+ * A token mint is safe to retry: the endpoint issues a fresh, scoped bearer
+ * without changing the sandbox lifecycle. This protects a chat turn from the
+ * short interval while an upstream proxy is republishing a healthy
+ * orchestrator after a restart. Do not retry 4xx responses: those describe a
+ * caller, access, or sandbox-state problem that another request cannot fix.
+ */
+export async function mintAccessTokenWithRetry(
+  url: string,
+  init: RequestInit,
+  {
+    request = fetch,
+    wait = sleep,
+  }: { request?: FetchLike; wait?: (milliseconds: number) => Promise<void> } = {},
+): Promise<Response> {
+  let response: Response | undefined;
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= TOKEN_MINT_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      response = await request(url, init);
+      if (!TRANSIENT_UPSTREAM_STATUSES.has(response.status)) return response;
+    } catch (error) {
+      lastError = error;
+    }
+
+    if (attempt < TOKEN_MINT_MAX_ATTEMPTS) {
+      await wait(TOKEN_MINT_RETRY_MS * attempt);
+    }
+  }
+
+  if (response) return response;
+  throw lastError instanceof Error ? lastError : new Error("Sandbox orchestrator is not reachable");
+}
+
 /**
  * POST /api/sandbox/[id]/access-tokens
  *
@@ -112,7 +156,7 @@ export async function POST(
     // 3) Forward to the orchestrator hosting this sandbox's tier.
     let resp: Response;
     try {
-      resp = await fetch(
+      resp = await mintAccessTokenWithRetry(
         `${lookup.orchestrator.url}/sandboxes/${lookup.sandboxId}/access-tokens`,
         {
           method: "POST",

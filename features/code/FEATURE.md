@@ -147,6 +147,11 @@ container.
 
 ## Change log
 
+- 2026-09-11 — Access-token minting now retries transient 502/503/504 upstream
+  responses before leaving a chat turn unbound. Authoritative client refusals
+  still return immediately, so a bad key or invalid sandbox state is never
+  masked as a transient availability event.
+
 - `2026-08-30` — **Ctrl-C now uses the PTY's explicit `SIGINT` control frame.** Live verification showed raw ETX could remain buffered while `sleep 30` kept running; the buffered terminal still handles ETX locally, and Ctrl-Shift-C remains copy.
 - `2026-08-28` — **Code chat agent selection now delegates to the canonical Chat picker.** Both the empty state and active-agent trigger use the shared Redux-backed picker, so Code inherits the full agent inventory and standard tabs, search, sort, favorites, category/tag filters, reset, origin badges, and detail actions. Starting a new selection still clears Code's conversation focus and URL through `beginFreshCodeChat`.
 
