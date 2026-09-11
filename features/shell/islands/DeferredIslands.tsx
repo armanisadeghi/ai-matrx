@@ -31,12 +31,13 @@ const WindowTraySync = dynamic(
 export default function DeferredIslands() {
   const ready = useIdleReady();
 
-  if (!ready) return null;
-
   return (
     <>
-      <CanvasSideSheet />
+      {/* Window geometry must listen before idle work: a viewport can shrink
+          while the shell is still settling, and an open footer must remain
+          reachable even if no later resize event occurs. */}
       <WindowTraySync />
+      {ready && <CanvasSideSheet />}
     </>
   );
 }

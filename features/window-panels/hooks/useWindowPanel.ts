@@ -369,9 +369,9 @@ export function useWindowPanel(
           // Off-screen rescue: if the user released the drag outside the
           // viewport without triggering a popout (e.g. they dragged past
           // the edge but not far enough / long enough to dwell, or popout
-          // was unavailable), pull the window back so its header stays
-          // grabbable. The clamp reducer is a no-op when rect is already
-          // in bounds, so this is cheap to dispatch unconditionally.
+          // was unavailable), pull the complete window back into bounds.
+          // The clamp reducer is a no-op when rect is already in bounds, so
+          // this is cheap to dispatch unconditionally.
           const { vw, vh, degenerate } = safeViewportDims();
           if (!degenerate) {
             dispatch(

@@ -761,8 +761,8 @@ const windowManagerSlice = createSlice({
     },
 
     /**
-     * Clamp a window's `windowed` rect into the current viewport so at least
-     * the standard MIN_VISIBLE_PX strip of the header stays grabbable.
+     * Clamp a window's `windowed` rect into the current viewport so its body
+     * and footer remain reachable.
      *
      * **Why this exists:** drag-and-release outside the viewport (without a
      * popout firing), restore-from-minimize where `preMinimizedRect` was

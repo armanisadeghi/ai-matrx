@@ -35,21 +35,29 @@ export function WindowTraySync() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
 
+    const syncWindowGeometry = () => {
+      // A resize that measures 0×0 is a hidden/undisplayed tab or a
+      // display:none ancestor, never a real screen. Bail WITHOUT dispatching:
+      // reacting to it would rewrite every window rect and every tray slot
+      // against invented dimensions, and the next real measurement would
+      // then have to undo it. No measurement, no write.
+      const { vw, vh, degenerate } = safeViewportDims();
+      if (degenerate) return;
+      dispatch(
+        recomputeTrayPositions({ viewportWidth: vw, viewportHeight: vh }),
+      );
+      dispatch(clampAllWindowRects({ viewportWidth: vw, viewportHeight: vh }));
+    };
+
+    // This island may load after the viewport already changed. Synchronising
+    // once on mount closes that event-listener gap for persisted windows.
+    syncWindowGeometry();
+
     const handleResize = () => {
       if (timer !== null) clearTimeout(timer);
       timer = setTimeout(() => {
         timer = null;
-        // A resize that measures 0×0 is a hidden/undisplayed tab or a
-        // display:none ancestor, never a real screen. Bail WITHOUT dispatching:
-        // reacting to it would rewrite every window rect and every tray slot
-        // against invented dimensions, and the next real measurement would
-        // then have to undo it. No measurement, no write.
-        const { vw, vh, degenerate } = safeViewportDims();
-        if (degenerate) return;
-        dispatch(
-          recomputeTrayPositions({ viewportWidth: vw, viewportHeight: vh }),
-        );
-        dispatch(clampAllWindowRects({ viewportWidth: vw, viewportHeight: vh }));
+        syncWindowGeometry();
       }, DEBOUNCE_MS);
     };
 

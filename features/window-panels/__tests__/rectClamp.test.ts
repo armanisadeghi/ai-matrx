@@ -85,22 +85,21 @@ describe("clampRectToViewport", () => {
     });
   });
 
-  describe("keeps the header grabbable", () => {
-    it("clamps far-left-offscreen x so 48px remains visible", () => {
+  describe("keeps the usable window visible", () => {
+    it("clamps far-left-offscreen x into the viewport", () => {
       const out = clampRectToViewport(
         { x: -1000, y: 100, width: 500, height: 300 },
         VIEWPORT,
       );
-      // Min visible = 48px — window's (x + width) must be >= 48 from left
-      expect(out.x + out.width).toBeGreaterThanOrEqual(48);
+      expect(out.x).toBeGreaterThanOrEqual(0);
     });
 
-    it("clamps far-right-offscreen x so 48px remains visible", () => {
+    it("clamps far-right-offscreen x so the body remains usable", () => {
       const out = clampRectToViewport(
         { x: VIEWPORT.width + 500, y: 100, width: 500, height: 300 },
         VIEWPORT,
       );
-      expect(out.x).toBeLessThanOrEqual(VIEWPORT.width - 48);
+      expect(out.x + out.width).toBeLessThanOrEqual(VIEWPORT.width - 8);
     });
 
     it("never lets y go above the viewport", () => {
@@ -111,12 +110,12 @@ describe("clampRectToViewport", () => {
       expect(out.y).toBeGreaterThanOrEqual(0);
     });
 
-    it("clamps far-below-offscreen y so 48px remains visible", () => {
+    it("clamps a restored tall window so its footer stays visible after viewport shrink", () => {
       const out = clampRectToViewport(
-        { x: 100, y: VIEWPORT.height + 500, width: 500, height: 300 },
-        VIEWPORT,
+        { x: 313, y: 156, width: 920, height: 680 },
+        { width: 1280, height: 800 },
       );
-      expect(out.y).toBeLessThanOrEqual(VIEWPORT.height - 48);
+      expect(out.y + out.height).toBeLessThanOrEqual(792);
     });
   });
 

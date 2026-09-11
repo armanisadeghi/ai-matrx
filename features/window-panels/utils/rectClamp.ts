@@ -7,8 +7,7 @@
  * stored rects into a sensible shape for the current viewport:
  *
  *  - Width/height capped to viewport minus safe margins.
- *  - Position nudged into bounds so at least a `MIN_VISIBLE_PX` strip of
- *    the header stays draggable.
+ *  - Position nudged into bounds so the complete usable window stays visible.
  *  - If the stored rect is entirely nonsensical (e.g. width 0, negative
  *    coords with huge values), fall back to a centered default.
  */
@@ -19,9 +18,6 @@ export interface WindowRectLike {
   width: number;
   height: number;
 }
-
-/** Minimum chrome strip that must remain visible post-clamp (px). */
-const MIN_VISIBLE_PX = 48;
 
 /** Safety padding around the viewport edges. */
 const VIEWPORT_PADDING = 8;
@@ -172,18 +168,16 @@ export function clampRectToViewport(
   }
   height = Math.min(height, maxH);
 
-  // 2. Sanitise position. Reject NaN. Keep at least MIN_VISIBLE_PX of the
-  //    window's top-left corner inside the viewport so the user can drag it.
+  // 2. Sanitise position. Reject NaN. The complete body must remain reachable:
+  // keeping only a title-bar strip visible leaves footer controls below a
+  // smaller viewport after a desktop-window resize.
   let x = Number.isFinite(rect.x) ? rect.x : 0;
   let y = Number.isFinite(rect.y) ? rect.y : 0;
 
-  const minX = -(width - MIN_VISIBLE_PX);
-  const maxX = viewport.width - MIN_VISIBLE_PX;
-  x = Math.max(minX, Math.min(maxX, x));
-
-  const minY = 0; // never allow the header to go above the viewport
-  const maxY = viewport.height - MIN_VISIBLE_PX;
-  y = Math.max(minY, Math.min(maxY, y));
+  const maxX = Math.max(0, viewport.width - width - VIEWPORT_PADDING);
+  const maxY = Math.max(0, viewport.height - height - VIEWPORT_PADDING);
+  x = Math.max(0, Math.min(maxX, x));
+  y = Math.max(0, Math.min(maxY, y));
 
   return { x, y, width, height };
 }
