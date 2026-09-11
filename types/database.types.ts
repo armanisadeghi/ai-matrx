@@ -96888,7 +96888,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      udt_dataset_access: {
+        Args: {
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_table_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
