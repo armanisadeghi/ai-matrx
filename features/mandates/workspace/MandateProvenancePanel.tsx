@@ -95,7 +95,7 @@ export function MandateProvenancePanel({
   return (
     <Section
       title={PROVENANCE_SECTION_TITLE}
-      hint="Read from the registry, the shortcut tables and the run ledger"
+      hint="Read from the source record, input definitions, and run history"
     >
       <div className="rounded-lg border border-border bg-card px-3">
         <OriginRow report={report} />

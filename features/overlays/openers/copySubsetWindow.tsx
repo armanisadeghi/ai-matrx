@@ -15,8 +15,8 @@
  * would strip the functions, and a row array is not global state.
  */
 
-import { useEffect, useState } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useContext, useEffect, useState } from "react";
+import { ReactReduxContext } from "react-redux";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   registerCopySubsetSession,
@@ -41,10 +41,20 @@ export interface CopySubsetWindowHandle {
 }
 
 export function useOpenCopySubsetWindow() {
-  const dispatch = useAppDispatch();
+  // MatrxDataTable can render as a standalone primitive without the app Redux
+  // provider when copy actions are not configured. Keep that render path real;
+  // if a caller actually invokes this app-owned overlay door without its
+  // provider, fail at the interaction boundary with an actionable error.
+  const reduxContext = useContext(ReactReduxContext);
+  const dispatch = reduxContext?.store.dispatch;
   return function openCopySubsetWindow<T>(
     opts: OpenCopySubsetWindowOptions<T>,
   ): CopySubsetWindowHandle {
+    if (!dispatch) {
+      throw new Error(
+        "CopySubsetWindow requires the application Redux provider before it can open.",
+      );
+    }
     const session = registerCopySubsetSession(opts.source);
     const instanceId = opts.instanceId ?? session.id;
     dispatch(
