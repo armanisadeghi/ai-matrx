@@ -37,6 +37,8 @@ import { selectLoadedDisplayGroupCount } from "@/features/agents/components/mess
 import { loadOlderMessages } from "@/features/agents/redux/execution-system/thunks/load-older-messages.thunk";
 import { revealOlderGroups } from "@/features/agents/redux/execution-system/messages/messages.slice";
 
+const PREFETCH_BAND_PX = 200;
+
 interface OlderMessagesSentinelProps {
   conversationId: string;
   /**
@@ -198,7 +200,7 @@ export function OlderMessagesSentinel({
         // Prefetch when the sentinel is within 200px of entering the
         // visible region (extends the root's top edge upward). Keeps the
         // user from waiting to see a spinner when they reach the top.
-        rootMargin: "200px 0px 0px 0px",
+        rootMargin: `${PREFETCH_BAND_PX}px 0px 0px 0px`,
         threshold: 0,
       },
     );
@@ -216,7 +218,6 @@ export function OlderMessagesSentinel({
     const scrollEl = scrollRef.current;
     if (!scrollEl) return undefined;
 
-    const PREFETCH_BAND_PX = 200;
     const pump = () => {
       if (scrollEl.scrollTop > PREFETCH_BAND_PX) return;
       advanceOlderHistory.current();
@@ -255,6 +256,29 @@ export function OlderMessagesSentinel({
     if (isLoadingOlder) return;
     if (pendingAnchor.current) pendingAnchor.current = null;
   }, [isLoadingOlder]);
+
+  // A page can add only collapsed assistant/tool records: the cursor moves,
+  // but the scroll height and sentinel intersection do not. Re-check after
+  // that progress commits instead of requiring another physical scroll.
+  // The frame reads the position AFTER anchor restoration, so a user who
+  // leaves the top (or a prepend that pushes it away) stops further fetching.
+  // Loading-state changes alone deliberately do not restart this pump: a
+  // failed/no-progress page must not become an automatic retry loop.
+  useEffect(() => {
+    if (disabled) return;
+    const frame = window.requestAnimationFrame(() => {
+      const scrollEl = scrollRef.current;
+      if (!scrollEl || scrollEl.scrollTop > PREFETCH_BAND_PX) return;
+      advanceOlderHistory.current();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [
+    conversationId,
+    disabled,
+    firstMessageId,
+    effectiveVisibleGroupLimit,
+    scrollRef,
+  ]);
 
   return <div ref={sentinelRef} aria-hidden className="h-px w-full" />;
 }
