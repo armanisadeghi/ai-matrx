@@ -104,6 +104,7 @@ export function projectMatrixRequestForPortableParity(
     completion: request.completion ? { ...request.completion } : null,
     error: request.error ? { ...request.error } : null,
     lastTransportSeq: request.lastTransportSeq,
+    transportStreamId: request.transportStreamId ?? null,
     // Matrix intentionally coalesces hot-path chunks and does not store one
     // universal event counter. The package owns this portable diagnostic.
     eventCount: 0,

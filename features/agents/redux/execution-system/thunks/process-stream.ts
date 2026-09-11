@@ -18,6 +18,7 @@ import type { CompletionStats } from "@/features/agents/types/instance.types";
 import type { ClientMetrics } from "@/features/agents/types/request.types";
 import type { ToolLifecycleStatus } from "@/features/agents/types/request.types";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
+import { isStreamTransportLost } from "@/lib/api/errors";
 import { monitorStream } from "@ai-matrx/data/net";
 import {
   isChunkEvent,
@@ -334,6 +335,12 @@ export interface ProcessStreamResult {
   finishReason: string | undefined;
 }
 
+/** A live reader owns parser and turn bookkeeping until it reaches a terminal event. */
+const retainedTransportConsumers = new Map<
+  string,
+  (response: Response, controller?: AbortController) => Promise<ProcessStreamResult>
+>();
+
 // =============================================================================
 // Processor
 // =============================================================================
@@ -356,24 +363,13 @@ export async function processStream({
   forceLocalConversationId = false,
   skipTranscriptCommit = false,
 }: ProcessStreamArgs): Promise<ProcessStreamResult> {
+  const retained = retainedTransportConsumers.get(requestId);
+  if (retained) return retained(response, abortController);
   // Helper for the manual execution path: when forceLocalConversationId is
   // set, stream-event parent_refs.conversation_id is ignored and the local
   // Redux conversationId is used everywhere. See the param docstring above.
   const owningConvId = (wireConvId: string | undefined | null): string =>
     forceLocalConversationId ? conversationId : (wireConvId ?? conversationId);
-  const { events: rawEvents } = parseNdjsonStream(response);
-  // When an abortController is provided, wrap the raw NDJSON iterator with
-  // the stream-monitor so a silent server (headers-only-then-nothing, dead
-  // TCP socket, tab-sleep induced stall) throws HeartbeatTimeoutError and
-  // aborts the fetch instead of hanging forever.
-  const events = abortController
-    ? monitorStream(rawEvents, {
-        heartbeatTimeoutMs,
-        maxLifetimeMs,
-        abortController,
-      })
-    : rawEvents;
-
   const jsonTracker = jsonExtraction?.enabled
     ? new StreamingJsonTracker({
         maxResults: jsonExtraction.maxResults,
@@ -624,6 +620,19 @@ export async function processStream({
   let transportStreamId =
     getState().activeRequests.byRequestId[requestId]?.transportStreamId ?? null;
 
+  const consume = async (
+    nextResponse: Response,
+    nextAbortController?: AbortController,
+  ): Promise<ProcessStreamResult> => {
+    const { events: rawEvents } = parseNdjsonStream(nextResponse);
+    const events = nextAbortController
+      ? monitorStream(rawEvents, {
+          heartbeatTimeoutMs,
+          maxLifetimeMs,
+          abortController: nextAbortController,
+        })
+      : rawEvents;
+    streamFailure = null;
   try {
     for await (const event of events) {
       const transportCursor = readTransportCursor(event);
@@ -2555,6 +2564,19 @@ export async function processStream({
     );
   }
 
+  // A lost transport is recoverable: preserve every lexical processor value
+  // (accumulator, reservations, tool maps, handoff state, JSON parser, etc.)
+  // in this closure and let the rejoin reader enter it before terminalization.
+  const recoverableTransportFailure =
+    streamFailure !== null &&
+    (streamFailure.name === "HeartbeatTimeoutError" ||
+      isStreamTransportLost(streamFailure));
+  if (recoverableTransportFailure) {
+    dispatchBatch();
+    retainedTransportConsumers.set(requestId, consume);
+    throw streamFailure;
+  }
+
   // Final flush of any trailing buffers after the loop ends
   dispatchBatch();
   blockAccumulator.finalize(dispatch);
@@ -3184,6 +3206,7 @@ export async function processStream({
   // Everything streamed before the failure is now flushed + committed —
   // propagate so runAiStream's canonical error path (statuses,
   // failPendingToolLifecycle, recovery) runs.
+  retainedTransportConsumers.delete(requestId);
   if (streamFailure !== null) {
     throw streamFailure;
   }
@@ -3194,6 +3217,9 @@ export async function processStream({
     tokenUsage,
     finishReason,
   };
+  };
+  retainedTransportConsumers.set(requestId, consume);
+  return consume(response, abortController);
 }
 
 // =============================================================================
