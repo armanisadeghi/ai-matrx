@@ -204,6 +204,11 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 
 ## Change log
 
+- `2026-09-11` — The full-scrape result strip now left-aligns its 17 tabs so
+  wide content cannot be centered beyond the scrollable viewport. Every tab
+  and both mobile scroll controls expose a 44px phone target; a rendered
+  component guard holds the complete strip, reachable alignment, and target
+  sizing.
 - `2026-09-08` — Keyword Analysis tab stopped flattening its shape: `scraper.keyword_analysis`
   declares `output_kind: keyword_variant_set`, so the run is `expect: "json"` typed against the
   generated `KeywordVariantSet` and renders ONLY through `<LiveRunDisplay>` → the kind's
