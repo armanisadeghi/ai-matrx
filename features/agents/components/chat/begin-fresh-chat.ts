@@ -89,10 +89,12 @@ export function chatRouteSurfaceKey(agentId: string): string {
 /** Start a brand-new chat: drop stale surface focus, bump the fresh-session
  *  nonce (so `/chat/new` remints even when the path is unchanged), navigate.
  *
- *  Resolves the `chat.default_new_chat` mandate first (cached; the user's own
- *  binding wins) so "am I on the default agent" compares against what the
- *  mandate ACTUALLY resolves to. Resolution failure is loud but never blocks the
- *  navigation — `/chat/new` surfaces the resolution error itself. */
+ *  Authenticated users resolve `chat.default_new_chat` first (cached; the
+ *  user's own binding wins) so "am I on the default agent" compares against
+ *  what the mandate ACTUALLY resolves to. Guests have no admitted workspace,
+ *  so the organization-scoped mandate cannot truthfully resolve for them: keep
+ *  their known route agent, or navigate to `/chat/new`, without making the
+ *  doomed request and emitting a false system error. */
 export async function beginFreshChat({
   dispatch,
   router,
@@ -104,19 +106,22 @@ export async function beginFreshChat({
   pathname: string;
   getState: () => RootState;
 }): Promise<void> {
+  const state = getState();
   let defaultAgentId: string | null = null;
-  try {
-    defaultAgentId = (await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY))
-      .agentId;
-  } catch (error) {
-    console.error(
-      `[beginFreshChat] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — routing to /chat/new, which will surface the error:`,
-      error,
-    );
+  if (state.userAuth.id !== null) {
+    try {
+      defaultAgentId = (await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY))
+        .agentId;
+    } catch (error) {
+      console.error(
+        `[beginFreshChat] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — routing to /chat/new, which will surface the error:`,
+        error,
+      );
+    }
   }
   const activeAgentId = resolveActiveChatAgentId(
     pathname,
-    getState(),
+    state,
     defaultAgentId,
   );
   const targetAgentId = activeAgentId ?? defaultAgentId;
