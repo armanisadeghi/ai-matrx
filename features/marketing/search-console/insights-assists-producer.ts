@@ -249,7 +249,11 @@ function classifyCandidate(
       kind: "navigate",
       href: severe
         ? marketingRoutes.siteSettings(null, siteId, "intake")
-        : `/marketing/sites/${siteId}/keywords?view=workbench&st=traffic_class:unclassified`,
+        : marketingRoutes.siteKeywordWorkbench(
+            null,
+            siteId,
+            "st=traffic_class:unclassified",
+          ),
     },
     surfaceName: GSC_ASSIST_SURFACE,
     dedupeKey: `${SOURCE_PREFIX}.classify:${siteId}`,

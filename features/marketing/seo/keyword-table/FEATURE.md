@@ -81,7 +81,7 @@ otherwise is the quiet lie this whole system exists to stop.
 
 | Surface | Opens on | Base filter | Prefix |
 |---|---|---|---|
-| Keyword Workbench (`/keywords?view=workbench`) | keyword, offering, class, clicks, impressions, score, level | — | *(none — it owns its route, and every saved view already stored uses this dialect)* |
+| Keyword Workbench (`/keywords/workbench`) | keyword, offering, class, clicks, impressions, score, level | — | *(none — it owns its route, and every saved view already stored uses this dialect)* |
 | Not placed on the tree (`/value/offerings`) | keyword, offering, class, clicks, impressions, level | `topic: "none"` | `u_` |
 | Proposals (`/value/offerings`) | keyword, offering, clicks, impressions, level + How sure | `placement: "proposed"` | `pq_` |
 

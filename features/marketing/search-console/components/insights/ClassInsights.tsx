@@ -672,7 +672,7 @@ export function QualityView({
           place, never a second period label here. */}
       <div className="flex shrink-0 justify-end">
         <Link
-          href={marketingRoutes.site(null, siteId, "/keywords?view=workbench")}
+          href={marketingRoutes.siteKeywordWorkbench(null, siteId)}
           className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           title="Open the Keyword Workbench — rule on keywords"
         >
@@ -716,7 +716,11 @@ export function QualityView({
           }
           rowActions={(row) => (
             <Link
-              href={`/marketing/sites/${siteId}/keywords?view=workbench&st=traffic_class:${row.traffic_class}`}
+              href={marketingRoutes.siteKeywordWorkbench(
+                null,
+                siteId,
+                `st=traffic_class:${row.traffic_class}`,
+              )}
               className="whitespace-nowrap text-[11px] text-primary hover:underline"
               title={
                 row.traffic_class === "unclassified"

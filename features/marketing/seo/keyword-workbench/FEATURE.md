@@ -8,7 +8,7 @@ timestamp: 2026-08-24
 
 # Keyword Workbench (C14)
 
-**Route:** `/marketing/brands/[brandId]/sites/[siteId]/keywords?view=workbench`
+**Route:** `/marketing/[brandKey]/seo/[siteKey]/keywords/workbench`
 (sibling sub-views on the same route: `start`, `performance`).
 `?view=classification` — the old dedicated traffic-class TEACHING surface —
 folded into this one at parity and was DELETED 2026-08-25 (KI-036, C18); an

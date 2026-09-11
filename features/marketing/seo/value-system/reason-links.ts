@@ -21,7 +21,7 @@
  *   /value            ?kw=<keyword>               (ValueWorkbench)
  *   /value/dimensions ?combo=<id>                 (the combinations panel —
  *                      C7 combinations are authored where their values live)
- *   /keywords         ?view=workbench&st=<dimension>:<value>|…&cols=…  (the
+ *   /keywords/workbench ?st=<dimension>:<value>|…&cols=…  (the
  *                      keyword workbench, filtered; `__none` selects the
  *                      keywords a dimension has no answer for — KI-022)
  */
@@ -109,7 +109,7 @@ export function dimensionValueHref(
  * dimensions' own columns with it, so the reader arrives somewhere they can
  * ACT rather than somewhere they must first configure.
  *
- * `view=workbench` is REQUIRED, not decoration: the bare `…/keywords` URL is
+ * `/workbench` is REQUIRED, not decoration: the bare `…/keywords` URL is
  * the "Start here" map (site-subviews.ts), so a filtered link without it drops
  * the reader on a menu with their filter silently ignored — which is a dead
  * end wearing a working link's clothes.
@@ -125,9 +125,7 @@ export function stampMatchHref(
    */
   window?: { start: string; end: string },
 ): string {
-  const base = marketingRoutes.site(ctx.brandId, ctx.siteId, "/keywords");
   const search = new URLSearchParams({
-    view: "workbench",
     st: encodeStampFilter(pairs),
     cols: [...new Set(pairs.map((pair) => pair.dimension))].join(","),
   });
@@ -136,7 +134,11 @@ export function stampMatchHref(
     search.set("from", window.start);
     search.set("to", window.end);
   }
-  return `${base}?${search.toString()}`;
+  return marketingRoutes.siteKeywordWorkbench(
+    ctx.brandId,
+    ctx.siteId,
+    search.toString(),
+  );
 }
 
 /**

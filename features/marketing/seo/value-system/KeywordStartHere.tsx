@@ -74,7 +74,7 @@ export function KeywordStartHere({
       action: "Say what a keyword IS",
       screen: "Workbench",
       line: "Find exactly the keywords you mean and set their class, their Offering, or any dimension you invent — with the reason that teaches the system.",
-      href: `${keywords}?view=workbench`,
+      href: marketingRoutes.siteKeywordWorkbench(brandId, siteId),
       icon: SlidersHorizontal,
     },
     {

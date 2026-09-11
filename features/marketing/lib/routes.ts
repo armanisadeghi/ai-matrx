@@ -236,6 +236,19 @@ export const marketingRoutes = {
     `/marketing/${brandId}/seo/${siteId}${sub}`,
   siteKeywords: (brandId: string, siteId: string) =>
     `/marketing/${brandId}/seo/${siteId}/keywords`,
+  /** Keyword Workbench, carrying its saved-view/filter query dialect. */
+  siteKeywordWorkbench: (
+    brandId: string | null | undefined,
+    siteId: string,
+    query = "",
+  ) => {
+    const keywordsPath = brandId
+      ? `/marketing/${brandId}/seo/${siteId}/keywords`
+      : `/marketing/sites/${siteId}/keywords`;
+    const path = marketingSubViewHref(keywordsPath, "keywords", "workbench");
+    const normalizedQuery = query.startsWith("?") ? query.slice(1) : query;
+    return normalizedQuery ? `${path}?${normalizedQuery}` : path;
+  },
   siteKeywordValue: (brandId: string, siteId: string, sub = "") =>
     `/marketing/${brandId}/seo/${siteId}/keywords/value${sub}`,
   siteSearchConsole: (brandId: string, siteId: string) =>

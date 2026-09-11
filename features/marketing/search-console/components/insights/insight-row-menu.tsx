@@ -80,7 +80,11 @@ export function buildClassMenuSection(opts: {
           ? "Classify in Workbench"
           : "Review in Workbench",
       icon: ExternalLink,
-      href: `${marketingRoutes.site(null, siteId, "/keywords")}?view=workbench&st=traffic_class:${trafficClass}`,
+      href: marketingRoutes.siteKeywordWorkbench(
+        null,
+        siteId,
+        `st=traffic_class:${trafficClass}`,
+      ),
     },
     {
       kind: "link",

@@ -185,7 +185,7 @@ export function KeywordWorkbench() {
       next,
     ).toString();
     router.push(
-      marketingRoutes.site(brandId, site.id, `/keywords${qs ? `?${qs}` : ""}`),
+      marketingRoutes.siteKeywordWorkbench(brandId, site.id, qs),
       { scroll: false },
     );
   };
@@ -536,11 +536,7 @@ export function KeywordWorkbench() {
                 viewId: created.id,
               }).toString();
               router.push(
-                marketingRoutes.site(
-                  brandId,
-                  site.id,
-                  `/keywords${qs ? `?${qs}` : ""}`,
-                ),
+                marketingRoutes.siteKeywordWorkbench(brandId, site.id, qs),
                 { scroll: false },
               );
             }, `“${name}” saved.`);
