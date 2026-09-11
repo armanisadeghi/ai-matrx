@@ -15,13 +15,25 @@
  * checksum drifted, is screamed in a big red box.
  *
  * It is READ-ONLY: it never writes the ledger, so we can never mark a migration
- * "applied" that did not truly run. To apply + record a pending/drifted migration,
- * either apply it via the Supabase MCP (apply_migration) and write the ledger row
- * yourself (insert/update _schema_migrations with source='matrx-frontend', the
- * filename, and the SHA-256 of the file), or from the aidream repo run:
- *     python db/apply_migrations.py --source matrx-frontend
- * (which applies and records in one step). `./scripts/release.sh` runs that
- * applier automatically before bumping — see the finalize-and-ship skill.
+ * "applied" that did not truly run. There is exactly ONE way to apply + record:
+ *     pnpm db:apply migrations/<file>.sql        (scripts/apply-migration.ts)
+ * which sends the WHOLE file in one call and ledgers the SHA-256 of the bytes it
+ * executed, in that same transaction. `./scripts/release.sh` runs aidream's
+ * `python db/apply_migrations.py --source matrx-frontend` before bumping — the
+ * same invariant, batch-wise, and the path for files that need autocommit
+ * (CREATE INDEX CONCURRENTLY etc.).
+ *
+ * HAND-APPLYING THROUGH THE SUPABASE MCP AND WRITING THE LEDGER ROW YOURSELF IS
+ * FORBIDDEN, and this script is why it can never be safe: it compares the FILE's
+ * SHA-256 to the ledger's. When a hand-composed payload leaves a statement out,
+ * those two numbers are still equal — the file is intact, the row is intact, and
+ * the database is missing a statement. That is not a hypothetical: it happened to
+ * ctx_scope_access_membrane_b7_fix1.sql on 2026-09-11 (one trailing `comment on
+ * table` never ran) and this check was green throughout. There is no
+ * PARTIALLY-APPLIED class below because on the db:apply path that state cannot
+ * exist, and on the hand path it is not detectable from here — the ledger records
+ * nothing about WHO wrote the row (an `applied_by` column would change that; see
+ * the DD-113 report). The defence is that the hand path is closed.
  *
  *   pnpm check:migrations            # loud, non-blocking (exit 0) — for hooks
  *   pnpm check:migrations --strict   # exit 1 when anything is unapplied — for CI
@@ -267,6 +279,25 @@ function nextFreeNumber(series: string, allSlots: Iterable<string>): number {
  */
 const SHA256_RE = /^[0-9a-f]{64}$/;
 
+/**
+ * A migration that writes `public._schema_migrations` in its own body.
+ *
+ * The applier owns that row and records the SHA-256 of the bytes it actually
+ * executed. A row a file writes about itself is a self-report: it cannot be
+ * wrong about a statement it never reached, and its placeholder checksum is what
+ * produced 34 of the UNVERIFIABLE rows above. aidream's runner refuses to start
+ * when it finds one (`_find_self_ledgering`); this is the same rule on the disk
+ * side, so the file is caught before anyone applies it. Keep the pattern in sync
+ * with aidream/db/apply_migrations.py and scripts/apply-migration.ts.
+ */
+const SELF_LEDGER_RE =
+  /\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|MERGE\s+INTO|TRUNCATE(?:\s+TABLE)?|ALTER\s+TABLE|DROP\s+TABLE|CREATE\s+TABLE)\s+(?:public\.)?_schema_migrations\b/i;
+
+/** Comments stripped so a commented-out example never trips the detector. */
+function stripForDetection(sql: string): string {
+  return sql.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ");
+}
+
 const DRIFT_OK_FILE = resolve(MIGRATIONS_DIR, "DB_TRANSITION_DRIFT_OK.txt");
 
 /** Filename allowlist — drift on these files is expected during DB transition. */
@@ -290,13 +321,31 @@ async function main(): Promise<number> {
   // Classify local files: skip-marked vs trackable, with checksums.
   const skipped: string[] = [];
   const local = new Map<string, string>(); // filename -> checksum
+  const selfLedgering: string[] = []; // files that write the ledger themselves
   for (const f of files) {
     const sql = readFileSync(resolve(MIGRATIONS_DIR, f), "utf8");
     if (skipReason(sql) !== null) {
       skipped.push(f);
       continue;
     }
+    if (SELF_LEDGER_RE.test(stripForDetection(sql))) selfLedgering.push(f);
     local.set(f, sha256(sql));
+  }
+
+  if (selfLedgering.length) {
+    console.log();
+    console.log(
+      `${TAG.fail}MIGRATION SELF-LEDGERING — ${selfLedgering.length} file(s) write ` +
+        `public._schema_migrations in their own body. ${strict ? "(--strict: blocking)" : "(non-blocking)"}`,
+    );
+    for (const f of selfLedgering)
+      console.log(`  ${C.white}- ${f}${C.reset} ${C.red}[SELF-LEDGERING]${C.reset}`);
+    console.log(
+      `  ${C.white}Delete the ledger statement from the file.${C.reset} ` +
+        `${C.dim}The applier owns that row and records the SHA-256 of the bytes it executed; ` +
+        `a self-written checksum is a claim nobody can check, and it is where the ` +
+        `UNVERIFIABLE rows below came from. aidream's runner refuses to start on one.${C.reset}`,
+    );
   }
 
   const env = loadEnv();
@@ -394,15 +443,16 @@ async function main(): Promise<number> {
 
   // Clean: every tracked migration is recorded and unchanged. Stay quiet.
   if (pending.length === 0 && drifted.length === 0 && unverifiable.length === 0)
-    return actionable.length && strict ? 1 : 0;
+    return (actionable.length || selfLedgering.length) && strict ? 1 : 0;
 
-  // Two valid fixes for BOTH states below: apply via the Supabase MCP
-  // (apply_migration) + write the ledger row yourself, or run aidream's batch
-  // applier which does both. White, not dim — it's an instruction the user
-  // acts on, not a footnote. See the finalize-and-ship skill.
+  // ONE fix for BOTH states below. White, not dim — it's an instruction the user
+  // acts on, not a footnote. Never suggest hand-applying and self-ledgering: that
+  // is the path that can leave a file partially applied with this check green.
   const fix =
-    `${C.white}Fix — apply via Supabase MCP (apply_migration) + record in _schema_migrations, ` +
-    `or from aidream:${C.reset} ${C.white}python db/apply_migrations.py --source ${SOURCE}${C.reset}`;
+    `${C.white}Fix:${C.reset} ${C.white}pnpm db:apply migrations/<file>.sql${C.reset} ` +
+    `${C.dim}(whole file, one transaction, ledgers the SHA-256 of what executed; ` +
+    `for a whole batch, or a file needing CONCURRENTLY, from aidream: ` +
+    `python db/apply_migrations.py --source ${SOURCE})${C.reset}`;
 
   // Leading blank line separates our output from the command the user just typed.
   console.log();
@@ -464,7 +514,9 @@ async function main(): Promise<number> {
     );
   }
 
-  return (pending.length || actionable.length) && strict ? 1 : 0;
+  return (pending.length || actionable.length || selfLedgering.length) && strict
+    ? 1
+    : 0;
 }
 
 main().then(

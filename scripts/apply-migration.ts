@@ -48,6 +48,8 @@
  *   pnpm db:apply migrations/foo.sql --dry-run  print exactly what would run
  *   pnpm db:apply migrations/foo.sql --reapply  re-execute a file whose ledger
  *                                               row holds a DIFFERENT checksum
+ *   pnpm db:apply --self-test                   prove RED then GREEN against the
+ *                                               real DB in a throwaway schema
  *
  * `--reapply` means: EXECUTE THESE BYTES AGAIN against the one live database.
  * The DB is not reconciled against files — a file is a record of a change that
@@ -69,7 +71,7 @@
  * failure · 2 unexpected error / creds absent.
  */
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -221,6 +223,7 @@ async function ledgerRow(
 function usage(): void {
   console.log(
     `${C.bold}pnpm db:apply <migrations/file.sql> [--dry-run] [--reapply]${C.reset}\n` +
+      `  pnpm db:apply --self-test          prove RED/GREEN against the live database\n` +
       `  Applies the WHOLE file in one transaction through the admin query door and\n` +
       `  ledgers the SHA-256 of the bytes it executed. The only sanctioned apply path\n` +
       `  for matrx-frontend migrations (see CLAUDE.md § Migrations).`,
@@ -400,6 +403,118 @@ async function applyFile(
     `${TAG.info}Next: ${C.white}pnpm db-types${C.reset} if this changed a table shape, then ` +
       `${C.white}pnpm check:migrations${C.reset}.`,
   );
+  return 0;
+}
+
+/**
+ * `pnpm db:apply --self-test` — the forcing test for this applier, run against
+ * the REAL database with a throwaway schema. It is the only thing that can prove
+ * the two properties everything else here rests on, and it proves them by making
+ * them FAIL first:
+ *
+ *   RED   a file whose LAST statement errors → exit 1, NO ledger row, and none of
+ *         the earlier statements survive (so the door is still transactional; if
+ *         `public.execute_admin_query` ever stops being one transaction, this is
+ *         what screams).
+ *   GREEN the same file with the error removed → exit 0, ledger checksum equals
+ *         the SHA-256 of the bytes on disk, and the TRAILING statement is live in
+ *         the database (the exact statement class the hand-apply path dropped).
+ *
+ * Cleans up after itself: drops the scratch schema, deletes its ledger row, and
+ * removes the scratch file — in a finally, so a failure still leaves nothing behind.
+ */
+const SELFTEST_FILE = "zz_db_apply_selftest.sql";
+const SELFTEST_SCHEMA = "zz_db_apply_selftest";
+
+async function selfTest(): Promise<number> {
+  const env = loadEnv();
+  if (!env?.secret) {
+    console.error(
+      `${TAG.fail}db:apply --self-test needs NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY. ` +
+        `Refusing to report a pass it did not measure.`,
+    );
+    return 2;
+  }
+  const path = resolve(MIGRATIONS_DIR, SELFTEST_FILE);
+  const body =
+    `create schema if not exists ${SELFTEST_SCHEMA};\n` +
+    `create table ${SELFTEST_SCHEMA}.landed (id int primary key, note text);\n` +
+    `insert into ${SELFTEST_SCHEMA}.landed (id, note) values (1, 'first statement');\n`;
+  const trailing =
+    `comment on table ${SELFTEST_SCHEMA}.landed is 'trailing statement — the class the hand-apply path dropped';\n`;
+  let failures = 0;
+
+  const probe = async (sql: string): Promise<Record<string, unknown>> =>
+    (rows(await door(env, sql))[0] ?? {}) as Record<string, unknown>;
+  const state = () =>
+    probe(
+      `select (select count(*)::int from public._schema_migrations
+                 where source = ${lit(SOURCE)} and filename = ${lit(SELFTEST_FILE)}) as ledger_rows,
+              (select count(*)::int from information_schema.schemata
+                 where schema_name = ${lit(SELFTEST_SCHEMA)}) as schema_present,
+              (select checksum from public._schema_migrations
+                 where source = ${lit(SOURCE)} and filename = ${lit(SELFTEST_FILE)}) as checksum,
+              (select obj_description(c.oid) from pg_class c join pg_namespace n on n.oid = c.relnamespace
+                 where n.nspname = ${lit(SELFTEST_SCHEMA)} and c.relname = 'landed') as trailing_comment`,
+    );
+
+  const fail = (what: string) => {
+    failures += 1;
+    console.error(`${TAG.fail}self-test: ${what}`);
+  };
+
+  try {
+    // ── RED ──────────────────────────────────────────────────────────────────
+    writeFileSync(
+      path,
+      `${body}create table ${SELFTEST_SCHEMA}.never (id int, bogus zz_no_such_type);\n`,
+      "utf8",
+    );
+    console.log(`${C.bold}self-test RED${C.reset} ${C.dim}(last statement errors)${C.reset}`);
+    const redCode = await applyFile(path, { dryRun: false, reapply: false });
+    const red = await state();
+    if (redCode !== 1) fail(`a failing migration exited ${redCode}, expected 1`);
+    if (red.ledger_rows !== 0) fail(`a failing migration wrote ${red.ledger_rows} ledger row(s)`);
+    if (red.schema_present !== 0)
+      fail(`statements before the error survived — the apply door is NOT one transaction`);
+    if (failures === 0)
+      console.log(`${TAG.ok}RED proven: exit 1, no ledger row, nothing partially applied`);
+
+    // ── GREEN ────────────────────────────────────────────────────────────────
+    writeFileSync(path, body + trailing, "utf8");
+    const expected = sha256(readFileSync(path, "utf8"));
+    console.log(`${C.bold}self-test GREEN${C.reset} ${C.dim}(same file, error removed)${C.reset}`);
+    const greenCode = await applyFile(path, { dryRun: false, reapply: false });
+    const green = await state();
+    if (greenCode !== 0) fail(`a valid migration exited ${greenCode}, expected 0`);
+    if (green.checksum !== expected)
+      fail(`ledger checksum ${String(green.checksum)} != sha256 of the executed bytes ${expected}`);
+    if (!green.trailing_comment)
+      fail(`the TRAILING statement did not land — the dropped-statement class is back`);
+    if (failures === 0)
+      console.log(
+        `${TAG.ok}GREEN proven: ledger checksum == sha256(${expected.slice(0, 12)}…) and the ` +
+          `trailing statement is live`,
+      );
+  } finally {
+    await door(
+      env,
+      `drop schema if exists ${SELFTEST_SCHEMA} cascade;\n` +
+        `delete from public._schema_migrations where source = ${lit(SOURCE)} and filename = ${lit(SELFTEST_FILE)};`,
+    ).catch((err: unknown) =>
+      console.error(
+        `${TAG.fail}self-test cleanup FAILED — remove schema ${SELFTEST_SCHEMA} and the ` +
+          `${SELFTEST_FILE} ledger row by hand: ${String(err)}`,
+      ),
+    );
+    if (existsSync(path)) unlinkSync(path);
+  }
+
+  if (failures) {
+    console.error(`${TAG.fail}db:apply --self-test FAILED (${failures} assertion(s))`);
+    return 1;
+  }
+  console.log(`${TAG.ok}db:apply --self-test passed against the live database`);
   return 0;
 }
 

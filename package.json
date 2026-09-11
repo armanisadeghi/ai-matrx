@@ -106,6 +106,7 @@
     "check:assist-priority": "tsx scripts/check-assist-priority.ts",
     "check:migrations": "tsx scripts/check-migrations.ts",
     "db:apply": "tsx scripts/apply-migration.ts",
+    "db:apply:self-test": "tsx scripts/apply-migration.ts --self-test",
     "check:canonical-ratchets": "tsx scripts/canonical-ratchets/check-all.ts",
     "check:org-null": "tsx scripts/canonical-ratchets/check-org-null.ts",
     "check:org-null:strict": "tsx scripts/canonical-ratchets/check-org-null.ts --strict",
