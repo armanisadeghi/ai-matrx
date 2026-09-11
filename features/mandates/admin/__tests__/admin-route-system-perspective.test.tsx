@@ -102,6 +102,9 @@ jest.mock(
 jest.mock("../../workspace/MandateCoverageAlert", () => ({
   MandateCoverageAlert: () => null,
 }));
+jest.mock("../../workspace/MandateProvenancePanel", () => ({
+  MandateProvenancePanel: () => null,
+}));
 jest.mock("../../components/MandateNotesPanel", () => ({
   MandateNotesPanel: () => <div />,
 }));
