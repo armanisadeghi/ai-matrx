@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SandboxDiagnosticsPanel } from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
@@ -43,6 +45,18 @@ export default function SandboxManagementWindow({
         contextData={{ content: title?.trim() || sandboxId }}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-1">
+            <span className="text-xs text-muted-foreground">
+              Sandbox controls
+            </span>
+            <Link
+              href={`/sandbox/${encodeURIComponent(sandboxId)}`}
+              onClick={onClose}
+              className="inline-flex min-h-9 items-center gap-1.5 text-xs font-medium hover:underline max-lg:min-h-11"
+            >
+              Full management <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             <SandboxDiagnosticsPanel sandboxId={sandboxId} />
           </div>
