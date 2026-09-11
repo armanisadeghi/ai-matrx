@@ -27,8 +27,22 @@ import { useOpenCodeFileFromUrl } from "./hooks/useOpenCodeFileFromUrl";
 import { useFocusCodeFolderFromUrl } from "./hooks/useFocusCodeFolderFromUrl";
 import { useCodeWorkspaceUrlState } from "./hooks/useCodeWorkspaceUrlState";
 import { useTabRealtimeWatcher } from "./hooks/useTabRealtimeWatcher";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveSandboxId } from "./redux/codeWorkspaceSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectActiveSandboxId,
+  selectActiveView,
+  selectFarRightOpen,
+  selectRightOpen,
+  selectSideOpen,
+  setFarRightOpen,
+  setRightOpen,
+  setSideOpen,
+} from "./redux/codeWorkspaceSlice";
+import {
+  selectTerminalOpen,
+  setOpen as setBottomOpen,
+} from "./redux/terminalSlice";
+import type { ActivityViewId } from "./types";
 import { useSandboxHeartbeat } from "@/hooks/sandbox/use-sandbox-heartbeat";
 import type { SandboxInstance } from "@/types/sandbox";
 import { sandboxDisplayName } from "@/lib/sandbox/format";
@@ -122,20 +136,12 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
           <SandboxHeartbeatBridge />
           <TabRealtimeBridge />
           <div className={cn("flex h-full w-full min-h-0", className)}>
-            <MobilePanelShell
-              collapseBelow="lg"
-              presentation="stacked"
-              desktop={
-                <WorkspaceLayout
-                  rightSlot={rightSlot}
-                  farRightSlot={farRightSlot}
-                  showStatusBar={showStatusBar}
-                  defaultSideSize={defaultSideSize}
-                  showActivityBar={showActivityBar}
-                />
-              }
-              main={<EditorArea rightSlotAvailable={false} rightmost />}
-              panels={buildMobilePanels(rightSlot, farRightSlot)}
+            <CodeWorkspaceMobileShell
+              rightSlot={rightSlot}
+              farRightSlot={farRightSlot}
+              showStatusBar={showStatusBar}
+              defaultSideSize={defaultSideSize}
+              showActivityBar={showActivityBar}
             />
           </div>
         </>
@@ -153,10 +159,90 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
  * and the terminal (which stays mounted so a running session survives the
  * drawer opening and closing).
  */
-function buildMobilePanels(
-  rightSlot: React.ReactNode,
-  farRightSlot: React.ReactNode,
-): MobileShellPanel[] {
+function CodeWorkspaceMobileShell({
+  rightSlot,
+  farRightSlot,
+  showStatusBar,
+  defaultSideSize,
+  showActivityBar,
+}: {
+  rightSlot: React.ReactNode;
+  farRightSlot: React.ReactNode;
+  showStatusBar: boolean;
+  defaultSideSize: number | undefined;
+  showActivityBar: boolean;
+}) {
+  const dispatch = useAppDispatch();
+  const activeView = useAppSelector(selectActiveView);
+  const sideOpen = useAppSelector(selectSideOpen);
+  const rightOpen = useAppSelector(selectRightOpen);
+  const farRightOpen = useAppSelector(selectFarRightOpen);
+  const bottomOpen = useAppSelector(selectTerminalOpen);
+
+  return (
+    <MobilePanelShell
+      collapseBelow="lg"
+      presentation="stacked"
+      desktop={
+        <WorkspaceLayout
+          rightSlot={rightSlot}
+          farRightSlot={farRightSlot}
+          showStatusBar={showStatusBar}
+          defaultSideSize={defaultSideSize}
+          showActivityBar={showActivityBar}
+        />
+      }
+      main={<EditorArea rightSlotAvailable={false} rightmost />}
+      panels={buildMobilePanels({
+        rightSlot,
+        farRightSlot,
+        activeView,
+        sideOpen,
+        rightOpen,
+        farRightOpen,
+        bottomOpen,
+        onSideOpenChange: (open) => {
+          if (open !== sideOpen) dispatch(setSideOpen(open));
+        },
+        onRightOpenChange: (open) => {
+          if (open !== rightOpen) dispatch(setRightOpen(open));
+        },
+        onFarRightOpenChange: (open) => {
+          if (open !== farRightOpen) dispatch(setFarRightOpen(open));
+        },
+        onBottomOpenChange: (open) => {
+          if (open !== bottomOpen) dispatch(setBottomOpen(open));
+        },
+      })}
+    />
+  );
+}
+
+function buildMobilePanels({
+  rightSlot,
+  farRightSlot,
+  activeView,
+  sideOpen,
+  rightOpen,
+  farRightOpen,
+  bottomOpen,
+  onSideOpenChange,
+  onRightOpenChange,
+  onFarRightOpenChange,
+  onBottomOpenChange,
+}: {
+  rightSlot: React.ReactNode;
+  farRightSlot: React.ReactNode;
+  activeView: ActivityViewId;
+  sideOpen: boolean;
+  rightOpen: boolean;
+  farRightOpen: boolean;
+  bottomOpen: boolean;
+  onSideOpenChange: (open: boolean) => void;
+  onRightOpenChange: (open: boolean) => void;
+  onFarRightOpenChange: (open: boolean) => void;
+  onBottomOpenChange: (open: boolean) => void;
+}): MobileShellPanel[] {
   const decoratedRightSlot = React.isValidElement(rightSlot)
     ? React.cloneElement(
         rightSlot as React.ReactElement<{ rightmost?: boolean }>,
@@ -174,10 +260,12 @@ function buildMobilePanels(
 
   const panels: MobileShellPanel[] = [
     {
-      id: "files",
-      label: "Files",
+      id: "side-panel",
+      label: activityViewLabel(activeView),
       icon: FolderTree,
       content: <SidePanelRouter />,
+      open: sideOpen,
+      onOpenChange: onSideOpenChange,
     },
   ];
   if (rightSlot) {
@@ -186,6 +274,8 @@ function buildMobilePanels(
       label: "Chat",
       icon: MessageCircle,
       content: decoratedRightSlot,
+      open: rightOpen,
+      onOpenChange: onRightOpenChange,
     });
   }
   if (farRightSlot) {
@@ -194,16 +284,34 @@ function buildMobilePanels(
       label: "History",
       icon: History,
       content: decoratedFarRightSlot,
+      open: farRightOpen,
+      onOpenChange: onFarRightOpenChange,
     });
   }
   panels.push({
-    id: "terminal",
-    label: "Terminal",
+    id: "workspace-tools",
+    label: "Workspace tools",
     icon: SquareTerminal,
     content: <BottomPanel />,
     alwaysMount: true,
+    open: bottomOpen,
+    onOpenChange: onBottomOpenChange,
   });
   return panels;
+}
+
+function activityViewLabel(view: ActivityViewId): string {
+  const labels: Record<ActivityViewId, string> = {
+    explorer: "Explorer",
+    search: "Search",
+    git: "Source control",
+    "source-control": "Source control",
+    run: "Run",
+    extensions: "Extensions",
+    sandboxes: "Sandboxes",
+    library: "Library",
+  };
+  return labels[view];
 }
 
 export default CodeWorkspace;

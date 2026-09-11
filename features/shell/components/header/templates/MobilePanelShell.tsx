@@ -67,6 +67,10 @@ export interface MobileShellPanel {
   content: React.ReactNode;
   /** Keep mounted (hidden) instead of lazy-mounting on first open. */
   alwaysMount?: boolean;
+  /** Optional controlled state for stacked disclosures. */
+  open?: boolean;
+  /** Reports a user toggle for a controlled stacked disclosure. */
+  onOpenChange?: (open: boolean) => void;
 }
 
 export interface MobilePanelShellProps {
@@ -165,6 +169,10 @@ export function MobilePanelShell({
             <details
               key={panel.id}
               className="group border-t border-border bg-card"
+              open={panel.open}
+              onToggle={(event) =>
+                panel.onOpenChange?.(event.currentTarget.open)
+              }
             >
               <summary className="min-h-11 cursor-pointer px-4 py-3 text-sm font-medium text-foreground marker:text-muted-foreground">
                 {Icon && (
