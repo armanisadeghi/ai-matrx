@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { useCodeWorkspace } from "../CodeWorkspaceProvider";
-import { openTab } from "../redux/tabsSlice";
+import { openTab, setActiveTab } from "../redux/tabsSlice";
 import { languageFromFilename } from "../styles/file-icon";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 
@@ -32,12 +32,23 @@ import { getFilePreviewProfile } from "@/features/files/utils/file-types";
  */
 export function useOpenFile() {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const { filesystem } = useCodeWorkspace();
 
   return useCallback(
     async (path: string) => {
       const name = path.split("/").pop() ?? path;
       const id = `${filesystem.id}:${path}`;
+      // URL restore and explorer/search selection both converge here. An
+      // existing tab may carry unsaved edits, so activate it rather than
+      // reading the filesystem again and replacing its buffer.
+      // `openTab` also avoids replacement today, but this explicit branch
+      // keeps that dirty-buffer guarantee local to the filesystem read.
+      const existing = store.getState().codeTabs?.byId?.[id];
+      if (existing) {
+        dispatch(setActiveTab(id));
+        return;
+      }
       const profile = getFilePreviewProfile(name, null, null);
       const kind = profile.previewKind;
 
@@ -88,6 +99,6 @@ export function useOpenFile() {
         }),
       );
     },
-    [dispatch, filesystem],
+    [dispatch, filesystem, store],
   );
 }
