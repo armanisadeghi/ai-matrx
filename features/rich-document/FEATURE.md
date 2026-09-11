@@ -133,7 +133,7 @@ Generic XML code blocks converge on `components/mardown-display/blocks/xml/XmlBl
 
 This is a formatting boundary, not another content-recognition pass. Never mount `MarkdownStream`, `RichDocument`, or a block dispatcher from XML text. Code spans/fences and XML comments/CDATA remain literal, raw HTML is not executed, and the default Markdown URL filter remains active. The outer Content IR pipeline still owns registered kinds, embedded-kind recovery, and artifact composition; its existing ownership exclusions remain unchanged. Common XML text indentation is removed while relative Markdown indentation is retained.
 
-Guards: `blocks/xml/XmlBlock.test.tsx` exercises the real Markdown core and literal-content boundaries; `chat-markdown/__tests__/xmlRenderingPaths.test.tsx` checks rendered Markdown across ingress adapters (its unrelated block leaves are stubbed); `block-registry/__tests__/block-dispatch.test.tsx` checks dispatch separately. These guards complement browser verification rather than replacing it.
+Guards: `components/mardown-display/blocks/xml/XmlBlock.test.tsx` exercises the real Markdown core and literal-content boundaries; `components/mardown-display/chat-markdown/__tests__/xmlRenderingPaths.test.tsx` checks rendered Markdown across ingress adapters (its unrelated block leaves are stubbed); `components/mardown-display/chat-markdown/block-registry/__tests__/block-dispatch.test.tsx` checks dispatch separately. These guards complement browser verification rather than replacing it.
 
 ## Related features
 
