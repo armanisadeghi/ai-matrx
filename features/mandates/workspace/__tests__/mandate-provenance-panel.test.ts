@@ -38,7 +38,7 @@ function usage(patch: Partial<MandateUsageFacts>): MandateUsageFacts {
     code_reference_count: 0,
     sentence: "server sentence",
     ...patch,
-  } as MandateUsageFacts;
+  } satisfies MandateUsageFacts;
 }
 
 describe("runsReading", () => {
@@ -57,10 +57,14 @@ describe("runsReading", () => {
   it("says Never only when BOTH ledgers agree nothing ran", () => {
     expect(runsReading(usage({})).kind).toBe("never");
     // A request ledger that saw runs outranks an empty conversation count —
-    // reading "never" there would hide real usage.
-    expect(
-      runsReading(usage({ conversation_count: 0, request_count: 5 })).kind,
-    ).toBe("ran");
+    // reading "never" there would hide real usage, and rendering "0 times"
+    // would be worse still.
+    const onlyRequests = runsReading(
+      usage({ conversation_count: 0, request_count: 5 }),
+    );
+    expect(onlyRequests.kind).toBe("ran");
+    expect(onlyRequests.text).toContain("5 times");
+    expect(onlyRequests.text).not.toContain("0 times");
   });
 
   it("counts one run as Once, not '1 times'", () => {
@@ -80,7 +84,9 @@ describe("runsReading", () => {
         last_run_at: "2026-09-10T19:00:56.211050+00:00",
       }),
     );
-    expect(reading.text).toContain("42 times");
+    // 61 requests, 42 conversations: the finer ledger wins, so the number on
+    // the row can never understate what actually ran.
+    expect(reading.text).toContain("61 times");
     expect(reading.text).toContain("2026-09-10");
     // A timestamp is not a sentence a person says out loud.
     expect(reading.text).not.toContain("T19:00");

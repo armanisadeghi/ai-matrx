@@ -160,8 +160,14 @@ export function runsReading(usage: MandateUsageFacts): RunsReading {
       text: "Could not be counted just now — which is not the same as never.",
     };
   }
-  const count = conversations ?? 0;
-  if (count === 0 && (requests ?? 0) === 0) {
+  // 🚨 A RUN IS A REQUEST, NOT A CONVERSATION. One conversation carries many
+  // runs, and a Mandate can run with no conversation of its own — so reading
+  // the conversation count alone renders "0 times" for a job that really ran.
+  // The larger of the two ledgers wins, exactly as the server's own sentence
+  // does (`run_count_of` in aidream/services/mandates/provenance.py), so the
+  // number on the row and the sentence under it can never disagree.
+  const count = Math.max(conversations ?? 0, requests ?? 0);
+  if (count === 0) {
     return { kind: "never", text: "Never — no run has ever been recorded." };
   }
   const times = count === 1 ? "Once" : `${count} times`;

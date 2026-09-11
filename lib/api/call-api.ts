@@ -128,10 +128,12 @@ type PathOperation<P extends keyof paths, M extends HttpMethod> =
  * Given an operation, extract the JSON request body type.
  * Returns `never` if the operation has no request body.
  */
-type OperationRequestBody<Op> = Op extends {
-  requestBody: { content: { "application/json": infer T } };
-}
-  ? T
+type OperationRequestBody<Op> = Op extends { requestBody?: infer Body }
+  ? NonNullable<Body> extends {
+      content: { "application/json": infer T };
+    }
+    ? T
+    : never
   : never;
 
 /**
