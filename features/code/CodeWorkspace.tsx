@@ -33,6 +33,7 @@ import { useSandboxHeartbeat } from "@/hooks/sandbox/use-sandbox-heartbeat";
 import type { SandboxInstance } from "@/types/sandbox";
 import { sandboxDisplayName } from "@/lib/sandbox/format";
 import { SandboxDeepLinkConnection } from "./views/sandboxes/SandboxDeepLinkConnection";
+import { useCodeWorkspaceUrlState } from "./hooks/useCodeWorkspaceUrlState";
 
 export interface CodeWorkspaceProps {
   /** Stable id used by agent tools to target this workspace instance. */
@@ -66,6 +67,8 @@ export interface CodeWorkspaceProps {
   /** Authenticated sandbox handoff from the `/code?sandbox=` route. */
   initialSandbox?: SandboxInstance | null;
   onInitialSandboxError?: (message: string) => void;
+  /** Only the route host owns browser URL state; embedded workspaces do not. */
+  syncUrlState?: boolean;
 }
 
 /**
@@ -86,6 +89,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   className,
   initialSandbox,
   onInitialSandboxError,
+  syncUrlState = false,
 }) => {
   const isSandboxHandoff = Boolean(initialSandbox && onInitialSandboxError);
   const [sandboxReady, setSandboxReady] = useState(!isSandboxHandoff);
@@ -109,9 +113,16 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
         </div>
       ) : (
         <>
+          {syncUrlState && (
+            <UrlWorkspaceStateBridge
+              initialSandboxId={initialSandbox?.id ?? null}
+            />
+          )}
           <UrlOpenFileBridge />
           <UrlFocusFolderBridge />
-          <UrlWorkspaceStateBridge initialSandboxId={initialSandbox?.id ?? null} />
+          <UrlWorkspaceStateBridge
+            initialSandboxId={initialSandbox?.id ?? null}
+          />
           <SandboxHeartbeatBridge />
           <TabRealtimeBridge />
           <div className={cn("flex h-full w-full min-h-0", className)}>
@@ -201,6 +212,15 @@ function buildMobilePanels(
 
 export default CodeWorkspace;
 
+function UrlWorkspaceStateBridge({
+  initialSandboxId,
+}: {
+  initialSandboxId: string | null;
+}) {
+  useCodeWorkspaceUrlState(initialSandboxId);
+  return null;
+}
+
 /** Zero-render bridge that watches `?open=<codeFileId>` and opens the file.
  *  Split out into its own component so it can call hooks that depend on
  *  `CodeWorkspaceProvider` being mounted. */
@@ -219,9 +239,9 @@ const UrlFocusFolderBridge: React.FC = () => {
 /** Restores and reflects `/code` workspace location/panel state. Kept beside
  * the established `open` / `folder` bridges because it depends on the same
  * provider tree and deliberately leaves those canonical library links alone. */
-const UrlWorkspaceStateBridge: React.FC<{ initialSandboxId: string | null }> = ({
-  initialSandboxId,
-}) => {
+const UrlWorkspaceStateBridge: React.FC<{
+  initialSandboxId: string | null;
+}> = ({ initialSandboxId }) => {
   useCodeWorkspaceUrlState(initialSandboxId);
   return null;
 };

@@ -42,7 +42,10 @@ export const CodeWorkspaceRoute: React.FC<CodeWorkspaceRouteProps> = ({
   if (connectionError) {
     return (
       <div className="flex h-full w-full items-center justify-center p-6">
-        <div role="alert" className="max-w-md rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+        <div
+          role="alert"
+          className="max-w-md rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive"
+        >
           <p>{connectionError}</p>
           <a href="/code" className="mt-3 inline-block font-medium underline">
             Open Code and choose a sandbox
@@ -56,6 +59,7 @@ export const CodeWorkspaceRoute: React.FC<CodeWorkspaceRouteProps> = ({
     <div className="relative h-full w-full overflow-hidden">
       <CodeWorkspace
         {...props}
+        syncUrlState
         showActivityBar={showActivityBar}
         rightSlot={resolvedRight}
         farRightSlot={resolvedFarRight}
