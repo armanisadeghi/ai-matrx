@@ -18,7 +18,6 @@ import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
 
 import { callApi } from "@/lib/api/call-api";
-import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import type { RootState } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
 
@@ -84,12 +83,19 @@ export const refreshProviderModels = (
   UnknownAction
 > => {
   return async (dispatch) => {
-    const organizationId = await resolveSystemOrgId();
+    // 🚨 NO scopeOverrides. This is a PLATFORM-scoped admin route: it reads no
+    // organization at all, and the caller carries their own, exactly like any
+    // other caller (common-docs/projects/no-db-assigned-org/PLAN.md — "an
+    // administrator carries the same explicit target organization as an
+    // ordinary caller"). Overriding the request scope to the Matrx System org
+    // (copied from the row-OWNERSHIP pattern, where system-owned rows really
+    // are homed there) made every Sync Now die with 400
+    // `organization_forbidden`: nobody holds an iam.memberships row in that
+    // org, and the admission gate proves membership on every request.
     const result = await dispatch(
       callApi({
         path: "/admin/ai-catalog/provider-models/refresh",
         method: "POST",
-        scopeOverrides: { organization_id: organizationId },
         body: { provider_slugs: providerSlugs ?? null },
       }),
     );

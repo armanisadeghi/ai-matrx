@@ -16,7 +16,6 @@ import type { UnknownAction } from "@reduxjs/toolkit";
 import { toast } from "@/lib/toast";
 
 import { callApi } from "@/lib/api/call-api";
-import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import type { RootState } from "@/lib/redux/store";
 
 /**
@@ -31,12 +30,17 @@ export const reloadAiCatalog = (): ThunkAction<
   UnknownAction
 > => {
   return async (dispatch) => {
-    const organizationId = await resolveSystemOrgId();
+    // 🚨 NO scopeOverrides — see providerModelsRefresh.ts for the full story.
+    // `/admin/ai-catalog/reload` is PLATFORM-scoped: it reads no organization,
+    // and an administrator carries their own organization exactly like any
+    // other caller. Pinning the request context to the Matrx System org made
+    // this 400 `organization_forbidden` on every rule save since it shipped —
+    // an admin holds no iam.memberships row in the system org, and the
+    // admission gate proves membership on every request, never infers it.
     const result = await dispatch(
       callApi({
         path: "/admin/ai-catalog/reload",
         method: "POST",
-        scopeOverrides: { organization_id: organizationId },
       }),
     );
     if (result.error) {

@@ -26,18 +26,24 @@ describe("reloadAiCatalog", () => {
     mockResolveSystemOrgId.mockResolvedValue("system-org-id");
   });
 
-  it("binds the global reload to the platform system organization", async () => {
+  // 🚨 REGRESSION GUARD (2026-09-11). This used to assert the OPPOSITE — that
+  // the reload was pinned to the Matrx System organization — and that
+  // assertion is exactly what shipped the defect: `/admin/ai-catalog/reload`
+  // is platform-scoped, nobody holds an iam.memberships row in the system org,
+  // and the server's admission gate refused every call with 400
+  // `organization_forbidden` before routing. An administrator carries their
+  // own organization like any other caller.
+  it("sends NO organization override — the route is platform-scoped", async () => {
     const apiThunk = jest.fn().mockResolvedValue({ data: { models: 12 } });
     mockCallApi.mockReturnValue(apiThunk);
     const dispatch = jest.fn(async (action) => action());
 
     const result = await reloadAiCatalog()(dispatch, jest.fn(), undefined);
 
-    expect(mockResolveSystemOrgId).toHaveBeenCalledTimes(1);
+    expect(mockResolveSystemOrgId).not.toHaveBeenCalled();
     expect(mockCallApi).toHaveBeenCalledWith({
       path: "/admin/ai-catalog/reload",
       method: "POST",
-      scopeOverrides: { organization_id: "system-org-id" },
     });
     expect(result).toBe(true);
     expect(mockToastSuccess).toHaveBeenCalledWith("Backend AI catalog reloaded");
