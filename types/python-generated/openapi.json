@@ -4788,7 +4788,7 @@
           "Runtime Operations (reconnect)"
         ],
         "summary": "Rejoin Operation Stream",
-        "description": "Replay and follow the original NDJSON response while its detached task\nis still alive. Ownership is proven through the same runtime operation\nlookup as status/follow; unavailable live delivery returns 409 so clients\nfall back to the durable lifecycle stream and final record re-query.",
+        "description": "Replay and follow durable NDJSON bytes from any server replica.",
         "operationId": "rejoin_operation_stream_runtime_operations__request_id__rejoin_post",
         "parameters": [
           {
@@ -123787,7 +123787,7 @@
         },
         "type": "object",
         "title": "CreateShareLinkRequest",
-        "description": "Canonical share-link mint request (``platform.share_links`` levels)."
+        "description": "Share-link mint request (``platform.share_links``), capped below ``admin``."
       },
       "CreateSheetRequest": {
         "properties": {
@@ -175533,6 +175533,28 @@
               }
             ],
             "title": "Successor Id"
+          },
+          "cost_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Rating"
+          },
+          "speed_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speed Rating"
           },
           "output_type": {
             "type": "string",

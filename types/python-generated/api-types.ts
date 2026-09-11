@@ -2149,10 +2149,7 @@ export interface paths {
         put?: never;
         /**
          * Rejoin Operation Stream
-         * @description Replay and follow the original NDJSON response while its detached task
-         *     is still alive. Ownership is proven through the same runtime operation
-         *     lookup as status/follow; unavailable live delivery returns 409 so clients
-         *     fall back to the durable lifecycle stream and final record re-query.
+         * @description Replay and follow durable NDJSON bytes from any server replica.
          */
         post: operations["rejoin_operation_stream_runtime_operations__request_id__rejoin_post"];
         delete?: never;
@@ -54385,7 +54382,7 @@ export interface components {
         };
         /**
          * CreateShareLinkRequest
-         * @description Canonical share-link mint request (``platform.share_links`` levels).
+         * @description Share-link mint request (``platform.share_links``), capped below ``admin``.
          */
         CreateShareLinkRequest: {
             /**
@@ -77778,6 +77775,10 @@ export interface components {
             is_deprecated?: boolean;
             /** Successor Id */
             successor_id?: string | null;
+            /** Cost Rating */
+            cost_rating?: number | null;
+            /** Speed Rating */
+            speed_rating?: number | null;
             /**
              * Output Type
              * @default text
