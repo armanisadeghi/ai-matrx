@@ -107,6 +107,12 @@ export interface ConversationRelayReadiness {
   blockedReasons: string[];
 }
 
+function isOptionalGate(
+  definition: (typeof GATE_DEFINITIONS)[number],
+): boolean {
+  return "optional" in definition && definition.optional === true;
+}
+
 export function evaluateConversationRelayReadiness(
   state: ConversationRelayReadinessGateState,
 ): ConversationRelayReadiness {
@@ -121,17 +127,18 @@ export function evaluateConversationRelayReadiness(
   });
   const requiredGates = gates.filter(
     (gate) =>
-      !GATE_DEFINITIONS.find((definition) => definition.key === gate.key)
-        ?.optional,
+      !isOptionalGate(
+        GATE_DEFINITIONS.find((definition) => definition.key === gate.key)!,
+      ),
   );
   const blockedReasons = requiredGates.flatMap((gate) =>
     gate.blockedReason === null ? [] : [gate.blockedReason],
   );
   const optionalPlaybackEvidenceReady = gates
-    .filter(
-      (gate) =>
-        GATE_DEFINITIONS.find((definition) => definition.key === gate.key)
-          ?.optional,
+    .filter((gate) =>
+      isOptionalGate(
+        GATE_DEFINITIONS.find((definition) => definition.key === gate.key)!,
+      ),
     )
     .every((gate) => gate.passed);
   return {

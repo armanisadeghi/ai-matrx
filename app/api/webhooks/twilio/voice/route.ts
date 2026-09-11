@@ -144,6 +144,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const url = new URL(signedUrl);
   const stage = url.searchParams.get("stage");
 
+  let organizationId: string | null = null;
   try {
     const callContext = await resolveVoiceOwnerCallContext({
       programKey: admission.programKey,
@@ -153,6 +154,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       callerPhone: parsed.value.from,
       calledPhone: parsed.value.to,
     });
+    organizationId = callContext.organization_id;
     await registerVoiceCallInteraction({
       partyId: callContext.party_id,
       contactPointId: callContext.contact_point_id,
@@ -180,6 +182,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         ? buildOwnerBetaNoConsentTwiml()
         : buildOwnerBetaRejectedCallerTwiml(),
     );
+  }
+  if (organizationId === null) {
+    return twimlResponse(buildOwnerBetaNoConsentTwiml());
   }
 
   if (stage === null && url.search === "") {
@@ -308,7 +313,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       } catch (error) {
         sessionReference = null;
         try {
-          await recordConversationRelayPreparationFailure(error);
+          await recordConversationRelayPreparationFailure(
+            error,
+            organizationId,
+          );
         } catch (captureError) {
           console.error(
             "Twilio Voice relay preparation failure was not captured",

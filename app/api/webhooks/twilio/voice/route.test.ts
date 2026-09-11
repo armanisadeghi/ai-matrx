@@ -581,8 +581,10 @@ describe("POST /api/webhooks/twilio/voice", () => {
 
     expect(body).toContain("<Start><Recording");
     expect(body).not.toContain("<Connect><ConversationRelay");
+    expect(prepareConversationRelaySession).toHaveBeenCalledTimes(1);
     expect(recordConversationRelayPreparationFailure).toHaveBeenCalledWith(
       preparationError,
+      "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
     );
   });
 

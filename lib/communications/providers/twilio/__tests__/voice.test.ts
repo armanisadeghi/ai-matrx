@@ -94,7 +94,9 @@ describe("Twilio Voice provider adapter", () => {
       'recordingStatusCallbackEvent="in-progress completed absent"',
     );
     expect(twiml).toContain('recordingStatusCallbackMethod="POST"');
-    expect(twiml.indexOf("<Start>")).toBeLessThan(twiml.indexOf("Recording starts now"));
+    expect(twiml.indexOf("<Start>")).toBeLessThan(
+      twiml.indexOf("Recording starts now"),
+    );
     expect(twiml).toContain("<Hangup/>");
     expect(twiml).not.toContain("<Connect");
     expect(twiml).not.toContain("<Stream");
@@ -119,7 +121,9 @@ describe("Twilio Voice provider adapter", () => {
     expect(twiml).toContain(
       '<Parameter name="sessionReference" value="owner-beta-one-time-reference"/>',
     );
-    expect(twiml).toContain('welcomeGreeting="Thank you. Your consent was received. Recording starts now.');
+    expect(twiml).toContain(
+      'welcomeGreeting="Thank you. Your consent was received. Recording starts now.',
+    );
     expect(twiml).not.toContain(" events=");
     expect(twiml).not.toContain("<Hangup");
   });
@@ -248,12 +252,24 @@ describe("Twilio Voice provider adapter", () => {
     }
 
     expect(shouldApplyCallLifecycleEvent(null, initiated.value)).toBe(true);
-    expect(shouldApplyCallLifecycleEvent(initiated.value, ringing.value)).toBe(true);
-    expect(shouldApplyCallLifecycleEvent(ringing.value, ringing.value)).toBe(false);
-    expect(shouldApplyCallLifecycleEvent(ringing.value, initiated.value)).toBe(false);
-    expect(shouldApplyCallLifecycleEvent(ringing.value, lateInitiated.value)).toBe(false);
-    expect(shouldApplyCallLifecycleEvent(ringing.value, completed.value)).toBe(true);
-    expect(shouldApplyCallLifecycleEvent(completed.value, lateRinging.value)).toBe(false);
+    expect(shouldApplyCallLifecycleEvent(initiated.value, ringing.value)).toBe(
+      true,
+    );
+    expect(shouldApplyCallLifecycleEvent(ringing.value, ringing.value)).toBe(
+      false,
+    );
+    expect(shouldApplyCallLifecycleEvent(ringing.value, initiated.value)).toBe(
+      false,
+    );
+    expect(
+      shouldApplyCallLifecycleEvent(ringing.value, lateInitiated.value),
+    ).toBe(false);
+    expect(shouldApplyCallLifecycleEvent(ringing.value, completed.value)).toBe(
+      true,
+    );
+    expect(
+      shouldApplyCallLifecycleEvent(completed.value, lateRinging.value),
+    ).toBe(false);
   });
 
   test("rejects unknown statuses and invalid sequence numbers", () => {
@@ -363,9 +379,14 @@ describe("Twilio Voice provider adapter", () => {
       throw new Error("test fixtures must parse");
     }
 
-    expect(shouldApplyCallRecordingLifecycleEvent(null, inProgress.value)).toBe(true);
+    expect(shouldApplyCallRecordingLifecycleEvent(null, inProgress.value)).toBe(
+      true,
+    );
     expect(
-      shouldApplyCallRecordingLifecycleEvent(inProgress.value, inProgress.value),
+      shouldApplyCallRecordingLifecycleEvent(
+        inProgress.value,
+        inProgress.value,
+      ),
     ).toBe(false);
     expect(
       shouldApplyCallRecordingLifecycleEvent(inProgress.value, completed.value),
@@ -379,7 +400,7 @@ describe("Twilio Voice provider adapter", () => {
     const blocked = evaluateVoiceRecordingReadiness({
       owner_only_program_bound: true,
       disclosure_and_consent_verified: true,
-      provider_email_verification_current: true,
+      provider_account_verified: true,
       dedicated_storage_identity_ready: false,
       external_storage_configured: false,
       external_storage_canary_passed: false,
@@ -393,7 +414,7 @@ describe("Twilio Voice provider adapter", () => {
     const ready = evaluateVoiceRecordingReadiness({
       owner_only_program_bound: true,
       disclosure_and_consent_verified: true,
-      provider_email_verification_current: true,
+      provider_account_verified: true,
       dedicated_storage_identity_ready: true,
       external_storage_configured: true,
       external_storage_canary_passed: true,
