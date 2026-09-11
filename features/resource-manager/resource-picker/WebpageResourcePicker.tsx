@@ -45,6 +45,14 @@ interface WebpageResourcePickerCoreProps {
     type: "youtube" | "image_url" | "file_url",
     url: string,
   ) => void;
+  /**
+   * A host that can take a DIRECT FILE LINK (PDF, Word, text…) as-is receives
+   * the normalized URL + filename here — the file is fetched and read by the
+   * server later, so there is nothing to preview. Without this (and without
+   * `onSwitchTo`) a file link is refused OUT LOUD below, never swallowed:
+   * 2026-09-10 a PDF pasted into a Rulebook's "Add a link" did nothing at all.
+   */
+  onFileUrl?: (url: string, filename: string) => void;
   initialUrl?: string;
 }
 
@@ -110,6 +118,7 @@ function detectUrlType(url: string): "youtube" | "image" | "file" | "webpage" {
 export function WebpageResourcePickerCore({
   onSelect,
   onSwitchTo,
+  onFileUrl,
   initialUrl,
 }: WebpageResourcePickerCoreProps) {
   const [url, setUrl] = useState(initialUrl || "");
@@ -169,6 +178,15 @@ export function WebpageResourcePickerCore({
       return;
     }
     if (detectedType === "file") {
+      if (onFileUrl) {
+        const filename =
+          new URL(normalized).pathname.split("/").filter(Boolean).pop() ||
+          normalized;
+        onFileUrl(normalized, decodeURIComponent(filename));
+        setUrl("");
+        setSuggestedType(null);
+        return;
+      }
       setSuggestedType("file_url");
       return;
     }
@@ -287,8 +305,10 @@ export function WebpageResourcePickerCore({
                 </p>
               </div>
 
-              {/* Suggestion to switch type */}
-              {suggestedType && onSwitchTo && (
+              {/* Suggestion to switch type — ALWAYS spoken. A host without
+                  `onSwitchTo` gets the honest refusal instead of silence
+                  (nothing fails silently). */}
+              {suggestedType && (
                 <div className="space-y-2">
                   <div className="flex items-start gap-2 p-2 border border-blue-500/20 bg-blue-500/10 rounded">
                     <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
@@ -299,21 +319,26 @@ export function WebpageResourcePickerCore({
                         : suggestedType === "image_url"
                           ? "image"
                           : "file"}
+                      {onSwitchTo
+                        ? "."
+                        : " — this box reads web pages only. Use Upload or Add file to bring it in."}
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    className="w-full text-xs h-7"
-                    onClick={() => onSwitchTo(suggestedType, url)}
-                  >
-                    <Globe className="w-3.5 h-3.5 mr-1.5" />
-                    Switch to{" "}
-                    {suggestedType === "youtube"
-                      ? "YouTube"
-                      : suggestedType === "image_url"
-                        ? "Image URL"
-                        : "File URL"}
-                  </Button>
+                  {onSwitchTo && (
+                    <Button
+                      size="sm"
+                      className="w-full text-xs h-7"
+                      onClick={() => onSwitchTo(suggestedType, url)}
+                    >
+                      <Globe className="w-3.5 h-3.5 mr-1.5" />
+                      Switch to{" "}
+                      {suggestedType === "youtube"
+                        ? "YouTube"
+                        : suggestedType === "image_url"
+                          ? "Image URL"
+                          : "File URL"}
+                    </Button>
+                  )}
                 </div>
               )}
 

@@ -586,6 +586,10 @@ export function RulebookSourcesPanel({
                       onSelect={(content) =>
                         void stageUrl(content.url, content.title ?? undefined)
                       }
+                      // A direct file link (a PDF of a book, a Word SOP) is a
+                      // first-class source: staged as-is, fetched and read by
+                      // the server's ONE scraper door when the run starts.
+                      onFileUrl={(url, filename) => void stageUrl(url, filename)}
                     />
                   </div>
                 ) : null}
