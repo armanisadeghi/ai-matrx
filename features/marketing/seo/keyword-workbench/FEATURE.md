@@ -35,7 +35,7 @@ plan in `common-docs/projects/keyword-intelligence-convergence/PLAN.md` (C13/C14
 
 | | Law | How it shows up here |
 |---|---|---|
-| **P23** | Every picker takes new input | The value picker's footer offers `Create "what you typed"`, and naming a dimension that does not exist creates it with its first value. A platform vocabulary refuses with a sentence and a door, never a grey-out. |
+| **P23** | Every picker takes new input | The value picker's footer offers `Create "what you typed"`; adding a dimension opens the editable canonical form for its name and first two choices. Nothing is written until that complete form is submitted. A platform vocabulary refuses with a sentence and a door, never a grey-out. |
 | **P24** | The WHY is captured at the moment of assignment | One reason box on every assignment, single or bulk, stored ON the stamp. It is the training material an AI later learns the pattern from. |
 | **P25** | Never lose the view | "See pages for this keyword" and "Why this score" open as floating panels beside the table you built. |
 | **P26** | The table is the user's — ONE TABLE | Any dimension can be a column; every column sorts and filters; the arrangement saves as a named tab; and the why is an (i), never a novel in a cell. Extended 2026-08-24: this is now literally the SAME table component every keyword list uses, and the Columns chooser adds AND removes core columns too. |
@@ -218,6 +218,11 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
 - **P11 is a door, never a grey-out.** Class is platform-shared; the dropdown
   says so and offers "make it your own dimension" rather than a list with no
   way out. `pnpm check:picker-add` catches the omission.
+- **`onCreateRequiresMore("")` must open a real form.** The shared picker
+  deliberately treats a blank Add click as a request for the caller's
+  follow-up form. Holding that empty string as a closed trigger label produces
+  a “Naming…” state with nowhere to type. The Workbench uses the same canonical
+  two-choice dimension form as the filter and rule surfaces.
 
 ## Traps the OFFERING column added to the list
 

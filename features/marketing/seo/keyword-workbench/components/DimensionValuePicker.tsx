@@ -8,12 +8,12 @@
  * and the write is `quickAddDimensionValue` (its one creation path). What this
  * file adds is the two-step relationship between them:
  *
- *   • pick a dimension — or invent one by typing its name;
+ *   • pick a dimension — or invent one through the canonical two-choice form;
  *   • pick a value inside it — or invent one by typing that.
  *
- * A dimension a person invents is not written until its first value lands, so
- * an abandoned "New way of looking at things" never leaves an empty vocabulary
- * behind for the next person to wonder about.
+ * A dimension a person invents is not written until its name and first two
+ * choices are complete, so an abandoned form never leaves empty vocabulary
+ * behind and the new dimension is immediately meaningful.
  *
  * P11 lives in the primitive: a platform dimension refuses to widen, says so
  * in a sentence a person can act on, and offers the "make it your own" door

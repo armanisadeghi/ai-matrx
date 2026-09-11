@@ -51,20 +51,23 @@ describe("DimensionValuePicker", () => {
       'button[aria-label="Dimension"]',
     );
     expect(dimension).not.toBeNull();
-    act(() => dimension!.click());
+    if (!dimension) throw new Error("dimension picker did not render");
+    act(() => dimension.click());
 
     const add = Array.from(document.querySelectorAll("button")).find(
       (button) => button.textContent?.trim() === "Add a dimension…",
     );
     expect(add).toBeDefined();
-    act(() => add!.click());
+    if (!add) throw new Error("dimension add action did not render");
+    act(() => add.click());
 
     for (const name of ["Dimension name", "First choice", "Second choice"]) {
       const input = document.querySelector<HTMLInputElement>(
         `input[aria-label="${name}"]`,
       );
       expect(input).not.toBeNull();
-      expect(input!.disabled).toBe(false);
+      if (!input) throw new Error(`${name} input did not render`);
+      expect(input.disabled).toBe(false);
     }
   });
 });
