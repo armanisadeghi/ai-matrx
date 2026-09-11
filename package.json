@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.1840",
+  "version": "0.4.1841",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -28,7 +28,7 @@
     "test:unit": "jest --no-coverage",
     "test:window-panels": "jest features/window-panels/__tests__ --no-coverage",
     "test:content-ir": "jest features/content-ir --no-coverage",
-    "test:render-matrix": "jest features/content-ir/render-paths --no-coverage",
+    "test:render-matrix": "jest features/content-ir/render-paths features/content-ir/__tests__/nested-parser-combinations.test.ts features/tool-call-visualization/result-fields/__tests__/nested-markdown.test.tsx components/mardown-display/blocks/xml/XmlBlock.test.tsx components/mardown-display/chat-markdown/__tests__/xmlRenderingPaths.test.tsx components/mardown-display/chat-markdown/__tests__/unrecognizedXmlFallback.test.ts --no-coverage",
     "test:workflow-runtime": "jest features/workflow-runtime features/workflow-emit --no-coverage",
     "check:org-header-lanes": "tsx scripts/check-org-header-lanes.ts",
     "check:organization-context": "tsx scripts/check-org-header-lanes.ts && jest organization-context features/marketing/data/organization-scope.test.ts features/agent-shortcuts/resolveShortcutWriteScope.test.ts --runInBand --no-coverage",
