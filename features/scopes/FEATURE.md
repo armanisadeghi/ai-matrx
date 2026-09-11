@@ -44,6 +44,22 @@ this directory.
     downgrade an error carrying a Postgres code or HTTP status. The sole probe exception is
     the package's demanded-schema contract check: exact `__not_a_uuid__`/`__probe__`
     sentinels remain local and non-persisting; every ordinary `22P02`/`P0001` stays red.
+11. 🚨 **A record's VALUES go only to people who can open the RECORD, and a `SECURITY DEFINER`
+    function is where that is decided.** RLS does not run inside a DEFINER function, so the table
+    policy everybody reasons about is not what stands in the way: on 2026-09-11
+    `public.get_scope_context` authorized on organization membership alone and handed a
+    `personal` scope's 16 populated cells to a colleague who could not see the scope itself.
+    Every DEFINER door that serves cell values now calls `context._assert_scope_readable(scope_id,
+    'viewer'|'editor')` (or `context._scope_readable` / `_scope_readable_for` to filter), and
+    `context.context_item_values` is a registered **component of `scope`** on the generated
+    `iam.apply_rls(…,'component')` lane. Adding a door without the membrane, or hand-writing a
+    policy over the generated one, is caught by `pnpm check:scope-access-membrane` — a live pull,
+    because a function body lives in the catalog, not on disk.
+    Migration: `migrations/ctx_scope_access_membrane_b7.sql`.
+    **Do NOT make `context_items` a component of `scope_type`:** `context.scope_types` has no
+    `created_by` and no `visibility`, so `iam.accessible_entity_ids('scope_type','viewer')` returns
+    zero ids while RLS shows an ordinary member 4 rows — the field definitions would go from 57
+    visible to 0 and blank every scopes screen. That needs a base retrofit of `scope_types` first.
 
 ## File map
 
@@ -259,6 +275,19 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   not the same axis.
 
 ## Change Log
+
+- 2026-09-11 — **B-7: the scope access membrane.** The leak was never in the table policy
+  (`context_item_values_select`'s subquery over `context.scopes` is itself RLS-filtered, so a
+  `personal` scope's values already went from 37 visible to 0). It was in the `SECURITY DEFINER`
+  door: 59 DEFINER functions read the scopes tables and **zero** called `iam.has_access('scope', …)`.
+  The eight that serve cell values now go through `context._assert_scope_readable` /
+  `_scope_readable` / `_scope_readable_for`, and `context.context_item_values` is registered as a
+  component of `scope` on the generated lane. That also closed the mirror-image defect: a real
+  `viewer` grant used to open the record and hand over **0** values and **0** field labels — it now
+  conveys all 37, while the grantee's DELETE affects 0 rows. `anon`'s SELECT/INSERT/UPDATE/DELETE
+  grants on the values table were revoked. Byte parity proven on `get_scope_context` across all 15
+  readable scopes, both lanes. Guard: `pnpm check:scope-access-membrane`, proven RED on four
+  injected regressions then GREEN. Rule 11 above; `migrations/ctx_scope_access_membrane_b7.sql`.
 
 - 2026-09-10 — **DC-009: local entity-types re-export shim deleted.** Every importer now imports
   `@ai-matrx/associations` directly; the vocabulary paragraph above no longer names a local file.

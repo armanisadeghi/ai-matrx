@@ -232,6 +232,8 @@
     "check:loading-slug-twin:strict": "tsx scripts/check-loading-slug-twin.ts --strict",
     "core-check": "pnpm check:ui-primitives && pnpm check:dead-relations",
     "check:migrations:strict": "tsx scripts/check-migrations.ts --strict",
+    "check:scope-access-membrane": "tsx scripts/check-scope-access-membrane.ts",
+    "check:scope-access-membrane:strict": "tsx scripts/check-scope-access-membrane.ts --strict",
     "check:soft-delete-cascade": "tsx scripts/check-soft-delete-cascade.ts",
     "check:soft-delete-cascade:strict": "tsx scripts/check-soft-delete-cascade.ts --strict",
     "check:migration-slot-guard": "tsx scripts/check-migration-slot-guard.ts",

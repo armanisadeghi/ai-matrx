@@ -125,13 +125,14 @@ begin
       using errcode = '42501';
   end if;
 
-  if p_level = 'viewer' then
-    raise exception 'You do not have access to "%". Ask someone who can already open it to share it with you.', v_name
-      using errcode = '42501';
-  else
+  -- A SCREEN NEVER LIES: only say "you can view it" when they actually can.
+  if p_level <> 'viewer' and context._scope_readable(p_scope_id, 'viewer') then
     raise exception 'You can view "%" but you cannot change it. Ask for edit access on that record.', v_name
       using errcode = '42501';
   end if;
+
+  raise exception 'You do not have access to "%". Ask someone who can already open it to share it with you.', v_name
+    using errcode = '42501';
 end;
 $fn$;
 
@@ -414,3 +415,183 @@ select iam.apply_rls('context', 'context_item_values', 'context_item_value', 'co
 -- grant that only a policy stands behind is one `apply_rls` away from being a hole. The component
 -- lane revokes SELECT itself; the write grants are revoked here.
 revoke all on context.context_item_values from anon;
+
+-- ============================================================================
+-- PART C — THE GATE (pnpm check:scope-access-membrane)
+-- ============================================================================
+--
+-- A LIVE PULL, NOT A SOURCE SCAN. A function body is in the catalog, not on disk: a
+-- `CREATE OR REPLACE` in any session, from any repo, can drop the membrane out of a door
+-- while this .sql file on disk keeps looking exactly right (db-rules §1). So the gate asks
+-- the database.
+--
+-- THE REVIEWED-DOOR LIST is the mechanism that makes a FUTURE function impossible to ship
+-- without a decision: every SECURITY DEFINER function that reads the scopes tables either
+-- carries the membrane or is named below with a reason. A new one is neither, so it FAILS
+-- and somebody has to choose which it is.
+create or replace function public.__scope_access_membrane_conformance()
+returns table (check_key text, ok boolean, severity text, detail jsonb)
+language plpgsql
+stable
+security definer
+set search_path to 'public', 'pg_temp'
+as $fn$
+declare
+  -- Doors that serve a scope's CELL VALUES. These must carry the membrane, no exceptions:
+  -- the two named here are the provisioner path, reached only from a trigger that provably
+  -- never fires (every context_items.reference_source is NULL live) and taking no caller.
+  v_value_exempt text[] := array['context.provision_scope_dataset', 'context.provision_scope_datasets_trigger'];
+
+  -- Doors that read scopes or field definitions but never serve cell values, reviewed
+  -- 2026-09-11 (B-7). Each is here for one of three reasons:
+  --   * education: `p_class` IS a scope id, but the education module runs its own
+  --     authorization (roster, teacher, join code). A viewer assert would break a student
+  --     joining a class they cannot yet read — the module's gate is the correct one.
+  --   * scope_type / org lane: takes a scope_type or an org id and returns record TYPES or
+  --     field definitions, which are organization dimensions, `internal` by nature, and
+  --     org-wide by design (Doctrine R20's member default). Organization membership is the
+  --     right question for these, and they already ask it.
+  --   * create/own: acts on a row the caller is creating or already owns.
+  v_reviewed text[] := array[
+    'public._edu_class','public._edu_generate_join_code','public.edu_class_approve',
+    'public.edu_class_assign','public.edu_class_assignments','public.edu_class_by_code',
+    'public.edu_class_confer_purchase','public.edu_class_grant','public.edu_class_join',
+    'public.edu_class_join_by_code','public.edu_class_join_code','public.edu_class_leave',
+    'public.edu_class_progress_overview','public.edu_class_remove','public.edu_class_request',
+    'public.edu_class_revoke_purchase','public.edu_class_roster','public.edu_class_set_access',
+    'public.edu_class_state','public.edu_class_student_progress','public.edu_class_unassign',
+    'public.edu_my_classes',
+    'public.accept_context_item_suggestion','public.apply_template','public.apply_template_definition',
+    'public.create_context_item','public.delete_context_item','public.update_context_item',
+    'public.list_scope_type_items','public.list_scope_types','public.delete_scope_type',
+    'public.create_scope','public.update_scope','public.delete_scope','public.create_tasks_bulk',
+    'public.creator_public_page','public.get_entity_scopes','public.get_org_structure',
+    'public.get_scope_tree','public.get_user_dashboard_metrics','public.get_user_full_context',
+    'public.get_user_scopes','public.inv_get_by_token','public.kg_caller_can_target_scope',
+    'public.list_scopes','public.scope_system_apply','public.search_scopes','public.set_entity_scopes',
+    'context.provision_scope_dataset','context.provision_scope_datasets_trigger'
+  ];
+  v_missing text[];
+  v_new text[];
+  v_pols jsonb;
+  v_sel text;
+begin
+  -- 1. the helpers exist, and are DEFINER (as INVOKER they would answer through the caller's
+  --    own RLS and quietly say "no" to everyone).
+  check_key := 'membrane_helpers_installed';
+  detail := (
+    select jsonb_object_agg(p.proname, jsonb_build_object('definer', p.prosecdef))
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'context'
+      and p.proname in ('_scope_readable', '_scope_readable_for', '_assert_scope_readable')
+  );
+  ok := (select count(*) = 3 and bool_and(p.prosecdef)
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'context'
+           and p.proname in ('_scope_readable', '_scope_readable_for', '_assert_scope_readable'));
+  severity := 'error';
+  if not ok then detail := coalesce(detail, '{}'::jsonb) || jsonb_build_object(
+    'why', 'context._scope_readable / _scope_readable_for / _assert_scope_readable must all exist and be SECURITY DEFINER.'); end if;
+  return next;
+
+  -- 2. THE CLASS. Every DEFINER door that serves cell values calls the membrane.
+  select array_agg(n.nspname || '.' || p.proname order by p.proname)
+    into v_missing
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname in ('public', 'context') and p.prosecdef
+    and p.prosrc ~ 'context\.context_item_values'
+    and p.prosrc !~ '_scope_readable'
+    and (n.nspname || '.' || p.proname) <> all (v_value_exempt);
+  check_key := 'value_doors_carry_membrane';
+  ok := v_missing is null;
+  severity := 'error';
+  detail := jsonb_build_object(
+    'why', 'RLS does not run inside a SECURITY DEFINER function. A door that serves a scope''s cell '
+           || 'values and does not call context._assert_scope_readable / context._scope_readable hands '
+           || 'them to anyone who is merely in the organization — the 2026-09-11 finding on get_scope_context.',
+    'missing', coalesce(to_jsonb(v_missing), '[]'::jsonb));
+  return next;
+
+  -- 3. THE FUTURE. A DEFINER function that reads these tables and is neither membraned nor on
+  --    the reviewed list is a door nobody has decided about.
+  select array_agg(n.nspname || '.' || p.proname order by p.proname)
+    into v_new
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname in ('public', 'context') and p.prosecdef
+    and p.prosrc ~ 'context\.(scopes|context_items|context_item_values)'
+    and p.prosrc !~ '_scope_readable'
+    and (n.nspname || '.' || p.proname) <> all (v_reviewed);
+  check_key := 'no_unreviewed_scope_doors';
+  ok := v_new is null;
+  severity := 'error';
+  detail := jsonb_build_object(
+    'why', 'A new SECURITY DEFINER function reads the scopes tables without the access membrane and '
+           || 'without a recorded reason. Either call context._assert_scope_readable, or add it to '
+           || 'v_reviewed in migrations/ctx_scope_access_membrane_b7.sql WITH the reason it does not need one.',
+    'unreviewed', coalesce(to_jsonb(v_new), '[]'::jsonb));
+  return next;
+
+  -- 4. the values table is a registered component of `scope`, with exactly one parent.
+  check_key := 'values_registered_as_component_of_scope';
+  detail := jsonb_build_object(
+    'entity_type', (select to_jsonb(t) from (select rls_variant, is_component, is_active
+                                               from platform.entity_types where token = 'context_item_value') t),
+    'parents', coalesce((select jsonb_agg(jsonb_build_object('parent', er.parent_type, 'fk', er.fk_column))
+                           from platform.entity_relationships er
+                          where er.child_type = 'context_item_value' and er.kind = 'composition'), '[]'::jsonb),
+    'why', 'A second composition parent (context_item) would OR an ORG-WIDE id set back into the read '
+           || 'lane and undo the membrane. The parent is `scope`, and only `scope`.');
+  ok := exists (select 1 from platform.entity_types
+                 where token = 'context_item_value' and rls_variant = 'component' and is_component and is_active)
+        and (select count(*) from platform.entity_relationships
+              where child_type = 'context_item_value' and kind = 'composition') = 1
+        and exists (select 1 from platform.entity_relationships
+                     where child_type = 'context_item_value' and parent_type = 'scope' and fk_column = 'scope_id');
+  severity := 'error';
+  return next;
+
+  -- 5. the live policies are the GENERATED component set — not a hand-written twin, and not the
+  --    old organization-membership predicate.
+  select jsonb_object_agg(policyname, cmd), max(qual) filter (where cmd = 'SELECT')
+    into v_pols, v_sel
+  from pg_policies where schemaname = 'context' and tablename = 'context_item_values';
+  check_key := 'values_policies_are_generated_component_lane';
+  -- The parent arm, rendered. `my_orgs` is NOT a disqualifier: the generated candidate set
+  -- legitimately contains an iam.permissions arm keyed on granted_to_organization_id. What must
+  -- be gone is the RETIRED hand-written predicate, which reached into context.scopes directly.
+  ok := coalesce(v_sel, '') like '%accessible_entity_ids(''scope''::text%'
+        and coalesce(v_sel, '') not like '%context.scopes%'
+        and v_pols ? 'std_select' and v_pols ? 'std_insert' and v_pols ? 'std_update'
+        and v_pols ? 'std_delete' and v_pols ? 'svc_all';
+  severity := 'error';
+  detail := jsonb_build_object(
+    'policies', coalesce(v_pols, '{}'::jsonb),
+    'why', 'The read lane must resolve the PARENT id set once per query (THE COMPONENT-ACCESS PRECEDENT, '
+           || '2026-08-08) and must not fall back to organization membership. Re-apply with '
+           || 'select iam.apply_rls(''context'',''context_item_values'',''context_item_value'',''component'').');
+  return next;
+
+  -- 6. anon holds nothing on the table. It held SELECT+INSERT+UPDATE+DELETE until 2026-09-11,
+  --    with only RLS between an anonymous caller and 242 rows of customer data.
+  check_key := 'no_anon_grants_on_values';
+  detail := jsonb_build_object(
+    'grants', coalesce((select jsonb_agg(privilege_type order by privilege_type)
+                          from information_schema.role_table_grants
+                         where table_schema = 'context' and table_name = 'context_item_values'
+                           and grantee = 'anon'), '[]'::jsonb),
+    'why', 'A table grant that only a policy stands behind is one apply_rls away from being a hole.');
+  ok := not exists (select 1 from information_schema.role_table_grants
+                     where table_schema = 'context' and table_name = 'context_item_values' and grantee = 'anon');
+  severity := 'error';
+  return next;
+end;
+$fn$;
+
+revoke all on function public.__scope_access_membrane_conformance() from public;
+grant execute on function public.__scope_access_membrane_conformance() to service_role;
+
+comment on function public.__scope_access_membrane_conformance() is
+  'B-7 liveness: read by pnpm check:scope-access-membrane. Proves, against the live catalog, that '
+  'every SECURITY DEFINER door serving a scope''s cell values calls the access membrane, that the '
+  'values table carries the generated component lane over `scope`, and that no unreviewed door has '
+  'appeared. service_role only — no client door row needed.';
