@@ -42,9 +42,11 @@ export type AiModelOfferingViewRow = Database["ai"]["Views"]["model_offering"]["
 
 export type PricingTier = {
   max_tokens: number | null;
-  input_price: number;
-  output_price: number;
-  cached_input_price: number;
+  // A price is null when this billing direction does not apply to the
+  // offering (for example, character-input TTS has no output price).
+  input_price: number | null;
+  output_price: number | null;
+  cached_input_price: number | null;
   // Billing unit the prices map to. null/absent = standard $/1M-token billing.
   // Values + meaning: features/ai-models/usageBasis.ts (mirrors the matrx-ai
   // server SSOT). Drives correct media/audio cost — never leave a media model

@@ -74,6 +74,14 @@ function requireFiniteNumber(value: unknown, path: string): number {
   return value;
 }
 
+function requireFiniteNumberOrNull(
+  value: unknown,
+  path: string,
+): number | null {
+  if (value === null) return null;
+  return requireFiniteNumber(value, path);
+}
+
 function requireBoolean(value: unknown, path: string): boolean {
   if (typeof value !== "boolean") throw boundaryError(path, "a boolean");
   return value;
@@ -335,12 +343,15 @@ function parsePricingTier(value: unknown, path: string): PricingTier {
       maxTokens === null
         ? null
         : requireFiniteNumber(maxTokens, `${path}.max_tokens`),
-    input_price: requireFiniteNumber(record.input_price, `${path}.input_price`),
-    output_price: requireFiniteNumber(
+    input_price: requireFiniteNumberOrNull(
+      record.input_price,
+      `${path}.input_price`,
+    ),
+    output_price: requireFiniteNumberOrNull(
       record.output_price,
       `${path}.output_price`,
     ),
-    cached_input_price: requireFiniteNumber(
+    cached_input_price: requireFiniteNumberOrNull(
       record.cached_input_price,
       `${path}.cached_input_price`,
     ),

@@ -73,6 +73,11 @@ must obey.
 > updates this file in the same change; a change to what the catalog MEANS updates the node's STATE.md.
 
 ## Change log
+
+- `2026-09-11` — The admin Offerings catalog now accepts nullable pricing directions from the
+  live `ai.offering.pricing` contract. A non-applicable direction remains `null` and renders as
+  absent; non-null prices still fail closed unless they are finite numbers. Previously the first
+  character-input offering with a null output price rejected the entire live catalog.
 - `2026-09-09` — **Deprecated models RUN; retired is the dead state** (ai_075, ruling in
   `../../../common-docs/systems/agents/ai-models/DECISIONS.md`). Deprecating Gemini 3.7 Flash had
   made it vanish: `ai.model_config`/`model_public` filtered deprecated rows, so `fetchModelById`
