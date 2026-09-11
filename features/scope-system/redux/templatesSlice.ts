@@ -34,7 +34,7 @@ export interface FlatTemplateScopeType extends TemplateScopeType {
   template_key: string;
   template_name: string;
   template_category: string;
-  t// CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
+  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
   template_is_personal: boolean;
 }
 
