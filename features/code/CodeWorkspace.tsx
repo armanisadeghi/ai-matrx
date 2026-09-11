@@ -33,7 +33,6 @@ import { useSandboxHeartbeat } from "@/hooks/sandbox/use-sandbox-heartbeat";
 import type { SandboxInstance } from "@/types/sandbox";
 import { sandboxDisplayName } from "@/lib/sandbox/format";
 import { SandboxDeepLinkConnection } from "./views/sandboxes/SandboxDeepLinkConnection";
-import { useCodeWorkspaceUrlState } from "./hooks/useCodeWorkspaceUrlState";
 
 export interface CodeWorkspaceProps {
   /** Stable id used by agent tools to target this workspace instance. */
@@ -120,9 +119,6 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
           )}
           <UrlOpenFileBridge />
           <UrlFocusFolderBridge />
-          <UrlWorkspaceStateBridge
-            initialSandboxId={initialSandbox?.id ?? null}
-          />
           <SandboxHeartbeatBridge />
           <TabRealtimeBridge />
           <div className={cn("flex h-full w-full min-h-0", className)}>
@@ -233,16 +229,6 @@ const UrlOpenFileBridge: React.FC = () => {
  *  folder in the Library tree (expand ancestors + highlight + scroll to). */
 const UrlFocusFolderBridge: React.FC = () => {
   useFocusCodeFolderFromUrl();
-  return null;
-};
-
-/** Restores and reflects `/code` workspace location/panel state. Kept beside
- * the established `open` / `folder` bridges because it depends on the same
- * provider tree and deliberately leaves those canonical library links alone. */
-const UrlWorkspaceStateBridge: React.FC<{
-  initialSandboxId: string | null;
-}> = ({ initialSandboxId }) => {
-  useCodeWorkspaceUrlState(initialSandboxId);
   return null;
 };
 
