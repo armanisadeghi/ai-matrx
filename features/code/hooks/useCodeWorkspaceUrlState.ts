@@ -6,6 +6,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { SandboxInstance, SandboxListResponse } from "@/types/sandbox";
 import { useCodeWorkspace } from "../CodeWorkspaceProvider";
 import { useOpenFile } from "./useOpenFile";
+import { codeFileIdFromTabId, isLibraryTabId } from "./useOpenLibraryFile";
+import { toast } from "@/lib/toast";
 import {
   revealView,
   selectActiveFilesystemId,
@@ -61,6 +63,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   const [locationSearch, setLocationSearch] = useState(
     () => params?.toString() ?? "",
   );
+  const [restoreRevision, setRestoreRevision] = useState(0);
   const restoringSearchRef = useRef<string | null>(null);
   const requestGenerationRef = useRef(0);
   const appliedLocationRef = useRef<string | null>(null);
@@ -72,8 +75,15 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     // URL restoration must remain honest without replacing the workspace with
     // an error screen. The Sandboxes panel remains the actionable recovery
     // surface for an unavailable instance.
-    onError: (message) => console.error("[code URL restore]", message),
+    onError: (message) => toast.error(message),
   });
+
+  const completeRestore = useCallback((search: string) => {
+    if (restoringSearchRef.current !== search) return;
+    appliedLocationRef.current = search;
+    restoringSearchRef.current = null;
+    setRestoreRevision((revision) => revision + 1);
+  }, []);
 
   const applyNonFilesystemState = useCallback(
     (state: CodeWorkspaceUrlState, params: URLSearchParams) => {
@@ -132,14 +142,13 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
             // `connect` reports a non-runnable sandbox as a handled false
             // result. Finish this restore so later UI changes can still
             // serialize; otherwise the URL bridge would remain paused.
-            restoringSearchRef.current = null;
-            appliedLocationRef.current = targetSearch;
+            completeRestore(targetSearch);
           }
         } catch (error) {
           if (generation === requestGenerationRef.current) {
             console.error("[code URL restore] sandbox", error);
-            restoringSearchRef.current = null;
-            appliedLocationRef.current = targetSearch;
+            toast.error("This sandbox link could not be restored. Choose another sandbox from Compute.");
+            completeRestore(targetSearch);
           }
         }
         return;
@@ -156,6 +165,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     activeSandboxId,
     applyNonFilesystemState,
     connect,
+    completeRestore,
     disconnect,
     locationSearch,
   ]);
@@ -188,8 +198,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
           !abortController.signal.aborted &&
           restoringSearchRef.current === targetSearch
         ) {
-          appliedLocationRef.current = targetSearch;
-          restoringSearchRef.current = null;
+          completeRestore(targetSearch);
           if (state.sandboxId === initialSandboxRef.current) {
             initialSandboxRef.current = null;
           }
@@ -197,12 +206,11 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
       });
       return;
     }
-    appliedLocationRef.current = targetSearch;
-    restoringSearchRef.current = null;
+    completeRestore(targetSearch);
     if (state.sandboxId && state.sandboxId === initialSandboxRef.current) {
       initialSandboxRef.current = null;
     }
-  }, [activeFilesystemId, activeSandboxId, dispatch, filesystem, locationSearch, openFile]);
+  }, [activeFilesystemId, activeSandboxId, completeRestore, dispatch, filesystem, locationSearch, openFile]);
 
   // Reflect normal workspace interaction back into the current route without
   // changing history on every panel drag or tab click. `popstate` remains the
@@ -210,6 +218,10 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   useEffect(() => {
     if (restoringSearchRef.current !== null) return;
     const current = new URLSearchParams(window.location.search);
+    const currentSearch = current.toString();
+    const libraryFileId = activeTab && isLibraryTabId(activeTab.id)
+      ? codeFileIdFromTabId(activeTab.id)
+      : null;
     // Session reports predate the filesystem tab identity and use a stable
     // `session-report:<sandbox>` id for deduplication. They are still real
     // absolute filesystem files, so selecting one must produce a restorable
@@ -222,6 +234,14 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
       (isFilesystemTab || isActiveSessionReport) && activeTab?.path.startsWith("/")
         ? activeTab.path
         : null;
+    if (libraryFileId) {
+      current.set("open", libraryFileId);
+    } else if (filePath) {
+      // A filesystem tab and a library record are distinct sources. Keeping a
+      // stale `open`/`folder` would reopen a competing tab on reload.
+      current.delete("open");
+      current.delete("folder");
+    }
     const next = withCodeWorkspaceUrlState(current, {
       sandboxId: activeSandboxId,
       filePath,
@@ -234,7 +254,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
       bottomTab,
     });
     const nextSearch = next.toString();
-    if (nextSearch === current.toString()) return;
+    if (nextSearch === currentSearch) return;
     const href = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
     if (hasNormalizedRef.current) {
       window.history.pushState(window.history.state, "", href);
@@ -243,6 +263,10 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
       hasNormalizedRef.current = true;
     }
     appliedLocationRef.current = nextSearch;
+    // `history.pushState` does not update Next's search-param hook. Keep the
+    // restore authority aligned with the URL we just wrote so a later render
+    // cannot replay the previous location over a user-selected tab.
+    setLocationSearch(nextSearch);
   }, [
     activeSandboxId,
     activeTab,
@@ -255,5 +279,6 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     filesystem.rootPath,
     rightOpen,
     sideOpen,
+    restoreRevision,
   ]);
 }
