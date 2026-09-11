@@ -186,6 +186,12 @@ export interface ActiveRequest {
    * mounted client already rendered part of the stream before reconnecting.
    */
   lastTransportSeq: number;
+  /**
+   * Emitter segment that owns `lastTransportSeq`. A user request can resume on
+   * a new server emitter, where `stream_seq` lawfully starts at 1 again.
+   * Absent only for older servers that did not stamp a segment id.
+   */
+  transportStreamId?: string | null;
 
   /**
    * User-applied override for the rendered text. When non-null, this

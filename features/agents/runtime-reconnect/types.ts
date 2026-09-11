@@ -86,7 +86,8 @@ export interface ServerOperationState {
     | "prompt_visible"
     | "pending_tool"
     | "continuing"
-    | "needs_action";
+    | "needs_action"
+    | "live_replay_unavailable";
   startedAt: string | null;
   /** ISO timestamp of the status fetch that produced this record. */
   checkedAt: string;

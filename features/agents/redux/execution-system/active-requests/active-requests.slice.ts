@@ -317,6 +317,7 @@ const activeRequestsSlice = createSlice({
         status: "pending",
         chunkCount: 0,
         lastTransportSeq: 0,
+        transportStreamId: null,
         editedText: null,
         reasoningChunks: [],
         accumulatedReasoning: "",
@@ -424,10 +425,21 @@ const activeRequestsSlice = createSlice({
 
     recordTransportSeq(
       state,
-      action: PayloadAction<{ requestId: string; streamSeq: number }>,
+      action: PayloadAction<{
+        requestId: string;
+        streamSeq: number;
+        streamId?: string | null;
+      }>,
     ) {
       const request = state.byRequestId[action.payload.requestId];
-      if (request && action.payload.streamSeq > request.lastTransportSeq) {
+      if (!request) return;
+      const streamId = action.payload.streamId ?? null;
+      if (streamId && streamId !== request.transportStreamId) {
+        request.transportStreamId = streamId;
+        request.lastTransportSeq = action.payload.streamSeq;
+        return;
+      }
+      if (action.payload.streamSeq > request.lastTransportSeq) {
         request.lastTransportSeq = action.payload.streamSeq;
       }
     },
@@ -1370,6 +1382,7 @@ const activeRequestsSlice = createSlice({
           status,
           chunkCount: 0,
           lastTransportSeq: 0,
+          transportStreamId: null,
           editedText: null,
           reasoningChunks: [],
           accumulatedReasoning: "",

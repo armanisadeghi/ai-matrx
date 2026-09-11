@@ -96,6 +96,9 @@ export function ServerOperationBanner({
     message = "Finishing the agent’s pending tool action…";
   } else if (waiting) {
     message = "The agent paused without a visible question.";
+  } else if (operation.recoveryState === "live_replay_unavailable") {
+    message =
+      "The agent is still working. Live text could not be restored; its saved response will appear when it finishes.";
   }
 
   return (

@@ -32,6 +32,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "@/lib/toast";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { setRequestStatus } from "../redux/execution-system/active-requests/active-requests.slice";
 import { createRequest } from "../redux/execution-system/active-requests/active-requests.slice";
@@ -351,6 +352,16 @@ export const reconnectServerOperation = createAsyncThunk<
           "[runtime-reconnect] live response replay unavailable — following durable lifecycle instead.",
           { conversationId, executionId: op.execution_id },
         );
+        captureError({
+          source: "runtime-reconnect",
+          code: "live_replay_unavailable",
+          message:
+            "A running response could not replay its live NDJSON; following durable lifecycle until the saved result is available.",
+          requestId: op.request_id ?? undefined,
+          conversationId,
+          raw: { executionId: op.execution_id, source },
+        });
+        stampOperation(op.status, false, "live_replay_unavailable");
       }
     }
 

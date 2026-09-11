@@ -61,6 +61,7 @@ import {
   type MemoryObserverCompletedData,
   type MemoryReflectorCompletedData,
   type UntypedDataPayload,
+  type TypedStreamEvent,
 } from "@/types/python-generated/stream-events";
 import {
   appendChunk,
@@ -145,7 +146,10 @@ import { toast } from "@/lib/toast";
 import { isDirectiveApplyEvent } from "@/features/matrx-envelope/envelope";
 import { proposeDirective } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
 
-function readTransportSeq(event: unknown): number | null {
+function readTransportCursor(event: unknown): {
+  streamId: string | null;
+  streamSeq: number;
+} | null {
   if (
     typeof event !== "object" ||
     event === null ||
@@ -156,7 +160,15 @@ function readTransportSeq(event: unknown): number | null {
   ) {
     return null;
   }
-  return event.stream_seq;
+  return {
+    streamId:
+      "stream_id" in event &&
+      typeof event.stream_id === "string" &&
+      event.stream_id.length > 0
+        ? event.stream_id
+        : null,
+    streamSeq: event.stream_seq,
+  };
 }
 
 /**
@@ -610,14 +622,42 @@ export async function processStream({
 
   let lastTransportSeq =
     getState().activeRequests.byRequestId[requestId]?.lastTransportSeq ?? 0;
+  let transportStreamId =
+    getState().activeRequests.byRequestId[requestId]?.transportStreamId ?? null;
 
   try {
     for await (const event of events) {
-      const transportSeq = readTransportSeq(event);
-      if (transportSeq !== null) {
-        if (transportSeq <= lastTransportSeq) continue;
-        lastTransportSeq = transportSeq;
-        dispatch(recordTransportSeq({ requestId, streamSeq: transportSeq }));
+      const transportCursor = readTransportCursor(event);
+      if (transportCursor !== null) {
+        const segmentChanged =
+          transportCursor.streamId !== null &&
+          transportStreamId !== null &&
+          transportCursor.streamId !== transportStreamId;
+        if (segmentChanged) {
+          // New emitter segment: retain prior rendered content, but make the
+          // next client block begin after it and reset only this segment's
+          // cursor. This mirrors a fresh local resume request without blanking
+          // the retained viewer.
+          blockAccumulator.rewindToBlockCount(
+            getState().activeRequests.byRequestId[requestId]?.renderBlockOrder
+              .length ?? 0,
+          );
+          lastTransportSeq = 0;
+        }
+        if (transportCursor.streamId !== null) {
+          transportStreamId = transportCursor.streamId;
+        }
+        if (transportCursor.streamSeq <= lastTransportSeq) {
+          continue;
+        }
+        lastTransportSeq = transportCursor.streamSeq;
+        dispatch(
+          recordTransportSeq({
+            requestId,
+            streamSeq: transportCursor.streamSeq,
+            streamId: transportCursor.streamId,
+          }),
+        );
       }
       totalEvents++;
       const now = performance.now();
