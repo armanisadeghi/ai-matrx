@@ -185,15 +185,28 @@ export async function updateOrganization(
     if (updates.website !== undefined) updateData.website = updates.website;
     if (updates.settings !== undefined) updateData.settings = updates.settings;
 
-    const { data, error } = await supabase
+    // NOT `.single()`. Updating an organization is gated by the RLS policy
+    // `iam.organizations.org_update_policy`, and an RLS refusal is a ZERO-ROW
+    // no-op, not an error — `.single()` turned that into a raw PostgREST
+    // `PGRST116` string on the Save button. DD-048 fix 1, 2026-09-11.
+    const { data: rows, error } = await supabase
       .schema("iam")
       .from("organizations")
       .update(updateData)
       .eq("id", orgId)
-      .select()
-      .single();
+      .select();
 
     if (error) throw pgErrorToError(error);
+
+    if (!rows || rows.length === 0) {
+      return {
+        success: false,
+        error:
+          "Only this organization's owner and admins can change its settings. Ask one of them to make this change.",
+      };
+    }
+
+    const data = rows[0];
 
     return {
       success: true,
@@ -261,6 +274,17 @@ export async function deleteOrganization(
   } catch (error: unknown) {
     const err = pgErrorToError(error);
     console.error("Error deleting organization:", err);
+    // D307: a hard delete of an organization walks 655 foreign keys, 240 of
+    // them unindexed, and can exceed the statement timeout. The raw Postgres
+    // string is not a sentence, and the user needs to know the organization may
+    // yet be gone rather than that nothing happened.
+    if (/statement timeout|canceling statement/i.test(err.message ?? "")) {
+      return {
+        success: false,
+        error:
+          "Deleting this organization is taking longer than the database allows, so it was stopped part-way. Nothing was lost — reload the page to see whether it was removed, and tell us if it is still here.",
+      };
+    }
     return {
       success: false,
       error: err.message || "Failed to delete organization",
