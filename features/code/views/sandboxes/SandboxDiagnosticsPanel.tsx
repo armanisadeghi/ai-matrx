@@ -151,10 +151,12 @@ type LogSource = (typeof LOG_SOURCES)[number];
 export type SandboxDiagnosticsView = "all" | "status" | "filesystem" | "env";
 
 export interface SandboxDiagnosticsStatus {
-  overallOk: boolean;
+  overallOk: boolean | null;
   sandboxId: string;
   template: string | null;
   tier: string | null;
+  phase: "checking" | "ready" | "attention";
+  busy: boolean;
 }
 
 export interface SandboxDiagnosticsHandle {
@@ -336,21 +338,24 @@ export const SandboxDiagnosticsPanel = forwardRef<
   }, [onStatusChange]);
 
   useEffect(() => {
-    onStatusChangeRef.current?.(
-      diag
-        ? {
-            overallOk: diag.overall_ok,
-            sandboxId: diag.sandbox_id,
-            template: diag.sandbox.template,
-            tier: diag.sandbox.tier,
-          }
-        : null,
-    );
+    const knownSandboxId = diag?.sandbox_id ?? sandboxId;
+    onStatusChangeRef.current?.({
+      overallOk: diag?.overall_ok ?? null,
+      sandboxId: knownSandboxId,
+      template: diag?.sandbox.template ?? null,
+      tier: diag?.sandbox.tier ?? null,
+      phase: error ? "attention" : diag?.overall_ok ? "ready" : diag ? "attention" : "checking",
+      busy: loading || resetting,
+    });
   }, [
     diag?.overall_ok,
     diag?.sandbox.tier,
     diag?.sandbox.template,
     diag?.sandbox_id,
+    error,
+    loading,
+    resetting,
+    sandboxId,
   ]);
 
   const fetchLogs = useCallback(async () => {

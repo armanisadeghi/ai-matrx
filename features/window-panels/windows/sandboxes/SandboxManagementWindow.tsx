@@ -1,7 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Activity, CheckCircle2, RefreshCw, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  ExternalLink,
+  RefreshCw,
+  RotateCcw,
+} from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Badge } from "@/components/ui/badge";
@@ -35,21 +43,31 @@ export default function SandboxManagementWindow({
 
   if (!isOpen) return null;
 
+  const statusBadge =
+    status?.phase === "ready" ? (
+      <Badge
+        variant="outline"
+        className="shrink-0 gap-1 border-green-300 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-300"
+      >
+        <CheckCircle2 className="h-3 w-3" /> Ready
+      </Badge>
+    ) : status?.phase === "attention" ? (
+      <Badge
+        variant="outline"
+        className="shrink-0 gap-1 border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+      >
+        <AlertTriangle className="h-3 w-3" /> Needs attention
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="shrink-0 gap-1 text-muted-foreground">
+        <Activity className="h-3 w-3 animate-pulse" /> Checking
+      </Badge>
+    );
+
   const footer = (
     <div className="flex min-h-11 items-center justify-between gap-2 px-3 py-1.5">
       <div className="flex min-w-0 items-center gap-2">
-        {status?.overallOk ? (
-          <Badge
-            variant="outline"
-            className="shrink-0 gap-1 border-green-300 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-300"
-          >
-            <CheckCircle2 className="h-3 w-3" /> Ready
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="shrink-0 gap-1 text-muted-foreground">
-            <Activity className="h-3 w-3 animate-pulse" /> Checking
-          </Badge>
-        )}
+        {statusBadge}
         {status && (
           <span className="truncate text-xs text-muted-foreground">
             {status.template ?? "default"} · {status.tier}
@@ -57,10 +75,16 @@ export default function SandboxManagementWindow({
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
+        <Button asChild variant="ghost" size="icon" title="Open full sandbox management">
+          <Link href={`/sandbox/${encodeURIComponent(sandboxId)}`} aria-label="Open full sandbox management">
+            <ExternalLink className="h-4 w-4" />
+          </Link>
+        </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={() => diagnosticsRef.current?.requestRebuild()}
+          disabled={status?.busy}
           title="Replace the container with its configured template and resources. Your persistent home is kept unless you explicitly erase it."
         >
           <RotateCcw className="mr-1 h-3.5 w-3.5" /> Rebuild
@@ -69,6 +93,7 @@ export default function SandboxManagementWindow({
           variant="outline"
           size="sm"
           onClick={() => diagnosticsRef.current?.refresh()}
+          disabled={status?.busy}
         >
           <RefreshCw className="mr-1 h-3.5 w-3.5" /> Refresh
         </Button>
