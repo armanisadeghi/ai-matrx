@@ -16,6 +16,11 @@ import type { SandboxInstance } from "@/types/sandbox";
  */
 export type EditorMode = "sandbox" | "cloud" | "mock";
 
+/** The Explorer's sandbox-specific lower split is available only with an
+ * active sandbox. It begins as a compact rail rather than consuming editor
+ * space before the user asks for its detail. */
+export type ExplorerSandboxMode = "hidden" | "collapsed" | "open";
+
 export interface CodeWorkspaceState {
   /** Reconnect live sessions after a container replacement without reloading editor buffers. */
   sandboxRuntimeRevisions: Record<string, number>;
@@ -47,6 +52,8 @@ export interface CodeWorkspaceState {
    *  `rootPath`. Set by the breadcrumb "navigate into / up" controls and by
    *  direct path input. */
   explorerRootOverride: string | null;
+  /** Visibility of the Explorer's active-sandbox lower split. */
+  explorerSandboxMode: ExplorerSandboxMode;
   /**
    * Mirror of the active filesystem adapter. The adapter itself is held in
    * React context (`CodeWorkspaceProvider`) because it isn't serializable,
@@ -95,6 +102,7 @@ const initialState: CodeWorkspaceState = {
   activeSandbox: null,
   activeSandboxProxyUrl: null,
   explorerRootOverride: null,
+  explorerSandboxMode: "collapsed",
   activeFilesystemId: null,
   activeFilesystemLabel: null,
   activeFilesystemRoot: null,
@@ -202,6 +210,9 @@ const slice = createSlice({
     setExplorerRootOverride(state, action: PayloadAction<string | null>) {
       state.explorerRootOverride = action.payload;
     },
+    setExplorerSandboxMode(state, action: PayloadAction<ExplorerSandboxMode>) {
+      state.explorerSandboxMode = action.payload;
+    },
     /**
      * Mirror the active filesystem adapter into Redux. Called by
      * `CodeWorkspaceProvider` whenever `setFilesystem` runs so selectors
@@ -244,6 +255,7 @@ export const {
   setActiveSandbox,
   setActiveSandboxProxyUrl,
   setExplorerRootOverride,
+  setExplorerSandboxMode,
   setActiveFilesystem,
   bumpFreshSession,
 } = slice.actions;
@@ -273,6 +285,8 @@ export const selectActiveSandboxProxyUrl = (state: WithCodeWorkspace) =>
   selectCodeWorkspace(state).activeSandboxProxyUrl;
 export const selectExplorerRootOverride = (state: WithCodeWorkspace) =>
   selectCodeWorkspace(state).explorerRootOverride;
+export const selectExplorerSandboxMode = (state: WithCodeWorkspace) =>
+  selectCodeWorkspace(state).explorerSandboxMode;
 export const selectEditorMode = (state: WithCodeWorkspace): EditorMode =>
   selectCodeWorkspace(state).editorMode;
 export const selectActiveFilesystemId = (state: WithCodeWorkspace) =>

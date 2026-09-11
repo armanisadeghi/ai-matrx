@@ -1,4 +1,5 @@
 import type { ActivityViewId, BottomTabId } from "./types";
+import type { ExplorerSandboxMode } from "./redux/codeWorkspaceSlice";
 
 /** Query keys owned by the `/code` workspace. Existing entity links keep
  * `open` and `folder`; chat keeps `agentId` and `conversationId`. */
@@ -12,6 +13,7 @@ export const CODE_WORKSPACE_URL_KEYS = {
   history: "history",
   bottom: "bottom",
   bottomTab: "bottomTab",
+  sandboxPane: "sandboxPane",
 } as const;
 
 const ACTIVITY_VIEWS = new Set<ActivityViewId>([
@@ -37,6 +39,12 @@ const BOTTOM_TABS = new Set<BottomTabId>([
   "sandbox-ssh",
 ]);
 
+const EXPLORER_SANDBOX_MODES = new Set<ExplorerSandboxMode>([
+  "hidden",
+  "collapsed",
+  "open",
+]);
+
 export interface CodeWorkspaceUrlState {
   sandboxId: string | null;
   filePath: string | null;
@@ -47,6 +55,9 @@ export interface CodeWorkspaceUrlState {
   farRightOpen: boolean | null;
   bottomOpen: boolean | null;
   bottomTab: BottomTabId | null;
+  /** The active sandbox's Explorer lower split. Null leaves a deep link at
+   * its compact default. */
+  explorerSandboxMode: ExplorerSandboxMode | null;
 }
 
 export const EMPTY_CODE_WORKSPACE_URL_STATE: CodeWorkspaceUrlState = {
@@ -59,6 +70,7 @@ export const EMPTY_CODE_WORKSPACE_URL_STATE: CodeWorkspaceUrlState = {
   farRightOpen: null,
   bottomOpen: null,
   bottomTab: null,
+  explorerSandboxMode: null,
 };
 
 function readBoolean(params: URLSearchParams, key: string): boolean | null {
@@ -83,6 +95,7 @@ export function parseCodeWorkspaceUrlState(
 ): CodeWorkspaceUrlState {
   const view = params.get(CODE_WORKSPACE_URL_KEYS.view);
   const bottomTab = params.get(CODE_WORKSPACE_URL_KEYS.bottomTab);
+  const sandboxPane = params.get(CODE_WORKSPACE_URL_KEYS.sandboxPane);
   return {
     sandboxId: params.get(CODE_WORKSPACE_URL_KEYS.sandbox),
     filePath: readAbsolutePath(params, CODE_WORKSPACE_URL_KEYS.file),
@@ -97,7 +110,18 @@ export function parseCodeWorkspaceUrlState(
     bottomTab: bottomTab && BOTTOM_TABS.has(bottomTab as BottomTabId)
       ? (bottomTab as BottomTabId)
       : null,
+    explorerSandboxMode:
+      sandboxPane && EXPLORER_SANDBOX_MODES.has(sandboxPane as ExplorerSandboxMode)
+        ? (sandboxPane as ExplorerSandboxMode)
+        : null,
   };
+}
+
+/** A bare sandbox link starts in the compact lower-split rail. */
+export function resolveCodeWorkspaceExplorerSandboxMode(
+  state: CodeWorkspaceUrlState,
+): ExplorerSandboxMode {
+  return state.explorerSandboxMode ?? "collapsed";
 }
 
 /** `/code?sandbox=` is a filesystem workspace, so its useful default is the
@@ -133,5 +157,6 @@ export function withCodeWorkspaceUrlState(
   set(CODE_WORKSPACE_URL_KEYS.history, state.farRightOpen === null ? null : state.farRightOpen ? "1" : "0");
   set(CODE_WORKSPACE_URL_KEYS.bottom, state.bottomOpen === null ? null : state.bottomOpen ? "1" : "0");
   set(CODE_WORKSPACE_URL_KEYS.bottomTab, state.bottomTab);
+  set(CODE_WORKSPACE_URL_KEYS.sandboxPane, state.explorerSandboxMode);
   return params;
 }

@@ -1,16 +1,20 @@
 import {
   EMPTY_CODE_WORKSPACE_URL_STATE,
   parseCodeWorkspaceUrlState,
+  resolveCodeWorkspaceExplorerSandboxMode,
   resolveCodeWorkspaceUrlView,
   withCodeWorkspaceUrlState,
 } from "../url-state";
+import codeWorkspaceReducer, {
+  setExplorerSandboxMode,
+} from "../redux/codeWorkspaceSlice";
 
 describe("code workspace URL state", () => {
   it("parses the complete supported route state and rejects malformed values", () => {
     expect(
       parseCodeWorkspaceUrlState(
         new URLSearchParams(
-          "sandbox=s1&file=%2Fhome%2Fagent%2Fsrc%2Fapp.ts&root=%2Fhome%2Fagent&view=explorer&side=0&chat=1&history=0&bottom=1&bottomTab=ports",
+          "sandbox=s1&file=%2Fhome%2Fagent%2Fsrc%2Fapp.ts&root=%2Fhome%2Fagent&view=explorer&side=0&chat=1&history=0&bottom=1&bottomTab=ports&sandboxPane=open",
         ),
       ),
     ).toEqual({
@@ -23,6 +27,7 @@ describe("code workspace URL state", () => {
       farRightOpen: false,
       bottomOpen: true,
       bottomTab: "ports",
+      explorerSandboxMode: "open",
     });
 
     expect(
@@ -45,11 +50,12 @@ describe("code workspace URL state", () => {
         farRightOpen: false,
         bottomOpen: true,
         bottomTab: "terminal",
+        explorerSandboxMode: "hidden",
       },
     );
 
     expect(result.toString()).toBe(
-      "open=file-1&folder=folder-1&agentId=a&conversationId=c&view=explorer&sandbox=sandbox-1&file=%2Fworkspace%2Findex.ts&side=1&chat=0&history=0&bottom=1&bottomTab=terminal",
+      "open=file-1&folder=folder-1&agentId=a&conversationId=c&view=explorer&sandbox=sandbox-1&file=%2Fworkspace%2Findex.ts&side=1&chat=0&history=0&bottom=1&bottomTab=terminal&sandboxPane=hidden",
     );
   });
 
@@ -69,5 +75,31 @@ describe("code workspace URL state", () => {
       parseCodeWorkspaceUrlState(new URLSearchParams("sandbox=s1&view=run")),
       new URLSearchParams("sandbox=s1&view=run"),
     )).toBe("run");
+  });
+
+  it("round-trips an active sandbox pane mode and defaults bare sandbox links to collapsed", () => {
+    const restored = parseCodeWorkspaceUrlState(
+      new URLSearchParams("sandbox=s1&sandboxPane=open"),
+    );
+    expect(restored.explorerSandboxMode).toBe("open");
+    expect(
+      withCodeWorkspaceUrlState(new URLSearchParams("agentId=a"), restored).toString(),
+    ).toBe("agentId=a&sandbox=s1&sandboxPane=open");
+
+    const bareSandbox = parseCodeWorkspaceUrlState(new URLSearchParams("sandbox=s1"));
+    expect(resolveCodeWorkspaceExplorerSandboxMode(bareSandbox)).toBe("collapsed");
+    expect(
+      parseCodeWorkspaceUrlState(new URLSearchParams("sandboxPane=wide"))
+        .explorerSandboxMode,
+    ).toBeNull();
+  });
+
+  it("keeps the sandbox split state in the workspace contract", () => {
+    const initial = codeWorkspaceReducer(undefined, { type: "test" });
+    expect(initial.explorerSandboxMode).toBe("collapsed");
+    expect(
+      codeWorkspaceReducer(initial, setExplorerSandboxMode("hidden"))
+        .explorerSandboxMode,
+    ).toBe("hidden");
   });
 });

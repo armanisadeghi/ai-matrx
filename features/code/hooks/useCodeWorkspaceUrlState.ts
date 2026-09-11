@@ -14,10 +14,12 @@ import {
   selectActiveSandboxId,
   selectActiveView,
   selectExplorerRootOverride,
+  selectExplorerSandboxMode,
   selectFarRightOpen,
   selectRightOpen,
   selectSideOpen,
   setExplorerRootOverride,
+  setExplorerSandboxMode,
   setFarRightOpen,
   setRightOpen,
   setSideOpen,
@@ -35,6 +37,7 @@ import { useSandboxWorkspaceConnection } from "../views/sandboxes/useSandboxWork
 import {
   parseCodeWorkspaceUrlState,
   resolveCodeWorkspaceUrlView,
+  resolveCodeWorkspaceExplorerSandboxMode,
   withCodeWorkspaceUrlState,
   type CodeWorkspaceUrlState,
 } from "../url-state";
@@ -54,6 +57,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   const activeFilesystemId = useAppSelector(selectActiveFilesystemId);
   const activeView = useAppSelector(selectActiveView);
   const explorerRootOverride = useAppSelector(selectExplorerRootOverride);
+  const explorerSandboxMode = useAppSelector(selectExplorerSandboxMode);
   const sideOpen = useAppSelector(selectSideOpen);
   const rightOpen = useAppSelector(selectRightOpen);
   const farRightOpen = useAppSelector(selectFarRightOpen);
@@ -92,6 +96,13 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     (state: CodeWorkspaceUrlState, params: URLSearchParams) => {
       const view = resolveCodeWorkspaceUrlView(state, params);
       if (view) dispatch(revealView(view));
+      if (state.sandboxId) {
+        dispatch(
+          setExplorerSandboxMode(
+            resolveCodeWorkspaceExplorerSandboxMode(state),
+          ),
+        );
+      }
       if (state.sideOpen !== null) dispatch(setSideOpen(state.sideOpen));
       if (state.rightOpen !== null) dispatch(setRightOpen(state.rightOpen));
       if (state.farRightOpen !== null) dispatch(setFarRightOpen(state.farRightOpen));
@@ -258,6 +269,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
       farRightOpen,
       bottomOpen,
       bottomTab,
+      explorerSandboxMode: activeSandboxId ? explorerSandboxMode : null,
     });
     const nextSearch = next.toString();
     if (nextSearch === currentSearch) {
@@ -284,6 +296,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     bottomOpen,
     bottomTab,
     explorerRootOverride,
+    explorerSandboxMode,
     farRightOpen,
     filesystem.id,
     filesystem.rootPath,
