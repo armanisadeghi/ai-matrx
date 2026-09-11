@@ -18,11 +18,6 @@ export const VOICE_PROVIDER_CONFIGURATION_VERIFIED_ACTION =
   "voice.recording.provider_configuration.verified";
 export const VOICE_PROVIDER_CONFIGURATION_INVALIDATED_ACTION =
   "voice.recording.provider_configuration.invalidated";
-export const VOICE_PROVIDER_EMAIL_VERIFICATION_MAX_AGE_MS =
-  24 * 60 * 60 * 1000;
-export const VOICE_PROVIDER_CONFIGURATION_MAX_AGE_MS =
-  30 * 24 * 60 * 60 * 1000;
-
 const VOICE_PROVIDER_CONFIGURATION_ENTITY_TYPE =
   "voice_recording_provider_configuration";
 const VOICE_PROVIDER_CONFIGURATION_EVIDENCE_VERSION = 1;
@@ -53,22 +48,15 @@ type ActivityRow = Pick<
 >;
 
 export type VoiceProviderConfigurationStatus =
-  | "ready"
-  | "missing"
-  | "invalidated"
-  | "invalid"
-  | "email_verification_stale"
-  | "configuration_stale";
+  "ready" | "missing" | "invalidated" | "invalid";
 
 export interface VoiceProviderConfigurationReadiness {
   ready: boolean;
   status: VoiceProviderConfigurationStatus;
   evidenceId: number | null;
   verifiedAt: string | null;
-  emailVerificationCurrent: boolean;
+  providerAccountVerified: boolean;
   externalStorageConfigured: boolean;
-  emailVerificationValidUntil: string | null;
-  configurationValidUntil: string | null;
 }
 
 function unavailable(
@@ -81,10 +69,8 @@ function unavailable(
     status,
     evidenceId: row?.id ?? null,
     verifiedAt,
-    emailVerificationCurrent: false,
+    providerAccountVerified: false,
     externalStorageConfigured: false,
-    emailVerificationValidUntil: null,
-    configurationValidUntil: null,
   };
 }
 
@@ -98,7 +84,9 @@ function unavailable(
  * the process timezone. Same correction the whole fleet inherited on
  * 2026-09-07.
  */
-function receiptInstant(value: unknown): { iso: string; milliseconds: number } | null {
+function receiptInstant(
+  value: unknown,
+): { iso: string; milliseconds: number } | null {
   if (typeof value !== "string") return null;
   const parsed = parseTimestamp(value);
   if (!parsed) return null;
@@ -118,7 +106,8 @@ export function evaluateVoiceProviderConfigurationReceipt(
   if (
     row.organization_id !==
       OWNER_BETA_VOICE_PROVIDER_CONFIGURATION_POLICY.organizationId ||
-    row.actor_id !== OWNER_BETA_VOICE_PROVIDER_CONFIGURATION_POLICY.operatorId ||
+    row.actor_id !==
+      OWNER_BETA_VOICE_PROVIDER_CONFIGURATION_POLICY.operatorId ||
     row.entity_type !== VOICE_PROVIDER_CONFIGURATION_ENTITY_TYPE ||
     !isJsonObject(row.metadata)
   ) {
@@ -160,12 +149,12 @@ export function evaluateVoiceProviderConfigurationReceipt(
     emailVerifiedAt !== null &&
     configurationVerifiedAt !== null &&
     configurationVerifiedAt.milliseconds >= emailVerifiedAt.milliseconds;
-  if (!factsMatch || emailVerifiedAt === null || configurationVerifiedAt === null) {
-    return unavailable(
-      "invalid",
-      row,
-      configurationVerifiedAt?.iso ?? null,
-    );
+  if (
+    !factsMatch ||
+    emailVerifiedAt === null ||
+    configurationVerifiedAt === null
+  ) {
+    return unavailable("invalid", row, configurationVerifiedAt?.iso ?? null);
   }
 
   const nowMs = now.getTime();
@@ -176,47 +165,13 @@ export function evaluateVoiceProviderConfigurationReceipt(
     return unavailable("invalid", row, configurationVerifiedAt.iso);
   }
 
-  const emailVerificationValidUntil = new Date(
-    emailVerifiedAt.milliseconds + VOICE_PROVIDER_EMAIL_VERIFICATION_MAX_AGE_MS,
-  ).toISOString();
-  const configurationValidUntil = new Date(
-    configurationVerifiedAt.milliseconds +
-      VOICE_PROVIDER_CONFIGURATION_MAX_AGE_MS,
-  ).toISOString();
-  const externalStorageConfigured =
-    nowMs - configurationVerifiedAt.milliseconds <=
-    VOICE_PROVIDER_CONFIGURATION_MAX_AGE_MS;
-  const emailVerificationCurrent =
-    nowMs - emailVerifiedAt.milliseconds <=
-    VOICE_PROVIDER_EMAIL_VERIFICATION_MAX_AGE_MS;
-
-  if (!externalStorageConfigured) {
-    return {
-      ...unavailable("configuration_stale", row, configurationVerifiedAt.iso),
-      configurationValidUntil,
-    };
-  }
-  if (!emailVerificationCurrent) {
-    return {
-      ready: false,
-      status: "email_verification_stale",
-      evidenceId: row.id,
-      verifiedAt: configurationVerifiedAt.iso,
-      emailVerificationCurrent: false,
-      externalStorageConfigured: true,
-      emailVerificationValidUntil,
-      configurationValidUntil,
-    };
-  }
   return {
     ready: true,
     status: "ready",
     evidenceId: row.id,
     verifiedAt: configurationVerifiedAt.iso,
-    emailVerificationCurrent: true,
+    providerAccountVerified: true,
     externalStorageConfigured: true,
-    emailVerificationValidUntil,
-    configurationValidUntil,
   };
 }
 

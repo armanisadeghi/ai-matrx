@@ -57,7 +57,7 @@ long-lived media and agent execution stay in aidream.
   return non-success. Provider media URLs are retained only in evidence, never in
   `crm.interaction.recording_url` or as playback identity.
 - The accepted owner-beta TwiML emits Twilio `<Start><Recording>` only after the v2 disclosure,
-  exact affirmative input, durable consent claim, and a fresh runtime pass of every recording
+  exact affirmative input, durable consent claim, and a runtime pass of every recording
   gate. Capture is dual-channel/both-track, begins after consent, and posts `in-progress`,
   `completed`, and `absent` events to the existing signed recording callback. Any missing or
   unavailable readiness evidence returns explicit non-recording TwiML.
@@ -67,20 +67,22 @@ long-lived media and agent execution stay in aidream.
   The route consumes this option only after aidream independently revalidates the exact Twilio
   signature/routing, resolves `voice.owner_beta` for the canonical actor and organization, creates
   the durable chat conversation, and idempotently issues the short-lived reference. Preparation
-  failure preserves recording but omits the connection; absent recording readiness refuses both
+  failure is persisted as a structured `ops.system_error`, preserves recording, and omits the connection; absent recording readiness refuses both
   because the disclosed owner-beta program promised capture after consent.
 - `storage-canary-readiness.ts` reads the latest owner-program pass/fail receipt from the existing
   `platform.activity_log` ledger and validates the exact bucket, prefix, writer ARN, retention
-  policy, deny checks, application HEAD/read/hash, canonical index/access/delete receipts, and a
-  24-hour freshness window. A fresh exact pass derives the four storage/custody gates; a missing,
-  failed, malformed, future-dated, or stale receipt fails closed. Visibility exposes only event
-  identity and expiry—not credential fingerprints, object paths, storage URIs, or secrets.
+  policy, deny checks, application HEAD/read/hash, and canonical index/access/delete receipts. An
+  exact pass remains the configuration/custody proof until an explicit failed or invalidated receipt;
+  it is not misrepresented as a 24-hour runtime-health probe. A missing, failed, malformed, or
+  future-dated receipt fails closed. Visibility exposes only event identity—not credential
+  fingerprints, object paths, storage URIs, or secrets.
 - `provider-configuration-readiness.ts` reads the latest operator verification or invalidation from
   that same activity ledger. It validates the exact AI Matrx organization/operator, Twilio
   account fingerprint and region, external-storage credential fingerprint and S3 target, confirms capture is
-  still off, and independently expires email verification after 24 hours and the reviewed
-  external configuration after 30 days. The Voice response exposes only readiness, receipt id,
-  and validity times—never provider, credential, account, or storage identifiers. This evidence
+  still off. Account email verification is a completed administrative setup fact, not a 24-hour
+  recording gate; only an explicit invalidation or mismatched receipt closes the gate. The Voice
+  response exposes only readiness and receipt id—never provider, credential, account, or storage
+  identifiers. This evidence
   supplies only the provider-email and external-configuration gates; recording disclosure and
   affirmative consent remain a separate false gate until the recording flow itself is exercised.
 
@@ -94,9 +96,9 @@ readiness from the durable canary receipt; it still reports recording disabled r
 receipt because provider verification, external configuration, and disclosure proof are separate
 gates.
 
-The main Voice GET also derives provider email-verification and external-storage readiness from an
-exact durable operator receipt instead of hard-coded booleans. Missing, invalidated, malformed,
-future-dated, or stale evidence fails closed. It keeps the disclosure-proof gate false until an
+The main Voice GET also derives provider-account-verification and external-storage readiness from an
+exact durable operator receipt instead of hard-coded booleans. Missing, invalidated, malformed, or
+future-dated evidence fails closed. It keeps the disclosure-proof gate false until an
 actual v2 consented recording proves the complete live path; the POST route independently requires
 that exact disclosure and durable consent before it can emit capture TwiML.
 
@@ -113,6 +115,10 @@ content, phone, provider URL, session reference, signature, or credential is ret
   capture, external S3 storage, canonical file adoption, CRM binding, and owner-authorized WAV
   playback. Corrected the recording-file FK to `ON DELETE SET NULL` so governed retention can
   delete media without deleting the call or bypassing Matrx Files.
+
+- **2026-09-11** — Kept exact provider and custody receipts as fail-closed configuration evidence,
+  while removing invented 24-hour expiry gates. ConversationRelay preparation failures now create
+  a secret-free structured error rather than silently dropping the connection.
 
 - **2026-08-17** — Completed the first-call handoff: the signed webhook forwards exact signed form
   material through the typed backend client, aidream independently revalidates and prepares the

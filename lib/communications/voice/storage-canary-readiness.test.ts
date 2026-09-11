@@ -62,7 +62,7 @@ function passedReceipt(): ActivityRow {
 }
 
 describe("Voice storage canary readiness", () => {
-  test("accepts only a fresh exact passed receipt", () => {
+  test("accepts an exact passed receipt without inventing a runtime health expiry", () => {
     expect(
       evaluateVoiceStorageCanaryReceipt(
         passedReceipt(),
@@ -73,17 +73,16 @@ describe("Voice storage canary readiness", () => {
       status: "ready",
       evidenceId: 123,
       completedAt: COMPLETED_AT,
-      validUntil: "2026-08-17T20:00:00.000Z",
     });
   });
 
-  test("expires an otherwise valid receipt after 24 hours", () => {
+  test("keeps an exact passed receipt ready after 24 hours", () => {
     expect(
       evaluateVoiceStorageCanaryReceipt(
         passedReceipt(),
         new Date("2026-08-17T20:00:00.001Z"),
       ),
-    ).toMatchObject({ ready: false, status: "stale", evidenceId: 123 });
+    ).toMatchObject({ ready: true, status: "ready", evidenceId: 123 });
   });
 
   test("a latest failed outcome closes the storage gates", () => {

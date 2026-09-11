@@ -14,10 +14,10 @@ const GATE_DEFINITIONS = [
       "The exact recording disclosure and affirmative continuation behavior have not been verified.",
   },
   {
-    key: "provider_email_verification_current",
+    key: "provider_account_verified",
     label: "Provider verification",
     blockedReason:
-      "Twilio requires fresh account email verification before recording settings can be reviewed or changed.",
+      "An exact reviewed receipt has not confirmed the Twilio account that owns the recording configuration.",
   },
   {
     key: "dedicated_storage_identity_ready",

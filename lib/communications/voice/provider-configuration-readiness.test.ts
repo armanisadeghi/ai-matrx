@@ -57,7 +57,7 @@ function verifiedReceipt(): ActivityRow {
 }
 
 describe("Voice provider-configuration readiness", () => {
-  test("accepts a fresh exact operator verification", () => {
+  test("accepts an exact operator verification without inventing a recency requirement", () => {
     expect(
       evaluateVoiceProviderConfigurationReceipt(
         verifiedReceipt(),
@@ -68,38 +68,21 @@ describe("Voice provider-configuration readiness", () => {
       status: "ready",
       evidenceId: 124,
       verifiedAt: CONFIGURATION_VERIFIED_AT,
-      emailVerificationCurrent: true,
+      providerAccountVerified: true,
       externalStorageConfigured: true,
-      emailVerificationValidUntil: "2026-08-18T22:50:00.000Z",
-      configurationValidUntil: "2026-09-16T23:00:00.000Z",
     });
   });
 
-  test("keeps configured storage visible when only email verification expires", () => {
+  test("keeps exact provider evidence ready after an administrative email verification is old", () => {
     expect(
       evaluateVoiceProviderConfigurationReceipt(
         verifiedReceipt(),
         new Date("2026-08-19T00:00:00.000Z"),
       ),
     ).toMatchObject({
-      ready: false,
-      status: "email_verification_stale",
-      emailVerificationCurrent: false,
-      externalStorageConfigured: true,
-    });
-  });
-
-  test("expires provider configuration after thirty days", () => {
-    expect(
-      evaluateVoiceProviderConfigurationReceipt(
-        verifiedReceipt(),
-        new Date("2026-09-16T23:00:00.001Z"),
-      ),
-    ).toMatchObject({
-      ready: false,
-      status: "configuration_stale",
-      emailVerificationCurrent: false,
-      externalStorageConfigured: false,
+      ready: true,
+      status: "ready",
+      providerAccountVerified: true,
     });
   });
 
@@ -111,7 +94,7 @@ describe("Voice provider-configuration readiness", () => {
       ready: false,
       status: "invalidated",
       evidenceId: 124,
-      emailVerificationCurrent: false,
+      providerAccountVerified: false,
       externalStorageConfigured: false,
     });
   });
@@ -131,7 +114,12 @@ describe("Voice provider-configuration readiness", () => {
       "storage_credential_fingerprint",
       "b".repeat(64),
     ],
-    ["wrong storage target", "metadata", "external_storage_url", "https://example.com"],
+    [
+      "wrong storage target",
+      "metadata",
+      "external_storage_url",
+      "https://example.com",
+    ],
     ["email not completed", "metadata", "email_verification_completed", false],
     ["external storage off", "metadata", "external_storage_enabled", false],
     ["recording already on", "metadata", "recording_capture_enabled", true],

@@ -39,6 +39,7 @@ import { evaluateConversationRelayReadiness } from "@/lib/communications/voice/c
 import {
   CONVERSATION_RELAY_PUBLIC_URL,
   prepareConversationRelaySession,
+  recordConversationRelayPreparationFailure,
 } from "@/lib/communications/voice/conversation-relay-preparation";
 import {
   getVoiceProviderConfigurationReadiness,
@@ -275,8 +276,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     recordingReadiness = evaluateVoiceRecordingReadiness({
       owner_only_program_bound: true,
       disclosure_and_consent_verified: true,
-      provider_email_verification_current:
-        providerConfiguration.emailVerificationCurrent,
+      provider_account_verified: providerConfiguration.providerAccountVerified,
       dedicated_storage_identity_ready: storageCanary.ready,
       external_storage_configured:
         providerConfiguration.externalStorageConfigured,
@@ -301,8 +301,21 @@ export async function POST(request: Request): Promise<NextResponse> {
           parameters: validation.params,
         });
         sessionReference = prepared.session_reference;
-      } catch {
+      } catch (error) {
         sessionReference = null;
+        try {
+          await recordConversationRelayPreparationFailure(error);
+        } catch (captureError) {
+          console.error(
+            "Twilio Voice relay preparation failure was not captured",
+            {
+              error:
+                captureError instanceof Error
+                  ? captureError.message
+                  : "Unknown capture error",
+            },
+          );
+        }
       }
     }
   }
@@ -312,22 +325,22 @@ export async function POST(request: Request): Promise<NextResponse> {
     ...consentEvidence,
     recordingStarted,
     conversationRelayConnected,
-    recordingBlockedGateKeys:
-      recordingReadiness?.gates
-        .filter((gate) => !gate.passed)
-        .map((gate) => gate.key) ?? ["readiness_unavailable"],
+    recordingBlockedGateKeys: recordingReadiness?.gates
+      .filter((gate) => !gate.passed)
+      .map((gate) => gate.key) ?? ["readiness_unavailable"],
   });
   return twimlResponse(
     buildOwnerBetaConsentAcceptedTwiml({
       recording: recordingStarted
         ? { recordingStatusCallbackUrl: RECORDING_STATUS_CALLBACK_URL }
         : null,
-      conversationRelay: sessionReference !== null
-        ? {
-            url: CONVERSATION_RELAY_PUBLIC_URL,
-            sessionReference,
-          }
-        : null,
+      conversationRelay:
+        sessionReference !== null
+          ? {
+              url: CONVERSATION_RELAY_PUBLIC_URL,
+              sessionReference,
+            }
+          : null,
     }),
   );
 }
@@ -376,10 +389,8 @@ export async function GET(): Promise<NextResponse> {
     status: "missing",
     evidenceId: null,
     verifiedAt: null,
-    emailVerificationCurrent: false,
+    providerAccountVerified: false,
     externalStorageConfigured: false,
-    emailVerificationValidUntil: null,
-    configurationValidUntil: null,
   };
   try {
     providerConfiguration = await getVoiceProviderConfigurationReadiness();
@@ -389,10 +400,8 @@ export async function GET(): Promise<NextResponse> {
       status: "missing",
       evidenceId: null,
       verifiedAt: null,
-      emailVerificationCurrent: false,
+      providerAccountVerified: false,
       externalStorageConfigured: false,
-      emailVerificationValidUntil: null,
-      configurationValidUntil: null,
     };
   }
   let storageCanary: VoiceStorageCanaryReadiness = {
@@ -400,7 +409,6 @@ export async function GET(): Promise<NextResponse> {
     status: "missing",
     evidenceId: null,
     completedAt: null,
-    validUntil: null,
   };
   try {
     storageCanary = await getVoiceStorageCanaryReadiness();
@@ -410,14 +418,12 @@ export async function GET(): Promise<NextResponse> {
       status: "missing",
       evidenceId: null,
       completedAt: null,
-      validUntil: null,
     };
   }
   const recordingReadiness = evaluateVoiceRecordingReadiness({
     owner_only_program_bound: ownerBeta.ready,
     disclosure_and_consent_verified: false,
-    provider_email_verification_current:
-      providerConfiguration.emailVerificationCurrent,
+    provider_account_verified: providerConfiguration.providerAccountVerified,
     dedicated_storage_identity_ready: storageCanary.ready,
     external_storage_configured:
       providerConfiguration.externalStorageConfigured,

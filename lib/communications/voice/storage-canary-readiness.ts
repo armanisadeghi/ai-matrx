@@ -17,8 +17,6 @@ export const VOICE_STORAGE_CANARY_PASSED_ACTION =
   "voice.recording.storage_canary.passed";
 export const VOICE_STORAGE_CANARY_FAILED_ACTION =
   "voice.recording.storage_canary.failed";
-export const VOICE_STORAGE_CANARY_MAX_AGE_MS = 24 * 60 * 60 * 1000;
-
 const VOICE_STORAGE_CANARY_ENTITY_TYPE = "voice_recording_storage_canary";
 const VOICE_STORAGE_CANARY_EVIDENCE_VERSION = 1;
 const VOICE_RECORDING_RETENTION_POLICY = "voice_recordings_30d";
@@ -43,14 +41,13 @@ type ActivityRow = Pick<
 >;
 
 export type VoiceStorageCanaryStatus =
-  "ready" | "missing" | "failed" | "invalid" | "stale";
+  "ready" | "missing" | "failed" | "invalid";
 
 export interface VoiceStorageCanaryReadiness {
   ready: boolean;
   status: VoiceStorageCanaryStatus;
   evidenceId: number | null;
   completedAt: string | null;
-  validUntil: string | null;
 }
 
 function unavailable(
@@ -63,7 +60,6 @@ function unavailable(
     status,
     evidenceId: row?.id ?? null,
     completedAt,
-    validUntil: null,
   };
 }
 
@@ -135,21 +131,14 @@ export function evaluateVoiceStorageCanaryReceipt(
     Number.isFinite(completedAtMs);
   if (!factsMatch) return unavailable("invalid", row, completedAt);
 
-  const ageMs = now.getTime() - completedAtMs;
-  if (ageMs < -5 * 60 * 1000) {
+  if (now.getTime() - completedAtMs < -5 * 60 * 1000) {
     return unavailable("invalid", row, completedAt);
-  }
-  if (ageMs > VOICE_STORAGE_CANARY_MAX_AGE_MS) {
-    return unavailable("stale", row, completedAt);
   }
   return {
     ready: true,
     status: "ready",
     evidenceId: row.id,
     completedAt,
-    validUntil: new Date(
-      completedAtMs + VOICE_STORAGE_CANARY_MAX_AGE_MS,
-    ).toISOString(),
   };
 }
 
