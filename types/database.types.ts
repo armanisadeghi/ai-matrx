@@ -19605,6 +19605,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _assert_scope_readable: {
+        Args: { p_level?: string; p_scope_id: string }
+        Returns: undefined
+      }
+      _scope_readable: {
+        Args: { p_level?: string; p_scope_id: string }
+        Returns: boolean
+      }
+      _scope_readable_for: {
+        Args: { p_level?: string; p_scope_id: string; p_user_id: string }
+        Returns: boolean
+      }
       index_reference_value: {
         Args: {
           p_item_id: string
@@ -64025,6 +64037,15 @@ export type Database = {
               type: string
             }[]
           }
+      __scope_access_membrane_conformance: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: Json
+          ok: boolean
+          severity: string
+        }[]
+      }
       __soft_delete_cascade_conformance: {
         Args: never
         Returns: {
