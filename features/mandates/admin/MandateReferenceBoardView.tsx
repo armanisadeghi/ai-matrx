@@ -29,7 +29,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import {
   fetchMandateReferenceBoard,
   formatRepoList,
@@ -171,17 +174,31 @@ export function MandateReferenceBoardView() {
   // the id is the honest fix; the screen says it is waiting rather than
   // reporting a failure that is really a timing artefact.
   const organizationId = useAppSelector(selectOrganizationId);
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the same class MandatesConsole and
+  // useMandateInputSurface already fixed. `loading` starts `true`, so a bare
+  // early return on a missing organization left "Waiting for your organization
+  // to load" spinning FOREVER on a session that has none, with no remedy.
+  // Before the bootstrap resolves, waiting is the truth. Once it HAS resolved
+  // and there is still no organization, that is a settled fact: stop loading
+  // and say what fixes it.
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const [board, setBoard] = useState<MandateReferenceBoard | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [reading, setReading] = useState(true);
   const [reloads, setReloads] = useState(0);
+  // Derived at render, never set in the effect (react-hooks/set-state-in-effect).
+  const noOrganization =
+    !organizationId && orgBootstrapResolved
+      ? "No organization is selected, so the reference board cannot read anything — choose one from the organization picker in the header and this fills in."
+      : null;
+  const loading = reading && !noOrganization;
 
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 
   useEffect(() => {
     if (!organizationId) return;
     let cancelled = false;
-    setLoading(true);
+    setReading(true);
     setError(null);
     fetchMandateReferenceBoard(dispatch)
       .then((next) => {
@@ -193,7 +210,7 @@ export function MandateReferenceBoardView() {
         setBoard(null);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setReading(false);
       });
     return () => {
       cancelled = true;
@@ -221,7 +238,18 @@ export function MandateReferenceBoardView() {
         </Button>
       </header>
 
-      {!organizationId ? (
+      {noOrganization ? (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-md border border-border p-3 text-sm"
+        >
+          <AlertTriangle
+            className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <span>{noOrganization}</span>
+        </div>
+      ) : !organizationId ? (
         <div
           role="status"
           className="flex items-center gap-2 rounded-md border border-border p-3 text-sm text-muted-foreground"

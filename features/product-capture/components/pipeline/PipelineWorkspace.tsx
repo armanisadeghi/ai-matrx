@@ -12,7 +12,10 @@ import { ChevronLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectEffectiveOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/lib/toast";
 
@@ -40,6 +43,13 @@ export function PipelineWorkspace({
   const [stage, setStage] = useState<PipelineStage>("intake");
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [entries, setEntries] = useState<StageListEntry[] | null>(null);
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class MandatesConsole and
+  // useMandateInputSurface already fixed. `entries` starts null and null is the
+  // list's loading state, so with no organization the load effect's early
+  // return left the stage list loading FOREVER with no remedy. Before the
+  // bootstrap resolves, loading is the truth; once it has resolved with no
+  // organization, that is a settled fact and it is said, with the remedy.
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Mobile: once an item is picked, the workspace replaces the list.
   const [mobileDetail, setMobileDetail] = useState(false);
@@ -125,16 +135,25 @@ export function PipelineWorkspace({
     setMobileDetail(true);
   };
 
-  const list = (
-    <div className="flex min-h-0 flex-col">
-      <StageItemList
-        entries={entries ?? []}
-        loading={entries === null}
-        selectedId={selectedId}
-        onSelect={selectItem}
-      />
-    </div>
-  );
+  const list =
+    !organizationId && orgBootstrapResolved ? (
+      <p
+        role="status"
+        className="px-4 py-16 text-center text-sm text-muted-foreground"
+      >
+        No organization is selected, so the pipeline cannot be read — choose one
+        from the organization picker in the header and this fills in.
+      </p>
+    ) : (
+      <div className="flex min-h-0 flex-col">
+        <StageItemList
+          entries={entries ?? []}
+          loading={entries === null}
+          selectedId={selectedId}
+          onSelect={selectItem}
+        />
+      </div>
+    );
 
   const detail = selectedId ? (
     <ItemWorkspace

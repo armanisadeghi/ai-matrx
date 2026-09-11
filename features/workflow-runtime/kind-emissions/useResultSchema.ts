@@ -18,7 +18,10 @@
 import { useEffect, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import { callApi } from "@/lib/api/call-api";
 
 import { parseResultSchema, type DeclaredResultSchema } from "./result-schema";
@@ -55,6 +58,11 @@ export function useResultSchema(definitionId: string): ResultSchemaState {
    * not sendable before.
    */
   const organizationId = useAppSelector(selectOrganizationId);
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class useMandateInputSurface
+  // fixed (V3 F4). Waiting is right only until the bootstrap resolves; on a
+  // session with NO organization selected this read stayed "loading" forever.
+  // Once resolved with no org, that is a settled fact: say it, with the remedy.
+  const orgResolved = useAppSelector(selectOrgBootstrapResolved);
   const [answered, setAnswered] = useState<Answered>({
     forId: definitionId,
     state: { status: "loading" },
@@ -89,6 +97,14 @@ export function useResultSchema(definitionId: string): ResultSchemaState {
     };
   }, [dispatch, definitionId, organizationId]);
 
+  // Derived at render, never set in the effect (react-hooks/set-state-in-effect).
+  if (!organizationId && orgResolved) {
+    return {
+      status: "error",
+      message:
+        "No organization is selected, so what this workflow makes cannot be read — choose one from the organization picker in the header and this fills in.",
+    };
+  }
   return answered.forId === definitionId
     ? answered.state
     : { status: "loading" };

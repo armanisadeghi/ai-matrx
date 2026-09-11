@@ -41,7 +41,10 @@ import {
   type CaptureItemMenuRow,
 } from "../item-actions";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectEffectiveOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -87,6 +90,13 @@ export function AllItemsTable() {
 
   const isMobile = useIsMobile();
   const [rows, setRows] = useState<ItemTableRow[] | null>(null);
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class MandatesConsole and
+  // useMandateInputSurface already fixed. `rows` starts null and null renders
+  // the spinner (and the footer spun on its own while the org was null), so with
+  // no organization the load's early return left the table spinning FOREVER
+  // with no remedy. Before the bootstrap resolves, loading is the truth; once it
+  // has resolved with no organization, that is a settled fact and it is said.
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const [confirmDelete, setConfirmDelete] = useState<ItemTableRow | null>(null);
   const [actionsTarget, setActionsTarget] = useState<ItemTableRow | null>(null);
   const [clickedRow, setClickedRow] = useState<ItemTableRow | null>(null);
@@ -307,6 +317,18 @@ export function AllItemsTable() {
       },
     },
   });
+
+  if (!organizationId && orgBootstrapResolved) {
+    return (
+      <p
+        role="status"
+        className="px-6 py-10 text-center text-sm text-muted-foreground"
+      >
+        No organization is selected, so captured items cannot be read — choose
+        one from the organization picker in the header and this fills in.
+      </p>
+    );
+  }
 
   // Mobile: a swipeable card list on the shared gesture row (tap → view,
   // swipe RIGHT → capture, swipe LEFT → delete, long-press → all actions —

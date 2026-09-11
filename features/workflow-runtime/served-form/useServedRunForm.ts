@@ -19,7 +19,10 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 
@@ -83,6 +86,12 @@ export function useServedRunForm(
    * Depending on the id re-runs the fetch the moment context arrives.
    */
   const organizationId = useAppSelector(selectOrganizationId);
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class useMandateInputSurface
+  // fixed (V3 F4). "Wait, never fail" is right only while the bootstrap is still
+  // resolving; on a session with NO organization selected, `loading` stayed the
+  // state forever and the form never said why. Once the bootstrap has resolved
+  // with no org, that is a settled fact: say it, with the action that fixes it.
+  const orgResolved = useAppSelector(selectOrgBootstrapResolved);
   const [state, setState] = useState<ServedRunFormState>({
     status: "loading",
   });
@@ -116,6 +125,18 @@ export function useServedRunForm(
     };
   }, [dispatch, definitionId, organizationId]);
 
+  // Derived at render, never set in the effect (react-hooks/set-state-in-effect):
+  // the settled fact needs no extra render pass and can never go stale.
+  if (!organizationId && orgResolved && definitionId !== null) {
+    return {
+      status: "error",
+      message:
+        "No organization is selected, so this run form cannot be read — choose one from the organization picker in the header and this fills in.",
+      issues: [],
+      serverExplained: false,
+      doesNotCompile: false,
+    };
+  }
   return state;
 }
 

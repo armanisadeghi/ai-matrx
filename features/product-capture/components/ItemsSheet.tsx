@@ -26,6 +26,8 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Loader2 } from "lucide-react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrgBootstrapResolved } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 
 import type { CaptureFile, CaptureItem } from "../types";
@@ -50,6 +52,12 @@ export function ItemsSheet({
 }: ItemsSheetProps) {
   const router = useRouter();
   const [items, setItems] = useState<CaptureItem[] | null>(null);
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class MandatesConsole and
+  // useMandateInputSurface already fixed. `items` starts null and null paints
+  // the spinner, so a sheet opened with no organization spun FOREVER with no
+  // remedy. Before the bootstrap resolves, loading is the truth; once it has
+  // resolved with no organization, that is a settled fact and it is said.
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const [filesByItem, setFilesByItem] = useState<Map<string, CaptureFile[]>>(
     new Map(),
   );
@@ -147,7 +155,16 @@ export function ItemsSheet({
             </DrawerDescription>
           </DrawerHeader>
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4">
-            {items === null ? (
+            {!organizationId && orgBootstrapResolved ? (
+              <p
+                role="status"
+                className="py-10 text-center text-sm text-muted-foreground"
+              >
+                No organization is selected, so captured items cannot be read —
+                choose one from the organization picker in the header and this
+                fills in.
+              </p>
+            ) : items === null ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>

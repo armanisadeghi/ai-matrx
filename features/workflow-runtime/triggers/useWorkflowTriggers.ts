@@ -15,7 +15,10 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 
@@ -92,6 +95,15 @@ export function useWorkflowTriggers(
    * the org id re-runs the read the moment context arrives.
    */
   const organizationId = useAppSelector(selectOrganizationId);
+  /**
+   * 🚨 "NO ORG YET" IS NOT "STILL READING" — the class MandatesConsole and
+   * useMandateInputSurface already fixed. "Wait, never fail" was right only
+   * while the bootstrap was still resolving; `loading` starts `true`, so on a
+   * session with NO organization selected the skeleton stayed up forever with
+   * no remedy. Once the bootstrap has resolved and there is still no org,
+   * that is a settled fact: stop loading and say what fixes it.
+   */
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const [triggers, setTriggers] = useState<WorkflowTrigger[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -121,6 +133,12 @@ export function useWorkflowTriggers(
     setTriggers(parseTriggerList(result.data));
     setLoading(false);
   }, [definitionId, dispatch, organizationId]);
+
+  // Derived at render, never set in the effect (react-hooks/set-state-in-effect).
+  const noOrganization =
+    !organizationId && orgBootstrapResolved
+      ? "No organization is selected, so this workflow's schedules cannot be read — choose one from the organization picker in the header and this fills in."
+      : null;
 
   useEffect(() => {
     setLoading(true);
@@ -273,8 +291,8 @@ export function useWorkflowTriggers(
 
   return {
     triggers,
-    loading,
-    loadError,
+    loading: loading && !noOrganization,
+    loadError: noOrganization ?? loadError,
     busyId,
     creating,
     refresh,

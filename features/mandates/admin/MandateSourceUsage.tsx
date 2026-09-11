@@ -31,7 +31,10 @@ import { AlertTriangle, Loader2, OctagonAlert } from "lucide-react";
 
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import {
   SINGLE_SITE_SENTENCE,
   fetchMandateReferences,
@@ -100,14 +103,25 @@ export function MandateSourceUsage({
   // See the same note on MandateReferenceBoardView: `callApi` needs an
   // explicitly selected organization, and the app context hydrates async.
   const organizationId = useAppSelector(selectOrganizationId);
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — same class as MandatesConsole.
+  // `loading` starts `true`; a bare early return left "Waiting for your
+  // organization to load" spinning forever on a session with none selected.
+  // Once the bootstrap has resolved with no organization, stop and say why.
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const [report, setReport] = useState<MandateReferenceReport | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [reading, setReading] = useState(true);
+  // Derived at render, never set in the effect (react-hooks/set-state-in-effect).
+  const noOrganization =
+    !organizationId && orgBootstrapResolved
+      ? "No organization is selected, so this key's references cannot be read — choose one from the organization picker in the header and this fills in."
+      : null;
+  const loading = reading && !noOrganization;
 
   const load = useCallback(() => {
     if (!organizationId) return;
     let cancelled = false;
-    setLoading(true);
+    setReading(true);
     setError(null);
     fetchMandateReferences(dispatch, mandateKey)
       .then((next) => {
@@ -122,7 +136,7 @@ export function MandateSourceUsage({
         setReport(null);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setReading(false);
       });
     return () => {
       cancelled = true;
@@ -139,7 +153,18 @@ export function MandateSourceUsage({
 
   return (
     <div className="min-w-0 space-y-4">
-      {!organizationId ? (
+      {noOrganization ? (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-md border border-border p-3 text-sm"
+        >
+          <AlertTriangle
+            className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <span>{noOrganization}</span>
+        </div>
+      ) : !organizationId ? (
         <div
           role="status"
           className="flex items-center gap-2 rounded-md border border-border p-3 text-sm text-muted-foreground"

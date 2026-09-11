@@ -28,7 +28,10 @@ import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { transcribeAudioFile } from "@/features/audio/services/speechApi";
 import { toAudioFile } from "@ai-matrx/browser-audio/core";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectEffectiveOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 
 import { VoiceNoteButton } from "../VoiceNoteButton";
@@ -53,6 +56,13 @@ interface QueueEntry {
 export function AnswerQueue() {
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
   const [queue, setQueue] = useState<QueueEntry[] | null>(null);
+  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class MandatesConsole and
+  // useMandateInputSurface already fixed. `queue` starts null and null renders the
+  // spinner, so with no organization the load effect's early return left it
+  // spinning FOREVER with no remedy. Before the bootstrap resolves, loading is
+  // the truth; once it has resolved with no organization, that is a settled
+  // fact and it is said, with the action that fixes it.
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const [answeredCount, setAnsweredCount] = useState(0);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -182,6 +192,17 @@ export function AnswerQueue() {
     },
     [],
   );
+
+  if (!organizationId && orgBootstrapResolved) {
+    return (
+      <p
+        role="status"
+        className="px-6 py-16 text-center text-sm text-muted-foreground"
+      >
+        No organization is selected, so the question queue cannot be read — choose one from the organization picker in the header and this fills in.
+      </p>
+    );
+  }
 
   if (queue === null) {
     return (
