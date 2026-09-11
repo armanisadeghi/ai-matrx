@@ -724,6 +724,32 @@ older shapes.
 
 ## Change log
 
+- `2026-09-11` — **Every user-data-table RPC guard now asks the grant the RLS
+  policy asks, instead of re-implementing it.** On a table shared read-only the
+  page rendered all 400 rows while every copy action — `getCompleteTable` →
+  `get_user_table_complete`, the loader behind Copy table / Copy JSON / Current
+  table view / the copy-subset window / the JSON and CSV exports — was refused
+  with `viewer access required for dataset …` (feedback `5c31eaea`). The RPC's
+  SECURITY DEFINER guard admitted only service_role, the row's own `user_id`,
+  and an explicit `iam.permissions` grant; the `std_select` policy on
+  `workbench.udt_datasets` additionally admits platform admins, `created_by`,
+  public visibility, org admins, org members at ≥ internal, and every conveyed
+  lane through `iam.has_access`. **A guard stricter than the row policy over the
+  same rows is the defect** (db-rules §6). All 11 guards in the family now call
+  one helper, `workbench.udt_dataset_access(table, level)`, which mirrors
+  `std_select` at viewer and `std_update` at editor —
+  `migrations/udt_rpc_guards_match_row_policy.sql`, which carries a DB-side
+  equivalence assertion and will not apply without it. Two siblings closed in the
+  same pass: the editor guards refused platform and org admins for the same
+  reason, and `udt_bulk_write` / `udt_change_field_type` / `udt_upsert_cell` /
+  `udt_upsert_row` still called `has_permission('workbench.udt_datasets', …)` —
+  a bare table name is not a permission key, so a non-owner editor got a raised
+  P0001 rather than a decision (`udt_permission_token_fix.sql` had repointed only
+  the unprefixed spelling). No frontend behaviour changed; the frontend half of
+  the contract is pinned by
+  `features/data-tables/__tests__/complete-table-read-grant.test.ts` — a refusal
+  must arrive as a FAILURE, never as a confidently empty table.
+
 - `2026-09-10` — Fixed the clipped Table Settings footer and exposed universal dataset sharing from settings, desktop toolbar, and mobile actions; removed the separate table-public checkbox and write path.
 
 - `2026-08-29` — **Table detail uses one compact mobile control row and content-driven columns.**
