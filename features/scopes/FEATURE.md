@@ -10,14 +10,38 @@ this directory.
 
 ## 🚨 Rules an agent editing this directory must obey
 
-1. **`scopesService.ts` is the ONLY file that may query the `context.*` tables.** ~~ESLint enforces
-   it;~~ the boy-scout rule applies — fix violators on sight.
-   **Corrected 2026-09-11 (data-doctrine discovery atlas §3.4 O-6):** "ESLint enforces it" is
-   **DECLARED, not observed.** The rule targets `.from('ctx_*')` literals, of which **zero remain**,
-   and **four live files bypass the chokepoint**. Tracked as register item DD-109 in
-   `common-docs/projects/data-doctrine-adoption/REGISTER.md`. (The tables are `context.scope_types`,
-   `context.scopes`, `context.context_items`, `context.context_item_values`, … — the old public
-   `ctx_*` names no longer exist.)
+1. **`scopesService.ts` is the ONLY file that may query the `context.*` tables**, and ESLint
+   enforces it. The boy-scout rule applies — fix violators on sight.
+
+   **What the guard actually checks** (`scopesChokepointSyntaxRestrictions`, `eslint.config.mjs`,
+   rewritten 2026-09-11 under DD-109): four `no-restricted-syntax` selectors, each an error —
+   `.schema("context")`; importing `@/utils/supabase/contextDb`; `.from()` on any of the **12**
+   `context` tables by name; `.rpc()` on any of the **22** scope/context RPC names. Any one of
+   the four reaches the schema, so all four are banned.
+
+   **What it does NOT check:** a `schema: "context"` / `schemaName: "context"` string inside a
+   registry or resolver config object — `features/item-presentation/registry.tsx` and the three
+   `createRecordResolver` entries in `features/matrx-envelope/referenceResolvers.ts` still bind
+   the schema declaratively and are NOT caught. Neither is a dynamic (non-literal) table or RPC
+   name. The 12 table names and 22 RPC names are hand-maintained lists in `eslint.config.mjs` —
+   re-derive them from the generated `context` block after any `pnpm sync-types`, or the guard
+   grows holes.
+
+   **Who is exempt, and why:** the allowlist at the bottom of `eslint.config.mjs` (§"features/scopes
+   chokepoint allowlist") names every exempt file with its reason. Three are server-side or
+   service-role doors this `"use client"` service cannot serve (`app/(core)/scopes/s/[scopeId]/page.tsx`,
+   `app/api/admin/system-context/route.ts`, `app/api/stripe/class-checkout/route.ts`); five are the
+   retirement queue — live duplicate paths (`features/scope-system/redux/{contextItemsSlice,templatesSlice,scopeValuesSlice}.ts`,
+   `features/agent-context/redux/scope/{scopeTypesSlice,scopesSlice}.ts`) that still hold a second
+   apply-template path, a second set-value RPC and a duplicate scope-type read path. Delete the
+   allowlist entry when the duplicate path goes; it is not a standing exemption.
+
+   Prior state, for the record: before 2026-09-11 the rule banned `.from('ctx_*')` string literals,
+   of which zero had remained since the tables moved into the `context` schema — it matched nothing,
+   and the allowlist beside it held 19 paths of which 18 also matched nothing (3 files no longer
+   existed). Register item DD-109 in `common-docs/projects/data-doctrine-adoption/REGISTER.md`.
+   (The tables are `context.scope_types`, `context.scopes`, `context.context_items`,
+   `context.context_item_values`, … — the old public `ctx_*` names no longer exist.)
 2. **The `assoc_*` / `cat_*` / `ues_*` RPC families are called ONLY inside
    `@ai-matrx/associations` (W5 swap, 2026-08-29).** The host wiring modules
    `service/{associationsService,categoriesService,favoritesService,favoritesCore}.ts`

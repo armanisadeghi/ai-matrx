@@ -1137,21 +1137,89 @@ const ttsHookDirectImportRestriction = {
   ],
 };
 
-// features/scopes is the single owner of every `ctx_*` table. The
-// chokepoint is `features/scopes/service/scopesService.ts` — every other
-// file in the repo must go through that service (or a thunk/hook layered
-// on top of it). The selector catches `supabase.from('ctx_anything')`
-// calls anywhere outside the allowlist below.
+// features/scopes is the single owner of the `context` schema. The chokepoint
+// is `features/scopes/service/scopesService.ts` — every other file in the repo
+// must go through that service (or a thunk/hook layered on top of it).
+//
+// HISTORY (2026-09-11, DD-109): this rule used to ban `.from('ctx_*')` string
+// literals. The DB restructure moved every one of those tables into the
+// `context` schema, zero `ctx_*` literals survive, and the rule silently
+// matched NOTHING for months — four files reached `context.*` outside the
+// service with a green lint. The selectors below ban what the code actually
+// writes today, so the guard fails on real bypasses again:
+//   1. `x.schema("context")`            — the schema handle itself
+//   2. importing `@/utils/supabase/contextDb` — the typed wrapper over it
+//   3. `.from("<a context.* table>")`   — all 12 live tables, by name
+//   4. `.rpc("<a scope RPC>")`          — all 22 live scope/context RPCs
+// Any ONE of the four is enough to reach the schema, so all four are banned.
 //
 // This is the "scopesService is the sole Supabase chokepoint" invariant
 // from features/scopes/FEATURE.md. Violations of this rule are how the
 // scope system rotted into 8 overlapping slices last time.
+//
+// Keep these two lists in sync with the DB: regenerate from
+// `types/database.types.ts` (the generated `context` block) after any
+// `pnpm sync-types`. A table or RPC missing here is a hole in the guard.
+const CONTEXT_SCHEMA_TABLES = [
+  "context_access_log",
+  "context_item_values",
+  "context_items",
+  "context_value_refs",
+  "scope_dataset_instances",
+  "scope_types",
+  "scopes",
+  "system_context_item",
+  "template_context_items",
+  "template_scope_types",
+  "templates",
+  "user_active_context",
+];
+
+const SCOPE_RPC_NAMES = [
+  "apply_template",
+  "apply_template_by_key",
+  "create_context_item",
+  "create_scope",
+  "create_scope_type",
+  "delete_context_item",
+  "delete_scope",
+  "delete_scope_type",
+  "get_scope_context",
+  "get_scope_tree",
+  "list_context_value_refs",
+  "list_scope_type_items",
+  "list_scope_types",
+  "list_scopes",
+  "list_templates",
+  "list_udt_dataset_templates",
+  "search_scopes",
+  "set_context_value",
+  "set_scope_context_value",
+  "update_context_item",
+  "update_scope",
+  "update_scope_type",
+];
+
+const SCOPES_CHOKEPOINT_REMEDY =
+  "Route this through @/features/scopes/service/scopesService (mounted via scope thunks) — it is the ONE door to the context schema. If this is a legitimate server-side or service-role door that the client-only service cannot serve, add the file to the scopes chokepoint allowlist at the bottom of this config WITH a one-line reason, or carry an `// eslint-disable-next-line no-restricted-syntax` with a justification. See features/scopes/FEATURE.md.";
+
 const scopesChokepointSyntaxRestrictions = [
   {
     selector:
-      "CallExpression[callee.property.name='from'][arguments.0.type='Literal'][arguments.0.value=/^ctx_/]",
-    message:
-      "Direct supabase.from('ctx_*') is banned. Every ctx_* table goes through @/features/scopes/service/scopesService (mounted via scope thunks). See features/scopes/FEATURE.md.",
+      "CallExpression[callee.property.name='schema'][arguments.0.type='Literal'][arguments.0.value='context']",
+    message: `Direct .schema("context") is banned outside the scopes service. ${SCOPES_CHOKEPOINT_REMEDY}`,
+  },
+  {
+    selector: "ImportDeclaration[source.value='@/utils/supabase/contextDb']",
+    message: `Importing contextDb (the typed context-schema handle) is banned outside the scopes service. ${SCOPES_CHOKEPOINT_REMEDY}`,
+  },
+  {
+    selector: `CallExpression[callee.property.name='from'][arguments.0.type='Literal'][arguments.0.value=/^(${CONTEXT_SCHEMA_TABLES.join("|")})$/]`,
+    message: `Direct .from("<a context.* table>") is banned outside the scopes service. ${SCOPES_CHOKEPOINT_REMEDY}`,
+  },
+  {
+    selector: `CallExpression[callee.property.name='rpc'][arguments.0.type='Literal'][arguments.0.value=/^(${SCOPE_RPC_NAMES.join("|")})$/]`,
+    message: `Direct .rpc("<a scope/context RPC>") is banned outside the scopes service — a second write path to the same cell is exactly how the scope system grew two set-value RPCs and three apply-template paths. ${SCOPES_CHOKEPOINT_REMEDY}`,
   },
 ];
 
@@ -1911,46 +1979,65 @@ export default [
   },
   // ─── features/scopes chokepoint allowlist ─────────────────────────
   //
-  // The `scopesChokepointSyntaxRestrictions` rule bans `.from('ctx_*')`
-  // calls globally. This override re-enables them for:
-  //   1. The single permanent chokepoint:
-  //        features/scopes/service/scopesService.ts
-  //   2. Legacy modules slated for deletion in Phase 5
-  //      (features/scopes/FEATURE.md §"Retirement inventory").
+  // `scopesChokepointSyntaxRestrictions` bans every door into the `context`
+  // schema — `.schema("context")`, the `contextDb` import, `.from()` on any of
+  // the 12 context tables, and `.rpc()` on any of the 22 scope/context RPCs.
+  // This override stands the ban down for the files listed below, and ONLY
+  // those. Each entry carries the reason it is here.
   //
-  // Adding a new path here is a Doctrine violation. Adding a new ctx_*
-  // table access in a feature consumer is the bug — route through the
-  // service instead. Remove paths from this list as Phase 5 consumes
-  // them; the ban must shrink toward the single permanent chokepoint
-  // by the end of the rebuild.
+  // Rewritten 2026-09-11 (DD-109). The previous list held 19 paths; 18 of them
+  // had not contained a banned call in months (3 no longer existed at all) —
+  // an allowlist guarding an empty set, next to a rule matching an empty set.
+  // Both are now real. VERIFY an entry before adding one: if the file has no
+  // banned call, it does not belong here.
+  //
+  // Adding a new path is a Doctrine violation unless it is a SERVER-side or
+  // service-role door — `scopesService` is `"use client"` and holds the
+  // browser Supabase singleton, so it genuinely cannot serve a server
+  // component or an admin-client route. A new client-side `context.*` read is
+  // the bug: route it through the service instead.
   {
     files: [
-      // Permanent chokepoint.
+      // ── Permanent chokepoint ──
+      // The service itself, and the typed schema handle it is built on.
       "features/scopes/service/scopesService.ts",
-      // Phase-5 retirement queue — these files will be deleted or
-      // rewritten to go through scopesService.
-      "features/agent-context/service/hierarchyService.ts",
-      "features/agent-context/redux/organizationsSlice.ts",
-      "features/agent-context/redux/projectsSlice.ts",
-      "features/agent-context/redux/tasksSlice.ts",
-      "features/scope-system/components/AddScopeModal.tsx",
-      "features/scope-system/components/EditScopeTypeSheet.tsx",
+      "utils/supabase/contextDb.ts",
+
+      // ── Server-side doors the client-only service cannot serve ──
+      // Server component: resolves the /scopes/s/<id> short link to the
+      // canonical org route before the page renders. Runs on the request's
+      // server Supabase client (RLS still applies), not the browser singleton.
+      // NB: a `**` glob, NOT the literal path. ESLint globs are minimatch,
+      // where `[scopeId]` is a CHARACTER CLASS — the literal dynamic-route path
+      // matches NOTHING. That is a second way the old allowlist was dead: four
+      // of its entries were dynamic routes spelled literally.
+      "app/(core)/scopes/s/**",
+      // Service-role admin CRUD for context.system_context_item (global public
+      // facts with no org or scope dimension). Deliberately bypasses RLS
+      // behind an admin check; the service has no service-role path at all.
+      "app/api/admin/system-context/route.ts",
+      // Service-role read of a class scope's price/access settings during
+      // Stripe checkout. Must resolve the scope authoritatively BEFORE the
+      // buyer has any grant on it, so it cannot run under the buyer's RLS.
+      "app/api/stripe/class-checkout/route.ts",
+
+      // ── Retirement queue: live duplicate paths, named and finite ──
+      // Each of these reaches context.* beside the service. They are on the
+      // convergence list (features/scopes/FEATURE.md §"What is enforced"), not
+      // a standing exemption — delete the entry with the duplicate path.
+      // The context-item editor: reads context.system_context_item (the ONLY
+      // reader of that table) and updates/soft-deletes context.context_items.
       "features/scope-system/redux/contextItemsSlice.ts",
-      // Consumer-feature ctx_* writes that need their own thunk
-      // re-routing (already documented in §Retirement inventory).
-      "features/notes/redux/thunks.ts",
-      "features/projects/service.ts",
-      "features/tasks/services/taskService.ts",
-      "features/tasks/services/projectService.ts",
-      "lib/redux/prompt-execution/thunks/fetchScopedVariablesThunk.ts",
-      // Admin/route surfaces that read ctx_* until their migration ships.
-      "app/(a)/organizations/[orgId]/page.tsx",
-      "app/(a)/organizations/[orgId]/tasks/page.tsx",
-      "app/(a)/invitations/project/accept/[token]/page.tsx",
-      "app/api/projects/invitations/resend/route.ts",
-      "app/api/projects/invite/route.ts",
-      "app/api/cron/due-date-reminders/route.ts",
-      "app/api/sandbox/route.ts",
+      // Second apply-template path (list_templates / apply_template /
+      // apply_template_by_key) beside scopesService.applyTemplate.
+      "features/scope-system/redux/templatesSlice.ts",
+      // Second write path to the same cell (set_scope_context_value) beside
+      // scopesService.setContextValue (set_context_value).
+      "features/scope-system/redux/scopeValuesSlice.ts",
+      // Third scope Redux module: duplicate RPC-only read/write paths for
+      // scope types and scopes.
+      "features/agent-context/redux/scope/scopeTypesSlice.ts",
+      "features/agent-context/redux/scope/scopesSlice.ts",
     ],
     rules: {
       "no-restricted-syntax": [

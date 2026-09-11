@@ -508,6 +508,64 @@ export const scopesService = {
     }
   },
 
+  /**
+   * ONE cell (scope x context item) plus the two names that head it.
+   *
+   * The chokepoint's answer for the `@context_value` reference chip
+   * (`features/matrx-envelope/referenceResolvers.ts`), which until 2026-09-11
+   * read `context_item_values` / `scopes` / `context_items` directly — the
+   * only place in the frontend that read a CELL outside this service, and a
+   * silent-break class (a wrong schema rendered a label instead of a value
+   * with no error at all).
+   *
+   * Missing scope or item names are NOT an error: the caller heads the chip
+   * with whatever it got. Only a failed VALUE read is reported.
+   */
+  async resolveContextCell(args: {
+    scopeId: string;
+    contextItemId: string;
+  }): Promise<
+    ScopesRpcResult<{
+      scopeName: string | null;
+      itemName: string | null;
+      value: ContextItemValue | null;
+    }>
+  > {
+    try {
+      requireUserId();
+      const ctx = contextDb(supabase);
+      const [valueRes, scopeRes, itemRes] = await Promise.all([
+        ctx
+          .from("context_item_values")
+          .select(
+            `context_item_id, id, version, is_current,
+             value_text, value_number, value_boolean, value_date, value_json,
+             value_document_url, value_document_size_bytes,
+             value_reference_id, value_reference_type,
+             source_type, authored_by, created_at`,
+          )
+          .eq("scope_id", args.scopeId)
+          .eq("context_item_id", args.contextItemId)
+          .eq("is_current", true)
+          .maybeSingle(),
+        ctx.from("scopes").select("name").eq("id", args.scopeId).maybeSingle(),
+        ctx
+          .from("context_items")
+          .select("display_name")
+          .eq("id", args.contextItemId)
+          .maybeSingle(),
+      ]);
+      if (valueRes.error) return err(...mapPgErrorPair(valueRes.error));
+      return ok({
+        scopeName: scopeRes.data?.name ?? null,
+        itemName: itemRes.data?.display_name ?? null,
+        value: (valueRes.data ?? null) as ContextItemValue | null,
+      });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
   // ──────────────────────────────────────────────────────────────────
   //  READ — SUGGESTION TARGET RESOLUTION
   //

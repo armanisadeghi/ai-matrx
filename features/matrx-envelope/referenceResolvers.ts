@@ -22,7 +22,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
 
-import { contextDb } from "@/utils/supabase/contextDb";
+import { scopesService } from "@/features/scopes/service/scopesService";
 import { supabase } from "@/utils/supabase/client";
 
 import type { KnownItemType } from "@/features/item-presentation/types";
@@ -448,49 +448,24 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   context_value: {
     openItemType: "scope",
     openId: (ref) => ref.scope_id,
-    resolveValue: async (supabase, ref) => {
+    // The cell comes from `scopesService` — the ONE door to the context
+    // schema. This resolver used to read context_item_values / scopes /
+    // context_items directly; the chokepoint lint now forbids that (DD-109).
+    resolveValue: async (_supabase, ref) => {
       if (!ref.scope_id || !ref.context_item_id) return stringify(ref.label);
-      const ctx = contextDb(supabase);
-      const [
-        { data: value, error: valueErr },
-        { data: scope },
-        { data: item },
-      ] = await Promise.all([
-        ctx
-          .from("context_item_values")
-          .select(
-            "value_text, value_number, value_boolean, value_date, value_json",
-          )
-          .eq("scope_id", ref.scope_id)
-          .eq("context_item_id", ref.context_item_id)
-          .eq("is_current", true)
-          .maybeSingle(),
-        ctx.from("scopes").select("name").eq("id", ref.scope_id).maybeSingle(),
-        ctx
-          .from("context_items")
-          .select("display_name")
-          .eq("id", ref.context_item_id)
-          .maybeSingle(),
-      ]);
-      if (valueErr) return stringify(ref.label);
-      const scopeName = stringify(
-        (scope as { name?: string | null } | null)?.name,
-      );
-      const itemName = stringify(
-        (item as { display_name?: string | null } | null)?.display_name,
-      );
+      const res = await scopesService.resolveContextCell({
+        scopeId: ref.scope_id,
+        contextItemId: ref.context_item_id,
+      });
+      if (!res.ok) return stringify(ref.label);
+      const scopeName = stringify(res.data.scopeName);
+      const itemName = stringify(res.data.itemName);
       const heading =
         scopeName && itemName
           ? `${scopeName} · ${itemName}`
           : (scopeName ?? itemName ?? stringify(ref.label));
-      if (!value) return heading;
-      const row = value as {
-        value_text?: string | null;
-        value_number?: number | null;
-        value_boolean?: boolean | null;
-        value_date?: string | null;
-        value_json?: unknown;
-      };
+      const row = res.data.value;
+      if (!row) return heading;
       const cell =
         stringify(row.value_text) ??
         stringify(row.value_number) ??
