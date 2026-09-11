@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   closeTab,
@@ -11,6 +11,7 @@ import {
 import { EditorTab } from "./EditorTab";
 import { useOpenRenderPreview } from "../hooks/useOpenRenderPreview";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { revealActiveEditorTab } from "./editorTabsScroll";
 
 export const EditorTabs: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -18,6 +19,22 @@ export const EditorTabs: React.FC = () => {
   const activeId = useAppSelector(selectActiveTabId);
   const openRenderPreview = useOpenRenderPreview();
   const [closeConfirmationId, setCloseConfirmationId] = useState<string | null>(null);
+  const tabListRef = useRef<HTMLDivElement | null>(null);
+
+  // Keep the selection visible inside the horizontal strip only. This avoids
+  // scrolling the editor/page when a tab changes from URL restore, keyboard,
+  // or a narrow mobile viewport.
+  useEffect(() => {
+    const list = tabListRef.current;
+    if (!list || !activeId) return undefined;
+    const revealActiveTab = () => {
+      revealActiveEditorTab(list, activeId);
+    };
+    revealActiveTab();
+    const observer = new ResizeObserver(revealActiveTab);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [activeId, order]);
 
   const handleSelect = useCallback(
     (id: string) => {
@@ -47,6 +64,7 @@ export const EditorTabs: React.FC = () => {
   if (order.length === 0) {
     return (
       <div
+      ref={tabListRef}
         role="tablist"
         className="flex h-full w-full items-center px-2 text-[11px] text-neutral-500 dark:text-neutral-400"
         aria-label="Editor tabs"
@@ -72,6 +90,7 @@ export const EditorTabs: React.FC = () => {
             key={id}
             id={id}
             name={tab.name}
+            path={tab.path}
             active={id === activeId}
             dirty={tab.dirty}
             onSelect={handleSelect}

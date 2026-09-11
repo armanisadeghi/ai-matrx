@@ -10,6 +10,7 @@ import { hasRenderPreviewerForTabId } from "../preview/renderPreviewRegistry";
 export interface EditorTabProps {
   id: string;
   name: string;
+  path?: string;
   active: boolean;
   dirty?: boolean;
   onSelect: (id: string) => void;
@@ -21,6 +22,7 @@ export interface EditorTabProps {
 export const EditorTab: React.FC<EditorTabProps> = ({
   id,
   name,
+  path,
   active,
   dirty,
   onSelect,
@@ -36,6 +38,8 @@ export const EditorTab: React.FC<EditorTabProps> = ({
   return (
     <div
       role="tab"
+      data-tab-id={id}
+      title={path}
       aria-selected={active}
       tabIndex={0}
       onClick={() => onSelect(id)}
