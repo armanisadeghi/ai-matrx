@@ -8,11 +8,10 @@
  *     model the provider entry resolves to. `ai.offering.pricing[n].*_price`
  *     is already denominated per 1M units of the tier's `usage_basis`, so no
  *     conversion happens on our side.
- *  2. STALENESS — `ai.offering.pricing_verified_at`, the column an aidream
- *     agent is adding concurrently. It is read off the row by key rather than
- *     through the generated type because the column may not exist yet; when it
- *     does not, the row reports `verification_untracked` and the UI SAYS SO —
- *     it never renders a reassuring "verified" badge it cannot back up.
+ *  2. STALENESS — `ai.offering.pricing_verified_at` (aidream, 2026-09-11):
+ *     when someone last confirmed the number against the provider. An offering
+ *     with no timestamp reads "never verified"; nothing here ever wears a
+ *     reassuring badge it cannot back up.
  *  3. THEIR price — Groq's `/v1/models` payload carries a `pricing` object
  *     (`prompt` / `completion` / `input_cache_read`) in dollars PER TOKEN as
  *     strings. Multiplied by 1e6 it is directly comparable to ours, so a
@@ -40,11 +39,9 @@ export type PriceMismatch = {
 };
 
 export type VerificationState =
-  /** The `pricing_verified_at` column does not exist in the database yet. */
-  | "untracked"
-  /** Column exists, this offering has never been verified. */
+  /** Nobody has ever confirmed this offering's price against the provider. */
   | "never"
-  /** Column exists and carries a timestamp. */
+  /** `pricing_verified_at` carries a timestamp. */
   | "verified";
 
 export type ProviderSyncRowPricing = {
@@ -63,36 +60,15 @@ export const PRICING_NOT_APPLICABLE: ProviderSyncRowPricing = {
   state: "no_offering",
   ours: null,
   usage_basis: null,
-  verification: "untracked",
+  verification: "never",
   verified_at: null,
   theirs: null,
   mismatches: [],
 };
 
-/**
- * `ai.offering.pricing_verified_at` read off a parsed offering row WITHOUT
- * going through the generated database types.
- *
- * This is deliberate and temporary: the column is being added by a concurrent
- * aidream change, so `types/database.types.ts` does not declare it yet. The
- * row object from `select("*")` carries every live column at runtime, so the
- * presence of the KEY — not of a value — is what tells us whether the platform
- * tracks verification at all. Once the column ships and `pnpm db-types` runs,
- * this function keeps working unchanged and can be simplified to a field read.
- */
-export function readPricingVerifiedAt(offering: AiOffering): {
-  tracked: boolean;
-  verified_at: string | null;
-} {
-  const row = offering as unknown as Record<string, unknown>;
-  if (!("pricing_verified_at" in row)) {
-    return { tracked: false, verified_at: null };
-  }
-  const value = row.pricing_verified_at;
-  return {
-    tracked: true,
-    verified_at: typeof value === "string" ? value : null,
-  };
+/** When this offering's price was last confirmed against the provider. */
+export function readPricingVerifiedAt(offering: AiOffering): string | null {
+  return offering.pricing_verified_at;
 }
 
 function tierToPrice(tier: PricingTier | undefined): PerMTokPrice | null {
@@ -196,12 +172,8 @@ export function buildRowPricing(
     return { ...PRICING_NOT_APPLICABLE, theirs };
   }
 
-  const { tracked, verified_at } = readPricingVerifiedAt(preferred);
-  const verification: VerificationState = !tracked
-    ? "untracked"
-    : verified_at
-      ? "verified"
-      : "never";
+  const verified_at = readPricingVerifiedAt(preferred);
+  const verification: VerificationState = verified_at ? "verified" : "never";
 
   const ours = tierToPrice(preferred.pricing[0]);
   if (!ours) {

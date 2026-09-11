@@ -422,16 +422,6 @@ function PriceVerifiedCell({ pricing }: { pricing: ProviderSyncRowPricing }) {
   if (pricing.state === "no_offering") {
     return <span className="text-muted-foreground text-[10px]">—</span>;
   }
-  if (pricing.verification === "untracked") {
-    return (
-      <span
-        className="text-[10px] text-muted-foreground italic whitespace-nowrap"
-        title="ai.offering.pricing_verified_at does not exist yet — this platform does not record price verification, so nothing here can claim a price was checked."
-      >
-        not tracked
-      </span>
-    );
-  }
   if (pricing.verification === "never") {
     return (
       <Badge

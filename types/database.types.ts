@@ -2290,6 +2290,7 @@ export type Database = {
           organization_id: string
           override: Json
           pricing: Json
+          pricing_verified_at: string | null
           priority: number
           provider_model_id: string
           token_billed: boolean
@@ -2315,6 +2316,7 @@ export type Database = {
           organization_id: string
           override?: Json
           pricing?: Json
+          pricing_verified_at?: string | null
           priority?: number
           provider_model_id: string
           token_billed?: boolean
@@ -2340,6 +2342,7 @@ export type Database = {
           organization_id?: string
           override?: Json
           pricing?: Json
+          pricing_verified_at?: string | null
           priority?: number
           provider_model_id?: string
           token_billed?: boolean
@@ -19237,6 +19240,27 @@ export type Database = {
           },
         ]
       }
+      scope_door_registry: {
+        Row: {
+          door_class: string
+          function_name: string
+          reason: string
+          reviewed_at: string
+        }
+        Insert: {
+          door_class: string
+          function_name: string
+          reason: string
+          reviewed_at?: string
+        }
+        Update: {
+          door_class?: string
+          function_name?: string
+          reason?: string
+          reviewed_at?: string
+        }
+        Relationships: []
+      }
       scope_types: {
         Row: {
           color: string
@@ -19656,6 +19680,7 @@ export type Database = {
         Args: { p_level?: string; p_scope_id: string; p_user_id: string }
         Returns: boolean
       }
+      _strip_sql_noise: { Args: { p_src: string }; Returns: string }
       index_reference_value: {
         Args: {
           p_item_id: string

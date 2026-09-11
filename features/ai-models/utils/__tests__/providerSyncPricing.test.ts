@@ -20,6 +20,7 @@ import type { AiOffering, ProviderModelEntry } from "../../types";
 
 function offering(over: Partial<AiOffering> & { id: string }): AiOffering {
   return {
+    pricing_verified_at: null,
     model_id: "m1",
     provider_model_id: null,
     priority: 0,
@@ -88,7 +89,10 @@ describe("comparePrices", () => {
 
   it("does not call float noise from the 1e6 conversion a mismatch", () => {
     expect(
-      comparePrices({ input: 0.15 }, { input: 0.00000015 * 1_000_000 }) as unknown,
+      comparePrices(
+        { input: 0.15, output: null, cached: null },
+        { input: 0.00000015 * 1_000_000, output: null, cached: null },
+      ),
     ).toEqual([]);
   });
 
@@ -113,33 +117,35 @@ describe("preferredOffering", () => {
 });
 
 describe("readPricingVerifiedAt", () => {
-  it("reports UNTRACKED while ai.offering has no pricing_verified_at column", () => {
-    expect(readPricingVerifiedAt(offering({ id: "a" }))).toEqual({
-      tracked: false,
-      verified_at: null,
-    });
+  it("reads the timestamp off ai.offering.pricing_verified_at", () => {
+    const o = offering({ id: "a", pricing_verified_at: "2026-09-01T00:00:00Z" });
+    expect(readPricingVerifiedAt(o)).toBe("2026-09-01T00:00:00Z");
   });
 
-  it("reports the timestamp once the column exists", () => {
-    const row = offering({ id: "a" }) as unknown as Record<string, unknown>;
-    row.pricing_verified_at = "2026-09-01T00:00:00Z";
-    expect(readPricingVerifiedAt(row as unknown as AiOffering)).toEqual({
-      tracked: true,
-      verified_at: "2026-09-01T00:00:00Z",
-    });
-  });
-
-  it("distinguishes 'column exists, never verified' from 'no column'", () => {
-    const row = offering({ id: "a" }) as unknown as Record<string, unknown>;
-    row.pricing_verified_at = null;
-    expect(readPricingVerifiedAt(row as unknown as AiOffering)).toEqual({
-      tracked: true,
-      verified_at: null,
-    });
+  it("is null when nobody has ever verified the price", () => {
+    expect(readPricingVerifiedAt(offering({ id: "a" }))).toBeNull();
   });
 });
 
 describe("buildRowPricing", () => {
+  it("reports 'verified' with an age once a price has been confirmed", () => {
+    const o = offering({
+      id: "a",
+      pricing_verified_at: "2026-09-01T00:00:00Z",
+      pricing: [
+        {
+          max_tokens: null,
+          input_price: 1,
+          output_price: 2,
+          cached_input_price: 0.1,
+        },
+      ],
+    });
+    const p = buildRowPricing([o], null);
+    expect(p.verification).toBe("verified");
+    expect(p.verified_at).toBe("2026-09-01T00:00:00Z");
+  });
+
   it("says no_offering when the model has none — never a blank cell", () => {
     const p = buildRowPricing([], GROQ_ENTRY);
     expect(p.state).toBe("no_offering");
@@ -202,7 +208,7 @@ describe("buildRowPricing", () => {
       "output",
       "cached",
     ]);
-    expect(p.verification).toBe("untracked");
+    expect(p.verification).toBe("never");
   });
 
   it("reports no mismatch for a provider that publishes no price", () => {
