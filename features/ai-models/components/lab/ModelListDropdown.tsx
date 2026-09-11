@@ -2088,7 +2088,10 @@ export function ModelListDropdown({
         container={dialogContainer ?? undefined}
         className="overflow-hidden p-0"
         style={{
-          width: popoverWidth,
+          // PopoverContent's 1px border is inside this border-box width.
+          // Give the fixed columns those two pixels at their natural desktop width;
+          // maxWidth still turns the inner panel into a horizontal scrollport.
+          width: popoverWidth + 2,
           maxWidth: "calc(100vw - 24px)",
           height: PANEL_HEIGHT,
           // See LIST_MAX_HEIGHT — this clamp is what keeps the search row on
