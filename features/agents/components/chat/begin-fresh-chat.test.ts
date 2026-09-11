@@ -70,7 +70,7 @@ describe("beginFreshChat guest boundary", () => {
       pathname: "/chat/6ffbb619-514f-460a-863e-fb16d89943bd",
       getState: () =>
         ({
-          userAuth: { id: null },
+          userAuth: { id: "guest-auth-user", isAnonymous: true },
           conversations: { byConversationId: {} },
         }) as RootState,
     });
