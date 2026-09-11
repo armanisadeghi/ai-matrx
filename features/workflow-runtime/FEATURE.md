@@ -176,6 +176,19 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-09-11 — **A refused run form shows the server's real reason.** A
+  workflow that fails the server's compile gate answers `/run-form` with 400,
+  and every surface printed a transport sentence — "Bad request. Please check
+  your input." — at a reader who had typed nothing, while the server's named
+  per-node reasons reached no one. `served-form/run-form-refusal.ts` is now the
+  ONE reader: it takes the server's own words, lifts `details[]` into a line
+  per issue, and refuses to print a sentence that blames the reader (when
+  nothing readable came back, the MISSING reason is named as the defect).
+  `runFormScreamProps` gives the Masterwork try box, the run form, the trigger
+  editor and the commission page one story, and drops a surface's technical
+  note when the workflow does not compile. Guard:
+  `served-form/__tests__/run-form-refusal.test.tsx`.
+
 - 2026-09-09 — **Picker values commit after their Radix layer closes.** Production verification caught a synchronous picker update orphaning `pointer-events:none` on the document body. `SelectInput` now waits for the shared measured close boundary, preventing the dead-page interaction class instead of relying on the recovery watchdog.
 
 - 2026-09-09 — **Served picker variants keep the input's legal options.** `componentForInputOptions` joins the registered presentation with each served field's closed option set across run forms, triggers, interrupts, bake-offs, and masterworks. Generic `dropdown` variants no longer degrade to a textarea, and the async registry paint no longer flashes a false unregistered-variant warning.
