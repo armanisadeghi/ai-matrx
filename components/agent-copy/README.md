@@ -37,6 +37,15 @@ no page reimplements them.
   gets JSON + CSV; a page gets its data JSON. `MatrxDataTable` toolbars get it
   free via the `copy` config; `rowsToCsvFromColumns` (tableCopy.ts) builds
   view-shaped CSV.
+- **`copy-subset/`** — **"Filter & sort before copying…"**, the row-subset
+  door every Copy-for-AI menu carries: `useCopySubsetVariant()` returns a
+  factory whose `AiVariant` opens the `copySubsetWindow` overlay over a
+  SNAPSHOT of any rows (a table, a report, a card list, a non-tabular
+  surface) with the canonical `MatrxDataTable` — search, filters, sort,
+  column show/hide, row selection, live count + size, For AI / Markdown /
+  CSV / JSON — and copies exactly the visible+selected subset; the origin is
+  never touched. `MatrxDataTable` toolbars get it free via `copy`. Contract:
+  [`copy-subset/FEATURE.md`](./copy-subset/FEATURE.md).
 - `AgentCopyGroomerWindow` + `groomer-types.ts` — the page-level custom
   workspace opened from the **Copy-for-AI menu**. It grooms the
   whole-page payload before copying; its footer also exports payload `.md` /

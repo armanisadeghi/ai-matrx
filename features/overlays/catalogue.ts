@@ -19,6 +19,11 @@ export interface OverlayCatalogueEntry {
 }
 
 export const OVERLAY_CATALOGUE = {
+  copySubsetWindow: {
+    label: "Copy subset",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   adminIndicator: {
     label: "Admin Indicator",
     instanceMode: "singleton",

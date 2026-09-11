@@ -50,7 +50,8 @@ export function buildViewAgentInput<T>(
     anyOf?: string;
     filterCount?: number;
     sort?: string | null;
-    scope?: "view" | "selected";
+    /** `custom` = shaped in the copy-subset window (filter & sort before copying). */
+    scope?: "view" | "selected" | "custom";
   },
 ): AgentPayloadInput {
   return {

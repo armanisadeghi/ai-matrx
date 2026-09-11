@@ -300,6 +300,7 @@ never a fake one.
 The menu is a thin consumer of existing platform systems. **Do not recreate any of these here.**
 
 - **Copy-as / Export / Convert** → `rich-document` action registry (`resolveActions` by category). New rich-document actions appear automatically. (`rich-document-actions` skill.)
+- **Tabular rows — "Filter & sort before copying…"** → the `copy-subset` primitive (`components/agent-copy/copy-subset/FEATURE.md`): a pane whose rows are data adds `useCopySubsetVariant()`'s `onSelect` as an `extraSections` item (or gets it free through `MatrxDataTable`'s `copy` config) — never a bespoke "choose rows" popover.
 - **Attach To** → `context-assignment` (`contextAssignment` overlay → `ContextAssignmentWindow`, writes `ctx_scope_assignments`). (`context-assignment` skill.)
 - **Share** → `sharing` (`shareModalWindow` overlay).
 - **AI Actions / Bound Agents / Content Blocks / My&Org Items** → `useUnifiedAgentContextMenu` + `useSurfaceBoundAgents`, one deduped fetch.

@@ -33,6 +33,10 @@ import {
 } from "lucide-react";
 
 import AppLink from "@/components/navigation/AppLink";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import type { CopySubsetColumn } from "@/components/agent-copy/copy-subset/types";
+import { useCopySubsetVariant } from "@/components/agent-copy/copy-subset/useCopySubsetVariant";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { ADMIN_REPORTING_SURFACE_NAME } from "@/features/surfaces/manifests/admin-reporting.manifest";
 import { Badge } from "@/components/ui/badge";
@@ -202,6 +206,25 @@ const COLUMNS: ColumnSpec[] = [
   { key: "charsRefetchedSameData", label: "Chars re-fetched", align: "right", title: "Characters of output re-delivered by same-data repeats — the context this cost." },
   { key: "conversations", label: "Convos", align: "right", title: "Distinct conversations in which this tool was repeated." },
 ];
+
+/** The report's columns as copy-subset columns — same labels the table shows. */
+const SUBSET_COLUMNS: CopySubsetColumn<ToolRefetchSummaryRow>[] = COLUMNS.map((c) => ({
+  id: c.key,
+  header: c.label,
+  accessorKey: c.key,
+  filter: c.key === "toolName" ? "auto" : "number",
+}));
+
+const TOOL_REFETCH_AI_LOCATION = "AI Matrx Admin — Tool re-fetch report";
+
+function rowsToHumanText(rows: ToolRefetchSummaryRow[], win: RefetchWindow): string {
+  const header = `Tool re-fetch report (${win}) — ${rows.length} tools`;
+  const lines = rows.map(
+    (r) =>
+      `${r.toolName}: ${r.repeats} repeats of ${r.totalCalls ?? "?"} calls (${r.sameDataRepeats} same-data, ${r.newDataRepeats} new-data, ${r.unknownDataRepeats} unknown, ${r.afterTrimRepeats} after trim) across ${r.conversations} conversations`,
+  );
+  return [header, "", ...lines].join("\n");
+}
 
 function compare(a: ToolRefetchSummaryRow, b: ToolRefetchSummaryRow, key: SortKey): number {
   if (key === "toolName") return a.toolName.localeCompare(b.toolName);
@@ -387,6 +410,7 @@ export function ToolRefetchConsole() {
   const [sortKey, setSortKey] = useState<SortKey>("sameDataRepeats");
   const [sortAsc, setSortAsc] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const copySubset = useCopySubsetVariant();
 
   const report = useQuery({
     queryKey: ["admin", "tool-refetch", "summary", win],
@@ -464,10 +488,56 @@ export function ToolRefetchConsole() {
               the after-trim column as a floor.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => void report.refetch()} disabled={refreshing}>
-            <RefreshCw className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <CopyButtons
+              size="sm"
+              label="Tool re-fetch report"
+              disabled={rows.length === 0}
+              human={() => rowsToHumanText(rows, win)}
+              json={() => rows}
+              agent={() => ({
+                kind: "tool-refetch-report",
+                location: TOOL_REFETCH_AI_LOCATION,
+                description: `Tool re-fetch report for the ${win} window: ${rows.length} tools, sorted by ${sortKey} ${sortAsc ? "ascending" : "descending"}.`,
+                data: rows,
+                summary: rowsToHumanText(rows, win),
+                attributes: {
+                  window: win,
+                  tool_count: rows.length,
+                  truncated: report.data?.truncated ?? false,
+                  sort: `${sortKey}:${sortAsc ? "asc" : "desc"}`,
+                },
+                context: {
+                  truncation_note: report.data?.truncationNote ?? undefined,
+                  trim_audit_epoch: TRIM_AUDIT_EPOCH,
+                },
+              })}
+              aiVariants={[
+                copySubset(() => ({
+                  label: `Tool re-fetch report (${win})`,
+                  location: TOOL_REFETCH_AI_LOCATION,
+                  kind: "tool-refetch-report",
+                  rows,
+                  columns: SUBSET_COLUMNS,
+                  getRowId: (row) => row.toolName,
+                })),
+              ]}
+              export={{
+                items: [
+                  jsonExportItem(() => rows),
+                  csvExportItem(
+                    () => rows as unknown as Array<Record<string, unknown>>,
+                    "CSV",
+                    COLUMNS.map((c) => ({ key: c.key, header: c.label })),
+                  ),
+                ],
+              }}
+            />
+            <Button variant="outline" size="sm" onClick={() => void report.refetch()} disabled={refreshing}>
+              <RefreshCw className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

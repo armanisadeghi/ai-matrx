@@ -642,6 +642,13 @@ const HtmlPreviewBridge = lazyOverlay(
     ),
   { ssr: false },
 );
+const CopySubsetWindow = lazyOverlay(
+  () =>
+    import("@/components/agent-copy/copy-subset/CopySubsetWindow").then(
+      (m) => ({ default: m.CopySubsetWindow }),
+    ),
+  { ssr: false },
+);
 const ImageArrivalPeekHost = lazyOverlay(
   () =>
     import("@/features/agents/components/notifications/ImageArrivalPeekHost").then(
@@ -2000,6 +2007,9 @@ export default function OverlayController() {
       selectOpenInstances(s, "reviewWalkWindow"),
     ),
     htmlPreview: useAppSelector((s) => selectOpenInstances(s, "htmlPreview")),
+    copySubsetWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "copySubsetWindow"),
+    ),
     imageUploaderWindow: useAppSelector((s) =>
       selectOpenInstances(s, "imageUploaderWindow"),
     ),
@@ -4526,6 +4536,30 @@ export default function OverlayController() {
                 ? data.isAgentSystem
                 : undefined
             }
+          />
+        );
+      })}
+
+      {/* copySubsetWindow — multi-instance. Rows, column definitions, and
+          callbacks live in the module-scope copy-subset session registry;
+          only the `sessionId` string travels through Redux. The window
+          releases its session on unmount. */}
+      {instancesById.copySubsetWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        return (
+          <CopySubsetWindow
+            key={inst.instanceId}
+            isOpen
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "copySubsetWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            sessionId={typeof data?.sessionId === "string" ? data.sessionId : ""}
+            title={typeof data?.title === "string" ? data.title : undefined}
           />
         );
       })}

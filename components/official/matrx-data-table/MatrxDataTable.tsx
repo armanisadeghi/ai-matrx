@@ -50,6 +50,8 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import GenericTablePagination from "@/components/generic-table/GenericTablePagination";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { useCopySubsetVariant } from "@/components/agent-copy/copy-subset/useCopySubsetVariant";
+import type { CopySubsetColumn } from "@/components/agent-copy/copy-subset/types";
 import { jsonExportItem } from "@/components/agent-copy/export";
 import { cn } from "@/lib/utils";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
@@ -525,6 +527,46 @@ function MatrxDataTableCore<T>({
     () => columns.filter((c) => !c.hidden),
     [columns],
   );
+
+  /**
+   * "Filter & sort before copying…" — every table with a `copy` config
+   * offers the copy-subset door on its view copy AND its selected-rows copy.
+   * Suppressed in remote controlled mode: there `data` is one server page,
+   * and a door promising "exactly what you want from the data" over one page
+   * would be a lie (a fetch-all seam is the honest prerequisite).
+   */
+  const copySubsetVariant = useCopySubsetVariant();
+  const copySubsetColumns = (): CopySubsetColumn<T>[] =>
+    visibleColumns
+      .filter((c) => c.filter !== false || c.accessorKey || c.accessorFn)
+      .map((c) => ({
+        id: columnId(c),
+        header: typeof c.header === "string" ? c.header : columnId(c),
+        accessorKey: c.accessorKey,
+        accessorFn: c.accessorFn,
+        filter: c.filter,
+      }));
+  const copySubsetVariantFor = (
+    rows: () => T[],
+    scope: "view" | "selected",
+  ) =>
+    copy && !remoteQuery
+      ? [
+          copySubsetVariant(() => ({
+            label:
+              scope === "selected"
+                ? `${rows().length} selected ${selectionNoun}${rows().length === 1 ? "" : "s"}`
+                : (copy.listLabel ?? `${copy.label} view`),
+            location: copy.location,
+            kind: copy.listKind,
+            rows: rows(),
+            columns: copySubsetColumns(),
+            getRowId,
+            serializer: (shaped) =>
+              buildViewAgentInput(copy, shaped, data, { scope: "custom" }),
+          })),
+        ]
+      : [];
 
   const filterMeta = useMemo(() => {
     const meta = new Map<string, QueryFilterMeta>();
@@ -1262,7 +1304,10 @@ function MatrxDataTableCore<T>({
                       sort: sort ? `${sort.id}:${sort.direction}` : null,
                     })
                   }
-                  aiVariants={copy.aiVariants?.(processed, data)}
+                  aiVariants={[
+                    ...(copy.aiVariants?.(processed, data) ?? []),
+                    ...copySubsetVariantFor(() => processed, "view"),
+                  ]}
                   aiCustom={copy.aiCustom?.(processed, data)}
                   export={{
                     items: [
@@ -1348,6 +1393,10 @@ function MatrxDataTableCore<T>({
                       scope: "selected",
                     })
                   }
+                  aiVariants={copySubsetVariantFor(
+                    () => selectedRows,
+                    "selected",
+                  )}
                   export={{
                     items: [
                       jsonExportItem(

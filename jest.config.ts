@@ -101,8 +101,10 @@ const config: Config = {
     // stays untransformed ("Unexpected token 'export'"). Listing the package
     // prefixes makes that nested position fail the ignore, so ESM markdown
     // deps (needed by rehypeSafeRawHtml et al.) get transpiled to CJS.
+    // XML rendering tests use the real MarkdownCore, including react-markdown
+    // and unified/GFM's is-plain-obj + escape-string-regexp dependencies.
     transformIgnorePatterns: [
-      "/node_modules/(?!\\.pnpm/|@ai-matrx|human-id|uuid|unist|hast|mdast|micromark|remark|rehype|unified|vfile|property-information|space-separated-tokens|comma-separated-tokens|web-namespaces|zwitch|html-void-elements|html-url-attributes|ccount|character-entities|character-reference-invalid|decode-named-character-reference|stringify-entities|parse-entities|trim-lines|bail|trough|devlop|longest-streak|markdown-table|estree|mathml-tag-names|parse5).+\\.js$",
+      "/node_modules/(?!\\.pnpm/|@ai-matrx|human-id|uuid|unist|hast|mdast|micromark|react-markdown|is-plain-obj|escape-string-regexp|remark|rehype|unified|vfile|property-information|space-separated-tokens|comma-separated-tokens|web-namespaces|zwitch|html-void-elements|html-url-attributes|ccount|character-entities|character-reference-invalid|decode-named-character-reference|stringify-entities|parse-entities|trim-lines|bail|trough|devlop|longest-streak|markdown-table|estree|mathml-tag-names|parse5).+\\.js$",
     ],
     testPathIgnorePatterns: ["/node_modules/", "/.next/", "/.claude/"],
     // Restrict to *.test.ts(x) / *.spec.ts(x). Jest's default `testMatch`

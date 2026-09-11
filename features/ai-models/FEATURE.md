@@ -74,6 +74,8 @@ must obey.
 
 ## Change log
 
+- **2026-09-11** — Provider-sync copy actions rebuilt on the canonical `CopyButtons` pair (`ProviderSyncCopyForAi.tsx`): the provider menu and page control lose their bespoke dropdown / visible "Copy for AI" text / local clipboard copy, keep the status variants (All / Matched / Not in DB / Extra / Excluded), gain Copy JSON + JSON/CSV downloads, and carry **"Filter & sort before copying…"** — the platform `copy-subset` window (`components/agent-copy/copy-subset/FEATURE.md`) over `{ provider, comparison }` rows (Model · Provider id · Provider · Status · Released · DB name · Deprecated · Type). Serializer: `buildProviderSyncSubsetPayload` (`status_filter: "custom"`, shaping attributes); flat records: `providerSyncComparisonRecord`.
+
 - `2026-09-11` — `ModelListDropdown` keeps every fixed desktop column reachable
   below its 808px/1208px user/admin inner widths by scrolling the inner panel
   horizontally inside its viewport-clamped popover; list/detail/offering panes

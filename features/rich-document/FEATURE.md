@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-30`
+**Last updated:** `2026-09-11`
 
 > **Skill**: [`.claude/skills/rich-document-actions/SKILL.md`](../../.claude/skills/rich-document-actions/SKILL.md) — the how-to for using RichDocument on a page, adding an action, adding a content source, and wiring a remote surface. Read the skill for tasks; read this FEATURE.md for deep reference.
 
@@ -127,6 +127,14 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 
 ---
 
+## Markdown inside generic XML blocks
+
+Generic XML code blocks converge on `components/mardown-display/blocks/xml/XmlBlock.tsx` through the existing block dispatch, regardless of direct text, persisted history, Redux render blocks, or event input. The XML renderer groups contiguous text between tags and formats it with the existing `MarkdownCore` **GFM** preset. XML chrome, collapse, and copying the original source remain owned by `XmlBlock`; text at nested XML levels uses the same formatting path.
+
+This is a formatting boundary, not another content-recognition pass. Never mount `MarkdownStream`, `RichDocument`, or a block dispatcher from XML text. Code spans/fences and XML comments/CDATA remain literal, raw HTML is not executed, and the default Markdown URL filter remains active. The outer Content IR pipeline still owns registered kinds, embedded-kind recovery, and artifact composition; its existing ownership exclusions remain unchanged. Common XML text indentation is removed while relative Markdown indentation is retained.
+
+Guards: `blocks/xml/XmlBlock.test.tsx` exercises the real Markdown core and literal-content boundaries; `chat-markdown/__tests__/xmlRenderingPaths.test.tsx` checks rendered Markdown across ingress adapters (its unrelated block leaves are stubbed); `block-registry/__tests__/block-dispatch.test.tsx` checks dispatch separately. These guards complement browser verification rather than replacing it.
+
 ## Related features
 
 - **Depends on:** `components/mardown-display/` (the content engine), `lib/redux/slices/overlaySlice.ts` (overlay dispatch), `features/overlays/` (overlay registration), `components/icons/tap-buttons` (button primitives for inline variants), `features/tts/components/StreamingSpeakerButton` (TTS inline button), `features/notes/service/notesApi` (save-to-notes), `features/code-files/service/codeFilesApi` (save-to-code), `features/tasks/redux/taskAssociationsSlice` (save-to-task).
@@ -181,6 +189,8 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 ## Change log
 
 Newest first.
+
+- `2026-09-11` — Generic XML text now renders GFM through the shared Markdown core, with contiguous table/list text, literal code boundaries, retained XML controls, and rendering assertions across direct, stored, Redux, and event inputs. Rich-kind and artifact recognition stays in the outer pipeline.
 
 - `2026-08-30` — codex: **Configurable Markdown images cross the authenticated blob boundary before rendering.** `DurableMarkdownImg` sends recognized Matrx file endpoints through `useMediaBlob`, never binds the private byte endpoint while that read is pending, and leaves blob-read failure capture to the canonical hook.
 - `2026-08-25` — codex: **Restored the complete RichDocument right-click hierarchy in nested editors.** The shared context-menu trigger now lets the innermost preview own desktop right-click, `MatrxSplit` enables that menu when `actionsSource` opts into RichDocument, and RichDocument converts non-core registry actions through `buildMenuTree` inside a named Document section, restoring Edit content, full-screen editor, and the App subgroup without duplicating handlers or Compare verbs.

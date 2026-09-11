@@ -1,4 +1,5 @@
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import type { CopySubsetMeta } from "@/components/agent-copy/copy-subset/types";
 import type {
   ProviderSyncComparison,
   ProviderSyncComparisonStatus,
@@ -156,5 +157,76 @@ export function buildProviderSyncPagePayload(
       )
       .join("\n"),
     data: { providers },
+  };
+}
+
+/**
+ * One flat record per comparison — the shape JSON/CSV exports and Google
+ * Sheets take. Shared by the provider menu and the page control so every
+ * export path names the same columns in the same order.
+ */
+export function providerSyncComparisonRecord(
+  c: ProviderSyncComparison,
+  provider?: string,
+): Record<string, unknown> {
+  return {
+    ...(provider !== undefined ? { provider } : {}),
+    model: c.display_name,
+    provider_id: c.id,
+    status: c.status,
+    released: c.providerEntry?.created_at ?? null,
+    type: c.providerEntry?.type ?? null,
+    db_name: c.localEntry?.common_name ?? null,
+    db_id: c.localEntry?.id ?? null,
+    deprecated: c.localEntry ? Boolean(c.localEntry.is_deprecated) : null,
+  };
+}
+
+/**
+ * The for-AI envelope for rows the user shaped in the copy-subset window
+ * ("Filter & sort before copying…"). Same lean row shape as the provider
+ * payload; the attributes say exactly how the subset was shaped.
+ */
+export function buildProviderSyncSubsetPayload(
+  label: string,
+  rows: Array<{ provider: string; comparison: ProviderSyncComparison }>,
+  meta: CopySubsetMeta,
+): AgentPayloadInput {
+  const providers = [...new Set(rows.map((row) => row.provider))];
+  const counts = {
+    matched: rows.filter((r) => r.comparison.status === "matched").length,
+    missing_local: rows.filter((r) => r.comparison.status === "missing_local")
+      .length,
+    extra_local: rows.filter((r) => r.comparison.status === "extra_local")
+      .length,
+    excluded: rows.filter((r) => r.comparison.status === "excluded").length,
+  };
+  return {
+    kind: "provider-sync-models",
+    location: PROVIDER_SYNC_AI_LOCATION,
+    description: `${label}: ${rows.length} of ${meta.total_rows} rows, filtered and sorted by the user before copying.`,
+    attributes: {
+      providers: providers.join(","),
+      status_filter: "custom",
+      model_count: rows.length,
+      total_rows: meta.total_rows,
+      matched_rows: meta.matched_rows,
+      active_filters: meta.active_filters,
+      sort: meta.sort,
+      search: meta.search,
+      selection: meta.selection,
+    },
+    summary: [
+      `Providers: ${providers.join(", ") || "none"}`,
+      `Models: ${rows.length} of ${meta.total_rows}`,
+      `Matched: ${counts.matched}, Not in DB: ${counts.missing_local}, Extra: ${counts.extra_local}, Excluded: ${counts.excluded}`,
+    ].join("\n"),
+    data: {
+      counts,
+      models: rows.map((row) => ({
+        provider_name: row.provider,
+        ...leanComparison(row.comparison),
+      })),
+    },
   };
 }

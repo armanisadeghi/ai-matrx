@@ -2,9 +2,13 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 let mockDbSegments: Array<Record<string, unknown>> = [];
+let mockReduxState: Record<string, unknown> = {
+  activeRequests: { byRequestId: {} },
+};
 
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector(mockReduxState),
   // useRetainRequestForViewer (StreamAwareChatMarkdown) dispatches retention
   // actions on mount; a noop dispatch keeps this render-path test focused on
   // rendering.
@@ -18,22 +22,47 @@ jest.mock(
   }),
 );
 
+// XmlBlock imports the MarkdownCore front door in production. Replace only
+// Next's dynamic boundary with its real implementation so these assertions
+// exercise react-markdown + GFM, rather than testing next/dynamic.
+jest.mock("@/components/markdown-core/MarkdownCore", () => {
+  const actual = jest.requireActual(
+    "@/components/markdown-core/MarkdownCoreImpl",
+  ) as typeof import("@/components/markdown-core/MarkdownCoreImpl");
+  return { __esModule: true, default: actual.default };
+});
+
 jest.mock("../internal-handlers/SafeBlockRenderer", () => {
   const react = jest.requireActual("react") as typeof React;
+  const XmlBlock = jest.requireActual(
+    "@/components/mardown-display/blocks/xml/XmlBlock",
+  ).default as React.ComponentType<{ content: string; language?: string }>;
   return {
+    // EnhancedChatMarkdown's ingress/sequencing seam is the subject here.
+    // Block dispatch has its own direct tests; keep non-XML blocks lightweight,
+    // but render XML through the real XmlBlock and MarkdownCore implementation.
     SafeBlockRenderer: ({
       block,
     }: {
       block: { type: string; content: string; language?: string };
-    }) =>
-      react.createElement(
-        "div",
-        {
-          "data-block-type": block.type,
-          "data-language": block.language,
-        },
-        block.content,
-      ),
+    }) => {
+      const attrs = {
+        "data-mtx-ctx": "block",
+        "data-block-type": block.type,
+        "data-language": block.language,
+      };
+      if (block.type === "code" && block.language === "xml") {
+        return react.createElement(
+          "div",
+          attrs,
+          react.createElement(XmlBlock, {
+            content: block.content,
+            language: block.language,
+          }),
+        );
+      }
+      return react.createElement("div", attrs, block.content);
+    },
   };
 });
 
@@ -83,8 +112,24 @@ import { EnhancedChatMarkdownInternal } from "../EnhancedChatMarkdown";
 import { StreamAwareChatMarkdown } from "../StreamAwareChatMarkdown";
 import type { TypedStreamEvent } from "../types";
 
-const XML =
-  "<custom_response>\n<value>42</value>\n</custom_response>";
+// Controlled guard fixture: generic wrappers must retain author Markdown
+// semantics instead of downgrading the XML body to literal/XML-token text.
+const XML = `<custom_response>
+**Strong result** with \`inline_code\`
+
+| Name | Score |
+| --- | ---: |
+| Ada | 42 |
+</custom_response>`;
+
+function expectRichXmlFallback(container: HTMLElement) {
+  const xmlBlock = container.querySelector('[data-block-type="code"]');
+  expect(xmlBlock?.getAttribute("data-language")).toBe("xml");
+  expect(xmlBlock?.getAttribute("data-mtx-ctx")).toBe("block");
+  expect(xmlBlock?.querySelector("strong")?.textContent).toBe("Strong result");
+  expect(xmlBlock?.querySelector("code")?.textContent).toBe("inline_code");
+  expect(xmlBlock?.querySelector("table")).not.toBeNull();
+}
 
 describe("XML fallback across MarkdownStream rendering paths", () => {
   let container: HTMLDivElement;
@@ -100,6 +145,7 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
 
   beforeEach(() => {
     mockDbSegments = [];
+    mockReduxState = { activeRequests: { byRequestId: {} } };
     jest
       .spyOn(globalThis, "requestAnimationFrame")
       .mockImplementation((callback) => {
@@ -125,11 +171,7 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
       );
     });
 
-    expect(
-      container
-        .querySelector('[data-block-type="code"]')
-        ?.getAttribute("data-language"),
-    ).toBe("xml");
+    expectRichXmlFallback(container);
   });
 
   it("expands server-processed text blocks before rendering", async () => {
@@ -151,11 +193,7 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
       );
     });
 
-    expect(
-      container
-        .querySelector('[data-block-type="code"]')
-        ?.getAttribute("data-language"),
-    ).toBe("xml");
+    expectRichXmlFallback(container);
   });
 
   it("splits persisted DB text segments in the interleaved history path", async () => {
@@ -175,11 +213,48 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
       );
     });
 
-    expect(
-      container
-        .querySelector('[data-block-type="code"]')
-        ?.getAttribute("data-language"),
-    ).toBe("xml");
+    expectRichXmlFallback(container);
+  });
+
+  it("renders the XML body held in the Redux render-block path", async () => {
+    mockReduxState = {
+      activeRequests: {
+        byRequestId: {
+          "redux-xml": {
+            renderBlockOrder: ["xml-block"],
+            renderBlocks: {
+              "xml-block": {
+                blockId: "xml-block",
+                blockIndex: 0,
+                type: "code",
+                status: "complete",
+                content: "**Strong result** with `inline_code`\n\n| Name | Score |\n| --- | ---: |\n| Ada | 42 |",
+                data: { language: "xml" },
+                metadata: {},
+              },
+            },
+            editedText: null,
+            timeline: [],
+            isTextStreaming: false,
+            isReasoningStreaming: false,
+            activeOperations: {},
+            completedOperations: {},
+          },
+        },
+      },
+    };
+
+    await act(async () => {
+      root.render(
+        <EnhancedChatMarkdownInternal
+          requestId="redux-xml"
+          content=""
+          hideCopyButton
+        />,
+      );
+    });
+
+    expectRichXmlFallback(container);
   });
 
   it("keeps recognized XML specialized on the server-text path", async () => {
@@ -208,7 +283,8 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
   it("updates the XML rendering through live chunk events", async () => {
     const events = [
       { event: "chunk", data: { text: "<custom_response>\n" } },
-      { event: "chunk", data: { text: "<value>42</value>\n" } },
+      { event: "chunk", data: { text: "**Strong result** with `inline_code`\n\n" } },
+      { event: "chunk", data: { text: "| Name | Score |\n| --- | ---: |\n| Ada | 42 |\n" } },
       { event: "chunk", data: { text: "</custom_response>" } },
     ] as TypedStreamEvent[];
 
@@ -222,11 +298,7 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
       );
     });
 
-    expect(
-      container
-        .querySelector('[data-block-type="code"]')
-        ?.getAttribute("data-language"),
-    ).toBe("xml");
+    expectRichXmlFallback(container);
   });
 
   it("renders complete XML text runs in tool-interleaved event mode", async () => {
@@ -253,11 +325,7 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
       );
     });
 
-    expect(
-      container
-        .querySelector('[data-block-type="code"]')
-        ?.getAttribute("data-language"),
-    ).toBe("xml");
+    expectRichXmlFallback(container);
     logSpy.mockRestore();
   });
 
@@ -288,11 +356,7 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
       );
     });
 
-    expect(
-      container
-        .querySelector('[data-block-type="code"]')
-        ?.getAttribute("data-language"),
-    ).toBe("xml");
+    expectRichXmlFallback(container);
     logSpy.mockRestore();
   });
 });
