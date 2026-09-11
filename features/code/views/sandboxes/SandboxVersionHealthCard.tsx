@@ -193,7 +193,6 @@ export function SandboxVersionHealthCard({
             <Badge variant="outline" className={`shrink-0 gap-1 ${presentation.className}`}>
               <Icon className="h-3 w-3" /> {presentation.label}
             </Badge>
-            {health.template && <span className="truncate">{health.template}</span>}
             <span className="text-[11px] underline-offset-2 hover:underline">Details</span>
           </summary>
           <div className="mt-2 space-y-1 rounded border border-border bg-background p-2 text-[11px]">
