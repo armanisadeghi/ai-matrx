@@ -44,6 +44,7 @@ import {
   useServedInputKinds,
   useServedInputValues,
 } from "./ServedInputFields";
+import { runFormScreamProps } from "./run-form-refusal";
 import {
   useServedRunForm,
   useServedRunStart,
@@ -122,8 +123,11 @@ export function ServedRunForm({
   if (state.status === "error") {
     return (
       <ServedFormScream
-        title="Could not load the run form"
-        body={`${state.message} The run form is SERVED (GET /workflows/{id}/run-form) — without it there is nothing honest to render.`}
+        {...runFormScreamProps(state, {
+          title: "Could not load the run form",
+          surfaceNote:
+            "The run form is SERVED (GET /workflows/{id}/run-form) — without it there is nothing honest to render.",
+        })}
       />
     );
   }

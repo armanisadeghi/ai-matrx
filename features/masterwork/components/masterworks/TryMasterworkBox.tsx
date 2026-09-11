@@ -70,6 +70,7 @@ import {
   useServedInputKinds,
   useServedInputValues,
 } from "@/features/workflow-runtime/served-form/ServedInputFields";
+import { runFormScreamProps } from "@/features/workflow-runtime/served-form/run-form-refusal";
 import {
   buildSubmission,
   parseServedInput,
@@ -441,9 +442,19 @@ export function TryMasterworkBox({
     <div className="space-y-3">
       {/* ── LOUD: a surface that could not be read, or was never served ─── */}
       {served.status === "error" ? (
+        // 🚨 THE READER IS NEVER BLAMED FOR A WORKFLOW THAT DOES NOT COMPILE.
+        // This printed "Bad request. Please check your input. The fields below
+        // are the fallback pair…" on 2026-09-11 while the reader had typed
+        // nothing and the server had sent six named node errors. Both halves
+        // were false. `runFormScreamProps` drops the fallback-pair note for a
+        // compile refusal (there is nothing to fill in) and carries the
+        // server's own reasons through as lines.
         <ServedFormScream
-          title="Could not read what this asks for"
-          body={`${served.message} The fields below are the fallback pair, not this Masterwork's own declared inputs — what the builder designed is not being asked for.`}
+          {...runFormScreamProps(served, {
+            title: "Could not read what this asks for",
+            surfaceNote:
+              "The fields below are the fallback pair, not this Masterwork's own declared inputs — what the builder designed is not being asked for.",
+          })}
         />
       ) : served.status === "ready" && !served.form.surfaceServed ? (
         <ServedFormScream

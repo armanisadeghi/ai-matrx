@@ -23,6 +23,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 
+import { describeRunFormFailure } from "./run-form-refusal";
 import {
   parseServedRunForm,
   readInputsRequiredGaps,
@@ -38,7 +39,25 @@ import {
 export type ServedRunFormState =
   | { status: "loading" }
   | { status: "ready"; form: ServedRunFormSchema }
-  | { status: "error"; message: string };
+  | {
+      status: "error";
+      /** The reason to print. NEVER a sentence that blames the reader. */
+      message: string;
+      /**
+       * The server's own named problems, one line each. Pass these straight
+       * to `<ServedFormScream issues>` — a refusal that knows six things and
+       * prints one is a silent failure.
+       */
+      issues: string[];
+      /** The server explained itself (as opposed to a bare status code). */
+      serverExplained: boolean;
+      /**
+       * The workflow does not compile. The fix is in the WORKFLOW — Studio or
+       * the Conductor — not in anything the reader could type here, so a
+       * surface must not also tell them their inputs are the problem.
+       */
+      doesNotCompile: boolean;
+    };
 
 /**
  * GET /workflows/{id}/run-form → THE compiled input surface.
@@ -83,10 +102,11 @@ export function useServedRunForm(
       );
       if (!live) return;
       if (result.error) {
-        setState({
-          status: "error",
-          message: result.error.message || "Could not load the run form.",
-        });
+        // THE SERVER'S REASON ALWAYS WINS. `describeRunFormFailure` is the
+        // shared reader (see its header for the 2026-09-11 defect), so every
+        // consumer of this hook inherits the truth and none of them can drift
+        // back to a generic sentence on its own.
+        setState({ status: "error", ...describeRunFormFailure(result.error) });
         return;
       }
       setState({ status: "ready", form: parseServedRunForm(result.data) });

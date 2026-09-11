@@ -51,6 +51,7 @@ import {
   useServedInputKinds,
   useServedInputValues,
 } from "../../served-form/ServedInputFields";
+import { runFormScreamProps } from "../../served-form/run-form-refusal";
 import {
   buildSubmission,
   unsatisfiedServedInputs,
@@ -477,8 +478,11 @@ function IntakeBrief({
       {state.status === "error" ? (
         <div className="mt-4">
           <ServedFormScream
-            title="Could not load what this commission needs"
-            body={`${state.message} The brief is SERVED (GET /workflows/{id}/run-form) — without it there is nothing honest to ask for.`}
+            {...runFormScreamProps(state, {
+              title: "Could not load what this commission needs",
+              surfaceNote:
+                "The brief is SERVED (GET /workflows/{id}/run-form) — without it there is nothing honest to ask for.",
+            })}
           />
         </div>
       ) : null}

@@ -25,6 +25,7 @@ import {
   ServedInputFields,
   useServedInputKinds,
 } from "../../served-form/ServedInputFields";
+import { runFormScreamProps } from "../../served-form/run-form-refusal";
 import type { ServedRunFormState } from "../../served-form/useServedRunForm";
 import { collidingInputNames, missingTriggerInputs, triggerDefaultInputs } from "../default-inputs";
 
@@ -60,8 +61,11 @@ export function TriggerDefaultInputs({
   if (state.status === "error") {
     return (
       <ServedFormScream
-        title="Could not load what this workflow needs"
-        body={`${state.message} A schedule's answers are authored against the workflow's declared input surface (GET /workflows/{id}/run-form) — without it there is nothing honest to fill in, and saving now would turn on a schedule with no answers.`}
+        {...runFormScreamProps(state, {
+          title: "Could not load what this workflow needs",
+          surfaceNote:
+            "A schedule's answers are authored against the workflow's declared input surface (GET /workflows/{id}/run-form) — without it there is nothing honest to fill in, and saving now would turn on a schedule with no answers.",
+        })}
       />
     );
   }

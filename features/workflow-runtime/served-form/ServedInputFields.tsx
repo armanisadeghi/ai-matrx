@@ -409,24 +409,48 @@ export function SourcingBadge({ input }: { input: ServedInput }) {
   );
 }
 
-/** The loud band. A degraded served surface always says so out loud. */
+/**
+ * The loud band. A degraded served surface always says so out loud.
+ *
+ * `issues` are the server's OWN named reasons, one line each — rendered
+ * verbatim rather than summarised. A refusal that knows six things and prints
+ * one is a silent failure (Masterwork "Verification Desk", 2026-09-11: the
+ * run box showed "Bad request. Please check your input." while the server had
+ * sent six node-addressed compile errors). Build them with
+ * `describeRunFormFailure` from `./run-form-refusal`, never by hand.
+ */
 export function ServedFormScream({
   title,
   body,
+  issues,
 }: {
   title: string;
   body: string;
+  issues?: readonly string[] | undefined;
 }) {
   return (
     <div className="mb-3 flex items-start gap-2 rounded-md border border-red-500/40 bg-red-500/5 px-3 py-2">
       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" />
-      <div>
+      <div className="min-w-0">
         <p className="text-xs font-medium text-red-700 dark:text-red-300">
           {title}
         </p>
         <p className="mt-0.5 text-[11px] text-red-700/90 dark:text-red-300/90">
           {body}
         </p>
+        {issues && issues.length > 0 ? (
+          <ul className="mt-1.5 space-y-1">
+            {issues.map((issue) => (
+              <li
+                key={issue}
+                className="text-[11px] leading-snug text-red-700/90 dark:text-red-300/90"
+              >
+                <span className="mr-1 select-none">•</span>
+                {issue}
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
     </div>
   );
