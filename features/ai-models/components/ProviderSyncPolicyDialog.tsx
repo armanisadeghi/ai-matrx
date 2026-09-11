@@ -13,13 +13,23 @@
  * Saving states the consequence out loud before it happens — an excluded model
  * is a model the sync agent will never add, forever, silently.
  *
- * 🚨 The consequence panel is INLINE, not a second confirm dialog. A
- * `confirm()` raised from inside an open Dialog never appears: the opener
- * waits for `document.body.style.pointerEvents` to come back, which an open
- * Radix dialog holds at "none" for as long as it is open, so the promise never
- * resolves and Save silently does nothing. (Found live on 2026-09-11 — the
- * button looked fine and wrote nothing.) An editor surface states its impact
- * on the surface; only a control OUTSIDE a modal layer may raise a confirm.
+ * 🚨 The consequence panel is INLINE, and that is a UX choice, not a
+ * workaround any more. It began as one: a `confirm()` raised from inside an
+ * open Dialog never appeared, because the opener waited for
+ * `document.body.style.pointerEvents` to come back and an open Radix dialog
+ * holds it at "none" for its whole life — so the promise never resolved and
+ * Save silently did nothing (found live 2026-09-11, feedback 11b0a90c).
+ *
+ * THAT MECHANISM IS FIXED. `components/dialogs/confirm/after-current-layer-closes.ts`
+ * now tells a transient layer from a persistent one and opens the confirm
+ * NESTED above a dialog, with a bounded wait and a thrown error if it cannot
+ * be shown at all; a confirm from inside a dialog works everywhere. Do not
+ * repeat the old rule that "only a control OUTSIDE a modal layer may raise a
+ * confirm" — it is no longer true.
+ *
+ * The panel stays inline because an editor surface should state its impact on
+ * the surface, where the person is already reading, rather than interrupt with
+ * a second modal for something they can see.
  */
 
 import React, { useEffect, useState } from "react";

@@ -105,18 +105,17 @@ export function hasClosingLayerAnimation(doc: Document = document): boolean {
   for (const el of Array.from(doc.querySelectorAll(OPEN_LAYER_SELECTOR))) {
     if (el.getAttribute("data-state") !== "closed") continue;
     if (el.getAttribute("aria-hidden") === "true") continue;
-    if (typeof el.getAnimations !== "function") continue;
-    if (
-      el
-        .getAnimations()
-        .some(
-          (animation) => animation.pending || animation.playState === "running",
-        )
-    ) {
-      return true;
-    }
+    if (hasRunningAnimation(el)) return true;
   }
   return false;
+}
+
+/** One reading of "this element is still animating", shared by every predicate here. */
+function hasRunningAnimation(el: Element): boolean {
+  if (typeof el.getAnimations !== "function") return false;
+  return el
+    .getAnimations()
+    .some((animation) => animation.pending || animation.playState === "running");
 }
 
 /** How many times this session had to repair the body. Read by the scream. */
@@ -208,6 +207,62 @@ export function restoreBodyPointerEventsIfOrphaned(
     );
   }
   return true;
+}
+
+/**
+ * 🚨 TRANSIENT vs PERSISTENT — the distinction that ends the dead Save button
+ * (feedback 11b0a90c, 2026-09-11).
+ *
+ * `hasOpenLayer` answers "is a layer up", and that question is right for the
+ * watchdog and WRONG for "may I open a confirm now". A Radix Select or menu is
+ * TRANSIENT: it is on its way out, the layer that raised the intent is about to
+ * be gone, and waiting for it is correct. A Dialog, Sheet or Drawer is
+ * PERSISTENT: it will still be open in ten seconds, so waiting for it is
+ * waiting forever — which is exactly what `afterCurrentLayerCloses` did, and
+ * why eight in-dialog Save/Delete handlers silently did nothing.
+ *
+ * Telling them apart from the DOM: every popper-based layer (Select,
+ * DropdownMenu, Popover, Tooltip, HoverCard) renders inside
+ * `[data-radix-popper-content-wrapper]`, and listboxes/menus carry their own
+ * roles. Everything else that matches a layer role — `role="dialog"` or
+ * `role="alertdialog"` NOT inside a popper wrapper — is a real modal surface
+ * that stays. This is why `role="dialog"` alone cannot decide it: Radix Popover
+ * content is also `role="dialog"`, and it is transient.
+ */
+export function isTransientLayer(el: Element): boolean {
+  if (el.closest("[data-radix-popper-content-wrapper]")) return true;
+  const role = el.getAttribute("role");
+  return role === "listbox" || role === "menu";
+}
+
+/**
+ * A transient layer is still on screen — open, or mounted and mid-exit. Both
+ * count: a closing Select still owns the body lock until Radix's cleanup runs,
+ * which is the whole reason the original wait existed.
+ */
+export function hasTransientLayer(doc: Document = document): boolean {
+  for (const el of Array.from(doc.querySelectorAll(OPEN_LAYER_SELECTOR))) {
+    if (el.getAttribute("aria-hidden") === "true") continue;
+    if (!isTransientLayer(el)) continue;
+    const state = el.getAttribute("data-state");
+    if (state === "open") return true;
+    if (state === "closed" && hasRunningAnimation(el)) return true;
+  }
+  return false;
+}
+
+/**
+ * A layer that will NOT close on its own is open right now. The confirm must
+ * be opened ABOVE it as a nested layer instead of waiting for it.
+ */
+export function hasPersistentLayer(doc: Document = document): boolean {
+  for (const el of Array.from(doc.querySelectorAll(OPEN_LAYER_SELECTOR))) {
+    if (el.getAttribute("data-state") !== "open") continue;
+    if (el.getAttribute("aria-hidden") === "true") continue;
+    if (isTransientLayer(el)) continue;
+    return true;
+  }
+  return false;
 }
 
 /**

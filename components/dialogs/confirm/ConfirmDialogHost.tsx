@@ -36,9 +36,65 @@ import { useBodyPointerEventsGuard } from "./body-pointer-events-guard";
 
 export type { ConfirmOptions } from "@ai-matrx/kit/confirm-opener";
 
-/** The one ownership handoff for every imperative confirm in the app. */
+/**
+ * The kit parks its opener state on a `Symbol.for` slot on `globalThis` so the
+ * ESM and CJS copies of the package share one host registration. We read the
+ * same slot for ONE question: is a host actually alive to show this dialog?
+ */
+const CONFIRM_OPENER_STATE_SLOT = Symbol.for(
+  "ai-matrx.kit.confirm-opener-state",
+);
+
+/**
+ * The host arrives via `next/dynamic({ ssr: false })`, so an early call can
+ * legitimately precede it. This is generous enough to cover hydration plus the
+ * chunk fetch, and short enough that a page with NO host mounted reports the
+ * fact instead of leaving the caller pending forever.
+ */
+export const CONFIRM_HOST_WAIT_MS = 5000;
+
+function confirmHostIsRegistered(): boolean {
+  const state = (globalThis as Record<symbol, unknown>)[
+    CONFIRM_OPENER_STATE_SLOT
+  ] as { host?: unknown } | undefined;
+  return Boolean(state?.host);
+}
+
+async function waitForConfirmHost(timeoutMs: number): Promise<boolean> {
+  if (confirmHostIsRegistered()) return true;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    if (confirmHostIsRegistered()) return true;
+  }
+  return false;
+}
+
+/**
+ * The one ownership handoff for every imperative confirm in the app.
+ *
+ * 🚨 IT ALWAYS SETTLES (feedback 11b0a90c). Three outcomes, no fourth:
+ * the person answers; the wait ran long and we opened anyway with a warning;
+ * or the confirm genuinely cannot be shown and this THROWS, so the caller's
+ * own error handling surfaces it. What it must never do again is hang, which
+ * a caller cannot tell apart from a button that does nothing.
+ */
 export async function confirm(options: ConfirmOptions): Promise<boolean> {
-  await afterCurrentLayerCloses();
+  const outcome = await afterCurrentLayerCloses();
+  if (outcome === "timed-out") {
+    console.warn(
+      "[modal-layers] a closing layer never released the screen within ~500ms; showing the confirm anyway.",
+    );
+  }
+  // `openConfirm` queues indefinitely when no host is mounted — by design, so
+  // a pre-hydration call still gets a real question. That queue must not
+  // become a silent hang: if no host ever appears, say so rather than leaving
+  // the caller pending.
+  if (!(await waitForConfirmHost(CONFIRM_HOST_WAIT_MS))) {
+    throw new Error(
+      "Could not show the confirmation dialog: no <ConfirmDialogHost /> is mounted in this tree. The action was not performed.",
+    );
+  }
   return openConfirm(options);
 }
 
