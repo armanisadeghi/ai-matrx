@@ -10,8 +10,12 @@ this directory.
 
 ## 🚨 Rules an agent editing this directory must obey
 
-1. **`scopesService.ts` is the ONLY file that may query the `context.*` tables.** ESLint enforces
-   it; the boy-scout rule applies — fix violators on sight. (The tables are `context.scope_types`,
+1. **`scopesService.ts` is the ONLY file that may query the `context.*` tables.** ~~ESLint enforces
+   it;~~ the boy-scout rule applies — fix violators on sight.
+   **Corrected 2026-09-11 (data-doctrine discovery atlas §3.4 O-6):** "ESLint enforces it" is
+   **DECLARED, not observed.** The rule targets `.from('ctx_*')` literals, of which **zero remain**,
+   and **four live files bypass the chokepoint**. Tracked as register item DD-109 in
+   `common-docs/projects/data-doctrine-adoption/REGISTER.md`. (The tables are `context.scope_types`,
    `context.scopes`, `context.context_items`, `context.context_item_values`, … — the old public
    `ctx_*` names no longer exist.)
 2. **The `assoc_*` / `cat_*` / `ues_*` RPC families are called ONLY inside
