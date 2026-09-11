@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { FolderTree, MessageCircle, History, SquareTerminal } from "lucide-react";
+import {
+  FolderTree,
+  MessageCircle,
+  History,
+  SquareTerminal,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 // Side effect: register builtin library-source adapters (prompt_apps, aga_apps, tool_ui, html_pages).
 import "./library-sources/registerBuiltinLibrarySources";
@@ -20,6 +25,7 @@ import {
 } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { useOpenCodeFileFromUrl } from "./hooks/useOpenCodeFileFromUrl";
 import { useFocusCodeFolderFromUrl } from "./hooks/useFocusCodeFolderFromUrl";
+import { useCodeWorkspaceUrlState } from "./hooks/useCodeWorkspaceUrlState";
 import { useTabRealtimeWatcher } from "./hooks/useTabRealtimeWatcher";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveSandboxId } from "./redux/codeWorkspaceSlice";
@@ -105,10 +111,13 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
         <>
           <UrlOpenFileBridge />
           <UrlFocusFolderBridge />
+          <UrlWorkspaceStateBridge initialSandboxId={initialSandbox?.id ?? null} />
           <SandboxHeartbeatBridge />
           <TabRealtimeBridge />
           <div className={cn("flex h-full w-full min-h-0", className)}>
             <MobilePanelShell
+              collapseBelow="lg"
+              presentation="stacked"
               desktop={
                 <WorkspaceLayout
                   rightSlot={rightSlot}
@@ -142,9 +151,12 @@ function buildMobilePanels(
   farRightSlot: React.ReactNode,
 ): MobileShellPanel[] {
   const decoratedRightSlot = React.isValidElement(rightSlot)
-    ? React.cloneElement(rightSlot as React.ReactElement<{ rightmost?: boolean }>, {
-        rightmost: true,
-      })
+    ? React.cloneElement(
+        rightSlot as React.ReactElement<{ rightmost?: boolean }>,
+        {
+          rightmost: true,
+        },
+      )
     : rightSlot;
   const decoratedFarRightSlot = React.isValidElement(farRightSlot)
     ? React.cloneElement(
@@ -201,6 +213,16 @@ const UrlOpenFileBridge: React.FC = () => {
  *  folder in the Library tree (expand ancestors + highlight + scroll to). */
 const UrlFocusFolderBridge: React.FC = () => {
   useFocusCodeFolderFromUrl();
+  return null;
+};
+
+/** Restores and reflects `/code` workspace location/panel state. Kept beside
+ * the established `open` / `folder` bridges because it depends on the same
+ * provider tree and deliberately leaves those canonical library links alone. */
+const UrlWorkspaceStateBridge: React.FC<{ initialSandboxId: string | null }> = ({
+  initialSandboxId,
+}) => {
+  useCodeWorkspaceUrlState(initialSandboxId);
   return null;
 };
 

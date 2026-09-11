@@ -5,7 +5,7 @@ import {
   ChevronsDown,
   ChevronsLeft,
   ChevronsRight,
-  GitBranch,
+  FolderOpen,
   Layers,
   MessageSquare,
   PanelRightOpen,
@@ -60,37 +60,38 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   return (
     <div
       className={cn(
-        "flex h-6 shrink-0 items-center justify-between bg-blue-600 px-2 text-[11px] text-white dark:bg-blue-700",
+        "flex h-7 min-w-0 shrink-0 items-center justify-between gap-3 border-t border-border bg-muted/40 px-2 text-[11px] text-muted-foreground",
         className,
       )}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"
           onClick={() => dispatch(setSideOpen(!sideOpen))}
-          className="flex items-center gap-1 hover:bg-blue-700/50 dark:hover:bg-blue-800/50"
+          className="flex shrink-0 items-center gap-1 rounded px-1 hover:bg-accent hover:text-foreground"
           aria-label="Toggle sidebar"
         >
           {sideOpen ? <ChevronsLeft size={12} /> : <ChevronsRight size={12} />}
           <span>Sidebar</span>
         </button>
-        <div className="flex items-center gap-1">
-          <GitBranch size={12} />
-          <span>{filesystem.label}</span>
+        <div
+          className="flex min-w-0 items-center gap-1"
+          title={
+            filesystem.id.startsWith("sandbox:")
+              ? process.cwd
+              : "Cloud files and saved code"
+          }
+        >
+          <FolderOpen size={12} className="shrink-0" />
+          <span className="truncate">
+            {filesystem.id.startsWith("sandbox:") ? process.cwd : "Cloud files"}
+          </span>
         </div>
-        {process.isReady && (
-          <div className="flex items-center gap-1">
-            <TerminalIcon size={12} />
-            <span>{process.cwd}</span>
-          </div>
-        )}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-3">
         {activeTab && (
           <>
             <span>{activeTab.language}</span>
-            <span>UTF-8</span>
-            <span>LF</span>
             {activeEnvironment ? (
               <span
                 className="flex items-center gap-1"
@@ -116,7 +117,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         <button
           type="button"
           onClick={() => dispatch(setTerminalOpen(!terminalOpen))}
-          className="flex items-center gap-1 hover:bg-blue-700/50 dark:hover:bg-blue-800/50"
+          className="flex items-center gap-1 rounded px-1 hover:bg-accent hover:text-foreground"
           aria-label="Toggle bottom panel"
         >
           <ChevronsDown size={12} />
@@ -126,7 +127,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           <button
             type="button"
             onClick={() => dispatch(setRightOpen(!rightOpen))}
-            className="flex items-center gap-1 hover:bg-blue-700/50 dark:hover:bg-blue-800/50"
+            className="flex items-center gap-1 rounded px-1 hover:bg-accent hover:text-foreground"
             aria-label="Toggle chat panel"
           >
             <MessageSquare size={12} />
@@ -137,7 +138,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           <button
             type="button"
             onClick={() => dispatch(setFarRightOpen(!farRightOpen))}
-            className="flex items-center gap-1 hover:bg-blue-700/50 dark:hover:bg-blue-800/50"
+            className="flex items-center gap-1 rounded px-1 hover:bg-accent hover:text-foreground"
             aria-label="Toggle chat history"
           >
             <PanelRightOpen size={12} />

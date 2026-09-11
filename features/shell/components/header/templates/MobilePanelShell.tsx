@@ -90,6 +90,9 @@ export interface MobilePanelShellProps {
   menuLabel?: string;
   /** Collapse a dense desktop workspace before phone width. */
   collapseBelow?: "md" | "lg" | "xl" | "2xl";
+  /** Keep workspace tools in an accessible vertical stack on compact screens.
+   * Native disclosures keep live children mounted when collapsed. */
+  presentation?: "drawers" | "stacked";
 }
 
 const COLLAPSE_MAX_WIDTH = {
@@ -107,6 +110,7 @@ export function MobilePanelShell({
   menuIcon: MenuIcon = MoreHorizontal,
   menuLabel = "Panels",
   collapseBelow = "md",
+  presentation = "drawers",
 }: MobilePanelShellProps) {
   const isMobile = useIsMobile();
   const compactWorkspace = useMediaQuery(
@@ -146,6 +150,37 @@ export function MobilePanelShell({
     setOpenPanelId(null);
     setMenuOpen(false);
   };
+
+  if (presentation === "stacked") {
+    return (
+      <div className="h-full w-full min-w-0 overflow-y-auto overscroll-contain pb-safe">
+        <div
+          className={cn("h-[65dvh] min-h-80 overflow-hidden", mainClassName)}
+        >
+          {main}
+        </div>
+        {panels?.map((panel) => {
+          const Icon = panel.icon;
+          return (
+            <details
+              key={panel.id}
+              className="group border-t border-border bg-card"
+            >
+              <summary className="min-h-11 cursor-pointer px-4 py-3 text-sm font-medium text-foreground marker:text-muted-foreground">
+                {Icon && (
+                  <Icon className="mr-2 inline-block h-4 w-4" aria-hidden />
+                )}
+                {panel.label}
+              </summary>
+              <div className="h-[60dvh] min-h-72 min-w-0 overflow-hidden">
+                {panel.content}
+              </div>
+            </details>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <>

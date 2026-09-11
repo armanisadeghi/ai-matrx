@@ -1,7 +1,14 @@
 "use client";
 
-import React from "react";
-import { ChevronDown, X } from "lucide-react";
+import React, { useEffect } from "react";
+import { X } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -63,6 +70,11 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
   const visibleTabs = TABS.filter(
     (t) => !t.requiresSandbox || !!activeSandboxId,
   );
+  useEffect(() => {
+    if (!visibleTabs.some((tab) => tab.id === activeTab)) {
+      dispatch(setTerminalActiveTab("terminal"));
+    }
+  }, [activeTab, dispatch, visibleTabs]);
 
   return (
     <div
@@ -75,11 +87,38 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
     >
       <div
         className={cn(
-          "flex h-8 shrink-0 items-center justify-between border-b px-1",
+          "flex min-h-11 lg:min-h-8 min-w-0 shrink-0 items-center justify-between gap-1 border-b px-1",
           PANE_BORDER,
         )}
       >
-        <div role="tablist" className="flex items-stretch">
+        <div className="min-w-0 flex-1 lg:hidden">
+          <Select
+            value={activeTab}
+            onValueChange={(value) => {
+              const tab = visibleTabs.find((item) => item.id === value);
+              if (tab) dispatch(setTerminalActiveTab(tab.id));
+            }}
+          >
+            <SelectTrigger
+              aria-label="Workspace tool"
+              className="h-11 border-0 bg-transparent text-base shadow-none"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {visibleTabs.map((tab) => (
+                <SelectItem key={tab.id} value={tab.id}>
+                  {tab.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div
+          role="tablist"
+          aria-label="Workspace tools"
+          className="hidden min-w-0 flex-1 items-stretch overflow-x-auto scrollbar-thin lg:flex"
+        >
           {visibleTabs.map((tab) => (
             <button
               key={tab.id}
@@ -88,33 +127,21 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
               aria-selected={activeTab === tab.id}
               onClick={() => dispatch(setTerminalActiveTab(tab.id))}
               className={cn(
-                "relative h-8 px-3 text-[11px] uppercase tracking-wide text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100",
-                activeTab === tab.id && "text-neutral-900 dark:text-neutral-50",
+                "relative h-8 shrink-0 whitespace-nowrap px-3 text-xs text-muted-foreground transition-colors hover:text-foreground",
+                activeTab === tab.id && "text-foreground font-medium",
               )}
             >
               {tab.label}
               {activeTab === tab.id && (
                 <span
                   aria-hidden
-                  className="absolute inset-x-2 bottom-0 h-[2px] rounded-t bg-blue-500"
+                  className="absolute inset-x-2 bottom-0 h-[2px] rounded-t bg-primary"
                 />
               )}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-0.5 pr-1">
-          <button
-            type="button"
-            aria-label="Hide panel"
-            title="Hide Panel"
-            onClick={() => {
-              dispatch(setTerminalOpen(false));
-              onCollapse?.();
-            }}
-            className="flex h-6 w-6 items-center justify-center rounded-sm text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
-          >
-            <ChevronDown size={14} />
-          </button>
+        <div className="hidden shrink-0 items-center pr-1 lg:flex">
           <button
             type="button"
             aria-label="Close panel"
@@ -123,7 +150,7 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
               dispatch(setTerminalOpen(false));
               onCollapse?.();
             }}
-            className="flex h-6 w-6 items-center justify-center rounded-sm text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+            className="flex h-7 w-7 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             <X size={14} />
           </button>
@@ -162,5 +189,3 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
     </div>
   );
 };
-
-
