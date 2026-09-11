@@ -78,6 +78,7 @@ import { EffectiveConfigLayers } from "../components/EffectiveConfigLayers";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { systemRungHealth, type SystemRungHealth } from "./system-rung-health";
 import { MandateCoverageAlert } from "./MandateCoverageAlert";
+import { MandateProvenancePanel } from "./MandateProvenancePanel";
 import {
   useMandateWorkspaceData,
   type MandateWorkspaceData,
@@ -627,6 +628,12 @@ function OneMandateWorkspace({
                 host={host}
               />
             </div>
+            {/* 🚨 ON EVERY HOST AND EVERY RUNG. Where this Mandate came from,
+                who is offered it, whether anything has ever run it, and which
+                rungs carry it — the four facts that used to need an engineer
+                and a database session (2026-09-11). See
+                ./MandateProvenancePanel.tsx. */}
+            <MandateProvenancePanel mandateKey={data.mandate.mandate_key} />
           </div>
           {perspective !== "system" ? (
             <div
