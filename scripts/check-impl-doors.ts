@@ -43,6 +43,14 @@
  *       the published anon key could rewrite or delete every row over
  *       `/rest/v1/schema_templates`. Until the table is registered or retired
  *       (DD-033), "anon has nothing" is the only thing holding it shut.
+ *   D4  No CLIENT role (`anon`, `authenticated`, `PUBLIC`) holds INSERT, UPDATE,
+ *       DELETE, TRUNCATE or REFERENCES on `workbench.schema_templates`. B-8
+ *       (2026-09-11) typed it REFERENCE data — authenticated reads, writes go
+ *       through `public.admin_{create,update,delete}_schema_template` (gated on
+ *       `admin.admins`) or `service_role`. Before that, any signed-in user of
+ *       any organization could rewrite or delete all five rows; proven live as
+ *       `test@test.com`. SELECT is deliberately not checked — reference data is
+ *       meant to be read.
  *
  * D2 is deliberately WIDER than the `_d31_impl_*` family this was born from:
  * fix the class, not the instance. It is expected to report a large
@@ -52,7 +60,7 @@
  * The baseline may only shrink; that is the same contract
  * `migration_checksum_honesty_guard` uses for its UNVERIFIABLE list.
  *
- * D1 and D3 have no baseline and no allowlist. They are absolutes.
+ * D1, D3 and D4 have no baseline and no allowlist. They are absolutes.
  *
  *   pnpm check:impl-doors            # loud, non-blocking (exit 0)
  *   pnpm check:impl-doors:strict     # exit 1 on any finding
@@ -185,6 +193,40 @@ interface PrivRow {
   privilege_type: string;
 }
 
+// ─── D4: no client role WRITES workbench.schema_templates ────────────────────
+//
+// B-8 (2026-09-11) typed that table as REFERENCE data: its 5 rows are field
+// shapes created 2025-05-15/16, they carry no organization, no creator and no
+// user content (discovery D13), and the table is registered nowhere, so there is
+// no owner an RLS policy could key on. Reference means exactly one thing here:
+// `authenticated` READS, and every WRITE goes through the admin doors
+// `public.admin_{create,update,delete}_schema_template` (gated on
+// `public.is_admin()` → admin.admins) or through `service_role`.
+//
+// D3 keeps `anon` at zero. D4 is the other half: a direct INSERT/UPDATE/DELETE
+// grant to ANY client role re-opens "any signed-in user of any organization can
+// rewrite all five rows", which is the hole B-8 closed — proven live before the
+// fix: as `test@test.com` (non-admin, 2 orgs) UPDATE, DELETE and INSERT all
+// SUCCEEDED. SELECT is deliberately NOT checked: reference data is meant to be
+// readable, and `utils/user-table-utls/template-utils.ts` reads it as the
+// signed-in user.
+//
+// No baseline, no allowlist — like D1 and D3 this is an absolute.
+const CLIENT_TEMPLATE_WRITE_QUERY = `
+  select grantee, privilege_type
+  from information_schema.role_table_grants
+  where table_schema = 'workbench'
+    and table_name = 'schema_templates'
+    and grantee in ('anon', 'authenticated', 'PUBLIC')
+    and privilege_type in ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES')
+  order by 1, 2
+`;
+
+interface ClientWriteRow {
+  grantee: string;
+  privilege_type: string;
+}
+
 // ─── Baseline for D2 (may only shrink) ───────────────────────────────────────
 
 interface Baseline {
@@ -240,6 +282,7 @@ async function main(): Promise<number> {
   let openImpls: OpenImplRow[];
   let undeclared: GrandfatherRow[];
   let anonPrivs: PrivRow[];
+  let clientWrites: ClientWriteRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -249,6 +292,10 @@ async function main(): Promise<number> {
     anonPrivs = await q<PrivRow>(
       ANON_TEMPLATE_GRANTS_QUERY,
       "D3 anon grants on workbench.schema_templates",
+    );
+    clientWrites = await q<ClientWriteRow>(
+      CLIENT_TEMPLATE_WRITE_QUERY,
+      "D4 client write grants on workbench.schema_templates",
     );
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
@@ -355,6 +402,39 @@ async function main(): Promise<number> {
     );
     console.log(
       `${C.dim}       The real close is registering or retiring the table (DD-033).${C.reset}`,
+    );
+  }
+
+  // ── D4 ────────────────────────────────────────────────────────────────────
+  if (clientWrites.length === 0) {
+    console.log(
+      `${TAG.ok}D4 no client role can write workbench.schema_templates directly ${C.dim}(writes go through public.admin_*_schema_template or service_role)${C.reset}`,
+    );
+  } else {
+    findings += clientWrites.length;
+    console.log(
+      `${TAG.fail}D4 client write grant(s) on ${C.white}workbench.schema_templates${C.reset}:`,
+    );
+    for (const r of clientWrites) {
+      console.log(`  ${C.white}- ${r.grantee}${C.reset} ${C.dim}→ ${r.privilege_type}${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       The table has RLS OFF, no organization, no creator and no user content, so it is${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       typed REFERENCE (B-8): authenticated READS, and every write goes through${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       public.admin_{create,update,delete}_schema_template (gated on admin.admins) or${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       service_role. A direct write grant to a client role restores the hole B-8 closed:${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       any signed-in user of any organization rewriting all five rows. Fix:${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       revoke insert, update, delete on table workbench.schema_templates from <role>;${C.reset}`,
     );
   }
 

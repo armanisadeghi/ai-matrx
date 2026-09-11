@@ -27,6 +27,8 @@ import { sanitizeFieldName } from '@/utils/user-table-utls/field-name-sanitizer'
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { useAppSelector } from '@/lib/redux/hooks';
+import { selectIsAdmin } from '@/lib/redux/selectors/userSelectors';
 
 interface CreateTemplateModalProps {
   isOpen: boolean;
@@ -42,6 +44,14 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess }: Crea
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('details');
   const [currentField, setCurrentField] = useState<number | null>(null);
+
+  // Schema templates are shared platform REFERENCE data (B-8, 2026-09-11): they
+  // belong to no organization and no person, everyone reads them, and only a
+  // platform administrator may write one — the database refuses everyone else
+  // through `public.admin_create_schema_template`. So the Create control is
+  // ABSENT for a non-admin rather than dead: offering a button that can only
+  // ever produce a permission error is the lie this guards against.
+  const isAdmin = useAppSelector(selectIsAdmin);
 
   // Reset form when modal opens
   const resetForm = () => {
@@ -188,10 +198,21 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess }: Crea
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // The submit button is absent for a non-admin, but a form still submits on
+    // Enter — say why instead of letting the database answer with a raw 42501.
+    if (!isAdmin) {
+      setError(
+        'Schema templates are shared platform reference data, so only a platform ' +
+        'administrator can create one. To build a shape of your own, create your own ' +
+        'table or dataset instead.'
+      );
+      return;
+    }
+
     if (!validateTemplate()) {
       return;
     }
-    
+
     try {
       setLoading(true);
       setError(null);
@@ -239,6 +260,15 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess }: Crea
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          {!isAdmin && (
+            <div className="rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
+              Schema templates are shared platform reference data: everyone reads the
+              same set, so only a platform administrator can create or change one. You
+              can look through the form below, but saving is not available to you — to
+              build a shape of your own, create your own table or dataset instead.
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 p-2 rounded-md text-red-500 text-sm">
               {error}
@@ -481,11 +511,13 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess }: Crea
           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-              Cancel
+              {isAdmin ? 'Cancel' : 'Close'}
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Template'}
-            </Button>
+            {isAdmin && (
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Creating...' : 'Create Template'}
+              </Button>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

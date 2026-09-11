@@ -31,6 +31,24 @@ export interface CreateTemplateResult {
 }
 
 /**
+ * `workbench.schema_templates` is REFERENCE data (typed B-8, 2026-09-11): its rows
+ * are shared field shapes belonging to no organization and no creator, read by
+ * every signed-in user and written by nobody except a platform administrator.
+ *
+ * So the reads below stay plain table reads as the signed-in user, and the three
+ * WRITES go through the admin doors — `authenticated` holds SELECT on the table
+ * and nothing else. Before this, any signed-in user of any organization could
+ * rewrite or delete all five rows (proven live), which is the hole B-8 closed.
+ *
+ * A non-admin caller gets a real 42501 carrying the sentence the database wrote,
+ * which is what these functions surface — never a swallowed failure, and never a
+ * silent 0-row "success".
+ */
+const ADMIN_CREATE_TEMPLATE_RPC = "admin_create_schema_template" as const;
+const ADMIN_UPDATE_TEMPLATE_RPC = "admin_update_schema_template" as const;
+const ADMIN_DELETE_TEMPLATE_RPC = "admin_delete_schema_template" as const;
+
+/**
  * Create a new schema template in the database
  */
 export async function createSchemaTemplate(
@@ -77,24 +95,20 @@ export async function createSchemaTemplate(
       };
     });
     
-    // Insert the template into the database
-    const { data, error } = await supabase
-      .schema('workbench').from('schema_templates')
-      .insert({
-        template_name: templateName,
-        description: description || '',
-        fields: normalizedFields,
-        version: version
-      })
-      .select('id')
-      .single();
-    
+    // Admin-only door (see the note above). Refuses a non-admin with a sentence.
+    const { data, error } = await supabase.rpc(ADMIN_CREATE_TEMPLATE_RPC, {
+      p_template_name: templateName,
+      p_description: description || '',
+      p_fields: normalizedFields,
+      p_version: version,
+    });
+
     if (error) {
       console.error('Error creating schema template:', error);
       return { success: false, error: error.message };
     }
-    
-    return { success: true, templateId: data.id };
+
+    return { success: true, templateId: data as string };
   } catch (err) {
     console.error('Error in createSchemaTemplate:', err);
     const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
@@ -160,11 +174,11 @@ export async function deleteSchemaTemplate(
   templateId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
-      .schema('workbench').from('schema_templates')
-      .delete()
-      .eq('id', templateId);
-    
+    // Admin-only door (see the note above). Refuses a non-admin with a sentence.
+    const { error } = await supabase.rpc(ADMIN_DELETE_TEMPLATE_RPC, {
+      p_id: templateId,
+    });
+
     if (error) {
       console.error("Error deleting schema template:", error);
       return { success: false, error: error.message };
@@ -187,23 +201,15 @@ export async function updateSchemaTemplate(
   updates: Partial<CreateTemplateParams>
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const updateData: Record<string, unknown> = {};
-    
-    if (updates.templateName) {
-      updateData.template_name = updates.templateName;
-    }
-    
-    if (updates.description !== undefined) {
-      updateData.description = updates.description;
-    }
-    
-    if (updates.version) {
-      updateData.version = updates.version;
-    }
-    
+    // The door reads NULL as "leave this column alone", so every optional field
+    // below is null unless the caller actually sent it. The version bump when
+    // `fields` changes now happens inside the door, where it cannot race a
+    // concurrent editor — it used to be a separate read here.
+    let normalizedFields: FieldDefinition[] | null = null;
+
     if (updates.fields) {
       // Normalize field data types and ensure proper structure
-      const normalizedFields = updates.fields.map((field, index) => {
+      normalizedFields = updates.fields.map((field, index) => {
         // Ensure field order is set correctly if not specified
         const fieldOrder = field.field_order !== undefined ? field.field_order : index + 1;
         
@@ -217,34 +223,27 @@ export async function updateSchemaTemplate(
           default_value: field.default_value !== undefined ? field.default_value : null
         };
       });
-      
-      updateData.fields = normalizedFields;
-      
-      // Increment version
-      if (!updates.version) {
-        // Fetch current version
-        const { data: template } = await supabase
-          .schema('workbench').from('schema_templates')
-          .select('version')
-          .eq('id', templateId)
-          .single();
-        
-        if (template) {
-          updateData.version = (template.version || 0) + 1;
-        }
-      }
     }
-    
+
     // Only update if there's something to update
-    if (Object.keys(updateData).length === 0) {
+    if (
+      updates.templateName === undefined &&
+      updates.description === undefined &&
+      updates.version === undefined &&
+      normalizedFields === null
+    ) {
       return { success: false, error: 'No updates provided' };
     }
-    
-    const { error } = await supabase
-      .schema('workbench').from('schema_templates')
-      .update(updateData)
-      .eq('id', templateId);
-    
+
+    // Admin-only door (see the note above). Refuses a non-admin with a sentence.
+    const { error } = await supabase.rpc(ADMIN_UPDATE_TEMPLATE_RPC, {
+      p_id: templateId,
+      p_template_name: updates.templateName ?? null,
+      p_description: updates.description ?? null,
+      p_fields: normalizedFields,
+      p_version: updates.version ?? null,
+    });
+
     if (error) {
       console.error("Error updating schema template:", error);
       return { success: false, error: error.message };

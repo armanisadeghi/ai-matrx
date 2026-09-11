@@ -2209,6 +2209,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ai_model_model_provider_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_sync_candidates"
+            referencedColumns: ["provider_id"]
+          },
+          {
             foreignKeyName: "model_definition_retry_fallback_id_fkey"
             columns: ["retry_fallback_id"]
             isOneToOne: false
@@ -2411,6 +2418,7 @@ export type Database = {
           organization_id: string
           provider_models_cache: Json | null
           slug: string | null
+          sync_policy: Json
           updated_at: string
           updated_by: string | null
           version: number
@@ -2433,6 +2441,7 @@ export type Database = {
           organization_id: string
           provider_models_cache?: Json | null
           slug?: string | null
+          sync_policy?: Json
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -2455,6 +2464,7 @@ export type Database = {
           organization_id?: string
           provider_models_cache?: Json | null
           slug?: string | null
+          sync_policy?: Json
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -2728,6 +2738,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "provider"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_model_provider_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider_sync_candidates"
+            referencedColumns: ["provider_id"]
           },
           {
             foreignKeyName: "model_definition_retry_fallback_id_fkey"
@@ -3092,6 +3109,23 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      provider_sync_candidates: {
+        Row: {
+          before_cutoff: boolean | null
+          display_name: string | null
+          excluded: boolean | null
+          fetched_at: string | null
+          in_db: boolean | null
+          min_release_date: string | null
+          model_id: string | null
+          provider_entry: Json | null
+          provider_id: string | null
+          provider_name: string | null
+          released_at: string | null
+          status: string | null
+        }
+        Relationships: []
       }
       ui_enum_drift: {
         Row: {
@@ -19608,6 +19642,11 @@ export type Database = {
       _assert_scope_readable: {
         Args: { p_level?: string; p_scope_id: string }
         Returns: undefined
+      }
+      _readable_scope_ids: { Args: never; Returns: string[] }
+      _scope_denial_message: {
+        Args: { p_level?: string; p_scope_id: string }
+        Returns: string
       }
       _scope_readable: {
         Args: { p_level?: string; p_scope_id: string }
@@ -64242,6 +64281,7 @@ export type Database = {
         Args: { p_audience: string; p_entity_id: string; p_entity_type: string }
         Returns: undefined
       }
+      _schema_template_write_denied_message: { Args: never; Returns: string }
       _scope_system_resolve_type_id: {
         Args: { p_kind: string; p_op: Json; p_org_id: string }
         Returns: string
@@ -64342,6 +64382,15 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_create_schema_template: {
+        Args: {
+          p_description?: string
+          p_fields?: Json
+          p_template_name: string
+          p_version?: number
+        }
+        Returns: string
+      }
       admin_delete_catalog_entry: {
         Args: { p_app: string; p_key: string; p_kind: string }
         Returns: {
@@ -64371,6 +64420,10 @@ export type Database = {
       }
       admin_delete_relationship_rule: {
         Args: { p_label?: string; p_source_type: string; p_target_type: string }
+        Returns: undefined
+      }
+      admin_delete_schema_template: {
+        Args: { p_id: string }
         Returns: undefined
       }
       admin_entity_types_list: {
@@ -64903,6 +64956,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_update_schema_template: {
+        Args: {
+          p_description?: string
+          p_fields?: Json
+          p_id: string
+          p_template_name?: string
+          p_version?: number
+        }
+        Returns: undefined
       }
       admin_upsert_assist_producer_policy: {
         Args: {
