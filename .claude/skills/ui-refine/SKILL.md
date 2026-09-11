@@ -35,7 +35,7 @@ Ask in normal prose (never a multiple-choice UI). Skip if the user already cover
 ## How you work
 
 - **Study the current implementation closely.** Keep its structure and the user's mental model. You are sharpening, not replacing.
-- **Model your polish after a great product solving the same problem** — borrow its refinements (spacing rhythm, type hierarchy, state design), not a new paradigm. Name the reference.
+- **Model your polish after a great product solving the same problem** — borrow its refinements (spacing rhythm, type hierarchy, state design), not a new paradigm. Name the reference (ruled set + bones-not-skin: ground-rules §4).
 - **Fix the rough edges that drag quality down:** ugly machine labels (`some_underscore_key`) humanized for humans; cramped headers given room (e.g. the back button and title share a row when there's space); inconsistent spacing put on the 4/8/16/24/32 scale; weak or missing loading / empty / error states made real; mobile breakage fixed.
 - **Reuse app primitives aggressively** — it's the fastest path to consistency (`GenericDataTable`, official cards/sheets, `LoadingComponents`).
 

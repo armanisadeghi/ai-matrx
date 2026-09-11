@@ -9,7 +9,7 @@ description: "Dense UI posture — maximum information density with clear hierar
 
 ## The result this gives
 
-Maximum useful information on screen with **clear hierarchy** — for the power user, the data-heavy surface, the enterprise/admin tool driven all day, where speed and scannability beat breathing room. Think Linear at its densest, a Bloomberg terminal, a great ops console, SAP Fiori done right. More on screen, nothing wasted, everything fast to reach.
+Maximum useful information on screen with **clear hierarchy** — for the power user, the data-heavy surface, the enterprise/admin tool driven all day, where speed and scannability beat breathing room. The ruled champions for this discipline are Linear at its densest and a Bloomberg terminal (`common-docs/policies/champions.md`). More on screen, nothing wasted, everything fast to reach.
 
 Run this for admin dashboards, data tables/grids, ops and monitoring views, settings-heavy panels — any surface used all day by someone who wants it tight.
 

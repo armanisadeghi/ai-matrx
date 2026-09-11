@@ -66,7 +66,7 @@ The original vision is usually bigger, more powerful, and more ambitious than wh
 
 ## Phase 3 — Best practices: the bar
 
-Treat this as critical — not secondary, never underplayed. The standard is what the best enterprise engineering organizations in the world (Google, Microsoft, and their peers) would do — and the goal is to *exceed* it. Research and apply best practices specific to the platform, language, architecture, and every relevant technical dimension. Find what's currently done well but not as well as it could be, and build toward the best achievable implementation. Never water an ambitious goal down to fit a mediocre template.
+Treat this as critical — not secondary, never underplayed. The standard is the discipline's world champion (`common-docs/policies/champions.md`: name it before you build, match it before you ship, beat it before you call it done). Research and apply best practices specific to the platform, language, architecture, and every relevant technical dimension. Find what's currently done well but not as well as it could be, and build toward the best achievable implementation. Never water an ambitious goal down to fit a mediocre template.
 
 ## Phase 4 — Synthesize & gap analysis: what it should be
 

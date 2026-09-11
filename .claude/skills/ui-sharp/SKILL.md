@@ -28,7 +28,7 @@ Why exactly these two: your failure mode in lean mode is cutting something they 
 
 ## How you work
 
-- **Name the real product you're modeling after, out loud**, then build toward it. This is the single biggest quality lever — "make it modern/beautiful" averages to the generic AI mean; "model it after macOS Reminders / Linear / Stripe" inherits real layout, density, and interaction for free. Borrow its bones and behavior — **never** its colors or fonts (those are ours).
+- **Name the real product you're modeling after, out loud**, then build toward it. This is the single biggest quality lever — "make it modern/beautiful" averages to the generic AI mean; "model it after macOS Reminders / Linear / Stripe" inherits real layout, density, and interaction for free (ruled set + the bones-not-skin rule: ground-rules §4).
 - **Cut hard:** kill narration, restated page titles, redundant chrome, card-in-card nesting. Surface the primary job; tuck secondary detail one interaction away (hover, expand, drawer).
 - **Density with clarity** at the persona's level. One confident accent. Our glass where it invites, not everywhere.
 - Make the **primary action unmistakable**. Make first glance say *easy*.

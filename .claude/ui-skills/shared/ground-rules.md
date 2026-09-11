@@ -38,7 +38,7 @@ A flashy primary screen shipped next to a neglected second screen — or a beaut
 
 ## 4. Paint only with our system
 
-The reference product you model gives you *structure*; the look is always ours. Hardcoding colors or hand-rolling glass is what makes UI look off-brand and AI-generated.
+The reference product you model — the discipline's champion (`common-docs/policies/champions.md`), named out loud before you build — gives you *structure*: bones and behavior, never its colors or fonts. The look is always ours. Hardcoding colors or hand-rolling glass is what makes UI look off-brand and AI-generated.
 - Semantic color classes only (`bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`, status colors) — never hex / `bg-zinc-*` / `text-gray-*`.
 - **Our glass**, never generic frosted-on-pastel: `bg-glass border border-glass-edge backdrop-blur-glass backdrop-saturate-glass shadow-glass`, or `<GlassContainer>` / `GlassPortal`.
 - `--elevation-1/2/3` for depth, `bg-textured` pages, `bg-card` cards, Lucide icons only, **no emoji** (this is enterprise).

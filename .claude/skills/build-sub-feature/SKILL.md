@@ -15,7 +15,7 @@ timestamp: 2026-09-10T00:00:00Z
 
 # Build a Sub-Feature
 
-You're implementing a new sub-feature — an addition to something that already exists in the platform. The spec comes from the user (interview below); the standards are non-negotiable acceptance criteria. Implement to them, and loop until the result actually satisfies them. You're done when it's real, complete, verified, and indistinguishable from work shipped by the best engineering organization on earth — not before.
+You're implementing a new sub-feature — an addition to something that already exists in the platform. The spec comes from the user (interview below); the standards are non-negotiable acceptance criteria. Implement to them, and loop until the result actually satisfies them. You're done when it's real, complete, verified, and at parity or better with the discipline's champion (`common-docs/policies/champions.md`) — not before.
 
 This isn't greenfield. It's an addition to something live, so the surrounding system is your first concern, not an afterthought. Build so the whole ecosystem is better for this — not just the one spot it lands in.
 
@@ -56,7 +56,7 @@ Write a ≤20-line design note in scratch and run `plan-attack` (one reviewer) o
 
 **Quality is the baseline, not the target.** Do it correctly and completely the first time — no half-wired states, no "good enough for now," no TODOs left as landmines. Compiling isn't working; it works when it's verified, handles the real edges, and reads like someone competent maintains it tomorrow.
 
-**Mimic what works.** Before you design or implement, explicitly consider the best systems in the world that already do something similar — their principles, layouts, patterns, and concepts. Don't invent from scratch — reuse as much as possible from what has proven to work at scale. Agents produce significantly better results when they emulate excellence rather than reinvent mediocrity. Look at the industry leaders for this type of feature, absorb what makes them successful, and apply those patterns here. Stand on the shoulders of giants.
+**Mimic what works.** Before you design or implement, explicitly consider the best systems in the world that already do something similar — their principles, layouts, patterns, and concepts. Don't invent from scratch — reuse as much as possible from what has proven to work at scale. Agents produce significantly better results when they emulate excellence rather than reinvent mediocrity. The ruled set of leaders per discipline is `common-docs/policies/champions.md`; absorb what makes them successful and apply those patterns here. Stand on the shoulders of giants.
 
 ## Done means
 

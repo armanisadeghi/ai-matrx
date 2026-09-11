@@ -39,7 +39,7 @@ are already fully decided."* **Prescribe the process; let the agent derive the p
 ### 2. Demand discovery before design
 The assignment ordered familiarization first: know the live database, its conventions and RLS
 before designing anything; research the best products in the world and pick one primary + one
-secondary reference; scope capabilities explicitly (what's IN, what's deliberately deferred).
+secondary reference (default set: `policies/champions.md`); scope capabilities explicitly (what's IN, what's deliberately deferred).
 The coordinator ran these as parallel zero-assumption recon agents whose reports went to FILES.
 Every later spec stood on verified ground instead of assumption.
 

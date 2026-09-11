@@ -119,10 +119,10 @@ in the same pass — leaving known-wrong metadata is negligence.
 Full mechanics: [references/research-playbook.md](references/research-playbook.md). The
 essentials:
 
-- **Benchmark against the best at the FUNCTION, never against AI-engine peers.** Building a
-  file system? Study Google Drive and Dropbox, not how some RAG product handles files. Building
-  billing? Stripe's own checkout and the FTC's dark-patterns record. Include the niche masters,
-  not just giants. Getting this framing wrong invalidates the whole phase.
+- **Benchmark against the best at the FUNCTION, never against AI-engine peers** — the rule and
+  the competitor-selection method are `references/research-playbook.md` step 1; the standing
+  champion set is `common-docs/policies/champions.md`. Getting this framing wrong invalidates
+  the whole phase.
 - **~8–10 parallel deep-research passes, one per competitor/cluster**, each mining real user
   sentiment (Trustpilot, app-store reviews, Reddit, G2, feature boards, news, academic papers,
   regulatory records). What do people LOVE, what do they HATE, what did the company fumble.
