@@ -429,6 +429,7 @@ export async function startClassCheckout(
 // email failure never fails the invitation row).
 
 import type { ClassCodePreview } from "./types";
+import { withInvitedEmail } from "@/utils/auth/invitation-links";
 
 /** The class join-code page URL a teacher pastes anywhere. */
 export function classJoinUrl(code: string): string {
@@ -439,13 +440,23 @@ export function classJoinUrl(code: string): string {
   return `${base}/education/classes/join?code=${encodeURIComponent(code)}`;
 }
 
-/** The accept-page URL inside a class invitation email. */
-export function classInviteAcceptUrl(token: string): string {
+/**
+ * The accept-page URL inside a class invitation email. `invitedEmail` rides
+ * along so an anonymous student reaches sign-up prefilled instead of a login
+ * dead end (DD-091) — display only, it grants nothing.
+ */
+export function classInviteAcceptUrl(
+  token: string,
+  invitedEmail?: string | null,
+): string {
   const base =
     typeof window !== "undefined"
       ? window.location.origin
       : process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-  return `${base}/invitations/class/accept/${token}`;
+  return withInvitedEmail(
+    `${base}/invitations/class/accept/${token}`,
+    invitedEmail,
+  );
 }
 
 /** Owner: the class's current join code (creates one on first call). */
@@ -512,19 +523,58 @@ export async function joinClassByCode(
   return { ...coerceJoin(data), classId: str(rec(data).class_id) };
 }
 
+/** What actually happened to an invitation email. */
+export interface ClassInviteEmailOutcome {
+  emailSent: boolean;
+  emailError?: string;
+  acceptUrl?: string;
+}
+
 /**
- * Fire the invitation email for an already-created invitation row. Errors are
- * logged, never thrown — the invitation exists regardless (its link can still
- * be copied), matching the org-invite contract.
+ * Fire the invitation email for an already-created invitation row. Never
+ * throws — the invitation exists regardless (its link can still be copied),
+ * matching the org-invite contract. It does, however, REPORT: the caller gets
+ * `emailSent:false` with the reason so the screen can say the email did not go
+ * out instead of claiming it did (DD-091, law 4).
  */
-export async function sendClassInviteEmail(invitationId: string): Promise<void> {
+export async function sendClassInviteEmail(
+  invitationId: string,
+): Promise<ClassInviteEmailOutcome> {
   try {
-    await fetch("/api/education/class-invite", {
+    const response = await fetch("/api/education/class-invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ invitationId }),
     });
+    const payload = (await response.json().catch(() => null)) as {
+      emailSent?: boolean;
+      emailError?: string;
+      error?: string;
+      acceptUrl?: string;
+    } | null;
+    if (!response.ok || !payload) {
+      return {
+        emailSent: false,
+        emailError:
+          payload?.error ||
+          `The invitation email service answered ${response.status}`,
+      };
+    }
+    if (payload.emailSent === false) {
+      return {
+        emailSent: false,
+        emailError: payload.emailError || payload.error,
+        acceptUrl: payload.acceptUrl,
+      };
+    }
+    // Anything that is not an explicit `false` means the route sent it.
+    return { emailSent: true };
   } catch (e) {
     console.warn("Class invite email failed (invitation row still exists):", e);
+    return {
+      emailSent: false,
+      emailError:
+        e instanceof Error ? e.message : "The invitation email could not be sent",
+    };
   }
 }

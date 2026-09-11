@@ -272,7 +272,10 @@ export function InviteStudentsSheet({
                             className="h-7 w-7 text-muted-foreground"
                             onClick={() =>
                               copyText(
-                                classInviteAcceptUrl(invite.token!),
+                                classInviteAcceptUrl(
+                                  invite.token!,
+                                  invite.email,
+                                ),
                                 "Invite link",
                               )
                             }

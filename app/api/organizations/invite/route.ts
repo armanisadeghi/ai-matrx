@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
+import { withInvitedEmail } from "@/utils/auth/invitation-links";
 
 export async function POST(request: NextRequest) {
   try {
@@ -84,7 +85,13 @@ export async function POST(request: NextRequest) {
 
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/organization/accept/${invitationToken}`;
+    // The link carries the address it was sent to so an invitee with NO
+    // account reaches sign-up prefilled instead of a login dead end (DD-091).
+    // Display data only — acceptance is still gated by `inv_get_by_token`.
+    const invitationUrl = withInvitedEmail(
+      `${siteUrl}/invitations/organization/accept/${invitationToken}`,
+      recipientEmail,
+    );
     const expiry = invitation.expires_at
       ? new Date(invitation.expires_at)
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -103,13 +110,24 @@ export async function POST(request: NextRequest) {
     });
 
     if (!emailResult.success) {
+      // The invitation ROW is good; only the delivery failed. We keep the row
+      // (rolling it back would destroy a valid invitation over a mail outage)
+      // and we SAY SO — `emailSent:false` with the provider's reason and the
+      // accept link, so the caller can show the honest "copy this link and
+      // send it yourself" state instead of a green success toast (DD-091,
+      // law 4: nothing fails silently).
       console.warn("Failed to send invitation email:", emailResult.error);
-      // Don't fail the request if email fails — invitation row already exists
+      return NextResponse.json({
+        success: true,
+        emailSent: false,
+        emailError: emailResult.error || "The email provider rejected the send",
+        acceptUrl: invitationUrl,
+      });
     }
 
     return NextResponse.json({
       success: true,
-      emailSent: emailResult.success,
+      emailSent: true,
     });
   } catch (error: unknown) {
     console.error("Error in POST /api/organizations/invite:", error);

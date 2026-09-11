@@ -140,6 +140,21 @@ export interface ProjectResult extends OperationResult {
 
 export interface ProjectInvitationResult extends OperationResult {
   invitation?: ProjectInvitation;
+  /**
+   * Whether the invitation EMAIL actually went out. `false` means the row
+   * exists and the link works, but nothing was delivered — show the
+   * copy-the-link remedy, never a success toast (DD-091, law 4).
+   */
+  emailSent?: boolean;
+  emailError?: string;
+  acceptUrl?: string;
+}
+
+/** Resend result — same honesty contract as {@link ProjectInvitationResult}. */
+export interface ResendProjectInvitationResult extends OperationResult {
+  emailSent?: boolean;
+  emailError?: string;
+  acceptUrl?: string;
 }
 
 // ============================================================================

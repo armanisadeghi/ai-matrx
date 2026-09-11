@@ -98,6 +98,14 @@ sales page after signing in.
   bounce.** That bounce sends every authenticated visitor to `landing`; ordered
   the other way it eats the destination.
 - **Logout is not a destination flow.** Sign-out goes to a bare `/login`.
+- **An invitee goes to SIGN-UP, never `/login`.** An invitation link's whole
+  point is reaching someone who does not have an account yet.
+  [`invitation-links.ts`](./invitation-links.ts) owns the shape: every accept
+  page calls `invitationSignUpHref(acceptPath, invitedEmail)`, and every
+  invitation link (emailed or copied) carries `?email=` — the address it was
+  sent to — which the sign-up and login pages prefill and NAME. That value is
+  display data only: acceptance is still gated by `inv_get_by_token` matching
+  the signed-in `auth.email()`.
 - **A remembered account is display data, never authority.**
   [`remembered-account.ts`](./remembered-account.ts) stores only a display name,
   optional avatar URL, and timestamp. Tokens, ids, email addresses, roles, and
@@ -153,6 +161,14 @@ links and the nonexistent `/signup` route. `pnpm check:auth-destinations` runs
 the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
+
+- **2026-09-10** — DD-091: invitation accept pages no longer dead-end an
+  anonymous invitee at `/login`. New primitive `invitation-links.ts`
+  (`readInvitedEmail` / `withInvitedEmail` / `invitationSignUpHref`); all four
+  accept pages (organization, project, class, employee) route to sign-up with
+  the destination and the invited address; sign-up and login prefill it and say
+  where it came from. Guard: `app/(core)/invitations/no-login-dead-end.test.ts`
+  (proven RED against the pre-fix sources) + `utils/auth/invitation-links.test.ts`.
 
 - **2026-08-31** — Public auth sync treats `AuthSessionMissingError` during server validation as the expected session-loss path: it clears client authority and enters guest mode without emitting a production console error; unrelated validation failures remain loud.
 

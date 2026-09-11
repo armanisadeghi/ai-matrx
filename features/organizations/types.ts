@@ -166,6 +166,25 @@ export interface OrganizationResult extends OperationResult {
  */
 export interface InvitationResult extends OperationResult {
   invitation?: OrganizationInvitation;
+  /**
+   * Whether the invitation EMAIL actually went out. `false` means the
+   * invitation row exists and is acceptable by its link, but nothing was
+   * delivered — the caller must show the copy-the-link remedy instead of a
+   * success toast (DD-091, law 4: nothing fails silently). `undefined` only
+   * when no send was attempted.
+   */
+  emailSent?: boolean;
+  /** Why the send failed, in a sentence a human can act on. */
+  emailError?: string;
+  /** The accept link to hand out by other means when `emailSent` is false. */
+  acceptUrl?: string;
+}
+
+/** Resend result — same honesty contract as {@link InvitationResult}. */
+export interface ResendInvitationResult extends OperationResult {
+  emailSent?: boolean;
+  emailError?: string;
+  acceptUrl?: string;
 }
 
 // ============================================================================

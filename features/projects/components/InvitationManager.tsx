@@ -10,6 +10,7 @@
  * components/membership/InvitationsPanel.tsx.
  */
 
+import { useState } from "react";
 import {
   useProjectInvitations,
   useProjectInvitationOperations,
@@ -18,12 +19,14 @@ import type { ProjectRole } from "../types";
 import { toast } from "@/lib/toast";
 import {
   InvitationsPanel,
+  type InvitationDeliveryNotice,
   type PanelInvitation,
 } from "@/components/membership/InvitationsPanel";
 import type {
   MembershipRole,
   MembershipRoleOption,
 } from "@/components/membership/types";
+import { withInvitedEmail } from "@/utils/auth/invitation-links";
 
 interface InvitationManagerProps {
   projectId: string;
@@ -36,12 +39,17 @@ const ROLE_OPTIONS: MembershipRoleOption[] = [
   { value: "admin", label: "Admin" },
 ];
 
-function buildAcceptUrl(token: string): string {
+function buildAcceptUrl(token: string, invitedEmail?: string | null): string {
   const origin =
     typeof window !== "undefined"
       ? window.location.origin
       : "https://www.aimatrx.com";
-  return `${origin}/invitations/project/accept/${token}`;
+  // Same link the invitation email sends: it carries the invited address so a
+  // recipient with no account lands on sign-up prefilled (DD-091).
+  return withInvitedEmail(
+    `${origin}/invitations/project/accept/${token}`,
+    invitedEmail,
+  );
 }
 
 export function InvitationManager({
@@ -59,15 +67,38 @@ export function InvitationManager({
   } = useProjectInvitationOperations(projectId);
 
   const canManage = userRole === "owner" || userRole === "admin";
+  // Honest state when the row exists but the email did not go out (DD-091).
+  const [deliveryNotice, setDeliveryNotice] =
+    useState<InvitationDeliveryNotice | null>(null);
 
   const handleInvite = async (email: string, role: MembershipRole) => {
     const result = await invite({ email, role: role as ProjectRole });
-    if (result.success) {
-      toast.success(`Invitation sent to ${email}`);
-      refresh();
-    } else {
+    if (!result.success) {
       toast.error(result.error ?? "Failed to send invitation");
+      return;
     }
+    if ("emailSent" in result && result.emailSent === false) {
+      const acceptUrl =
+        ("acceptUrl" in result ? result.acceptUrl : undefined) ??
+        (result.invitation?.token
+          ? buildAcceptUrl(result.invitation.token, email)
+          : undefined);
+      if (acceptUrl) {
+        setDeliveryNotice({
+          email,
+          acceptUrl,
+          reason: "emailError" in result ? result.emailError : undefined,
+        });
+      }
+      toast.warning(
+        `Invitation created for ${email}, but the email could not be sent`,
+      );
+      refresh();
+      return;
+    }
+    setDeliveryNotice(null);
+    toast.success(`Invitation sent to ${email}`);
+    refresh();
   };
 
   const handleCancel = async (invitation: PanelInvitation) => {
@@ -82,12 +113,29 @@ export function InvitationManager({
 
   const handleResend = async (invitation: PanelInvitation) => {
     const result = await resend(invitation.id, invitation.email);
-    if (result.success) {
-      toast.success(`Invitation resent to ${invitation.email}`);
-      refresh();
-    } else {
+    if (!result.success) {
       toast.error(result.error ?? "Failed to resend invitation");
+      return;
     }
+    if ("emailSent" in result && result.emailSent === false) {
+      const acceptUrl = "acceptUrl" in result ? result.acceptUrl : undefined;
+      if (acceptUrl) {
+        setDeliveryNotice({
+          email: invitation.email,
+          acceptUrl,
+          reason: "emailError" in result ? result.emailError : undefined,
+          wasResend: true,
+        });
+      }
+      toast.warning(
+        `Invitation refreshed for ${invitation.email}, but the email could not be sent`,
+      );
+      refresh();
+      return;
+    }
+    setDeliveryNotice(null);
+    toast.success(`Invitation resent to ${invitation.email}`);
+    refresh();
   };
 
   if (error) {
@@ -110,6 +158,8 @@ export function InvitationManager({
       onResend={handleResend}
       onRefresh={refresh}
       refreshing={loading}
+      deliveryNotice={deliveryNotice}
+      onDismissDeliveryNotice={() => setDeliveryNotice(null)}
       canManage={canManage}
       inviteLabel={`Invite to ${projectName}`}
       copyContainer={{ noun: "project", id: projectId, name: projectName }}

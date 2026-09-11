@@ -23,6 +23,10 @@ import {
   preserveAuthDestination,
   readAuthDestination,
 } from "@/utils/auth/auth-destination";
+import {
+  readInvitedEmail,
+  withInvitedEmail,
+} from "@/utils/auth/invitation-links";
 
 interface SignUpProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -34,6 +38,12 @@ export default async function SignUp({ searchParams }: SignUpProps) {
   console.log("Awaited search params:", awaitedSearchParams);
 
   const redirectTo = readAuthDestination(awaitedSearchParams);
+  // An invitation link brought the address it was sent to (DD-091). We prefill
+  // it and SAY why, because the invitation only opens for that exact address —
+  // guessing it was the step new colleagues were losing the flow on. The value
+  // is display-only: it grants nothing, and the field stays editable so a
+  // person whose address really differs is never locked out of signing up.
+  const invitedEmail = readInvitedEmail(awaitedSearchParams);
   const error = awaitedSearchParams.error as string;
   const success = awaitedSearchParams.success as string;
 
@@ -61,7 +71,10 @@ export default async function SignUp({ searchParams }: SignUpProps) {
           Already have an account?{" "}
           <Link
             className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
-            href={preserveAuthDestination("/login", { redirectTo })}
+            href={withInvitedEmail(
+              preserveAuthDestination("/login", { redirectTo }),
+              invitedEmail,
+            )}
             tabIndex={-1}
           >
             Sign in
@@ -90,10 +103,21 @@ export default async function SignUp({ searchParams }: SignUpProps) {
               type="email"
               autoComplete="email"
               required
+              defaultValue={invitedEmail ?? undefined}
               className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-neutral-700 dark:text-white"
               placeholder="you@example.com"
               data-lpignore="true"
             />
+            {invitedEmail && (
+              <p
+                className="mt-1 text-xs text-gray-600 dark:text-gray-400"
+                data-testid="invited-email-note"
+              >
+                Your invitation was sent to <strong>{invitedEmail}</strong> —
+                create your account with this address so the invitation opens
+                for you.
+              </p>
+            )}
           </div>
         </div>
 

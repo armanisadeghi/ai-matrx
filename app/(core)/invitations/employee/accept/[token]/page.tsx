@@ -12,9 +12,12 @@
 // signed-in address is not the invited one, we say so and stop rather than
 // linking the wrong person to somebody's HR record permanently.
 //
-// 🚨 SIGN-IN FIRST, ACCEPTANCE SECOND — never the reverse. A signed-out visitor
-// is sent to `/login?redirectTo=<here>`; they come back and the accept happens
-// then. Accepting cannot be done anonymously because there is no account to link.
+// 🚨 AN ACCOUNT FIRST, ACCEPTANCE SECOND — never the reverse. A signed-out
+// visitor is sent to sign-up (`invitationSignUpHref`) carrying this page as the
+// destination — an employee being given platform access usually has no account
+// yet, and sign-up keeps "Already have an account? Sign in" one click away.
+// They come back and the accept happens then. Accepting cannot be done
+// anonymously because there is no account to link.
 //
 // 🚨 `hr_linked: false` IS A SUCCESS. It means the token was an ordinary
 // organization invitation with no employee attached — the membership is real and
@@ -30,6 +33,10 @@ import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { acceptHrEmployeeInvite } from "@/features/hr/service";
 import { isHrDenied } from "@/features/hr/types";
+import {
+  invitationSignUpHref,
+  readInvitedEmail,
+} from "@/utils/auth/invitation-links";
 
 export default function AcceptEmployeeInvitationPage() {
   const params = useParams();
@@ -50,12 +57,16 @@ export default function AcceptEmployeeInvitationPage() {
       if (cancelled) return;
 
       if (!user) {
-        // Come back here afterwards — the token is in the path, so the round
-        // trip through the login screen loses nothing.
+        // Sign-up, not login: an employee being given platform access usually
+        // has no account yet (DD-091). Come back here afterwards — the token
+        // is in the path, so the round trip loses nothing.
         router.push(
-          `/login?redirectTo=${encodeURIComponent(
+          invitationSignUpHref(
             `/invitations/employee/accept/${token}`,
-          )}`,
+            readInvitedEmail(
+              typeof window !== "undefined" ? window.location.search : null,
+            ),
+          ),
         );
         return;
       }

@@ -7,7 +7,7 @@
  * Lifted verbatim from the battle-tested organization InvitationManager and made
  * data-agnostic: it does not fetch invitations or contacts and runs no
  * mutations. The consumer supplies the data plus `onInvite` / `onCancel` /
- * `onResend`, and an `inviteAcceptUrl(token)` builder so the copy-link action
+ * `onResend`, and an `inviteAcceptUrl(token, email)` builder so the copy-link action
  * points at the right accept route (org vs project).
  *
  * The "quick select from contacts" affordance renders only when `contacts` is
@@ -28,6 +28,7 @@ import {
   MessageSquare,
   Building2,
   XCircle,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,23 @@ function validateEmail(email: string): { valid: boolean; error: string } {
   return { valid: true, error: "" };
 }
 
+/**
+ * The honest state after an invitation was created (or refreshed) but its
+ * EMAIL did not go out. The invitation itself is valid — the remedy is to hand
+ * the recipient the link another way, so the link is part of the notice
+ * (DD-091, law 4: nothing fails silently, every stand-in names its remedy).
+ */
+export interface InvitationDeliveryNotice {
+  /** Who the invitation was for. */
+  email: string;
+  /** The accept link to send by hand. */
+  acceptUrl: string;
+  /** Why the email did not go out, when the provider told us. */
+  reason?: string;
+  /** True when the row was a RESEND — the recipient's older link is now dead. */
+  wasResend?: boolean;
+}
+
 export interface InvitationsPanelProps {
   invitations: PanelInvitation[];
   /** Roles assignable on invite, in display order. */
@@ -119,13 +137,24 @@ export interface InvitationsPanelProps {
   contactsLoading?: boolean;
   /** Disable controls while a mutation is in flight. */
   operationLoading?: boolean;
-  /** Builds the absolute accept URL for the copy-link action. */
-  inviteAcceptUrl: (token: string) => string;
+  /**
+   * Builds the absolute accept URL for the copy-link action. `invitedEmail` is
+   * passed so the link carries the address it was sent to (DD-091) — display
+   * data only, acceptance is still gated by the invited identity.
+   */
+  inviteAcceptUrl: (token: string, invitedEmail?: string | null) => string;
   onInvite: (email: string, role: MembershipRole) => void | Promise<void>;
   onCancel: (invitation: PanelInvitation) => void | Promise<void>;
   onResend: (invitation: PanelInvitation) => void | Promise<void>;
   onRefresh?: () => void;
   refreshing?: boolean;
+  /**
+   * Shown when an invitation was created but its email failed. Never render a
+   * success toast in that case — this banner IS the honest state.
+   */
+  deliveryNotice?: InvitationDeliveryNotice | null;
+  /** Dismiss handler for `deliveryNotice`. Required when a notice is passed. */
+  onDismissDeliveryNotice?: () => void;
   /** When false, the invite form and per-row actions are hidden (view-only). */
   canManage?: boolean;
   /** Optional label above the email field (e.g. "Invite to Acme"). */
@@ -151,6 +180,8 @@ export function InvitationsPanel({
   onResend,
   onRefresh,
   refreshing = false,
+  deliveryNotice = null,
+  onDismissDeliveryNotice,
   canManage = true,
   inviteLabel,
   copyContainer,
@@ -432,6 +463,69 @@ export function InvitationsPanel({
         </form>
       )}
 
+      {/* Email delivery failure — the invitation is real, the email is not.
+          An amber, persistent, dismissible banner rather than a toast: the
+          manager has to be able to copy the link, and a toast disappears. */}
+      {deliveryNotice && (
+        <div
+          role="alert"
+          data-testid="invitation-delivery-notice"
+          className="rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20"
+        >
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <p className="text-sm text-amber-900 dark:text-amber-100">
+                The invitation for{" "}
+                <strong className="break-all">{deliveryNotice.email}</strong>{" "}
+                {deliveryNotice.wasResend
+                  ? "was refreshed, but the email could not be sent. Their earlier link no longer works, so send this new one yourself:"
+                  : "was created, but the email could not be sent — copy this link and send it yourself:"}
+              </p>
+              <code className="block break-all rounded border border-amber-200 bg-white px-2 py-1 text-xs text-amber-900 dark:border-amber-800 dark:bg-neutral-900 dark:text-amber-100">
+                {deliveryNotice.acceptUrl}
+              </code>
+              {deliveryNotice.reason && (
+                <p className="text-xs text-amber-800 dark:text-amber-200">
+                  Reason: {deliveryNotice.reason}
+                </p>
+              )}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(
+                      deliveryNotice.acceptUrl,
+                    );
+                    toast.success("Invitation link copied to clipboard");
+                  } catch {
+                    toast.error(
+                      "Could not copy the link — select it above and copy manually",
+                    );
+                  }
+                }}
+              >
+                <Copy className="mr-1 h-4 w-4" />
+                Copy invitation link
+              </Button>
+            </div>
+            {onDismissDeliveryNotice && (
+              <button
+                type="button"
+                onClick={onDismissDeliveryNotice}
+                aria-label="Dismiss"
+                className="text-amber-700 transition-colors hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Invitations List */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -495,7 +589,10 @@ export function InvitationsPanel({
                 ? "Expired"
                 : `Expires ${formatDistanceToNow(expiresAt, { addSuffix: true })}`;
 
-              const invitationLink = inviteAcceptUrl(invitation.token);
+              const invitationLink = inviteAcceptUrl(
+                invitation.token,
+                invitation.email,
+              );
 
               const handleCopyLink = async () => {
                 try {

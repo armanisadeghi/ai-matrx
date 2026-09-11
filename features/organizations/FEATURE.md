@@ -274,6 +274,20 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-09-10` — **DD-091, the invite flow tells the truth in both directions.**
+  (1) An anonymous visitor on `/invitations/organization/accept/[token]` now
+  goes to SIGN-UP (`invitationSignUpHref`, `utils/auth/invitation-links.ts`)
+  with the invited address prefilled and named, not to `/login` — the old bounce
+  was a dead end for the one person an invitation is for. The link itself
+  carries `?email=` so an anonymous page can prefill; it is display data only
+  and `inv_get_by_token` still gates acceptance on the signed-in address. Same
+  fix on the project, class and employee accept pages, guarded by
+  `app/(core)/invitations/no-login-dead-end.test.ts`. (2) A failed invitation
+  email is no longer a green toast: `inviteToOrganization` / `resendInvitation`
+  read the route's answer and carry `emailSent` / `emailError` / `acceptUrl`,
+  and `InvitationManager` renders the persistent "copy this link and send it
+  yourself" banner. The invitation row is always kept.
+
 - `2026-09-10` — **Doctrine pointer + `CONVERGE:` stamps added** by the Data Doctrine adoption program. The AI Matrx Data Doctrine (Arman, 2026-09-10) rules that organizations are all equal, that `is_personal` is dropped, that the default organization is a user preference, and that the auto-created organization is named `{First name}'s Org`; none of that is built yet, so nothing here was rewritten — the passages that assert "personal org" as a property are stamped and pointed at the new node `/systems/platform/organizations/` in common-docs. One factual correction settled by the live database: the `on_auth_user_created` trigger calls `public._provision_new_user_personal_org()`, not the `public.create_personal_organization()` this doc named (verified in `pg_trigger`/`pg_proc`, 2026-09-10). No code change.
 
 - `2026-09-10` — Unified the blocked-action picker with the header membership cache, added in-place list retry, and resumed pending actions when organization hydration or selection completes. Regression guards cover late selection, cached memberships without a token, cancellation, preserving the pending conversation, and failed-read recovery.

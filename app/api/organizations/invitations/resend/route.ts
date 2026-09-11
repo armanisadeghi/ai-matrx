@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
+import { withInvitedEmail } from "@/utils/auth/invitation-links";
 
 export async function POST(request: NextRequest) {
   try {
@@ -77,7 +78,10 @@ export async function POST(request: NextRequest) {
 
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/organization/accept/${invitationToken}`;
+    const invitationUrl = withInvitedEmail(
+      `${siteUrl}/invitations/organization/accept/${invitationToken}`,
+      recipientEmail,
+    );
     const expiresAt = invitation.expires_at
       ? new Date(invitation.expires_at)
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -97,11 +101,18 @@ export async function POST(request: NextRequest) {
     });
 
     if (!emailResult.success) {
+      // `inv_resend` already minted a FRESH token, so the invitation is valid
+      // and the older link is dead. Reporting a flat failure here would leave
+      // the manager believing nothing happened while the recipient's old link
+      // silently stopped working. Say exactly what happened and hand back the
+      // new link as the remedy (DD-091, law 4).
       console.warn("Failed to resend invitation email:", emailResult.error);
-      return NextResponse.json(
-        { success: false, error: "Failed to send email" },
-        { status: 500 },
-      );
+      return NextResponse.json({
+        success: true,
+        emailSent: false,
+        emailError: emailResult.error || "The email provider rejected the send",
+        acceptUrl: invitationUrl,
+      });
     }
 
     return NextResponse.json({

@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
+import { withInvitedEmail } from "@/utils/auth/invitation-links";
 
 export async function POST(request: NextRequest) {
   try {
@@ -86,7 +87,12 @@ export async function POST(request: NextRequest) {
 
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/class/accept/${invitationToken}`;
+    // Carries the invited address so a student with no account reaches
+    // sign-up prefilled rather than a login dead end (DD-091).
+    const invitationUrl = withInvitedEmail(
+      `${siteUrl}/invitations/class/accept/${invitationToken}`,
+      recipientEmail,
+    );
     const expiry = invitation.expires_at
       ? new Date(invitation.expires_at)
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -104,12 +110,20 @@ export async function POST(request: NextRequest) {
       html: emailTemplate.html,
     });
     if (!emailResult.success) {
+      // Keep the invitation row; say the email failed and hand back the link
+      // as the remedy (DD-091, law 4).
       console.warn("Failed to send class invitation email:", emailResult.error);
+      return NextResponse.json({
+        success: true,
+        emailSent: false,
+        emailError: emailResult.error || "The email provider rejected the send",
+        acceptUrl: invitationUrl,
+      });
     }
 
     return NextResponse.json({
       success: true,
-      emailSent: emailResult.success,
+      emailSent: true,
     });
   } catch (error: unknown) {
     console.error("Error in POST /api/education/class-invite:", error);

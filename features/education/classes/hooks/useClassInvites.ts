@@ -146,8 +146,17 @@ export function useClassInvites(
           });
           if (result.ok) {
             sent += 1;
-            // Fire-and-forget — the row exists even if the email fails.
-            void sendClassInviteEmail(result.data.invitation.id);
+            // The row exists even if the email fails — but a failed email is
+            // never silent (DD-091, law 4). The invitation stands; the teacher
+            // is told to hand the link over from the list below.
+            const outcome = await sendClassInviteEmail(
+              result.data.invitation.id,
+            );
+            if (!outcome.emailSent) {
+              toast.warning(
+                `${email} was invited, but the email could not be sent — copy their invitation link from the list and send it yourself.`,
+              );
+            }
           } else {
             failed.push({ email, reason: result.error.message });
           }
@@ -178,8 +187,15 @@ export function useClassInvites(
     async (invitationId: string) => {
       const result = await invitationsService.resend(invitationId);
       if (result.ok) {
-        await sendClassInviteEmail(invitationId);
-        toast.success("Invitation re-sent.");
+        const outcome = await sendClassInviteEmail(invitationId);
+        if (outcome.emailSent) {
+          toast.success("Invitation re-sent.");
+        } else {
+          // The refresh minted a fresh token, so their older link is dead.
+          toast.warning(
+            "The invitation was refreshed, but the email could not be sent — their earlier link no longer works, so copy the new link from the list and send it yourself.",
+          );
+        }
       } else {
         toast.error(result.error.message);
       }

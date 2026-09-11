@@ -7,7 +7,7 @@
 // invitationsService). target_type='scope' — accepting atomically creates the
 // active class membership the roster reads, then sends the student into the
 // class hub. Survives signup: an anonymous student bounces through auth with
-// this page preserved as the destination (loginHref), and the token matches on
+// this page preserved as the destination (invitationSignUpHref), and the token matches on
 // the invited email once they're signed in.
 
 import { useEffect, useState } from "react";
@@ -20,9 +20,13 @@ import { invitationsService } from "@/features/organizations/service/invitations
 import type { Invitation } from "@/features/organizations/service/invitationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { supabase } from "@/utils/supabase/client";
-import { loginHref } from "@/utils/auth/auth-destination";
+
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import {
+  invitationSignUpHref,
+  readInvitedEmail,
+} from "@/utils/auth/invitation-links";
 
 export default function AcceptClassInvitationPage() {
   const params = useParams();
@@ -44,9 +48,17 @@ export default function AcceptClassInvitationPage() {
       if (cancelled) return;
 
       if (!user) {
-        // Canonical auth-destination primitive — the student signs in (or signs
-        // UP) and lands right back on this accept page.
-        router.push(loginHref(acceptPath));
+        // Sign-up, not login: a student invited by email usually has no
+        // account yet (DD-091). They land right back on this accept page, and
+        // sign-up keeps "Already have an account? Sign in" one click away.
+        router.push(
+          invitationSignUpHref(
+            acceptPath,
+            readInvitedEmail(
+              typeof window !== "undefined" ? window.location.search : null,
+            ),
+          ),
+        );
         return;
       }
 

@@ -34,6 +34,7 @@ import {
   InviteMemberOptions,
   OrganizationResult,
   InvitationResult,
+  ResendInvitationResult,
   OperationResult,
   validateOrgName,
   validateOrgSlug,
@@ -660,23 +661,67 @@ export async function inviteToOrganization(
     const invitation = createResult.data.invitation;
 
     // Fire the email-only route. A delivery failure does NOT fail the invite —
-    // the row exists and is acceptable via its token / the user's invites list.
-    try {
-      await fetch("/api/organizations/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          invitationId: invitation.id,
-        }),
-      });
-    } catch (emailError) {
-      console.warn("Organization invitation email send failed:", emailError);
-    }
+    // the row exists and is acceptable via its token / the user's invites list
+    // — but it is NEVER reported as a success either. The outcome rides back on
+    // `emailSent` / `emailError` / `acceptUrl` so the UI can show the honest
+    // "copy this link and send it yourself" state (DD-091, law 4). The whole
+    // response used to be discarded, which is exactly how a misconfigured
+    // provider produced a green toast and an invitation nobody ever received.
+    const emailOutcome = await (async (): Promise<{
+      emailSent: boolean;
+      emailError?: string;
+      acceptUrl?: string;
+    }> => {
+      try {
+        const response = await fetch("/api/organizations/invite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            invitationId: invitation.id,
+          }),
+        });
+        const payload = (await response.json().catch(() => null)) as {
+          emailSent?: boolean;
+          emailError?: string;
+          error?: string;
+          acceptUrl?: string;
+        } | null;
+        if (!response.ok || !payload) {
+          return {
+            emailSent: false,
+            emailError:
+              payload?.error ||
+              `The invitation email service answered ${response.status}`,
+          };
+        }
+        if (payload.emailSent === false) {
+          return {
+            emailSent: false,
+            emailError: payload.emailError || payload.error,
+            acceptUrl: payload.acceptUrl,
+          };
+        }
+        // Anything that is not an explicit `false` means the route sent it.
+        return { emailSent: true };
+      } catch (emailError) {
+        console.warn("Organization invitation email send failed:", emailError);
+        return {
+          emailSent: false,
+          emailError:
+            emailError instanceof Error
+              ? emailError.message
+              : "The invitation email could not be sent",
+        };
+      }
+    })();
 
     return {
       success: true,
-      message: "Invitation sent successfully",
+      message: emailOutcome.emailSent
+        ? "Invitation sent successfully"
+        : "Invitation created, but the email could not be sent",
       invitation: invitationToOrganizationInvitation(invitation),
+      ...emailOutcome,
     };
   } catch (error: unknown) {
     const err = pgErrorToError(error);
@@ -727,7 +772,7 @@ export async function cancelInvitation(
 export async function resendInvitation(
   invitationId: string,
   _context?: { organizationId: string; email: string },
-): Promise<OperationResult> {
+): Promise<ResendInvitationResult> {
   try {
     const resendResult = await invitationsService.resend(invitationId);
     if (isScopesRpcErr(resendResult)) {
@@ -751,7 +796,24 @@ export async function resendInvitation(
       };
     }
 
-    return { success: true, message: "Invitation resent successfully" };
+    // The row was refreshed with a FRESH token either way, so the old link is
+    // already dead. When the email did not go out, say so and carry the new
+    // link so the manager can deliver it themselves (DD-091, law 4).
+    if (result.emailSent === false) {
+      return {
+        success: true,
+        message: "Invitation refreshed, but the email could not be sent",
+        emailSent: false,
+        emailError: result.emailError,
+        acceptUrl: result.acceptUrl,
+      };
+    }
+
+    return {
+      success: true,
+      message: "Invitation resent successfully",
+      emailSent: true,
+    };
   } catch (error: unknown) {
     const err = pgErrorToError(error);
     console.error("Error resending invitation:", err);

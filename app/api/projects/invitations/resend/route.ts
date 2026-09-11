@@ -12,6 +12,7 @@ import { createClient } from "@/utils/supabase/server";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
+import { withInvitedEmail } from "@/utils/auth/invitation-links";
 
 export async function POST(request: NextRequest) {
   try {
@@ -98,7 +99,10 @@ export async function POST(request: NextRequest) {
       "Someone";
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/project/accept/${invitationToken}`;
+    const invitationUrl = withInvitedEmail(
+      `${siteUrl}/invitations/project/accept/${invitationToken}`,
+      recipientEmail,
+    );
     const expiresAt = invitation.expires_at
       ? new Date(invitation.expires_at)
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -118,14 +122,18 @@ export async function POST(request: NextRequest) {
     });
 
     if (!emailResult.success) {
+      // `inv_resend` already minted a fresh token, so the older link is dead.
+      // Report the honest outcome plus the new link (DD-091, law 4).
       console.warn(
         "Failed to resend project invitation email:",
         emailResult.error,
       );
-      return NextResponse.json(
-        { success: false, error: "Failed to send email" },
-        { status: 500 },
-      );
+      return NextResponse.json({
+        success: true,
+        emailSent: false,
+        emailError: emailResult.error || "The email provider rejected the send",
+        acceptUrl: invitationUrl,
+      });
     }
 
     return NextResponse.json({

@@ -24,6 +24,10 @@ import {
   preserveAuthDestination,
   readAuthDestination,
 } from "@/utils/auth/auth-destination";
+import {
+  readInvitedEmail,
+  withInvitedEmail,
+} from "@/utils/auth/invitation-links";
 import { RememberedSignInHeading } from "@/features/auth/components/RememberedSignInHeading";
 
 interface SignInProps {
@@ -40,11 +44,19 @@ export default async function SignIn({ searchParams }: SignInProps) {
   // absent.
   const redirectTo = readAuthDestination(awaitedSearchParams);
 
+  // Carried over from an invitation link (DD-091) so someone who DOES already
+  // have an account does not have to retype the invited address, and so the
+  // "Sign up" cross-link keeps it too.
+  const invitedEmail = readInvitedEmail(awaitedSearchParams);
+
   // Sibling auth links carry the SAME destination forward — never a new one,
   // and never the transient error/success banner from this attempt.
-  const signUpHrefWithDest = preserveAuthDestination("/sign-up", {
-    [AUTH_DEST_PARAM]: redirectTo,
-  });
+  const signUpHrefWithDest = withInvitedEmail(
+    preserveAuthDestination("/sign-up", {
+      [AUTH_DEST_PARAM]: redirectTo,
+    }),
+    invitedEmail,
+  );
   const forgotHrefWithDest = preserveAuthDestination("/forgot-password", {
     [AUTH_DEST_PARAM]: redirectTo,
   });
@@ -112,6 +124,7 @@ export default async function SignIn({ searchParams }: SignInProps) {
               type="email"
               autoComplete="email"
               required
+              defaultValue={invitedEmail ?? undefined}
               className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-neutral-700 dark:text-white"
               placeholder="you@example.com"
             />

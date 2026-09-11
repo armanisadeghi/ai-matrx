@@ -77,6 +77,17 @@ Reset-password email template must use `{{ .ConfirmationURL }}` (not `{{ .SiteUR
 
 ## Change Log
 
+- **2026-09-10** — DD-091: an invitation email that fails to send is never
+  reported as sent. Every invitation email route (organization + project invite
+  and resend, class invite) answers `{success:true, emailSent:false,
+  emailError, acceptUrl}` instead of a bare `emailSent` nobody read or a flat
+  500 that hid a freshly-minted token; the org/project Manage panels render a
+  persistent "copy this link and send it yourself" banner
+  (`InvitationsPanel`'s `deliveryNotice`) rather than a green toast. The
+  invitation row is always kept — the failure is the email, not the invite.
+  Guard: `app/api/organizations/invite/route.test.ts` (proven RED against the
+  pre-fix route) + `components/membership/InvitationsPanel.delivery-notice.test.tsx`.
+
 - **2026-08-30** — Restored the explicit 30/hour Supabase Auth email limit after
   the blank-field two/hour fallback blocked signup attempts 3–5; signup provider
   errors now render above the form with actionable copy.
