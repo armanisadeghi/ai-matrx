@@ -44,7 +44,7 @@ export const TEXT_HEADER =
 
 export const HOVER_ROW = "hover:bg-accent";
 
-export const ACTIVE_ROW = "bg-primary/10 text-primary";
+export const ACTIVE_ROW = "bg-accent text-accent-foreground";
 
 /** Reserves horizontal space at the top-right of the rightmost panel so the
  *  app's floating user-menu avatar (rendered by `features/shell/...`) doesn't
