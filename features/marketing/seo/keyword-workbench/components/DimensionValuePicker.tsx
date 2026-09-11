@@ -31,6 +31,7 @@ import {
   QuickAddRefusal,
   quickAddDimensionValue,
 } from "@/features/marketing/seo/value-system/quick-add";
+import { AddDimensionDialog } from "@/features/marketing/seo/value-system/pickers/AddDimensionDialog";
 
 export interface PickedValue {
   dimensionId: string;
@@ -71,14 +72,8 @@ export function DimensionValuePicker({
   const [pendingDimensionId, setPendingDimensionId] = useState<string | null>(
     null,
   );
-  /**
-   * A dimension being INVENTED — real only once its first value lands.
-   * `null` means nobody is inventing one; `""` means they clicked "Add a
-   * dimension…" without typing a name yet, which is a REAL state and not a
-   * no-op (the three sibling editors that open a dialog treat it the same
-   * way). Modelling it as `""`-means-nothing is what made that click dead.
-   */
-  const [newDimensionLabel, setNewDimensionLabel] = useState<string | null>(
+  /** The name handed to the canonical two-choice dimension form. */
+  const [newDimensionDraft, setNewDimensionDraft] = useState<string | null>(
     null,
   );
 
@@ -106,9 +101,7 @@ export function DimensionValuePicker({
       const created = await quickAddDimensionValue({
         siteId,
         valueLabel: typed,
-        ...(newDimensionLabel
-          ? { newDimensionLabel }
-          : { dimensionId: activeDimension?.dimension_id }),
+        dimensionId: activeDimension?.dimension_id,
       });
       await refreshCatalog();
       onPicked({
@@ -118,7 +111,6 @@ export function DimensionValuePicker({
         valueId: created.value_id,
         valueLabel: created.value_label,
       });
-      setNewDimensionLabel(null);
       setPendingDimensionId(created.dimension_id);
       toast.success(
         created.created_dimension
@@ -140,12 +132,6 @@ export function DimensionValuePicker({
   };
 
   const valueRows = (activeDimension?.values ?? []).filter((v) => !v.abstain);
-  const dimensionPlaceholder = newDimensionLabel
-    ? `New: ${newDimensionLabel}`
-    : newDimensionLabel === ""
-      ? "Naming a new dimension…"
-      : "Dimension";
-
   const cell = variant === "cell";
 
   return (
@@ -160,10 +146,10 @@ export function DimensionValuePicker({
           }))}
           onSelect={(dimensionId) => {
             onPicked(null);
-            setNewDimensionLabel(null);
+            setNewDimensionDraft(null);
             setPendingDimensionId(dimensionId);
           }}
-          placeholder={dimensionPlaceholder}
+          placeholder="Dimension"
           searchPlaceholder="Find or name a dimension…"
           noun="dimension"
           loading={loading}
@@ -173,9 +159,7 @@ export function DimensionValuePicker({
           // value before it means anything, so the typed name is held here and
           // written by the value picker's create.
           onCreateRequiresMore={(typed) => {
-            onPicked(null);
-            setPendingDimensionId(null);
-            setNewDimensionLabel(typed);
+            setNewDimensionDraft(typed);
           }}
         />
       )}
@@ -204,25 +188,19 @@ export function DimensionValuePicker({
         placeholder={
           cell
             ? "Unassigned"
-            : newDimensionLabel
-              ? `First value for “${newDimensionLabel}”`
-              : newDimensionLabel === ""
-                ? "Name the dimension first"
-                : activeDimension
-                  ? "Value"
-                  : "Pick a dimension first"
+            : activeDimension
+              ? "Value"
+              : "Pick a dimension first"
         }
         searchPlaceholder="Find or type a new value…"
         noun="value"
-        disabled={!activeDimension && !newDimensionLabel}
+        disabled={!activeDimension}
         loading={loading}
         ariaLabel={
           cell ? `${activeDimension?.label ?? "Dimension"} value` : "Value"
         }
         emptyLabel={
-          newDimensionLabel !== null
-            ? "Type what this new dimension's first value should be."
-            : "Nothing by that name yet — type it and add it."
+          "Nothing by that name yet — type it and add it."
         }
         className={
           cell
@@ -272,19 +250,24 @@ export function DimensionValuePicker({
         onCreate={createValue}
       />
 
-      {!cell && newDimensionLabel !== null ? (
-        <p className="text-[11px] leading-snug text-muted-foreground sm:col-span-2">
-          {newDimensionLabel
-            ? `New dimension “${newDimensionLabel}” — it becomes yours the moment you add its first value.`
-            : "Naming a new dimension — type its name in the Dimension box, then give it a first value."}{" "}
-          <button
-            type="button"
-            className="underline underline-offset-2 hover:text-foreground"
-            onClick={() => setNewDimensionLabel(null)}
-          >
-            Cancel
-          </button>
-        </p>
+      {!cell && newDimensionDraft !== null ? (
+        <AddDimensionDialog
+          siteId={siteId}
+          initialLabel={newDimensionDraft}
+          onCancel={() => setNewDimensionDraft(null)}
+          onCreated={(created) => {
+            setNewDimensionDraft(null);
+            setPendingDimensionId(created.dimension_id);
+            onPicked({
+              dimensionId: created.dimension_id,
+              dimensionSlug: created.dimension_slug,
+              dimensionLabel: created.dimension_label,
+              valueId: created.value_id,
+              valueLabel: created.value_label,
+            });
+            void refreshCatalog();
+          }}
+        />
       ) : null}
     </div>
   );
