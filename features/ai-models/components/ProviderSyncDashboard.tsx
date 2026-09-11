@@ -1480,16 +1480,16 @@ export default function ProviderSyncDashboard({
   const loadSummaries = useCallback(async () => {
     setLoading(true);
     try {
-      // `summaries` derives from the `providers` prop (direct supabase-js
-      // reads, owned by the parent page) — refreshing it here means asking
-      // the parent to re-fetch providers alongside our own classification +
-      // registry rows, which come straight from the database, as they must:
-      // the sync agent reads the same view.
+      // Our own classification + registry rows come straight from the
+      // database (the sync agent reads the same view). The `providers` prop is
+      // the parent page's: the write paths call `onModelsChanged` explicitly
+      // after a change. This loader must NOT call it — on mount that asked the
+      // parent to reload, the parent unmounted us for its skeleton, and the
+      // mount effect fired again, forever (2026-09-11 review).
       const [candidateRows, offerings, aliases] = await Promise.all([
         aiModelService.fetchProviderSyncCandidates(),
         aiModelService.fetchOfferings(),
         aiModelService.fetchAliases(),
-        Promise.resolve(onModelsChanged?.()),
       ]);
       setCandidates(candidateRows);
       setRegistry({ offerings, aliases });
@@ -1501,7 +1501,7 @@ export default function ProviderSyncDashboard({
     } finally {
       setLoading(false);
     }
-  }, [onModelsChanged]);
+  }, []);
 
   useEffect(() => {
     loadSummaries();
