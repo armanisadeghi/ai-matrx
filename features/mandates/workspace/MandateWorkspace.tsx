@@ -561,7 +561,7 @@ function OneMandateWorkspace({
                   value={item.id}
                   id={`mandate-tab-${item.id}`}
                   aria-controls={`mandate-panel-${item.id}`}
-                  className={cn(styles.tab, "min-h-10 px-3 text-xs")}
+                  className={cn(styles.tab, "px-3 text-xs")}
                 >
                   {item.label}
                 </TabsTrigger>
@@ -679,7 +679,7 @@ function OneMandateWorkspace({
               ["holder", "overrides", "display", "permissions"].includes(
                 activeTab,
               )
-                ? "space-y-4"
+                ? cn(styles.mobileTouchTargets, "space-y-4")
                 : "hidden"
             }
           >

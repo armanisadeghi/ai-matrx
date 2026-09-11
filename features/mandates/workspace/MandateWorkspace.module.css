@@ -24,4 +24,20 @@
   .tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .tab {
+    min-height: 2.75rem;
+  }
+
+  /* The Holder workspace is a dense desktop editor, but every one of these
+     controls is also the phone interaction path. Preserve the compact visual
+     treatment while giving the whole control a real 44px touch box. */
+  .mobileTouchTargets
+    :is(button:not([role="switch"]), [role="combobox"], [role="radio"]) {
+    min-height: 2.75rem;
+  }
+
+  .mobileTouchTargets :is(button:not([role="switch"]), [role="radio"]) {
+    min-width: 2.75rem;
+  }
 }

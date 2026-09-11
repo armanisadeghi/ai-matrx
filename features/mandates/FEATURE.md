@@ -156,14 +156,10 @@ through which channel (`variable` | `context`). SoR (rulings 2026-08-22):
   `consumptionMap`; the picker re-sends the existing map on a quick agent swap).
 - **Pins are declared metadata, not editable overrides.** `EffectiveConfigLayers` renders only stored keys in Definition; empty pins render **Constraints: None**. The September 2026 consumer audit did not establish runtime enforcement, so the UI must not claim pins win or lock effective API settings. Enforcement is a tracked contract gap, not fabricated UI state.
 - **`pinned_context`** values are force-delivered as context — locked in the editor.
-- **The input model is visible at LIST level** (`/mandates`). Every mandate with a
-  `provision_key` renders a provision strip on its collapsed card — the provision key, the
-  offer size (`N values offered — M guaranteed`), what the deciding binding consumes
-  (`3 of 12 consumed`, or "nothing mapped yet"), the pinned-context count, and a **Map
-  inputs** button that expands straight onto the Consumed values section. A **Mappable
-  inputs (N)** chip beside the filter box scopes the list to jobs that have an input model.
-  Mandates with no Provision render exactly as before — an absent offer is not a
-  deficiency, so there is no empty state and no warning.
+- **The input model starts at LIST level** (`/mandates`). The Inputs column says how many
+  Provision values the job offers; selecting the row opens its canonical workspace, where
+  Holder owns the saved consumption map, coverage verdict, and mapping controls. A mandate
+  without a Provision reads `legacy` — absence is not a deficiency or warning.
 - **Bench**: a provision mandate's test-bench composer offers "Fill from the offer"
   (`features/mandates/admin/ProvisionOfferComposer.tsx`): the canonical `KindInputForm`
   against the derived `<provision_key>.offer` kind when it resolves, scaffolded fields from
@@ -351,6 +347,8 @@ The Test surface distinguishes **server/API tests** from **actual display launch
 Deferred contract gaps: reusable Agent Builder test-data fill; exact-version-and-mapping full validation; demonstrated enforcement of declared pins; product decisions on treatment seed/menu fields absent from the imperative mandate consumer. None is represented as a working control or a passed verdict.
 
 ## Change Log
+
+- 2026-09-10 — **Mandate mapping controls meet the phone touch-target floor.** Production review measured the Holder workspace's real buttons, selectors, radios, and section tabs at 21–40px on a 390px viewport. `MandateWorkspace.module.css` now gives the shared Holder/Overrides/Display/Permissions panel controls and every section tab a 44px mobile hit box without changing desktop density. The Provision-era list description was also reconciled with the post-cutover entity list: Inputs reports the offered count, while the canonical workspace owns mapping and coverage.
 
 - 2026-09-10 — **THE DECLARATION GAP IS CLOSED, and four allowlist entries are gone.** The cross-repo item this repo opened the same day — 17 live `origin='code'` rows that no aidream `declare_mandate` call declared, so no generated union could ever contain them — was fixed at the source (aidream feedback `d8889c32`). Sixteen are declared now and one, `workflow.plan_shape_designer`, was retired as superseded: it never had a Holder so it never ran, and its job shipped in August as `workflow.plan_input_kind_authoring` + `workflow.plan_output_kind_authoring`. `@ai-matrx/agents` **0.10.1** publishes the complete set — **368 → 384 keys**, nothing renamed, nothing removed, nothing retiring, so the upgrade is purely additive.
 
