@@ -81,6 +81,14 @@ export interface IngestSummary {
   duplicatesSkipped: number;
   quotesUnverified: number;
   /**
+   * Pieces of the source the distiller could not read even after retrying
+   * them smaller, and the words they held. Non-zero = rules are MISSING and
+   * the summary says so first (2026-09-10: a whole chapter's method vanished
+   * behind "14 rules added, every quote verified").
+   */
+  failedChunks: number;
+  skippedWords: number;
+  /**
    * Recording (monologue) lane only: a ready composer seed listing what the
    * expert touched but never explained — offered as "interview me about it".
    */
@@ -97,6 +105,8 @@ export function parseIngestSummary(raw: unknown): IngestSummary | null {
     added: Number(data.added ?? 0),
     duplicatesSkipped: Number(data.duplicates_skipped ?? 0),
     quotesUnverified: Number(data.quotes_unverified ?? 0),
+    failedChunks: Number(data.failed_chunks ?? 0),
+    skippedWords: Number(data.skipped_words ?? 0),
     followupSeed:
       typeof data.followup_seed === "string" && data.followup_seed.trim()
         ? data.followup_seed
@@ -108,8 +118,15 @@ export function describeIngest({
   added,
   duplicatesSkipped,
   quotesUnverified,
+  failedChunks,
+  skippedWords,
 }: IngestSummary): string {
+  const missing =
+    failedChunks > 0
+      ? `Not all of it could be read: ${failedChunks} ${failedChunks === 1 ? "part" : "parts"} of your source (about ${skippedWords} words) failed even after being split smaller, so the rules from ${failedChunks === 1 ? "that part are" : "those parts are"} missing — paste ${failedChunks === 1 ? "it" : "them"} again on ${failedChunks === 1 ? "its" : "their"} own. `
+      : "";
   return (
+    missing +
     `${added} suggested ${added === 1 ? "rule" : "rules"} added as drafts` +
     (duplicatesSkipped ? `, ${duplicatesSkipped} duplicates skipped` : "") +
     (quotesUnverified

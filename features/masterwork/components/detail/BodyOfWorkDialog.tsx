@@ -70,6 +70,8 @@ function parseCorpusSummary(raw: unknown): CorpusSummary | null {
     added: Number(data.added ?? 0),
     duplicatesSkipped: Number(data.duplicates_skipped ?? 0),
     quotesUnverified: Number(data.quotes_unverified ?? 0),
+    failedChunks: Number(data.failed_chunks ?? 0),
+    skippedWords: Number(data.skipped_words ?? 0),
   };
 }
 
