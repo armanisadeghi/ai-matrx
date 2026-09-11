@@ -66,6 +66,34 @@ const BACKEND_URL_SIGNALS = [
   ".matrxserver.com",
 ];
 
+/**
+ * `db.matrxserver.com` is SUPABASE — the one database — not a python backend,
+ * and PostgREST has no organization-admission contract to violate: matrx-connect
+ * AuthMiddleware is not in front of it, and clients are REQUIRED to reach it
+ * direct (workspace CLAUDE.md, "clients never route DB reads/writes through the
+ * Python server"). But it ends in `.matrxserver.com`, so the host signal above
+ * matched it and this sweep flagged correct, mandated, direct-to-Supabase code.
+ *
+ * That is not a near-miss: it makes the gate red for doing the right thing, and
+ * the "fix" it prints (stamp X-Organization-Id, or allowlist it) would have
+ * pushed a real lane onto a transport that does not serve it. It first fired on
+ * 2026-09-11 against scripts/check-hr-custom-field-targets.ts, where the ONLY
+ * match in the whole file was the string `db.matrxserver.com` inside a doc
+ * comment saying which database the script reads.
+ *
+ * So the host signal is subtracted before it is tested. A genuine python-backend
+ * host (server.app.matrxserver.com, and every other subdomain) still matches,
+ * and nothing else about the sweep is relaxed. Anything that reaches the python
+ * backend AND mentions the database host is still caught by its own signals.
+ */
+const NOT_A_BACKEND_HOST = ["db.matrxserver.com"];
+
+function mentionsBackendHost(source: string): boolean {
+  let stripped = source;
+  for (const host of NOT_A_BACKEND_HOST) stripped = stripped.split(host).join("");
+  return BACKEND_URL_SIGNALS.some((s) => stripped.includes(s));
+}
+
 const COMPLIANCE_SIGNALS = [
   "X-Organization-Id",
   "applyOrganizationContextHeader",
@@ -161,7 +189,7 @@ function main(): number {
       scanned += 1;
       const source = readFileSync(file, "utf8");
       if (!BEARER_TEMPLATE.test(source)) continue;
-      if (!BACKEND_URL_SIGNALS.some((s) => source.includes(s))) continue;
+      if (!mentionsBackendHost(source)) continue;
       if (COMPLIANCE_SIGNALS.some((s) => source.includes(s))) continue;
       if (
         ALLOWLISTED_TRANSPORT_IMPORTS.some((s) => source.includes(`"${s}"`))
