@@ -254,11 +254,15 @@ export async function writeDumpUrlSources(opts: {
       ? (rulebook.metadata as Record<string, unknown>)
       : {};
   const metadata = { ...baseMeta, dump_url_sources: urls };
+  // Metadata-only: CAS-guard on the RULES version, never bump it — `version`
+  // is what a built Masterwork drifts against, and bumping it here made a
+  // freshly built Masterwork read "needs rebuild" the moment a link was
+  // attached (2026-09-10, v44 → v45 with identical rules).
   const result = await guardedUpdate<RulebookRow>({
     expectedVersion: rulebook.version,
-    applyUpdate: ({ expectedVersion, nextVersion }) =>
+    applyUpdate: ({ expectedVersion }) =>
       rulebookTable()
-        .update({ metadata, version: nextVersion } as never)
+        .update({ metadata } as never)
         .eq("id", rulebook.id)
         .eq("version", expectedVersion)
         .is("deleted_at", null)
