@@ -45,6 +45,7 @@ import {
 import { resolveLibraryOrgId } from "@/lib/organizations/systemOrg";
 import { LibraryPublishPanel } from "@/features/rag/components/library/LibraryPublishPanel";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { useAdoptRecordOrganization } from "@/features/organizations/useAdoptRecordOrganization";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -915,6 +916,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const canEdit =
     rulebook !== null && userId !== null && rulebook.created_by === userId;
 
+  // THE RULEBOOK SAYS WHICH WORKSPACE THIS IS (wall W3, 2026-09-10) — the
+  // same adoption the lane routes make, because this page is the other door
+  // onto the same record and the two must never behave differently.
+  const recordOrganization = useAdoptRecordOrganization(
+    rulebook?.organization_id,
+    "Rulebook",
+  );
+
   const existingIds = useMemo(
     () => new Set((rulebook?.rules ?? []).map((r) => r.id)),
     [rulebook?.rules],
@@ -1416,6 +1425,20 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         fallbackHref="/masterwork/all"
         fallbackLabel="Back to Masterwork Studio"
       />
+    );
+  }
+
+  // The workspace answer is not in yet. Every action on this page is
+  // org-scoped, so it waits rather than letting them die on "Select an
+  // organization before sending this request."
+  if (recordOrganization.status === "resolving") {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3">
+        <LoadingSpinner />
+        <p className="text-sm text-muted-foreground">
+          Getting your workspace ready…
+        </p>
+      </div>
     );
   }
 

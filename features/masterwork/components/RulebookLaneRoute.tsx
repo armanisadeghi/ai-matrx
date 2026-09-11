@@ -37,6 +37,7 @@ import {
   useSurfaceClientTools,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
+import { useAdoptRecordOrganization } from "@/features/organizations/useAdoptRecordOrganization";
 import { buildRulebookSurfaceScope } from "../agent-context/rulebookSurfaceScope";
 import { getRulebook, listMasterworksForRulebook } from "../service";
 import type { Masterwork, Rulebook } from "../types";
@@ -125,6 +126,19 @@ export function RulebookLaneRoute({
 
   const canEdit =
     rulebook !== null && userId !== null && rulebook.created_by === userId;
+
+  // THE RULEBOOK SAYS WHICH WORKSPACE THIS IS (wall W3, 2026-09-10). Before
+  // this, a reload of any lane left every action dying on "Select an
+  // organization before sending this request." — the active-org selection is
+  // per-tab-session unless the Expert found the "set as my default" switch in
+  // the avatar menu, and a first-time Expert has never seen it. The row
+  // already carries `organization_id`; nothing here is guessed. The lane holds
+  // its body until the answer is in, so no child (the Conductor's Mandate
+  // resolution above all) can fire an org-scoped request into the gap.
+  const recordOrganization = useAdoptRecordOrganization(
+    rulebook?.organization_id,
+    "Rulebook",
+  );
 
   // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md, Arman
   // 2026-09-09). This frame renders no Masterwork list of its own — it is the
@@ -244,6 +258,26 @@ export function RulebookLaneRoute({
             <Button asChild variant="outline" size="sm">
               <Link href={`/masterwork/${rulebookId}`}>Open the Rulebook</Link>
             </Button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // The workspace answer is not in yet. Rendering the lane now would let its
+  // body fire org-scoped requests into the gap and collect the "Select an
+  // organization" refusal this whole path exists to end — so the lane says
+  // what it is doing instead of failing behind the Expert's back.
+  if (recordOrganization.status === "resolving") {
+    return (
+      <>
+        {header}
+        <div className={shellClass}>
+          <div className="flex h-full flex-1 flex-col items-center justify-center gap-3">
+            <LoadingSpinner />
+            <p className="text-sm text-muted-foreground">
+              Getting your workspace ready…
+            </p>
           </div>
         </div>
       </>

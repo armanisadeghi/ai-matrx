@@ -75,6 +75,14 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     that set directly is how a run that errored left the box "Working…" forever, with nothing told
     to the caller until a row poll happened to notice. Guarded by `TryMasterworkBox.test.tsx`
     (proven failing-then-passing 2026-09-09).
+18. **Every Rulebook door adopts the Rulebook's own organization** — `RulebookLaneRoute` and
+    `RulebookDetailPage` both call `useAdoptRecordOrganization`
+    (`features/organizations/useAdoptRecordOrganization.ts`) and hold their body until it answers.
+    The row carries `organization_id`, so a reload must never leave the Expert's every action
+    dying on "Select an organization before sending this request." (wall W3, 2026-09-10). Nothing
+    is guessed: an unreadable organization row means "not your workspace" and the page falls back
+    to the old fail-closed behaviour, and the adoption ANNOUNCES itself with a toast naming the
+    workspace. Guarded by `components/__tests__/RulebookLaneRoute.organization.test.tsx`.
 
 ## Files
 
