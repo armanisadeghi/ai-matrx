@@ -14,7 +14,7 @@ jest.mock("@/utils/supabase/client", () => ({
 
 import { aiModelService } from "./service";
 
-describe("AI offering pricing boundary", () => {
+describe("AI offering boundary", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -75,6 +75,59 @@ describe("AI offering pricing boundary", () => {
 
     await expect(aiModelService.fetchOfferings()).rejects.toThrow(
       "ai.offering.offering-2.pricing[0].input_price: expected a finite number",
+    );
+  });
+
+  it("treats a null optional processor as absent without weakening string validation", async () => {
+    mockOrder.mockResolvedValue({
+      error: null,
+      data: [
+        {
+          id: "offering-3",
+          pricing: [],
+          capabilities_override: {},
+          override: {
+            params: {
+              temperature: { supported: false, processor: null },
+              reasoning_effort: {
+                supported: true,
+                processor: "anthropic_thinking",
+              },
+            },
+            constraints: [],
+          },
+          metadata: {},
+        },
+      ],
+    });
+
+    const offerings = await aiModelService.fetchOfferings();
+
+    expect(offerings[0].override.params.temperature).toEqual({
+      supported: false,
+    });
+    expect(offerings[0].override.params.reasoning_effort?.processor).toBe(
+      "anthropic_thinking",
+    );
+
+    mockOrder.mockResolvedValue({
+      error: null,
+      data: [
+        {
+          id: "offering-4",
+          pricing: [],
+          capabilities_override: {},
+          override: {
+            params: { temperature: { processor: 42 } },
+            constraints: [],
+          },
+          metadata: {},
+        },
+      ],
+    });
+
+    await expect(aiModelService.fetchOfferings()).rejects.toThrow(
+      "ai.offering.offering-4.override.params.temperature.processor: expected a string",
     );
   });
 });

@@ -284,7 +284,9 @@ function parseControlRule(value: unknown, path: string): ControlRule {
     );
   }
   if (record.const !== undefined) rule.const = record.const;
-  if (record.processor !== undefined) {
+  // Stored sparse rules may use JSON null to mean that the optional processor
+  // is not configured. Normalize that representation to an omitted property.
+  if (record.processor !== undefined && record.processor !== null) {
     rule.processor = requireString(record.processor, `${path}.processor`);
   }
   if (record.processor_config !== undefined) {

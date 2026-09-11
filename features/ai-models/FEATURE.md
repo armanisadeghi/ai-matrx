@@ -74,6 +74,9 @@ must obey.
 
 ## Change log
 
+- `2026-09-11` — Offering rule parsing now normalizes a null optional `processor` to an absent
+  property, matching the sparse-rule contract while retaining strict validation for configured
+  processors.
 - `2026-09-11` — The admin Offerings catalog now accepts nullable pricing directions from the
   live `ai.offering.pricing` contract. A non-applicable direction remains `null` and renders as
   absent; non-null prices still fail closed unless they are finite numbers. Previously the first
