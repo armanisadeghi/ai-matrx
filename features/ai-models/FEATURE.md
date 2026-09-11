@@ -74,6 +74,10 @@ must obey.
 
 ## Change log
 
+- `2026-09-11` — All finite admin selectors now import directly from
+  `@ai-matrx/design-system`; the deprecated-model replacement control now uses
+  `ModelListDropdown` with its active-model allowlist, so it retains the full
+  platform catalog behavior instead of building a second model roster.
 - `2026-09-11` — Offering rule parsing now normalizes a null optional `processor` to an absent
   property, matching the sparse-rule contract while retaining strict validation for configured
   processors.

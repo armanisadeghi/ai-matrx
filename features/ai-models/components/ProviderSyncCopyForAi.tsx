@@ -18,7 +18,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import type {
   ProviderSyncComparison,

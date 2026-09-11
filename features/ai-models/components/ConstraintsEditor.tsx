@@ -10,7 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";

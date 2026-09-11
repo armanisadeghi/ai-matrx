@@ -23,7 +23,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai-matrx/design-system";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { aiModelService } from "../service";
 import { reloadAiCatalog } from "../catalogReload";

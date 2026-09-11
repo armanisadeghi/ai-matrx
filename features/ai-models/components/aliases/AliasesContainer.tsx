@@ -22,7 +22,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Save, Trash2, X, AlertTriangle } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";

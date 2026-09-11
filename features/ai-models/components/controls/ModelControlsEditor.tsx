@@ -35,7 +35,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai-matrx/design-system";
 import { FullJsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { aiModelService } from "../../service";

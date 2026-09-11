@@ -15,7 +15,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 const UNSET_SENTINEL = "__unset__";

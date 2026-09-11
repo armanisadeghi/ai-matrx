@@ -16,7 +16,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai-matrx/design-system";
 import GenericTablePagination from "@/components/generic-table/GenericTablePagination";
 import {
   AlertDialog,

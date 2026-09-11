@@ -11,7 +11,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai-matrx/design-system";
 import { Plus, Trash2, DollarSign, AlertCircle, AlertTriangle } from "lucide-react";
 import type { PricingTier } from "../types";
 import {

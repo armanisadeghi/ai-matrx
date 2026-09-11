@@ -12,7 +12,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai-matrx/design-system";
 import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";
 import ModelPricingEditor from "@/features/ai-models/components/ModelPricingEditor";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";

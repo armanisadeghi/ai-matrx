@@ -10,7 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai-matrx/design-system";
 import { Lock, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AiProviderRow, DocSource } from "../../types";

@@ -10,7 +10,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai-matrx/design-system";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -791,33 +792,20 @@ export default function DeprecatedModelsAudit({
                           No active usage
                         </span>
                       ) : (
-                        <Select
+                        <ModelListDropdown
                           value={entry.replacementId || undefined}
-                          onValueChange={(v) =>
-                            updateEntry(model.id, { replacementId: v })
+                          onValueChange={(replacementId) =>
+                            updateEntry(model.id, { replacementId })
                           }
+                          inputModalities={[]}
+                          allowedModelIds={activeModels.map(
+                            (candidate) => candidate.id,
+                          )}
+                          catalogVariant="admin"
+                          placeholder="Select replacement..."
+                          className="h-7 w-full max-w-[240px] justify-between text-xs"
                           disabled={entry.replacing}
-                        >
-                          <SelectTrigger className="h-7 text-xs w-full max-w-[240px]">
-                            <SelectValue placeholder="Select replacement..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {activeModels.map((m) => (
-                              <SelectItem
-                                key={m.id}
-                                value={m.id}
-                                className="text-xs"
-                              >
-                                {m.common_name || m.name}
-                                {m.is_primary && (
-                                  <span className="ml-1 text-green-600">
-                                    (primary)
-                                  </span>
-                                )}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        />
                       )}
                     </td>
 
