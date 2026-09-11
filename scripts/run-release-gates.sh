@@ -76,6 +76,18 @@ if $STRICT; then
         "Route metadata and favicons|pnpm check:route-metadata:strict"
         "Pattern Patrol manifest contracts|pnpm exec tsx scripts/pattern-patrol/check-manifest.ts --repo-only"
         "Turbopack filesystem tracing|pnpm exec tsx scripts/check-turbopack-fs-tracing.ts"
+        # BROWSER DIALOGS exit 1 under --strict. Zero findings at introduction
+        # (2026-09-11) and no lawful exception, so there is no backlog to
+        # grandfather. eslint.config.mjs has carried `no-alert` /
+        # `no-restricted-globals` / `no-restricted-properties` for these forms
+        # since 2026-08-12, but `pnpm lint` runs in neither CI nor this script,
+        # so until now the ban was an IDE squiggle with nothing behind it. The
+        # cost of a leak is not style: a native confirm() raised from inside an
+        # open Radix Dialog cannot render (the dialog holds body pointer-events
+        # at none), so the button reads as dead and writes nothing — the class
+        # feedback 11b0a90c reported live on the provider-sync policy dialog.
+        # `pnpm check:browser-dialogs:self-test` proves the guard can still fail.
+        "Browser dialogs (window.confirm/alert/prompt)|pnpm check:browser-dialogs:strict"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
         "Archived-items law (every list has an archive control)|pnpm check:archived-items-law"
@@ -400,6 +412,10 @@ else
         "Route metadata and favicons|pnpm check:route-metadata"
         "Pattern Patrol manifest contracts|pnpm exec tsx scripts/pattern-patrol/check-manifest.ts --repo-only"
         "Turbopack filesystem tracing|pnpm exec tsx scripts/check-turbopack-fs-tracing.ts"
+        # Browser dialogs — see the strict lane above for why this class is
+        # a dead control, not a style nit. Zero backlog, so the report is
+        # the whole finding.
+        "Browser dialogs (window.confirm/alert/prompt)|pnpm check:browser-dialogs"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
         "Archived-items law (every list has an archive control)|pnpm check:archived-items-law"
