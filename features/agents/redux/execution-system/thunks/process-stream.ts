@@ -326,6 +326,12 @@ interface ProcessStreamArgs {
    * what an adopted consumer reads.
    */
   skipTranscriptCommit?: boolean;
+  /**
+   * The caller owns a durable rejoin path for this request. Only those paths
+   * may retain the lexical parser after a dropped transport; generic stream
+   * consumers otherwise have no reader to resume it and must finalize.
+   */
+  allowTransportResume?: boolean;
 }
 
 export interface ProcessStreamResult {
@@ -336,13 +342,30 @@ export interface ProcessStreamResult {
 }
 
 /** A live reader owns parser and turn bookkeeping until it reaches a terminal event. */
-const retainedTransportConsumers = new Map<
-  string,
-  (response: Response, controller?: AbortController) => Promise<ProcessStreamResult>
->();
+interface RetainedTransportConsumer {
+  consume: (
+    response: Response,
+    controller?: AbortController,
+    onEvent?: (event: unknown) => void,
+  ) => Promise<ProcessStreamResult>;
+  /** A rejoin must never put two readers into one lexical stream processor. */
+  busy: boolean;
+  /** Clears closure-owned timers before dropping the retained processor. */
+  dispose: () => void;
+}
+
+const retainedTransportConsumers = new Map<string, RetainedTransportConsumer>();
 
 export function hasRetainedTransportConsumer(requestId: string): boolean {
   return retainedTransportConsumers.has(requestId);
+}
+
+/** Drop a retained lexical processor once its durable request cannot rejoin. */
+export function discardRetainedTransportConsumer(requestId: string): void {
+  const retained = retainedTransportConsumers.get(requestId);
+  if (!retained) return;
+  retainedTransportConsumers.delete(requestId);
+  retained.dispose();
 }
 
 // =============================================================================
@@ -366,15 +389,33 @@ export async function processStream({
   userMessageClientTempId,
   forceLocalConversationId = false,
   skipTranscriptCommit = false,
+  allowTransportResume = false,
 }: ProcessStreamArgs): Promise<ProcessStreamResult> {
   const retained = retainedTransportConsumers.get(requestId);
-  if (retained) return retained(response, abortController);
+  if (retained) {
+    const activeRequest = getState().activeRequests.byRequestId[requestId];
+    // A retained parser only has meaning while it still owns this exact
+    // request. Never let an orphaned closure consume a later response.
+    if (!activeRequest || activeRequest.conversationId !== conversationId) {
+      discardRetainedTransportConsumer(requestId);
+      throw new Error(
+        `Cannot reconnect stream ${requestId}: its active request is missing or belongs to another conversation.`,
+      );
+    }
+    if (retained.busy) {
+      throw new Error(
+        `Cannot reconnect stream ${requestId}: another transport reader is already active.`,
+      );
+    }
+    return retained.consume(response, abortController, onEvent);
+  }
   // Helper for the manual execution path: when forceLocalConversationId is
   // set, stream-event parent_refs.conversation_id is ignored and the local
   // Redux conversationId is used everywhere. See the param docstring above.
   const owningConvId = (wireConvId: string | undefined | null): string =>
     forceLocalConversationId ? conversationId : (wireConvId ?? conversationId);
   let activeAbortController = abortController;
+  let activeOnEvent = onEvent;
   const jsonTracker = jsonExtraction?.enabled
     ? new StreamingJsonTracker({
         maxResults: jsonExtraction.maxResults,
@@ -625,11 +666,23 @@ export async function processStream({
   let transportStreamId =
     getState().activeRequests.byRequestId[requestId]?.transportStreamId ?? null;
 
+  let retainedEntry: RetainedTransportConsumer;
   const consume = async (
     nextResponse: Response,
     nextAbortController?: AbortController,
+    nextOnEvent?: (event: unknown) => void,
   ): Promise<ProcessStreamResult> => {
+    if (retainedEntry.busy) {
+      throw new Error(
+        `Cannot consume stream ${requestId}: another transport reader is already active.`,
+      );
+    }
+    retainedEntry.busy = true;
+    try {
     activeAbortController = nextAbortController;
+      // Each transport has its own watchdog observer. Keep all lexical stream
+      // state, but never keep the observer that belonged to a dead socket.
+      activeOnEvent = nextOnEvent;
     const { events: rawEvents } = parseNdjsonStream(nextResponse);
     const events = nextAbortController
       ? monitorStream(rawEvents, {
@@ -654,8 +707,8 @@ export async function processStream({
           // cursor. This mirrors a fresh local resume request without blanking
           // the retained viewer.
           blockAccumulator.rewindToBlockCount(
-            getState().activeRequests.byRequestId[requestId]?.renderBlockOrder
-              .length ?? 0,
+                getState().activeRequests.byRequestId[requestId]
+                  ?.renderBlockOrder.length ?? 0,
           );
           lastTransportSeq = 0;
         }
@@ -676,9 +729,9 @@ export async function processStream({
       }
       totalEvents++;
       const now = performance.now();
-      if (onEvent) {
+          if (activeOnEvent) {
         try {
-          onEvent(event);
+              activeOnEvent(event);
         } catch {
           /* heartbeat observer must never break the stream */
         }
@@ -760,7 +813,9 @@ export async function processStream({
             blockAccumulator.breakTextBlock(dispatch);
             isInTextRun = false;
             isInReasoningRun = true;
-            dispatch(markReasoningStreamStart({ requestId, timestamp: now }));
+                dispatch(
+                  markReasoningStreamStart({ requestId, timestamp: now }),
+                );
           }
         } else {
           // "stopped" — close the run so the phase flips off "Reasoning…".
@@ -1404,7 +1459,10 @@ export async function processStream({
             );
             blockData = unified as unknown as Record<string, unknown>;
           } else if (blockType === "unknown_data_event") {
-            blockData = { ...(d as UntypedDataPayload), _dataType: dataType };
+                blockData = {
+                  ...(d as UntypedDataPayload),
+                  _dataType: dataType,
+                };
           } else {
             // MATRX-EXCEPTION: `d` here is one of the many TypedDataPayload
             // union members without a shared index signature; blockData's
@@ -1433,7 +1491,8 @@ export async function processStream({
                 blockId,
                 blockIndex: renderBlockEvents,
                 type: finalBlockType,
-                status: dataType === "partial_image" ? "streaming" : "complete",
+                    status:
+                      dataType === "partial_image" ? "streaming" : "complete",
                 content: null,
                 data: blockData,
               },
@@ -1538,8 +1597,9 @@ export async function processStream({
           // the DB. The end-of-stream flush still runs as a backstop.
           if (toolData.event === "tool_completed") {
             const dbId = toolCallIdByProviderCallId.get(toolData.call_id);
-            const rawResult = (toolData.data as Record<string, unknown> | null)
-              ?.result;
+                const rawResult = (
+                  toolData.data as Record<string, unknown> | null
+                )?.result;
             if (dbId && rawResult != null) {
               const outputStr =
                 typeof rawResult === "string"
@@ -1575,9 +1635,8 @@ export async function processStream({
             runToolStateEffects({
               toolName: toolData.tool_name,
               args:
-                getState().activeRequests.byRequestId[requestId]?.toolLifecycle[
-                  toolData.call_id
-                ]?.arguments ?? {},
+                    getState().activeRequests.byRequestId[requestId]
+                      ?.toolLifecycle[toolData.call_id]?.arguments ?? {},
               result: rawResult,
               dispatch,
               getState,
@@ -1843,7 +1902,10 @@ export async function processStream({
               // A child conversation's user/system row announced on the
               // parent wire — skip entirely (it must not promote our
               // optimistic user message or seed a phantom bubble).
-            } else if (role === "user" && inboxTempIdByPosition.has(position)) {
+                } else if (
+                  role === "user" &&
+                  inboxTempIdByPosition.has(position)
+                ) {
               // A queued (inbox) message drained into the conversation earlier
               // this stream — promote its optimistic bubble to the durable id.
               const inboxTempId = inboxTempIdByPosition.get(position);
@@ -1927,7 +1989,8 @@ export async function processStream({
               toolDurationMs: null,
               sourceApp: "",
               sourceFeature: "",
-              metadata: (d.metadata ?? {}) as CxUserRequestRecord["metadata"],
+                  metadata: (d.metadata ??
+                    {}) as CxUserRequestRecord["metadata"],
               createdAt: nowIso,
               completedAt: null,
               deletedAt: null,
@@ -2050,7 +2113,9 @@ export async function processStream({
               dispatch(confirmServerSync(conversationId));
               // The conversation row now exists — document/scratch edges that
               // were queued while it was cache-only can finally persist.
-              void dispatch(flushPendingDocumentEdgesThunk({ conversationId }));
+                  void dispatch(
+                    flushPendingDocumentEdgesThunk({ conversationId }),
+                  );
               const syncListCx = upsertAgentConversationFromExecutionAction(
                 getState(),
                 conversationId,
@@ -2126,7 +2191,8 @@ export async function processStream({
               rawError &&
               typeof rawError === "object" &&
               !Array.isArray(rawError) &&
-              typeof (rawError as Record<string, unknown>).message === "string"
+                  typeof (rawError as Record<string, unknown>).message ===
+                    "string"
             ) {
               const e = rawError as Record<string, unknown>;
               patch.error = {
@@ -2201,8 +2267,12 @@ export async function processStream({
           const added =
             typeof d.metadata?.added === "number" ? d.metadata.added : 0;
           const removed =
-            typeof d.metadata?.removed === "number" ? d.metadata.removed : 0;
-          dispatch(invalidateActiveTools({ conversationId, added, removed }));
+                typeof d.metadata?.removed === "number"
+                  ? d.metadata.removed
+                  : 0;
+              dispatch(
+                invalidateActiveTools({ conversationId, added, removed }),
+              );
         } else if (isSkillStreamEvent(d.kind)) {
           // `skills.ingested` (sandbox auto-discovery completing) and
           // future `skill.created` / `skill.modified` / `skill.deleted`
@@ -2278,7 +2348,9 @@ export async function processStream({
           dispatch(setInstanceStatus({ conversationId, status: "paused" }));
         } else if (d.state === "cancelled") {
           dispatch(setRequestStatus({ requestId, status: "cancelled" }));
-          dispatch(setInstanceStatus({ conversationId, status: "cancelled" }));
+              dispatch(
+                setInstanceStatus({ conversationId, status: "cancelled" }),
+              );
         }
         dispatch(
           appendTimeline({
@@ -2327,7 +2399,8 @@ export async function processStream({
           conversationId,
         );
         if (errWidgetHandleId) {
-          const handle = callbackManager.get<WidgetHandle>(errWidgetHandleId);
+              const handle =
+                callbackManager.get<WidgetHandle>(errWidgetHandleId);
           handle?.onError?.({
             reason: event.data.error_type ?? "stream_error",
             message: event.data.user_message ?? event.data.message,
@@ -2352,9 +2425,12 @@ export async function processStream({
           // REQUEST at "complete" is correct (this stream did end); the INSTANCE
           // tracks the conversation lifecycle, which is still mid-flight.
           const instStatus =
-            currentState.conversations.byConversationId[conversationId]?.status;
+                currentState.conversations.byConversationId[conversationId]
+                  ?.status;
           if (instStatus !== "paused") {
-            dispatch(setInstanceStatus({ conversationId, status: "complete" }));
+                dispatch(
+                  setInstanceStatus({ conversationId, status: "complete" }),
+                );
           }
 
           // Widget handle lifecycle: fire onComplete at stream end (success
@@ -2366,11 +2442,14 @@ export async function processStream({
             conversationId,
           );
           if (endWidgetHandleId) {
-            const handle = callbackManager.get<WidgetHandle>(endWidgetHandleId);
+                const handle =
+                  callbackManager.get<WidgetHandle>(endWidgetHandleId);
             if (handle?.onComplete) {
               const responseText =
                 currentRequest?.renderBlockOrder
-                  .map((id) => currentRequest.renderBlocks[id]?.content ?? "")
+                      .map(
+                        (id) => currentRequest.renderBlocks[id]?.content ?? "",
+                      )
                   .join("\n") || "";
               handle.onComplete({
                 conversationId,
@@ -2471,11 +2550,16 @@ export async function processStream({
             event.data,
           );
         } else {
-          const reqSnapshot = getState().activeRequests.byRequestId[requestId];
+              const reqSnapshot =
+                getState().activeRequests.byRequestId[requestId];
           let anchorBlockId: string | null = null;
           let anchorOffset: number | null = null;
           if (reqSnapshot) {
-            for (let i = reqSnapshot.renderBlockOrder.length - 1; i >= 0; i--) {
+                for (
+                  let i = reqSnapshot.renderBlockOrder.length - 1;
+                  i >= 0;
+                  i--
+                ) {
               const candidate =
                 reqSnapshot.renderBlocks[reqSnapshot.renderBlockOrder[i]];
               if (candidate && candidate.type === "text") {
@@ -2559,6 +2643,27 @@ export async function processStream({
     streamFailure = err instanceof Error ? err : new Error(String(err));
   }
 
+      // An END is authoritative. Some fetch implementations report a reader
+      // error while they are closing immediately after it; that is not a second
+      // failed stream and must not clobber the completed request.
+      if (sawTerminalEvent && streamFailure !== null) {
+        streamFailure = null;
+      }
+
+      const abortReason = activeAbortController?.signal.reason;
+      const monitorAborted =
+        abortReason === "heartbeat-timeout" || abortReason === "total-timeout";
+      if (
+        streamFailure === null &&
+        !sawTerminalEvent &&
+        activeAbortController?.signal.aborted &&
+        !monitorAborted
+      ) {
+        const abortError = new Error("Stream was cancelled.");
+        abortError.name = "AbortError";
+        streamFailure = abortError;
+      }
+
   if (streamFailure === null && !sawTerminalEvent) {
     streamFailure = new StreamTransportError({
       detail: "NDJSON transport closed before a terminal end event.",
@@ -2583,12 +2688,12 @@ export async function processStream({
   // (accumulator, reservations, tool maps, handoff state, JSON parser, etc.)
   // in this closure and let the rejoin reader enter it before terminalization.
   const recoverableTransportFailure =
+        allowTransportResume &&
     streamFailure !== null &&
     (streamFailure.name === "HeartbeatTimeoutError" ||
       isStreamTransportLost(streamFailure));
   if (recoverableTransportFailure) {
     dispatchBatch();
-    retainedTransportConsumers.set(requestId, consume);
     throw streamFailure;
   }
 
@@ -2612,13 +2717,15 @@ export async function processStream({
       ? {
           total_duration:
             completionStats.timing_stats.total_duration ?? undefined,
-          api_duration: completionStats.timing_stats.api_duration ?? undefined,
+              api_duration:
+                completionStats.timing_stats.api_duration ?? undefined,
         }
       : undefined,
   });
 
   const postLoopState = getState();
-  const postLoopRequest = postLoopState.activeRequests.byRequestId[requestId];
+      const postLoopRequest =
+        postLoopState.activeRequests.byRequestId[requestId];
   if (
     streamFailure === null &&
     postLoopRequest &&
@@ -2659,7 +2766,9 @@ export async function processStream({
   const finalErrorMessage =
     streamFailure?.message ??
     (finalRequest?.status === "error" && finalRequest.error
-      ? (finalRequest.error.user_message ?? finalRequest.error.message ?? null)
+          ? (finalRequest.error.user_message ??
+            finalRequest.error.message ??
+            null)
       : null);
 
   // Assemble the DB-compatible CxContentBlock[] from the completed request.
@@ -2734,7 +2843,9 @@ export async function processStream({
         const uuid = callId
           ? toolCallIdByProviderCallId.get(callId)
           : undefined;
-        const tc = uuid ? finalState.observability.toolCalls[uuid] : undefined;
+            const tc = uuid
+              ? finalState.observability.toolCalls[uuid]
+              : undefined;
         if (tc?.iteration) {
           iter = tc.iteration;
           currentIter = iter;
@@ -2760,7 +2871,9 @@ export async function processStream({
   ): Set<number> => {
     const iters = new Set<number>();
     for (const [iter, blocks] of blocksByIter) {
-      if (blocks.some((b) => (b as { type?: string }).type === "tool_call")) {
+          if (
+            blocks.some((b) => (b as { type?: string }).type === "tool_call")
+          ) {
         iters.add(iter);
       }
     }
@@ -3221,7 +3334,7 @@ export async function processStream({
   // Everything streamed before the failure is now flushed + committed —
   // propagate so runAiStream's canonical error path (statuses,
   // failPendingToolLifecycle, recovery) runs.
-  retainedTransportConsumers.delete(requestId);
+      discardRetainedTransportConsumer(requestId);
   if (streamFailure !== null) {
     throw streamFailure;
   }
@@ -3232,9 +3345,26 @@ export async function processStream({
     tokenUsage,
     finishReason,
   };
+    } finally {
+      retainedEntry.busy = false;
+    }
   };
-  retainedTransportConsumers.set(requestId, consume);
-  return consume(response, abortController);
+  retainedEntry = {
+    consume,
+    busy: false,
+    dispose: () => {
+      if (postTerminalGraceTimer !== null) {
+        clearTimeout(postTerminalGraceTimer);
+        postTerminalGraceTimer = null;
+      }
+    },
+  };
+  // Store before consuming the first transport so a mid-body loss preserves
+  // the exact parser, reservation, and accumulator closure for rejoin.
+  if (allowTransportResume) {
+    retainedTransportConsumers.set(requestId, retainedEntry);
+  }
+  return consume(response, abortController, onEvent);
 }
 
 // =============================================================================

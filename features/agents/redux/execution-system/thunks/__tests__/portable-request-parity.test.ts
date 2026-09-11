@@ -10,7 +10,7 @@ import {
 import activeRequestsReducer, {
   createRequest,
 } from "../../active-requests/active-requests.slice";
-import { processStream } from "../process-stream";
+import { hasRetainedTransportConsumer, processStream } from "../process-stream";
 import {
   compareMatrixRequestToPortableProjection,
   projectMatrixRequestForPortableParity,
@@ -55,7 +55,9 @@ function responseFor(events: readonly AgentProjectionEvent[]): Response {
 }
 
 function brokenResponse(events: readonly AgentProjectionEvent[]): Response {
-  const chunks = events.map((event) => encoder.encode(`${JSON.stringify(event)}\n`));
+  const chunks = events.map((event) =>
+    encoder.encode(`${JSON.stringify(event)}\n`),
+  );
   const reader = {
     read(): Promise<{ value?: Uint8Array; done: boolean }> {
       const value = chunks.shift();
@@ -64,7 +66,10 @@ function brokenResponse(events: readonly AgentProjectionEvent[]): Response {
     },
     releaseLock() {},
   };
-  return { body: { getReader: () => reader }, headers: new Headers() } as unknown as Response;
+  return {
+    body: { getReader: () => reader },
+    headers: new Headers(),
+  } as unknown as Response;
 }
 
 function matrixHarness() {
@@ -211,16 +216,188 @@ test("server tool starts do not falsely suspend either consumer", async () => {
   expect(report.shared.tools).toBe(true);
 });
 
-test("rejoin reuses the live processor for a partial code fence and drops its replay prefix", async () => {
+test("rejoin retains the real processor through two drops, replaying a fenced assistant turn exactly once", async () => {
   const harness = matrixHarness();
+  const assistantId = "77777777-7777-4777-8777-777777777777";
   const prefix: AgentProjectionEvent[] = [
-    { event: "chunk", stream_id: "segment-a", stream_seq: 1, data: { text: "```json\n{\"a\": " } },
-    { event: "chunk", stream_id: "segment-a", stream_seq: 2, data: { text: "1" } },
+    {
+      event: "record_reserved",
+      stream_id: "segment-a",
+      stream_seq: 1,
+      data: {
+        db_project: "main",
+        table: "message",
+        record_id: assistantId,
+        parent_refs: { conversation_id: PORTABLE_PARITY_CONVERSATION_ID },
+        metadata: { role: "assistant", position: 1 },
+      },
+    },
+    {
+      event: "chunk",
+      stream_id: "segment-a",
+      stream_seq: 2,
+      data: { text: '```json\n{"a": ' },
+    },
+    {
+      event: "chunk",
+      stream_id: "segment-a",
+      stream_seq: 3,
+      data: { text: "1" },
+    },
   ];
-  await expect(processStream({ requestId: PORTABLE_PARITY_REQUEST_ID, conversationId: PORTABLE_PARITY_CONVERSATION_ID, response: brokenResponse(prefix), submitAt: 0, conversationIdAt: null, dispatch: harness.dispatch as never, getState: harness.getState, abortController: new AbortController() })).rejects.toThrow();
-  await processStream({ requestId: PORTABLE_PARITY_REQUEST_ID, conversationId: PORTABLE_PARITY_CONVERSATION_ID, response: responseFor([...prefix, { event: "chunk", stream_id: "segment-a", stream_seq: 3, data: { text: "}\n```" } }, { event: "end", stream_id: "segment-a", stream_seq: 4, data: {} }]), submitAt: 0, conversationIdAt: null, dispatch: harness.dispatch as never, getState: harness.getState, abortController: new AbortController() });
+  const args = {
+    requestId: PORTABLE_PARITY_REQUEST_ID,
+    conversationId: PORTABLE_PARITY_CONVERSATION_ID,
+    submitAt: 0,
+    conversationIdAt: null,
+    dispatch: harness.dispatch as never,
+    getState: harness.getState,
+    allowTransportResume: true,
+  };
+  const firstTransportEvents: unknown[] = [];
+  const secondTransportEvents: unknown[] = [];
+  const thirdTransportEvents: unknown[] = [];
+  await expect(
+    processStream({
+      ...args,
+      response: brokenResponse(prefix),
+      abortController: new AbortController(),
+      onEvent: (event) => firstTransportEvents.push(event),
+    }),
+  ).rejects.toThrow();
+  await expect(
+    processStream({
+      ...args,
+      response: brokenResponse([
+        ...prefix,
+        {
+          event: "chunk",
+          stream_id: "segment-a",
+          stream_seq: 4,
+          data: { text: "2" },
+        },
+      ]),
+      abortController: new AbortController(),
+      onEvent: (event) => secondTransportEvents.push(event),
+    }),
+  ).rejects.toThrow();
+  await processStream({
+    ...args,
+    response: responseFor([
+      ...prefix,
+      {
+        event: "chunk",
+        stream_id: "segment-a",
+        stream_seq: 4,
+        data: { text: "2" },
+      },
+      {
+        event: "chunk",
+        stream_id: "segment-a",
+        stream_seq: 5,
+        data: { text: "}\n```" },
+      },
+      { event: "end", stream_id: "segment-a", stream_seq: 6, data: {} },
+    ]),
+    abortController: new AbortController(),
+    onEvent: (event) => thirdTransportEvents.push(event),
+  });
   const request = harness.request();
-  expect(Object.values(request.renderBlocks).map((block) => block.content).join(""))
-    .toContain('{"a": 1}');
-  expect(request.lastTransportSeq).toBe(4);
+  const content = Object.values(request.renderBlocks)
+    .map((block) => block.content)
+    .join("");
+  expect(content).toContain('{"a": 12}');
+  expect(content.match(/\{\"a\": 12\}/g)).toHaveLength(1);
+  expect(request.reservations[assistantId]).toBeDefined();
+  expect(request.lastTransportSeq).toBe(6);
+  expect(hasRetainedTransportConsumer(PORTABLE_PARITY_REQUEST_ID)).toBe(false);
+  expect(firstTransportEvents).toHaveLength(3);
+  expect(secondTransportEvents).toHaveLength(1);
+  expect(thirdTransportEvents).toHaveLength(2);
+});
+
+test("an end event wins over the reader error that follows its socket close", async () => {
+  const harness = matrixHarness();
+  await expect(
+    processStream({
+      requestId: PORTABLE_PARITY_REQUEST_ID,
+      conversationId: PORTABLE_PARITY_CONVERSATION_ID,
+      response: brokenResponse([{ event: "end", stream_seq: 1, data: {} }]),
+      submitAt: 0,
+      conversationIdAt: null,
+      dispatch: harness.dispatch as never,
+      getState: harness.getState,
+      abortController: new AbortController(),
+    }),
+  ).resolves.toBeDefined();
+  expect(harness.request().status).toBe("complete");
+});
+
+test("explicit abort disposes a retained processor instead of leaving a stale closure", async () => {
+  const harness = matrixHarness();
+  const args = {
+    requestId: PORTABLE_PARITY_REQUEST_ID,
+    conversationId: PORTABLE_PARITY_CONVERSATION_ID,
+    submitAt: 0,
+    conversationIdAt: null,
+    dispatch: harness.dispatch as never,
+    getState: harness.getState,
+    allowTransportResume: true,
+  };
+  await expect(
+    processStream({
+      ...args,
+      response: brokenResponse(PORTABLE_PARITY_SETTLED_EVENTS.slice(5, 7)),
+      abortController: new AbortController(),
+    }),
+  ).rejects.toThrow();
+  expect(hasRetainedTransportConsumer(PORTABLE_PARITY_REQUEST_ID)).toBe(true);
+
+  const controller = new AbortController();
+  controller.abort();
+  await expect(
+    processStream({
+      ...args,
+      response: responseFor([]),
+      abortController: controller,
+    }),
+  ).rejects.toMatchObject({ name: "AbortError" });
+  expect(hasRetainedTransportConsumer(PORTABLE_PARITY_REQUEST_ID)).toBe(false);
+});
+
+test("an orphaned retained processor is discarded before it can read a rejoin response", async () => {
+  const harness = matrixHarness();
+  const args = {
+    requestId: PORTABLE_PARITY_REQUEST_ID,
+    conversationId: PORTABLE_PARITY_CONVERSATION_ID,
+    submitAt: 0,
+    conversationIdAt: null,
+    dispatch: harness.dispatch as never,
+    getState: harness.getState,
+    allowTransportResume: true,
+  };
+  await expect(
+    processStream({
+      ...args,
+      response: brokenResponse(PORTABLE_PARITY_SETTLED_EVENTS.slice(5, 7)),
+      abortController: new AbortController(),
+    }),
+  ).rejects.toThrow();
+
+  const missingRequestState = () => {
+    const state = harness.getState();
+    return {
+      ...state,
+      activeRequests: { ...state.activeRequests, byRequestId: {} },
+    } as RootState;
+  };
+  await expect(
+    processStream({
+      ...args,
+      response: responseFor([]),
+      getState: missingRequestState,
+      abortController: new AbortController(),
+    }),
+  ).rejects.toThrow("active request is missing");
+  expect(hasRetainedTransportConsumer(PORTABLE_PARITY_REQUEST_ID)).toBe(false);
 });

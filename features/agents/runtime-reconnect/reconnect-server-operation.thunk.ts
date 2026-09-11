@@ -19,8 +19,11 @@
  *      (`loadConversation`) so the finished message appears without a manual
  *      refresh, then clears the indicator.
  *
- * Token text is deliberately NOT replayed (platform doctrine) — reconnect UX
- * is status until terminal, then a DB refetch.
+ * When the operation still owns its NDJSON emitter, reconnect first opens its
+ * replay-then-follow `/rejoin` stream through `runAiStream`: sequence-stamped
+ * frames restore retained text immediately and continue live output through
+ * the canonical processor. The SSE follower remains the durable status and
+ * terminal-refetch path when rejoin is unavailable or after a cold reload.
  *
  * Fallback: when the spine has no operation (pre-spine turn, surface missing)
  * a stream-loss caller falls back to the legacy `recoverDroppedStream` poll so

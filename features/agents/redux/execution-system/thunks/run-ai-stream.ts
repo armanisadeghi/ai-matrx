@@ -49,7 +49,11 @@ import { toast } from "@/lib/toast";
  */
 export type StreamDispatch = (action: unknown) => unknown;
 
-import { hasRetainedTransportConsumer, processStream } from "./process-stream";
+import {
+  discardRetainedTransportConsumer,
+  hasRetainedTransportConsumer,
+  processStream,
+} from "./process-stream";
 import { captureStreamClientError } from "@/lib/diagnostics/captureStreamError";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
@@ -601,7 +605,8 @@ export async function runAiStream(
         // is the only one that knows what actually happened.
         throw new ExpectedRequestConflictError(
           errorCode ?? "forbidden",
-          serverMessage || "You do not have access to something in this request.",
+          serverMessage ||
+            "You do not have access to something in this request.",
         );
       } else if (code === 404) {
         throw recordUnavailable({
@@ -673,6 +678,10 @@ export async function runAiStream(
       jsonExtraction,
       userMessageClientTempId,
       forceLocalConversationId,
+      // runAiStream owns the durable operation follower and rejoin endpoint.
+      // Direct processStream consumers do not, so only this path may retain
+      // the lexical parser across a lost transport.
+      allowTransportResume: true,
       // Heartbeat-based liveness. The server emits {type:"heartbeat"} every
       // ~10s independent of tool progress; a 30s deadline is ~3 missed beats
       // — long enough for jitter, short enough to surface a dead socket fast.
@@ -689,6 +698,21 @@ export async function runAiStream(
     return { requestId, conversationId };
   } catch (error) {
     unregisterAbortController(conversationId);
+
+    // Keep the lexical parser only while a reconnectable transport failure is
+    // actively handing it to the durable rejoin path. HTTP rejoin refusal,
+    // explicit cancellation, missing records, and every ordinary terminal
+    // error have no future reader; dispose them now so a later request cannot
+    // enter stale parser/reservation state.
+    const preservesRetainedProcessor =
+      (error instanceof Error && error.name === "HeartbeatTimeoutError") ||
+      isStreamTransportLost(error);
+    if (
+      !preservesRetainedProcessor ||
+      !hasRetainedTransportConsumer(requestId)
+    ) {
+      discardRetainedTransportConsumer(requestId);
+    }
 
     // 409 resume_conflict — pass straight through to resumeInstance's bounded
     // retry. Deliberately NO error statuses, no failPendingToolLifecycle, no
@@ -739,7 +763,8 @@ export async function runAiStream(
     const isTransportLost = isStreamTransportLost(error);
     /** Both classes mean "our connection died, the run did not" — reconnect. */
     const isConnectionLoss = isHeartbeat || isTransportLost;
-    const retainedProcessor = isConnectionLoss && hasRetainedTransportConsumer(requestId);
+    const retainedProcessor =
+      isConnectionLoss && hasRetainedTransportConsumer(requestId);
     const errorType:
       | "heartbeat_timeout"
       | "total_timeout"
@@ -770,7 +795,8 @@ export async function runAiStream(
       });
     }
 
-    if (!retainedProcessor) dispatch(
+    if (!retainedProcessor)
+      dispatch(
       setRequestStatus({
         requestId,
         status: "error",
@@ -785,7 +811,8 @@ export async function runAiStream(
         },
       }),
     );
-    if (!retainedProcessor) dispatch(setInstanceStatus({ conversationId, status: "error" }));
+    if (!retainedProcessor)
+      dispatch(setInstanceStatus({ conversationId, status: "error" }));
 
     // Self-heal: the server runs detached and persists the turn even though
     // our connection died. Ask the canonical /runtime reconnect surface for
@@ -811,7 +838,8 @@ export async function runAiStream(
     // Force-terminal any tool that the stream left mid-flight. Without this,
     // LiveToolCallCard keeps shimmering "Using tool …" forever because the
     // toolLifecycle entry never receives its terminal event.
-    if (!retainedProcessor) dispatch(
+    if (!retainedProcessor)
+      dispatch(
       failPendingToolLifecycle({
         requestId,
         errorType,
