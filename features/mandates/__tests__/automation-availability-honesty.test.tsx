@@ -94,6 +94,7 @@ describe("Refine with AI — three facts, three sentences (F4)", () => {
       loading: false,
       error: DOOR_SAID,
       absent: false,
+      organizationPending: false,
     });
 
     // 🚨 THE LIE, ASSERTED ABSENT.
@@ -110,6 +111,7 @@ describe("Refine with AI — three facts, three sentences (F4)", () => {
       loading: false,
       error: null,
       absent: true,
+      organizationPending: false,
     });
     // The true sentence must survive the fix — a guard that made BOTH states
     // generic would trade one lie for another.
@@ -123,6 +125,7 @@ describe("Refine with AI — three facts, three sentences (F4)", () => {
       loading: false,
       error: "",
       absent: false,
+      organizationPending: false,
     });
     // A server that refuses with NO message is itself a defect, and the screen
     // says so rather than going quiet or blaming the reader.

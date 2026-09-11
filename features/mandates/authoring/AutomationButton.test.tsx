@@ -101,6 +101,7 @@ describe("AutomationButton — the key resolves", () => {
       loading: false,
       error: null,
       absent: false,
+      organizationPending: false,
     });
     const { button, text } = mount("mandate.goal_writer");
 
@@ -131,6 +132,7 @@ describe("AutomationButton — the key resolves to nothing", () => {
       loading: false,
       error: null,
       absent: true,
+      organizationPending: false,
     });
     const { button, text } = mount(key);
 
@@ -149,6 +151,7 @@ describe("AutomationButton — the key resolves to nothing", () => {
       loading: true,
       error: null,
       absent: false,
+      organizationPending: false,
     });
     const { button, text } = mount(KIND_CONVERTER_MANDATE_KEY);
     // "not read yet" and "does not exist" must never look identical.
@@ -178,6 +181,7 @@ describe("the inline ask captures EVERY character, then submits it", () => {
       loading: false,
       error: null,
       absent: false,
+      organizationPending: false,
     });
     mockedSurface.mockReturnValue({
       status: "ready",

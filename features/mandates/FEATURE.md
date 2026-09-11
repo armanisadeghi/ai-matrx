@@ -192,6 +192,16 @@ Law: `../../../../common-docs/systems/agents/agent-variable-binding/FEATURE.md` 
 
 ## Invariants
 
+- 🚨 **A MISSING WORKSPACE IS A WAIT, NEVER AN UNBOUND MANDATE.** Resolution refuses until an
+  organization is in force (`MandateOrganizationUnresolvedError` — which agent runs a job depends
+  on the active workspace). `useMandate` reports that refusal as its OWN fact,
+  `organizationPending`, after retrying **once** on its own; it is not folded into `error`, and it
+  does not shout into the console. A consumer showing `organizationPending` renders a "getting
+  your workspace ready" state and **must never print the "an administrator can bind an agent"
+  remedy** — that remedy is for a genuinely unbound Mandate only. The live defect (wall W10,
+  2026-09-10, reproduced twice on a cold `/masterwork/[id]/conduct`) told an Expert to go repair a
+  binding that was never broken. Guard:
+  `__tests__/mandate-organization-pending.test.tsx`.
 - 🚨 **THE HOLDER GATE — the BROWSER resolver runs `agent` Holders only, and anything else
   REFUSES.** This is a limit of the client path, not of the platform: workflow Holders execute
   end to end on the server (aidream `services/mandates/workflow_holder.py` — the workflow runs

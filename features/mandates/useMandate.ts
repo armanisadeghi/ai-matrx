@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  MandateOrganizationUnresolvedError,
   onMandateCacheInvalidated,
   resolveMandate,
   type ResolvedMandate,
@@ -34,6 +35,25 @@ export interface MandateState {
    * `loading`, `absent`, and `error` (the door's own sentence).
    */
   absent: boolean;
+
+  /**
+   * 🚨 THE WORKSPACE IS NOT READY YET — and that is NOT a broken binding.
+   *
+   * Which agent runs a job depends on the active organization, so resolution
+   * refuses until one is in force (`MandateOrganizationUnresolvedError`). On a
+   * COLD navigation that refusal arrives as "workspace initialization timed
+   * out", and consumers printed it inside their unbound-mandate remedy:
+   * *"…An administrator can bind an agent to the `masterwork.conductor`
+   * Mandate."* — telling an Expert to go fix a binding that was never broken
+   * (wall W10, Expert Book Challenge 2026-09-10; reproduced twice on a cold
+   * `/masterwork/[id]/conduct`).
+   *
+   * So it is its own fact. `organizationPending` means WAIT, not REPAIR: the
+   * consumer shows a "getting your workspace ready" state and must never
+   * print the administrator remedy. The hook has already retried once on its
+   * own before setting it.
+   */
+  organizationPending: boolean;
 }
 
 interface UseMandateOptions {
@@ -47,14 +67,16 @@ export function useMandate(
 ): MandateState {
   const hasMandateKey = mandateKey.trim().length > 0;
   const [state, setState] = useState<
-    MandateState & { key: string; epoch: number }
+    MandateState & { key: string; epoch: number; organizationRetries: number }
   >({
     key: mandateKey,
     epoch: 0,
+    organizationRetries: 0,
     mandate: null,
     loading: hasMandateKey,
     error: null,
     absent: false,
+    organizationPending: false,
   });
 
   // Reset for a new mandate key during render (the documented adjust-state-on-
@@ -63,10 +85,12 @@ export function useMandate(
     setState({
       key: mandateKey,
       epoch: 0,
+      organizationRetries: 0,
       mandate: null,
       loading: hasMandateKey,
       error: null,
       absent: false,
+      organizationPending: false,
     });
   }
 
@@ -104,36 +128,63 @@ export function useMandate(
             // every other outcome throws. That is what makes "absent"
             // provable rather than guessed.
             absent: mandate === null,
+            organizationPending: false,
           }));
         }
       })
       .catch((error: unknown) => {
-        const message = extractErrorMessage(error);
-        if (!options.optional) {
-          console.error(`[mandates] ${mandateKey} failed to resolve:`, message);
-        }
-        if (!cancelled) {
+        if (cancelled) return;
+        // THE WORKSPACE, NOT THE BINDING. A cold navigation can reach this
+        // hook before an organization is in force; resolution then refuses
+        // with `MandateOrganizationUnresolvedError`, which is a WAIT and not a
+        // fault. Retry once on our own before telling anybody anything —
+        // initialization normally lands in that window — and when it still has
+        // not, say `organizationPending` rather than handing the consumer a
+        // sentence it will print under an "ask an administrator" remedy.
+        const organizationPending =
+          error instanceof MandateOrganizationUnresolvedError;
+        if (organizationPending && state.organizationRetries === 0) {
           setState((prev) => ({
             ...prev,
             key: mandateKey,
-            mandate: null,
-            loading: false,
-            error: message,
-            // A refusal is not an absence. Saying "no such job" here is the
-            // F4 lie.
-            absent: false,
+            organizationRetries: prev.organizationRetries + 1,
+            epoch: prev.epoch + 1,
+            loading: true,
           }));
+          return;
         }
+        const message = extractErrorMessage(error);
+        if (!options.optional && !organizationPending) {
+          console.error(`[mandates] ${mandateKey} failed to resolve:`, message);
+        }
+        setState((prev) => ({
+          ...prev,
+          key: mandateKey,
+          mandate: null,
+          loading: false,
+          error: message,
+          // A refusal is not an absence. Saying "no such job" here is the
+          // F4 lie.
+          absent: false,
+          organizationPending,
+        }));
       });
     return () => {
       cancelled = true;
     };
-  }, [mandateKey, epoch, options.optional, hasMandateKey]);
+  }, [
+    mandateKey,
+    epoch,
+    options.optional,
+    hasMandateKey,
+    state.organizationRetries,
+  ]);
 
   return {
     mandate: state.mandate,
     loading: state.loading,
     error: state.error,
     absent: state.absent,
+    organizationPending: state.organizationPending,
   };
 }

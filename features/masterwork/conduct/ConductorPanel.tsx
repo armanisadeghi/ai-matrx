@@ -47,6 +47,7 @@ import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
 import { useMandate } from "@/features/mandates/useMandate";
@@ -470,7 +471,9 @@ export function ConductorContent({
   initialConversationId,
   startNew: startNewProp,
 }: ConductorContentProps) {
-  const { mandate, loading, error } = useMandate(CONDUCTOR_MANDATE_KEY);
+  const { mandate, loading, error, organizationPending } = useMandate(
+    CONDUCTOR_MANDATE_KEY,
+  );
   // THE DOCUMENT COMES FIRST. Loaded here, before any conversation is minted,
   // so the Conductor's first turn already holds the rules (disease D4).
   const rulebookDoc = useRulebookDocument(rulebookId);
@@ -521,6 +524,27 @@ export function ConductorContent({
 
   if (loading || rulebookDoc.loading || sessions === null)
     return <ChatRoomSkeleton />;
+  // WAITING IS NOT BREAKAGE (wall W10, 2026-09-10). Which agent conducts a
+  // build depends on the active workspace, so a cold navigation can arrive
+  // before one is in force and resolution refuses with "workspace
+  // initialization timed out". `useMandate` has already retried once on its
+  // own by the time this is true. It is a WAIT — so it never wears the
+  // unbound-Mandate remedy, which would send an Expert off to fix a binding
+  // that was never broken.
+  if (organizationPending) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 px-4 py-10 text-center">
+        <LoadingSpinner />
+        <p className="text-sm text-muted-foreground">
+          Getting your workspace ready…
+        </p>
+        <p className="max-w-sm text-xs text-muted-foreground">
+          The build has to know which workspace it is running in before it can
+          start. If this does not clear in a moment, reload the page.
+        </p>
+      </div>
+    );
+  }
   // NO SILENT FALLBACK. A Mandate resolves or the run refuses.
   if (error || !mandate?.agentId) {
     return (

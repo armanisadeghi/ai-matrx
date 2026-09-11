@@ -30,6 +30,8 @@ describe("useMandate — disabled key", () => {
         // "this job does not exist" is a claim nothing backs. A disabled
         // sentinel is silence, not a verdict.
         absent: false,
+        // Same reasoning: nothing was asked, so there is nothing to wait for.
+        organizationPending: false,
       });
 
       await hook.unmount();

@@ -50,6 +50,7 @@ const PENDING: MandateState = {
   loading: true,
   error: null,
   absent: false,
+  organizationPending: false,
 };
 
 function pendingSet(keys: readonly string[]): Record<string, MandateState> {
@@ -112,6 +113,7 @@ export function useMandateSet(
               loading: false,
               error: null,
               absent: false,
+              organizationPending: false,
             };
           } else {
             const message = extractErrorMessage(result.reason);
@@ -123,6 +125,10 @@ export function useMandateSet(
               loading: false,
               error: message,
               absent: false,
+              // The set lane resolves many keys at once and has no single
+              // consumer to hold a "wait" state for; the org refusal reaches
+              // it as an ordinary error. Only `useMandate` distinguishes it.
+              organizationPending: false,
             };
           }
         });
