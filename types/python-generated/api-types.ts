@@ -5010,11 +5010,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * The artifact URL envelope
-         * @description E-23 — **the URL envelope, never bytes** (§3.5).
+         * The artifact reference envelope
+         * @description E-23 — **the reference envelope, never bytes** (§3.5).
          *
-         *     `file_id` is the identity and the URLs expire; a consumer that persists this envelope must
-         *     keep only `file_id` and `sha256` (the platform's `_durable_only` rule). This IS an audited
+         *     `file_id` is the identity and `download_url` is the platform's durable, never-expiring
+         *     `/files/{file_id}/download` route, authenticated per request. Nothing here expires, so the
+         *     whole envelope is safe to persist — and nothing here is a signed URL, which the platform
+         *     forbids outright (`common-docs/systems/media/media-durability/FEATURE.md`). This IS an audited
          *     act — the file is the payroll data — so an `hr.access_audit` row with `action='export'` is
          *     written before the envelope is returned.
          *
@@ -25283,30 +25285,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -53232,6 +53210,20 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             }[];
         };
+        /**
+         * ContextPreviewRefusal
+         * @description One selected id that did NOT reach the agent, and why, in words.
+         */
+        ContextPreviewRefusal: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Reason */
+            reason: string;
+            /** Message */
+            message: string;
+        };
         /** ContextPreviewRequest */
         ContextPreviewRequest: {
             /**
@@ -53318,12 +53310,45 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             };
             bindings: components["schemas"]["ContextPreviewBindings"] | null;
+            selection: components["schemas"]["ContextPreviewSelection"];
             /** Entity Type */
             entity_type: string;
             /** Entity Id */
             entity_id: string;
             /** Entity Is New */
             entity_is_new: boolean;
+        };
+        /**
+         * ContextPreviewSelection
+         * @description What the caller asked for vs. what this turn actually resolved.
+         *
+         *     The endpoint's contract is 'exactly what the agent receives', so the
+         *     substitutions the server makes are part of the answer, never a hidden
+         *     detail: the organization a cross-org scope selection SNAPPED the turn to,
+         *     and every selected id that was refused (DD-114).
+         */
+        ContextPreviewSelection: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Organization Name */
+            organization_name?: string | null;
+            /** Organization Snapped From Id */
+            organization_snapped_from_id?: string | null;
+            /** Organization Snapped From Name */
+            organization_snapped_from_name?: string | null;
+            /**
+             * Organization Snapped
+             * @default false
+             */
+            organization_snapped?: boolean;
+            /** Snap Message */
+            snap_message?: string | null;
+            /** Requested Scope Ids */
+            requested_scope_ids?: string[];
+            /** Delivered Scope Ids */
+            delivered_scope_ids?: string[];
+            /** Refusals */
+            refusals?: components["schemas"]["ContextPreviewRefusal"][];
         };
         /** ContextPreviewVariables */
         ContextPreviewVariables: {
@@ -57093,33 +57118,6 @@ export interface components {
             access?: "public_no_auth";
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /**
          * DevtoServiceStatus
@@ -61467,18 +61465,23 @@ export interface components {
         };
         /**
          * ExportArtifactEnvelope
-         * @description E-23. **The URL envelope, never bytes.**
+         * @description E-23. **The reference envelope, never bytes and never a signed URL.**
          *
-         *     ``file_id`` is the identity; the URLs expire. A service or node output that persists this
-         *     must strip the expiring members — the platform's ``_durable_only`` rule — so only ``file_id``
-         *     and ``sha256`` are safe to store.
+         *     ``file_id`` IS the artifact. ``download_url`` is the platform's durable, never-expiring
+         *     redemption door — ``{PUBLIC_URL}/files/{file_id}/download``, built by
+         *     ``matrx_files`` and authenticated per request (Bearer for API callers, the
+         *     ``mx_files_session`` cookie for a browser binding). Every member of this envelope is
+         *     durable, so there is nothing a persisting consumer has to strip and no field with a
+         *     death date.
          *
-         *     A note on ``signed_url``, because it looks like it contradicts a platform rule and does not:
-         *     ``matrx_files.FileRecord`` deliberately carries **no** ``signed_url``, on the 2026-08-21
-         *     ruling that *a signed URL is a handoff, never an identity*. That rule governs the platform's
-         *     identity-bearing file record. This envelope is the handoff itself — it says so in its own
-         *     contract by naming ``expires_at`` as required and by telling the caller which two members are
-         *     durable. The two agree; they are describing different objects.
+         *     🚨 **This envelope carried a ``signed_url`` and an ``expires_at`` until 2026-09-11 and
+         *     never may again.** The platform law — *a signed URL is a handoff, never an identity*
+         *     (``common-docs/systems/media/media-durability/FEATURE.md``, eradicated platform-wide
+         *     2026-08-26) — has no "but this object is the handoff" exception: that was the exact
+         *     rationale the law names as how the bug kept crawling back. The blocking guard is
+         *     ``scripts/check_signed_url_confinement.py`` (+ ``tests/test_signed_url_confinement.py``).
+         *     A payroll artifact is written ``visibility="personal"``, so it also has no ``cdn_url``:
+         *     the only way to these bytes is an authenticated redemption of the file id.
          */
         ExportArtifactEnvelope: {
             /**
@@ -61488,17 +61491,8 @@ export interface components {
             file_id: string;
             /** Sha256 */
             sha256: string;
-            /**
-             * Expires At
-             * Format: date-time
-             */
-            expires_at: string;
             /** Download Url */
-            download_url?: string | null;
-            /** Signed Url */
-            signed_url?: string | null;
-            /** Cdn Url */
-            cdn_url?: string | null;
+            download_url: string;
         };
         /** ExportDelivery */
         ExportDelivery: {
@@ -153903,41 +153897,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

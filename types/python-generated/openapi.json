@@ -12800,8 +12800,8 @@
         "tags": [
           "HR"
         ],
-        "summary": "The artifact URL envelope",
-        "description": "E-23 — **the URL envelope, never bytes** (§3.5).\n\n`file_id` is the identity and the URLs expire; a consumer that persists this envelope must\nkeep only `file_id` and `sha256` (the platform's `_durable_only` rule). This IS an audited\nact — the file is the payroll data — so an `hr.access_audit` row with `action='export'` is\nwritten before the envelope is returned.\n\nA `includes_pii` export additionally requires `payroll.export_pii` to READ, not only to\ngenerate: §4.6's gate would be decorative if the file it protects could be fetched with the\nlesser capability.",
+        "summary": "The artifact reference envelope",
+        "description": "E-23 — **the reference envelope, never bytes** (§3.5).\n\n`file_id` is the identity and `download_url` is the platform's durable, never-expiring\n`/files/{file_id}/download` route, authenticated per request. Nothing here expires, so the\nwhole envelope is safe to persist — and nothing here is a signed URL, which the platform\nforbids outright (`common-docs/systems/media/media-durability/FEATURE.md`). This IS an audited\nact — the file is the payroll data — so an `hr.access_audit` row with `action='export'` is\nwritten before the envelope is returned.\n\nA `includes_pii` export additionally requires `payroll.export_pii` to READ, not only to\ngenerate: §4.6's gate would be decorative if the file it protects could be fetched with the\nlesser capability.",
         "operationId": "hr_exports_artifact_get",
         "parameters": [
           {
@@ -64226,6 +64226,49 @@
         }
       }
     },
+    "/mandates/{mandate_key}/provenance": {
+      "get": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Mandate Provenance",
+        "description": "Origin, Offered on, Runs and Held by for ONE Mandate.\n\nRead-only, and honest about what it could not read: a ledger that does not\nanswer reports `None`, never zero — \"nothing ever ran this\" is a conclusion,\nnot a default.",
+        "operationId": "mandate_provenance_mandates__mandate_key__provenance_get",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandate Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateProvenanceReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/agent-testing/agents/{agent_id}/tests": {
       "post": {
         "tags": [
@@ -80800,6 +80843,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AiCatalogReloadSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/ai-catalog/provider-models/refresh": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin AI Catalog"
+        ],
+        "summary": "Refresh Provider Models",
+        "description": "Pull each provider's own models API into ai.provider.provider_models_cache.\n\nThe on-demand half of the daily ``provider_models_refresh`` system task —\nthe same service, so the admin UI's \"Refresh\" calls the server instead of\nkeeping a second copy of five provider contracts in Next.js.\n\nA provider-level problem (no API key on this host, provider outage, no\nai.provider row) is a reported result row, not an error: the response\nalways names every provider and what happened to it. Only an unusable\nREQUEST — a slug we have no fetcher for — is a 400.",
+        "operationId": "refresh_provider_models_admin_ai_catalog_provider_models_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ProviderModelsRefreshRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderModelsRefreshSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -120808,6 +120901,35 @@
         "type": "object",
         "title": "ContextPreviewBindings"
       },
+      "ContextPreviewRefusal": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "reason",
+          "message"
+        ],
+        "title": "ContextPreviewRefusal",
+        "description": "One selected id that did NOT reach the agent, and why, in words."
+      },
       "ContextPreviewRequest": {
         "properties": {
           "organization_id": {
@@ -121074,6 +121196,9 @@
               }
             ]
           },
+          "selection": {
+            "$ref": "#/components/schemas/ContextPreviewSelection"
+          },
           "entity_type": {
             "type": "string",
             "title": "Entity Type"
@@ -121099,11 +121224,100 @@
           "variables",
           "cell_values",
           "bindings",
+          "selection",
           "entity_type",
           "entity_id",
           "entity_is_new"
         ],
         "title": "ContextPreviewResponse"
+      },
+      "ContextPreviewSelection": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "organization_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Name"
+          },
+          "organization_snapped_from_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Snapped From Id"
+          },
+          "organization_snapped_from_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Snapped From Name"
+          },
+          "organization_snapped": {
+            "type": "boolean",
+            "title": "Organization Snapped",
+            "default": false
+          },
+          "snap_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snap Message"
+          },
+          "requested_scope_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requested Scope Ids"
+          },
+          "delivered_scope_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Delivered Scope Ids"
+          },
+          "refusals": {
+            "items": {
+              "$ref": "#/components/schemas/ContextPreviewRefusal"
+            },
+            "type": "array",
+            "title": "Refusals"
+          }
+        },
+        "type": "object",
+        "title": "ContextPreviewSelection",
+        "description": "What the caller asked for vs. what this turn actually resolved.\n\nThe endpoint's contract is 'exactly what the agent receives', so the\nsubstitutions the server makes are part of the answer, never a hidden\ndetail: the organization a cross-org scope selection SNAPPED the turn to,\nand every selected id that was refused (DD-114)."
       },
       "ContextPreviewVariables": {
         "properties": {
@@ -139798,43 +140012,9 @@
             "type": "string",
             "title": "Sha256"
           },
-          "expires_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Expires At"
-          },
           "download_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Download Url"
-          },
-          "signed_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Signed Url"
-          },
-          "cdn_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cdn Url"
           }
         },
         "additionalProperties": false,
@@ -139842,10 +140022,10 @@
         "required": [
           "file_id",
           "sha256",
-          "expires_at"
+          "download_url"
         ],
         "title": "ExportArtifactEnvelope",
-        "description": "E-23. **The URL envelope, never bytes.**\n\n``file_id`` is the identity; the URLs expire. A service or node output that persists this\nmust strip the expiring members — the platform's ``_durable_only`` rule — so only ``file_id``\nand ``sha256`` are safe to store.\n\nA note on ``signed_url``, because it looks like it contradicts a platform rule and does not:\n``matrx_files.FileRecord`` deliberately carries **no** ``signed_url``, on the 2026-08-21\nruling that *a signed URL is a handoff, never an identity*. That rule governs the platform's\nidentity-bearing file record. This envelope is the handoff itself — it says so in its own\ncontract by naming ``expires_at`` as required and by telling the caller which two members are\ndurable. The two agree; they are describing different objects."
+        "description": "E-23. **The reference envelope, never bytes and never a signed URL.**\n\n``file_id`` IS the artifact. ``download_url`` is the platform's durable, never-expiring\nredemption door — ``{PUBLIC_URL}/files/{file_id}/download``, built by\n``matrx_files`` and authenticated per request (Bearer for API callers, the\n``mx_files_session`` cookie for a browser binding). Every member of this envelope is\ndurable, so there is nothing a persisting consumer has to strip and no field with a\ndeath date.\n\n🚨 **This envelope carried a ``signed_url`` and an ``expires_at`` until 2026-09-11 and\nnever may again.** The platform law — *a signed URL is a handoff, never an identity*\n(``common-docs/systems/media/media-durability/FEATURE.md``, eradicated platform-wide\n2026-08-26) — has no \"but this object is the handoff\" exception: that was the exact\nrationale the law names as how the bug kept crawling back. The blocking guard is\n``scripts/check_signed_url_confinement.py`` (+ ``tests/test_signed_url_confinement.py``).\nA payroll artifact is written ``visibility=\"personal\"``, so it also has no ``cdn_url``:\nthe only way to these bytes is an authenticated redemption of the file id."
       },
       "ExportDelivery": {
         "properties": {
@@ -169813,6 +169993,76 @@
         ],
         "title": "MandateGoalResponse"
       },
+      "MandateHolderRow": {
+        "properties": {
+          "rung": {
+            "type": "string",
+            "enum": [
+              "system",
+              "organization",
+              "user"
+            ],
+            "title": "Rung"
+          },
+          "holder_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Type"
+          },
+          "holder_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Name"
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name"
+          },
+          "is_enabled": {
+            "type": "boolean",
+            "title": "Is Enabled"
+          },
+          "runnable": {
+            "type": "boolean",
+            "title": "Runnable"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rung",
+          "holder_type",
+          "holder_name",
+          "owner_name",
+          "is_enabled",
+          "runnable",
+          "detail"
+        ],
+        "title": "MandateHolderRow"
+      },
       "MandateInputSurfaceResponse": {
         "properties": {
           "mandate_key": {
@@ -169882,6 +170132,45 @@
         "title": "MandateInputSurfaceResponse",
         "description": "THE mandate's input declaration, resolved for THIS caller.\n\n``surface_source`` names where the declaration came from, and it is the\nonly honest way to say \"this job takes user text only\" — that claim is\ntrue when and only when ``surface_source == 'none'``."
       },
+      "MandateOfferRow": {
+        "properties": {
+          "surface": {
+            "type": "string",
+            "title": "Surface"
+          },
+          "href": {
+            "type": "string",
+            "title": "Href"
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "everyone",
+              "organization",
+              "admins"
+            ],
+            "title": "Audience"
+          },
+          "live": {
+            "type": "boolean",
+            "title": "Live"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "surface",
+          "href",
+          "audience",
+          "live",
+          "detail"
+        ],
+        "title": "MandateOfferRow"
+      },
       "MandateOption": {
         "properties": {
           "mandate_key": {
@@ -169950,6 +170239,192 @@
         ],
         "title": "MandateOption",
         "description": "One mandate an author can point a scenario at, with what it offers."
+      },
+      "MandateOriginFacts": {
+        "properties": {
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "code",
+              "migration",
+              "user",
+              "unknown"
+            ],
+            "title": "Kind"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "created_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Name"
+          },
+          "organization_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Name"
+          },
+          "code_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Path"
+          },
+          "migrated_from_table": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Migrated From Table"
+          },
+          "original_created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Created At"
+          },
+          "sentence": {
+            "type": "string",
+            "title": "Sentence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "origin",
+          "kind",
+          "created_at",
+          "updated_at",
+          "created_by_name",
+          "organization_name",
+          "code_path",
+          "migrated_from_table",
+          "original_created_at",
+          "sentence"
+        ],
+        "title": "MandateOriginFacts"
+      },
+      "MandateProvenanceReport": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/MandateOriginFacts"
+          },
+          "offered_on": {
+            "items": {
+              "$ref": "#/components/schemas/MandateOfferRow"
+            },
+            "type": "array",
+            "title": "Offered On"
+          },
+          "offered_sentence": {
+            "type": "string",
+            "title": "Offered Sentence"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/MandateUsageFacts"
+          },
+          "held_by": {
+            "items": {
+              "$ref": "#/components/schemas/MandateHolderRow"
+            },
+            "type": "array",
+            "title": "Held By"
+          },
+          "held_sentence": {
+            "type": "string",
+            "title": "Held Sentence"
+          },
+          "computed_at": {
+            "type": "string",
+            "title": "Computed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "label",
+          "origin",
+          "offered_on",
+          "offered_sentence",
+          "usage",
+          "held_by",
+          "held_sentence",
+          "computed_at"
+        ],
+        "title": "MandateProvenanceReport"
       },
       "MandateReferenceBoard": {
         "properties": {
@@ -171231,6 +171706,126 @@
         ],
         "title": "MandateTestResult",
         "description": "A persisted result entry stored in agent.exemplar metadata (test_bench_results)."
+      },
+      "MandateUsageFacts": {
+        "properties": {
+          "conversation_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Count"
+          },
+          "request_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Count"
+          },
+          "first_run_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Run At"
+          },
+          "last_run_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run At"
+          },
+          "runs_href": {
+            "type": "string",
+            "title": "Runs Href"
+          },
+          "observed_attempted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Attempted"
+          },
+          "observed_resolved": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Resolved"
+          },
+          "observed_executed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Executed"
+          },
+          "observed_last_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Last At"
+          },
+          "code_reference_count": {
+            "type": "integer",
+            "title": "Code Reference Count"
+          },
+          "sentence": {
+            "type": "string",
+            "title": "Sentence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_count",
+          "request_count",
+          "first_run_at",
+          "last_run_at",
+          "runs_href",
+          "observed_attempted",
+          "observed_resolved",
+          "observed_executed",
+          "observed_last_at",
+          "code_reference_count",
+          "sentence"
+        ],
+        "title": "MandateUsageFacts"
       },
       "MandateVariableVerdictRequest": {
         "properties": {
@@ -198715,6 +199310,136 @@
         ],
         "title": "ProviderDispatchBody",
         "description": "E-28 — the edge out."
+      },
+      "ProviderModelsRefreshRequest": {
+        "properties": {
+          "provider_slugs": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Slugs",
+            "description": "ai.provider.slug values to refresh (openai, anthropic, groq, google, xai). Omit or null to refresh every supported provider."
+          }
+        },
+        "type": "object",
+        "title": "ProviderModelsRefreshRequest",
+        "description": "Which providers to refresh. Omit ``provider_slugs`` for all supported."
+      },
+      "ProviderModelsRefreshSummary": {
+        "properties": {
+          "started_at": {
+            "type": "string",
+            "title": "Started At"
+          },
+          "refreshed": {
+            "type": "integer",
+            "title": "Refreshed"
+          },
+          "missing_key": {
+            "type": "integer",
+            "title": "Missing Key"
+          },
+          "no_provider_row": {
+            "type": "integer",
+            "title": "No Provider Row"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderRefreshResult"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "started_at",
+          "refreshed",
+          "missing_key",
+          "no_provider_row",
+          "failed"
+        ],
+        "title": "ProviderModelsRefreshSummary"
+      },
+      "ProviderRefreshResult": {
+        "properties": {
+          "provider_slug": {
+            "type": "string",
+            "title": "Provider Slug"
+          },
+          "provider_label": {
+            "type": "string",
+            "title": "Provider Label"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "refreshed",
+              "missing_key",
+              "no_provider_row",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "model_count": {
+            "type": "integer",
+            "title": "Model Count",
+            "default": 0
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider_slug",
+          "provider_label",
+          "status"
+        ],
+        "title": "ProviderRefreshResult",
+        "description": "What happened for ONE provider. Every status is reported, never dropped."
       },
       "ProviderResultsBody": {
         "properties": {
