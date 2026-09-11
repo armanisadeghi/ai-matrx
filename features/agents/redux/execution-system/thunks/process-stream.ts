@@ -643,6 +643,7 @@ export async function processStream({
   let postTerminalGraceTimer: ReturnType<typeof setTimeout> | null = null;
   const armPostTerminalGrace = (terminalSignal: string) => {
     if (!activeAbortController || postTerminalGraceTimer !== null) return;
+    const terminalTransportController = activeAbortController;
     postTerminalGraceTimer = setTimeout(() => {
       console.error(
         `[stream:${requestId.slice(0, 8)}] server declared the request terminal (${terminalSignal}) but never closed the stream within ${POST_TERMINAL_GRACE_MS}ms — ending it locally so the client promise settles. SERVER DEFECT: the response was held open after terminal.`,
@@ -657,7 +658,7 @@ export async function processStream({
         requestId,
         conversationId,
       });
-      activeAbortController.abort("post-terminal-grace");
+      terminalTransportController.abort("post-terminal-grace");
     }, POST_TERMINAL_GRACE_MS);
   };
 
