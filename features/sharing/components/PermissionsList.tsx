@@ -435,7 +435,9 @@ export function PermissionsList({
                       }
                       disabled={isUpdating || isRevoking}
                     >
-                      <SelectTrigger className="w-[90px] h-7 text-xs">
+                      {/* Widened from 90px: THE SCOPE-QUALIFIED ADMIN RULE makes the longest
+                          option "Admin (this item)", which truncates at 90px. */}
+                      <SelectTrigger className="w-[140px] h-7 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
