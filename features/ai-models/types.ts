@@ -36,6 +36,13 @@ export type AiSettingUpdate = Database["ai"]["Tables"]["setting"]["Update"];
 
 export type AiModelOfferingViewRow = Database["ai"]["Views"]["model_offering"]["Row"];
 
+/** `ai.provider_sync_candidates` — THE one provider-sync classification.
+ *  Read-only view over `ai.provider.provider_models_cache` × the registry ×
+ *  `ai.provider.sync_policy`. The sync agent and this app's Provider Sync
+ *  screen both read it, so neither can invent its own idea of "excluded". */
+export type ProviderSyncCandidate =
+  Database["ai"]["Views"]["provider_sync_candidates"]["Row"];
+
 // =============================================================================
 // Json-field shape definitions — what we actually store in JSONB columns
 // =============================================================================
@@ -218,6 +225,25 @@ export type ProviderModelsCache = {
 /** One curated "ideal doc page" on `ai.provider.doc_sources` /
  *  `ai.endpoint.doc_sources` — the exact pages the AI Model Config Sync agent
  *  reads BEFORE any web search. */
+/** `ai.provider.sync_policy` — the per-provider rules the sync agent obeys.
+ *  Edited from the Provider Sync screen's policy editor; there is no code-side
+ *  copy of any of it (the old `constants/excluded-provider-models.ts` is
+ *  deleted — a hardcoded exclusion list the agent could not read was the bug). */
+export type ProviderSyncPolicy = {
+  /** Provider models released before this date are never sync candidates. */
+  min_release_date: string | null;
+  /** Provider model ids the sync agent must never add to the registry. */
+  excluded_model_ids: string[];
+  /** Free text for whoever reads the policy next. */
+  notes: string | null;
+};
+
+export const EMPTY_PROVIDER_SYNC_POLICY: ProviderSyncPolicy = {
+  min_release_date: null,
+  excluded_model_ids: [],
+  notes: null,
+};
+
 export type DocSource = {
   kind: "models" | "params" | "pricing" | "changelog";
   url: string;

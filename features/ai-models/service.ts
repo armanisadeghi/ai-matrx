@@ -1,5 +1,7 @@
 "use client";
 
+import { readAllRows } from "@ai-matrx/data/db";
+
 import { supabase } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import { isJsonArray, isJsonObject, type JsonObject } from "@/types/json";
@@ -41,10 +43,13 @@ import type {
   PricingTier,
   ProviderModelEntry,
   ProviderModelsCache,
+  ProviderSyncCandidate,
+  ProviderSyncPolicy,
   RulesEnvelope,
   RulesParams,
   UnconditionalRule,
 } from "./types";
+import { EMPTY_PROVIDER_SYNC_POLICY } from "./types";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 
 type ReplaceModelReferencesResult = {
@@ -654,6 +659,73 @@ export const aiModelService = {
       .single();
     if (error) throw error;
     return parseProvider(data);
+  },
+
+  // ── Provider sync policy + candidates (ai.provider.sync_policy, ai.provider_sync_candidates) ──
+
+  /**
+   * THE provider-sync classification, straight from the database.
+   *
+   * `ai.provider_sync_candidates` is what the sync agent reads; the admin
+   * screen reads the same rows so a human and the agent can never disagree
+   * about which models are excluded, too old, missing, or already ours.
+   *
+   * `readAllRows` because the caller treats the result as complete — a row
+   * silently dropped at the PostgREST 1000-row cap would read on screen as a
+   * model the provider never returned.
+   */
+  async fetchProviderSyncCandidates(): Promise<ProviderSyncCandidate[]> {
+    return readAllRows<ProviderSyncCandidate>(
+      ({ from, to }) =>
+        supabase
+          .schema("ai")
+          .from("provider_sync_candidates")
+          .select("*", { count: "exact" })
+          .order("provider_name", { ascending: true })
+          .order("model_id", { ascending: true })
+          .range(from, to),
+      { label: "ai.provider_sync_candidates" },
+    );
+  },
+
+  /** Normalize whatever `ai.provider.sync_policy` holds into the editor shape. */
+  parseSyncPolicy(raw: unknown): ProviderSyncPolicy {
+    if (!isJsonObject(raw)) return { ...EMPTY_PROVIDER_SYNC_POLICY };
+    const excluded = raw.excluded_model_ids;
+    return {
+      min_release_date:
+        typeof raw.min_release_date === "string" ? raw.min_release_date : null,
+      excluded_model_ids: isJsonArray(excluded)
+        ? excluded.filter((v): v is string => typeof v === "string")
+        : [],
+      notes: typeof raw.notes === "string" ? raw.notes : null,
+    };
+  },
+
+  /**
+   * Write a provider's sync policy. Direct supabase-js write (RLS
+   * `platform_admin_all` on `ai.provider` is the authorization layer) — never
+   * through a Next route, which is not a middle tier.
+   */
+  async updateProviderSyncPolicy(
+    providerId: string,
+    policy: ProviderSyncPolicy,
+  ): Promise<ProviderSyncPolicy> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("provider")
+      .update({
+        sync_policy: {
+          min_release_date: policy.min_release_date,
+          excluded_model_ids: policy.excluded_model_ids,
+          notes: policy.notes,
+        },
+      })
+      .eq("id", providerId)
+      .select("sync_policy")
+      .single();
+    if (error) throw error;
+    return this.parseSyncPolicy(data.sync_policy);
   },
 
   // ── Provider CRUD (identity fields — separate from the cache-only helpers above) ──

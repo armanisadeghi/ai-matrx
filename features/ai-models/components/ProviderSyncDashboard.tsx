@@ -7,6 +7,8 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
+  Ban,
   Circle,
   ExternalLink,
   Plus,
@@ -14,6 +16,9 @@ import {
   ChevronRight,
   ChevronUp,
   ChevronsUpDown,
+  ShieldCheck,
+  SlidersHorizontal,
+  Undo2,
   X,
   Copy,
   Check,
@@ -35,8 +40,25 @@ import {
   countProviderSyncByStatus,
   type ProviderSyncComparison,
   type ProviderSyncComparisonStatus,
+  type ProviderSyncRegistry,
 } from "../utils/providerSyncComparison";
-import type { AiModel, AiProvider } from "../types";
+import {
+  ageInDays,
+  formatPerMTok,
+  type ProviderSyncRowPricing,
+} from "../utils/providerSyncPricing";
+import ProviderSyncPolicyDialog, {
+  type ProviderSyncPolicyTarget,
+} from "./ProviderSyncPolicyDialog";
+import { aiModelService } from "../service";
+import type {
+  AiModel,
+  AiProvider,
+  ProviderSyncCandidate,
+  ProviderSyncPolicy,
+} from "../types";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE_FROZEN,
@@ -64,9 +86,17 @@ type ComparisonSortKey =
   | "max_out"
   | "released"
   | "our_name"
+  | "price"
+  | "verified"
   | "primary"
   | "deprecated"
   | "status";
+
+/**
+ * A provider snapshot older than this is not a comparison, it is a guess —
+ * the row flags it and puts the Sync control next to the complaint.
+ */
+const STALE_SNAPSHOT_HOURS = 24;
 
 type ComparisonSortDir = "asc" | "desc";
 
@@ -110,9 +140,25 @@ function compareNullableNumbers(a?: number | null, b?: number | null): number {
 const STATUS_SORT_ORDER: Record<ComparisonStatus, number> = {
   matched: 0,
   missing_local: 1,
-  excluded: 2,
-  extra_local: 3,
+  before_cutoff: 2,
+  excluded: 3,
+  extra_local: 4,
 };
+
+/** Hours since an ISO timestamp, or null when there is nothing to age. */
+function hoursSince(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  return Math.max(0, (Date.now() - t) / 3_600_000);
+}
+
+function formatAge(hours: number): string {
+  if (hours < 1) return "just now";
+  if (hours < 24) return `${Math.floor(hours)}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
 
 function defaultSortDirForColumn(key: ComparisonSortKey): ComparisonSortDir {
   switch (key) {
@@ -178,6 +224,18 @@ function compareComparisons(
     case "our_name":
       cmp = (leA?.common_name ?? "").localeCompare(leB?.common_name ?? "");
       break;
+    case "price":
+      cmp = compareNullableNumbers(
+        a.pricing.ours?.input ?? null,
+        b.pricing.ours?.input ?? null,
+      );
+      break;
+    case "verified":
+      cmp = compareNullableNumbers(
+        a.pricing.verified_at ? Date.parse(a.pricing.verified_at) : null,
+        b.pricing.verified_at ? Date.parse(b.pricing.verified_at) : null,
+      );
+      break;
     case "primary":
       cmp = Number(Boolean(leA?.is_primary)) - Number(Boolean(leB?.is_primary));
       break;
@@ -200,23 +258,32 @@ function compareComparisons(
 const STATUS_BG: Record<ComparisonStatus, string> = {
   matched: "bg-green-50/60 dark:bg-green-900/10",
   missing_local: "bg-amber-50/70 dark:bg-amber-900/15",
+  before_cutoff: "bg-slate-50/70 dark:bg-slate-900/20",
   excluded: "bg-muted/40 dark:bg-muted/20",
   extra_local: "bg-blue-50/50 dark:bg-blue-900/10",
 };
 const STATUS_BG_SEL: Record<ComparisonStatus, string> = {
   matched: "bg-green-100 dark:bg-green-900/30",
   missing_local: "bg-amber-100 dark:bg-amber-900/30",
+  before_cutoff: "bg-slate-200/70 dark:bg-slate-800/50",
   excluded: "bg-muted/60 dark:bg-muted/30",
   extra_local: "bg-blue-100 dark:bg-blue-900/30",
 };
 const STATUS_LEFT: Record<ComparisonStatus, string> = {
   matched: "border-l-green-400",
   missing_local: "border-l-amber-400",
+  before_cutoff: "border-l-slate-400",
   excluded: "border-l-muted-foreground/40",
   extra_local: "border-l-blue-400",
 };
 
-function StatusBadge({ status }: { status: ComparisonStatus }) {
+function StatusBadge({
+  status,
+  cutoff,
+}: {
+  status: ComparisonStatus;
+  cutoff?: string | null;
+}) {
   if (status === "matched")
     return (
       <Badge
@@ -236,12 +303,28 @@ function StatusBadge({ status }: { status: ComparisonStatus }) {
         Not in DB
       </Badge>
     );
+  if (status === "before_cutoff")
+    return (
+      <Badge
+        variant="outline"
+        className="text-[10px] h-5 bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 whitespace-nowrap"
+        title={
+          cutoff
+            ? `Released before the sync cutoff (${cutoff}) — the sync agent ignores it.`
+            : "Released before this provider's sync cutoff — the sync agent ignores it."
+        }
+      >
+        Before cutoff
+      </Badge>
+    );
   if (status === "excluded")
     return (
       <Badge
         variant="outline"
-        className="text-[10px] h-5 bg-muted/50 text-muted-foreground border-border whitespace-nowrap"
+        className="text-[10px] h-5 gap-1 bg-muted/50 text-muted-foreground border-border whitespace-nowrap"
+        title="On this provider's exclusion list — the sync agent will never add it."
       >
+        <Ban className="h-3 w-3" />
         Excluded
       </Badge>
     );
@@ -251,6 +334,129 @@ function StatusBadge({ status }: { status: ComparisonStatus }) {
       className="text-[10px] h-5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 whitespace-nowrap"
     >
       Extra / deprecated
+    </Badge>
+  );
+}
+
+// ─── Pricing cells ────────────────────────────────────────────────────────
+
+/**
+ * What we charge, per 1M units of the offering's billing basis. Never blank:
+ * a model with no offering and a model whose offering carries no price are
+ * two different problems and the cell says which one it is.
+ */
+function PriceCell({ pricing }: { pricing: ProviderSyncRowPricing }) {
+  if (pricing.state === "no_offering") {
+    return (
+      <span
+        className="text-[10px] text-muted-foreground italic whitespace-nowrap"
+        title="This provider model has no ai.offering row, so nothing prices it."
+      >
+        no offering
+      </span>
+    );
+  }
+  if (pricing.state === "no_price") {
+    return (
+      <span
+        className="text-[10px] text-amber-600 dark:text-amber-400 whitespace-nowrap"
+        title="The preferred offering exists but carries no pricing tier."
+      >
+        no price
+      </span>
+    );
+  }
+
+  const ours = pricing.ours;
+  const mismatchFields = new Set(pricing.mismatches.map((m) => m.field));
+  const cellFor = (field: "input" | "output" | "cached") => (
+    <span
+      className={cn(
+        "tabular-nums",
+        mismatchFields.has(field) &&
+          "text-red-600 dark:text-red-400 font-semibold",
+      )}
+    >
+      {formatPerMTok(ours?.[field] ?? null)}
+    </span>
+  );
+
+  return (
+    <div className="whitespace-nowrap leading-tight">
+      <span className="text-[11px]">
+        {cellFor("input")}
+        <span className="text-muted-foreground"> / </span>
+        {cellFor("output")}
+        <span className="text-muted-foreground"> / </span>
+        {cellFor("cached")}
+      </span>
+      {pricing.usage_basis && (
+        <span className="ml-1 text-[9px] text-muted-foreground">
+          {pricing.usage_basis}
+        </span>
+      )}
+      {pricing.mismatches.length > 0 && pricing.theirs && (
+        <div
+          className="flex items-center gap-1 text-[10px] text-red-600 dark:text-red-400"
+          title={pricing.mismatches
+            .map(
+              (m) =>
+                `${m.field}: ours ${formatPerMTok(m.ours)} vs provider ${formatPerMTok(m.theirs)}`,
+            )
+            .join("\n")}
+        >
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          <span className="tabular-nums">
+            provider {formatPerMTok(pricing.theirs.input)} /{" "}
+            {formatPerMTok(pricing.theirs.output)} /{" "}
+            {formatPerMTok(pricing.theirs.cached)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** How old our confidence in the price is — or that nobody tracks it yet. */
+function PriceVerifiedCell({ pricing }: { pricing: ProviderSyncRowPricing }) {
+  if (pricing.state === "no_offering") {
+    return <span className="text-muted-foreground text-[10px]">—</span>;
+  }
+  if (pricing.verification === "untracked") {
+    return (
+      <span
+        className="text-[10px] text-muted-foreground italic whitespace-nowrap"
+        title="ai.offering.pricing_verified_at does not exist yet — this platform does not record price verification, so nothing here can claim a price was checked."
+      >
+        not tracked
+      </span>
+    );
+  }
+  if (pricing.verification === "never") {
+    return (
+      <Badge
+        variant="outline"
+        className="text-[10px] h-5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300 whitespace-nowrap"
+      >
+        never verified
+      </Badge>
+    );
+  }
+  const days = ageInDays(pricing.verified_at) ?? 0;
+  const stale = days > 30;
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        "text-[10px] h-5 gap-1 whitespace-nowrap",
+        stale
+          ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300"
+          : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300",
+      )}
+      title={`Price last verified ${pricing.verified_at}`}
+    >
+      <ShieldCheck className="h-3 w-3" />
+      {days === 0 ? "verified today" : `${days}d ago`}
     </Badge>
   );
 }
@@ -358,14 +564,20 @@ function CopyBtn({ text }: { text: string }) {
 
 function ProviderEntryDetail({
   comparison,
+  cutoff,
   onClose,
   onOpenModel,
   onAddMissing,
+  onToggleExclusion,
+  policyBusy,
 }: {
   comparison: ModelComparison;
+  cutoff: string | null;
   onClose: () => void;
   onOpenModel: (id: string) => void;
   onAddMissing: (c: ModelComparison) => void;
+  onToggleExclusion: (c: ModelComparison) => void;
+  policyBusy: boolean;
 }) {
   const pe = comparison.providerEntry;
   const le = comparison.localEntry;
@@ -384,7 +596,7 @@ function ProviderEntryDetail({
           </p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0 ml-2">
-          <StatusBadge status={comparison.status} />
+          <StatusBadge status={comparison.status} cutoff={cutoff} />
           {comparison.status === "matched" && le && (
             <OpenDetailButton onClick={() => onOpenModel(le.id)} />
           )}
@@ -398,6 +610,13 @@ function ProviderEntryDetail({
               <Plus className="h-3 w-3" />
               Add to DB
             </Button>
+          )}
+          {comparison.status !== "extra_local" && (
+            <ExcludeButton
+              comparison={comparison}
+              onToggle={onToggleExclusion}
+              busy={policyBusy}
+            />
           )}
           <button
             onClick={onClose}
@@ -455,6 +674,16 @@ function ProviderEntryDetail({
                       <p className="text-xs font-mono">{val}</p>
                     </div>
                   ))}
+                </div>
+              </section>
+
+              <section>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  Pricing (per MTok)
+                </p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <PriceCell pricing={comparison.pricing} />
+                  <PriceVerifiedCell pricing={comparison.pricing} />
                 </div>
               </section>
 
@@ -593,6 +822,56 @@ function ProviderEntryDetail({
   );
 }
 
+// ─── Exclude / un-exclude ─────────────────────────────────────────────────
+
+/**
+ * One row's entry point into `ai.provider.sync_policy.excluded_model_ids`.
+ * The consequence is stated by the confirm the handler raises, not here —
+ * this is only the control.
+ */
+function ExcludeButton({
+  comparison,
+  onToggle,
+  busy,
+}: {
+  comparison: ModelComparison;
+  onToggle: (c: ModelComparison) => void;
+  busy: boolean;
+}) {
+  const isExcluded = comparison.status === "excluded";
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      className={cn(
+        "h-5 px-1.5 text-[10px] gap-0.5",
+        isExcluded
+          ? "text-muted-foreground hover:text-foreground"
+          : "text-muted-foreground hover:text-destructive",
+      )}
+      onClick={() => onToggle(comparison)}
+      disabled={busy}
+      title={
+        isExcluded
+          ? "Stop excluding this model — the sync agent may add it again"
+          : "Exclude this model — the sync agent will never add it"
+      }
+    >
+      {isExcluded ? (
+        <>
+          <Undo2 className="h-2.5 w-2.5" />
+          Un-exclude
+        </>
+      ) : (
+        <>
+          <Ban className="h-2.5 w-2.5" />
+          Exclude
+        </>
+      )}
+    </Button>
+  );
+}
+
 // ─── Comparison table (real <table> for alignment) ────────────────────────
 
 function SortableTH({
@@ -654,17 +933,23 @@ const STATIC_TH = ({
 function ComparisonTable({
   comparisons,
   providerName,
+  cutoff,
   selectedId,
   onSelect,
   onOpenModel,
   onAddMissing,
+  onToggleExclusion,
+  policyBusy,
 }: {
   comparisons: ModelComparison[];
   providerName: string | null;
+  cutoff: string | null;
   selectedId: string | null;
   onSelect: (c: ModelComparison | null) => void;
   onOpenModel: (id: string) => void;
   onAddMissing: (c: ModelComparison) => void;
+  onToggleExclusion: (c: ModelComparison) => void;
+  policyBusy: boolean;
 }) {
   const [sortKey, setSortKey] = useState<ComparisonSortKey>("released");
   const [sortDir, setSortDir] = useState<ComparisonSortDir>("desc");
@@ -747,6 +1032,22 @@ function ComparisonTable({
               Our Name
             </SortableTH>
             <SortableTH
+              sortKey="price"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Price in/out/cached per MTok
+            </SortableTH>
+            <SortableTH
+              sortKey="verified"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Price checked
+            </SortableTH>
+            <SortableTH
               sortKey="primary"
               activeSortKey={sortKey}
               activeSortDir={sortDir}
@@ -822,6 +1123,12 @@ function ComparisonTable({
                     {le?.common_name ?? "—"}
                   </span>
                 </td>
+                <td className="px-2 py-1.5">
+                  <PriceCell pricing={c.pricing} />
+                </td>
+                <td className="px-2 py-1.5">
+                  <PriceVerifiedCell pricing={c.pricing} />
+                </td>
                 <td className="px-2 py-1.5 text-center">
                   {le?.is_primary ? (
                     <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mx-auto" />
@@ -837,7 +1144,7 @@ function ComparisonTable({
                   )}
                 </td>
                 <td className="px-2 py-1.5 whitespace-nowrap">
-                  <StatusBadge status={c.status} />
+                  <StatusBadge status={c.status} cutoff={cutoff} />
                 </td>
                 <td
                   className="px-2 py-1.5 pr-3"
@@ -863,6 +1170,13 @@ function ComparisonTable({
                         Add
                       </Button>
                     )}
+                    {c.status !== "extra_local" && (
+                      <ExcludeButton
+                        comparison={c}
+                        onToggle={onToggleExclusion}
+                        busy={policyBusy}
+                      />
+                    )}
                   </div>
                 </td>
               </tr>
@@ -879,36 +1193,42 @@ function ComparisonTable({
 function ProviderSection({
   summary,
   provider,
-  localModels,
+  comparisons,
+  policy,
   onSync,
   syncing,
   onOpenModel,
   onAddMissing,
-  onModelsChanged: _onModelsChanged,
+  onEditPolicy,
+  onToggleExclusion,
+  policyBusy,
 }: {
   summary: ProviderSummary;
   provider: AiProvider | undefined;
-  localModels: AiModel[];
+  comparisons: ModelComparison[];
+  policy: ProviderSyncPolicy;
   onSync: (s: ProviderSummary) => void;
   syncing: boolean;
   onOpenModel: (id: string) => void;
   onAddMissing: (c: ModelComparison, summary: ProviderSummary) => void;
-  onModelsChanged?: () => void;
+  onEditPolicy: (s: ProviderSummary) => void;
+  onToggleExclusion: (c: ModelComparison, s: ProviderSummary) => void;
+  policyBusy: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [selectedComparison, setSelectedComparison] =
     useState<ModelComparison | null>(null);
-
-  const comparisons = React.useMemo<ModelComparison[]>(
-    () => buildProviderSyncComparisons(summary, provider, localModels),
-    [provider, localModels, summary],
-  );
 
   const statusCounts = countProviderSyncByStatus(comparisons);
   const matched = statusCounts.matched;
   const missing = statusCounts.missing_local;
   const extra = statusCounts.extra_local;
   const excluded = statusCounts.excluded;
+  const beforeCutoff = statusCounts.before_cutoff;
+
+  const snapshotAgeHours = hoursSince(summary.fetched_at);
+  const snapshotStale =
+    snapshotAgeHours != null && snapshotAgeHours >= STALE_SNAPSHOT_HOURS;
 
   const handleExpand = () => {
     if (expanded) setSelectedComparison(null);
@@ -957,12 +1277,30 @@ function ProviderSection({
         <div className="flex-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0">
           {summary.has_cache ? (
             <>
-              <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                Synced{" "}
-                {summary.fetched_at
-                  ? new Date(summary.fetched_at).toLocaleString()
-                  : "—"}
-              </span>
+              {snapshotStale ? (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] h-5 gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300 whitespace-nowrap"
+                  title={`This provider snapshot was taken ${summary.fetched_at ? new Date(summary.fetched_at).toLocaleString() : "—"}. Everything below compares against it, not against the provider's API right now.`}
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  Snapshot {formatAge(snapshotAgeHours ?? 0)}
+                </Badge>
+              ) : (
+                <span
+                  className="text-[11px] text-muted-foreground whitespace-nowrap"
+                  title={
+                    summary.fetched_at
+                      ? new Date(summary.fetched_at).toLocaleString()
+                      : undefined
+                  }
+                >
+                  Synced{" "}
+                  {snapshotAgeHours == null
+                    ? "—"
+                    : formatAge(snapshotAgeHours)}
+                </span>
+              )}
               <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-green-700 dark:text-green-400 whitespace-nowrap">
                 <CheckCircle2 className="h-3 w-3" />
                 {matched} matched
@@ -970,6 +1308,18 @@ function ProviderSection({
               {missing > 0 && (
                 <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap">
                   {missing} not in DB
+                </span>
+              )}
+              {beforeCutoff > 0 && (
+                <span
+                  className="text-[11px] font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap"
+                  title={
+                    policy.min_release_date
+                      ? `Released before ${policy.min_release_date}`
+                      : undefined
+                  }
+                >
+                  {beforeCutoff} before cutoff
                 </span>
               )}
               {excluded > 0 && (
@@ -982,6 +1332,11 @@ function ProviderSection({
                   {extra} extra/deprecated
                 </span>
               )}
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                {policy.min_release_date
+                  ? `cutoff ${policy.min_release_date}`
+                  : "no cutoff"}
+              </span>
             </>
           ) : (
             <span className="text-[11px] text-muted-foreground">
@@ -1009,10 +1364,20 @@ function ProviderSection({
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
           )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2 text-xs gap-1.5"
+            onClick={() => onEditPolicy(summary)}
+            title="Edit the sync policy the model sync agent obeys for this provider"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Policy
+          </Button>
           {summary.is_supported && (
             <Button
               size="sm"
-              variant="outline"
+              variant={snapshotStale ? "default" : "outline"}
               className="h-7 px-2.5 text-xs gap-1.5"
               onClick={() => onSync(summary)}
               disabled={syncing}
@@ -1020,7 +1385,7 @@ function ProviderSection({
               <RefreshCw
                 className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}
               />
-              {syncing ? "Syncing…" : "Sync Now"}
+              {syncing ? "Syncing…" : snapshotStale ? "Refresh now" : "Sync Now"}
             </Button>
           )}
         </div>
@@ -1039,10 +1404,13 @@ function ProviderSection({
             <ComparisonTable
               comparisons={comparisons}
               providerName={summary.name}
+              cutoff={policy.min_release_date}
               selectedId={selectedComparison?.id ?? null}
               onSelect={setSelectedComparison}
               onOpenModel={onOpenModel}
               onAddMissing={(c) => onAddMissing(c, summary)}
+              onToggleExclusion={(c) => onToggleExclusion(c, summary)}
+              policyBusy={policyBusy}
             />
           </div>
           {selectedComparison && (
@@ -1052,9 +1420,12 @@ function ProviderSection({
             >
               <ProviderEntryDetail
                 comparison={selectedComparison}
+                cutoff={policy.min_release_date}
                 onClose={() => setSelectedComparison(null)}
                 onOpenModel={onOpenModel}
                 onAddMissing={(c) => onAddMissing(c, summary)}
+                onToggleExclusion={(c) => onToggleExclusion(c, summary)}
+                policyBusy={policyBusy}
               />
             </div>
           )}
@@ -1081,16 +1452,45 @@ export default function ProviderSyncDashboard({
     comparison: ModelComparison;
     summary: ProviderSummary;
   } | null>(null);
+  const [candidates, setCandidates] = useState<ProviderSyncCandidate[]>([]);
+  const [registry, setRegistry] = useState<Omit<ProviderSyncRegistry, "localModels">>({
+    offerings: [],
+    aliases: [],
+  });
+  const [policies, setPolicies] = useState<Record<string, ProviderSyncPolicy>>(
+    {},
+  );
+  const [policyTarget, setPolicyTarget] =
+    useState<ProviderSyncPolicyTarget | null>(null);
+  const [policyBusyProviderId, setPolicyBusyProviderId] = useState<
+    string | null
+  >(null);
 
   const loadSummaries = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/ai-models/provider-sync");
-      if (!res.ok) throw new Error(await res.text());
-      const json = (await res.json()) as { providers: ProviderSummary[] };
+      // The Next route owns only the provider-API fetchers + their cache
+      // metadata (a secret-keyed admin concern). The CLASSIFICATION and the
+      // registry rows come straight from the database, as they must: the sync
+      // agent reads the same view.
+      const [summaryRes, candidateRows, offerings, aliases] = await Promise.all(
+        [
+          fetch("/api/ai-models/provider-sync"),
+          aiModelService.fetchProviderSyncCandidates(),
+          aiModelService.fetchOfferings(),
+          aiModelService.fetchAliases(),
+        ],
+      );
+      if (!summaryRes.ok) throw new Error(await summaryRes.text());
+      const json = (await summaryRes.json()) as { providers: ProviderSummary[] };
       setSummaries(json.providers);
+      setCandidates(candidateRows);
+      setRegistry({ offerings, aliases });
     } catch (err) {
       console.error("[ProviderSyncDashboard] load error", err);
+      setSyncError(
+        `Could not load the provider sync data: ${extractErrorMessage(err)}`,
+      );
     } finally {
       setLoading(false);
     }
@@ -1100,6 +1500,114 @@ export default function ProviderSyncDashboard({
     loadSummaries();
   }, [loadSummaries]);
 
+  // Policies come off the provider rows the page already fetched; a save
+  // overlays the fresh value so the table reclassifies without a full reload.
+  useEffect(() => {
+    setPolicies((prev) => {
+      const next = { ...prev };
+      for (const provider of providers) {
+        if (next[provider.id] === undefined) {
+          next[provider.id] = aiModelService.parseSyncPolicy(
+            provider.sync_policy,
+          );
+        }
+      }
+      return next;
+    });
+  }, [providers]);
+
+  const policyFor = useCallback(
+    (providerId: string): ProviderSyncPolicy =>
+      policies[providerId] ?? {
+        min_release_date: null,
+        excluded_model_ids: [],
+        notes: null,
+      },
+    [policies],
+  );
+
+  /**
+   * Add or remove one model id on the provider's exclusion list.
+   * Excluding is quiet and permanent from the agent's side, so the confirm
+   * says exactly that before the write happens.
+   */
+  const handleToggleExclusion = async (
+    comparison: ModelComparison,
+    summary: ProviderSummary,
+  ) => {
+    const policy = policyFor(summary.id);
+    const isExcluded = policy.excluded_model_ids.includes(comparison.id);
+    const providerLabel = summary.name ?? summary.id;
+
+    const ok = await confirm({
+      title: isExcluded
+        ? `Stop excluding ${comparison.id}?`
+        : `Exclude ${comparison.id} from ${providerLabel} sync?`,
+      description: isExcluded
+        ? `It becomes a sync candidate again: the model sync agent may add it to the registry on its next run, and it will start showing as "Not in DB" here until it is added.`
+        : `The model sync agent will never add this model to the registry — not now, not on any future run, and without saying anything. Un-exclude it here to undo that.`,
+      confirmLabel: isExcluded ? "Un-exclude" : "Exclude",
+      variant: isExcluded ? "default" : "destructive",
+    });
+    if (!ok) return;
+
+    setPolicyBusyProviderId(summary.id);
+    try {
+      const next: ProviderSyncPolicy = {
+        ...policy,
+        excluded_model_ids: isExcluded
+          ? policy.excluded_model_ids.filter((id) => id !== comparison.id)
+          : [...policy.excluded_model_ids, comparison.id],
+      };
+      const saved = await aiModelService.updateProviderSyncPolicy(
+        summary.id,
+        next,
+      );
+      setPolicies((prev) => ({ ...prev, [summary.id]: saved }));
+      setCandidates(await aiModelService.fetchProviderSyncCandidates());
+      toast.success(
+        isExcluded
+          ? `${comparison.id} is no longer excluded`
+          : `${comparison.id} is now excluded from ${providerLabel} sync`,
+      );
+    } catch (err) {
+      toast.error("Could not update the exclusion list", {
+        description: extractErrorMessage(err),
+      });
+    } finally {
+      setPolicyBusyProviderId(null);
+    }
+  };
+
+  const handlePolicySaved = async (
+    providerId: string,
+    policy: ProviderSyncPolicy,
+  ) => {
+    setPolicies((prev) => ({ ...prev, [providerId]: policy }));
+    try {
+      setCandidates(await aiModelService.fetchProviderSyncCandidates());
+    } catch (err) {
+      toast.error(
+        "Policy saved, but the classification below could not be reloaded — press Refresh.",
+        { description: extractErrorMessage(err) },
+      );
+    }
+  };
+
+  /**
+   * Pull this provider's models API into `ai.provider.provider_models_cache`.
+   *
+   * ⚠️ MIGRATION POINT (2026-09-11): aidream is landing
+   * `POST /admin/ai-catalog/provider-models/refresh`, the on-demand half of its
+   * daily `provider_models_refresh` task — the same five provider contracts
+   * this Next route keeps a second copy of. At the time of writing that
+   * endpoint exists only in the aidream working tree and answers 404 on the
+   * live server, so wiring this button to it would have broken the only
+   * working refresh path. When it is live: swap this fetch for
+   * `dispatch(callApi({ path: "/admin/ai-catalog/provider-models/refresh", ... }))`
+   * keyed by `ai.provider.slug`, and DELETE `app/api/ai-models/provider-sync`'s
+   * POST half with its fetchers — no twin.
+   */
   const handleSync = async (summary: ProviderSummary) => {
     if (!summary.provider_key) return;
     setSyncingId(summary.id);
@@ -1136,17 +1644,24 @@ export default function ProviderSyncDashboard({
   };
 
   const providerMap = new Map(providers.map((p) => [p.id, p]));
+  const comparisonsByProvider = useMemo(() => {
+    const fullRegistry: ProviderSyncRegistry = { ...registry, localModels };
+    const map = new Map<string, ModelComparison[]>();
+    for (const summary of summaries) {
+      map.set(
+        summary.id,
+        buildProviderSyncComparisons(summary, candidates, fullRegistry),
+      );
+    }
+    return map;
+  }, [summaries, candidates, registry, localModels]);
   const pageExports = useMemo(
     () =>
       summaries.map((summary) => ({
         summary,
-        comparisons: buildProviderSyncComparisons(
-          summary,
-          providerMap.get(summary.id),
-          localModels,
-        ),
+        comparisons: comparisonsByProvider.get(summary.id) ?? [],
       })),
-    [summaries, providers, localModels],
+    [summaries, comparisonsByProvider],
   );
   const totalProviderModels = summaries.reduce(
     (acc, s) => acc + s.model_count,
@@ -1190,6 +1705,7 @@ export default function ProviderSyncDashboard({
           {[
             { color: "bg-green-400", label: "Matched" },
             { color: "bg-amber-400", label: "Not in DB" },
+            { color: "bg-slate-400", label: "Before cutoff" },
             { color: "bg-muted-foreground/50", label: "Excluded" },
             { color: "bg-blue-400", label: "Extra/deprecated" },
           ].map(({ color, label }) => (
@@ -1265,14 +1781,26 @@ export default function ProviderSyncDashboard({
                 key={summary.id}
                 summary={summary}
                 provider={providerMap.get(summary.id)}
-                localModels={localModels}
+                comparisons={comparisonsByProvider.get(summary.id) ?? []}
+                policy={policyFor(summary.id)}
                 onSync={handleSync}
                 syncing={syncingId === summary.id}
                 onOpenModel={setSheetModelId}
                 onAddMissing={(comparison, s) =>
                   setAddTarget({ comparison, summary: s })
                 }
-                onModelsChanged={onModelsChanged}
+                onEditPolicy={(s) =>
+                  setPolicyTarget({
+                    providerId: s.id,
+                    providerName: s.name ?? s.id,
+                    policy: policyFor(s.id),
+                    knownModelIds: (comparisonsByProvider.get(s.id) ?? [])
+                      .filter((c) => c.status !== "extra_local")
+                      .map((c) => c.id),
+                  })
+                }
+                onToggleExclusion={handleToggleExclusion}
+                policyBusy={policyBusyProviderId === summary.id}
               />
             ))
           )}
@@ -1287,6 +1815,12 @@ export default function ProviderSyncDashboard({
           onModelsChanged?.();
           setSheetModelId(null);
         }}
+      />
+
+      <ProviderSyncPolicyDialog
+        target={policyTarget}
+        onClose={() => setPolicyTarget(null)}
+        onSaved={handlePolicySaved}
       />
 
       <AddProviderModelDialog
