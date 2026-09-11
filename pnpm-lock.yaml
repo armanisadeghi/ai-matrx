@@ -18,7 +18,7 @@ importers:
     dependencies:
       '@ai-matrx/agents':
         specifier: latest
-        version: 0.10.6(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 0.10.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@ai-matrx/associations':
         specifier: latest
         version: 0.8.5(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -824,8 +824,8 @@ importers:
 
 packages:
 
-  '@ai-matrx/agents@0.10.6':
-    resolution: {integrity: sha512-YebeEUiVxkEA2yOgsjb72he7as+6hHTk+9pYxEX2FMFdXrJwHsdTizcffPzWIG388X4XlHClDyZv+TqfbOhlUg==}
+  '@ai-matrx/agents@0.10.7':
+    resolution: {integrity: sha512-ZIInbxQoeFcaK9zhjWaBmT/L/KmkaggjHfYM9vnF8qOdy7hGlgSGlOdfpy3Uw6NeDmNTWp6FDSoKR70Jx/YCIQ==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -12610,7 +12610,7 @@ packages:
 
 snapshots:
 
-  '@ai-matrx/agents@0.10.6(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@ai-matrx/agents@0.10.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@ai-matrx/data': 0.11.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(react@19.2.8)
       '@ai-matrx/design-system': 0.14.3(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -12738,7 +12738,7 @@ snapshots:
 
   '@ai-matrx/meet@0.4.15(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/dom-mediacapture-record@1.0.22)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
-      '@ai-matrx/agents': 0.10.6(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@ai-matrx/agents': 0.10.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@ai-matrx/kit': 0.9.1(react@19.2.8)
       '@ai-matrx/messaging': 0.11.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@ai-matrx/realtime': 0.7.8(react@19.2.8)
@@ -12756,7 +12756,7 @@ snapshots:
 
   '@ai-matrx/messaging@0.11.1(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
-      '@ai-matrx/agents': 0.10.6(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@ai-matrx/agents': 0.10.7(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@ai-matrx/kit': 0.9.1(react@19.2.8)
       '@ai-matrx/realtime': 0.7.8(react@19.2.8)
     optionalDependencies:
