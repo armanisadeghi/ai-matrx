@@ -54,6 +54,19 @@ function responseFor(events: readonly AgentProjectionEvent[]): Response {
   } as unknown as Response;
 }
 
+function brokenResponse(events: readonly AgentProjectionEvent[]): Response {
+  const chunks = events.map((event) => encoder.encode(`${JSON.stringify(event)}\n`));
+  const reader = {
+    read(): Promise<{ value?: Uint8Array; done: boolean }> {
+      const value = chunks.shift();
+      if (value) return Promise.resolve({ value, done: false });
+      return Promise.reject(new Error("socket dropped"));
+    },
+    releaseLock() {},
+  };
+  return { body: { getReader: () => reader }, headers: new Headers() } as unknown as Response;
+}
+
 function matrixHarness() {
   let activeRequests = activeRequestsReducer(
     undefined,
@@ -196,4 +209,18 @@ test("server tool starts do not falsely suspend either consumer", async () => {
   expect(portable.status).toBe("complete");
   expect(report.shared.status).toBe(true);
   expect(report.shared.tools).toBe(true);
+});
+
+test("rejoin reuses the live processor for a partial code fence and drops its replay prefix", async () => {
+  const harness = matrixHarness();
+  const prefix: AgentProjectionEvent[] = [
+    { event: "chunk", stream_id: "segment-a", stream_seq: 1, data: { text: "```json\n{\"a\": " } },
+    { event: "chunk", stream_id: "segment-a", stream_seq: 2, data: { text: "1" } },
+  ];
+  await expect(processStream({ requestId: PORTABLE_PARITY_REQUEST_ID, conversationId: PORTABLE_PARITY_CONVERSATION_ID, response: brokenResponse(prefix), submitAt: 0, conversationIdAt: null, dispatch: harness.dispatch as never, getState: harness.getState, abortController: new AbortController() })).rejects.toThrow();
+  await processStream({ requestId: PORTABLE_PARITY_REQUEST_ID, conversationId: PORTABLE_PARITY_CONVERSATION_ID, response: responseFor([...prefix, { event: "chunk", stream_id: "segment-a", stream_seq: 3, data: { text: "}\n```" } }, { event: "end", stream_id: "segment-a", stream_seq: 4, data: {} }]), submitAt: 0, conversationIdAt: null, dispatch: harness.dispatch as never, getState: harness.getState, abortController: new AbortController() });
+  const request = harness.request();
+  expect(Object.values(request.renderBlocks).map((block) => block.content).join(""))
+    .toContain('{"a": 1}');
+  expect(request.lastTransportSeq).toBe(4);
 });
