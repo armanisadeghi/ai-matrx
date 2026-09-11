@@ -116,7 +116,7 @@ When a table is MOVED or RETIRED, **the old name MUST stop working — abruptly.
 
 ## Cross-repo finalize (run for EVERY change — TOOLKIT.md §8 has detail)
 
-1. **DB** — `apply_migration` (idempotent), verify live, write `migrations/<name>.sql`, sha256 → insert `public._schema_migrations` (`source='matrx-frontend'`).
+1. **DB** — write `migrations/<name>.sql` (idempotent), then **`pnpm db:apply migrations/<name>.sql`** — the ONE apply path: whole file, one transaction, and it writes the `public._schema_migrations` row itself with the SHA-256 of the bytes it executed. Never hand-apply through the MCP and never write that row yourself (CLAUDE.md § Migrations). Then verify live with a read.
 2. **Frontend** — `pnpm db-types`; update every usage; `pnpm sync-types`; fix all TS.
 3. **aidream** — `python db/generate.py`; new schema → `db/matrx_orm.yaml` (`additional_schemas` + generate block); sub-package table → `aidream/package_integration.py`; `python db/detect_applied.py`; update usages; `python run.py` → clean boot.
 4. **matrx-extend / matrx-local** — update if referenced; never block production.

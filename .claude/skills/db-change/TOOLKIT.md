@@ -24,11 +24,11 @@
 | Supabase project name | **Matrx Main** |
 | `project_id` (every MCP call) | **`brsgrqvjdzwihsvnfqkf`** (us-east-1, Postgres 17) — the ONLY DB this stack talks to |
 | System org ("Matrx System") | **`39c38960-d30c-4840-b0c1-c9960de95582`** — the org you assign to ownerless / system rows |
-| Apply DDL | Supabase MCP `apply_migration` (idempotent SQL) — NOT psql, NOT the app (no DDL path) |
+| Apply DDL | **`pnpm db:apply migrations/<file>.sql`** — the ONE path (whole file, one transaction, ledgers what executed). NOT the MCP by hand, NOT psql, NOT the app (no DDL path). Autocommit files (`CONCURRENTLY`, `VACUUM`, `ALTER TYPE … ADD VALUE`) → aidream `python db/apply_migrations.py --source matrx-frontend` |
 | Run read SQL | Supabase MCP `execute_sql` |
 | FE types regen | `pnpm db-types` → `types/database.types.ts` |
 | FE full check | `pnpm sync-types` (DB types + Python API types + tsc) |
-| Migration ledger | `public._schema_migrations` (key `(source, filename)`), `source='matrx-frontend'` — **`duration_ms` is NOT NULL; insert it (0 is fine)** |
+| Migration ledger | `public._schema_migrations` (key `(source, filename)`), `source='matrx-frontend'` — **written ONLY by the applier, never by you and never by a migration file**; it records the SHA-256 of the bytes that executed |
 | Admins table | **`admin.admins`** (moved out of `public` — `public.admins` errors; `is_super_admin()` reads `admin.admins`) |
 | Ledger verifier | `pnpm check:migrations` (red box on unapplied/drifted) |
 
@@ -251,7 +251,7 @@ FOR EACH ROW EXECUTE FUNCTION platform._version_capture('<token>');
 
 ## 8. Cross-repo apply order (the finalize SOP — same for every change type)
 
-1. **DB** — apply idempotent DDL via Supabase MCP `apply_migration` (project `brsgrqvjdzwihsvnfqkf`). **Verify live** with `execute_sql` (column/policy/trigger exists). Write `migrations/<name>.sql`, sha256 it, insert `public._schema_migrations` (`source='matrx-frontend'`).
+1. **DB** — write `migrations/<name>.sql` (idempotent), apply it with **`pnpm db:apply migrations/<name>.sql`** (whole file, one transaction; it writes the ledger row with the SHA-256 of what executed — you never do, and neither does the file). **Verify live** with `execute_sql` (column/policy/trigger exists). Hand-applying through the MCP is forbidden: it can leave a file partially applied with `check:migrations` green.
 2. **Frontend (ai-matrx)** — `pnpm db-types` (add the schema to the `--schema` list first if it's new & FE-read). Update every usage (`.from()/.schema()`, types, RPC names). `pnpm sync-types` at the end (DB + Python API types + tsc) → fix all TS errors.
 3. **Python (aidream)** — `python db/generate.py` (regenerates `db/models*.py` + managers). New schema → add to `db/matrx_orm.yaml` `additional_schemas` + a generate block. Table consumed by a sub-package (matrx-ai/graph/rag/…) → wire it in `aidream/package_integration.py` (`configure_packages()`). Drift check `python db/detect_applied.py`. Update usages. Start `python run.py`, confirm a clean boot (`Local Link: http://localhost:8000`, no ERROR/CRITICAL).
 4. **matrx-extend / matrx-local** — update references if any, but **never let them block production**.
