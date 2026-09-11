@@ -292,7 +292,7 @@ function buildMobilePanels({
     id: "workspace-tools",
     label: "Workspace tools",
     icon: SquareTerminal,
-    content: <BottomPanel />,
+    content: <BottomPanel visible={bottomOpen} />,
     alwaysMount: true,
     open: bottomOpen,
     onOpenChange: onBottomOpenChange,

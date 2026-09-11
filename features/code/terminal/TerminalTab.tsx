@@ -92,10 +92,6 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
   }, [process]);
 
   const [ready, setReady] = useState(false);
-  // xterm measures its glyph cell when `open()` runs. Its persistent mobile
-  // host can be mounted inside a closed native <details>, whose contents have
-  // no layout box. Wait for a real box so that first measurement is accurate.
-  const [hasVisibleBounds, setHasVisibleBounds] = useState(false);
 
   // ── Prompt writing helpers ──────────────────────────────────────────────
   const writePromptFor = useCallback((state: SessionState) => {
@@ -452,30 +448,9 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
     [refreshLine, runCommand, writePromptFor],
   );
 
-  // Establish a real layout box before xterm measures its character cell.
-  // `details` keeps its child mounted while closed, but its child has zero
-  // dimensions until disclosed.
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return undefined;
-
-    const markVisible = (width: number, height: number) => {
-      if (width > 0 && height > 0) setHasVisibleBounds(true);
-    };
-
-    markVisible(container.clientWidth, container.clientHeight);
-    const ro = new ResizeObserver(([entry]) => {
-      if (entry) markVisible(entry.contentRect.width, entry.contentRect.height);
-    });
-    ro.observe(container);
-    return () => ro.disconnect();
-  }, []);
-
   // ── Boot xterm once ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!hasVisibleBounds) return undefined;
     let cancelled = false;
-    let pendingMeasureObserver: ResizeObserver | null = null;
 
     const boot = async () => {
       if (!containerRef.current) return;
@@ -499,6 +474,11 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       term.loadAddon(fit);
       term.loadAddon(new linksModule.WebLinksAddon());
       term.open(containerRef.current);
+      try {
+        fit.fit();
+      } catch {
+        /* container may not be sized yet */
+      }
 
       const session: SessionState = {
         term,
@@ -546,56 +526,20 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       const expectsPty = Boolean(processRef.current.openPty);
       term.options.disableStdin = expectsPty;
 
-      // `Terminal.open` creates this span, but xterm does not retry its
-      // character measurement after it was opened under `display:none`.
-      // Its public `resize` deliberately remeasures when called with the
-      // current dimensions. Wait until that span itself has a layout box,
-      // then remeasure before fitting or allocating the remote PTY.
-      const measureElement = containerRef.current.querySelector<HTMLElement>(
-        ".xterm-char-measure-element",
+      term.write(
+        `${BOLD}Matrx Terminal${RESET}${DIM} — ${processRef.current.isReady ? "connected" : "no process adapter"}${RESET}\r\n`,
       );
-      let initialized = false;
-      const initializeWhenMeasurable = () => {
-        if (
-          cancelled ||
-          initialized ||
-          (measureElement
-            ? measureElement.offsetWidth <= 0 ||
-              measureElement.offsetHeight <= 0
-            : !containerRef.current ||
-              containerRef.current.clientWidth <= 0 ||
-              containerRef.current.clientHeight <= 0)
-        ) {
-          return;
-        }
-        initialized = true;
-        pendingMeasureObserver?.disconnect();
-
-        // Public xterm API: a same-size resize retries CharSizeService.measure
-        // when the initial hidden-host measurement was invalid.
-        term.resize(term.cols, term.rows);
-        fit.fit();
-
-        term.write(
-          `${BOLD}Matrx Terminal${RESET}${DIM} — ${processRef.current.isReady ? "connected" : "no process adapter"}${RESET}\r\n`,
-        );
-        if (expectsPty) {
-          term.write(`${DIM}[connecting interactive terminal…]${RESET}`);
-        } else {
-          writePromptFor(session);
-        }
-        setReady(true);
-
-        // Try to upgrade to a real PTY only after the true terminal geometry
-        // is known, so the daemon receives correct initial cols and rows.
-        void attachPty(session);
-      };
-
-      if (measureElement) {
-        pendingMeasureObserver = new ResizeObserver(initializeWhenMeasurable);
-        pendingMeasureObserver.observe(measureElement);
+      if (expectsPty) {
+        term.write(`${DIM}[connecting interactive terminal…]${RESET}`);
+      } else {
+        writePromptFor(session);
       }
-      requestAnimationFrame(initializeWhenMeasurable);
+      setReady(true);
+
+      // Try to upgrade to a real PTY in the background. If the adapter
+      // doesn't expose `openPty` (Mock) or the WebSocket can't connect
+      // fails, we visibly retain the buffered fallback.
+      void attachPty(session);
     };
 
     /** Attempt to attach xterm directly to a PTY WebSocket. */
@@ -675,7 +619,6 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
 
     return () => {
       cancelled = true;
-      pendingMeasureObserver?.disconnect();
       const s = sessionRef.current;
       if (s) {
         // Abort any in-flight stream so the orchestrator stops the
@@ -687,7 +630,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         sessionRef.current = null;
       }
     };
-  }, [hasVisibleBounds]);
+  }, []);
 
   // ── Resize observer ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -705,6 +648,10 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       }
       try {
         s.fit.fit();
+        // The DOM renderer's width cache can have measured zero-width glyphs
+        // while its always-mounted parent was hidden. A public refresh makes
+        // it measure the real visible font before painting rows again.
+        s.term.refresh(0, s.term.rows - 1);
       } catch {
         /* xterm is still painting */
       }
@@ -739,6 +686,9 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       }
       try {
         s.fit.fit();
+        // See the resize observer above: refresh recovers the DOM renderer's
+        // glyph width cache after a hidden mount.
+        s.term.refresh(0, s.term.rows - 1);
         if (s.pty?.isOpen) s.pty.resize(s.term.cols, s.term.rows);
       } catch {
         /* xterm or the PTY can be between frames */

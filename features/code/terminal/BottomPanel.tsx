@@ -32,6 +32,8 @@ import { selectActiveSandboxId } from "../redux/codeWorkspaceSlice";
 interface BottomPanelProps {
   onCollapse?: () => void;
   className?: string;
+  /** Whether this panel has a real layout box (mobile disclosure state). */
+  visible?: boolean;
 }
 
 interface BottomTabDescriptor {
@@ -63,6 +65,7 @@ const TABS: BottomTabDescriptorEx[] = [
 export const BottomPanel: React.FC<BottomPanelProps> = ({
   onCollapse,
   className,
+  visible = true,
 }) => {
   const dispatch = useAppDispatch();
   const activeTab = useAppSelector(selectTerminalActiveTab);
@@ -183,7 +186,7 @@ export const BottomPanel: React.FC<BottomPanelProps> = ({
           className={cn("h-full", activeTab !== "terminal" && "hidden")}
           aria-hidden={activeTab !== "terminal"}
         >
-          <SessionsHost visible={activeTab === "terminal"} />
+          <SessionsHost visible={visible && activeTab === "terminal"} />
         </div>
       </div>
     </div>
