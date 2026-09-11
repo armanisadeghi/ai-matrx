@@ -18,6 +18,7 @@ import {
 import { ExternalLink } from "lucide-react";
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useClipboard } from "@/hooks/useClipboard";
 import type { SandboxDetailResponse } from "@/types/sandbox";
 import { sandboxDisplayName } from "@/lib/sandbox/format";
 import {
@@ -38,6 +39,7 @@ import {
 
 export function CodeHeaderControls() {
   const dispatch = useAppDispatch();
+  const { copyText } = useClipboard();
   const sideOpen = useAppSelector(selectSideOpen);
   const rightOpen = useAppSelector(selectRightOpen);
   const farRightOpen = useAppSelector(selectFarRightOpen);
@@ -86,9 +88,8 @@ export function CodeHeaderControls() {
 
   return (
     <div className="flex items-center w-full min-w-0 gap-0 p-0 space-x-0 space-y-0">
-      {/* Toggles only make sense once the resizable panel layout is mounted
-          (desktop-class VSCode-style workspace) — hidden below md. */}
-      <div className="hidden md:flex items-center gap-0 p-0 space-x-0 space-y-0">
+      {/* Toggles only make sense once the resizable panel layout is mounted. */}
+      <div className="hidden lg:flex items-center gap-0 p-0 space-x-0 space-y-0">
         <PanelLeftTapButton
           onClick={() => dispatch(setSideOpen(!sideOpen))}
           variant={sideOpen ? "glass" : "transparent"}
@@ -108,20 +109,20 @@ export function CodeHeaderControls() {
           tooltip={farRightOpen ? "Hide chat history" : "Show chat history"}
         />
       </div>
-      <h1 className="ml-0 md:ml-2 text-sm font-medium text-foreground truncate">
+      <h1 className="ml-0 lg:ml-2 text-sm font-medium text-foreground truncate">
         Code
       </h1>
       {activeSandbox && status && (
-        <div className="ml-3 hidden min-w-0 items-center gap-2 border-l border-border pl-3 lg:flex">
+        <div className="ml-2 flex min-w-0 flex-1 items-center gap-1.5 border-l border-border pl-2 lg:ml-3 lg:gap-2 lg:pl-3">
           <div
-            className="min-w-0 leading-tight"
+            className="min-w-0 flex-1 leading-tight"
             title={sandboxDisplayName(activeSandbox)}
           >
             <div className="truncate text-xs font-medium text-foreground">
               {sandboxDisplayName(activeSandbox)}
             </div>
             <div
-              className="truncate font-mono text-[10px] text-muted-foreground"
+              className="hidden truncate font-mono text-[10px] text-muted-foreground lg:block"
               title={activeSandbox.hot_path ?? undefined}
             >
               {activeSandbox.hot_path ?? "Root unavailable"}
@@ -134,7 +135,7 @@ export function CodeHeaderControls() {
           </span>
           {(activeSandbox.tier || resourceLabel) && (
             <span
-              className="max-w-48 truncate text-[10px] text-muted-foreground"
+              className="hidden max-w-48 truncate text-[10px] text-muted-foreground lg:block"
               title={[activeSandbox.tier, resourceLabel]
                 .filter(Boolean)
                 .join(" · ")}
@@ -146,14 +147,16 @@ export function CodeHeaderControls() {
             variant="transparent"
             ariaLabel={`Copy sandbox ID ${activeSandbox.id}`}
             tooltip="Copy sandbox ID"
-            onClick={() => void navigator.clipboard.writeText(activeSandbox.id)}
+            onClick={() => void copyText(activeSandbox.id, "Sandbox ID copied")}
           />
           <a
             href={`/sandbox/${encodeURIComponent(activeSandbox.id)}`}
+            aria-label={`Manage ${sandboxDisplayName(activeSandbox)}`}
             className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground"
             title="Open sandbox details"
           >
-            Manage <ExternalLink className="size-3" aria-hidden />
+            <span className="hidden lg:inline">Manage</span>
+            <ExternalLink className="size-3" aria-hidden />
           </a>
         </div>
       )}

@@ -31,6 +31,8 @@ export interface OpenSessionReportArgs {
   /** Stable id used to dedupe the tab and produce a stable URL. */
   sandboxId: string;
   dispatch: AppDispatch;
+  /** Refuse a delayed report when the user has already selected another sandbox. */
+  canOpen?: () => boolean;
 }
 
 /**
@@ -42,12 +44,14 @@ export async function openSessionReportTab({
   adapter,
   sandboxId,
   dispatch,
+  canOpen = () => true,
 }: OpenSessionReportArgs): Promise<boolean> {
   for (const delay of RETRY_DELAYS_MS) {
     await sleep(delay);
     try {
       const content = await adapter.readFile(REPORT_PATH);
       if (!content || !content.trim()) continue;
+      if (!canOpen()) return false;
       dispatch(
         openTab({
           id: `session-report:${sandboxId}`,

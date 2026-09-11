@@ -5,7 +5,7 @@ import type { SandboxInstance, SandboxProbeResponse } from "@/types/sandbox";
 import { ACTIVE_SANDBOX_STATUSES } from "@/types/sandbox";
 import { sandboxDisplayName } from "@/lib/sandbox/format";
 import { getEffectiveStatus } from "@/lib/sandbox/status";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { SandboxFilesystemAdapter } from "../../adapters/SandboxFilesystemAdapter";
 import {
   MockProcessAdapter,
@@ -15,6 +15,7 @@ import { MockFilesystemAdapter } from "../../adapters/MockFilesystemAdapter";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 import { openSessionReportTab } from "../../runtime/openSessionReport";
 import {
+  selectActiveSandboxId,
   setActiveSandbox,
   setActiveView,
 } from "../../redux/codeWorkspaceSlice";
@@ -43,10 +44,14 @@ export function useSandboxWorkspaceConnection({
   onConnected,
 }: UseSandboxWorkspaceConnectionOptions) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const { setFilesystem, setProcess } = useCodeWorkspace();
   const [connectingId, setConnectingId] = useState<string | null>(null);
 
-  const wireInstance = (instance: SandboxInstance) => {
+  const wireInstance = (
+    instance: SandboxInstance,
+    options: SandboxWorkspaceConnectOptions = {},
+  ) => {
     dispatch(setActiveSandbox(instance));
     const label = sandboxDisplayName(instance);
     const rootPath = instance.hot_path || "/home/agent";
@@ -57,11 +62,17 @@ export function useSandboxWorkspaceConnection({
     );
     setFilesystem(filesystem);
     setProcess(new SandboxProcessAdapter(instance.id, rootPath));
-    void openSessionReportTab({
-      adapter: filesystem,
-      sandboxId: instance.id,
-      dispatch,
-    });
+    // A URL restore has an explicit file target. Do not let this optional,
+    // delayed report replace it; ordinary user-driven connections still get
+    // the recovery report as before.
+    if (!options.restore) {
+      void openSessionReportTab({
+        adapter: filesystem,
+        sandboxId: instance.id,
+        dispatch,
+        canOpen: () => selectActiveSandboxId(store.getState()) === instance.id,
+      });
+    }
   };
 
   /** Disconnect without selecting a replacement view or terminal tab. */
@@ -84,7 +95,7 @@ export function useSandboxWorkspaceConnection({
     }
 
     setConnectingId(instance.id);
-    wireInstance(instance);
+    wireInstance(instance, options);
     onConnected?.(instance);
     if (!options.restore) {
       dispatch(setActiveView("explorer"));
@@ -100,7 +111,10 @@ export function useSandboxWorkspaceConnection({
         if (!response.ok) return;
         const probe = (await response.json()) as SandboxProbeResponse;
         onProbe?.(instance.id, probe);
-        if (probe.aliveness === "gone") {
+        if (
+          probe.aliveness === "gone" &&
+          selectActiveSandboxId(store.getState()) === instance.id
+        ) {
           disconnect();
           onError(
             `Sandbox ${sandboxDisplayName(instance)} no longer exists. Choose another sandbox to open its files.`,
