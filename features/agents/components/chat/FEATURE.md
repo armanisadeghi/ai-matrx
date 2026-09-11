@@ -288,6 +288,8 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 
 ## Change log
 
+- `2026-09-11` — Sandbox pickers use the existing stored label and show `Unnamed · <short ID>` when absent. Chat Options supports inline naming through `renameInstance`, refreshes mounted compute pickers, and opens the selected sandbox in a separate Code tab via `/code?sandbox=<row UUID>`. Label edits preserve the routing identity and chat binding.
+
 - `2026-09-10` — codex: **conversation input-capability overrides survive the first server turn.** Switch changes still persist immediately through the versioned metadata merge, and `executeInstance` now reconciles the browser-owned `input_capabilities` block again after the stream's server commit barrier. This closes the cross-writer race where a stale first-turn `last_request_context` metadata snapshot replaced a just-saved YouTube/image/file override; server-owned sibling keys remain intact.
 - `2026-09-09` — codex: **user bubbles now render pristine human input.** The
   shared content selectors prefer `chat.message.user_content` for user rows

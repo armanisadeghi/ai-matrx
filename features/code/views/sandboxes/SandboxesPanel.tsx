@@ -51,11 +51,9 @@ import { CreateSandboxModal } from "./CreateSandboxModal";
 import { MockFilesystemAdapter } from "../../adapters/MockFilesystemAdapter";
 import {
   MockProcessAdapter,
-  SandboxProcessAdapter,
 } from "../../adapters/SandboxProcessAdapter";
-import { SandboxFilesystemAdapter } from "../../adapters/SandboxFilesystemAdapter";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
-import { openSessionReportTab } from "../../runtime/openSessionReport";
+import { useSandboxWorkspaceConnection } from "./useSandboxWorkspaceConnection";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -69,10 +67,6 @@ import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
 import { clearFsChangesBucket } from "../../redux/fsChangesSlice";
-import {
-  setActiveTab as setBottomActiveTab,
-  setOpen as setBottomOpen,
-} from "../../redux/terminalSlice";
 import { SidePanelAction, SidePanelHeader } from "../SidePanelChrome";
 import {
   ACTIVE_ROW,
@@ -102,7 +96,6 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [connectingId, setConnectingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -197,107 +190,17 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
    * probe; callers are expected to gate this on whatever readiness check
    * makes sense for their entry point.
    */
-  const wireInstance = useCallback(
-    (instance: SandboxInstance) => {
-      dispatch(setActiveSandboxId(instance.id));
-      // Mirror the per-sandbox proxy URL into Redux so chat surfaces can
-      // bind their conversation to the in-container Python server. Null
-      // until the orchestrator surfaces `proxy_url` on SandboxInstance.
-      dispatch(setActiveSandboxProxyUrl(instance.proxy_url ?? null));
-      const label = sandboxDisplayName(instance);
-      const rootPath = instance.hot_path || "/home/agent";
-      const fs = new SandboxFilesystemAdapter(instance.id, label, rootPath);
-      setFilesystem(fs);
-      setProcess(new SandboxProcessAdapter(instance.id, rootPath));
-      // Best-effort: surface the per-sandbox session report (written by the
-      // matrx_agent persistence module on every boot). Silent no-op when
-      // the file isn't there yet — first-ever sandbox for this user.
-      void openSessionReportTab({
-        adapter: fs,
-        sandboxId: instance.id,
-        dispatch,
-      });
+  const { connect, connectingId, wireInstance } = useSandboxWorkspaceConnection({
+    onError: setError,
+    onConnected: () => setError(null),
+    onSandboxGone: () => void refresh(),
+    onProbe: (instanceId, probe) => {
+      setProbeStatusById((current) => ({
+        ...current,
+        [instanceId]: probe.aliveness,
+      }));
     },
-    [dispatch, setFilesystem, setProcess],
-  );
-
-  /**
-   * One-click connect: wire the workspace + switch to Explorer **immediately**,
-   * fire the orchestrator probe in the background.
-   *
-   * The probe is still important — it detects ghost rows (Supabase says
-   * `ready`, orchestrator destroyed the container) and keeps AI calls from
-   * silently 404'ing against a dead `proxy_url`. But blocking the connect
-   * on it makes the click feel laggy. So we connect optimistically and
-   * reconcile in place if the probe comes back `gone` — clearing the
-   * active sandbox state and surfacing a clear error.
-   *
-   * Outcomes:
-   *   - `alive`            → no further action; user keeps editing.
-   *   - `unreachable` / null → user keeps editing; AI calls may fail loud
-   *                          if the orchestrator stays unreachable, but
-   *                          better than blocking the click.
-   *   - `gone`             → unwire (clear active sandbox + adapters),
-   *                          refresh the list, surface the error.
-   */
-  const connect = useCallback(
-    (instance: SandboxInstance) => {
-      const effective = getEffectiveStatus(instance);
-      if (!ACTIVE_SANDBOX_STATUSES.includes(effective)) {
-        setError(
-          `Sandbox ${instance.id} is ${STATUS_LABELS[effective].toLowerCase()} — it must be starting/ready/running to connect.`,
-        );
-        return;
-      }
-
-      setConnectingId(instance.id);
-      setError(null);
-
-      // 1) Wire & switch synchronously — user sees the explorer + bottom
-      //    panel pop open in the same frame. No await here.
-      wireInstance(instance);
-      dispatch(setActiveView("explorer"));
-      // Pop the bottom panel open and focus the terminal so the
-      // auto-spawned shell + logs sessions are visible immediately.
-      dispatch(setBottomOpen(true));
-      dispatch(setBottomActiveTab("terminal"));
-
-      // 2) Background probe. We dispatch this without awaiting so the UI
-      //    feels instant, then reconcile if the orchestrator says the
-      //    sandbox is gone.
-      void (async () => {
-        try {
-          const resp = await fetch(`/api/sandbox/${instance.id}/probe`, {
-            method: "POST",
-          });
-          if (!resp.ok) return;
-          const data: SandboxProbeResponse = await resp.json();
-          setProbeStatusById((cur) => ({
-            ...cur,
-            [instance.id]: data.aliveness,
-          }));
-          if (data.aliveness === "gone") {
-            // The container is destroyed. Tear the just-wired connection
-            // back down so subsequent AI calls don't 404 silently.
-            dispatch(setActiveSandboxId(null));
-            dispatch(setActiveSandboxProxyUrl(null));
-            setError(
-              `Sandbox ${sandboxDisplayName(instance)} no longer exists on the orchestrator — it was destroyed out of band. The row has been cleaned up.`,
-            );
-            void refresh();
-          }
-        } catch (err) {
-          // Network error talking to OUR API. Leave the optimistic
-          // connection in place; the user's next action will surface the
-          // real failure if it persists.
-          console.warn("[SandboxesPanel] probe call failed:", err);
-        } finally {
-          setConnectingId((cur) => (cur === instance.id ? null : cur));
-        }
-      })();
-    },
-    [dispatch, refresh, wireInstance],
-  );
+  });
 
   const disconnect = useCallback(() => {
     // Wipe the per-sandbox FS-change ring so a subsequent reconnect (or

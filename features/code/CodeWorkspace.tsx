@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { FolderTree, MessageCircle, History, SquareTerminal } from "lucide-react";
 import { cn } from "@/lib/utils";
 // Side effect: register builtin library-source adapters (prompt_apps, aga_apps, tool_ui, html_pages).
@@ -24,6 +24,9 @@ import { useTabRealtimeWatcher } from "./hooks/useTabRealtimeWatcher";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveSandboxId } from "./redux/codeWorkspaceSlice";
 import { useSandboxHeartbeat } from "@/hooks/sandbox/use-sandbox-heartbeat";
+import type { SandboxInstance } from "@/types/sandbox";
+import { sandboxDisplayName } from "@/lib/sandbox/format";
+import { SandboxDeepLinkConnection } from "./views/sandboxes/SandboxDeepLinkConnection";
 
 export interface CodeWorkspaceProps {
   /** Stable id used by agent tools to target this workspace instance. */
@@ -54,6 +57,9 @@ export interface CodeWorkspaceProps {
    *  specific source. */
   focusedLibrarySourceId?: string;
   className?: string;
+  /** Authenticated sandbox handoff from the `/code?sandbox=` route. */
+  initialSandbox?: SandboxInstance | null;
+  onInitialSandboxError?: (message: string) => void;
 }
 
 /**
@@ -72,7 +78,11 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   showActivityBar = true,
   focusedLibrarySourceId,
   className,
+  initialSandbox,
+  onInitialSandboxError,
 }) => {
+  const isSandboxHandoff = Boolean(initialSandbox && onInitialSandboxError);
+  const [sandboxReady, setSandboxReady] = useState(!isSandboxHandoff);
   return (
     <CodeWorkspaceProvider
       workspaceId={workspaceId}
@@ -80,25 +90,40 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
       initialProcess={process}
       focusedLibrarySourceId={focusedLibrarySourceId}
     >
-      <UrlOpenFileBridge />
-      <UrlFocusFolderBridge />
-      <SandboxHeartbeatBridge />
-      <TabRealtimeBridge />
-      <div className={cn("flex h-full w-full min-h-0", className)}>
-        <MobilePanelShell
-          desktop={
-            <WorkspaceLayout
-              rightSlot={rightSlot}
-              farRightSlot={farRightSlot}
-              showStatusBar={showStatusBar}
-              defaultSideSize={defaultSideSize}
-              showActivityBar={showActivityBar}
-            />
-          }
-          main={<EditorArea rightSlotAvailable={false} rightmost />}
-          panels={buildMobilePanels(rightSlot, farRightSlot)}
+      {initialSandbox && onInitialSandboxError ? (
+        <SandboxDeepLinkConnection
+          instance={initialSandbox}
+          onError={onInitialSandboxError}
+          onConnected={() => setSandboxReady(true)}
         />
-      </div>
+      ) : null}
+      {!sandboxReady && initialSandbox ? (
+        <div className="flex h-full w-full items-center justify-center p-6 text-sm text-muted-foreground">
+          Opening files for {sandboxDisplayName(initialSandbox)}…
+        </div>
+      ) : (
+        <>
+          <UrlOpenFileBridge />
+          <UrlFocusFolderBridge />
+          <SandboxHeartbeatBridge />
+          <TabRealtimeBridge />
+          <div className={cn("flex h-full w-full min-h-0", className)}>
+            <MobilePanelShell
+              desktop={
+                <WorkspaceLayout
+                  rightSlot={rightSlot}
+                  farRightSlot={farRightSlot}
+                  showStatusBar={showStatusBar}
+                  defaultSideSize={defaultSideSize}
+                  showActivityBar={showActivityBar}
+                />
+              }
+              main={<EditorArea rightSlotAvailable={false} rightmost />}
+              panels={buildMobilePanels(rightSlot, farRightSlot)}
+            />
+          </div>
+        </>
+      )}
     </CodeWorkspaceProvider>
   );
 };

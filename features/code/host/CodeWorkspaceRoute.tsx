@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { CodeWorkspace, type CodeWorkspaceProps } from "../CodeWorkspace";
 import { ChatPanelSlot } from "../chat/ChatPanelSlot";
 import { ChatHistorySlot } from "../chat/ChatHistorySlot";
@@ -10,6 +10,7 @@ export interface CodeWorkspaceRouteProps extends CodeWorkspaceProps {
   hideChat?: boolean;
   /** Disable the chat history column (default: enabled). */
   hideHistory?: boolean;
+  sandboxLinkError?: string | null;
 }
 
 /**
@@ -29,20 +30,36 @@ export const CodeWorkspaceRoute: React.FC<CodeWorkspaceRouteProps> = ({
   rightSlot,
   farRightSlot,
   showActivityBar = false,
+  sandboxLinkError = null,
   ...props
 }) => {
+  const [connectionError, setConnectionError] = useState(sandboxLinkError);
   const resolvedRight =
     rightSlot ?? (hideChat ? undefined : <ChatPanelSlot basePath="/code" />);
   const resolvedFarRight =
     farRightSlot ?? (hideHistory ? undefined : <ChatHistorySlot />);
 
+  if (connectionError) {
+    return (
+      <div className="flex h-full w-full items-center justify-center p-6">
+        <div role="alert" className="max-w-md rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          <p>{connectionError}</p>
+          <a href="/code" className="mt-3 inline-block font-medium underline">
+            Open Code and choose a sandbox
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-full w-full overflow-hidden">
+    <div className="relative h-full w-full overflow-hidden">
       <CodeWorkspace
         {...props}
         showActivityBar={showActivityBar}
         rightSlot={resolvedRight}
         farRightSlot={resolvedFarRight}
+        onInitialSandboxError={setConnectionError}
       />
     </div>
   );

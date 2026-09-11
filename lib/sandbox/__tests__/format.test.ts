@@ -1,4 +1,7 @@
-import { sandboxDisplayName, formatSandboxTimestamp } from "@/lib/sandbox/format";
+import {
+  sandboxDisplayName,
+  formatSandboxTimestamp,
+} from "@/lib/sandbox/format";
 
 describe("sandbox timestamps", () => {
   // Live fleet contains expires_at='infinity', a valid PostgreSQL timestamp.
@@ -21,9 +24,9 @@ describe("sandboxDisplayName", () => {
     ).toBe("AI Matrx Development");
   });
 
-  it("falls back to the immutable sandbox id", () => {
+  it("makes unnamed sandboxes distinguishable", () => {
     expect(
-      sandboxDisplayName({ name: null, sandbox_id: "sbx-123" }),
-    ).toBe("sbx-123");
+      sandboxDisplayName({ name: null, sandbox_id: "sbx-123456789abc" }),
+    ).toBe("Unnamed · 789abc");
   });
 });

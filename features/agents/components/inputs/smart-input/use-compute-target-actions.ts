@@ -96,7 +96,11 @@ export function useComputeTargetActions(conversationId: string) {
     (state) => state.userPreferences.coding.activeAgentSandboxBySurface,
   );
 
-  const boundTarget = binding.status === "verified" ? binding.target : null;
+  const boundTarget =
+    binding.status === "verified"
+      ? (data?.targets.find((target) => target.id === binding.target?.id) ??
+        binding.target)
+      : null;
   const hasBinding = !!binding.ref;
   const availableTargets = useMemo(
     () =>

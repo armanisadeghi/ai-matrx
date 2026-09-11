@@ -1,5 +1,6 @@
 "use client";
 
+import { notifyComputeTargetsChanged } from "@/hooks/sandbox/use-compute-targets";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -350,6 +351,7 @@ export default function SandboxDetailPage() {
         throw new Error(data.error || "Failed to rename sandbox");
       }
       setInstance(data.instance);
+      notifyComputeTargetsChanged();
       setRenaming(false);
     } catch (err) {
       setNameError(err instanceof Error ? err.message : "Failed to rename");

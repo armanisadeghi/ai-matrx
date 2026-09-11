@@ -11,6 +11,7 @@ import type {
   SandboxActionRequest,
   SandboxAccessResponse,
 } from "@/types/sandbox";
+import { notifyComputeTargetsChanged } from "./use-compute-targets";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
@@ -229,6 +230,7 @@ export function useSandboxInstances(projectId?: string) {
       }
       const { instance }: SandboxDetailResponse = await resp.json();
       setInstances((prev) => prev.map((i) => (i.id === id ? instance : i)));
+      notifyComputeTargetsChanged();
       return instance;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";

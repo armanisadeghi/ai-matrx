@@ -1,4 +1,8 @@
-import type { SandboxInstance, SandboxInstanceRow, SandboxInstanceDecorations } from "@/types/sandbox";
+import type {
+  SandboxInstance,
+  SandboxInstanceRow,
+  SandboxInstanceDecorations,
+} from "@/types/sandbox";
 
 /** PostgreSQL permits infinity timestamps; JavaScript Date does not. */
 export function formatSandboxTimestamp(value: string | null): string {
@@ -6,14 +10,16 @@ export function formatSandboxTimestamp(value: string | null): string {
   if (value === "infinity") return "No expiry";
   if (value === "-infinity") return "Unbounded past";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Invalid timestamp" : date.toLocaleString();
+  return Number.isNaN(date.getTime())
+    ? "Invalid timestamp"
+    : date.toLocaleString();
 }
 
-/** User-facing identity with the immutable orchestrator id as a safe fallback. */
+/** Editable label, or an explicit unnamed state distinguished by a short routing id. */
 export function sandboxDisplayName(
   instance: Pick<SandboxInstance, "name" | "sandbox_id">,
 ): string {
-  return instance.name?.trim() || instance.sandbox_id;
+  return instance.name?.trim() || `Unnamed · ${instance.sandbox_id.slice(-6)}`;
 }
 
 /**
@@ -22,12 +28,14 @@ export function sandboxDisplayName(
  * list, detail page). The agent flavor dumps the full row as JSON via
  * `buildAgentPayload`, so this only needs to cover the fields a human scans.
  */
-export function sandboxInstanceSummary(i: SandboxInstanceRow & Partial<SandboxInstanceDecorations>): string {
+export function sandboxInstanceSummary(
+  i: SandboxInstanceRow & Partial<SandboxInstanceDecorations>,
+): string {
   const ttlH = Math.floor(i.ttl_seconds / 3600);
   const ttlM = Math.floor((i.ttl_seconds % 3600) / 60);
   return [
     `Sandbox: ${sandboxDisplayName(i)}`,
-    i.name ? `Sandbox ID: ${i.sandbox_id}` : null,
+    `Sandbox ID: ${i.sandbox_id}`,
     `Status: ${i.status}`,
     `Tier: ${i.tier ?? "—"}`,
     `User ID: ${i.user_id}`,

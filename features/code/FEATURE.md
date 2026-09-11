@@ -114,7 +114,7 @@ Next route independently rejects it before contacting the orchestrator. Personal
 organization fallback is forbidden on this write path.
 
 Sandbox identity has two layers: `sandbox_instances.name` is the editable,
-user-facing name, while `sandbox_id` remains the immutable orchestrator routing
+user-facing label (duplicates are allowed), while `sandbox_id` remains the immutable orchestrator routing
 key and diagnostics fallback. `/sandbox`, `/sandbox/[id]`, the Code workspace,
 and the unified compute-target picker all use the stored name first. Renaming
 updates only the owned database row; it never renames or replaces the running
@@ -146,6 +146,8 @@ container.
 ---
 
 ## Change log
+
+- `2026-09-11` — `/code?sandbox=<row UUID>` opens the selected sandbox through the existing connection flow. Chat Options supplies the new-tab link and inline rename; unnamed display labels include a short ID, and successful renames refresh mounted compute pickers.
 
 - 2026-09-11 — Access-token minting now retries transient 502/503/504 upstream
   responses before leaving a chat turn unbound. Authoritative client refusals

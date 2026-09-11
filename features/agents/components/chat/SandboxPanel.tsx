@@ -15,6 +15,14 @@
  */
 
 import { useEffect, useState } from "react";
+import { Input } from "@ai-matrx/design-system";
+import {
+  PencilTapButton,
+  ExternalLinkTapButton,
+  CheckTapButton,
+  XTapButton,
+} from "@ai-matrx/tap-target/buttons";
+import { sandboxDisplayName } from "@/lib/sandbox/format";
 import {
   Plus,
   Loader2,
@@ -72,15 +80,12 @@ type SandboxRef = {
   name?: string;
 };
 
-function shortLabel(instance: SandboxInstance): string {
-  const sbx = instance.proxy_url?.match(/\/sandboxes\/([^/]+)/)?.[1];
-  const template = instance.config?.template;
-  if (sbx) return template ? `${sbx} · ${template}` : sbx;
-  return instance.id.slice(0, 8);
-}
-
 export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   const dispatch = useAppDispatch();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [cloneOpen, setCloneOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   // When true, picking a box pins it to THIS conversation instead of setting
@@ -140,14 +145,20 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   const sandboxPrefs = useAppSelector(selectSandboxPreferences);
   const organizationId = useAppSelector(selectOrganizationId);
 
-  const { instances, loading, fetchInstances, createInstance } =
-    useSandboxInstances();
+  const {
+    instances,
+    loading,
+    fetchInstances,
+    createInstance,
+    renameInstance,
+    error: sandboxError,
+  } = useSandboxInstances();
 
   // Unified compute-target list — also pulls the user's matrx-local PCs from
   // `app_instances`. The local-PC subset is rendered above the sandbox list;
   // sandbox rendering still uses `useSandboxInstances` so all existing
   // status / pill / clone behaviour keeps working unchanged.
-  const { data: computeTargets, refetch: refetchTargets } = useComputeTargets();
+  const { data: computeTargets } = useComputeTargets();
   // Quickset and the full Sandbox tab share this picker. Only present targets
   // the user can actually bind — offline local computers are status, not
   // available execution targets.
@@ -159,6 +170,29 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   useEffect(() => {
     void fetchInstances({ limit: 50 });
   }, [fetchInstances]);
+
+  const boundInstance = instances.find(
+    (instance) => instance.id === resolved?.rowId,
+  );
+
+  const saveName = async () => {
+    if (!editingId || savingName) return;
+    const name = nameDraft.trim();
+    if (!name || name.length > 100) {
+      setNameError("Enter a label between 1 and 100 characters.");
+      return;
+    }
+    setSavingName(true);
+    const renamed = await renameInstance(editingId, name);
+    setSavingName(false);
+    if (!renamed) {
+      setNameError("Could not save the label. Please try again.");
+      return;
+    }
+    clearSandboxBindingCache(editingId);
+    setEditingId(null);
+    setNameError(null);
+  };
 
   const handlePickLocalPc = (pc: ComputeTarget) => {
     applyRef({
@@ -277,6 +311,7 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
         rowId: instance.id,
         proxyUrl: instance.proxy_url,
         tier: instance.tier ?? undefined,
+        name: sandboxDisplayName(instance),
       });
     } finally {
       setCreating(false);
@@ -321,7 +356,9 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
             <span className="flex min-w-0 items-center gap-2">
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
               <span className="truncate text-xs font-medium text-foreground">
-                {resolved.name ??
+                {(boundInstance
+                  ? sandboxDisplayName(boundInstance)
+                  : resolved.name) ??
                   resolved.proxyUrl.match(/\/sandboxes\/([^/]+)/)?.[1] ??
                   resolved.rowId.slice(0, 8)}
               </span>
@@ -422,33 +459,113 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
               const isBound = resolved?.rowId === inst.id;
               const status = getEffectiveStatus(inst);
               return (
-                <button
-                  key={inst.id}
-                  onClick={() =>
-                    inst.proxy_url &&
-                    applyRef({
-                      rowId: inst.id,
-                      proxyUrl: inst.proxy_url,
-                      tier: inst.tier ?? undefined,
-                    })
-                  }
-                  disabled={!inst.proxy_url}
-                  className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-accent/60 transition-colors disabled:opacity-50"
-                >
-                  <span className="min-w-0 flex items-center gap-2">
-                    {isBound && (
-                      <Check className="h-3 w-3 text-emerald-500 shrink-0" />
-                    )}
-                    <span className="text-xs text-foreground truncate">
-                      {shortLabel(inst)}
-                    </span>
-                  </span>
-                  <span
-                    className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${statusPillClasses(status)}`}
-                  >
-                    {STATUS_LABELS[status]}
-                  </span>
-                </button>
+                <div key={inst.id} className="px-3 py-1">
+                  {editingId === inst.id ? (
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void saveName();
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          if (!savingName) setEditingId(null);
+                        }
+                      }}
+                    >
+                      <div className="flex min-w-0 items-center gap-1">
+                        <Input
+                          autoFocus
+                          aria-label={`Label for ${inst.sandbox_id}`}
+                          placeholder="Sandbox label"
+                          value={nameDraft}
+                          maxLength={100}
+                          disabled={savingName}
+                          onChange={(event) => {
+                            setNameDraft(event.target.value);
+                            setNameError(null);
+                          }}
+                          className="h-9 min-w-0 flex-1 text-base sm:h-7 sm:text-xs"
+                        />
+                        <CheckTapButton
+                          variant="transparent"
+                          ariaLabel="Save sandbox label"
+                          tooltip="Save label"
+                          disabled={savingName || !nameDraft.trim()}
+                          onClick={() => void saveName()}
+                        />
+                        <XTapButton
+                          variant="transparent"
+                          ariaLabel="Cancel sandbox label"
+                          tooltip="Cancel"
+                          disabled={savingName}
+                          onClick={() => setEditingId(null)}
+                        />
+                      </div>
+                      {nameError && (
+                        <p
+                          role="alert"
+                          className="mt-1 text-xs text-destructive"
+                        >
+                          {sandboxError || nameError}
+                        </p>
+                      )}
+                    </form>
+                  ) : (
+                    <div className="flex min-w-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          inst.proxy_url &&
+                          applyRef({
+                            rowId: inst.id,
+                            proxyUrl: inst.proxy_url,
+                            tier: inst.tier ?? undefined,
+                            name: sandboxDisplayName(inst),
+                          })
+                        }
+                        disabled={!inst.proxy_url}
+                        title={[sandboxDisplayName(inst), inst.sandbox_id, inst.template, inst.tier]
+                          .filter(Boolean)
+                          .join(" · ")}
+                        className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded text-left transition-colors hover:bg-accent/60 disabled:opacity-50 sm:min-h-7"
+                      >
+                        {isBound && (
+                          <Check className="h-3 w-3 shrink-0 text-emerald-500" />
+                        )}
+                        <span className="min-w-0 flex-1 truncate text-xs text-foreground">
+                          {sandboxDisplayName(inst)}
+                        </span>
+                        <span
+                          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${statusPillClasses(status)}`}
+                        >
+                          {STATUS_LABELS[status]}
+                        </span>
+                      </button>
+                      <PencilTapButton
+                        variant="transparent"
+                        ariaLabel={`Rename ${sandboxDisplayName(inst)}`}
+                        tooltip={
+                          inst.name?.trim() ? "Rename" : "Name this sandbox"
+                        }
+                        onClick={() => {
+                          setEditingId(inst.id);
+                          setNameDraft(inst.name ?? "");
+                          setNameError(null);
+                        }}
+                      />
+                      <ExternalLinkTapButton
+                        variant="transparent"
+                        ariaLabel={`Open files in ${sandboxDisplayName(inst)} in a new tab`}
+                        tooltip="Open in Code · new tab"
+                        href={`/code?sandbox=${encodeURIComponent(inst.id)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      />
+                    </div>
+                  )}
+                </div>
               );
             })
           )}

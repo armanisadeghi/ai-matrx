@@ -19,6 +19,7 @@
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/utils/supabase/server";
+import { sandboxDisplayName } from "@/lib/sandbox/format";
 import { filesDb } from "@/features/files/filesDb";
 
 const DEVICE_FRESHNESS_WINDOW_MS = 10 * 60 * 1000;
@@ -109,7 +110,7 @@ export async function GET() {
     sandboxes.push({
       id: String(row.id),
       kind: tier,
-      name: row.name?.trim() || config.template || row.sandbox_id || "Sandbox",
+      name: sandboxDisplayName(row),
       status: row.status ?? "stopped",
       is_online: row.status === "running" || row.status === "ready",
       is_this_device: false,

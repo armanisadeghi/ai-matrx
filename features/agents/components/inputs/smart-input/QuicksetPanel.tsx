@@ -6,6 +6,7 @@
  * delegates to the same Redux actions/components as its full tab counterpart.
  */
 
+import { useComputeTargets } from "@/hooks/sandbox/use-compute-targets";
 import { useEffect, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -204,6 +205,7 @@ export function QuicksetPanel({
   const surfaceTools = useAppSelector(
     selectInstanceClientTools(conversationId),
   );
+  const { data: computeTargets } = useComputeTargets();
   const sandboxBinding = useAppSelector((state) => {
     const conversation = state.conversations.byConversationId[conversationId];
     const surfaceBinding = conversation?.sourceFeature
@@ -376,6 +378,9 @@ export function QuicksetPanel({
       <PickerRow
         label="Agent Sandbox"
         summary={
+          computeTargets?.targets.find(
+            (target) => target.id === sandboxBinding?.rowId,
+          )?.name ??
           sandboxBinding?.name ??
           sandboxBinding?.proxyUrl.match(/\/sandboxes\/([^/]+)/)?.[1] ??
           (sandboxBinding

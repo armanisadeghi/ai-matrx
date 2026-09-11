@@ -21,6 +21,13 @@ import type {
 
 export type { ComputeTarget, ComputeTargetListResponse };
 
+const COMPUTE_TARGETS_CHANGED = "matrx:compute-targets-changed";
+
+/** Refresh mounted pickers after a successful sandbox mutation. */
+export function notifyComputeTargetsChanged(): void {
+  window.dispatchEvent(new Event(COMPUTE_TARGETS_CHANGED));
+}
+
 export interface ComputeTargetRef {
   rowId: string;
   kind: "ec2" | "hosted" | "local-pc";
@@ -64,7 +71,16 @@ export function useComputeTargets(): UseComputeTargetsResult {
   }, []);
 
   useEffect(() => {
-    void refetch();
+    const refresh = () => {
+      void refetch();
+    };
+    refresh();
+    window.addEventListener(COMPUTE_TARGETS_CHANGED, refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.removeEventListener(COMPUTE_TARGETS_CHANGED, refresh);
+      window.removeEventListener("focus", refresh);
+    };
   }, [refetch]);
 
   return { data, loading, error, refetch };

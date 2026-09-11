@@ -60,7 +60,7 @@ function TargetChip({
           type="button"
           onClick={onSelect}
           className={cn(
-            "inline-flex h-5 max-w-[7.5rem] min-w-0 items-center gap-1 rounded-full px-1.5 transition-colors",
+            "inline-flex h-5 max-w-[10rem] min-w-0 items-center gap-1 rounded-full px-1.5 transition-colors",
             isBound
               ? "bg-muted/80 hover:bg-muted"
               : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
@@ -90,9 +90,8 @@ function TargetChip({
         </button>
       </TooltipTrigger>
       <TooltipContent side="top">
-        {isBound
-          ? `${kindLabel} connected — click to manage`
-          : `Use ${kindLabel}: ${target.name}`}
+        {`${kindLabel}: ${target.name}${target.sandbox_id ? ` · ${target.sandbox_id}` : ""}`}
+        {isBound ? " — click to manage" : " — click to connect"}
       </TooltipContent>
     </Tooltip>
   );
