@@ -31,8 +31,9 @@
 #   ./scripts/release.sh --major      # major bump
 #   ./scripts/release.sh --message "document shared OAuth"
 #       → commit "release: vX.Y.Z - document shared OAuth"
-#   ./scripts/release.sh --ship --message "Added chat surface"
-#       → one commit of working tree + bump (used by ./ship.sh)
+#   ./scripts/release.sh --ship --message "Added chat surface" -- features/chat lib/x.ts
+#       → one commit of the NAMED paths + bump (used by ./ship.sh). Paths after
+#         `--` are the only content that enters the commit.
 #   ./scripts/release.sh --dry-run    # preview without changes
 #   ./scripts/release.sh --no-migrate # skip applying FE migrations
 #   ./scripts/release.sh --no-gates   # skip advisory quality gates after push
@@ -55,9 +56,25 @@
 # Each project carries a MATRX_BUILD_TARGET env var (main|admin|demos) the
 # ignore script matches against, so untargeted projects never rebuild.
 #
-# Dirty working tree: plain release IGNORES uncommitted changes (bumps + pushes
-# what is already committed). Only a remote sync that must FF/rebase will refuse
-# a dirty tree. ./ship.sh (--ship) folds the working tree into the release commit.
+# 🚨 THE RELEASE-COMMIT CONTENT LAW (scripts/release-stage.sh): a release never
+# ships content no one committed. This checkout is shared by dozens of lanes,
+# so the working tree and the index always hold someone else's half-written
+# files. The release commit therefore contains EXACTLY the version files plus
+# the paths the invoker NAMED after `--` — staged and committed by pathspec,
+# never `git add -A`, never "whatever is staged". Every other dirty path is
+# left exactly as its owner left it. Release v0.4.1575 (2026-08-31) was built
+# from a sweep that carried another lane's mid-edit import to a module that did
+# not exist; production broke until 6d07c466b2. aidream's release.sh commits
+# the same pathspec-scoped way, so the convention is one across both repos.
+#   Plain release: commits ONLY package.json (+ package-lock.json); a dirty tree
+#     is normal and never blocks; nothing foreign is staged, unstaged, or moved.
+#   --ship (./ship.sh): commits the version files + the named paths. A dirty
+#     tree with NO named paths is refused — the script cannot know which dirt is
+#     yours, and guessing is the defect. Tree-wide specs (`.`, `:/`, `*`) are
+#     refused by name. --dry-run prints the exact file list the commit would
+#     carry and the dirty paths it would leave behind.
+#   The primitive proves itself failing-then-passing on every --ship run
+#   (`pnpm check:ship-stage:self-test`), before anything is committed.
 #
 # General quality gates (doctrine, UI primitives, …) stay ADVISORY — they scream
 # loudly and never block the ship. Pattern Patrol delivery authorization is a
@@ -176,6 +193,9 @@ DRY_RUN=false
 NO_MIGRATE=false
 NO_GATES=false
 SHIP_MODE=false
+# --ship: the ONLY content the release commit may carry besides the version
+# files. Filled from the arguments after `--`. See THE RELEASE-COMMIT CONTENT LAW.
+SHIP_PATHS=()
 # Which Vercel project(s) this release should build (deployment split 2026-07):
 #   main  → ai-matrx (aimatrx.com)                — commit prefix `release:`
 #   admin → ai-matrx-manage (manage.aimatrx.com)  — commit prefix `release-admin:`
@@ -205,11 +225,20 @@ while [[ $# -gt 0 ]]; do
             esac
             shift 2 ;;
         -h|--help)
-            grep '^#' "$0" | head -45 | sed 's/^# \?//'
+            grep '^#' "$0" | head -70 | sed 's/^# \?//'
             exit 0 ;;
-        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --target, --dry-run, --no-migrate, or --no-gates." ;;
+        --)
+            # Everything after `--` is a pathspec the invoker owns (--ship only).
+            shift
+            SHIP_PATHS=("$@")
+            break ;;
+        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --target, --dry-run, --no-migrate, --no-gates, or -- <paths you own>." ;;
     esac
 done
+
+if [[ ${#SHIP_PATHS[@]} -gt 0 ]] && ! $SHIP_MODE; then
+    fail "Paths after '--' only mean something with --ship (./ship.sh). A plain release commits package.json only."
+fi
 
 if $SHIP_MODE && [[ -z "$CUSTOM_MESSAGE" ]]; then
     fail "--ship requires --message (./ship.sh passes it)."
@@ -217,6 +246,12 @@ fi
 
 # ── Pre-flight checks ────────────────────────────────────────────────────────
 [[ -f "$VERSION_FILE" ]] || fail "$VERSION_FILE not found."
+
+# THE RELEASE-COMMIT CONTENT LAW lives in one file and proves itself before a
+# --ship run may commit anything. Sourced here so the commit step and the
+# dry-run preview use the same primitive the self-test exercised.
+# shellcheck source=scripts/release-stage.sh
+source "$SCRIPT_DIR/release-stage.sh"
 
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 [[ "$CURRENT_BRANCH" == "$BRANCH" ]] \
@@ -270,6 +305,33 @@ if ! $DRY_RUN; then
     info "Claiming the serialized delivery lane..."
     acquire_delivery_lease
     ok "Delivery lane claimed."
+fi
+
+# --ship must know whose dirt it is shipping. With a dirty tree and no named
+# paths there is no honest answer, and guessing (a sweep) is the v0.4.1575
+# defect — so refuse, and say exactly what is dirty so the invoker can name
+# theirs. A clean tree with no paths is a bump-only release, which is fine.
+if $SHIP_MODE; then
+    if [[ ${#SHIP_PATHS[@]} -gt 0 ]]; then
+        release_stage_validate_paths ${SHIP_PATHS[@]+"${SHIP_PATHS[@]}"} \
+            || fail "--ship was given a pathspec it cannot commit (see above). Nothing has been changed."
+    elif working_tree_dirty; then
+        echo "" >&2
+        git status --short --untracked-files=all | sed 's/^/    /' >&2
+        echo "" >&2
+        fail "--ship with a dirty tree needs the paths YOU own, after '--':
+    ./ship.sh \"$CUSTOM_MESSAGE\" -- <file-or-dir> [more...]
+The tree above holds other lanes' work too; release.sh will not guess which of
+it is yours, and it never sweeps (THE RELEASE-COMMIT CONTENT LAW,
+scripts/release-stage.sh). Nothing has been changed."
+    fi
+    info "Proving the release-commit staging primitive (self-test)..."
+    if bash "$SCRIPT_DIR/release-stage.sh" --self-test >/dev/null 2>&1; then
+        ok "release-stage self-test passed (sweep reproduced, then excluded)."
+    else
+        bash "$SCRIPT_DIR/release-stage.sh" --self-test || true
+        fail "release-stage self-test FAILED — the staging primitive cannot be trusted to exclude foreign edits. Nothing has been changed."
+    fi
 fi
 
 if [[ "$LOCAL_SHA" == "$REMOTE_SHA" ]]; then
@@ -555,6 +617,10 @@ else
     COMMIT_MSG="${PREFIX} ${NEW_TAG}"
 fi
 
+# The version files are the only content a release commit carries on its own.
+RELEASE_VERSION_FILES=("$VERSION_FILE")
+[[ -f package-lock.json ]] && RELEASE_VERSION_FILES+=(package-lock.json)
+
 # ── Preview ──────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}  ${PROJECT_NAME} release${NC}"
@@ -572,6 +638,7 @@ echo ""
 if $DRY_RUN; then
     preview "Would update version in $VERSION_FILE: $CURRENT_VERSION → $NEW_VERSION"
     preview "Would commit: '$COMMIT_MSG'"
+    release_stage_preview "${RELEASE_VERSION_FILES[@]}" -- ${SHIP_PATHS[@]+"${SHIP_PATHS[@]}"}
     preview "Would create tag: $NEW_TAG"
     preview "Would push to $REMOTE/$BRANCH"
     echo ""
@@ -583,24 +650,21 @@ fi
 npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version >/dev/null 2>&1
 ok "$VERSION_FILE → $NEW_VERSION"
 
-# ── Commit ───────────────────────────────────────────────────────────────────
-# --ship (./ship.sh): one commit = working tree + version bump.
-# Plain release: only the version files — leave any dirty tree alone.
+# ── Commit (THE RELEASE-COMMIT CONTENT LAW — scripts/release-stage.sh) ───────
+# One pathspec-scoped commit: the version files, plus (--ship) the paths the
+# invoker named. `git commit -- <paths>` takes the working-tree content of
+# those paths only and disregards every other path, staged or not — so
+# another lane's `git add` cannot ride along, and nothing foreign is touched
+# (the old `git reset HEAD -- .` that unstaged their work is gone too).
 info "Committing..."
-if $SHIP_MODE; then
-    git add -A
-else
-    # Don't suck unrelated staged files into the version bump commit.
-    git reset -q HEAD -- . 2>/dev/null || true
-    git add package.json
-    [[ -f package-lock.json ]] && git add package-lock.json
-fi
-if git diff --cached --quiet; then
-    fail "Nothing to commit after version bump (unexpected)."
-fi
-git commit -m "$COMMIT_MSG"
+release_stage_commit "$COMMIT_MSG" "${RELEASE_VERSION_FILES[@]}" -- ${SHIP_PATHS[@]+"${SHIP_PATHS[@]}"} \
+    || fail "Release commit failed (see above)."
 echo ""
-ok "Committed: '$COMMIT_MSG'"
+ok "Committed: '$COMMIT_MSG' — $(git show --stat --format= HEAD | grep -c '|') file(s):"
+git show --stat --format= HEAD | grep '|' | sed 's/^/    /'
+if working_tree_dirty; then
+    info "Left uncommitted (not named, not yours to ship): $(git status --porcelain --untracked-files=all | wc -l | tr -d ' ') path(s)."
+fi
 
 # --ship materializes the dirty tree only at the commit above. Check again now
 # so report/run files and any patrol trailers in that new commit cannot bypass

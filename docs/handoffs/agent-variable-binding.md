@@ -102,7 +102,7 @@ Nothing consumes the endpoint yet. Build it into `/administration/mandates`:
 - Feed real code truth into `computeRebindImpact`'s `codeSuppliedVariables` seam (built for this),
   sharpening the guard from "what the current agent declares" to "what the code actually passes".
 
-Loud, never blocking. No JSON fields. Verify in a real browser, then `./ship.sh --target admin`.
+Loud, never blocking. No JSON fields. Verify in a real browser, then `./ship.sh "msg" --target admin -- <your files>` (the release commit carries only the paths you name).
 
 ### 3. Backfill the contracts and output promises *(blocked on #1)*
 

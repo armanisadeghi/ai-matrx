@@ -105,6 +105,44 @@ interface Claim {
 
 const claims: Claim[] = [
   {
+    id: "release-commit-content-law",
+    claim:
+      "a release never ships content no one committed — release.sh/ship.sh commit by pathspec through scripts/release-stage.sh, never git add -A, and the primitive self-tests",
+    where: "CLAUDE.md § Release",
+    check: () => {
+      const problems: string[] = [];
+      const release = read("scripts/release.sh");
+      const ship = read("ship.sh");
+      if (!existsSync(join(ROOT, "scripts/release-stage.sh"))) {
+        problems.push("scripts/release-stage.sh does not exist");
+      }
+      for (const [name, body] of [["scripts/release.sh", release], ["ship.sh", ship]] as const) {
+        // Only executable lines count: the header comments name the banned form on purpose.
+        const code = body.split("\n").filter((l) => !/^\s*#/.test(l)).join("\n");
+        if (/git\s+add\s+(-A|--all|\.)(\s|$)/.test(code) || /git\s+commit\s+-a(\s|$)/.test(code)) {
+          problems.push(`${name} stages the whole tree (git add -A / git commit -a)`);
+        }
+        if (/git\s+reset\s+(-q\s+)?HEAD\s+--\s+\.(\s|$)/.test(code)) {
+          problems.push(`${name} unstages other lanes' index entries (git reset HEAD -- .)`);
+        }
+      }
+      if (!/source\s+"\$SCRIPT_DIR\/release-stage\.sh"/.test(release)) {
+        problems.push("scripts/release.sh does not source scripts/release-stage.sh");
+      }
+      if (!/release_stage_commit\s+"\$COMMIT_MSG"/.test(release)) {
+        problems.push("scripts/release.sh does not commit through release_stage_commit");
+      }
+      if (!/release-stage\.sh"\s+--self-test/.test(release)) {
+        problems.push("scripts/release.sh does not run the release-stage self-test before a --ship commit");
+      }
+      if (PKG.scripts?.["check:ship-stage:self-test"] !== "bash scripts/release-stage.sh --self-test") {
+        problems.push(`package.json check:ship-stage:self-test is ${JSON.stringify(PKG.scripts?.["check:ship-stage:self-test"])}`);
+      }
+      return problems.length > 0 ? problems.join("; ") : null;
+    },
+    fix: "Keep every release commit pathspec-scoped through scripts/release-stage.sh (release v0.4.1575 shipped another lane's mid-edit broken import because --ship did git add -A). Never reintroduce a tree-wide stage; update CLAUDE.md § Release in the same commit as any change here.",
+  },
+  {
     id: "unwired-detector-wiring",
     claim:
       "pnpm check:unwired exists and is advisory in run-release-gates.sh in both modes",

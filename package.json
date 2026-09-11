@@ -17,6 +17,7 @@
     "check:parse:fix": "node scripts/check-parse.mjs --fix",
     "check:parse:advisory": "node scripts/check-parse.mjs --advisory",
     "check:parse:self-test": "node scripts/check-parse.mjs --self-test",
+    "check:ship-stage:self-test": "bash scripts/release-stage.sh --self-test",
     "measure:strict": "tsx scripts/measure-strict-flags.ts",
     "start": "next start",
     "lint": "eslint .",
