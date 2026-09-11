@@ -31,6 +31,8 @@ import {
   detectVideoMarkdown,
   detectMatrxFileMarkdown,
   isCompleteUnrecognizedXmlContainer,
+  startUnrecognizedXmlContainer,
+  type UnrecognizedXmlContainerTracker,
   normalizeCodeLanguage,
   SPECIAL_CODE_LANGUAGES,
 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
@@ -143,6 +145,7 @@ type BlockSubState =
       isAttrXml: boolean;
     }
   | { kind: "table" }
+  | { kind: "generic_xml"; tracker: UnrecognizedXmlContainerTracker }
   | {
       kind: "bare_json";
       /** Running count of `{` characters seen so far — including the opening line. */
@@ -560,6 +563,13 @@ export class StreamBlockAccumulator {
       this.processLine(this.pendingLineFragment, dispatch);
       this.pendingLineFragment = "";
     }
+    // An unknown XML opener gains XML chrome only after its matching close.
+    // A truncated/malformed stream must keep its bytes on the ordinary text
+    // path, matching the one-shot splitter's incomplete-container behavior.
+    if (this.subState.kind === "generic_xml") {
+      this.currentBlockType = "text";
+      this.subState = { kind: "none" };
+    }
     // If the stream ended while still inside a bare JSON block (unbalanced braces),
     // run a final type detection pass so we at least get the right block type.
     if (this.subState.kind === "bare_json") {
@@ -662,7 +672,9 @@ export class StreamBlockAccumulator {
     // the literal closing tag / fence line — streamed on as plain text: the
     // "`</thinking>` drops to the bottom of the message as text" bug.
     const openRegion =
-      this.subState.kind === "xml_tag" || this.subState.kind === "code_fence"
+      this.subState.kind === "xml_tag" ||
+      this.subState.kind === "code_fence" ||
+      this.subState.kind === "generic_xml"
         ? this.subState
         : null;
 
@@ -677,7 +689,7 @@ export class StreamBlockAccumulator {
       this.openBlock(
         openRegion.kind === "xml_tag"
           ? mapXmlTagToBlockType(openRegion.tagName)
-          : this.currentBlockType,
+          : "code",
         dispatch,
       );
       // Same region, fresh block: the closing tag / fence detection in
@@ -701,6 +713,29 @@ export class StreamBlockAccumulator {
     // If we're inside a multi-line sub-state, delegate to the appropriate handler
     if (this.subState.kind !== "none") {
       this.processSubStateLine(rawLine, trimmed, dispatch);
+      return;
+    }
+
+    // Generic XML is a container, not markdown surrounding independently
+    // renderable children. Start it before table/fence/JSON classification so
+    // its complete source reaches XmlBlock intact.
+    const genericXml = startUnrecognizedXmlContainer(rawLine);
+    if (genericXml) {
+      this.closeCurrentBlock(dispatch);
+      this.openBlock("code", dispatch);
+      this.subState = { kind: "generic_xml", tracker: genericXml.tracker };
+      const source = rawLine.slice(genericXml.rootStart);
+      const rootEnd = genericXml.tracker.consumeLine(source);
+      if (rootEnd === null) {
+        this.appendToCurrentBlock(source);
+      } else {
+        this.appendToCurrentBlock(source.slice(0, rootEnd));
+        this.closeCurrentBlock(dispatch);
+        this.subState = { kind: "none" };
+        this.openBlock("text", dispatch);
+        const remainder = source.slice(rootEnd).trim();
+        if (remainder) this.processLine(remainder, dispatch);
+      }
       return;
     }
 
@@ -1125,6 +1160,21 @@ export class StreamBlockAccumulator {
             this.processLine(remainder, dispatch);
           }
         }
+        return;
+      }
+
+      case "generic_xml": {
+        const rootEnd = this.subState.tracker.consumeLine(rawLine);
+        if (rootEnd === null) {
+          this.appendToCurrentBlock(rawLine);
+          return;
+        }
+        this.appendToCurrentBlock(rawLine.slice(0, rootEnd));
+        this.closeCurrentBlock(dispatch);
+        this.subState = { kind: "none" };
+        this.openBlock("text", dispatch);
+        const remainder = rawLine.slice(rootEnd).trim();
+        if (remainder) this.processLine(remainder, dispatch);
         return;
       }
 
@@ -1651,7 +1701,8 @@ export class StreamBlockAccumulator {
       if (
         this.subState.kind === "none" ||
         this.subState.kind === "code_fence" ||
-        this.subState.kind === "bare_json"
+        this.subState.kind === "bare_json" ||
+        this.subState.kind === "generic_xml"
       ) {
         // HOLD a nascent bare-JSON object: a fresh-block fragment that opens
         // with `{` may become a JSON region the instant its first `"key":`
@@ -1681,6 +1732,10 @@ export class StreamBlockAccumulator {
     }
 
     if (!content && status === "streaming") return;
+    // A generic XML container can close on its final line and open a fresh
+    // text slot for a possible same-line/next-line remainder. Do not persist a
+    // never-used empty slot at stream end.
+    if (!content && status === "complete" && !this.currentBlockEmitted) return;
 
     this.emitCount++;
 
@@ -1812,6 +1867,9 @@ export class StreamBlockAccumulator {
       return this.subState.language
         ? { language: this.subState.language }
         : null;
+    }
+    if (this.subState.kind === "generic_xml") {
+      return { language: "xml" };
     }
     if (this.subState.kind === "bare_json") {
       // Same rule: only include language metadata for untyped code blocks.

@@ -201,3 +201,50 @@ describe("unrecognized XML fallback", () => {
     ]);
   });
 });
+
+describe("unrecognized XML accumulator container boundaries", () => {
+  const accumulated = (source: string) => {
+    const latestById = new Map<string, RenderBlockPayload>();
+    const accumulator = new StreamBlockAccumulator(
+      "xml-boundary-test",
+      (payload) => {
+        latestById.set(payload.block.blockId, payload.block);
+        return payload;
+      },
+    );
+    const dispatch = (action: unknown) => action;
+    for (const line of source.split("\n"))
+      accumulator.ingest(`${line}\n`, dispatch);
+    accumulator.finalize(dispatch);
+    return [...latestById.values()]
+      .filter((block) => block.content)
+      .sort((a, b) => a.blockIndex - b.blockIndex)
+      .map(renderBlockToContentBlock);
+  };
+
+  it.each([
+    ["GFM table", "| a | b |\n| - | - |\n| 1 | 2 |"],
+    ["fenced code", "```js\nconst literal = '</custom>';\n```"],
+    [
+      "comment and CDATA",
+      "<!-- </custom> -->\n<![CDATA[</custom>]]>\n`</custom>`",
+    ],
+  ])("keeps %s inside the generic XML container", (_name, body) => {
+    const source = `<custom><inner>\n${body}\n</inner></custom>`;
+    const live = accumulated(source);
+    expect(live).toEqual([
+      expect.objectContaining({
+        type: "code",
+        content: source,
+        language: "xml",
+      }),
+    ]);
+  });
+
+  it("keeps an incomplete generic XML payload lossless on the text path", () => {
+    const source = "<custom>\n| a | b |\n| - | - |";
+    expect(accumulated(source)).toEqual([
+      expect.objectContaining({ type: "text", content: source }),
+    ]);
+  });
+});

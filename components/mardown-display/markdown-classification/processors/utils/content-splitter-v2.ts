@@ -867,75 +867,152 @@ function detectXmlBlockType(
  * inline angle-bracket prose and incomplete streaming text on the markdown path.
  * Curated raw HTML remains on its existing sanitized HTML path.
  */
+export interface UnrecognizedXmlContainerTracker {
+  readonly rootTag: string;
+  consumeLine(line: string, startOffset?: number): number | null;
+}
+
+interface UnrecognizedXmlStart {
+  tracker: UnrecognizedXmlContainerTracker;
+  rootStart: number;
+}
+
+/**
+ * Stateful scanner shared by the one-shot splitter and incremental stream host.
+ * It only balances the unknown root tag and deliberately ignores lookalike tags
+ * inside fenced code, inline code spans, comments, and CDATA.
+ */
+class XmlContainerTracker implements UnrecognizedXmlContainerTracker {
+  private depth = 0;
+  private inComment = false;
+  private inCdata = false;
+  private inlineTicks = 0;
+  private fenceTicks = 0;
+
+  constructor(readonly rootTag: string) {}
+
+  consumeLine(line: string, startOffset = 0): number | null {
+    const trimmed = line.trimStart();
+    const fence = /^(\`{3,})/.exec(trimmed);
+    if (fence && !this.inComment && !this.inCdata && this.inlineTicks === 0) {
+      const ticks = fence[1].length;
+      if (this.fenceTicks === 0) {
+        this.fenceTicks = ticks;
+        return null;
+      }
+      if (ticks >= this.fenceTicks) this.fenceTicks = 0;
+      return null;
+    }
+    if (this.fenceTicks > 0) return null;
+
+    for (let i = startOffset; i < line.length; i++) {
+      if (this.inComment) {
+        const end = line.indexOf("-->", i);
+        if (end === -1) return null;
+        this.inComment = false;
+        i = end + 2;
+        continue;
+      }
+      if (this.inCdata) {
+        const end = line.indexOf("]]>", i);
+        if (end === -1) return null;
+        this.inCdata = false;
+        i = end + 2;
+        continue;
+      }
+      if (line.startsWith("<!--", i)) {
+        this.inComment = true;
+        i += 3;
+        continue;
+      }
+      if (line.startsWith("<![CDATA[", i)) {
+        this.inCdata = true;
+        i += 8;
+        continue;
+      }
+      if (line[i] === "`") {
+        let end = i;
+        while (line[end] === "`") end++;
+        const ticks = end - i;
+        if (this.inlineTicks === 0) this.inlineTicks = ticks;
+        else if (ticks === this.inlineTicks) this.inlineTicks = 0;
+        i = end - 1;
+        continue;
+      }
+      if (this.inlineTicks > 0 || line[i] !== "<") continue;
+      const tag =
+        /^<\/?([A-Za-z][\w.-]*)(?:\s+(?:[\w.-]+\s*=\s*(?:"[^"]*"|'[^']*')\s*)*)?(\/?)>/.exec(
+          line.slice(i),
+        );
+      if (!tag) continue;
+      const tagEnd = i + tag[0].length;
+      if (tag[1] === this.rootTag) {
+        if (tag[0].startsWith("</")) this.depth--;
+        else if (tag[2] !== "/") this.depth++;
+        if (this.depth === 0) return tagEnd;
+      }
+      i = tagEnd - 1;
+    }
+    return null;
+  }
+}
+
+/** Starts a line-leading generic XML container, after known/raw-HTML ownership. */
+export function startUnrecognizedXmlContainer(
+  line: string,
+): UnrecognizedXmlStart | null {
+  const firstTrimmed = line.trimStart();
+  const openingMatch = firstTrimmed.match(
+    /^<([A-Za-z][\w.-]*)(?:\s+(?:[\w.-]+\s*=\s*(?:"[^"]*"|'[^']*')\s*)*)?(\/?)>/,
+  );
+  if (!openingMatch) return null;
+  const rootTag = openingMatch[1];
+  if (
+    KNOWN_XML_TAG_NAMES.has(rootTag) ||
+    ALLOWED_RAW_HTML_TAGS.has(rootTag.toLowerCase())
+  )
+    return null;
+  return {
+    tracker: new XmlContainerTracker(rootTag),
+    rootStart: line.length - firstTrimmed.length,
+  };
+}
+
+/**
+ * Extract a complete generic XML element using the same incremental scanner
+ * that owns the live stream boundary.
+ */
 function extractUnrecognizedXmlBlock(
   startIndex: number,
   lines: string[],
 ): ExtractionResult | null {
   const firstLine = normalizeLine(lines[startIndex]);
-  const firstTrimmed = firstLine.trimStart();
-  const openingMatch = firstTrimmed.match(
-    /^<([A-Za-z][\w.-]*)(?:\s+(?:[\w.-]+\s*=\s*(?:"[^"]*"|'[^']*')\s*)*)?(\/?)>/,
-  );
-  if (!openingMatch) return null;
-
-  const rootTag = openingMatch[1];
-  if (
-    KNOWN_XML_TAG_NAMES.has(rootTag) ||
-    ALLOWED_RAW_HTML_TAGS.has(rootTag.toLowerCase())
-  ) {
-    return null;
-  }
-
-  const rootStart = firstLine.length - firstTrimmed.length;
-  let depth = 0;
-  let sawRoot = false;
-
+  const start = startUnrecognizedXmlContainer(firstLine);
+  if (!start) return null;
+  const { tracker, rootStart } = start;
   for (let lineIndex = startIndex; lineIndex < lines.length; lineIndex++) {
     const currentLine = normalizeLine(lines[lineIndex]);
-    STRICT_XML_TAG_PATTERN.lastIndex =
-      lineIndex === startIndex ? rootStart : 0;
-
-    let tagMatch: RegExpExecArray | null;
-    while (
-      (tagMatch = STRICT_XML_TAG_PATTERN.exec(currentLine)) !== null
-    ) {
-      if (tagMatch[2] !== rootTag) continue;
-
-      const isClosing = tagMatch[1] === "/";
-      const isSelfClosing = tagMatch[3] === "/";
-      if (isClosing) {
-        depth--;
-      } else {
-        sawRoot = true;
-        if (!isSelfClosing) depth++;
-      }
-
-      if (!sawRoot || depth !== 0) continue;
-
-      const rootEnd = tagMatch.index + tagMatch[0].length;
-      const contentLines =
-        lineIndex === startIndex
-          ? [currentLine.slice(rootStart, rootEnd)]
-          : [
-              firstLine.slice(rootStart),
-              ...lines
-                .slice(startIndex + 1, lineIndex)
-                .map(normalizeLine),
-              currentLine.slice(0, rootEnd),
-            ];
-      const remainder = currentLine.slice(rootEnd).trim();
-      if (remainder) {
-        lines.splice(lineIndex + 1, 0, remainder);
-      }
-
-      return {
-        content: contentLines.join("\n").trim(),
-        nextIndex: lineIndex + 1,
-        metadata: { isComplete: true },
-      };
-    }
+    const rootEnd = tracker.consumeLine(
+      currentLine,
+      lineIndex === startIndex ? rootStart : 0,
+    );
+    if (rootEnd === null) continue;
+    const contentLines =
+      lineIndex === startIndex
+        ? [currentLine.slice(rootStart, rootEnd)]
+        : [
+            firstLine.slice(rootStart),
+            ...lines.slice(startIndex + 1, lineIndex).map(normalizeLine),
+            currentLine.slice(0, rootEnd),
+          ];
+    const remainder = currentLine.slice(rootEnd).trim();
+    if (remainder) lines.splice(lineIndex + 1, 0, remainder);
+    return {
+      content: contentLines.join("\n").trim(),
+      nextIndex: lineIndex + 1,
+      metadata: { isComplete: true },
+    };
   }
-
   return null;
 }
 
