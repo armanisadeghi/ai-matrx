@@ -18,7 +18,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { detectResultShape, type ResultMediaElement } from "./shape";
+import { detectResultShape, looksLikeMarkdown, type ResultMediaElement } from "./shape";
 import { ResultScalar } from "./ResultScalar";
 import { ResultMarkdown } from "./ResultMarkdown";
 import { ResultMedia } from "./ResultMedia";
@@ -100,9 +100,13 @@ const ScalarList: React.FC<{
                 {shown.map((item, i) => (
                     <li key={i} className="flex gap-2 text-sm text-foreground">
                         <span className="select-none text-muted-foreground">•</span>
-                        <span className="min-w-0 break-words">
-                            {item === null ? <span className="italic text-muted-foreground">null</span> : String(item)}
-                        </span>
+                        <div className="min-w-0 flex-1 break-words">
+                            {typeof item === "string" && looksLikeMarkdown(item) ? (
+                                <ResultMarkdown content={item} density={density} />
+                            ) : item === null ? (
+                                <span className="italic text-muted-foreground">null</span>
+                            ) : String(item)}
+                        </div>
                     </li>
                 ))}
             </ul>

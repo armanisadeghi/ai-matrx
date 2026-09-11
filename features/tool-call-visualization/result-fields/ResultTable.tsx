@@ -23,6 +23,7 @@ import {
     detectResultShape,
     humanizeEnumValue,
     isPlainObject,
+    looksLikeMarkdown,
     mediaElementHintForKey,
 } from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
@@ -217,7 +218,7 @@ function isShortScalarList(
         value.length <= CHIP_LIST_MAX_ITEMS &&
         value.every(
             (item) =>
-                (typeof item === "string" && item.length <= CHIP_LIST_MAX_CHARS) ||
+                (typeof item === "string" && item.length <= CHIP_LIST_MAX_CHARS && !looksLikeMarkdown(item)) ||
                 typeof item === "number" ||
                 typeof item === "boolean",
         )
@@ -252,7 +253,7 @@ const Cell: React.FC<{ fieldKey: string; value: unknown; depth: number; embedMed
             />
         );
     }
-    if (typeof value === "string" && value.length > LONG_CELL_CHARS) {
+    if (typeof value === "string" && value.length > LONG_CELL_CHARS && !looksLikeMarkdown(value)) {
         return <LongTextCell value={value} />;
     }
     if (typeof value === "string") {

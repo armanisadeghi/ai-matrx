@@ -2,7 +2,7 @@
 
 **Status:** `consolidated — canonical home for all tool-call UI`
 **Tier:** `1` — tools are first-class product surface, not auxiliary output
-**Last updated:** `2026-08-31`
+**Last updated:** `2026-09-11`
 
 ---
 
@@ -247,6 +247,13 @@ The `tool_ui_components` table carries a `contract_version` column:
 
 ## Authoring guide — hardcoded renderer
 
+**Nested prose uses the same formatting boundary.** `ResultValue` scalar lists use
+the shared `looksLikeMarkdown` detector and `ResultMarkdown`, just like standalone
+strings. `ResultTable` must not intercept recognized Markdown in its plain long-text
+clamp or short-list chips; nested lists retain their existing disclosure and format
+on expansion. This is static Markdown formatting, not recursive artifact recognition.
+The explicit Raw view stays literal. Guard: `result-fields/__tests__/nested-markdown.test.tsx`.
+
 See `.claude/skills/create-tool-renderer/SKILL.md` for the full workflow and `EXPANSION.md` for the current-state expansion guide (data paths, default vs custom, DB shapes). In short:
 
 1. Create `features/tool-call-visualization/renderers/<kebab-tool-name>/InlineComponent.tsx` and (optionally) `OverlayComponent.tsx`.
@@ -295,6 +302,8 @@ The consolidation (Phases 1–10) eliminated six legacy homes for tool UI:
 Historical planning and analysis docs from the pre-consolidation era have been archived at `docs/archive/tool-call-legacy/`.
 
 ## Change log
+
+- `2026-09-11` — Nested Markdown census found literal-output bypasses in scalar lists, long table text, and short table-list chips. All now reuse the existing Markdown detector/renderer; DOM guards cover both densities, object/table nesting, expansion, scalar preservation, and inert fenced artifact payloads.
 
 - `2026-09-09` — codex: **Plural media URL fields keep their element type across attachment lists.** The explicit field-name hint grammar now recognizes plural URL tokens (`urls`, `uris`, `srcs`, `hrefs`, `links`) as well as singular ones. `video_urls` therefore supplies the existing `video` hint to every durable item in its attachment list instead of leaving ID-only videos on the media client's first-render image default. Exact regression coverage uses both production file identities from the Podcast Episode run; canonical MIME/extension evidence remains authoritative.
 
