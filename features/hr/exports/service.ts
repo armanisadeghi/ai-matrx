@@ -164,11 +164,11 @@ export async function getExport(
 }
 
 /**
- * `GET /hr/exports/{export_id}/artifact` — returns the URL ENVELOPE, never bytes.
+ * `GET /hr/exports/{export_id}/artifact` — returns the REFERENCE ENVELOPE, never bytes.
  *
- * 🚨 Only `file_id` and `sha256` may be persisted from the result. `download_url`, `signed_url`,
- * `cdn_url` and `expires_at` are a handoff, not an identity (the platform's `_durable_only` rule):
- * storing an expiring URL produces a link that works in review and is dead in production.
+ * The envelope is `{file_id, sha256, download_url}` (aidream 6dfceff69). There is no
+ * `signed_url`, `cdn_url`, or `expires_at` — every field is durable, so the whole result may be
+ * persisted.
  */
 export async function getExportArtifact(
   exportId: string,

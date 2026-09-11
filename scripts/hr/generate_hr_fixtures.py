@@ -170,8 +170,6 @@ def _str_for(key, schema, case, seed):
         "location": "Los Angeles, CA", "compensation_range": "$22–$26 / hour",
         "description": "Prepare and plate dishes on the hot line.",
         "download_url": "https://cdn.aimatrx.com/hr/exports/fixture.csv",
-        "signed_url": "https://cdn.aimatrx.com/hr/exports/fixture.csv?sig=fixture",
-        "cdn_url": "https://cdn.aimatrx.com/hr/exports/fixture.csv",
         "source": "hr.work_interval.hours", "parameter": "increment_minutes",
         "floor": "15", "submitted": "30", "actor_ref": "user:jordan.rivera",
         "phone": "+1-555-0100", "recipient": "Bank of Example, Lending Dept",

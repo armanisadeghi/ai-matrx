@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * ExportArtifactDownload — the E-23 URL envelope, rendered honestly.
+ * ExportArtifactDownload — the E-23 reference envelope, rendered honestly.
  *
- * WHAT THE ENVELOPE IS: `{file_id, download_url, signed_url, cdn_url, expires_at, sha256}`.
- * 🚨 `file_id` and `sha256` are the IDENTITY; the three URLs are a HANDOFF and they EXPIRE. Only
- * the durable two may ever be persisted (the platform's `_durable_only` rule) — a stored signed
- * URL is a link that works in review and is dead in production.
+ * WHAT THE ENVELOPE IS (as of aidream 6dfceff69): `{file_id, sha256, download_url}`. There is no
+ * `signed_url`, `cdn_url`, or `expires_at` any more — `download_url` is the platform's durable,
+ * never-expiring redemption door (`{PUBLIC_URL}/files/{file_id}/download`), authenticated on
+ * every request. Every field in this envelope is safe to persist for good.
  *
  * ══ THE `a.download` FILENAME PROBLEM, AND WHICH HORN WE TOOK ══════════════════════════════════
  * `features/files/components/core/FileActions/useFileActions.ts` documents it: a signed S3 URL is
@@ -41,22 +41,6 @@ import { toast } from "@/lib/toast";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import type { ExportEnvelope } from "../types";
 
-function formatExpiry(expiresAt: string): { text: string; expired: boolean } {
-  const at = new Date(expiresAt);
-  if (Number.isNaN(at.getTime())) return { text: expiresAt, expired: false };
-  return {
-    text: at.toLocaleString(),
-    expired: at.getTime() <= Date.now(),
-  };
-}
-
-/** The first URL the envelope actually carries. Presence order matches §3.5's own listing. */
-function firstUrl(envelope: ExportEnvelope): string | null {
-  return (
-    envelope.download_url ?? envelope.signed_url ?? envelope.cdn_url ?? null
-  );
-}
-
 export function ExportArtifactDownload({
   envelope,
   /** Used only to name the saved file when the server sends no Content-Disposition. */
@@ -66,8 +50,7 @@ export function ExportArtifactDownload({
   filenameHint?: string;
 }) {
   const [busy, setBusy] = useState(false);
-  const expiry = formatExpiry(envelope.expires_at);
-  const url = firstUrl(envelope);
+  const url = envelope.download_url;
 
   const save = async () => {
     setBusy(true);
@@ -141,18 +124,11 @@ export function ExportArtifactDownload({
           />
           <CopyButton content={envelope.file_id} label="file ID" size="xs" />
         </dd>
-
-        <dt className="text-muted-foreground">Link expires</dt>
-        <dd className={expiry.expired ? "text-destructive" : "text-foreground"}>
-          {expiry.text}
-          {expiry.expired ? " — reopen this row to get a fresh link" : null}
-        </dd>
       </dl>
 
       <p className="text-xs text-muted-foreground">
-        The checksum identifies this exact file for good. The link above does
-        not — it expires, so copy the file itself rather than the link if you
-        need to keep it.
+        The checksum identifies this exact file for good. The link above is
+        durable and does not expire.
       </p>
     </div>
   );

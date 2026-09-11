@@ -512,8 +512,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Returns the URL ENVELOPE, never bytes
-         * @description Returns the URL ENVELOPE, never bytes. file_id is the identity; the URLs expire and a persisting consumer must strip them.
+         * Returns the REFERENCE envelope, never bytes
+         * @description Returns the REFERENCE envelope, never bytes. file_id is the identity and download_url is the durable, per-request-authenticated /files/{file_id}/download route — nothing expires and nothing is signed, so the whole envelope is safe to persist.
          */
         get: operations["hr_exports_artifact_get"];
         put?: never;
@@ -1326,14 +1326,11 @@ export interface components {
         ExportEnvelope: {
             /**
              * Format: uuid
-             * @description The identity. Only file_id and sha256 are safe to persist — the URLs expire (_durable_only).
+             * @description The identity AND the handle. Redeem it at the durable, per-request-authenticated download_url; the whole envelope is safe to persist.
              */
             file_id: string;
-            download_url?: string;
-            signed_url?: string;
-            cdn_url?: string;
-            /** Format: date-time */
-            expires_at: string;
+            /** @description {PUBLIC_URL}/files/{file_id}/download — durable, never expires, authenticated on every request. Never a signed URL. */
+            download_url: string;
             sha256: string;
         };
         ExportFormat: {
