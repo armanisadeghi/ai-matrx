@@ -152,6 +152,8 @@ container.
 
 ## Change log
 
+- `2026-09-11` — Sandbox rows now use a compact primary action plus an accessible overflow menu for lifecycle operations. Expanded rows are bordered and tinted as their own bounded detail surface, with a separate active treatment so inspecting a different sandbox never looks like changing the connected one.
+
 - `2026-09-11` — Sandbox Status and diagnostics report image freshness only after an exact running/current image-ID comparison. An owner can run the advertised in-place image update after an interruption warning; it preserves `/home/agent`, retains unsaved editor buffers, and recreates PTY sessions through the sandbox runtime revision. Manager and installed-tool freshness remain explicitly unknown. Verified on the admin account's owned hosted sandbox: image became current, workspace file persisted, terminal reconnected, and an existing dirty editor buffer saved successfully.
 
 - `2026-09-11` — Sandbox sidebar links to management and opens the canonical movable controls window. Window identity survives reload and diagnostics sections scroll on phones. Rebuild help accurately distinguishes configured-template recreation from image updates and explicitly identifies the account-shared home volume wipe.

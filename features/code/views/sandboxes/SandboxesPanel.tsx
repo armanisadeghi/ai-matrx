@@ -18,6 +18,7 @@ import {
   Copy,
   ExternalLink,
   Loader2,
+  MoreHorizontal,
   Plug,
   Plus,
   RefreshCw,
@@ -63,6 +64,13 @@ import {
 } from "@/components/ui/tooltip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   selectActiveSandboxId,
   selectActiveSandboxProxyUrl,
@@ -417,26 +425,29 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
           </>
         }
       />
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+      <div className="flex items-center border-b border-border px-3 py-1.5">
         <Link
           href="/sandbox"
-          className="inline-flex min-h-8 items-center gap-1.5 text-xs font-medium text-foreground hover:underline"
+          className="inline-flex min-h-8 items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
           title="Open the full sandbox management page"
         >
-          <ExternalLink size={13} /> Manage sandboxes
+          <ExternalLink size={13} /> Manage all
         </Link>
         {activeInstance && (
-          <ActionButton
-            icon={PanelsTopLeft}
-            label="Controls window"
-            description="Open controls and diagnostics for the connected sandbox without leaving your files."
-            onClick={() =>
-              openSandboxManagement({
-                sandboxId: activeInstance.id,
-                title: sandboxDisplayName(activeInstance),
-              })
-            }
-          />
+          <div className="ml-auto">
+            <ActionButton
+              icon={PanelsTopLeft}
+              label="Open connected sandbox controls"
+              description="Open controls and diagnostics for the connected sandbox."
+              onClick={() =>
+                openSandboxManagement({
+                  sandboxId: activeInstance.id,
+                  title: sandboxDisplayName(activeInstance),
+                })
+              }
+              iconOnly
+            />
+          </div>
         )}
       </div>
       {activeInstance && (
@@ -605,7 +616,17 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
   const rowClickDisabled = !isActive && (!canConnect || connecting);
 
   return (
-    <div>
+    <div
+      className={cn(
+        "mx-1 my-1 overflow-hidden rounded-md border transition-colors",
+        isExpanded
+          ? isActive
+            ? "border-primary/50 bg-primary/5"
+            : "border-border bg-muted/50"
+          : "border-transparent",
+        isActive && !isExpanded && "bg-primary/5",
+      )}
+    >
       <div
         className={cn(
           "flex w-full items-stretch gap-1 text-[12px]",
@@ -679,7 +700,7 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
         </button>
       </div>
       {isExpanded && (
-        <div className="border-b border-neutral-200 bg-neutral-50 px-3 py-2 text-[11px] dark:border-neutral-800 dark:bg-neutral-900/60">
+        <div className="border-t border-border bg-background/70 px-3 py-2 text-[11px]">
           <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 font-mono text-neutral-600 dark:text-neutral-400">
             <dt className="text-neutral-500">ID</dt>
             <dd className="truncate">{instance.id}</dd>
@@ -726,7 +747,7 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
               </>
             )}
           </dl>
-          <div className="mt-2 flex flex-wrap gap-1">
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <ActionButton
               icon={PanelsTopLeft}
               label="Controls"
@@ -737,6 +758,7 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
                   title: displayName,
                 })
               }
+              iconOnly
             />
             {!isActive && (
               <ActionButton
@@ -747,47 +769,20 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
                 primary={canConnect}
               />
             )}
-            <ActionButton
-              icon={Timer}
-              label="Extend 1 hour"
-              description="Adds one hour before this sandbox expires. Does not restart it or update its software."
-              onClick={onExtend}
-              disabled={!canExtend || busy}
-            />
-            <ActionButton
-              icon={Square}
-              label="Stop"
-              description="Stops running processes and disconnects this workspace. The persistent home volume is kept."
-              onClick={onStop}
-              disabled={!canStop || busy}
-            />
-            <ActionButton
-              icon={RotateCcw}
-              label="Rebuild…"
-              description="Replaces the container using its configured template and resources. Stops all processes; keeps /home/agent by default. Review options before continuing."
-              onClick={() => {
+            <SandboxRowActions
+              instance={instance}
+              busy={busy}
+              canExtend={canExtend}
+              canStop={canStop}
+              canReset={canReset}
+              onExtend={onExtend}
+              onStop={onStop}
+              onRebuild={() => {
                 setResetWipe(false);
                 setResetOpen(true);
               }}
-              disabled={!canReset || busy}
+              onDelete={onDelete}
             />
-            <ActionButton
-              icon={Trash2}
-              label="Delete"
-              description="Remove this sandbox. Review the deletion confirmation before continuing."
-              onClick={onDelete}
-              disabled={busy}
-              danger
-            />
-            <a
-              href={`/sandbox/${instance.id}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded border border-neutral-300 bg-white px-1.5 py-0.5 text-[10px] text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
-            >
-              <ExternalLink size={10} />
-              Open detail
-            </a>
           </div>
           {isAdmin && <RawInstanceInspector instance={instance} />}
         </div>
@@ -908,6 +903,7 @@ function ActionButton({
   disabled,
   primary,
   danger,
+  iconOnly = false,
 }: {
   icon: React.ComponentType<{ size?: number }>;
   label: string;
@@ -916,6 +912,7 @@ function ActionButton({
   disabled?: boolean;
   primary?: boolean;
   danger?: boolean;
+  iconOnly?: boolean;
 }) {
   return (
     <Tooltip>
@@ -925,8 +922,10 @@ function ActionButton({
           onClick={onClick}
           disabled={disabled}
           title={description ?? label}
+          aria-label={label}
           className={cn(
             "inline-flex min-h-8 max-lg:min-h-11 items-center gap-1 rounded border px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-50",
+            iconOnly && "w-8 justify-center px-0 max-lg:w-11",
             primary &&
               "border-blue-400 bg-blue-500 text-white hover:bg-blue-600 disabled:hover:bg-blue-500",
             danger &&
@@ -937,13 +936,75 @@ function ActionButton({
           )}
         >
           <Icon size={10} />
-          {label}
+          {iconOnly ? <span className="sr-only">{label}</span> : label}
         </button>
       </TooltipTrigger>
       <TooltipContent className="max-w-72">
         {description ?? label}
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+function SandboxRowActions({
+  instance,
+  busy,
+  canExtend,
+  canStop,
+  canReset,
+  onExtend,
+  onStop,
+  onRebuild,
+  onDelete,
+}: {
+  instance: SandboxInstance;
+  busy: boolean;
+  canExtend: boolean;
+  canStop: boolean;
+  canReset: boolean;
+  onExtend: () => void;
+  onStop: () => void;
+  onRebuild: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="More sandbox actions"
+          title="More sandbox actions"
+          className="inline-flex min-h-8 w-8 items-center justify-center rounded border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground max-lg:min-h-11 max-lg:w-11"
+        >
+          <MoreHorizontal size={16} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuItem asChild>
+          <a href={`/sandbox/${instance.id}`} target="_blank" rel="noreferrer">
+            <ExternalLink size={15} /> Open sandbox details
+          </a>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem disabled={!canExtend || busy} onClick={onExtend}>
+          <Timer size={15} /> Extend 1 hour
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!canStop || busy} onClick={onStop}>
+          <Square size={15} /> Stop sandbox
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!canReset || busy} onClick={onRebuild}>
+          <RotateCcw size={15} /> Rebuild container…
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={busy}
+          onClick={onDelete}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 size={15} /> Delete sandbox
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
