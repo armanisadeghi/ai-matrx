@@ -141,7 +141,7 @@ A DB renderer is **fully self-describing**: `display_name` → label, `header_su
 
 1. **Admin UI** — `/administration/mcp-tools/[toolId]/ui`: *Generate* tab (AI generator, prompt at `features/tool-call-visualization/admin/tool-ui-generator-prompt.ts`), *Edit Code* tab (manual + live compile errors), *Preview* tab (renders against `tool_test_sample` fixtures). Saves via `POST /api/admin/tool-ui-components` (defaults to the correct surface).
 2. **The renderer-author agent** — the AI Matrx agent specialized for this (invoke via the agent MCP / `agent_run`). Hand it the tool name + a sample result; it writes the row.
-3. **A seed migration** — idempotent `INSERT … ON CONFLICT (tool_name, surface_name) DO UPDATE` into `tool_ui` (the reference set in `migrations/tool_ui_db_renderer_examples*.sql` is the template). Apply via the Supabase MCP + record in `_schema_migrations`.
+3. **A seed migration** — idempotent `INSERT … ON CONFLICT (tool_name, surface_name) DO UPDATE` into `tool_ui` (the reference set in `migrations/tool_ui_db_renderer_examples*.sql` is the template). Apply it with `pnpm db:apply migrations/<name>.sql` (the ONE path; it records the ledger row itself).
 
 ### Verify (DB path)
 

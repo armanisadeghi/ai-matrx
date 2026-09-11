@@ -36,6 +36,6 @@ Take the old shape DOWN and bring the new one UP in ONE migration — no FE-soak
 5. De-register (only if the junction itself was registered): `DELETE FROM platform.entity_relationships WHERE child_type='<token>'`; `DELETE FROM platform.entity_types WHERE token='<token>'`.
 6. Retire, never DROP: `ALTER TABLE <schema>.<junction> SET SCHEMA graveyard`; `INSERT INTO platform.deprecated_relations(old_ref,new_ref,reason,archived_as)`.
 7. `SELECT audit.refresh()` → confirm the junction left `m2m_candidates` and no fn landed in `audit.broken_functions`; `iam.canonical_certify_ok(...)` where applicable.
-8. Apply via Supabase MCP `apply_migration`; ledger the file (`public._schema_migrations`, checksum = SHA-256 of bytes). Then `pnpm db-types` + aidream `python db/generate.py`.
+8. Apply with `pnpm db:apply migrations/<name>.sql` — the ONE path; it ledgers the file itself with the SHA-256 of the bytes it executed, so you never write that row. Then `pnpm db-types` + aidream `python db/generate.py`.
 
 **Then the FE (Recipe A) in the same change.** Before calling it done, run an **adversarial sweep** (see the campaign workflow in [`SKILL.md`](./SKILL.md)) — a fresh agent greps BOTH repos for any surviving old-shape usage (`.from("<junction>")`, the old RPC, the old column, the PostgREST embed). Old stuff must ERROR, never pass through.

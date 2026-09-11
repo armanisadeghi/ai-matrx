@@ -44,7 +44,7 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
   ```bash
   npx tsx scripts/emit-surface-sync-sql.ts --surface <client>/<local>
   ```
-  Apply the emitted SQL via Supabase MCP, then confirm the row live. (The admin button on `/administration/ui/surfaces` is the canonical path when you have a browser; it syncs the fleet, so prefer the flag when agents run in parallel.)
+  Save the emitted SQL as `migrations/<name>.sql` and apply it with `pnpm db:apply migrations/<name>.sql` (the ONE path), then confirm the row live. (The admin button on `/administration/ui/surfaces` is the canonical path when you have a browser; it syncs the fleet, so prefer the flag when agents run in parallel.)
 - MUST: `intro` describes the surface and the user, never the model's role (hardcoded-prompt law).
 - Check: `pnpm check:surface-drift` · `pnpm check:surface-routes` · `pnpm check:surface-overlays`.
 - Evidence: manifest path, `ui_surface.name`, readiness.

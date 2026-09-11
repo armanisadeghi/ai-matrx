@@ -103,9 +103,10 @@ five touch points are:
 - **Both writers produce byte-identical payloads**: client stamps on every user
   save; server stamps on every automatic capture. Neither is a "backup" of the
   other — they cover different data (e.g. desired vs observed).
-- Apply via Supabase MCP + ledger upsert (`public._schema_migrations`) + `pnpm
-  db-types` + aidream `python db/generate.py` (regenerates the ORM models —
-  never hand-edit `models_*.py`).
+- Apply with `pnpm db:apply migrations/<name>.sql` (the ONE path; it writes the
+  `public._schema_migrations` row itself), then `pnpm db-types` + aidream
+  `python db/generate.py` (regenerates the ORM models — never hand-edit
+  `models_*.py`).
 - Multi-table ALTERs deadlock against live writers holding locks in the
   opposite order — **apply one statement at a time** on hot tables.
 
