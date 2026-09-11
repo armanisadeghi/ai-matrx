@@ -25289,6 +25289,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -29677,6 +29701,30 @@ export interface paths {
          * @description One coverage verdict per mandate, for a list surface's per-row badge.
          */
         get: operations["mandate_coverage_states_mandates_coverage_states_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/{mandate_key}/provenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mandate Provenance
+         * @description Origin, Offered on, Runs and Held by for ONE Mandate.
+         *
+         *     Read-only, and honest about what it could not read: a ledger that does not
+         *     answer reports `None`, never zero — "nothing ever ran this" is a conclusion,
+         *     not a default.
+         */
+        get: operations["mandate_provenance_mandates__mandate_key__provenance_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -35879,6 +35927,35 @@ export interface paths {
         put?: never;
         /** Reload Catalog */
         post: operations["reload_catalog_admin_ai_catalog_reload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/ai-catalog/provider-models/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Provider Models
+         * @description Pull each provider's own models API into ai.provider.provider_models_cache.
+         *
+         *     The on-demand half of the daily ``provider_models_refresh`` system task —
+         *     the same service, so the admin UI's "Refresh" calls the server instead of
+         *     keeping a second copy of five provider contracts in Next.js.
+         *
+         *     A provider-level problem (no API key on this host, provider outage, no
+         *     ai.provider row) is a reported result row, not an error: the response
+         *     always names every provider and what happened to it. Only an unusable
+         *     REQUEST — a slug we have no fetcher for — is a 400.
+         */
+        post: operations["refresh_provider_models_admin_ai_catalog_provider_models_refresh_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -57017,6 +57094,33 @@ export interface components {
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /**
          * DevtoServiceStatus
          * @description Safe aggregate status projection for Devto's fixed status page.
@@ -74981,6 +75085,26 @@ export interface components {
             /** Goal Grounding */
             goal_grounding: string;
         };
+        /** MandateHolderRow */
+        MandateHolderRow: {
+            /**
+             * Rung
+             * @enum {string}
+             */
+            rung: "system" | "organization" | "user";
+            /** Holder Type */
+            holder_type: string | null;
+            /** Holder Name */
+            holder_name: string | null;
+            /** Owner Name */
+            owner_name: string | null;
+            /** Is Enabled */
+            is_enabled: boolean;
+            /** Runnable */
+            runnable: boolean;
+            /** Detail */
+            detail: string;
+        };
         /**
          * MandateInputSurfaceResponse
          * @description THE mandate's input declaration, resolved for THIS caller.
@@ -75019,6 +75143,22 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** MandateOfferRow */
+        MandateOfferRow: {
+            /** Surface */
+            surface: string;
+            /** Href */
+            href: string;
+            /**
+             * Audience
+             * @enum {string}
+             */
+            audience: "everyone" | "organization" | "admins";
+            /** Live */
+            live: boolean;
+            /** Detail */
+            detail: string;
+        };
         /**
          * MandateOption
          * @description One mandate an author can point a scenario at, with what it offers.
@@ -75048,6 +75188,51 @@ export interface components {
             offered_values?: {
                 [key: string]: components["schemas"]["JsonValue"];
             }[];
+        };
+        /** MandateOriginFacts */
+        MandateOriginFacts: {
+            /** Origin */
+            origin: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "code" | "migration" | "user" | "unknown";
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            /** Created By Name */
+            created_by_name: string | null;
+            /** Organization Name */
+            organization_name: string | null;
+            /** Code Path */
+            code_path: string | null;
+            /** Migrated From Table */
+            migrated_from_table: string | null;
+            /** Original Created At */
+            original_created_at: string | null;
+            /** Sentence */
+            sentence: string;
+        };
+        /** MandateProvenanceReport */
+        MandateProvenanceReport: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Label */
+            label: string | null;
+            origin: components["schemas"]["MandateOriginFacts"];
+            /** Offered On */
+            offered_on: components["schemas"]["MandateOfferRow"][];
+            /** Offered Sentence */
+            offered_sentence: string;
+            usage: components["schemas"]["MandateUsageFacts"];
+            /** Held By */
+            held_by: components["schemas"]["MandateHolderRow"][];
+            /** Held Sentence */
+            held_sentence: string;
+            /** Computed At */
+            computed_at: string;
         };
         /** MandateReferenceBoard */
         MandateReferenceBoard: {
@@ -75528,6 +75713,31 @@ export interface components {
             verdict_note?: string | null;
             /** Promoted To Reference At */
             promoted_to_reference_at?: string | null;
+        };
+        /** MandateUsageFacts */
+        MandateUsageFacts: {
+            /** Conversation Count */
+            conversation_count: number | null;
+            /** Request Count */
+            request_count: number | null;
+            /** First Run At */
+            first_run_at: string | null;
+            /** Last Run At */
+            last_run_at: string | null;
+            /** Runs Href */
+            runs_href: string;
+            /** Observed Attempted */
+            observed_attempted: number | null;
+            /** Observed Resolved */
+            observed_resolved: number | null;
+            /** Observed Executed */
+            observed_executed: number | null;
+            /** Observed Last At */
+            observed_last_at: string | null;
+            /** Code Reference Count */
+            code_reference_count: number;
+            /** Sentence */
+            sentence: string;
         };
         /**
          * MandateVariableVerdictRequest
@@ -88506,6 +88716,58 @@ export interface components {
             payload?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /**
+         * ProviderModelsRefreshRequest
+         * @description Which providers to refresh. Omit ``provider_slugs`` for all supported.
+         */
+        ProviderModelsRefreshRequest: {
+            /**
+             * Provider Slugs
+             * @description ai.provider.slug values to refresh (openai, anthropic, groq, google, xai). Omit or null to refresh every supported provider.
+             */
+            provider_slugs?: string[] | null;
+        };
+        /** ProviderModelsRefreshSummary */
+        ProviderModelsRefreshSummary: {
+            /** Started At */
+            started_at: string;
+            /** Refreshed */
+            refreshed: number;
+            /** Missing Key */
+            missing_key: number;
+            /** No Provider Row */
+            no_provider_row: number;
+            /** Failed */
+            failed: number;
+            /** Results */
+            results?: components["schemas"]["ProviderRefreshResult"][];
+        };
+        /**
+         * ProviderRefreshResult
+         * @description What happened for ONE provider. Every status is reported, never dropped.
+         */
+        ProviderRefreshResult: {
+            /** Provider Slug */
+            provider_slug: string;
+            /** Provider Label */
+            provider_label: string;
+            /** Provider Id */
+            provider_id?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "refreshed" | "missing_key" | "no_provider_row" | "failed";
+            /**
+             * Model Count
+             * @default 0
+             */
+            model_count?: number;
+            /** Fetched At */
+            fetched_at?: string | null;
+            /** Detail */
+            detail?: string | null;
         };
         /**
          * ProviderResultsBody
@@ -153645,6 +153907,41 @@ export interface operations {
             };
         };
     };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -161847,6 +162144,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MandateCoverageStatesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mandate_provenance_mandates__mandate_key__provenance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateProvenanceReport"];
                 };
             };
             /** @description Validation Error */
@@ -172231,6 +172559,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiCatalogReloadSummary"];
+                };
+            };
+        };
+    };
+    refresh_provider_models_admin_ai_catalog_provider_models_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ProviderModelsRefreshRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderModelsRefreshSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
