@@ -33,10 +33,7 @@ import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { acceptHrEmployeeInvite } from "@/features/hr/service";
 import { isHrDenied } from "@/features/hr/types";
-import {
-  invitationSignUpHref,
-  readInvitedEmail,
-} from "@/utils/auth/invitation-links";
+import { invitationSignUpHref } from "@/utils/auth/invitation-links";
 
 export default function AcceptEmployeeInvitationPage() {
   const params = useParams();
@@ -63,9 +60,7 @@ export default function AcceptEmployeeInvitationPage() {
         router.push(
           invitationSignUpHref(
             `/invitations/employee/accept/${token}`,
-            readInvitedEmail(
-              typeof window !== "undefined" ? window.location.search : null,
-            ),
+            token,
           ),
         );
         return;

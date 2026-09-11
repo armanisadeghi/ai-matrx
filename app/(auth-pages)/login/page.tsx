@@ -25,9 +25,10 @@ import {
   readAuthDestination,
 } from "@/utils/auth/auth-destination";
 import {
-  readInvitedEmail,
-  withInvitedEmail,
+  readInviteToken,
+  withInviteToken,
 } from "@/utils/auth/invitation-links";
+import { lookupInvitedEmail } from "@/utils/auth/invited-email-lookup";
 import { RememberedSignInHeading } from "@/features/auth/components/RememberedSignInHeading";
 
 interface SignInProps {
@@ -46,16 +47,18 @@ export default async function SignIn({ searchParams }: SignInProps) {
 
   // Carried over from an invitation link (DD-091) so someone who DOES already
   // have an account does not have to retype the invited address, and so the
-  // "Sign up" cross-link keeps it too.
-  const invitedEmail = readInvitedEmail(awaitedSearchParams);
+  // "Sign up" cross-link keeps it too. The link carries the TOKEN, never the
+  // address; the address is resolved server-side from it.
+  const inviteToken = readInviteToken(awaitedSearchParams);
+  const invitedEmail = await lookupInvitedEmail(inviteToken);
 
   // Sibling auth links carry the SAME destination forward — never a new one,
   // and never the transient error/success banner from this attempt.
-  const signUpHrefWithDest = withInvitedEmail(
+  const signUpHrefWithDest = withInviteToken(
     preserveAuthDestination("/sign-up", {
       [AUTH_DEST_PARAM]: redirectTo,
     }),
-    invitedEmail,
+    inviteToken,
   );
   const forgotHrefWithDest = preserveAuthDestination("/forgot-password", {
     [AUTH_DEST_PARAM]: redirectTo,

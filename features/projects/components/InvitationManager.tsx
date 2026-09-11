@@ -26,7 +26,6 @@ import type {
   MembershipRole,
   MembershipRoleOption,
 } from "@/components/membership/types";
-import { withInvitedEmail } from "@/utils/auth/invitation-links";
 
 interface InvitationManagerProps {
   projectId: string;
@@ -39,17 +38,15 @@ const ROLE_OPTIONS: MembershipRoleOption[] = [
   { value: "admin", label: "Admin" },
 ];
 
-function buildAcceptUrl(token: string, invitedEmail?: string | null): string {
+function buildAcceptUrl(token: string): string {
   const origin =
     typeof window !== "undefined"
       ? window.location.origin
       : "https://www.aimatrx.com";
-  // Same link the invitation email sends: it carries the invited address so a
-  // recipient with no account lands on sign-up prefilled (DD-091).
-  return withInvitedEmail(
-    `${origin}/invitations/project/accept/${token}`,
-    invitedEmail,
-  );
+  // Byte-identical to the link the invitation email sends: the TOKEN and
+  // nothing else. The invited address never travels in a URL (DD-091) — the
+  // sign-up page resolves it from the token through `inv_peek_invited_email`.
+  return `${origin}/invitations/project/accept/${token}`;
 }
 
 export function InvitationManager({
@@ -81,7 +78,7 @@ export function InvitationManager({
       const acceptUrl =
         ("acceptUrl" in result ? result.acceptUrl : undefined) ??
         (result.invitation?.token
-          ? buildAcceptUrl(result.invitation.token, email)
+          ? buildAcceptUrl(result.invitation.token)
           : undefined);
       if (acceptUrl) {
         setDeliveryNotice({

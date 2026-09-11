@@ -15,10 +15,7 @@ import type { ProjectInvitation, Project } from '@/features/projects/types';
 import type { ProjectRole } from '@/features/projects/types';
 import PageHeader from '@/features/shell/components/header/PageHeader';
 import { ChevronLeftTapButton } from '@ai-matrx/tap-target/buttons';
-import {
-  invitationSignUpHref,
-  readInvitedEmail,
-} from "@/utils/auth/invitation-links";
+import { invitationSignUpHref } from "@/utils/auth/invitation-links";
 
 type InvitationWithProject = ProjectInvitation & { project: Project };
 
@@ -56,9 +53,7 @@ export default function AcceptProjectInvitationPage() {
         router.push(
           invitationSignUpHref(
             `/invitations/project/accept/${token}`,
-            readInvitedEmail(
-              typeof window !== "undefined" ? window.location.search : null,
-            ),
+            token,
           ),
         );
         return;

@@ -5,10 +5,17 @@
  *
  * The route used to answer `{success:true, emailSent:<whatever>}` and the
  * caller threw the answer away, so a misconfigured provider produced a green
- * "Invitation sent" toast over an email nobody received. These tests drive the
- * REAL exported handler with a real `Request`; only the two external edges —
- * Supabase and the mail provider — are stood in for, and the failing edge is
- * the actual failure shape the provider returns.
+ * "Invitation sent" toast over an email nobody received.
+ *
+ * 🚨 THE FAILURES HERE ARE THE REAL ONES. `sendEmail` never returns a string
+ * error — its three failure returns are `new Error(...)` (EMAIL_FROM missing),
+ * Resend's `{name, message}`, and whatever the `catch` caught (where a missing
+ * RESEND_API_KEY lands). The first version of this test fed it a *string*, a
+ * shape the real code cannot produce, and so stayed green while the honest
+ * banner threw `Objects are not valid as a React child` in production
+ * (verification finding I1, 2026-09-11). Every case below drives the REAL
+ * exported handler with a real `Request` and one of those REAL shapes, and
+ * asserts the answer survives `JSON.stringify` as a readable sentence.
  */
 
 const sendEmail = jest.fn();
@@ -16,13 +23,13 @@ const getUser = jest.fn();
 const rpc = jest.fn();
 
 jest.mock("@/lib/email/client", () => ({
+  ...jest.requireActual("@/lib/email/error-message"),
   sendEmail: (...args: unknown[]) => sendEmail(...args),
   emailTemplates: {
-    organizationInvitation: (
-      _org: string,
-      _inviter: string,
-      url: string,
-    ) => ({ subject: "You're invited", html: `<a href="${url}">accept</a>` }),
+    organizationInvitation: (_org: string, _inviter: string, url: string) => ({
+      subject: "You're invited",
+      html: `<a href="${url}">accept</a>`,
+    }),
   },
 }));
 
@@ -55,6 +62,14 @@ function inviteRequest() {
   });
 }
 
+/** What the client actually receives: the body after a JSON round trip. */
+async function postAndReadOverTheWire() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const response = await POST(inviteRequest() as any);
+  const body = JSON.parse(JSON.stringify(await response.json()));
+  return { response, body };
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   process.env.NEXT_PUBLIC_SITE_URL = "https://www.aimatrx.com";
@@ -74,48 +89,61 @@ beforeEach(() => {
   });
 });
 
-test("REFUSAL: a failed send is never reported as a sent invitation — it answers emailSent:false with the reason and the link to hand over", async () => {
-  sendEmail.mockResolvedValue({
-    success: false,
-    error: "Resend: missing API key",
+describe.each([
+  [
+    "EMAIL_FROM missing (an Error instance)",
+    new Error("EMAIL_FROM is not configured"),
+    "EMAIL_FROM is not configured",
+  ],
+  [
+    "Resend rejected it (a {name,message} object)",
+    { name: "validation_error", message: "API key is invalid" },
+    "API key is invalid",
+  ],
+  [
+    "RESEND_API_KEY missing (the catch path, an Error instance)",
+    new Error("RESEND_API_KEY environment variable is not set"),
+    "RESEND_API_KEY environment variable is not set",
+  ],
+])("REFUSAL: %s", (_label, providerError, expectedSentence) => {
+  test("is reported as emailSent:false with a READABLE sentence and the link to hand over", async () => {
+    sendEmail.mockResolvedValue({ success: false, error: providerError });
+
+    const { response, body } = await postAndReadOverTheWire();
+
+    // The invitation ROW is good — the failure is the email, so the request
+    // succeeds and the row is never rolled back.
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.emailSent).toBe(false);
+    // The screen renders this. It MUST be a string after the wire, or React
+    // throws while drawing the honest banner.
+    expect(typeof body.emailError).toBe("string");
+    expect(body.emailError).toBe(expectedSentence);
+    expect(body.acceptUrl).toBe(
+      "https://www.aimatrx.com/invitations/organization/accept/tok-123",
+    );
   });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const response = await POST(inviteRequest() as any);
-  const body = await response.json();
-
-  // The invitation ROW is good — the failure is the email, so the request
-  // itself succeeds and the row is never rolled back.
-  expect(response.status).toBe(200);
-  expect(body.success).toBe(true);
-  // …but the screen must be able to tell the truth.
-  expect(body.emailSent).toBe(false);
-  expect(body.emailError).toContain("missing API key");
-  expect(body.acceptUrl).toBe(
-    "https://www.aimatrx.com/invitations/organization/accept/tok-123?email=dana%40example.com",
-  );
 });
 
 test("CONTROL: a real send answers emailSent:true and hands back no remedy link", async () => {
   sendEmail.mockResolvedValue({ success: true });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const response = await POST(inviteRequest() as any);
-  const body = await response.json();
+  const { response, body } = await postAndReadOverTheWire();
 
   expect(response.status).toBe(200);
   expect(body).toEqual({ success: true, emailSent: true });
   expect(sendEmail).toHaveBeenCalledTimes(1);
 });
 
-test("the emailed accept link carries the invited address, so a recipient with no account reaches sign-up prefilled", async () => {
+test("REFUSAL: the emailed accept link carries the token and NOTHING else — no address in a URL", async () => {
   sendEmail.mockResolvedValue({ success: true });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await POST(inviteRequest() as any);
 
   const [{ html }] = sendEmail.mock.calls[0] as [{ html: string }];
-  expect(html).toContain(
-    "/invitations/organization/accept/tok-123?email=dana%40example.com",
-  );
+  expect(html).toContain("/invitations/organization/accept/tok-123");
+  expect(html).not.toContain("email=");
+  expect(html).not.toContain("dana@example.com");
 });

@@ -13,9 +13,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { sendEmail, emailTemplates } from "@/lib/email/client";
+import {
+  sendEmail,
+  emailTemplates,
+  emailErrorMessage,
+} from "@/lib/email/client";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
-import { withInvitedEmail } from "@/utils/auth/invitation-links";
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,12 +90,7 @@ export async function POST(request: NextRequest) {
 
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-    // Carries the invited address so a student with no account reaches
-    // sign-up prefilled rather than a login dead end (DD-091).
-    const invitationUrl = withInvitedEmail(
-      `${siteUrl}/invitations/class/accept/${invitationToken}`,
-      recipientEmail,
-    );
+    const invitationUrl = `${siteUrl}/invitations/class/accept/${invitationToken}`;
     const expiry = invitation.expires_at
       ? new Date(invitation.expires_at)
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -116,7 +114,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         emailSent: false,
-        emailError: emailResult.error || "The email provider rejected the send",
+        emailError: emailErrorMessage(emailResult.error),
         acceptUrl: invitationUrl,
       });
     }

@@ -43,6 +43,7 @@ import {
   generateSlug,
   toOrgRole,
 } from "./types";
+import { emailErrorMessage } from "@/lib/email/error-message";
 
 // ============================================================================
 // Organization CRUD Operations
@@ -743,15 +744,17 @@ export async function inviteToOrganization(
         if (!response.ok || !payload) {
           return {
             emailSent: false,
-            emailError:
-              payload?.error ||
+            emailError: emailErrorMessage(
+              payload?.error,
               `The invitation email service answered ${response.status}`,
+            ),
           };
         }
         if (payload.emailSent === false) {
           return {
             emailSent: false,
-            emailError: payload.emailError || payload.error,
+            // The wire has no types. Coerce, or an object reaches a React child.
+            emailError: emailErrorMessage(payload.emailError ?? payload.error),
             acceptUrl: payload.acceptUrl,
           };
         }
@@ -761,10 +764,10 @@ export async function inviteToOrganization(
         console.warn("Organization invitation email send failed:", emailError);
         return {
           emailSent: false,
-          emailError:
-            emailError instanceof Error
-              ? emailError.message
-              : "The invitation email could not be sent",
+          emailError: emailErrorMessage(
+            emailError,
+            "The invitation email could not be sent",
+          ),
         };
       }
     })();
@@ -858,7 +861,7 @@ export async function resendInvitation(
         success: true,
         message: "Invitation refreshed, but the email could not be sent",
         emailSent: false,
-        emailError: result.emailError,
+        emailError: emailErrorMessage(result.emailError),
         acceptUrl: result.acceptUrl,
       };
     }

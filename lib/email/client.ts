@@ -24,19 +24,22 @@ function getResendClient(): Resend {
 export function getAllowedEmailDomains(): string[] {
   // If explicitly configured, use that
   if (process.env.EMAIL_ALLOWED_DOMAINS) {
-    return process.env.EMAIL_ALLOWED_DOMAINS.split(",").map((d) => d.trim().toLowerCase());
+    return process.env.EMAIL_ALLOWED_DOMAINS.split(",").map((d) =>
+      d.trim().toLowerCase(),
+    );
   }
-  
+
   // Otherwise, extract domain from EMAIL_FROM
   const emailFrom = process.env.EMAIL_FROM;
   if (emailFrom) {
-    const match = emailFrom.match(/<([^>]+)>/) || emailFrom.match(/([^\s<>]+@[^\s<>]+)/);
+    const match =
+      emailFrom.match(/<([^>]+)>/) || emailFrom.match(/([^\s<>]+@[^\s<>]+)/);
     if (match) {
       const domain = match[1].split("@")[1];
       if (domain) return [domain.toLowerCase()];
     }
   }
-  
+
   return [];
 }
 
@@ -55,14 +58,14 @@ export function getDefaultFromAddress(): string | undefined {
 export function isValidFromAddress(from: string): boolean {
   const allowedDomains = getAllowedEmailDomains();
   if (allowedDomains.length === 0) return true; // No restrictions if not configured
-  
+
   // Extract email from "Name <email>" format or plain email
   const match = from.match(/<([^>]+)>/) || from.match(/([^\s<>]+@[^\s<>]+)/);
   if (!match) return false;
-  
+
   const email = match[1].toLowerCase();
   const domain = email.split("@")[1];
-  
+
   return allowedDomains.includes(domain);
 }
 
@@ -83,7 +86,7 @@ export async function sendEmail(options: SendEmailOptions) {
   const { to, subject, html, text, from, replyTo } = options;
 
   const senderAddress = from || process.env.EMAIL_FROM;
-  
+
   if (!senderAddress) {
     console.error("EMAIL_FROM environment variable is not set");
     return { success: false, error: new Error("EMAIL_FROM is not configured") };
@@ -111,6 +114,8 @@ export async function sendEmail(options: SendEmailOptions) {
     return { success: false, error: err };
   }
 }
+
+export { emailErrorMessage } from "./error-message";
 
 /**
  * Escape user-controlled text before interpolating it into template HTML.
@@ -151,7 +156,7 @@ export const emailTemplates = {
     organizationName: string,
     inviterName: string,
     invitationUrl: string,
-    expiresAt: Date
+    expiresAt: Date,
   ) => ({
     subject: `You've been invited to join ${organizationName} on AI Matrx`,
     html: `
@@ -172,13 +177,13 @@ export const emailTemplates = {
     classNameRaw: string,
     inviterNameRaw: string,
     invitationUrl: string,
-    expiresAt: Date
+    expiresAt: Date,
   ) => {
     const className = escapeEmailHtml(classNameRaw);
     const inviterName = escapeEmailHtml(inviterNameRaw);
     return {
-    subject: `${inviterNameRaw} invited you to join ${classNameRaw}`,
-    html: `
+      subject: `${inviterNameRaw} invited you to join ${classNameRaw}`,
+      html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #3b82f6;">You're invited to a class</h1>
         <p><strong>${inviterName}</strong> has invited you to join <strong>${className}</strong> on AI Matrx Education.</p>
@@ -199,7 +204,7 @@ export const emailTemplates = {
     organizationName: string,
     inviterName: string,
     invitationUrl: string,
-    expiresAt: Date
+    expiresAt: Date,
   ) => ({
     subject: `You've been invited to join project "${projectName}" on AI Matrx`,
     html: `
@@ -221,7 +226,7 @@ export const emailTemplates = {
     organizationName: string,
     inviterName: string,
     invitationUrl: string,
-    expiresAt: Date
+    expiresAt: Date,
   ) => ({
     subject: `Reminder: Join project "${projectName}" on AI Matrx`,
     html: `
@@ -241,7 +246,7 @@ export const emailTemplates = {
     organizationName: string,
     inviterName: string,
     invitationUrl: string,
-    expiresAt: Date
+    expiresAt: Date,
   ) => ({
     subject: `Reminder: Join ${organizationName} on AI Matrx`,
     html: `
@@ -263,7 +268,7 @@ export const emailTemplates = {
     resourceType: string,
     resourceTitle: string,
     resourceUrl: string,
-    message?: string
+    message?: string,
   ) => ({
     subject: `${sharerName} shared a ${resourceType} with you`,
     html: `
@@ -302,7 +307,7 @@ export const emailTemplates = {
     company: string,
     useCase: string,
     requestId: string,
-    adminUrl: string
+    adminUrl: string,
   ) => ({
     subject: `New access request: ${fullName} (${company})`,
     html: `
@@ -326,7 +331,7 @@ export const emailTemplates = {
   invitationRequestApproved: (
     fullName: string,
     invitationCode: string,
-    signupUrl: string
+    signupUrl: string,
   ) => ({
     subject: "Your AI Matrx invitation request has been approved!",
     html: `
@@ -347,10 +352,7 @@ export const emailTemplates = {
     `,
   }),
 
-  invitationRequestRejected: (
-    fullName: string,
-    reason?: string
-  ) => ({
+  invitationRequestRejected: (fullName: string, reason?: string) => ({
     subject: "Update on your AI Matrx invitation request",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -385,7 +387,7 @@ export const emailTemplates = {
     email: string,
     subject: string,
     message: string,
-    submissionId: string
+    submissionId: string,
   ) => ({
     subject: `New Contact Form Submission: ${subject}`,
     html: `
@@ -423,10 +425,12 @@ export const emailTemplates = {
     description: string,
     message: string,
     senderName: string,
-    portalUrl?: string
+    portalUrl?: string,
   ) => {
     const truncatedDescription =
-      description.length > 150 ? description.slice(0, 150) + "..." : description;
+      description.length > 150
+        ? description.slice(0, 150) + "..."
+        : description;
 
     return {
       subject: `Action needed: Your ${feedbackType} report needs your review`,
@@ -471,10 +475,12 @@ export const emailTemplates = {
     description: string,
     userReply: string,
     username: string,
-    portalUrl?: string
+    portalUrl?: string,
   ) => {
     const truncatedDescription =
-      description.length > 150 ? description.slice(0, 150) + "..." : description;
+      description.length > 150
+        ? description.slice(0, 150) + "..."
+        : description;
 
     return {
       subject: `User responded to ${feedbackType} report review`,
@@ -520,7 +526,7 @@ export const emailTemplates = {
     description: string,
     status: string,
     resolutionNotes?: string,
-    portalUrl?: string
+    portalUrl?: string,
   ) => {
     const statusLabels: Record<string, string> = {
       in_progress: "In Progress",
@@ -541,7 +547,9 @@ export const emailTemplates = {
     const statusLabel = statusLabels[status] || status;
     const statusColor = statusColors[status] || "#3b82f6";
     const truncatedDescription =
-      description.length > 200 ? description.slice(0, 200) + "..." : description;
+      description.length > 200
+        ? description.slice(0, 200) + "..."
+        : description;
 
     return {
       subject: `Your ${feedbackType} report has been updated - ${statusLabel}`,

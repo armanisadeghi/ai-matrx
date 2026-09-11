@@ -81,7 +81,8 @@ function coerceJoin(data: unknown): ClassJoinResult {
 function priceCentsFromSettings(v: unknown): number | null {
   const s = rec(v);
   const raw = s.price_cents;
-  const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
+  const n =
+    typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
   return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
 }
 
@@ -196,7 +197,9 @@ function coerceMyClasses(data: unknown): MyClass[] {
 
 // ─── Reads ────────────────────────────────────────────────────────────────────
 
-export async function getClassState(classId: string): Promise<ClassAccessState> {
+export async function getClassState(
+  classId: string,
+): Promise<ClassAccessState> {
   const { data, error } = await createClient().rpc("edu_class_state", {
     p_class: classId,
   });
@@ -429,7 +432,7 @@ export async function startClassCheckout(
 // email failure never fails the invitation row).
 
 import type { ClassCodePreview } from "./types";
-import { withInvitedEmail } from "@/utils/auth/invitation-links";
+import { emailErrorMessage } from "@/lib/email/error-message";
 
 /** The class join-code page URL a teacher pastes anywhere. */
 export function classJoinUrl(code: string): string {
@@ -441,22 +444,16 @@ export function classJoinUrl(code: string): string {
 }
 
 /**
- * The accept-page URL inside a class invitation email. `invitedEmail` rides
- * along so an anonymous student reaches sign-up prefilled instead of a login
- * dead end (DD-091) — display only, it grants nothing.
+ * The accept-page URL inside a class invitation email: the TOKEN and nothing
+ * else. An anonymous student reaches sign-up prefilled because the accept page
+ * forwards the token, not because the address rides in the URL (DD-091).
  */
-export function classInviteAcceptUrl(
-  token: string,
-  invitedEmail?: string | null,
-): string {
+export function classInviteAcceptUrl(token: string): string {
   const base =
     typeof window !== "undefined"
       ? window.location.origin
       : process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-  return withInvitedEmail(
-    `${base}/invitations/class/accept/${token}`,
-    invitedEmail,
-  );
+  return `${base}/invitations/class/accept/${token}`;
 }
 
 /** Owner: the class's current join code (creates one on first call). */
@@ -555,15 +552,17 @@ export async function sendClassInviteEmail(
     if (!response.ok || !payload) {
       return {
         emailSent: false,
-        emailError:
-          payload?.error ||
+        emailError: emailErrorMessage(
+          payload?.error,
           `The invitation email service answered ${response.status}`,
+        ),
       };
     }
     if (payload.emailSent === false) {
       return {
         emailSent: false,
-        emailError: payload.emailError || payload.error,
+        // The wire has no types. Coerce, or an object reaches a React child.
+        emailError: emailErrorMessage(payload.emailError ?? payload.error),
         acceptUrl: payload.acceptUrl,
       };
     }
@@ -573,8 +572,10 @@ export async function sendClassInviteEmail(
     console.warn("Class invite email failed (invitation row still exists):", e);
     return {
       emailSent: false,
-      emailError:
-        e instanceof Error ? e.message : "The invitation email could not be sent",
+      emailError: emailErrorMessage(
+        e,
+        "The invitation email could not be sent",
+      ),
     };
   }
 }

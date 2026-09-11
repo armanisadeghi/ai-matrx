@@ -24,9 +24,10 @@ import {
   readAuthDestination,
 } from "@/utils/auth/auth-destination";
 import {
-  readInvitedEmail,
-  withInvitedEmail,
+  readInviteToken,
+  withInviteToken,
 } from "@/utils/auth/invitation-links";
+import { lookupInvitedEmail } from "@/utils/auth/invited-email-lookup";
 
 interface SignUpProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -38,12 +39,15 @@ export default async function SignUp({ searchParams }: SignUpProps) {
   console.log("Awaited search params:", awaitedSearchParams);
 
   const redirectTo = readAuthDestination(awaitedSearchParams);
-  // An invitation link brought the address it was sent to (DD-091). We prefill
-  // it and SAY why, because the invitation only opens for that exact address —
-  // guessing it was the step new colleagues were losing the flow on. The value
-  // is display-only: it grants nothing, and the field stays editable so a
-  // person whose address really differs is never locked out of signing up.
-  const invitedEmail = readInvitedEmail(awaitedSearchParams);
+  // An invitation link sent them here (DD-091). The link carries the invitation
+  // TOKEN, never the address — an address in a query string is stable PII in
+  // browser history and edge logs — so we resolve the address from the token
+  // through the one narrow anonymous-safe door. We prefill it and SAY why,
+  // because the invitation only opens for that exact address, and guessing it
+  // was the step new colleagues were losing the flow on. The field stays
+  // editable: a person whose address really differs is never locked out.
+  const inviteToken = readInviteToken(awaitedSearchParams);
+  const invitedEmail = await lookupInvitedEmail(inviteToken);
   const error = awaitedSearchParams.error as string;
   const success = awaitedSearchParams.success as string;
 
@@ -71,9 +75,9 @@ export default async function SignUp({ searchParams }: SignUpProps) {
           Already have an account?{" "}
           <Link
             className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500"
-            href={withInvitedEmail(
+            href={withInviteToken(
               preserveAuthDestination("/login", { redirectTo }),
-              invitedEmail,
+              inviteToken,
             )}
             tabIndex={-1}
           >

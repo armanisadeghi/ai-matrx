@@ -29,10 +29,7 @@ import type {
 } from "@/features/organizations/types";
 import { generateOrganizationAbbreviation } from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
-import {
-  invitationSignUpHref,
-  readInvitedEmail,
-} from "@/utils/auth/invitation-links";
+import { invitationSignUpHref } from "@/utils/auth/invitation-links";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -70,17 +67,16 @@ export default function AcceptInvitationPage() {
 
       if (!user) {
         // An invitee usually has NO account yet — bouncing them to /login was
-        // a dead end (DD-091). Sign-up carries the invited address (when the
-        // link brought one) and a destination back to this page; sign-up's own
-        // "Already have an account? Sign in" keeps the returning user one
-        // click away. Display only — acceptance is still gated by
-        // `inv_get_by_token` matching the signed-in address below.
+        // a dead end (DD-091). Sign-up carries a destination back to this page
+        // and the TOKEN (never the address — see invitation-links.ts), from
+        // which sign-up resolves the invited address to prefill. Sign-up's own
+        // "Already have an account? Sign in" keeps the returning user one click
+        // away. Acceptance is still gated by `inv_get_by_token` matching the
+        // signed-in address below.
         router.push(
           invitationSignUpHref(
             `/invitations/organization/accept/${token}`,
-            readInvitedEmail(
-              typeof window !== "undefined" ? window.location.search : null,
-            ),
+            token,
           ),
         );
         return;

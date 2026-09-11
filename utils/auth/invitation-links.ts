@@ -1,53 +1,61 @@
 /**
  * utils/auth/invitation-links.ts
  *
- * THE invitation accept-link shape, and the one rule that lets a brand-new
- * colleague finish an invitation.
+ * THE invitation link shape, and the one rule that lets a brand-new colleague
+ * finish an invitation.
  *
  * ## The flaw this exists to close (DD-091, 2026-09-10)
  *
- * `inv_get_by_token` is `authenticated`-only and gated to the invited party:
- * an anonymous visitor holding an invite link cannot read WHO the invite is
- * for. Every accept page therefore used to bounce an anonymous visitor to
- * `/login` — a dead end for the exact person an invitation exists to reach,
- * who has no account yet. They had to notice the sign-up link themselves, and
- * then guess that they must sign up with the *precise* address the invite was
- * sent to (any other address hits "This invitation is for X.").
+ * `inv_get_by_token` is `authenticated`-only and gated to the invited party, so
+ * every accept page used to bounce an anonymous visitor to `/login` — a dead
+ * end for the exact person an invitation exists to reach, who has no account
+ * yet. They had to notice the sign-up link themselves and then guess that they
+ * must sign up with the *precise* address the invite was sent to.
  *
- * The fix has two halves and neither one weakens a grant:
+ * An anonymous invitee now goes to SIGN-UP, carrying two things and only two:
+ * a `redirectTo` back to the accept page, and the invitation **token**.
  *
- * 1. **The link carries the address it was sent to** (`?email=`). The link is
- *    already the bearer secret and it is only ever delivered to that mailbox,
- *    so it tells the recipient nothing they do not already know. It is DISPLAY
- *    data only — every authorization decision still comes from
- *    `inv_get_by_token` matching the signed-in `auth.email()`. Never trust
- *    this value for anything but prefilling a field and writing a sentence.
- * 2. **An anonymous visitor goes to sign-up, not login**, carrying that
- *    address and a `redirectTo` back to the accept page. Sign-up already
- *    offers "Already have an account? Sign in" preserving the destination, so
- *    the returning user is one click away.
+ * ## THE TOKEN TRAVELS, THE ADDRESS NEVER DOES (chair ruling, 2026-09-11)
+ *
+ * The first cut put the invited address in the URL (`?email=`). That is below
+ * the bar every champion sets — GitHub, Slack, Notion, Google Workspace and
+ * Supabase's own invite all carry a token and resolve the address server-side.
+ * The exposed party is not the recipient (who knows their own address) but the
+ * **intermediaries**: a query string lands in browser history, synced history,
+ * and every edge/CDN access log the request passes through, where the address
+ * is stable PII that outlives by years the token sitting beside it. It also
+ * breaks the standing rule that personal data never goes in a query string.
+ *
+ * So the link carries `?invite=<token>` and the sign-up page resolves the
+ * address through the one narrow door `public.inv_peek_invited_email(p_token)`
+ * (`migrations/inv_peek_invited_email.sql`): anonymous-callable, returns ONLY
+ * the email, and only for a pending, unaccepted, unexpired invitation. The
+ * token is the secret and was mailed to that address; the door grants nothing.
  *
  * Pure functions only — imported by server routes, client link builders, the
- * accept pages, and the sign-up page alike.
+ * accept pages, and the auth pages alike. The lookup itself lives in
+ * `utils/auth/invited-email-lookup.ts` (server-only).
  */
 
 import { signUpHref } from "@/utils/auth/auth-destination";
 
-/** The query parameter carrying the invited address. */
-export const INVITED_EMAIL_PARAM = "email";
-
-/** The loosest shape we will echo back into a field or a sentence. */
-function looksLikeEmail(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
+/** The query parameter carrying the invitation token. */
+export const INVITE_TOKEN_PARAM = "invite";
 
 /**
- * Read an invited address out of a query string, a `URLSearchParams`, a Next
- * `searchParams` object, or a `FormData`. Returns `null` unless the value is
- * present and email-shaped — a junk or crafted param must never reach a
- * rendered sentence.
+ * Tokens are `gen_random_uuid()::text` (minted by `inv_create` / `inv_resend`),
+ * but the accept ROUTE accepts whatever is in its path, so this stays a shape
+ * check rather than a UUID check: bounded length, URL-safe characters only. A
+ * value that fails it is dropped — never forwarded, never echoed.
  */
-export function readInvitedEmail(
+const TOKEN_SHAPE = /^[A-Za-z0-9._~-]{8,200}$/;
+
+/**
+ * Read an invitation token out of a query string, a `URLSearchParams`, a Next
+ * `searchParams` object, or a `FormData`. Returns `null` unless it is present
+ * and token-shaped.
+ */
+export function readInviteToken(
   source:
     | URLSearchParams
     | FormData
@@ -63,7 +71,7 @@ export function readInvitedEmail(
       ? source.slice(source.indexOf("?"))
       : source;
     try {
-      raw = new URLSearchParams(query).get(INVITED_EMAIL_PARAM);
+      raw = new URLSearchParams(query).get(INVITE_TOKEN_PARAM);
     } catch {
       return null;
     }
@@ -71,51 +79,54 @@ export function readInvitedEmail(
     // Duck-typed for the same cross-realm reason as `auth-destination.ts`.
     const getter = (source as { get?: unknown }).get;
     if (typeof getter === "function") {
-      raw = (source as { get(k: string): unknown }).get(INVITED_EMAIL_PARAM);
+      raw = (source as { get(k: string): unknown }).get(INVITE_TOKEN_PARAM);
     } else {
       const value = (
         source as Record<string, string | string[] | undefined | null>
-      )[INVITED_EMAIL_PARAM];
+      )[INVITE_TOKEN_PARAM];
       raw = Array.isArray(value) ? (value[0] ?? null) : value;
     }
   }
   if (typeof raw !== "string") return null;
-  const candidate = raw.trim().toLowerCase();
-  if (!candidate || !looksLikeEmail(candidate)) return null;
-  return candidate;
+  const candidate = raw.trim();
+  return TOKEN_SHAPE.test(candidate) ? candidate : null;
 }
 
 /**
- * Stamp the invited address onto an accept URL (absolute or relative). A
- * missing or non-email value leaves the URL exactly as it was — the flow still
- * works, it just cannot prefill.
+ * Stamp an invitation token onto an internal auth URL. A missing or
+ * wrong-shaped token leaves the URL exactly as it was — the flow still works,
+ * it just cannot prefill.
+ *
+ * This is for AUTH urls (`/sign-up`, `/login`). The accept link itself never
+ * needs it: the token is already in its path.
  */
-export function withInvitedEmail(
-  acceptUrl: string,
-  email: string | null | undefined,
+export function withInviteToken(
+  authUrl: string,
+  token: string | null | undefined,
 ): string {
-  if (typeof email !== "string") return acceptUrl;
-  const candidate = email.trim().toLowerCase();
-  if (!candidate || !looksLikeEmail(candidate)) return acceptUrl;
-  const [base, hash] = acceptUrl.split("#");
+  if (typeof token !== "string") return authUrl;
+  const candidate = token.trim();
+  if (!TOKEN_SHAPE.test(candidate)) return authUrl;
+  const [base, hash] = authUrl.split("#");
   const separator = base.includes("?") ? "&" : "?";
-  const rebuilt = `${base}${separator}${INVITED_EMAIL_PARAM}=${encodeURIComponent(candidate)}`;
+  const rebuilt = `${base}${separator}${INVITE_TOKEN_PARAM}=${encodeURIComponent(candidate)}`;
   return hash ? `${rebuilt}#${hash}` : rebuilt;
 }
 
 /**
  * Where an ANONYMOUS visitor holding an invitation link must go: sign-up,
- * carrying the invited address (when the link told us one) and a destination
- * back to the accept page. This is the single call every accept page makes —
- * do not hand-build a `/login?redirectTo=…` for an invitee again.
+ * carrying a destination back to the accept page and the invitation token (so
+ * sign-up can prefill the invited address through the peek door). This is the
+ * single call every accept page makes — never hand-build a `/login?redirectTo=`
+ * for an invitee again.
  *
- * `acceptPath` is the accept route's own path; any `?email=` already on it is
- * dropped so the destination stays canonical and the address is stamped once.
+ * `acceptPath` is the accept route's own path; any query on it is dropped so
+ * the destination stays canonical.
  */
 export function invitationSignUpHref(
   acceptPath: string,
-  email?: string | null,
+  token?: string | null,
 ): string {
   const destination = acceptPath.split("?")[0].split("#")[0];
-  return withInvitedEmail(signUpHref(destination), email);
+  return withInviteToken(signUpHref(destination), token);
 }

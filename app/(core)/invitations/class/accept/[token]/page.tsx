@@ -23,10 +23,7 @@ import { supabase } from "@/utils/supabase/client";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
-import {
-  invitationSignUpHref,
-  readInvitedEmail,
-} from "@/utils/auth/invitation-links";
+import { invitationSignUpHref } from "@/utils/auth/invitation-links";
 
 export default function AcceptClassInvitationPage() {
   const params = useParams();
@@ -52,12 +49,7 @@ export default function AcceptClassInvitationPage() {
         // account yet (DD-091). They land right back on this accept page, and
         // sign-up keeps "Already have an account? Sign in" one click away.
         router.push(
-          invitationSignUpHref(
-            acceptPath,
-            readInvitedEmail(
-              typeof window !== "undefined" ? window.location.search : null,
-            ),
-          ),
+          invitationSignUpHref(acceptPath, token),
         );
         return;
       }

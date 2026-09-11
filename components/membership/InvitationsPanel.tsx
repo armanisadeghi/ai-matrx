@@ -7,7 +7,7 @@
  * Lifted verbatim from the battle-tested organization InvitationManager and made
  * data-agnostic: it does not fetch invitations or contacts and runs no
  * mutations. The consumer supplies the data plus `onInvite` / `onCancel` /
- * `onResend`, and an `inviteAcceptUrl(token, email)` builder so the copy-link action
+ * `onResend`, and an `inviteAcceptUrl(token)` builder so the copy-link action
  * points at the right accept route (org vs project).
  *
  * The "quick select from contacts" affordance renders only when `contacts` is
@@ -100,6 +100,20 @@ const SOURCE_LABELS: Record<ConnectionUser["source"], string> = {
   invitation: "Invited",
 };
 
+/**
+ * Anything crossing a network boundary is `unknown`, whatever its type says.
+ * Never put a raw value from one straight into JSX.
+ */
+function asDisplayText(value: unknown): string | null {
+  if (typeof value === "string") return value.trim() || null;
+  if (value instanceof Error) return value.message || null;
+  if (value && typeof value === "object") {
+    const message = (value as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message.trim();
+  }
+  return null;
+}
+
 function validateEmail(email: string): { valid: boolean; error: string } {
   if (!email || email.trim().length === 0)
     return { valid: false, error: "Email is required" };
@@ -120,7 +134,13 @@ export interface InvitationDeliveryNotice {
   email: string;
   /** The accept link to send by hand. */
   acceptUrl: string;
-  /** Why the email did not go out, when the provider told us. */
+  /**
+   * Why the email did not go out, when the provider told us. Declared a string
+   * and RE-CHECKED at render (`asDisplayText`): it originates on the far side
+   * of a `fetch`, where the mail provider's real failures are `Error` and
+   * `{name,message}` objects. Rendering one as a React child throws — the
+   * banner dying in exactly the failure it exists to report (DD-091 I1).
+   */
   reason?: string;
   /** True when the row was a RESEND — the recipient's older link is now dead. */
   wasResend?: boolean;
@@ -137,12 +157,8 @@ export interface InvitationsPanelProps {
   contactsLoading?: boolean;
   /** Disable controls while a mutation is in flight. */
   operationLoading?: boolean;
-  /**
-   * Builds the absolute accept URL for the copy-link action. `invitedEmail` is
-   * passed so the link carries the address it was sent to (DD-091) — display
-   * data only, acceptance is still gated by the invited identity.
-   */
-  inviteAcceptUrl: (token: string, invitedEmail?: string | null) => string;
+  /** Builds the absolute accept URL for the copy-link action. */
+  inviteAcceptUrl: (token: string) => string;
   onInvite: (email: string, role: MembershipRole) => void | Promise<void>;
   onCancel: (invitation: PanelInvitation) => void | Promise<void>;
   onResend: (invitation: PanelInvitation) => void | Promise<void>;
@@ -485,9 +501,9 @@ export function InvitationsPanel({
               <code className="block break-all rounded border border-amber-200 bg-white px-2 py-1 text-xs text-amber-900 dark:border-amber-800 dark:bg-neutral-900 dark:text-amber-100">
                 {deliveryNotice.acceptUrl}
               </code>
-              {deliveryNotice.reason && (
+              {asDisplayText(deliveryNotice.reason) && (
                 <p className="text-xs text-amber-800 dark:text-amber-200">
-                  Reason: {deliveryNotice.reason}
+                  Reason: {asDisplayText(deliveryNotice.reason)}
                 </p>
               )}
               <Button
@@ -589,10 +605,7 @@ export function InvitationsPanel({
                 ? "Expired"
                 : `Expires ${formatDistanceToNow(expiresAt, { addSuffix: true })}`;
 
-              const invitationLink = inviteAcceptUrl(
-                invitation.token,
-                invitation.email,
-              );
+              const invitationLink = inviteAcceptUrl(invitation.token);
 
               const handleCopyLink = async () => {
                 try {
