@@ -178,6 +178,41 @@ export interface SandboxTemplateListResponse {
   templates: SandboxTemplate[];
 }
 
+/**
+ * Per-instance image freshness, derived by the owning orchestrator from Docker
+ * image IDs. A template version is configuration; it does not establish that a
+ * running container is current, so callers must use this comparison result.
+ */
+export interface SandboxVersionHealth {
+  supported: boolean;
+  sandbox_id: string;
+  template: string | null;
+  tier: SandboxTier | null;
+  status: "current" | "outdated" | "unknown" | "not_running";
+  reason: string;
+  running_image_id: string | null;
+  running_version: string | null;
+  current_image_id: string | null;
+  current_version: string | null;
+  current_image_available: boolean;
+  can_migrate: boolean;
+  /** Manager build reported by its API surface. No upstream latest comparison exists. */
+  manager_version: string | null;
+  /** Why an in-place update is unavailable or unverified, if applicable. */
+  migration_action_reason: string | null;
+}
+
+export interface SandboxVersionHealthResponse {
+  health: SandboxVersionHealth;
+}
+
+export interface SandboxMigrateResponse {
+  status: "migrated" | "already_current";
+  sandbox_id: string;
+  to_version?: string | null;
+  to_image?: string | null;
+}
+
 export interface SandboxAccessResponse {
   /** Orchestrator-level sandbox ID (e.g. "sbx-7712966b8cb5") — used for key filename. */
   sandbox_id: string;

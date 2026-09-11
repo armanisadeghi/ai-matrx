@@ -55,6 +55,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import { SandboxVersionHealthCard } from "./SandboxVersionHealthCard";
 
 type DiagCheck = {
   ok?: boolean;
@@ -655,6 +656,8 @@ export function SandboxDiagnosticsPanel({
               </Button>
             </div>
           </div>
+
+          <SandboxVersionHealthCard sandboxId={sandboxId} onMigrated={fetchDiagnostics} />
 
           {/* Layer-by-layer checks — every card honors the orchestrator's
               `checked` flag. A check the orchestrator skipped for this
