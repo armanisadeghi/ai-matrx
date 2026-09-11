@@ -12,10 +12,25 @@
  *
  * Saving states the consequence out loud before it happens — an excluded model
  * is a model the sync agent will never add, forever, silently.
+ *
+ * 🚨 The consequence panel is INLINE, not a second confirm dialog. A
+ * `confirm()` raised from inside an open Dialog never appears: the opener
+ * waits for `document.body.style.pointerEvents` to come back, which an open
+ * Radix dialog holds at "none" for as long as it is open, so the promise never
+ * resolves and Save silently does nothing. (Found live on 2026-09-11 — the
+ * button looked fine and wrote nothing.) An editor surface states its impact
+ * on the surface; only a control OUTSIDE a modal layer may raise a confirm.
  */
 
 import React, { useEffect, useState } from "react";
-import { CalendarOff, Loader2, Plus, Save, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarOff,
+  Loader2,
+  Plus,
+  Save,
+  Trash2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +43,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system";
 import { Textarea } from "@/components/ui/textarea";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { aiModelService } from "@/features/ai-models/service";
@@ -79,44 +93,40 @@ export default function ProviderSyncPolicyDialog({
     setNewId("");
   };
 
+  const cutoffValue = cutoff.trim() === "" ? null : cutoff.trim();
+  const addedIds = excluded.filter(
+    (id) => !target.policy.excluded_model_ids.includes(id),
+  );
+  const removedIds = target.policy.excluded_model_ids.filter(
+    (id) => !excluded.includes(id),
+  );
+  const cutoffChanged = cutoffValue !== (target.policy.min_release_date ?? null);
+  const notesChanged = (notes.trim() === "" ? null : notes.trim()) !==
+    (target.policy.notes ?? null);
+  const dirty =
+    addedIds.length > 0 || removedIds.length > 0 || cutoffChanged || notesChanged;
+
+  /** What saving will do, in the words of the thing it does it to. */
+  const consequences: string[] = [];
+  if (addedIds.length > 0) {
+    consequences.push(
+      `${addedIds.length} model${addedIds.length === 1 ? "" : "s"} become${addedIds.length === 1 ? "s" : ""} excluded: the sync agent will never add ${addedIds.length === 1 ? "it" : "them"} to the registry, on this run or any future one, without saying anything.`,
+    );
+  }
+  if (removedIds.length > 0) {
+    consequences.push(
+      `${removedIds.length} model${removedIds.length === 1 ? "" : "s"} stop${removedIds.length === 1 ? "s" : ""} being excluded and become${removedIds.length === 1 ? "s" : ""} a candidate the agent may add.`,
+    );
+  }
+  if (cutoffChanged) {
+    consequences.push(
+      cutoffValue
+        ? `Models released before ${cutoffValue} are ignored by the sync agent; models on or after it become candidates.`
+        : "The release cutoff is removed — every model this provider returns becomes a candidate again, including very old ones.",
+    );
+  }
+
   const handleSave = async () => {
-    const cutoffValue = cutoff.trim() === "" ? null : cutoff.trim();
-    const addedCount = excluded.filter(
-      (id) => !target.policy.excluded_model_ids.includes(id),
-    ).length;
-    const removedCount = target.policy.excluded_model_ids.filter(
-      (id) => !excluded.includes(id),
-    ).length;
-    const cutoffChanged = cutoffValue !== (target.policy.min_release_date ?? null);
-
-    const consequences: string[] = [];
-    if (addedCount > 0) {
-      consequences.push(
-        `${addedCount} model${addedCount === 1 ? "" : "s"} will be excluded — the sync agent will never add ${addedCount === 1 ? "it" : "them"} to the registry.`,
-      );
-    }
-    if (removedCount > 0) {
-      consequences.push(
-        `${removedCount} model${removedCount === 1 ? "" : "s"} will stop being excluded and will show up as candidates the agent can add.`,
-      );
-    }
-    if (cutoffChanged) {
-      consequences.push(
-        cutoffValue
-          ? `Models released before ${cutoffValue} will be ignored by the sync agent.`
-          : "The release cutoff is being removed — every model the provider returns becomes a candidate again, including very old ones.",
-      );
-    }
-
-    if (consequences.length > 0) {
-      const ok = await confirm({
-        title: `Change the ${target.providerName} sync policy?`,
-        description: consequences.join(" "),
-        confirmLabel: "Save policy",
-      });
-      if (!ok) return;
-    }
-
     setSaving(true);
     try {
       const saved = await aiModelService.updateProviderSyncPolicy(
@@ -283,13 +293,35 @@ export default function ProviderSyncPolicyDialog({
               className="text-xs"
             />
           </div>
+
+          {/* The consequence is stated HERE, before the click — an editor
+              surface cannot raise a confirm dialog over itself. */}
+          {consequences.length > 0 && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-2.5">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 dark:text-amber-200">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                Saving will change what the sync agent does
+              </p>
+              <ul className="mt-1 space-y-0.5 pl-5 list-disc text-[11px] text-amber-800 dark:text-amber-200">
+                {consequences.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button size="sm" className="gap-1.5" onClick={handleSave} disabled={saving}>
+          <Button
+            size="sm"
+            className="gap-1.5"
+            onClick={handleSave}
+            disabled={saving || !dirty}
+            title={dirty ? undefined : "Nothing to save — the policy is unchanged."}
+          >
             {saving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
