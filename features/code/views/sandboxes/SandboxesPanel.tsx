@@ -27,6 +27,7 @@ import {
   Square,
   Timer,
   Trash2,
+  Unplug,
   WifiOff,
   PanelsTopLeft,
 } from "lucide-react";
@@ -86,7 +87,6 @@ import {
   ACTIVE_ROW,
   HOVER_ROW,
   PANE_BORDER,
-  ROW_HEIGHT,
 } from "../../styles/tokens";
 
 interface SandboxesPanelProps {
@@ -395,14 +395,9 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
 
   const activeInstance = instances?.find((i) => i.id === activeId);
 
-  // Header subtitle. Surface the reconcile sweep so the user sees that the
-  // initial load is doing more than just an /api/sandbox GET.
-  const subtitle = useMemo(() => {
-    if (reconciling && instances === null) return "Reconciling…";
-    if (instances === null) return undefined;
-    if (instances.length === 0) return "No sandboxes";
-    return `${instances.length} sandbox${instances.length === 1 ? "" : "es"}`;
-  }, [reconciling, instances]);
+  // A count competes with the title in the narrow workspace sidebar. The
+  // refresh action carries progress instead; keep this only for reconciliation.
+  const subtitle = reconciling ? "Reconciling…" : undefined;
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
@@ -637,13 +632,13 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
                 : `Cannot connect — ${STATUS_LABELS[effective].toLowerCase()}`
           }
           className={cn(
-            "group flex min-w-0 flex-1 items-center justify-between gap-2 px-3 text-left",
-            ROW_HEIGHT,
+            "group flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left",
+            "min-h-12",
             HOVER_ROW,
             "disabled:cursor-not-allowed disabled:opacity-50",
           )}
         >
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-start gap-2">
             {connecting ? (
               <Loader2
                 size={14}
@@ -660,23 +655,22 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
                 )}
               />
             )}
-            <span className="truncate font-medium">{displayName}</span>
-            {isActive && (
-              <span className="shrink-0 rounded bg-blue-100 px-1 py-[1px] font-mono text-[9px] uppercase tracking-wider text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                active
+            <div className="min-w-0 flex-1">
+              <span className="block truncate font-medium" title={displayName}>
+                {displayName}
               </span>
-            )}
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <ProbeDot aliveness={probeAliveness} />
-            <span
-              className={cn(
-                "rounded px-1.5 py-[1px] text-[10px] uppercase tracking-wide",
-                statusPillClasses(effective),
-              )}
-            >
-              {STATUS_LABELS[effective]}
-            </span>
+              <div className="mt-0.5 flex items-center gap-1.5">
+                <ProbeDot aliveness={probeAliveness} />
+                <span
+                  className={cn(
+                    "rounded px-1.5 py-[1px] text-[10px] uppercase tracking-wide",
+                    statusPillClasses(effective),
+                  )}
+                >
+                  {STATUS_LABELS[effective]}
+                </span>
+              </div>
+            </div>
           </div>
         </button>
         <button
@@ -685,7 +679,8 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
           title={isExpanded ? "Hide details" : "Show details"}
           aria-expanded={isExpanded}
           className={cn(
-            "flex w-6 shrink-0 items-center justify-center text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100",
+            "flex w-8 shrink-0 items-center justify-center text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100",
+            "max-lg:min-h-11 max-lg:w-11",
           )}
         >
           {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
@@ -1048,7 +1043,7 @@ const ActiveSandboxBanner: React.FC<ActiveSandboxBannerProps> = ({
       )}
     >
       <Plug size={12} className="shrink-0" />
-      <span className="min-w-0 flex-1 truncate font-medium">
+      <span className="min-w-0 flex-1 truncate font-medium" title={sandboxDisplayName(instance)}>
         {sandboxDisplayName(instance)}
       </span>
       {aiBound ? (
@@ -1064,13 +1059,14 @@ const ActiveSandboxBanner: React.FC<ActiveSandboxBannerProps> = ({
           aria-label="Sandbox proxy unavailable"
         />
       )}
-      <span className="shrink-0 opacity-70">Connected</span>
       <button
         type="button"
         onClick={onDisconnect}
-        className="min-h-8 shrink-0 text-xs opacity-80 hover:opacity-100 max-lg:min-h-11"
+        aria-label="Disconnect sandbox"
+        title="Disconnect sandbox"
+        className="inline-flex min-h-8 w-8 shrink-0 items-center justify-center rounded opacity-80 hover:bg-current/10 hover:opacity-100 max-lg:min-h-11 max-lg:w-11"
       >
-        Disconnect
+        <Unplug size={14} />
       </button>
     </div>
   );
