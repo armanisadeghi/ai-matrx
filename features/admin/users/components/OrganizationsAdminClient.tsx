@@ -203,6 +203,20 @@ export function OrganizationsAdminClient() {
     ? ["owner"]
     : ROLE_OPTIONS;
 
+  // R21 (Arman, 2026-09-10): one owner per organization, and ownership moves
+  // only through a transfer. The database refuses a second owner even for a
+  // super admin, so "Owner" is ABSENT from the picker when someone else already
+  // holds it — never offered and then rejected.
+  const organizationHasOwner = members.some((member) => member.role === "owner");
+  const roleOptionsFor = (member?: MemberDisplayRow): OrgRole[] =>
+    editableRoleOptions.filter(
+      (role) =>
+        role !== "owner" ||
+        member?.role === "owner" ||
+        !organizationHasOwner ||
+        selectedOrganization?.is_personal === true,
+    );
+
   function setOrganizationFocus(organization: AdminOrganizationRow) {
     setSelectedOrganizationId(organization.id);
     const params = new URLSearchParams(searchParams.toString());
@@ -302,7 +316,7 @@ export function OrganizationsAdminClient() {
     if (!selectedOrganization) return;
     const approved = await confirm({
       title: `Remove from ${selectedOrganization.name}?`,
-      description: `${member.display_name ?? member.email ?? member.user_id} will lose this organization membership. The last owner cannot be removed.`,
+      description: `${member.display_name ?? member.email ?? member.user_id} will lose this organization membership. The last owner cannot be removed, and neither can a person whose only organization this is.`,
       confirmLabel: "Remove member",
       variant: "destructive",
     });
@@ -438,7 +452,7 @@ export function OrganizationsAdminClient() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {editableRoleOptions.map((role) => (
+            {roleOptionsFor(member).map((role) => (
               <SelectItem key={role} value={role}>
                 {getRoleLabel(role)}
               </SelectItem>
@@ -826,7 +840,7 @@ export function OrganizationsAdminClient() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROLE_OPTIONS.map((role) => (
+                  {roleOptionsFor().map((role) => (
                     <SelectItem key={role} value={role}>
                       {getRoleLabel(role)}
                     </SelectItem>

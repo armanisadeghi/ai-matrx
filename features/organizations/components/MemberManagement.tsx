@@ -4,8 +4,9 @@
  * MemberManagement — organization wrapper around the shared <MembersPanel />.
  *
  * Thin by design: it fetches org members with the org hooks and supplies the
- * org-specific role rules (only owners can grant owner; admins manage members
- * only; personal orgs are read-only). The list UI, quick actions, and dialogs
+ * org-specific role rules — one owner per organization (ownership moves only
+ * through Transfer ownership), admins manage admins and members but never the
+ * owner, personal orgs are read-only. The list UI, quick actions, and dialogs
  * live in the shared panel so the org and project members surfaces stay in
  * lock-step. See components/membership/MembersPanel.tsx.
  */
@@ -14,6 +15,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { useOrganizationMembers, useMemberOperations } from "../hooks";
+import { transferOwnership } from "../service";
 import type { OrgRole } from "../types";
 import {
   MembersPanel,
@@ -87,6 +89,18 @@ export function MemberManagement({
     }
   };
 
+  const handleTransferOwnership = async (member: PanelMember) => {
+    const result = await transferOwnership(organizationId, member.userId);
+    if (result.success) {
+      toast.success(
+        `${member.user?.email ?? "That member"} now owns this organization. You are an admin here.`,
+      );
+      refresh();
+    } else {
+      toast.error(result.error || "Failed to transfer ownership");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -126,6 +140,7 @@ export function MemberManagement({
         ownerCount={ownerCount}
         onChangeRole={handleChangeRole}
         onRemove={handleRemove}
+        onTransferOwnership={handleTransferOwnership}
       />
     </HrMemberEmployeeSeamProvider>
   );
@@ -142,6 +157,7 @@ function OrganizationMembersPanel({
   ownerCount,
   onChangeRole,
   onRemove,
+  onTransferOwnership,
 }: {
   members: PanelMember[];
   organizationId: string;
@@ -153,6 +169,7 @@ function OrganizationMembersPanel({
   ownerCount: number;
   onChangeRole: (member: PanelMember, role: MembershipRole) => Promise<void>;
   onRemove: (member: PanelMember) => Promise<void>;
+  onTransferOwnership: (member: PanelMember) => Promise<void>;
 }) {
   const memberEmployeeCopyDetails = useMemberEmployeeCopyDetails();
   const enrichedMembers = members.map((member) => ({
@@ -175,11 +192,22 @@ function OrganizationMembersPanel({
       roleOptions={ROLE_OPTIONS}
       operationLoading={operationLoading}
       containerNoun="organization"
+      // R21 (Arman, 2026-09-10): "Admins add and remove admins and members."
+      // Only the OWNER is untouchable by an admin. The database enforces exactly
+      // this in mbr_remove / mbr_update_role — these predicates mirror it, they
+      // do not invent a second rule.
       canManageMember={(member) =>
         !isPersonal &&
-        (isOwner || (userRole === "admin" && member.role === "member"))
+        (isOwner || (userRole === "admin" && member.role !== "owner"))
       }
-      canAssignRole={(_member, role) => (role === "owner" ? isOwner : true)}
+      // R21: one owner per organization. "Make Owner" does not exist as a role
+      // change — the database refuses it and names Transfer ownership, so the
+      // menu item is ABSENT rather than present-and-failing.
+      canAssignRole={(_member, role) => role !== "owner"}
+      canTransferOwnership={(member) =>
+        !isPersonal && isOwner && member.role !== "owner"
+      }
+      onTransferOwnership={onTransferOwnership}
       isLastOwner={(member) => member.role === "owner" && ownerCount === 1}
       onChangeRole={onChangeRole}
       onRemove={onRemove}

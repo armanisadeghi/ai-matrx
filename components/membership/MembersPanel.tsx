@@ -151,6 +151,21 @@ export interface MembersPanelProps {
    * consumer is untouched.
    */
   renderMemberExtra?: (member: PanelMember) => React.ReactNode;
+  /**
+   * THE ONE-OWNER SEAM (Doctrine R21, 2026-09-10: "One owner per
+   * organization… only the owner transfers ownership").
+   *
+   * A container with exactly one owner cannot express "make this person an
+   * owner" as a role change — the database refuses it and names Transfer
+   * ownership instead. So the role menu drops "Make Owner" (via
+   * `canAssignRole`) and, when the viewer may transfer, gains this action.
+   * Without it the surface would be a dead end: a rule with no control.
+   *
+   * Supply BOTH or NEITHER. Containers that genuinely allow several owners
+   * (projects today) supply neither and are untouched.
+   */
+  canTransferOwnership?: (member: PanelMember) => boolean;
+  onTransferOwnership?: (member: PanelMember) => void | Promise<void>;
 }
 
 const ROLE_ICONS: Record<MembershipRole, LucideIcon> = {
@@ -188,6 +203,8 @@ export function MembersPanel({
   memberNoun = "member",
   copyContainer,
   renderMemberExtra,
+  canTransferOwnership,
+  onTransferOwnership,
 }: MembersPanelProps) {
   const container: MembershipCopyContainer = {
     noun: copyContainer?.noun ?? containerNoun,
@@ -198,6 +215,9 @@ export function MembersPanel({
   const dispatch = useAppDispatch();
   const [searchTerm, setSearchTerm] = useState("");
   const [memberToRemove, setMemberToRemove] = useState<PanelMember | null>(
+    null,
+  );
+  const [memberToPromote, setMemberToPromote] = useState<PanelMember | null>(
     null,
   );
   const [emailRecipient, setEmailRecipient] = useState<{
@@ -232,6 +252,15 @@ export function MembersPanel({
     await onRemove(memberToRemove);
     setMemberToRemove(null);
   };
+
+  const handleConfirmTransfer = async () => {
+    if (!memberToPromote || !onTransferOwnership) return;
+    await onTransferOwnership(memberToPromote);
+    setMemberToPromote(null);
+  };
+
+  const showTransfer = (member: PanelMember) =>
+    Boolean(onTransferOwnership && canTransferOwnership?.(member));
 
   const filteredMembers = members.filter((member) => {
     const q = searchTerm.toLowerCase();
@@ -467,6 +496,14 @@ export function MembersPanel({
                             </DropdownMenuItem>
                           );
                         })}
+                      {showTransfer(member) && (
+                        <DropdownMenuItem
+                          onClick={() => setMemberToPromote(member)}
+                        >
+                          <Crown className="h-4 w-4 mr-2" />
+                          Transfer ownership…
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => setMemberToRemove(member)}
@@ -537,6 +574,35 @@ export function MembersPanel({
               className="bg-red-600 hover:bg-red-700"
             >
               Remove {memberNoun === "member" ? "Member" : memberNoun}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Transfer Ownership Confirmation — a destructive/irreversible click
+          states its consequence BEFORE it happens (destructive-and-expensive
+          actions law): the viewer loses ownership in the same step. */}
+      <AlertDialog
+        open={!!memberToPromote}
+        onOpenChange={() => setMemberToPromote(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Transfer ownership</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>
+                {memberToPromote?.user?.email ?? `This ${memberNoun}`}
+              </strong>{" "}
+              becomes the owner of this {containerNoun}, and you become an
+              admin in the same step — a {containerNoun} has exactly one owner.
+              Only the owner can transfer ownership or delete the{" "}
+              {containerNoun}, so you will not be able to undo this yourself.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmTransfer}>
+              Transfer ownership
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -51495,6 +51495,10 @@ export type Database = {
         Args: { p_schema: string; p_table: string; p_variant?: string }
         Returns: undefined
       }
+      auto_organization_name: {
+        Args: { p_email: string; p_meta: Json }
+        Returns: string
+      }
       backfill_org_from_owner: {
         Args: { p_execute?: boolean }
         Returns: {
@@ -51718,8 +51722,16 @@ export type Database = {
             }
             Returns: boolean
           }
+      is_last_organization: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_org_member: {
         Args: { p_org: string; p_user: string }
+        Returns: boolean
+      }
+      is_org_owner: {
+        Args: { p_org_id: string; p_user_id: string }
         Returns: boolean
       }
       membership_row_visible: {
@@ -54325,6 +54337,30 @@ export type Database = {
   }
   ops: {
     Tables: {
+      _bak_organization_name_dd043: {
+        Row: {
+          backfilled_at: string
+          new_name: string
+          organization_id: string
+          previous_description: string | null
+          previous_name: string
+        }
+        Insert: {
+          backfilled_at?: string
+          new_name: string
+          organization_id: string
+          previous_description?: string | null
+          previous_name: string
+        }
+        Update: {
+          backfilled_at?: string
+          new_name?: string
+          organization_id?: string
+          previous_description?: string | null
+          previous_name?: string
+        }
+        Relationships: []
+      }
       api_field_warnings: {
         Row: {
           created_at: string
@@ -59408,6 +59444,27 @@ export type Database = {
           receipt?: Json
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      metadata_reserved_keys: {
+        Row: {
+          created_at: string
+          key: string
+          reason: string
+          table_token: string | null
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          reason: string
+          table_token?: string | null
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          reason?: string
+          table_token?: string | null
         }
         Relationships: []
       }

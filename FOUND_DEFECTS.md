@@ -15,6 +15,41 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D307 — Hard-deleting an organization exceeds the statement timeout (655 FKs, 240 without a leading index)
+
+Found 2026-09-11 while proving the DD-048 delete rulings (`pnpm check:org-ownership`). A `DELETE`
+on `iam.organizations` for a brand-new, EMPTY organization returns
+`canceling statement due to statement timeout` over PostgREST. Measured live on
+`brsgrqvjdzwihsvnfqkf`: 655 foreign keys reference `iam.organizations` (34 `ON DELETE CASCADE`,
+513 `NO ACTION`), and **240 of them have no index whose leading column is the referencing
+column** — so every delete sequentially scans 240 tables to prove the constraint.
+
+Why it matters beyond slowness: the timeout is indistinguishable from a permission refusal at the
+call site (both come back with zero rows), which is exactly how the DD-048 forcing test nearly
+recorded a false pass. `features/organizations/service.ts` → `deleteOrganization` now reports an
+honest sentence on zero rows, but it cannot tell "refused" from "timed out".
+
+Fix: index the referencing column on each of the 240 constraints (`CREATE INDEX CONCURRENTLY`),
+or give organization deletion an explicit soft-delete/retire path instead of a hard `DELETE`
+(db-rules §0 rule 7 says never `DROP` — the same argument applies to an organization row). The
+census query lives in the DD-048 report at
+`/private/tmp/claude-501/-Users-armanisadeghi-code/5ab899a7-360c-46e8-8f3b-1767ae55c8b7/scratchpad/reports/B-1-org-ownership.md`.
+
+### D308 — 4 organizations have no owner at all, and 1 organization's creator is not its owner
+
+Found 2026-09-11 during the DD-048 census (live, `brsgrqvjdzwihsvnfqkf`). Of 392 organizations,
+**4 have no active `role='owner'` membership** and **1 has a `created_by` who holds no owner
+membership**. Nothing produces this today that we found; they are historical.
+
+It matters now because as of `migrations/iam_org_ownership_rulings_dd048.sql` the DELETE policy is
+keyed on the owner membership: those 4 organizations can no longer be deleted by anyone except a
+platform admin, and for the 1 mismatched organization the delete right just moved from its creator
+to its actual owner (which is the intended fix, but it is a live behaviour change for that row).
+
+Fix: decide per organization — appoint an owner via `admin_manage_organization_membership`
+('set_role', owner), or retire the row. Census:
+`select o.id, o.name, o.created_by from iam.organizations o where not exists (select 1 from iam.memberships m where m.container_type='organization' and m.container_id=o.id and m.role='owner' and m.status='active' and m.deleted_at is null);`
+
 ### D305 — 100 `(core)` sub-pages export a title-only `metadata`/`generateMetadata`, so the tab drops the section name
 
 Found 2026-09-10 by the route-rules correction pass. Rule:

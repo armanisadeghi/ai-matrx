@@ -231,13 +231,27 @@ export async function deleteOrganization(
       return { success: false, error: "Cannot delete personal organization" };
     }
 
-    const { error } = await supabase
+    // `.select()` is REQUIRED, not decoration. Deletion is gated by the RLS
+    // policy `iam.organizations.org_delete_policy`, and an RLS refusal is a
+    // ZERO-ROW no-op, not an error — without asking for the deleted row back
+    // this reported "Organization deleted successfully" for a delete that
+    // never happened. DD-048, 2026-09-11.
+    const { data: deleted, error } = await supabase
       .schema("iam")
       .from("organizations")
       .delete()
-      .eq("id", orgId);
+      .eq("id", orgId)
+      .select("id");
 
     if (error) throw pgErrorToError(error);
+
+    if (!deleted || deleted.length === 0) {
+      return {
+        success: false,
+        error:
+          "Only the organization's owner can delete it. If you own it, you may have been made an admin by an ownership transfer.",
+      };
+    }
 
     return {
       success: true,
@@ -572,6 +586,46 @@ export async function removeMember(
     return {
       success: false,
       error: err.message || "Failed to remove member",
+    };
+  }
+}
+
+/**
+ * Transfer ownership of an organization to another active member.
+ *
+ * THE ONE-OWNER RULE (Doctrine R21, 2026-09-10): an organization has exactly
+ * one owner, and this is the ONLY way ownership moves — the database refuses a
+ * role update to `owner` and names this path. It demotes the caller to admin in
+ * the same step, so the caller loses the right to delete or transfer.
+ *
+ * @param orgId Organization ID
+ * @param newOwnerId The member who becomes the owner
+ */
+export async function transferOwnership(
+  orgId: string,
+  newOwnerId: string,
+): Promise<OperationResult> {
+  try {
+    const currentUserId = requireUserId();
+
+    const { error } = await supabase.rpc("transfer_organization_ownership", {
+      org_id: orgId,
+      current_owner_id: currentUserId,
+      new_owner_id: newOwnerId,
+    });
+
+    if (error) throw pgErrorToError(error);
+
+    return {
+      success: true,
+      message: "Ownership transferred. You are now an admin here.",
+    };
+  } catch (error: unknown) {
+    const err = pgErrorToError(error);
+    console.error("Error transferring organization ownership:", err);
+    return {
+      success: false,
+      error: err.message || "Failed to transfer ownership",
     };
   }
 }

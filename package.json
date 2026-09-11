@@ -286,6 +286,8 @@
     "check:access-drift:strict": "tsx scripts/access-matrix/check-access-drift.ts --strict",
     "check:reachability-guards": "tsx scripts/access-matrix/check-reachability-guards.ts",
     "check:reachability-guards:strict": "tsx scripts/access-matrix/check-reachability-guards.ts --strict",
+    "check:org-ownership": "tsx scripts/access-matrix/check-org-ownership.ts",
+    "check:org-ownership:strict": "tsx scripts/access-matrix/check-org-ownership.ts --strict",
     "check:governance-tier": "tsx scripts/access-matrix/check-governance-tier.ts",
     "check:governance-tier:strict": "tsx scripts/access-matrix/check-governance-tier.ts --strict",
     "check:component-created-by": "tsx scripts/access-matrix/check-component-created-by.ts",
