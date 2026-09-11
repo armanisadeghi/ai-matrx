@@ -42,7 +42,7 @@ importers:
         version: 0.14.2(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@ai-matrx/diff':
         specifier: latest
-        version: 0.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 0.3.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@ai-matrx/icons':
         specifier: latest
         version: 0.1.4(react@19.2.8)
@@ -896,8 +896,8 @@ packages:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
 
-  '@ai-matrx/diff@0.3.1':
-    resolution: {integrity: sha512-EtDtyxwFcdJipIDNJUIVfPWCSqUzkQkVNJVXssg1cFecjNFLbIXWwD48heyNTC5eSwPyFzq5g7hPGVEz0bn26Q==}
+  '@ai-matrx/diff@0.3.2':
+    resolution: {integrity: sha512-RGfJwlAEcP4rbyjB2pxaHU1sKIFIl+Mt2ZWP+92Ix0l75SLNIyyglctSML/M9h5x0m+Oiuw6HZutDBFwOyndBg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -12702,7 +12702,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@ai-matrx/diff@0.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@ai-matrx/diff@0.3.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@ai-matrx/kit': 0.9.1(react@19.2.8)
     optionalDependencies:
