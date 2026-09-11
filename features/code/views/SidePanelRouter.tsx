@@ -3,7 +3,7 @@
 import React from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveView } from "../redux/codeWorkspaceSlice";
-import { ExplorerPanel } from "./explorer/ExplorerPanel";
+import { ExplorerSandboxSplit } from "./explorer/ExplorerSandboxSplit";
 import { SearchPanel } from "./search/SearchPanel";
 import { SourceControlPanel } from "./source-control/SourceControlPanel";
 import { RunPanel } from "./run/RunPanel";
@@ -22,7 +22,7 @@ export const SidePanelRouter: React.FC = () => {
 
   switch (activeView) {
     case "explorer":
-      return <ExplorerPanel />;
+      return <ExplorerSandboxSplit />;
     case "search":
       return <SearchPanel />;
     case "source-control":

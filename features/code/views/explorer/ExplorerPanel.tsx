@@ -10,6 +10,7 @@ import {
   Plug,
   RefreshCw,
   Server,
+  PanelBottom,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -29,6 +30,8 @@ import { EditHistorySection } from "./EditHistorySection";
 
 interface ExplorerPanelProps {
   className?: string;
+  onShowSandbox?: () => void;
+  sandboxPaneVisible?: boolean;
 }
 
 /**
@@ -50,7 +53,11 @@ interface ExplorerPanelProps {
  * the Explorer mental model. The user's saved code (`code_files`) remains
  * one click away via the Library activity icon.
  */
-export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
+export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
+  className,
+  onShowSandbox,
+  sandboxPaneVisible,
+}) => {
   const dispatch = useAppDispatch();
   const { filesystem } = useCodeWorkspace();
   const activeSandboxId = useAppSelector(selectActiveSandboxId);
@@ -125,10 +132,16 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
           <>
             {sandboxConnected ? (
               <SidePanelAction
-                icon={Plug}
-                label={`Sandbox: ${filesystem.label} — manage`}
-                onClick={openSandboxes}
-                active
+                icon={onShowSandbox ? PanelBottom : Plug}
+                label={
+                  onShowSandbox
+                    ? sandboxPaneVisible
+                      ? "Hide live sandbox section"
+                      : "Show live sandbox section"
+                    : `Sandbox: ${filesystem.label} — manage`
+                }
+                onClick={onShowSandbox ?? openSandboxes}
+                active={onShowSandbox ? sandboxPaneVisible : true}
               />
             ) : (
               <SidePanelAction

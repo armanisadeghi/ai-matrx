@@ -152,6 +152,8 @@ container.
 
 ## Change log
 
+- `2026-09-11` — Explorer now offers an optional live sandbox section below the file tree, using the existing health card and controls window. The divider resizes; collapse preserves the chosen height; hidden/collapsed/open state round-trips through `sandboxPane` in the URL. File content stays mounted while hiding the section. The default desktop Explorer width is 22% for readable labels.
+
 - `2026-09-11` — Sandbox rows now use a compact primary action plus an accessible overflow menu for lifecycle operations. Expanded rows are bordered and tinted as their own bounded detail surface, with a separate active treatment so inspecting a different sandbox never looks like changing the connected one.
 
 - `2026-09-11` — Sandbox Status and diagnostics report image freshness only after an exact running/current image-ID comparison. An owner can run the advertised in-place image update after an interruption warning; it preserves `/home/agent`, retains unsaved editor buffers, and recreates PTY sessions through the sandbox runtime revision. Manager and installed-tool freshness remain explicitly unknown. Verified on the admin account's owned hosted sandbox: image became current, workspace file persisted, terminal reconnected, and an existing dirty editor buffer saved successfully.

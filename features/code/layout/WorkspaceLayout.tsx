@@ -39,7 +39,7 @@ export interface WorkspaceLayoutProps {
   className?: string;
   /** Override for the default side-panel width (percent of body width).
    *  Use to de-emphasise the file tree on focused-edit surfaces (e.g. the
-   *  agent-app editor wants ~12% instead of the full /code 18%). */
+   *  agent-app editor wants ~12% instead of the full /code 22%). */
   defaultSideSize?: number;
   /**
    * When false, omit the 48px ActivityBar icon rail. On `/code` the shell
@@ -52,7 +52,7 @@ export interface WorkspaceLayoutProps {
 
 /** Preferred percentages each horizontal panel snaps to whenever it
  *  re-opens after the user has not manually resized it. */
-const DEFAULT_SIDE = 18;
+const DEFAULT_SIDE = 22;
 const DESIRED_RIGHT = 25;
 const DESIRED_FAR_RIGHT = 16;
 
@@ -285,7 +285,11 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   if (open !== terminalOpen) dispatch(setTerminalOpen(open));
                 }}
               >
-                <div className="h-full" inert={!terminalOpen} aria-hidden={!terminalOpen}>
+                <div
+                  className="h-full"
+                  inert={!terminalOpen}
+                  aria-hidden={!terminalOpen}
+                >
                   <BottomPanel />
                 </div>
               </ResizablePanel>
@@ -308,7 +312,11 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 }}
                 className={cn("min-w-0 border-l", PANE_BORDER)}
               >
-                <div className="h-full overflow-hidden" inert={!rightOpen} aria-hidden={!rightOpen}>
+                <div
+                  className="h-full overflow-hidden"
+                  inert={!rightOpen}
+                  aria-hidden={!rightOpen}
+                >
                   {decoratedRightSlot}
                 </div>
               </ResizablePanel>
@@ -331,7 +339,11 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 }}
                 className={cn("min-w-0 border-l", PANE_BORDER)}
               >
-                <div className="h-full overflow-hidden" inert={!farRightOpen} aria-hidden={!farRightOpen}>
+                <div
+                  className="h-full overflow-hidden"
+                  inert={!farRightOpen}
+                  aria-hidden={!farRightOpen}
+                >
                   {decoratedFarRightSlot}
                 </div>
               </ResizablePanel>
