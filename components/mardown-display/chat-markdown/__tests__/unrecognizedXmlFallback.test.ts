@@ -248,3 +248,26 @@ describe("unrecognized XML accumulator container boundaries", () => {
     ]);
   });
 });
+
+it("keeps same-line trailing prose outside the streamed generic XML block", () => {
+  const latestById = new Map<string, RenderBlockPayload>();
+  const accumulator = new StreamBlockAccumulator("xml-trailing-test", (payload) => {
+    latestById.set(payload.block.blockId, payload.block);
+    return payload;
+  });
+  const dispatch = (action: unknown) => action;
+  accumulator.ingest("<custom>value</custom> trailing\n", dispatch);
+  accumulator.finalize(dispatch);
+  const live = [...latestById.values()]
+    .filter((block) => block.content)
+    .sort((a, b) => a.blockIndex - b.blockIndex)
+    .map(renderBlockToContentBlock);
+  expect(live).toEqual([
+    expect.objectContaining({
+      type: "code",
+      content: "<custom>value</custom>",
+      language: "xml",
+    }),
+    expect.objectContaining({ type: "text", content: "trailing" }),
+  ]);
+});

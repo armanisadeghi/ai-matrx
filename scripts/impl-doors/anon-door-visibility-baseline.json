@@ -1,0 +1,7 @@
+{
+  "count": 8,
+  "why": "Declared anonymous doors (platform.client_callable_door rows that anon can EXECUTE) whose body names a table carrying a `visibility` or `card_visibility` column and shows NO gate of any kind: no visibility test, no iam.has_access / has_permission / resolve_share_token / accessible_entity_ids, no credential-shaped argument (secret/token/code/pin/password), and no auth.uid(). Captured after DD-116 / B-15 fixed public.get_agent_public(uuid), which was the 9th: a properly declared door whose entire body was `where d.id = p_agent_id and d.deleted_at is null`, handing the name, description, launch variables and context policies of any of 628 card_visibility='internal' agents to anyone holding the published anon key (proven live as `anon`, 2026-09-11). The 8 survivors each need their own judgement and are NOT presumed safe - meet_meeting_by_slug and meet_record_consent (communication.meet_meetings), rulebook_ids_curated_by and starter_pack_ids_curated_by (RLS kernel predicates, evaluated as the querying role), cmt_list, creator_public_handles, creator_public_page, outsider_session_ping. This number may only SHRINK - never raise it to clear a finding. Shrink it by gating the door's body (model: migrations/dd116_agent_public_door_visibility_gate.sql) or by revoking anon EXECUTE when no anonymous caller needs it. Lower this file to match whenever the count drops.",
+  "capturedAt": "2026-09-11",
+  "capturedBy": "B-15 / DD-116 agent public door",
+  "declaredAnonDoorsAtCapture": 52
+}
