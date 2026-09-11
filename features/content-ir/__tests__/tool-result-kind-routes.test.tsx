@@ -33,11 +33,25 @@ jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: () => {
     const react = require("react") as typeof React;
-    return function MockDynamic({ data }: { data?: unknown }) {
+    return function MockDynamic({
+      data,
+      content,
+      block,
+      children,
+    }: {
+      data?: unknown;
+      content?: string;
+      block?: { content?: string };
+      children?: React.ReactNode;
+    }) {
       return react.createElement(
         "pre",
         { "data-testid": "json-tree" },
-        JSON.stringify(data ?? null),
+        typeof block?.content === "string"
+          ? block.content
+          : typeof content === "string"
+            ? content
+            : children ?? JSON.stringify(data ?? null),
       );
     };
   },
@@ -71,8 +85,10 @@ const TOOL_RESULT_KINDS: ReadonlyArray<{ kind: string; needles: readonly string[
   // nested: entries[] is a child kind and must render THROUGH the registry
   { kind: "directory_listing", needles: ["notes", "todo.md", "notes/todo.md"] },
   { kind: "directory_entry", needles: ["todo.md", "notes/todo.md"] },
-  // nested: results[] -> file_search_match -> matches[]
-  { kind: "file_search_results", needles: ["notes/todo.md", "ship the tools sweep"] },
+  // nested: results[] -> file_search_match. The inline table deliberately
+  // collapses the match list behind its Expand control; the reader-facing
+  // expansion and Markdown body are exercised by nested-markdown.test.tsx.
+  { kind: "file_search_results", needles: ["notes/todo.md", "Expand"] },
   { kind: "file_search_match", needles: ["notes/todo.md", "ship the tools sweep"] },
   { kind: "file_edit_result", needles: ["src/main.py"] },
   // nested: edits_applied[] -> file_edit_applied
