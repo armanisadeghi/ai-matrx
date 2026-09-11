@@ -6,7 +6,10 @@
 // guard around `features/window-panels/windows/**` is preserved to keep the
 // window-panels bundle-splitting contract intact (see .claude/skills/window-panels/SKILL.md).
 
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import noBarrelFiles from "eslint-plugin-no-barrel-files";
@@ -1157,48 +1160,95 @@ const ttsHookDirectImportRestriction = {
 // from features/scopes/FEATURE.md. Violations of this rule are how the
 // scope system rotted into 8 overlapping slices last time.
 //
-// Keep these two lists in sync with the DB: regenerate from
-// `types/database.types.ts` (the generated `context` block) after any
-// `pnpm sync-types`. A table or RPC missing here is a hole in the guard.
-const CONTEXT_SCHEMA_TABLES = [
-  "context_access_log",
-  "context_item_values",
-  "context_items",
-  "context_value_refs",
-  "scope_dataset_instances",
-  "scope_types",
-  "scopes",
-  "system_context_item",
-  "template_context_items",
-  "template_scope_types",
-  "templates",
-  "user_active_context",
-];
+// The two ban lists are DERIVED FROM THE GENERATED SCHEMA at config load, not
+// hand-typed. Verification V-12 found the hand-typed versions already drifting
+// on the day they shipped: 12 tables where the generated `context` block has 13
+// (`scope_door_registry` was unbanned), and an RPC list enumerated from a
+// discovery doc rather than from the schema, leaving `scope_system_apply`,
+// `set_entity_scopes`, `accept_scope_suggestion` and others unbanned. A list a
+// human must remember to update is a guard with a decay rate. These are
+// re-derived on every lint run, so a new context table or a new scope RPC is
+// banned the moment `pnpm sync-types` lands it.
+//
+// TABLES: every table in the generated `context` schema block. Exact, no
+// judgement — a table is in the schema or it is not.
+//
+// RPCS: the context schema's own Functions block, PLUS every `public` function
+// whose name is in the scope/context family grammar (a verb from the list
+// below joined to a scope/context/template noun, or a `scope_system_*` name).
+// Postgres exposes these to PostgREST from `public`, so the schema block alone
+// cannot find them, and their generated signatures almost all return `Json`,
+// so the return type cannot find them either — the NAME is the only signal the
+// generated file carries. The grammar is deliberately over- rather than
+// under-inclusive: it rejects every module-prefixed lookalike
+// (`agx_list_scoped`, `crm_inbox_list_scope_counts`, `hr_my_context`,
+// `admin_create_schema_template`, `edu_library_list_scoped`, …) because those
+// carry a prefix before the verb, while accepting a couple of unprefixed names
+// that do not in fact reach `context.*`. Checked against
+// `pg_get_functiondef` on the live DB (brsgrqvjdzwihsvnfqkf, 2026-09-11): of
+// the 34 names this derives, all but `get_user_form_context` and
+// `list_entities_by_scopes` have `context.` in their body. Those two have zero
+// call sites in this repo, so banning them costs nothing and the derivation
+// stays a rule rather than a rule-plus-exceptions.
+//
+// If this derivation ever throws or returns an empty list, the lint run FAILS
+// loudly rather than silently banning nothing — which is exactly the failure
+// mode that let the old `ctx_*` rule sit dead for months.
 
-const SCOPE_RPC_NAMES = [
-  "apply_template",
-  "apply_template_by_key",
-  "create_context_item",
-  "create_scope",
-  "create_scope_type",
-  "delete_context_item",
-  "delete_scope",
-  "delete_scope_type",
-  "get_scope_context",
-  "get_scope_tree",
-  "list_context_value_refs",
-  "list_scope_type_items",
-  "list_scope_types",
-  "list_scopes",
-  "list_templates",
-  "list_udt_dataset_templates",
-  "search_scopes",
-  "set_context_value",
-  "set_scope_context_value",
-  "update_context_item",
-  "update_scope",
-  "update_scope_type",
-];
+const SCOPE_RPC_FAMILY_RE =
+  /^(?:scope_system_[a-z_0-9]+|(?:accept|apply|create|delete|get|list|provision|resolve|search|set|update)_[a-z_0-9]*(?:scope|context|template)[a-z_0-9]*)$/;
+
+/** The `name: {` keys of one generated sub-block (Tables / Functions). */
+function generatedBlockKeys(lines, schemaLine, blockName) {
+  const start = lines.indexOf(`    ${blockName}: {`, schemaLine);
+  if (start === -1) return [];
+  const keys = [];
+  for (let i = start + 1; i < lines.length; i += 1) {
+    // A sibling sub-block (`    Views: {`) or the schema's closing `  }` ends it.
+    if (/^    [A-Za-z]+: [{[]/.test(lines[i]) || lines[i] === "  }") break;
+    const m = /^      ([a-z_0-9]+): /.exec(lines[i]);
+    if (m) keys.push(m[1]);
+  }
+  return keys;
+}
+
+function deriveScopesChokepointNames() {
+  const generatedPath = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "types/database.types.ts",
+  );
+  const lines = readFileSync(generatedPath, "utf8").split("\n");
+
+  // The FIRST `  context: {` is the Database schema block; a later one is the
+  // `Constants` export, which holds only `Enums`.
+  const contextLine = lines.indexOf("  context: {");
+  const publicLine = lines.indexOf("  public: {");
+  if (contextLine === -1 || publicLine === -1) {
+    throw new Error(
+      "eslint.config.mjs: could not find the `context` / `public` schema blocks in types/database.types.ts — the scopes chokepoint ban lists cannot be derived. Regenerate the types (`pnpm sync-types`) or fix this derivation; do NOT let lint run with an empty ban list.",
+    );
+  }
+
+  const tables = generatedBlockKeys(lines, contextLine, "Tables");
+  const rpcs = [
+    ...generatedBlockKeys(lines, contextLine, "Functions"),
+    ...generatedBlockKeys(lines, publicLine, "Functions").filter((n) =>
+      SCOPE_RPC_FAMILY_RE.test(n),
+    ),
+  ];
+
+  const uniqueTables = [...new Set(tables)].sort();
+  const uniqueRpcs = [...new Set(rpcs)].sort();
+  if (uniqueTables.length === 0 || uniqueRpcs.length === 0) {
+    throw new Error(
+      `eslint.config.mjs: the scopes chokepoint derivation produced ${uniqueTables.length} tables and ${uniqueRpcs.length} RPCs. An empty ban list is a dead guard — fix the derivation rather than shipping it.`,
+    );
+  }
+  return { tables: uniqueTables, rpcs: uniqueRpcs };
+}
+
+const { tables: CONTEXT_SCHEMA_TABLES, rpcs: SCOPE_RPC_NAMES } =
+  deriveScopesChokepointNames();
 
 const SCOPES_CHOKEPOINT_REMEDY =
   "Route this through @/features/scopes/service/scopesService (mounted via scope thunks) — it is the ONE door to the context schema. If this is a legitimate server-side or service-role door that the client-only service cannot serve, add the file to the scopes chokepoint allowlist at the bottom of this config WITH a one-line reason, or carry an `// eslint-disable-next-line no-restricted-syntax` with a justification. See features/scopes/FEATURE.md.";
@@ -2038,6 +2088,13 @@ export default [
       // scope types and scopes.
       "features/agent-context/redux/scope/scopeTypesSlice.ts",
       "features/agent-context/redux/scope/scopesSlice.ts",
+      // Added 2026-09-11 by the schema-derived ban list (DD-109 fix 1): both
+      // call `get_user_full_context`, which the hand-enumerated RPC list never
+      // held. It is a genuine context door — `pg_get_functiondef` on the live
+      // DB shows `context.` inside its 9.4kB body — so these are real bypasses
+      // the old list could not see, not derivation noise.
+      "features/agent-context/service/hierarchyService.ts",
+      "features/agent-context/redux/hierarchyThunks.ts",
     ],
     rules: {
       "no-restricted-syntax": [

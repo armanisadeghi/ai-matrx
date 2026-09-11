@@ -15,31 +15,54 @@ this directory.
 
    **What the guard actually checks** (`scopesChokepointSyntaxRestrictions`, `eslint.config.mjs`,
    rewritten 2026-09-11 under DD-109): four `no-restricted-syntax` selectors, each an error —
-   `.schema("context")`; importing `@/utils/supabase/contextDb`; `.from()` on any of the **12**
-   `context` tables by name; `.rpc()` on any of the **22** scope/context RPC names. Any one of
-   the four reaches the schema, so all four are banned.
+   `.schema("context")`; importing `@/utils/supabase/contextDb`; `.from()` on any `context` table
+   by name; `.rpc()` on any scope/context RPC name. Any one of the four reaches the schema, so
+   all four are banned.
+
+   **You do not maintain the name lists.** They are DERIVED from `types/database.types.ts` on
+   every lint run: the tables are every key of the generated `context` Tables block (13 today);
+   the RPCs are that schema's own Functions block plus every `public` function whose name is in
+   the scope/context family grammar (48 today). A new context table or scope RPC is banned the
+   moment `pnpm sync-types` lands it — nobody has to remember. If the derivation cannot find the
+   schema blocks it THROWS and the lint run fails; it never silently bans nothing, which is the
+   failure mode that let the old `ctx_*` rule sit dead for months.
+
+   Why a name grammar for the RPCs and not the schema block alone: Postgres exposes these to
+   PostgREST from `public`, and their generated signatures almost all return `Json`, so neither
+   the schema block nor the return type can find them. The grammar rejects every module-prefixed
+   lookalike (`agx_list_scoped`, `crm_inbox_list_scope_counts`, `hr_my_context`,
+   `admin_create_schema_template`, …) and is deliberately over- rather than under-inclusive:
+   checked against `pg_get_functiondef` on the live DB (2026-09-11), all but
+   `get_user_form_context` and `list_entities_by_scopes` genuinely touch `context.*`, and those
+   two have no call sites here.
 
    **What it does NOT check:** a `schema: "context"` / `schemaName: "context"` string inside a
    registry or resolver config object — `features/item-presentation/registry.tsx` and the three
    `createRecordResolver` entries in `features/matrx-envelope/referenceResolvers.ts` still bind
    the schema declaratively and are NOT caught. Neither is a dynamic (non-literal) table or RPC
-   name. The 12 table names and 22 RPC names are hand-maintained lists in `eslint.config.mjs` —
-   re-derive them from the generated `context` block after any `pnpm sync-types`, or the guard
-   grows holes.
+   name, nor a scope RPC whose name falls outside the family grammar.
 
    **Who is exempt, and why:** the allowlist at the bottom of `eslint.config.mjs` (§"features/scopes
-   chokepoint allowlist") names every exempt file with its reason. Three are server-side or
+   chokepoint allowlist") names every exempt file with its reason — 12 today. Three are server-side or
    service-role doors this `"use client"` service cannot serve (`app/(core)/scopes/s/[scopeId]/page.tsx`,
-   `app/api/admin/system-context/route.ts`, `app/api/stripe/class-checkout/route.ts`); five are the
+   `app/api/admin/system-context/route.ts`, `app/api/stripe/class-checkout/route.ts`); seven are the
    retirement queue — live duplicate paths (`features/scope-system/redux/{contextItemsSlice,templatesSlice,scopeValuesSlice}.ts`,
-   `features/agent-context/redux/scope/{scopeTypesSlice,scopesSlice}.ts`) that still hold a second
-   apply-template path, a second set-value RPC and a duplicate scope-type read path. Delete the
-   allowlist entry when the duplicate path goes; it is not a standing exemption.
+   `features/agent-context/redux/scope/{scopeTypesSlice,scopesSlice}.ts`,
+   `features/agent-context/{service/hierarchyService.ts,redux/hierarchyThunks.ts}`) that still hold a
+   second apply-template path, a second set-value RPC, a duplicate scope-type read path and a third
+   full-context read (`get_user_full_context`). Delete the allowlist entry when the duplicate path
+   goes; it is not a standing exemption.
+
+   Write an exempt path as a glob, never as a literal dynamic route: ESLint globs are minimatch,
+   where `[scopeId]` is a character class, so `app/(core)/scopes/s/[scopeId]/page.tsx` matches
+   nothing. Use `app/(core)/scopes/s/**`.
 
    Prior state, for the record: before 2026-09-11 the rule banned `.from('ctx_*')` string literals,
    of which zero had remained since the tables moved into the `context` schema — it matched nothing,
-   and the allowlist beside it held 19 paths of which 18 also matched nothing (3 files no longer
-   existed). Register item DD-109 in `common-docs/projects/data-doctrine-adoption/REGISTER.md`.
+   and the allowlist beside it held 19 paths of which 18 also matched nothing: **4** of those named
+   files no longer existed, and **4** were dynamic routes spelled literally, which minimatch could
+   never have matched even while the files did exist. Register item DD-109 in
+   `common-docs/projects/data-doctrine-adoption/REGISTER.md`.
    (The tables are `context.scope_types`, `context.scopes`, `context.context_items`,
    `context.context_item_values`, … — the old public `ctx_*` names no longer exist.)
 2. **The `assoc_*` / `cat_*` / `ues_*` RPC families are called ONLY inside
