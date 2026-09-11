@@ -197,6 +197,13 @@ async function flush(): Promise<void> {
       });
       if (isAuthenticated) {
         await supabase.rpc("log_client_error", {
+          // DD-115: every client names itself. The RPC used to stamp
+          // `source_app='matrx-frontend'` on whoever called it, so extension and
+          // desktop failures were triaged as web-app failures. Naming it here is
+          // what makes the column mean something — the value is validated
+          // against a closed list in the database, so a typo is a loud 400, not
+          // a quietly mislabelled row.
+          p_source_app: "matrx-frontend",
           p_source: e.source,
           p_message: e.message,
           p_code: e.code ?? undefined,

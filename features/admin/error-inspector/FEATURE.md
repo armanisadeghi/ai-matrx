@@ -194,11 +194,32 @@ stale pre-reconciliation snapshot.
 
 Direct client INSERT into `ops.system_error` is denied — the canonical browser
 path is the auth-checked `SECURITY DEFINER` RPC **`public.log_client_error`**
-(`migrations/log_client_error.sql`): attributes to `auth.uid()`, resolves
-`organization_id` (personal org → `matrx-system` fallback) so the NOT NULL never
-blocks capture, fail-safe (returns NULL, never raises). `source_app='matrx-frontend'`
-distinguishes client rows. The ad-hoc API-route writers (audio error logger,
+(`migrations/log_client_error.sql`, then DD-115's
+`migrations/log_client_error_source_app_and_loud_failures_dd115.sql`): attributes
+to `auth.uid()` and resolves `organization_id` (caller-supplied if reachable →
+personal org → `matrx-system`). The ad-hoc API-route writers (audio error logger,
 tool-ui-incident) can adopt this RPC over time.
+
+**Every client names itself, and nothing about that door is silent any more
+(DD-115, applied live 2026-09-11).** The RPC used to stamp the literal
+`source_app='matrx-frontend'` on every caller, so Chrome-extension and desktop
+failures were triaged as web-app failures; it also returned NULL without
+inserting when no organization resolved, and ended in
+`exception when others then return null`, so a failed write was indistinguishable
+from a successful one. Now:
+
+- the caller passes **`p_source_app`**, validated against a closed list
+  (`matrx-frontend`, `matrx-extend`, `matrx-local`, `matrx-mobile`) — an unknown
+  value is refused with `22023` and a sentence naming the list, never coerced;
+- the **pre-DD-115 10-argument signature still exists** as a compatibility
+  overload that delegates with `matrx-frontend`, so nothing that has not been
+  updated breaks. `p_source_app` is the FIRST parameter and has no default,
+  which is what keeps PostgREST's overload resolution unambiguous;
+- **the row is written even when no organization resolves**, carrying
+  `context.organization_note` that says nobody supplied one (`organization_id`
+  itself is NOT NULL and is stamped by `ops._stamp_capture_org`);
+- **insert failures raise.** This adapter already ignores its own RPC failure by
+  relation name, so it cannot loop; every other caller decides how to degrade.
 
 **Unknown public noise never persists.** The guest endpoint refuses fingerprints
 that do not exist in `guest_executions`; dedupe and the per-flush cap remain the

@@ -59,6 +59,13 @@ describe("captured error persistence settlement", () => {
     expect(rpc).toHaveBeenCalledWith(
       "log_client_error",
       expect.objectContaining({
+        // DD-115: the web app names ITSELF. The RPC keeps a compatibility
+        // overload that assumes matrx-frontend, so dropping this key still
+        // "works" and still labels the row correctly — which is exactly why it
+        // must be asserted: the next client copying this call site is the one
+        // that ends up mislabelled, and the closed list in the database can only
+        // check a value it is given.
+        p_source_app: "matrx-frontend",
         p_source: "runtime-exception",
         p_message: "real failure",
       }),

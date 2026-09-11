@@ -70530,21 +70530,38 @@ export type Database = {
       }
       list_udt_dataset_templates: { Args: { p_org_id: string }; Returns: Json }
       list_wizard_archetypes: { Args: never; Returns: Json }
-      log_client_error: {
-        Args: {
-          p_code?: string
-          p_context?: Json
-          p_conversation_id?: string
-          p_message: string
-          p_organization_id?: string
-          p_payload?: Json
-          p_request_id?: string
-          p_route?: string
-          p_source: string
-          p_stack?: string
-        }
-        Returns: string
-      }
+      log_client_error:
+        | {
+            Args: {
+              p_code?: string
+              p_context?: Json
+              p_conversation_id?: string
+              p_message: string
+              p_organization_id?: string
+              p_payload?: Json
+              p_request_id?: string
+              p_route?: string
+              p_source: string
+              p_stack?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_code?: string
+              p_context?: Json
+              p_conversation_id?: string
+              p_message: string
+              p_organization_id?: string
+              p_payload?: Json
+              p_request_id?: string
+              p_route?: string
+              p_source: string
+              p_source_app: string
+              p_stack?: string
+            }
+            Returns: string
+          }
       log_kind_component_incident: {
         Args: {
           p_browser_info?: Json

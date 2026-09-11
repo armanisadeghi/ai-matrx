@@ -48,6 +48,15 @@ yellow stay client-only. No per-source wiring needed. Don't add a parallel
 persistence path — extend the RPC (`migrations/log_client_error.sql`) if a new
 field must reach the DB.
 
+**Every caller names its own app.** `log_client_error` takes `p_source_app`,
+checked against a closed list (`matrx-frontend`, `matrx-extend`, `matrx-local`,
+`matrx-mobile`); an unknown value is a 400 with a sentence, and a caller that
+omits it hits a compatibility overload that assumes `matrx-frontend`. Adding a
+client app means adding it to that list in a migration. The RPC no longer
+swallows: a failed insert raises, and an error with no resolvable organization is
+still written with a note saying so (DD-115,
+`migrations/log_client_error_source_app_and_loud_failures_dd115.sql`).
+
 ## React boundaries
 
 New error boundary → use `lib/error-boundary/ErrorBoundaryWithCapture.tsx` (capture built-in). Migrating a bespoke `componentDidCatch` → add one line: `captureReactRenderError(error, { boundary, relation, componentStack })` (`lib/diagnostics/captureReactError.ts`). Route `error.tsx` boundaries are already covered at `components/errors/ErrorBoundaryView.tsx` — don't re-wire each one.
