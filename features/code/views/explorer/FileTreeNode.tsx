@@ -523,7 +523,12 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
   });
 
   const extraSections: ContextMenuExtraSection[] = [
-    { id: "fs-node-actions", anchor: "after-clipboard", items: menuItems },
+    {
+      id: "fs-node-actions",
+      label: "File actions",
+      anchor: "after-clipboard",
+      items: menuItems,
+    },
   ];
 
   return (
