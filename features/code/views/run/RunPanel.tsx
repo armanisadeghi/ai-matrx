@@ -8,6 +8,8 @@ import { runShellCommand } from "../../runtime/agentTools";
 import { SidePanelAction, SidePanelHeader } from "../SidePanelChrome";
 import { HOVER_ROW, ROW_HEIGHT } from "../../styles/tokens";
 import { extractErrorMessage } from "@/utils/errors";
+import { selectExplorerRootOverride } from "../../redux/codeWorkspaceSlice";
+import { useAppSelector } from "@/lib/redux/hooks";
 
 interface RunPanelProps {
   className?: string;
@@ -23,6 +25,8 @@ interface Script {
 
 export const RunPanel: React.FC<RunPanelProps> = ({ className }) => {
   const { filesystem, workspaceId } = useCodeWorkspace();
+  const explorerRootOverride = useAppSelector(selectExplorerRootOverride);
+  const root = explorerRootOverride ?? filesystem.rootPath;
 
   const [scripts, setScripts] = useState<Script[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +38,6 @@ export const RunPanel: React.FC<RunPanelProps> = ({ className }) => {
     setError(null);
     try {
       const found: Script[] = [];
-      const root = filesystem.rootPath;
 
       const tryRead = async (path: string): Promise<string | null> => {
         try {
@@ -66,11 +69,11 @@ export const RunPanel: React.FC<RunPanelProps> = ({ className }) => {
         root === "/" ? "/pyproject.toml" : `${root}/pyproject.toml`,
       );
       if (pyproject) {
-        for (const name of parsePyprojectScripts(pyproject)) {
+        for (const { name, module } of parsePyprojectScripts(pyproject)) {
           found.push({
             source: "pyproject.toml",
             name,
-            command: `python -m ${name}`,
+            command: `python -m ${module}`,
           });
         }
       }
@@ -112,7 +115,7 @@ export const RunPanel: React.FC<RunPanelProps> = ({ className }) => {
             : script.command;
         await runShellCommand({
           command: actualCommand,
-          cwd: filesystem.rootPath,
+          cwd: root,
           workspaceId,
         });
       } catch (err) {
@@ -121,7 +124,7 @@ export const RunPanel: React.FC<RunPanelProps> = ({ className }) => {
         setRunningName(null);
       }
     },
-    [filesystem.rootPath, workspaceId],
+    [root, workspaceId],
   );
 
   const grouped = React.useMemo(() => {
@@ -201,8 +204,8 @@ export const RunPanel: React.FC<RunPanelProps> = ({ className }) => {
   );
 };
 
-function parsePyprojectScripts(content: string): string[] {
-  const result: string[] = [];
+function parsePyprojectScripts(content: string): Array<{ name: string; module: string }> {
+  const result: Array<{ name: string; module: string }> = [];
   const lines = content.split("\n");
   let inScriptsSection = false;
   for (const raw of lines) {
@@ -213,8 +216,8 @@ function parsePyprojectScripts(content: string): string[] {
       continue;
     }
     if (!inScriptsSection) continue;
-    const match = line.match(/^([A-Za-z0-9_-]+)\s*=/);
-    if (match) result.push(match[1]);
+    const match = line.match(/^([A-Za-z0-9_-]+)\s*=\s*["']([^:"']+)/);
+    if (match) result.push({ name: match[1], module: match[2] });
   }
   return result;
 }

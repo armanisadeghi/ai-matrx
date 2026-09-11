@@ -22,7 +22,10 @@ import {
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveSandboxId } from "../../redux/codeWorkspaceSlice";
+import {
+  selectActiveSandboxId,
+  selectExplorerRootOverride,
+} from "../../redux/codeWorkspaceSlice";
 import { openTab } from "../../redux/tabsSlice";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 import { SidePanelAction, SidePanelHeader } from "../SidePanelChrome";
@@ -43,9 +46,10 @@ export const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const activeSandboxId = useAppSelector(selectActiveSandboxId);
+  const explorerRootOverride = useAppSelector(selectExplorerRootOverride);
   const { filesystem } = useCodeWorkspace();
 
-  const cwd = filesystem.rootPath || "/home/agent";
+  const cwd = (explorerRootOverride ?? filesystem.rootPath) || "/home/agent";
   const adapter = useMemo(
     () =>
       activeSandboxId
