@@ -87209,6 +87209,37 @@ export type Database = {
         }
         Returns: Json
       }
+      site_keyword_performance_for_keyword: {
+        Args: { p_keyword_id: string; p_site_id: string }
+        Returns: {
+          average_position: number
+          clicks: number
+          competition: string
+          competition_index: number
+          competitive_position: string
+          content_role: string
+          cpc: number
+          ctr: number
+          demand_trajectory: string
+          first_date: string
+          impressions: number
+          keyword_id: string
+          last_date: string
+          market_fetched_at: string
+          organization_id: string
+          priority_score: number
+          provider: string
+          query: string
+          search_volume: number
+          site_id: string
+          top_page_clicks: number
+          top_page_id: string
+          top_page_impressions: number
+          top_page_path: string
+          top_page_url: string
+          workflow_status: string
+        }[]
+      }
       site_keyword_performance_page: {
         Args: {
           p_filters?: Json

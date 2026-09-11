@@ -548,9 +548,9 @@ export async function listPageQueryStats(
 }
 
 /**
- * This site's organic performance + workflow state for ONE keyword — the
- * same `seo.v_site_keyword_performance` read model the site Keywords
- * workspace pages through, scoped to a keyword id (one row per provider).
+ * This site's organic performance + workflow state for ONE keyword. The RPC
+ * applies site and keyword scope before freshness ranking, so opening the
+ * dossier never expands the generic site-performance view.
  */
 export async function listSitePerformanceForKeyword(
   siteId: string,
@@ -560,13 +560,13 @@ export async function listSitePerformanceForKeyword(
   const response = await (
     await seoDb()
   )
-    .from("v_site_keyword_performance")
-    .select("*")
-    .eq("site_id", siteId)
-    .eq("keyword_id", keywordId)
+    .rpc("site_keyword_performance_for_keyword", {
+      p_site_id: siteId,
+      p_keyword_id: keywordId,
+    })
     .abortSignal(signal ?? new AbortController().signal);
   if (response.error) throw response.error;
-  return (response.data ?? []) as SiteKeywordPerformanceRow[];
+  return response.data ?? [];
 }
 
 /**
