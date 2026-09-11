@@ -634,12 +634,12 @@ export function SandboxDiagnosticsPanel({
                   size="sm"
                   onClick={() => setResetOpen(true)}
                   disabled={resetting}
-                  title="Destroy + recreate this sandbox with the latest image. Per-user volume preserved by default."
+                  title="Replace the container with its configured template and resources. Your persistent home is kept unless you explicitly erase it."
                 >
                   <RotateCcw
                     className={`h-3 w-3 mr-1 ${resetting ? "animate-spin" : ""}`}
                   />
-                  Reset
+                  Rebuild
                 </Button>
               )}
               <Button
@@ -698,17 +698,58 @@ export function SandboxDiagnosticsPanel({
               void fetchAgentEnv();
           }}
         >
-          <TabsList>
+          <TabsList
+            aria-label="Sandbox diagnostics sections"
+            className="h-auto w-full max-w-full justify-start gap-1 overflow-x-auto p-1"
+          >
             {showFilesystem && (
-              <TabsTrigger value="filesystem">Agent filesystem</TabsTrigger>
+              <TabsTrigger
+                value="filesystem"
+                className="shrink-0 whitespace-nowrap max-md:min-h-11"
+              >
+                Agent filesystem
+              </TabsTrigger>
             )}
-            {showEnv && <TabsTrigger value="agent-env">Agent env</TabsTrigger>}
-            {showEnv && <TabsTrigger value="env">Passthrough</TabsTrigger>}
             {showEnv && (
-              <TabsTrigger value="secrets">Secrets injection</TabsTrigger>
+              <TabsTrigger
+                value="agent-env"
+                className="shrink-0 whitespace-nowrap max-md:min-h-11"
+              >
+                Agent env
+              </TabsTrigger>
             )}
-            {showLogs && <TabsTrigger value="logs">Live logs</TabsTrigger>}
-            {showRaw && <TabsTrigger value="raw">Raw response</TabsTrigger>}
+            {showEnv && (
+              <TabsTrigger
+                value="env"
+                className="shrink-0 whitespace-nowrap max-md:min-h-11"
+              >
+                Passthrough
+              </TabsTrigger>
+            )}
+            {showEnv && (
+              <TabsTrigger
+                value="secrets"
+                className="shrink-0 whitespace-nowrap max-md:min-h-11"
+              >
+                Secrets injection
+              </TabsTrigger>
+            )}
+            {showLogs && (
+              <TabsTrigger
+                value="logs"
+                className="shrink-0 whitespace-nowrap max-md:min-h-11"
+              >
+                Live logs
+              </TabsTrigger>
+            )}
+            {showRaw && (
+              <TabsTrigger
+                value="raw"
+                className="shrink-0 whitespace-nowrap max-md:min-h-11"
+              >
+                Raw response
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {showFilesystem && (
@@ -716,14 +757,14 @@ export function SandboxDiagnosticsPanel({
               value="filesystem"
               className="mt-2 md:h-[30rem] md:flex md:flex-col"
             >
-              <div className="flex items-center gap-2 mb-2 shrink-0">
+              <div className="mb-2 flex flex-wrap items-center gap-2 shrink-0">
                 <Input
                   value={fsRootPath}
                   onChange={(e) => setFsRootPath(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") void fetchFsRoot();
                   }}
-                  className="text-xs h-8 font-mono max-w-md"
+                  className="h-8 min-w-0 flex-1 font-mono text-xs md:max-w-md"
                   placeholder="/home/agent"
                 />
                 <Button
@@ -737,7 +778,7 @@ export function SandboxDiagnosticsPanel({
                   />
                   Load
                 </Button>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="basis-full text-[11px] text-muted-foreground md:basis-auto md:flex-1">
                   Lists what the agent sees via the same <code>/fs/list</code>{" "}
                   endpoint <code>fs_list</code> uses.
                 </span>
@@ -1014,7 +1055,7 @@ export function SandboxDiagnosticsPanel({
               value="logs"
               className="mt-2 md:h-[30rem] md:flex md:flex-col"
             >
-              <div className="flex items-center gap-2 mb-2 shrink-0">
+              <div className="mb-2 flex flex-wrap items-center gap-2 shrink-0">
                 <select
                   value={logSource}
                   onChange={(e) => setLogSource(e.target.value as LogSource)}
@@ -1067,13 +1108,15 @@ export function SandboxDiagnosticsPanel({
         onOpenChange={(open) => {
           if (!resetting) setResetOpen(open);
         }}
-        title="Reset sandbox"
+        title="Rebuild sandbox"
         description={
           <div className="space-y-2 text-sm">
             <p>
-              Destroys the running container and re-creates it with the same
-              template / tier / resources, picking up any latest image or config
-              changes.
+              Replaces the container using the same configured template, tier,
+              and resources. Running processes and temporary files outside
+              /home/agent are lost. Your persistent home files are kept by
+              default. A pinned template version remains pinned; this is not a
+              guarantee that every installed tool or the manager is updated.
             </p>
             <label className="flex items-start gap-2 cursor-pointer">
               <Checkbox
@@ -1082,18 +1125,21 @@ export function SandboxDiagnosticsPanel({
                 className="mt-0.5 h-3 w-3 shrink-0"
               />
               <span>
-                Also wipe persistent volume (<code>/home/agent</code>) —
-                destructive, user data is lost.
+                Also erase the account’s shared persistent home volume (
+                <code>/home/agent</code>). This deletes home files used by other
+                sandboxes on that volume too.
               </span>
             </label>
             <p className="text-xs text-muted-foreground">
-              Without the wipe, your home dir, git checkouts, and any installed
-              packages survive. With the wipe, you start clean.
+              Without erasing the home volume, your home files and git
+              checkouts survive. Installed packages outside that volume may not.
             </p>
           </div>
         }
         confirmLabel={
-          resetWipe ? "Reset and wipe volume" : "Reset (preserve volume)"
+          resetWipe
+            ? "Rebuild and erase home files"
+            : "Rebuild and keep home files"
         }
         variant={resetWipe ? "destructive" : "default"}
         busy={resetting}

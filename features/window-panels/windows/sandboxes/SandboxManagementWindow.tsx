@@ -42,8 +42,10 @@ export default function SandboxManagementWindow({
         contentSource={{ type: "raw" }}
         contextData={{ content: title?.trim() || sandboxId }}
       >
-        <div className="min-h-0 flex-1 overflow-y-auto p-3">
-          <SandboxDiagnosticsPanel sandboxId={sandboxId} />
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-y-auto p-3">
+            <SandboxDiagnosticsPanel sandboxId={sandboxId} />
+          </div>
         </div>
       </NonEditableContextMenu>
     </WindowPanel>
