@@ -102,6 +102,11 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
             resolveCodeWorkspaceExplorerSandboxMode(state),
           ),
         );
+      } else {
+        // The lower split is meaningful only for a live sandbox. Resetting on
+        // a sandbox-less history entry prevents a prior hidden/open choice
+        // from leaking into the next manual sandbox connection.
+        dispatch(setExplorerSandboxMode("collapsed"));
       }
       if (state.sideOpen !== null) dispatch(setSideOpen(state.sideOpen));
       if (state.rightOpen !== null) dispatch(setRightOpen(state.rightOpen));

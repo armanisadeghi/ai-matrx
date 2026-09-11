@@ -102,4 +102,15 @@ describe("code workspace URL state", () => {
         .explorerSandboxMode,
     ).toBe("hidden");
   });
+
+  it("resets a prior pane choice to the compact default when leaving a sandbox", () => {
+    const hidden = codeWorkspaceReducer(
+      undefined,
+      setExplorerSandboxMode("hidden"),
+    );
+    expect(
+      codeWorkspaceReducer(hidden, setExplorerSandboxMode("collapsed"))
+        .explorerSandboxMode,
+    ).toBe("collapsed");
+  });
 });
