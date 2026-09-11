@@ -1878,6 +1878,16 @@
   }
 }
 
+/* xterm measures repeated glyphs in an offscreen, zero-width helper parent.
+   The mobile max-width default must not clamp that measurement to zero:
+   its DOM renderer otherwise adds a full character of letter spacing. */
+.xterm .xterm-char-measure-element {
+  max-width: none;
+  overflow-wrap: normal;
+  word-break: normal;
+  letter-spacing: normal;
+}
+
 /* The blanket element defaults below live in @layer base ON PURPOSE.
    They used to sit unlayered, and unlayered CSS beats EVERY layered rule
    regardless of specificity — so on any screen ≤768px they silently defeated
