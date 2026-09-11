@@ -55,7 +55,6 @@ import { MockFilesystemAdapter } from "../../adapters/MockFilesystemAdapter";
 import { MockProcessAdapter } from "../../adapters/SandboxProcessAdapter";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 import { useSandboxWorkspaceConnection } from "./useSandboxWorkspaceConnection";
-import Link from "next/link";
 import { useOpenSandboxManagementWindow } from "@/features/overlays/openers/sandboxManagementWindow";
 import {
   Tooltip,
@@ -422,34 +421,26 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
               label="Refresh sandbox status — does not restart or update software"
               onClick={() => void refresh()}
             />
+            <SidePanelAction
+              icon={ExternalLink}
+              label="Open full sandbox management"
+              onClick={() => window.location.assign("/sandbox")}
+            />
+            {activeInstance && (
+              <SidePanelAction
+                icon={PanelsTopLeft}
+                label="Open connected sandbox controls"
+                onClick={() =>
+                  openSandboxManagement({
+                    sandboxId: activeInstance.id,
+                    title: sandboxDisplayName(activeInstance),
+                  })
+                }
+              />
+            )}
           </>
         }
       />
-      <div className="flex items-center border-b border-border px-3 py-1.5">
-        <Link
-          href="/sandbox"
-          className="inline-flex min-h-8 items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-          title="Open the full sandbox management page"
-        >
-          <ExternalLink size={13} /> Manage all
-        </Link>
-        {activeInstance && (
-          <div className="ml-auto">
-            <ActionButton
-              icon={PanelsTopLeft}
-              label="Open connected sandbox controls"
-              description="Open controls and diagnostics for the connected sandbox."
-              onClick={() =>
-                openSandboxManagement({
-                  sandboxId: activeInstance.id,
-                  title: sandboxDisplayName(activeInstance),
-                })
-              }
-              iconOnly
-            />
-          </div>
-        )}
-      </div>
       {activeInstance && (
         <ActiveSandboxBanner
           instance={activeInstance}
@@ -459,11 +450,12 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       )}
       <div className="flex-1 overflow-y-auto py-1">
         {activeInstance && (
-          <div className="px-3 py-2">
+          <div className="border-b border-border px-3 py-1.5">
             <SandboxVersionHealthCard
               key={activeInstance.id}
               sandboxId={activeInstance.id}
               onMigrated={() => void refresh()}
+              compact
             />
           </div>
         )}
@@ -1048,50 +1040,38 @@ const ActiveSandboxBanner: React.FC<ActiveSandboxBannerProps> = ({
   return (
     <div
       className={cn(
-        "border-b text-[11px]",
+        "flex min-h-8 items-center gap-2 border-b px-3 text-[11px]",
         PANE_BORDER,
         aiBound
-          ? "bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
-          : "bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100",
+          ? "bg-emerald-50/70 text-emerald-900 dark:bg-emerald-950/25 dark:text-emerald-100"
+          : "bg-amber-50/70 text-amber-900 dark:bg-amber-950/20 dark:text-amber-100",
       )}
     >
-      <div className="flex items-center justify-between gap-2 px-3 py-1.5">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <Plug size={12} />
-          <span className="truncate font-medium">
-            {sandboxDisplayName(instance)}
-          </span>
-          <span className="opacity-70">connected</span>
-        </div>
-        <button
-          type="button"
-          onClick={onDisconnect}
-          className="min-h-8 text-xs opacity-80 hover:opacity-100 max-lg:min-h-11"
-        >
-          Disconnect
-        </button>
-      </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-current/10 px-3 py-1 text-[10px]">
-        <span className="inline-flex items-center gap-1">
-          {aiBound ? (
-            <>
-              <CheckCircle2
-                size={11}
-                className="text-emerald-600 dark:text-emerald-400"
-              />
-              Sandbox proxy available
-            </>
-          ) : (
-            <>
-              <AlertTriangle
-                size={11}
-                className="text-amber-600 dark:text-amber-400"
-              />
-              Sandbox proxy unavailable
-            </>
-          )}
-        </span>
-      </div>
+      <Plug size={12} className="shrink-0" />
+      <span className="min-w-0 flex-1 truncate font-medium">
+        {sandboxDisplayName(instance)}
+      </span>
+      {aiBound ? (
+        <CheckCircle2
+          size={12}
+          className="shrink-0 text-emerald-600 dark:text-emerald-400"
+          aria-label="Sandbox proxy available"
+        />
+      ) : (
+        <AlertTriangle
+          size={12}
+          className="shrink-0 text-amber-600 dark:text-amber-400"
+          aria-label="Sandbox proxy unavailable"
+        />
+      )}
+      <span className="shrink-0 opacity-70">Connected</span>
+      <button
+        type="button"
+        onClick={onDisconnect}
+        className="min-h-8 shrink-0 text-xs opacity-80 hover:opacity-100 max-lg:min-h-11"
+      >
+        Disconnect
+      </button>
     </div>
   );
 };

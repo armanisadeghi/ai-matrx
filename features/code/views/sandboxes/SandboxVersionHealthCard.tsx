@@ -16,6 +16,8 @@ import {
 interface SandboxVersionHealthCardProps {
   sandboxId: string;
   onMigrated?: () => void;
+  /** One-line status for constrained surfaces such as the sidebar. */
+  compact?: boolean;
 }
 
 type LoadState =
@@ -85,6 +87,7 @@ function versionLabel(version: string | null): string {
 export function SandboxVersionHealthCard({
   sandboxId,
   onMigrated,
+  compact = false,
 }: SandboxVersionHealthCardProps) {
   const dispatch = useAppDispatch();
   const runtimeRevision = useAppSelector((state) =>
@@ -162,7 +165,7 @@ export function SandboxVersionHealthCard({
 
   if (loadState.state === "loading") {
     return (
-      <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground">
+      <div className={compact ? "flex items-center gap-1.5 text-xs text-muted-foreground" : "flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground"}>
         <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking sandbox image…
       </div>
     );
@@ -170,7 +173,7 @@ export function SandboxVersionHealthCard({
 
   if (loadState.state === "error") {
     return (
-      <div className="flex items-center justify-between gap-2 rounded-md border border-muted-foreground/30 px-3 py-2 text-xs text-muted-foreground">
+      <div className={compact ? "flex items-center justify-between gap-2 text-xs text-muted-foreground" : "flex items-center justify-between gap-2 rounded-md border border-muted-foreground/30 px-3 py-2 text-xs text-muted-foreground"}>
         <span>Freshness unavailable: {loadState.message}</span>
         <Button variant="ghost" size="xs" onClick={() => void refresh()}>
           <RefreshCw className="mr-1 h-3 w-3" /> Retry
@@ -182,6 +185,53 @@ export function SandboxVersionHealthCard({
   const { health } = loadState;
   const presentation = statusPresentation(health.status);
   const { Icon } = presentation;
+  if (compact) {
+    return (
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <details className="min-w-0 flex-1 text-muted-foreground">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5">
+            <Badge variant="outline" className={`shrink-0 gap-1 ${presentation.className}`}>
+              <Icon className="h-3 w-3" /> {presentation.label}
+            </Badge>
+            {health.template && <span className="truncate">{health.template}</span>}
+            <span className="text-[11px] underline-offset-2 hover:underline">Details</span>
+          </summary>
+          <div className="mt-2 space-y-1 rounded border border-border bg-background p-2 text-[11px]">
+            <p>{health.reason}</p>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 font-mono">
+              <dt>Running</dt><dd>{versionLabel(health.running_version)}</dd>
+              <dt>Current</dt><dd>{versionLabel(health.current_version)}</dd>
+              <dt>Manager</dt><dd>{health.manager_version ?? "version not reported"} · freshness not checked</dd>
+              <dt>Tools</dt><dd>freshness not checked</dd>
+            </dl>
+            {health.status === "outdated" && !health.can_migrate && (
+              <p>{health.migration_action_reason ?? "This manager has not confirmed an in-place update action."}</p>
+            )}
+          </div>
+        </details>
+        <div className="flex shrink-0 items-center gap-1">
+          {health.status === "outdated" && health.can_migrate && (
+            <Button size="xs" onClick={() => setConfirmUpdateOpen(true)} disabled={updating}>
+              {updating ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowUpCircle className="mr-1 h-3 w-3" />}
+              Update
+            </Button>
+          )}
+          <Button variant="ghost" size="xs" aria-label="Check sandbox image freshness" title="Check sandbox image freshness" onClick={() => void refresh()} disabled={updating}>
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+        <ConfirmDialog
+          open={confirmUpdateOpen}
+          onOpenChange={setConfirmUpdateOpen}
+          title="Update sandbox image"
+          description="The running container will be replaced, interrupting active terminal, file, and agent connections. The sandbox identity and persistent /home/agent workspace are kept."
+          confirmLabel="Update image"
+          busy={updating}
+          onConfirm={migrate}
+        />
+      </div>
+    );
+  }
   return (
     <div className="rounded-md border border-border px-3 py-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
