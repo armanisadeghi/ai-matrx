@@ -162,7 +162,7 @@ it("retries a failed membership read in place and offers the returned workspace"
   const getTree = jest.mocked(scopesService.getScopeTree);
   getTree.mockResolvedValueOnce({
     ok: false,
-    error: { code: "NETWORK_ERROR", message: "Connection interrupted" },
+    error: { code: "internal", message: "Connection interrupted" },
   });
   await act(async () => {
     void ensureOrganizationContext().catch(() => {});
