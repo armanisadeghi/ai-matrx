@@ -1,6 +1,7 @@
 import {
   EMPTY_CODE_WORKSPACE_URL_STATE,
   parseCodeWorkspaceUrlState,
+  resolveCodeWorkspaceUrlView,
   withCodeWorkspaceUrlState,
 } from "../url-state";
 
@@ -58,5 +59,15 @@ describe("code workspace URL state", () => {
       EMPTY_CODE_WORKSPACE_URL_STATE,
     );
     expect(result.toString()).toBe("open=file-1");
+  });
+
+  it("defaults a sandbox to Explorer while preserving canonical Library doors and explicit views", () => {
+    const sandbox = parseCodeWorkspaceUrlState(new URLSearchParams("sandbox=s1"));
+    expect(resolveCodeWorkspaceUrlView(sandbox, new URLSearchParams("sandbox=s1"))).toBe("explorer");
+    expect(resolveCodeWorkspaceUrlView(sandbox, new URLSearchParams("sandbox=s1&open=file-1"))).toBe("library");
+    expect(resolveCodeWorkspaceUrlView(
+      parseCodeWorkspaceUrlState(new URLSearchParams("sandbox=s1&view=run")),
+      new URLSearchParams("sandbox=s1&view=run"),
+    )).toBe("run");
   });
 });

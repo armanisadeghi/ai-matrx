@@ -100,6 +100,18 @@ export function parseCodeWorkspaceUrlState(
   };
 }
 
+/** `/code?sandbox=` is a filesystem workspace, so its useful default is the
+ * Explorer. Canonical Library doors retain priority, and any valid explicit
+ * `view` wins over both defaults. */
+export function resolveCodeWorkspaceUrlView(
+  state: CodeWorkspaceUrlState,
+  params: URLSearchParams,
+): ActivityViewId | null {
+  if (state.activeView) return state.activeView;
+  if (params.has("open") || params.has("folder")) return "library";
+  return state.sandboxId ? "explorer" : null;
+}
+
 /** Applies workspace state without touching route-owned query parameters such
  * as `open`, `folder`, `agentId`, and `conversationId`. Null removes an owned
  * value so the URL remains small and backwards-compatible. */

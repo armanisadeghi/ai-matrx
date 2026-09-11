@@ -32,6 +32,7 @@ import {
 import { useSandboxWorkspaceConnection } from "../views/sandboxes/useSandboxWorkspaceConnection";
 import {
   parseCodeWorkspaceUrlState,
+  resolveCodeWorkspaceUrlView,
   withCodeWorkspaceUrlState,
   type CodeWorkspaceUrlState,
 } from "../url-state";
@@ -75,8 +76,9 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   });
 
   const applyNonFilesystemState = useCallback(
-    (state: CodeWorkspaceUrlState) => {
-      if (state.activeView) dispatch(revealView(state.activeView));
+    (state: CodeWorkspaceUrlState, params: URLSearchParams) => {
+      const view = resolveCodeWorkspaceUrlView(state, params);
+      if (view) dispatch(revealView(view));
       if (state.sideOpen !== null) dispatch(setSideOpen(state.sideOpen));
       if (state.rightOpen !== null) dispatch(setRightOpen(state.rightOpen));
       if (state.farRightOpen !== null) dispatch(setFarRightOpen(state.farRightOpen));
@@ -100,11 +102,12 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   useEffect(() => {
     const targetSearch = locationSearch;
     if (appliedLocationRef.current === targetSearch) return;
-    const state = parseCodeWorkspaceUrlState(new URLSearchParams(targetSearch));
+    const targetParams = new URLSearchParams(targetSearch);
+    const state = parseCodeWorkspaceUrlState(targetParams);
     restoringSearchRef.current = targetSearch;
     fileRestoreAbortRef.current?.abort();
     const generation = ++requestGenerationRef.current;
-    applyNonFilesystemState(state);
+    applyNonFilesystemState(state, targetParams);
 
     const restore = async () => {
       if (
@@ -204,9 +207,18 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   useEffect(() => {
     if (restoringSearchRef.current !== null) return;
     const current = new URLSearchParams(window.location.search);
-    const filePath = activeTab?.id.startsWith(`${filesystem.id}:`) && activeTab.path.startsWith("/")
-      ? activeTab.path
-      : null;
+    // Session reports predate the filesystem tab identity and use a stable
+    // `session-report:<sandbox>` id for deduplication. They are still real
+    // absolute filesystem files, so selecting one must produce a restorable
+    // `file` link just like an Explorer-opened tab.
+    const isFilesystemTab = activeTab?.id.startsWith(`${filesystem.id}:`);
+    const isActiveSessionReport = Boolean(
+      activeSandboxId && activeTab?.id === `session-report:${activeSandboxId}`,
+    );
+    const filePath =
+      (isFilesystemTab || isActiveSessionReport) && activeTab?.path.startsWith("/")
+        ? activeTab.path
+        : null;
     const next = withCodeWorkspaceUrlState(current, {
       sandboxId: activeSandboxId,
       filePath,
