@@ -36,7 +36,8 @@ export function useOpenFile() {
   const { filesystem } = useCodeWorkspace();
 
   return useCallback(
-    async (path: string) => {
+    async (path: string, signal?: AbortSignal) => {
+      if (signal?.aborted) return;
       const name = path.split("/").pop() ?? path;
       const id = `${filesystem.id}:${path}`;
       // URL restore and explorer/search selection both converge here. An
@@ -87,6 +88,10 @@ export function useOpenFile() {
       }
 
       const content = await filesystem.readFile(path);
+      // A newer URL restore may have selected another file while this read
+      // was in flight. The adapter cannot always cancel its request, but it
+      // must never activate a stale result after that newer selection.
+      if (signal?.aborted) return;
       dispatch(
         openTab({
           id,

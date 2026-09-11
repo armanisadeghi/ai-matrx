@@ -70,7 +70,10 @@ function readBoolean(params: URLSearchParams, key: string): boolean | null {
 
 function readAbsolutePath(params: URLSearchParams, key: string): string | null {
   const value = params.get(key);
-  return value?.startsWith("/") ? value : null;
+  if (!value?.startsWith("/") || value.includes("\0")) return null;
+  return value.split("/").some((segment) => segment === "." || segment === "..")
+    ? null
+    : value;
 }
 
 /** Reads only validated workspace state. Unknown or malformed values are

@@ -26,7 +26,7 @@ describe("code workspace URL state", () => {
 
     expect(
       parseCodeWorkspaceUrlState(
-        new URLSearchParams("file=relative.ts&root=home&view=nope&side=true&bottomTab=oops"),
+        new URLSearchParams("file=%2Fhome%2F..%2Fsecret&root=home&view=nope&side=true&bottomTab=oops"),
       ),
     ).toEqual(EMPTY_CODE_WORKSPACE_URL_STATE);
   });

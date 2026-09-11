@@ -65,6 +65,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   const appliedLocationRef = useRef<string | null>(null);
   const initialSandboxRef = useRef(initialSandboxId);
   const hasNormalizedRef = useRef(false);
+  const fileRestoreAbortRef = useRef<AbortController | null>(null);
 
   const { connect, disconnect } = useSandboxWorkspaceConnection({
     // URL restoration must remain honest without replacing the workspace with
@@ -101,6 +102,7 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     if (appliedLocationRef.current === targetSearch) return;
     const state = parseCodeWorkspaceUrlState(new URLSearchParams(targetSearch));
     restoringSearchRef.current = targetSearch;
+    fileRestoreAbortRef.current?.abort();
     const generation = ++requestGenerationRef.current;
     applyNonFilesystemState(state);
 
@@ -119,7 +121,14 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
           );
           if (!instance) throw new Error("The sandbox is unavailable or no longer belongs to you.");
           if (generation !== requestGenerationRef.current) return;
-          await connect(instance, { restore: true });
+          const connected = await connect(instance, { restore: true });
+          if (!connected && generation === requestGenerationRef.current) {
+            // `connect` reports a non-runnable sandbox as a handled false
+            // result. Finish this restore so later UI changes can still
+            // serialize; otherwise the URL bridge would remain paused.
+            restoringSearchRef.current = null;
+            appliedLocationRef.current = targetSearch;
+          }
         } catch (error) {
           if (generation === requestGenerationRef.current) {
             console.error("[code URL restore] sandbox", error);
@@ -162,12 +171,17 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
       ),
     );
     if (state.filePath) {
-      void openFile(state.filePath).catch((error) => {
+      const abortController = new AbortController();
+      fileRestoreAbortRef.current = abortController;
+      void openFile(state.filePath, abortController.signal).catch((error) => {
         console.error("[code URL restore] file", state.filePath, error);
       }).finally(() => {
         // Do not let the serializer observe an interim auto-opened session
         // report and erase the requested file before its read finishes.
-        if (restoringSearchRef.current === targetSearch) {
+        if (
+          !abortController.signal.aborted &&
+          restoringSearchRef.current === targetSearch
+        ) {
           appliedLocationRef.current = targetSearch;
           restoringSearchRef.current = null;
           if (state.sandboxId === initialSandboxRef.current) {
