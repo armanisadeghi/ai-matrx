@@ -152,6 +152,8 @@ container.
 
 ## Change log
 
+- `2026-09-11` — Sandbox sidebar links to management and opens the canonical movable controls window. Window identity survives reload and diagnostics sections scroll on phones. Rebuild help accurately distinguishes configured-template recreation from image updates and explicitly identifies the account-shared home volume wipe.
+
 - `2026-09-11` — **Mobile xterm glyph metrics now remain accurate.** The global narrow-viewport `* { max-width: 100% }` rule had clamped xterm’s off-screen width-cache measurement spans to their zero-width parent, making each rendered terminal glyph receive excess letter spacing. The xterm measurement span is exempted from that generic cap. `TerminalTab` waits for the first visible native workspace-tools disclosure before booting, then keeps the PTY mounted across later closes and refreshes rows on reveal.
 - `2026-09-11` — Code workspace clarity pass: active-file reveal, one location row, working safe create actions, visible sandbox context, URL-restorable locations/panels, compact stacked access, real diagnostics/task output, and larger starting terminal/chat panes. Verification uses the admin test account's own sandbox; localhost evidence does not imply production certification.
 - `2026-09-11` — `/code?sandbox=<row UUID>` opens the selected sandbox through the existing connection flow. Chat Options supplies the new-tab link and inline rename; unnamed display labels include a short ID, and successful renames refresh mounted compute pickers.

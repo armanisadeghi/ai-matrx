@@ -27,6 +27,7 @@ import {
   Timer,
   Trash2,
   WifiOff,
+  PanelsTopLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -47,13 +48,19 @@ import {
 } from "@/lib/sandbox/status";
 import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
 import { sandboxDisplayName } from "@/lib/sandbox/format";
+import { SandboxVersionHealthCard } from "./SandboxVersionHealthCard";
 import { CreateSandboxModal } from "./CreateSandboxModal";
 import { MockFilesystemAdapter } from "../../adapters/MockFilesystemAdapter";
-import {
-  MockProcessAdapter,
-} from "../../adapters/SandboxProcessAdapter";
+import { MockProcessAdapter } from "../../adapters/SandboxProcessAdapter";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 import { useSandboxWorkspaceConnection } from "./useSandboxWorkspaceConnection";
+import Link from "next/link";
+import { useOpenSandboxManagementWindow } from "@/features/overlays/openers/sandboxManagementWindow";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -86,6 +93,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   className,
 }) => {
   const dispatch = useAppDispatch();
+  const openSandboxManagement = useOpenSandboxManagementWindow();
   const activeId = useAppSelector(selectActiveSandboxId);
   const activeProxyUrl = useAppSelector(selectActiveSandboxProxyUrl);
   const isAdmin = useAppSelector(selectIsSuperAdmin);
@@ -190,17 +198,19 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
    * probe; callers are expected to gate this on whatever readiness check
    * makes sense for their entry point.
    */
-  const { connect, connectingId, wireInstance } = useSandboxWorkspaceConnection({
-    onError: setError,
-    onConnected: () => setError(null),
-    onSandboxGone: () => void refresh(),
-    onProbe: (instanceId, probe) => {
-      setProbeStatusById((current) => ({
-        ...current,
-        [instanceId]: probe.aliveness,
-      }));
+  const { connect, connectingId, wireInstance } = useSandboxWorkspaceConnection(
+    {
+      onError: setError,
+      onConnected: () => setError(null),
+      onSandboxGone: () => void refresh(),
+      onProbe: (instanceId, probe) => {
+        setProbeStatusById((current) => ({
+          ...current,
+          [instanceId]: probe.aliveness,
+        }));
+      },
     },
-  });
+  );
 
   const disconnect = useCallback(() => {
     // Wipe the per-sandbox FS-change ring so a subsequent reconnect (or
@@ -401,12 +411,34 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
             />
             <SidePanelAction
               icon={loading ? Loader2 : RefreshCw}
-              label="Refresh"
+              label="Refresh sandbox status — does not restart or update software"
               onClick={() => void refresh()}
             />
           </>
         }
       />
+      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+        <Link
+          href="/sandbox"
+          className="inline-flex min-h-8 items-center gap-1.5 text-xs font-medium text-foreground hover:underline"
+          title="Open the full sandbox management page"
+        >
+          <ExternalLink size={13} /> Manage sandboxes
+        </Link>
+        {activeInstance && (
+          <ActionButton
+            icon={PanelsTopLeft}
+            label="Controls window"
+            description="Open controls and diagnostics for the connected sandbox without leaving your files."
+            onClick={() =>
+              openSandboxManagement({
+                sandboxId: activeInstance.id,
+                title: sandboxDisplayName(activeInstance),
+              })
+            }
+          />
+        )}
+      </div>
       {activeInstance && (
         <ActiveSandboxBanner
           instance={activeInstance}
@@ -415,6 +447,15 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         />
       )}
       <div className="flex-1 overflow-y-auto py-1">
+        {activeInstance && (
+          <div className="px-3 py-2">
+            <SandboxVersionHealthCard
+              key={activeInstance.id}
+              sandboxId={activeInstance.id}
+              onMigrated={() => void refresh()}
+            />
+          </div>
+        )}
         {error && (
           <div className="mx-3 mb-1 rounded border border-red-300 bg-red-50 px-2 py-1 text-[11px] text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
             {error}
@@ -553,6 +594,7 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
   const canReset = canStop || effective === "stopped";
   const remaining = useTimeRemaining(instance.expires_at, "minute");
   const displayName = sandboxDisplayName(instance);
+  const openSandboxManagement = useOpenSandboxManagementWindow();
   const [resetOpen, setResetOpen] = useState(false);
   const [resetWipe, setResetWipe] = useState(false);
 
@@ -641,7 +683,7 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
           <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 font-mono text-neutral-600 dark:text-neutral-400">
             <dt className="text-neutral-500">ID</dt>
             <dd className="truncate">{instance.id}</dd>
-            <dt className="text-neutral-500">sandbox_id</dt>
+            <dt className="text-neutral-500">Runtime ID</dt>
             <dd className="truncate">{instance.sandbox_id ?? "—"}</dd>
             <dt className="text-neutral-500">status</dt>
             <dd className="truncate">{instance.status}</dd>
@@ -649,9 +691,9 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
             <dd className="truncate">
               {instance.tier ?? instance.config?.tier ?? "—"}
             </dd>
-            <dt className="text-neutral-500">hot_path</dt>
+            <dt className="text-neutral-500">Storage</dt>
             <dd className="truncate">{instance.hot_path ?? "—"}</dd>
-            <dt className="text-neutral-500">proxy_url</dt>
+            <dt className="text-neutral-500">Proxy</dt>
             <dd className="truncate">
               {instance.proxy_url ? (
                 <span className="text-neutral-600 dark:text-neutral-300">
@@ -659,7 +701,7 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
                 </span>
               ) : (
                 <span className="text-amber-600 dark:text-amber-400">
-                  null — orchestrator hasn’t shipped one
+                  Not available
                 </span>
               )}
             </dd>
@@ -685,6 +727,17 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
             )}
           </dl>
           <div className="mt-2 flex flex-wrap gap-1">
+            <ActionButton
+              icon={PanelsTopLeft}
+              label="Controls"
+              description="Open this sandbox’s controls and diagnostics in a movable window."
+              onClick={() =>
+                openSandboxManagement({
+                  sandboxId: instance.id,
+                  title: displayName,
+                })
+              }
+            />
             {!isActive && (
               <ActionButton
                 icon={Plug}
@@ -696,19 +749,22 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
             )}
             <ActionButton
               icon={Timer}
-              label="+1h TTL"
+              label="Extend 1 hour"
+              description="Adds one hour before this sandbox expires. Does not restart it or update its software."
               onClick={onExtend}
               disabled={!canExtend || busy}
             />
             <ActionButton
               icon={Square}
               label="Stop"
+              description="Stops running processes and disconnects this workspace. The persistent home volume is kept."
               onClick={onStop}
               disabled={!canStop || busy}
             />
             <ActionButton
               icon={RotateCcw}
-              label="Reset"
+              label="Rebuild…"
+              description="Replaces the container using its configured template and resources. Stops all processes; keeps /home/agent by default. Review options before continuing."
               onClick={() => {
                 setResetWipe(false);
                 setResetOpen(true);
@@ -718,6 +774,7 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
             <ActionButton
               icon={Trash2}
               label="Delete"
+              description="Remove this sandbox. Review the deletion confirmation before continuing."
               onClick={onDelete}
               disabled={busy}
               danger
@@ -740,13 +797,15 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
         onOpenChange={(open) => {
           if (!busy) setResetOpen(open);
         }}
-        title="Reset sandbox"
+        title="Rebuild sandbox"
         description={
           <div className="space-y-2 text-sm">
             <p>
-              Destroys the running container and re-creates it with the same
-              template / tier / resources, picking up any latest image or config
-              changes.
+              Replaces the container using the same configured template, tier,
+              and resources. Running processes and temporary files outside
+              /home/agent are lost. Your persistent home files are kept by
+              default. A pinned template version remains pinned; this is not a
+              guarantee that every installed tool or the manager is updated.
             </p>
             <label className="flex items-start gap-2 cursor-pointer">
               <Checkbox
@@ -755,14 +814,17 @@ const SandboxRow: React.FC<SandboxRowProps> = ({
                 className="mt-0.5 h-3 w-3 shrink-0"
               />
               <span>
-                Also wipe persistent volume (<code>/home/agent</code>) —
-                destructive, user data is lost.
+                Also erase the account’s shared persistent home volume (
+                <code>/home/agent</code>). This deletes home files used by other
+                sandboxes on that volume too.
               </span>
             </label>
           </div>
         }
         confirmLabel={
-          resetWipe ? "Reset and wipe volume" : "Reset (preserve volume)"
+          resetWipe
+            ? "Rebuild and erase home files"
+            : "Rebuild and keep home files"
         }
         variant={resetWipe ? "destructive" : "default"}
         busy={busy}
@@ -841,6 +903,7 @@ const ProbeLabel: React.FC<ProbeDotProps> = ({ aliveness }) => {
 function ActionButton({
   icon: Icon,
   label,
+  description,
   onClick,
   disabled,
   primary,
@@ -848,30 +911,39 @@ function ActionButton({
 }: {
   icon: React.ComponentType<{ size?: number }>;
   label: string;
+  description?: string;
   onClick: () => void;
   disabled?: boolean;
   primary?: boolean;
   danger?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] disabled:cursor-not-allowed disabled:opacity-50",
-        primary &&
-          "border-blue-400 bg-blue-500 text-white hover:bg-blue-600 disabled:hover:bg-blue-500",
-        danger &&
-          "border-red-400 bg-white text-red-600 hover:bg-red-50 dark:border-red-900 dark:bg-neutral-900 dark:text-red-300 dark:hover:bg-red-950/40",
-        !primary &&
-          !danger &&
-          "border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800",
-      )}
-    >
-      <Icon size={10} />
-      {label}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onClick}
+          disabled={disabled}
+          title={description ?? label}
+          className={cn(
+            "inline-flex min-h-8 max-lg:min-h-11 items-center gap-1 rounded border px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-50",
+            primary &&
+              "border-blue-400 bg-blue-500 text-white hover:bg-blue-600 disabled:hover:bg-blue-500",
+            danger &&
+              "border-red-400 bg-white text-red-600 hover:bg-red-50 dark:border-red-900 dark:bg-neutral-900 dark:text-red-300 dark:hover:bg-red-950/40",
+            !primary &&
+              !danger &&
+              "border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800",
+          )}
+        >
+          <Icon size={10} />
+          {label}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-72">
+        {description ?? label}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -933,7 +1005,7 @@ const ActiveSandboxBanner: React.FC<ActiveSandboxBannerProps> = ({
         <button
           type="button"
           onClick={onDisconnect}
-          className="text-[10px] uppercase tracking-wide opacity-80 hover:opacity-100"
+          className="min-h-8 text-xs opacity-80 hover:opacity-100 max-lg:min-h-11"
         >
           Disconnect
         </button>
@@ -946,7 +1018,7 @@ const ActiveSandboxBanner: React.FC<ActiveSandboxBannerProps> = ({
                 size={11}
                 className="text-emerald-600 dark:text-emerald-400"
               />
-              AI calls → sandbox proxy
+              Sandbox proxy available
             </>
           ) : (
             <>
@@ -954,30 +1026,14 @@ const ActiveSandboxBanner: React.FC<ActiveSandboxBannerProps> = ({
                 size={11}
                 className="text-amber-600 dark:text-amber-400"
               />
-              AI calls → cloud (no proxy_url)
+              Sandbox proxy unavailable
             </>
-          )}
-        </span>
-        <span className="opacity-70">·</span>
-        <span className="font-mono opacity-80">
-          proxy_url:{" "}
-          {proxyUrl ? (
-            <span title={proxyUrl}>{shortenUrl(proxyUrl)}</span>
-          ) : (
-            <span className="text-amber-700 dark:text-amber-300">null</span>
           )}
         </span>
       </div>
     </div>
   );
 };
-
-function shortenUrl(url: string, max = 56): string {
-  if (url.length <= max) return url;
-  // Keep the host + tail so the user can still recognize the orchestrator
-  // and the per-sandbox suffix without busting the single-line layout.
-  return `${url.slice(0, max - 14)}…${url.slice(-12)}`;
-}
 
 // ─── Raw instance inspector ────────────────────────────────────────────────
 //
