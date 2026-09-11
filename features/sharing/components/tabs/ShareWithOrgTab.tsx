@@ -260,7 +260,11 @@ export function ShareWithOrgTab({
             <SelectContent>
               <SelectItem value="viewer">Viewer</SelectItem>
               <SelectItem value="editor">Editor</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
+              {/* THE SCOPE-QUALIFIED ADMIN RULE (access/DECISIONS.md 2026-09-10): the heading
+                  above is "Permission Level", which names no item — and this tab grants to a
+                  whole ORGANIZATION, which is exactly where a bare "Admin" reads as the
+                  organization-admin role. Qualified. */}
+              <SelectItem value="admin">Admin (this item)</SelectItem>
             </SelectContent>
           </Select>
           <PermissionLevelDescription level={permissionLevel} />

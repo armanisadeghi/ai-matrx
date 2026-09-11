@@ -23,6 +23,15 @@ import type { ResourceType } from "./registry";
 // Core Permission Types
 // ============================================================================
 
+// CONVERGE: the access levels are `viewer` · `commenter` · `editor` · `admin` — one vocabulary
+// everywhere — declared 2026-09-10, AI Matrx Data Doctrine R18 (recorded in
+// common-docs/systems/platform/access/DECISIONS.md, 2026-09-10). Observed here: three levels, no
+// `commenter`, matching live `public.permission_level` = `viewer, editor, admin` [live
+// brsgrqvjdzwihsvnfqkf, 2026-09-10]. Adding it is `ALTER TYPE public.permission_level ADD VALUE
+// 'commenter' BEFORE 'editor'` plus this union and the `satisfiesPermissionLevel` comparator
+// below, and it requires re-reading every ordinal `permission_level` comparison against the new
+// four-value order first. Reconcile when you next change this for another reason. Do NOT escalate.
+// Register: /projects/data-doctrine-adoption/REGISTER.md#DD-050
 /**
  * Permission levels in hierarchical order: viewer < editor < admin
  */

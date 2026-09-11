@@ -175,6 +175,13 @@ export const TAB_AUTO_MOVE_IDLE_MS = 1500;
 
 // ── Shared-with-me metadata ──────────────────────────────────────────────────
 
+// CONVERGE: one access vocabulary, everywhere — a private per-feature copy of the level union is
+// a second vocabulary — declared 2026-09-10, AI Matrx Data Doctrine R18 (recorded in
+// common-docs/systems/platform/access/DECISIONS.md, 2026-09-10). Observed here: notes declares its
+// own `SharedNotePermissionLevel`, a duplicate of `PermissionLevel` in
+// utils/permissions/types.ts:29 — so `commenter` would have to be added in two places. Collapse to
+// the shared type. Reconcile when you next change this for another reason. Do NOT escalate.
+// Register: /projects/data-doctrine-adoption/REGISTER.md#DD-050
 /** Effective grant level from `iam.permissions` (viewer < editor < admin). */
 export type SharedNotePermissionLevel = "viewer" | "editor" | "admin";
 

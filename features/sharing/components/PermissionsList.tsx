@@ -441,7 +441,10 @@ export function PermissionsList({
                       <SelectContent>
                         <SelectItem value="viewer">Viewer</SelectItem>
                         <SelectItem value="editor">Editor</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
+                        {/* THE SCOPE-QUALIFIED ADMIN RULE (access/DECISIONS.md 2026-09-10):
+                            this control's own heading is the grant-list label, which does not
+                            name the item, so the bare "Admin" is qualified here. */}
+                        <SelectItem value="admin">Admin (this item)</SelectItem>
                       </SelectContent>
                     </Select>
 

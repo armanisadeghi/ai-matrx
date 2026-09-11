@@ -108,10 +108,15 @@ export function PermissionLevelDescription({
 }: {
   level: PermissionLevel;
 }) {
+  // THE SCOPE-QUALIFIED ADMIN RULE (common-docs/systems/platform/access/DECISIONS.md,
+  // 2026-09-10, CFL-360): the word "admin" never stands alone in an access surface — it carries
+  // the noun of the thing it governs, so the item level is never read as the organization-admin
+  // role. "Full access" was the retired label for this same level (AI Matrx Data Doctrine R19:
+  // "Admin is the top level on a thing; there is no 'full.'").
   const descriptions = {
     viewer: "Can view",
     editor: "Can view and edit",
-    admin: "Full access (view, edit, delete)",
+    admin: "Admin of this item (view, edit, share, delete)",
   };
 
   return (

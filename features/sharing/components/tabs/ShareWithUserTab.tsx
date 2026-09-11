@@ -505,7 +505,10 @@ export function ShareWithUserTab({
             <SelectContent>
               <SelectItem value="viewer">Viewer</SelectItem>
               <SelectItem value="editor">Editor</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
+              {/* THE SCOPE-QUALIFIED ADMIN RULE (access/DECISIONS.md 2026-09-10): the heading
+                  above is "Permission Level", which names no item, so the bare "Admin" is
+                  qualified here. */}
+              <SelectItem value="admin">Admin (this item)</SelectItem>
             </SelectContent>
           </Select>
           <PermissionLevelDescription level={permissionLevel} />
