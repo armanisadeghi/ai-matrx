@@ -31,6 +31,9 @@ import {
 } from "@/features/settings/universal/KnobFieldControl";
 import { formatKnobValue, type KnobLadder } from "./ladder";
 import { setKnobOverride, setKnobRungLock } from "./service";
+import { setFeatureKnob } from "@/features/admin/limits/service";
+import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
+import { SettingsRow } from "@/components/official/settings/SettingsRow";
 import type { KnobScopeKindName, ScopedKnob } from "./types";
 
 function valueText(value: unknown): string {
@@ -88,6 +91,8 @@ export function KnobOverrideRow(props: {
    * setting even though the platform allows it). Owner/admin gated in SQL.
    */
   showUserLockControl?: boolean;
+  /** Platform defaults use feature_knob_set; platform is not a scoped rung. */
+  system?: { canWrite: boolean; registeredDefault: unknown };
   onChanged: () => void;
 }) {
   const {
@@ -99,6 +104,7 @@ export function KnobOverrideRow(props: {
     hideKey = false,
     ladder,
     showUserLockControl,
+    system,
     onChanged,
   } = props;
   const flatOverride = scopeKind === "user" ? knob.user_override : knob.org_override;
@@ -130,6 +136,7 @@ export function KnobOverrideRow(props: {
   const overrideText = isSetHere ? valueText(overrideValue) : "";
   const [draft, setDraft] = useState<string>(overrideText);
   const [busy, setBusy] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
 
   // Re-sync the draft whenever the row starts representing different state —
   // a clear, a refresh, or (on the personal tab) an organization switch. A
@@ -140,7 +147,20 @@ export function KnobOverrideRow(props: {
 
   const write = async (value: unknown) => {
     setBusy(true);
+    setInlineError(null);
     try {
+      if (system) {
+        const result = await setFeatureKnob(knob.feature, knob.key, value);
+        if (!result.ok) {
+          const detail = result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`;
+          setInlineError(detail);
+          toast.error(detail);
+          return;
+        }
+        toast.success(value === null ? `${knob.label} restored to its registered default.` : `${knob.label} saved for the platform.`);
+        onChanged();
+        return;
+      }
       const result = await setKnobOverride({
         feature: knob.feature,
         key: knob.key,
@@ -211,6 +231,15 @@ export function KnobOverrideRow(props: {
   };
 
   const clear = async () => {
+    if (system) {
+      const confirmed = await confirm({
+        title: `Restore ${knob.label} to its registered default?`,
+        description: `The platform value becomes ${formatKnobValue(system.registeredDefault, knob.unit)}.`,
+        confirmLabel: "Restore registered default",
+      });
+      if (confirmed) await write(null);
+      return;
+    }
     const confirmed = await confirm({
       title: `Inherit ${knob.label} from ${inheritedFrom}?`,
       description: `The override is removed and this setting falls back to ${formatKnobValue(
@@ -238,13 +267,21 @@ export function KnobOverrideRow(props: {
       : null;
 
   return (
-    <div className="grid gap-3 p-4 md:grid-cols-[1fr_auto]">
+    <SettingAnchor id={knob.full_key}>
+      <SettingsRow
+        id={knob.full_key}
+        label={knob.label}
+        description={knob.description}
+        helpText={knob.ui.help}
+        error={inlineError ?? undefined}
+        modified={system ? JSON.stringify(knob.platform_default) !== JSON.stringify(system.registeredDefault) : isSetHere}
+        controlLayout="wide"
+        variant="stacked"
+      >
+      <div className="grid gap-3 md:grid-cols-[1fr_auto]">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium">{knob.label}</span>
-          {!hideKey && (
-            <code className="text-xs text-muted-foreground">{knob.key}</code>
-          )}
+          {!hideKey && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">Details</summary><code>{knob.full_key}</code></details>}
           {isSetHere ? (
             <Badge variant="default" className="text-xs">
               Set here
@@ -272,7 +309,6 @@ export function KnobOverrideRow(props: {
             </Badge>
           )}
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">{knob.description}</p>
         {showUserLockControl && knob.overridable_by.includes("user") && (
           <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
             Personal overrides{" "}
@@ -291,7 +327,7 @@ export function KnobOverrideRow(props: {
           </p>
         )}
         <p className="mt-1 text-xs text-muted-foreground">
-          Platform default {formatKnobValue(knob.platform_default, knob.unit)}
+          {system ? "Registered default" : "Platform default"} {formatKnobValue(system?.registeredDefault ?? knob.platform_default, knob.unit)}
           {knob.basis ? (
             <>
               {" · "}
@@ -314,7 +350,7 @@ export function KnobOverrideRow(props: {
           <KnobFieldControl
             knob={knob}
             ladder={fieldLadder}
-            disabled={busy || !fieldLadder.canWrite}
+            disabled={busy || !fieldLadder.canWrite || !system?.canWrite && Boolean(system)}
             onCommit={(value) => write(value)}
           />
           <Button
@@ -324,7 +360,7 @@ export function KnobOverrideRow(props: {
             title={`Remove the override and inherit from ${inheritedFrom}`}
             onClick={() => void clear()}
           >
-            Inherit
+            {system ? "Restore registered default" : "Inherit"}
           </Button>
         </div>
       ) : (
@@ -333,7 +369,7 @@ export function KnobOverrideRow(props: {
           <select
             className="h-9 w-40 rounded-md border border-border bg-background px-2 text-sm"
             value={draft}
-            disabled={busy}
+            disabled={busy || !system?.canWrite && Boolean(system)}
             onChange={(event) => setDraft(event.target.value)}
           >
             <option value="" disabled>
@@ -350,24 +386,26 @@ export function KnobOverrideRow(props: {
             className="w-40"
             placeholder={formatKnobValue(knob.effective_value, knob.unit)}
             value={draft}
-            disabled={busy}
+            disabled={busy || !system?.canWrite && Boolean(system)}
             onChange={(event) => setDraft(event.target.value)}
           />
         )}
-        <Button size="sm" disabled={busy || draft.trim() === ""} onClick={() => void save()}>
+        <Button size="sm" disabled={busy || draft.trim() === "" || !system?.canWrite && Boolean(system)} onClick={() => void save()}>
           Save
         </Button>
         <Button
           size="sm"
           variant="ghost"
-          disabled={busy || !isSetHere}
-          title={`Remove the override and inherit from ${inheritedFrom}`}
+          disabled={busy || (system ? JSON.stringify(knob.platform_default) === JSON.stringify(system.registeredDefault) : !isSetHere)}
+          title={system ? "Restore the registered default" : `Remove the override and inherit from ${inheritedFrom}`}
           onClick={() => void clear()}
         >
-          Inherit
+          {system ? "Restore registered default" : "Inherit"}
         </Button>
       </div>
       )}
     </div>
+    </SettingsRow>
+    </SettingAnchor>
   );
 }

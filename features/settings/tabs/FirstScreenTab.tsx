@@ -32,6 +32,8 @@ import { THEME_MODE_OPTIONS, type ThemeMode } from "../agent-writable-settings";
 import { useUniversalSettings } from "../universal/UniversalSettingsContext";
 import {
   OrganizationRungSection,
+  RegistryCoverage,
+  SettingsContextControls,
   UniversalSettingsRows,
 } from "../universal/UniversalSettingsPane";
 
@@ -77,7 +79,10 @@ export default function FirstScreenTab() {
         icon={SlidersHorizontal}
       />
 
-      <SettingsSection title="Appearance" icon={Palette}>
+      <SettingsContextControls />
+      {settings.editingContext === "system" && <RegistryCoverage />}
+
+      {settings.editingContext === "user" && <SettingsSection title="Appearance" icon={Palette}>
         <SettingsSegmented<ThemeMode>
           label="Theme"
           description="Light or dark. Applies before first paint and syncs across your tabs."
@@ -87,8 +92,9 @@ export default function FirstScreenTab() {
           last
         />
       </SettingsSection>
+      }
 
-      <SettingsSection title="Organization" icon={Building2}>
+      {settings.editingContext === "user" && <SettingsSection title="Account defaults" icon={Building2}>
         <SettingsSelect
           label="Default organization"
           description="Where you land when you sign in. You can switch organizations any time from the header."
@@ -99,6 +105,7 @@ export default function FirstScreenTab() {
           last
         />
       </SettingsSection>
+      }
 
       {settings.isLoading && (
         <div className="flex items-center justify-center py-8">
@@ -120,7 +127,7 @@ export default function FirstScreenTab() {
 
       {ladderKnobs.length > 0 && <UniversalSettingsRows knobs={ladderKnobs} hideKey />}
 
-      <OrganizationRungSection />
+      {settings.editingContext !== "system" && <OrganizationRungSection />}
     </>
   );
 }

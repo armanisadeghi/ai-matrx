@@ -18,12 +18,15 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useDefaultOrganization } from "@/features/organizations/hooks/useDefaultOrganization";
+import { fetchFeatureKnobs } from "@/features/admin/limits/service";
+import type { FeatureKnob } from "@/features/admin/limits/types";
 import { fetchKnobIndex, type KnobScopeRef } from "@/lib/scoped-config/service";
 import { getWebDeviceId } from "@/lib/scoped-config/deviceId";
-import type { ScopedKnob } from "@/lib/scoped-config/types";
+import type { KnobUiHints, ScopedKnob } from "@/lib/scoped-config/types";
+import { isJsonObject } from "@/types/json";
 import {
   fetchTaxonomyIndex,
   resolveKnobTaxonomy,
@@ -67,6 +70,9 @@ export type SettingsDomain = {
 };
 
 export type UniversalSettingsValue = {
+  editingContext: "user" | "organization" | "system";
+  selectEditingContext: (context: "user" | "organization" | "system") => void;
+  canManageSystem: boolean;
   organizationId: string | null;
   organizationName: string | null;
   /** The caller may write the organization rung (owner/admin). */
@@ -103,6 +109,9 @@ export type UniversalSettingsValue = {
 };
 
 const EMPTY: UniversalSettingsValue = {
+  editingContext: "user",
+  selectEditingContext: () => {},
+  canManageSystem: false,
   organizationId: null,
   organizationName: null,
   canManageOrganization: false,
@@ -124,19 +133,44 @@ const EMPTY: UniversalSettingsValue = {
   refresh: () => {},
 };
 
+function systemKnob(row: FeatureKnob): ScopedKnob {
+  const ui: KnobUiHints = isJsonObject(row.ui) ? row.ui : {};
+  return {
+    feature: row.feature, key: row.key, full_key: `${row.feature}.${row.key}`,
+    label: row.label, description: row.description, value_type: row.value_type,
+    unit: row.unit, allowed_values: row.allowed_values, min_value: row.min_value,
+    max_value: row.max_value, basis: row.basis, set_by: row.set_by, review_due: row.review_due,
+    overridable_by: row.overridable_by as ScopedKnob["overridable_by"],
+    override_direction: row.override_direction, bound_value: row.bound_value,
+    platform_locked: false, org_locked_kinds: [], user_override_locked: false,
+    platform_default: row.value, shipped_default: row.default_value, org_override: null,
+    user_override: null, effective_value: row.value, origin: "platform_default",
+    origin_scope_id: null, origin_precedence: null,
+    is_overridden: JSON.stringify(row.value) !== JSON.stringify(row.default_value),
+    out_of_range: false, ui, taxonomy: null, propagation: row.propagation,
+    // Platform is intentionally absent: it is not a knob_scope_kind.
+    scope_chain: [], locked: null, write_rung: { kind: "platform", scope_id: null },
+    can_write: true, can_write_reason: null, secret: null,
+  };
+}
+
 const UniversalSettingsContext = createContext<UniversalSettingsValue>(EMPTY);
 
 export function useUniversalSettings(): UniversalSettingsValue {
   return useContext(UniversalSettingsContext);
 }
 
-function groupDomains(knobs: ScopedKnob[], taxonomy: TaxonomyIndex): SettingsDomain[] {
+function groupDomains(
+  knobs: ScopedKnob[],
+  taxonomy: TaxonomyIndex,
+  includePlatformOnly = false,
+): SettingsDomain[] {
   const groups = new Map<string, SettingsDomain>();
   for (const knob of knobs) {
     // The personal surface shows what a person or organization may actually
     // steer. A key nobody below the platform may touch belongs on the admin
     // limits page; `knob_index` already filters it when no prefix is passed.
-    if (knob.overridable_by.length === 0) continue;
+    if (!includePlatformOnly && knob.overridable_by.length === 0) continue;
     const filed = resolveKnobTaxonomy(knob, taxonomy);
     const slug = filed?.domain_slug ?? UNFILED_DOMAIN_SLUG;
     const name = filed?.domain_name ?? UNFILED_DOMAIN_NAME;
@@ -167,6 +201,19 @@ function groupDomains(knobs: ScopedKnob[], taxonomy: TaxonomyIndex): SettingsDom
     }
     groups.set(slug, domain);
   }
+  // Taxonomy is navigation, not an accidental by-product of existing knobs:
+  // registered empty domains remain visible and truthfully say what is missing.
+  for (const node of taxonomy.byId.values()) {
+    if (node.level !== "domain" || groups.has(node.slug)) continue;
+    groups.set(node.slug, {
+      id: `${CONFIG_TAB_ROOT}.${slugToTabSegment(node.slug)}`,
+      slug: node.slug,
+      name: node.name,
+      knobs: [],
+      features: [],
+      domainLeafId: `${CONFIG_TAB_ROOT}.${slugToTabSegment(node.slug)}.${slugToTabSegment(node.slug)}`,
+    });
+  }
   for (const domain of groups.values()) {
     domain.features.sort((a, b) => a.name.localeCompare(b.name));
   }
@@ -191,9 +238,11 @@ export function UniversalSettingsProvider({
   scopes?: KnobScopeRef[];
 }) {
   const userId = useAppSelector(selectUserId);
+  const canManageSystem = useAppSelector(selectIsSuperAdmin);
   const { organizations } = useUserOrganizations();
   const { defaultOrganizationId } = useDefaultOrganization();
   const [chosenOrgId, setChosenOrgId] = useState<string | null>(null);
+  const [editingContext, selectEditingContext] = useState<"user" | "organization" | "system">("user");
   const organizationId =
     chosenOrgId ??
     organizations.find((org) => org.id === defaultOrganizationId)?.id ??
@@ -243,6 +292,11 @@ export function UniversalSettingsProvider({
     taxonomy: TaxonomyIndex;
     error: string | null;
   } | null>(null);
+  const [systemRows, setSystemRows] = useState<{
+    generation: number;
+    rows: ScopedKnob[];
+    error: string | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!organizationId || !userId) return;
@@ -275,10 +329,24 @@ export function UniversalSettingsProvider({
     };
   }, [organizationId, userId, deviceId, scopesKey, requestKey, generation]);
 
+  useEffect(() => {
+    if (editingContext !== "system" || !canManageSystem) return;
+    let cancelled = false;
+    void fetchFeatureKnobs()
+      .then((rows) => {
+        if (!cancelled) setSystemRows({ generation, rows: rows.map(systemKnob), error: null });
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setSystemRows({ generation, rows: [], error: err instanceof Error ? err.message : String(err) });
+      });
+    return () => { cancelled = true; };
+  }, [editingContext, canManageSystem, generation]);
+
   // Mask a previous organization's configuration synchronously: a stale answer
   // on screen is a lie about whose policy you are looking at.
   const current = state?.requestKey === requestKey ? state : null;
-  const knobs = current?.knobs ?? [];
+  const system = systemRows?.generation === generation ? systemRows : null;
+  const knobs = editingContext === "system" ? (system?.rows ?? []) : (current?.knobs ?? []);
 
   // The rows a person may stand inside, for every sub-org rung some key names.
   const neededKinds = [
@@ -313,10 +381,16 @@ export function UniversalSettingsProvider({
     };
   }, [organizationId, neededKey, neededKinds.length]);
   const scopeRows = rowsState?.key === neededKey ? rowsState.rows : {};
-  const domains = current ? groupDomains(current.knobs, current.taxonomy) : [];
+  const taxonomy = current?.taxonomy ?? { byId: new Map(), bySlug: new Map() };
+  const domains = groupDomains(knobs, taxonomy, editingContext === "system");
   const byKey = new Map(knobs.map((knob) => [knob.full_key, knob]));
 
   const value: UniversalSettingsValue = {
+    editingContext,
+    selectEditingContext: (context) => {
+      if (context !== "system" || canManageSystem) selectEditingContext(context);
+    },
+    canManageSystem,
     organizationId,
     organizationName: organization?.name ?? null,
     canManageOrganization:
@@ -333,8 +407,10 @@ export function UniversalSettingsProvider({
     knobs,
     knobByKey: (fullKey) => byKey.get(fullKey) ?? null,
     domains,
-    isLoading: Boolean(organizationId && userId) && !current,
-    error: current?.error ?? null,
+    isLoading: editingContext === "system"
+      ? canManageSystem && !system
+      : Boolean(organizationId && userId) && !current,
+    error: editingContext === "system" ? system?.error ?? null : current?.error ?? null,
     missing: knobs.filter((knob) => knob.origin === "missing"),
     refresh,
   };

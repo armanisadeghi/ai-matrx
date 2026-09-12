@@ -6,6 +6,8 @@ export {
   useSettingsSearch,
   countSearchHits,
   type SettingsSearchHit,
+  useSettingsControlSearch,
+  type SettingsControlSearchHit,
 } from "./hooks/useSettingsSearch";
 export {
   settingsRegistry,

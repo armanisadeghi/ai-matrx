@@ -16,11 +16,12 @@
 // (a tab component takes no props), so the same component serves the route,
 // the window and the mobile drawer.
 
-import { Building2 } from "lucide-react";
+import { Building2, ShieldCheck, UserRound } from "lucide-react";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
+import { SettingsSegmented } from "@/components/official/settings/primitives/SettingsSegmented";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
 import { blastRadiusFor, compareKnobOrder, resolveKnobLadder } from "@/lib/scoped-config/ladder";
@@ -76,15 +77,17 @@ export function UniversalSettingsRows({
     organizationName,
     selectedScopes,
   } = settings;
-  if (!organizationId || !userId) return null;
+  if (settings.editingContext !== "system" && (!organizationId || !userId)) return null;
 
   const resolved = knobs.map((knob) => {
-    const rung = editRungFor(knob, selectedScopes);
+    const rung = settings.editingContext === "organization"
+      ? { kind: "organization" as KnobScopeKindName, scopeId: null }
+      : editRungFor(knob, selectedScopes);
     return {
       knob,
-      scopeKind: rung.kind,
+      scopeKind: settings.editingContext === "system" ? "organization" : rung.kind,
       scopeId:
-        rung.kind === "user" ? userId : (rung.scopeId ?? organizationId),
+        settings.editingContext === "system" ? "platform" : rung.kind === "user" ? userId! : (rung.scopeId ?? organizationId ?? ""),
       ladder: resolveKnobLadder(knob, rung.kind, { isOrgAdmin: canManageOrganization }),
     };
   });
@@ -105,12 +108,16 @@ export function UniversalSettingsRows({
               knob={knob}
               scopeKind={scopeKind}
               scopeId={scopeId}
-              organizationId={organizationId}
+              organizationId={organizationId ?? ""}
               ladder={ladder}
               blastRadius={blastRadiusFor(scopeKind, {
                 organizationName,
                 members: memberCount,
               })}
+              system={settings.editingContext === "system" ? {
+                canWrite: settings.canManageSystem,
+                registeredDefault: knob.shipped_default,
+              } : undefined}
               showUserLockControl={
                 scopeKind === "organization" && canManageOrganization
               }
@@ -127,17 +134,63 @@ export function UniversalSettingsRows({
 /** The organization the values belong to, when the person has several. */
 export function OrganizationRungSection() {
   const { organizations, organizationId, selectOrganization } = useUniversalSettings();
-  if (organizations.length <= 1) return null;
   return (
     <SettingsSection title="Looking at" icon={Building2}>
       <SettingsSelect
         label="Organization"
-        description="A value applies within one organization; pick which one you are looking at."
+        description={organizations.length <= 1
+          ? "Personal and organization values are always qualified to this organization."
+          : "Personal and organization values are qualified to the organization you pick."}
         value={organizationId ?? ""}
         options={organizations.map((org) => ({ value: org.id, label: org.name }))}
         onValueChange={selectOrganization}
         last
       />
+    </SettingsSection>
+  );
+}
+
+/** Shared context selector used by the first screen and every registry section. */
+export function SettingsContextControls() {
+  const { editingContext, selectEditingContext, canManageSystem, organizationName } = useUniversalSettings();
+  const options = [
+    { value: "user", label: "Personal" },
+    { value: "organization", label: "Organization" },
+    ...(canManageSystem ? [{ value: "system", label: "System" }] : []),
+  ];
+  return (
+    <SettingsSection title="Editing" icon={editingContext === "system" ? ShieldCheck : UserRound}>
+      <SettingsSegmented
+        label="Settings level"
+        description={editingContext === "system"
+          ? "Platform defaults apply wherever a lower level has not set a value."
+          : editingContext === "organization"
+            ? `Organization values apply in ${organizationName ?? "the selected organization"} unless a person sets their own.`
+            : `Personal values apply only to you in ${organizationName ?? "the selected organization"}.`}
+        value={editingContext}
+        options={options}
+        onValueChange={(value) => selectEditingContext(value as "user" | "organization" | "system")}
+        last
+      />
+    </SettingsSection>
+  );
+}
+
+/** Admin-only register audit. Counts are runtime facts, never a frozen baseline. */
+export function RegistryCoverage() {
+  const { knobs, canManageSystem } = useUniversalSettings();
+  if (!canManageSystem) return null;
+  const missingTaxonomy = knobs.filter((knob) => knob.taxonomy === null).length;
+  const missingUi = knobs.filter((knob) => Object.keys(knob.ui).length === 0).length;
+  const unsupported = knobs.filter((knob) => knob.value_type === "secret").length;
+  return (
+    <SettingsSection title="Registry coverage">
+      <SettingsCallout tone="info" title={`${knobs.length} registered settings read`}>
+        {missingTaxonomy} need taxonomy filing; {missingUi} rely on their typed control because they have no presentation metadata; {unsupported} secret value{unsupported === 1 ? " is" : "s are"} state-only and link to Vault. Older account, session, and device preferences remain outside this registry and are labeled at their own controls.
+      </SettingsCallout>
+      <SettingsCallout tone="warning" title="Known consumer gaps">
+        `batch.deadline` currently reads platform values directly, so its lower-level overrides are not honored. Table pagination and commerce labels do use the shared resolver. The model, voice, and confirmation keys shown on the first screen have no verified active consumer beyond that screen; this is an incomplete census, not a claim that clients do not use them.
+      </SettingsCallout>
     </SettingsSection>
   );
 }
@@ -247,8 +300,10 @@ export default function UniversalSettingsPane() {
             : `Settings that apply across ${section.domain.name}.`
         }
       />
-      <OrganizationRungSection />
-      <SubOrgRungSection knobs={section.knobs} />
+      {settings.editingContext !== "system" && <SettingsContextControls />}
+      {settings.editingContext === "system" && <RegistryCoverage />}
+      {settings.editingContext !== "system" && <OrganizationRungSection />}
+      {settings.editingContext !== "system" && <SubOrgRungSection knobs={section.knobs} />}
       {missingHere.length > 0 && (
         <SettingsCallout tone="error" title="Some settings resolved to nothing">
           {missingHere.map((knob) => knob.full_key).join(", ")} — the register and the

@@ -14,6 +14,7 @@ import type {
   AccountAddon,
   Capability,
   FeatureKnob,
+  FeatureKnobSetResult,
   OrganizationOption,
   OrgPlanAssignment,
   Plan,
@@ -33,7 +34,7 @@ export async function fetchFeatureKnobs(): Promise<FeatureKnob[]> {
         .schema("platform")
         .from("feature_knob")
         .select(
-          "feature, key, value, default_value, value_type, unit, min_value, max_value, allowed_values, label, description, set_by, basis, review_due, overridable_by, override_direction, bound_value",
+          "feature, key, value, default_value, value_type, unit, min_value, max_value, allowed_values, label, description, set_by, basis, review_due, overridable_by, override_direction, bound_value, ui, taxonomy_node_id, propagation",
           { count: "exact" },
         )
         // (feature, key) is the PK, so the paginated order is stable.
@@ -72,16 +73,20 @@ export async function setFeatureKnob(
   feature: string,
   key: string,
   value: unknown,
-): Promise<void> {
+): Promise<FeatureKnobSetResult> {
   const supabase = createClient();
   // A null value is a RESET to the agent-set default, not a delete — that is
   // what makes an admin's experiment reversible without a migration.
-  const { error } = await supabase.schema("platform").rpc("feature_knob_set", {
+  const { data, error } = await supabase.schema("platform").rpc("feature_knob_set", {
     p_feature: feature,
     p_key: key,
     p_value: value ?? null,
   });
   if (error) throw error;
+  if (!data || typeof data !== "object" || Array.isArray(data) || !("ok" in data)) {
+    throw new Error("feature_knob_set returned an invalid response");
+  }
+  return data as FeatureKnobSetResult;
 }
 
 export async function fetchPlans(): Promise<Plan[]> {
