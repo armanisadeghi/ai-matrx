@@ -161,8 +161,8 @@ Do this, in order:
 
 Coordination: where your brief names another project as a dependency, check whether its
 contract/stub already exists before waiting on anything. If you're genuinely blocked or a
-product decision is mine to make, ask me directly (the AskUserQuestion tool is fine) — don't
-guess on product semantics, and don't silently shrink scope.
+product decision is mine to make, ask me directly in plain numbered chat text — never a clickable
+question picker — don't guess on product semantics, and don't silently shrink scope.
 
 Commits: Make small commits. Don't stash other people's work. If your work gets accidentally
 added to another commit, that's ok — just don't let your work get lost.

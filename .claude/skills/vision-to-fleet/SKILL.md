@@ -26,13 +26,6 @@ agents.
 
 ---
 
-> 🚨 **UNRESOLVED CONFLICT — `CFL-003`. Do not build against law 3's delivery clause until Arman rules.**
-> **This document says:** a decision may go to Arman through the structured question picker (AskUserQuestion) with clear options, or as crisp prose.
-> **common-docs `/skills/build-sub-feature/SKILL.md`, `/skills/grilling/SKILL.md`, this repo's `ui-bakeoff` skill, and `aidream/CLAUDE.md` say:** ask in plain chat, never the question tool or a multiple-choice UI, because it blocks free-form replies. common-docs `/skills/doc-convergence/SKILL.md` sides with this document.
-> **Why it matters:** with a picker, Arman chooses from fixed options; in plain chat he can answer "3 yes, 4 no because…" and add context nobody asked for.
-> **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
-> Register: common-docs [`/operations/conflicts.md`](../../../../common-docs/operations/conflicts.md) · `CFL-003`
-
 ## Cross-cutting laws (apply in every phase)
 
 1. **Ground everything in the live system.** Claims about code cite file paths; claims about
@@ -46,8 +39,9 @@ agents.
    evidence genuinely cuts both ways.
 3. **Decisions are Arman's; asking is your job; burying is a failure.** Product-semantics calls
    (what's free, what a hierarchy means, what enters the vision) go to him DIRECTLY in your
-   reply — AskUserQuestion with clear options, or crisp prose (conflicted: `CFL-003`, stamp
-   above this section).
+   reply as plain numbered chat text — **never a structured question picker** (Arman ruled
+   2026-09-12): numbered, one line of background, ONE direct question, plus the best practice and
+   your recommendation, or an explicit "this one is open-ended".
    Never leave a decision as a "flag" inside a document he'd have to dig for. Ask via the
    `grilling` skill.
 4. **Every doc is versioned truth.** Each artifact gets a status date, a changelog, and — when
