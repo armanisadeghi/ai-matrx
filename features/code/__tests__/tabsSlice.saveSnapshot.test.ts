@@ -38,4 +38,20 @@ describe("tab save snapshots", () => {
       dirty: false,
     });
   });
+
+  it("refuses edits to explicit and historical Git comparison tabs", () => {
+    const diff = {
+      ...file,
+      id: "git-diff:sandbox:one:/workspace:working:app.ts",
+      path: "git-diff:///workspace/app.ts",
+      readOnly: true,
+    };
+    let state = reducer(undefined, openTab(diff));
+    state = reducer(state, updateTabContent({ id: diff.id, content: "two" }));
+    expect(state.byId[diff.id]).toMatchObject({
+      content: "one",
+      pristineContent: "one",
+      dirty: false,
+    });
+  });
 });

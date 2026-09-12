@@ -4,6 +4,7 @@ import React from "react";
 import {
   AlignLeft,
   Brain,
+  Copy,
   MessageSquare,
   PanelBottom,
   Save,
@@ -42,6 +43,12 @@ interface EditorToolbarProps {
    *  through the files surface. Undefined for purely filesystem-backed
    *  tabs — there's no DB row to ingest. */
   activeCloudFileId?: string | null;
+  /** Compact source-of-truth label for the active tab's ordinary Save action. */
+  activeTabOrigin?: string | null;
+  /** Explicit copy action. This never changes the active tab's save destination. */
+  onCopyActiveTab?: () => void;
+  copyActiveTabLabel?: string | null;
+  canCopyActiveTab?: boolean;
   className?: string;
 }
 
@@ -60,6 +67,10 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onSendSelectionAsContext,
   canSendSelectionAsContext = false,
   activeCloudFileId,
+  activeTabOrigin,
+  onCopyActiveTab,
+  copyActiveTabLabel,
+  canCopyActiveTab = false,
   className,
 }) => {
   const dispatch = useAppDispatch();
@@ -102,6 +113,16 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
       {hasActiveTab && lastSavedAt ? (
         <LastSavedIndicator iso={lastSavedAt} dirty={hasDirtyActiveTab} />
       ) : null}
+      {activeTabOrigin ? <TabOriginIndicator label={activeTabOrigin} /> : null}
+      {onCopyActiveTab && copyActiveTabLabel ? (
+        <ToolbarButton
+          icon={Copy}
+          active={false}
+          disabled={!canCopyActiveTab}
+          label={copyActiveTabLabel}
+          onClick={onCopyActiveTab}
+        />
+      ) : null}
       {onSendSelectionAsContext && (
         <ToolbarButton
           icon={Brain}
@@ -140,6 +161,18 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
     </div>
   );
 };
+
+function TabOriginIndicator({ label }: { label: string }) {
+  return (
+    <span
+      className="hidden max-w-28 truncate px-1 text-[11px] text-neutral-500 sm:inline dark:text-neutral-400"
+      title={`Save writes to ${label}`}
+      aria-label={`Save writes to ${label}`}
+    >
+      {label}
+    </span>
+  );
+}
 
 function LastSavedIndicator({ iso, dirty }: { iso: string; dirty: boolean }) {
   const [, setTick] = React.useState(0);

@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { EditorFile } from "../types";
+import { isReadOnlyEditorTab } from "../utils/editor-tab-access";
 
 export interface CodeTabsState {
   /** Map of tabId → file. */
@@ -108,6 +109,7 @@ const slice = createSlice({
     ) {
       const tab = state.byId[action.payload.id];
       if (!tab) return;
+      if (isReadOnlyEditorTab(tab)) return;
       tab.content = action.payload.content;
       tab.dirty = tab.content !== tab.pristineContent;
       tab.lastMutationSource = action.payload.source ?? "user";
@@ -116,8 +118,12 @@ const slice = createSlice({
       state,
       action: PayloadAction<string | { id: string; savedContent: string }>,
     ) {
-      const id = typeof action.payload === "string" ? action.payload : action.payload.id;
-      const savedContent = typeof action.payload === "string" ? undefined : action.payload.savedContent;
+      const id =
+        typeof action.payload === "string" ? action.payload : action.payload.id;
+      const savedContent =
+        typeof action.payload === "string"
+          ? undefined
+          : action.payload.savedContent;
       const tab = state.byId[id];
       if (!tab) return;
       // An edit can land while a write is in flight. The persisted snapshot

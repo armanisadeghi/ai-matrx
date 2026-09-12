@@ -123,6 +123,12 @@ export interface EditorFile {
   /** True iff `content !== pristineContent`. Computed by the slice. */
   dirty?: boolean;
   /**
+   * A virtual inspection tab that must never accept edits or route through
+   * the normal save pipeline. Git diff tabs set this explicitly; their
+   * historic id prefixes remain guarded by `isReadOnlyEditorTab` as well.
+   */
+  readOnly?: boolean;
+  /**
    * What renders this tab. Omit (or set `"editor"`) for the standard
    * Monaco-backed text editor. `"binary-preview"` swaps Monaco for the
    * `BinaryFileViewer` so we don't try to feed image / video / pdf bytes

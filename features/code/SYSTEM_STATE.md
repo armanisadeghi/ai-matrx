@@ -40,7 +40,7 @@ This doc is the current-state reference for the `/code` (VSCode‑style) workspa
 | Filesystem adapter (Sandbox, structured FS API)                                                                   | ✅ Shipped               | `SandboxFilesystemAdapter` consumes `/fs/*` directly — no shell synthesis. Bulk read / upload / download / drag‑and‑drop wired.                                                             |
 | Terminal — real PTY over WebSocket                                                                                | ✅ Shipped               | xterm mints a sandbox-scoped credential, dials the orchestrator WSS endpoint directly, and falls back loudly to buffered exec.                                                              |
 | Code Library: `code_files`/`code_folders` browser                                                                 | ✅ Shipped               | Backed by the existing `code-files` Redux slice.                                                                                                                                            |
-| Library Source Adapters (`prompt_apps`, `aga_apps`, `tool_ui_components`)                                         | ✅ Shipped               | Direct‑edit source rows with optimistic concurrency, source-of-truth badge, conflict toast (Reload/Overwrite), Realtime softening.                                                          |
+| Library Source Adapters (`aga_apps`, `tool_ui_components`, `html_pages`)                                          | ✅ Shipped               | Direct‑edit source rows with optimistic concurrency, source-of-truth badge, conflict toast (Reload/Overwrite), Realtime softening where a live table exists.                                |
 | Universal "save & open in code editor" flow                                                                       | ✅ Shipped               | Wired into `HtmlPreviewModal` and chat code blocks.                                                                                                                                         |
 | Conversation history / agent filter / favorites                                                                   | ✅ Shipped               | Lives next to the chat panel; filter by tags; date/agent grouping.                                                                                                                          |
 | Per‑adapter Monaco type environments                                                                              | ✅ Shipped               | Refcounted registry, six environments (`prompt-app`, `aga-app`, `tool-ui`, `library`, `sandbox-fs`, `html`), status‑bar indicator, settings toggle.                                         |
@@ -180,9 +180,8 @@ features/code/library-sources/
   types.ts                 ← LibrarySourceAdapter + RemoteConflictError
   registry.ts              ← register/getLibrarySource/getAdapterForTabId
   adapters/
-    prompt-apps.ts         ← prompt_apps.component_code         (single field)
-    aga-apps.ts            ← aga_apps.component_code            (single field)
-    tool-ui-components.ts  ← tool_ui_components.* (multi‑field)
+    aga-apps.ts            ← app.definition.component_code      (single field)
+    tool-ui-components.ts  ← tool.ui.* (multi‑field)
     html-pages.ts          ← html_pages.html_content (via /api/html-pages)
   registerBuiltinLibrarySources.ts
 ```
@@ -192,7 +191,6 @@ Tab id conventions:
 | Adapter               | Tab id                                                       |
 | --------------------- | ------------------------------------------------------------ |
 | code_files (My Files) | `library:<codeFileId>`                                       |
-| prompt_apps           | `prompt-app:<rowId>`                                         |
 | aga_apps              | `aga-app:<rowId>`                                            |
 | tool_ui_components    | `tool-ui:<rowId>:<fieldId>` (e.g. `tool-ui:abc:inline_code`) |
 | html_pages            | `html-page:<rowId>`                                          |
@@ -201,6 +199,10 @@ Tab id conventions:
 **Render preview** (`features/code/preview/`): library sources may register a live previewer by `tabIdPrefix`. Eye icon on the tab opens a paired `kind: "render-preview"` tab. Registered today: `aga-app:` → `features/agent-apps/code-preview/`; `html-page:` → `features/html-pages/code-preview/` (imported from `CodeWorkspace.tsx`).
 
 `useSaveActiveTab` routes the save by inspecting the tab id prefix — code_files → thunks; library adapter → `adapter.save`; otherwise `filesystem.writeFile`.
+
+`EditorFile.readOnly` is a save invariant as well as Monaco presentation. Git comparison identities (`git-diff:` and `auto-stash-diff:`) remain read-only even for historical tabs that lack the explicit field, so their virtual paths never route to sandbox writes.
+
+The editor toolbar names the active tab's ordinary save target. Its copy action is deliberately one-way: a Library/source buffer can copy to a chosen absolute path in the connected writable sandbox after an overwrite check; a connected sandbox file can save an independent `code_files` copy in Library. Copies use the live editor buffer, including unsaved edits, and never alter the original tab's identity or create synchronization.
 
 ### 1.8 Optimistic concurrency for source‑backed tabs
 

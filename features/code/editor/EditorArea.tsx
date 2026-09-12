@@ -7,6 +7,9 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { codeFilesActions } from "@/features/code-files/redux/slice";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { extractErrorMessage } from "@/utils/errors";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { selectActiveTab, updateTabContent } from "../redux/tabsSlice";
 import { isPreviewTab } from "../types";
 import { AVATAR_RESERVE, EDITOR_BG } from "../styles/tokens";
@@ -15,6 +18,7 @@ import {
   isLibraryTabId,
 } from "../hooks/useOpenLibraryFile";
 import { useSaveActiveTab } from "../hooks/useSaveActiveTab";
+import { useSaveAndOpenInCodeEditor } from "../actions/saveAndOpenInCodeEditor";
 import { useReloadTab } from "../hooks/useReloadTab";
 import { useSendSelectionAsContext } from "../agent-context/useSendSelectionAsContext";
 import { useEditorContextMenuActions } from "../agent-context/useEditorContextMenuActions";
@@ -39,6 +43,16 @@ import { TripleDiffView } from "./TripleDiffView";
 import { RenderPreviewView } from "../preview/RenderPreviewView";
 import { selectPendingPatchCountForTab } from "../redux/codePatchesSlice";
 import { undoLastEditThunk } from "../redux/codeEditUndoRevert";
+import { useCodeWorkspace } from "../CodeWorkspaceProvider";
+import {
+  getTabCopyDestination,
+  isCurrentSandboxFilesystemTab,
+  isLibraryOrSourceTab,
+  isMissingSandboxPathError,
+  normalizeSandboxCopyPath,
+  tabOriginLabel,
+} from "../utils/tab-copy-bridge";
+import { isReadOnlyEditorTab } from "../utils/editor-tab-access";
 
 interface EditorAreaProps {
   rightSlotAvailable?: boolean;
@@ -55,6 +69,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const activeTab = useAppSelector(selectActiveTab);
+  const { filesystem } = useCodeWorkspace();
   // When the agent has staged SEARCH/REPLACE patches against the active
   // tab's buffer, the tab's body swaps from `<MonacoEditor>` to
   // `<TabDiffView>` (Cursor-style: the file's own tab IS the review).
@@ -64,6 +79,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   );
   const activeTabHasPending = activeTabPendingCount > 0;
   const saveActiveTab = useSaveActiveTab();
+  const saveAndOpenInCodeEditor = useSaveAndOpenInCodeEditor();
   const reloadTab = useReloadTab();
   const searchParams = useSearchParams();
   const agentId = searchParams.get("agentId");
@@ -107,6 +123,30 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   // trigger a re-render, so an effect that depends only on `editorRef`
   // would never re-run when the editor finally arrives.
   const [editorReadyTick, setEditorReadyTick] = useState(0);
+  const [sandboxCopyDialogOpen, setSandboxCopyDialogOpen] = useState(false);
+  const [pendingSandboxOverwritePath, setPendingSandboxOverwritePath] =
+    useState<string | null>(null);
+  const [copyBusy, setCopyBusy] = useState(false);
+
+  const copyableActiveTab =
+    activeTab &&
+    !isPreviewTab(activeTab.kind) &&
+    !isReadOnlyEditorTab(activeTab)
+      ? activeTab
+      : null;
+  const activeTabReadOnly = isReadOnlyEditorTab(activeTab);
+  const copyDestination = getTabCopyDestination(copyableActiveTab, filesystem);
+  const copyActionLabel = isCurrentSandboxFilesystemTab(
+    copyableActiveTab,
+    filesystem.id,
+  )
+    ? "Save copy to Library"
+    : isLibraryOrSourceTab(copyableActiveTab)
+      ? copyDestination === "sandbox"
+        ? "Copy to connected sandbox…"
+        : "Connect a writable sandbox to copy"
+      : null;
+  const activeTabOrigin = tabOriginLabel(activeTab, filesystem);
 
   const { sendSelection, canSend: canSendSelection } =
     useSendSelectionAsContext({
@@ -169,6 +209,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   const handleChange = useCallback(
     (next: string) => {
       if (!activeTab) return;
+      if (isReadOnlyEditorTab(activeTab)) return;
       dispatch(updateTabContent({ id: activeTab.id, content: next }));
       // Mirror edits of library tabs into the code-files slice so its own
       // dirty-tracking + auto-save machinery stays in sync with Monaco.
@@ -200,6 +241,94 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
       toast.error("Failed to format document");
     });
   }, []);
+
+  const copyActiveTabToLibrary = useCallback(async () => {
+    if (!activeTab) return;
+    setCopyBusy(true);
+    try {
+      await saveAndOpenInCodeEditor({
+        name: activeTab.name,
+        language: activeTab.language,
+        content: activeTab.content,
+        metadata: {
+          source: "code-workspace-copy",
+          sourceTabId: activeTab.id,
+          sourcePath: activeTab.path,
+        },
+        navigate: false,
+      });
+      toast.success("Saved a copy to Library", {
+        description:
+          "The original sandbox file remains separate and will not sync.",
+      });
+    } catch (error) {
+      toast.error("Couldn't save a Library copy", {
+        description: extractErrorMessage(error),
+      });
+    } finally {
+      setCopyBusy(false);
+    }
+  }, [activeTab, saveAndOpenInCodeEditor]);
+
+  const writeCopyToSandbox = useCallback(
+    async (path: string) => {
+      if (!activeTab || !filesystem.writeFile) return;
+      setCopyBusy(true);
+      try {
+        await filesystem.writeFile(path, activeTab.content);
+        setSandboxCopyDialogOpen(false);
+        setPendingSandboxOverwritePath(null);
+        toast.success(`Copied to ${path}`, {
+          description:
+            "The original Library/source file remains separate and will not sync.",
+        });
+      } catch (error) {
+        toast.error("Couldn't copy to sandbox", {
+          description: extractErrorMessage(error),
+        });
+      } finally {
+        setCopyBusy(false);
+      }
+    },
+    [activeTab, filesystem],
+  );
+
+  const requestSandboxCopy = useCallback(
+    async (value: string) => {
+      const path = normalizeSandboxCopyPath(value);
+      if (!path || !activeTab || !filesystem.stat || !filesystem.writeFile)
+        return;
+
+      setCopyBusy(true);
+      try {
+        const existing = await filesystem.stat(path);
+        if (existing.kind === "directory") {
+          toast.error("Choose a file path, not a folder.");
+          return;
+        }
+        setPendingSandboxOverwritePath(path);
+      } catch (error) {
+        if (isMissingSandboxPathError(error)) {
+          await writeCopyToSandbox(path);
+          return;
+        }
+        toast.error("Couldn't check the sandbox destination", {
+          description: extractErrorMessage(error),
+        });
+      } finally {
+        setCopyBusy(false);
+      }
+    },
+    [activeTab, filesystem, writeCopyToSandbox],
+  );
+
+  const handleCopyActiveTab = useCallback(() => {
+    if (copyDestination === "library") {
+      void copyActiveTabToLibrary();
+    } else if (copyDestination === "sandbox") {
+      setSandboxCopyDialogOpen(true);
+    }
+  }, [copyActiveTabToLibrary, copyDestination]);
 
   const handleSave = useCallback(() => {
     void saveActiveTab().then((result) => {
@@ -276,7 +405,8 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
         // let the browser keep its default Cmd+S so users can save the
         // page if they really want to, instead of silently swallowing
         // the keystroke.
-        if (isPreviewTab(activeTab.kind)) return;
+        if (isPreviewTab(activeTab.kind) || isReadOnlyEditorTab(activeTab))
+          return;
         e.preventDefault();
         handleSave();
       }
@@ -295,7 +425,8 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
       const mod = e.metaKey || e.ctrlKey;
       if (mod && !e.shiftKey && !e.altKey && (e.key === "z" || e.key === "Z")) {
         if (!activeTab) return;
-        if (isPreviewTab(activeTab.kind)) return;
+        if (isPreviewTab(activeTab.kind) || isReadOnlyEditorTab(activeTab))
+          return;
         if (activeTab.lastMutationSource !== "ai") return;
         // Don't fire when focus is inside an input or textarea outside
         // Monaco — that's almost never what the user wants.
@@ -344,16 +475,27 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
           rightSlotAvailable={rightSlotAvailable}
           onSaveActiveTab={handleSave}
           hasDirtyActiveTab={Boolean(activeTab?.dirty)}
-          hasActiveTab={Boolean(activeTab) && !isPreviewTab(activeTab?.kind)}
+          hasActiveTab={
+            Boolean(activeTab) &&
+            !isPreviewTab(activeTab?.kind) &&
+            !activeTabReadOnly
+          }
           lastSavedAt={activeTab?.lastSavedAt}
           onFormatDocument={
-            activeTab && !isPreviewTab(activeTab.kind) && !activeTabHasPending
+            activeTab &&
+            !isPreviewTab(activeTab.kind) &&
+            !activeTabReadOnly &&
+            !activeTabHasPending
               ? handleFormatDocument
               : undefined
           }
           onSendSelectionAsContext={sendSelection}
           canSendSelectionAsContext={canSendSelection}
           activeCloudFileId={activeTab?.cloudFileId ?? null}
+          activeTabOrigin={activeTabOrigin}
+          onCopyActiveTab={copyActionLabel ? handleCopyActiveTab : undefined}
+          copyActiveTabLabel={copyActionLabel}
+          canCopyActiveTab={copyDestination !== null && !copyBusy}
         />
       </div>
       <div className="relative flex-1 min-h-0">
@@ -394,6 +536,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
                 value={activeTab.content}
                 language={activeTab.language}
                 path={activeTab.path}
+                readOnly={activeTabReadOnly}
                 onChange={handleChange}
                 onSave={handleSave}
                 onSendSelection={sendSelection}
@@ -405,6 +548,50 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
           <EmptyEditorState />
         )}
       </div>
+      <TextInputDialog
+        open={sandboxCopyDialogOpen}
+        onOpenChange={(open) => {
+          if (!copyBusy) setSandboxCopyDialogOpen(open);
+        }}
+        title="Copy to connected sandbox"
+        description="Enter an absolute path. This creates an independent copy; later edits do not sync. Existing files require confirmation."
+        placeholder={`${filesystem.rootPath.replace(/\/$/, "")}/${activeTab?.name ?? "copy"}`}
+        defaultValue={`${filesystem.rootPath.replace(/\/$/, "")}/${activeTab?.name ?? "copy"}`}
+        confirmLabel="Copy"
+        busy={copyBusy}
+        validate={(value) =>
+          normalizeSandboxCopyPath(value)
+            ? null
+            : "Enter an absolute path without . or .. segments."
+        }
+        onConfirm={requestSandboxCopy}
+      />
+      <ConfirmDialog
+        open={pendingSandboxOverwritePath !== null}
+        onOpenChange={(open) => {
+          if (!open && !copyBusy) setPendingSandboxOverwritePath(null);
+        }}
+        title="Replace sandbox file?"
+        description={
+          pendingSandboxOverwritePath ? (
+            <>
+              <strong className="font-mono">
+                {pendingSandboxOverwritePath}
+              </strong>{" "}
+              already exists. Replace it with an independent copy of the current
+              editor buffer?
+            </>
+          ) : undefined
+        }
+        confirmLabel="Replace file"
+        variant="destructive"
+        busy={copyBusy}
+        onConfirm={() => {
+          if (pendingSandboxOverwritePath) {
+            void writeCopyToSandbox(pendingSandboxOverwritePath);
+          }
+        }}
+      />
     </div>
   );
 };

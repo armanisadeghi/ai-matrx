@@ -41,7 +41,7 @@ A first-class in-app coding environment that runs against either a remote sandbo
 | Editor               | [`editor/`](./editor/)                                                         | Monaco wrapper, tabs, toolbar, diff view (`TabDiffView`).                                                                |
 | Bottom panel         | [`terminal/`](./terminal/)                                                     | xterm PTY + loud buffered fallback + ports; persistent mount.                                                            |
 | Adapters             | [`adapters/`](./adapters/)                                                     | `FilesystemAdapter`, `ProcessAdapter`, `SandboxGitAdapter` — the seam between UI and runtime.                            |
-| Library sources      | [`library-sources/`](./library-sources/)                                       | Fuses `code_files` with external tables (`prompt_apps`, `aga_apps`, `tool_ui_components`, `html_pages`) behind one tree. |
+| Library sources      | [`library-sources/`](./library-sources/)                                       | Fuses `code_files` with active source tables (`app.definition`, `tool.ui`, HTML Pages) behind one tree.                 |
 | Render preview       | [`preview/`](./preview/)                                                       | Paired live-preview tabs keyed by library `tabIdPrefix`. Eye icon on tabs with a registered previewer.                   |
 | Agent context bridge | [`agent-context/`](./agent-context/)                                           | Pushes `editor.tabs`, `editor.tab.<id>`, `editor.selection.<id>`, `editor.diagnostics` into instance-context.            |
 | Runtime              | [`runtime/`](./runtime/)                                                       | Boot logic, session-report opener, sandbox heartbeat.                                                                    |
@@ -151,6 +151,10 @@ container.
 ---
 
 ## Change log
+
+- `2026-09-11` — **Library and sandbox files now state their save origin and offer explicit copies, never implicit synchronization.** Library/source tabs can copy the live buffer to a chosen absolute path in the connected writable sandbox, with a replacement confirmation. Sandbox tabs can save an independent copy in My Files. The original tab remains attached to its original source. The decommissioned Prompt Apps adapter is no longer registered in Library; Agent Apps, Tool UIs, and HTML Pages remain active sources.
+
+- `2026-09-11` — Git comparison tabs are read-only end to end: the editor, tab mutation reducer, toolbar Save control, and save router all reject them. Historic `git-diff:` and `auto-stash-diff:` identities receive the same protection even if opened before the explicit `readOnly` field existed.
 
 - `2026-09-11` — Explorer now offers an optional live sandbox section below the file tree, using the existing health card and controls window. The divider resizes; collapse preserves the chosen height; hidden/collapsed/open state round-trips through `sandboxPane` in the URL. File content stays mounted while hiding the section. The default desktop Explorer width is 22% for readable labels.
 

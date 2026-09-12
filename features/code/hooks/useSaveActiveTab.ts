@@ -18,6 +18,7 @@ import { codeFileIdFromTabId, isLibraryTabId } from "./useOpenLibraryFile";
 import { getAdapterForTabId } from "../library-sources/registry";
 import { isRemoteConflictError } from "../library-sources/types";
 import { isCurrentFilesystemTab } from "../views/explorer/fileTreePaths";
+import { isReadOnlyEditorTab } from "../utils/editor-tab-access";
 
 export interface SaveResult {
   tabId: string;
@@ -57,6 +58,13 @@ export function useSaveActiveTab() {
         ? selectTabById(tabIdOverride)(state)
         : selectActiveTab(state);
       if (!tab) return null;
+      if (isReadOnlyEditorTab(tab)) {
+        return {
+          tabId: tab.id,
+          ok: false,
+          error: "This is a read-only comparison and cannot be saved.",
+        };
+      }
       if (!tab.dirty) return { tabId: tab.id, ok: true };
       const force = options?.force === true;
 
@@ -152,7 +160,8 @@ export function useSaveActiveTab() {
         return {
           tabId: tab.id,
           ok: false,
-          error: "This file belongs to a different sandbox. Reconnect that sandbox before saving it.",
+          error:
+            "This file belongs to a different sandbox. Reconnect that sandbox before saving it.",
         };
       }
       if (filesystem.id.startsWith("mock")) {

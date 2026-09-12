@@ -8,7 +8,7 @@ import {
   SquareTerminal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-// Side effect: register builtin library-source adapters (prompt_apps, aga_apps, tool_ui, html_pages).
+// Side effect: register builtin library-source adapters (aga_apps, tool_ui, html_pages).
 import "./library-sources/registerBuiltinLibrarySources";
 // Side effect: HTML Pages live preview tab (eye icon on `html-page:` tabs).
 import "@/features/html-pages/code-preview/registerHtmlPageRenderPreview";
