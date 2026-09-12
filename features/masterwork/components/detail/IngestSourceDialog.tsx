@@ -24,6 +24,7 @@ import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { useRunOutcome } from "../../durable-run/useRunOutcome";
 
 /**
  * "Add rules from a source" — the plop-in-a-book / talk-it-out flow. Two ways
@@ -224,9 +225,10 @@ export function IngestSourceDialog({
 
   // Drafts that landed while the user was away still have to reach the page
   // behind this dialog.
-  useEffect(() => {
-    if (run.result) onIngested?.();
-  }, [run.result, onIngested]);
+  // Once per finished run, never once per render — the page hands a fresh
+  // arrow down every render and its refresh re-renders the page (see
+  // `useRunOutcome`).
+  useRunOutcome(run, onIngested);
 
   useEffect(() => {
     if (run.error) toast.error(run.error);

@@ -22,7 +22,7 @@
  * `ConfirmDialog`-grade honesty about what the click costs.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ListFilter, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
+import { useRunOutcome } from "../durable-run/useRunOutcome";
 import { useTriageRun } from "./useTriageRun";
 import { triageSummary } from "./types";
 
@@ -77,10 +78,32 @@ export function TriageDraftsDialog({
   }, [open, intakeGoal]);
 
   const result = run.result;
+  // Hand a real (non-preview) sort back to the page ONCE — see `useRunOutcome`.
+  // This fired on every render of the page instead, and refreshing the page was
+  // itself a render, so it never stopped (Bugbot, 163c3466).
+  useRunOutcome(run, onApplied, {
+    when: (done) => !done.dryRun && (done.retired > 0 || done.rewritten > 0),
+  });
+
+  // A sort survives a refresh on the durable spine, so the dialog reopens onto
+  // the run in flight rather than leaving the Expert with no sign of it — the
+  // same rejoin the sibling ingest dialogs do.
+  const reopenedRef = useRef(false);
   useEffect(() => {
-    if (!result || result.dryRun) return;
-    if (result.retired > 0 || result.rewritten > 0) onApplied?.();
-  }, [result, onApplied]);
+    if (reopenedRef.current || open || !run.running) return;
+    reopenedRef.current = true;
+    onOpenChange(true);
+  }, [open, run.running, onOpenChange]);
+
+  /** Closing clears the finished run, so reopening starts from the form rather
+   * than from the last answer. Never while it is still going: Escape and an
+   * overlay click would otherwise hide a run that is still changing her
+   * drafts. */
+  const requestOpenChange = (next: boolean) => {
+    if (run.running) return;
+    if (!next) run.reset();
+    onOpenChange(next);
+  };
 
   const start = async () => {
     if (!keep.trim()) {
@@ -95,7 +118,7 @@ export function TriageDraftsDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={requestOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -191,7 +214,7 @@ export function TriageDraftsDialog({
         <DialogFooter>
           <Button
             variant="ghost"
-            onClick={() => onOpenChange(false)}
+            onClick={() => requestOpenChange(false)}
             disabled={run.running}
           >
             Close

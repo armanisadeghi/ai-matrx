@@ -23,6 +23,7 @@ import {
   parseIngestSummary,
   type IngestSummary,
 } from "./IngestSourceDialog";
+import { useRunOutcome } from "../../durable-run/useRunOutcome";
 
 /**
  * "A case that unfolds in time" — the `timeline` Distillation Approach.
@@ -83,9 +84,10 @@ export function IngestTimelineDialog({
   const summary = run.result ? describeIngest(run.result) : null;
   const rejoining = run.status === "rejoining";
 
-  useEffect(() => {
-    if (run.result) onIngested?.();
-  }, [run.result, onIngested]);
+  // Once per finished run, never once per render — the page hands a fresh
+  // arrow down every render and its refresh re-renders the page (see
+  // `useRunOutcome`).
+  useRunOutcome(run, onIngested);
 
   useEffect(() => {
     if (run.error) toast.error(run.error);

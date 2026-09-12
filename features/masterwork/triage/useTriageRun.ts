@@ -35,6 +35,9 @@ export interface TriageRunHandle {
     setAside: string;
     dryRun: boolean;
   }) => Promise<void>;
+  /** Wipe a finished sort — the dialog calls it on close, so reopening starts
+   * from the form instead of from the last answer. */
+  reset: () => void;
 }
 
 export function useTriageRun(rulebookId: string): TriageRunHandle {
@@ -76,5 +79,6 @@ export function useTriageRun(rulebookId: string): TriageRunHandle {
     runId: run.runId,
     result: run.result,
     start,
+    reset: run.reset,
   };
 }
