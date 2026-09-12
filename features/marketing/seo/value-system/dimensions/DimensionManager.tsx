@@ -29,7 +29,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layers, Lock, Plus, Timer } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -119,7 +119,13 @@ export function DimensionManager() {
         siteId,
       });
       setCreating(false);
-      toast.success(`“${draft.label}” is yours — now write its answers`);
+      // A facet dimension's identity for toasts is its SLUG everywhere (the
+      // archive mutation keys on it too) — never dimension_id, or the two
+      // surfaces would treat one dimension as two records.
+      recordToast.success(
+        { type: "facet_dimension", id: draft.slug, title: draft.label },
+        `“${draft.label}” is yours — now write its answers`,
+      );
       refresh();
     } catch (error) {
       // A governance refusal is a SENTENCE written for this reader. Never

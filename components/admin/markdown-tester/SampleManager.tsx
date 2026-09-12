@@ -29,7 +29,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { useMarkdownSamples } from "./useMarkdownSamples";
 import { detectRenderBlocks } from "./utils/detect-render-blocks";
 import { SampleEditor } from "./SampleEditor";
@@ -113,7 +113,14 @@ export function SampleManager({
         content: currentContent,
         detected_blocks: detectRenderBlocks(currentContent),
       });
-      toast.success(`Updated "${loadedSample.name}"`);
+      recordToast.success(
+        {
+          type: "markdown-sample",
+          id: loadedSample.id,
+          title: loadedSample.name,
+        },
+        `Updated "${loadedSample.name}"`,
+      );
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to update sample",
@@ -139,6 +146,9 @@ export function SampleManager({
     setBusyId(sample.id);
     try {
       await remove(sample.id);
+      // The row is gone: withdraw any toast still naming it. "Deleted X" has
+      // no route left to follow, so it stays a plain toast.
+      dismissRecordToasts({ type: "markdown-sample", id: sample.id });
       toast.success(`Deleted "${sample.name}"`);
     } catch (err) {
       toast.error(
@@ -164,18 +174,28 @@ export function SampleManager({
           content: currentContent,
           detected_blocks: values.detectedBlocks,
         });
-        toast.success(`Saved "${created.name}"`);
+        recordToast.success(
+          { type: "markdown-sample", id: created.id, title: created.name },
+          `Saved "${created.name}"`,
+        );
         closeEditor();
         onLoad(created);
         setOpen(false);
       } else if (editor.mode === "edit" && editor.sample) {
         setBusyId(editor.sample.id);
-        await update(editor.sample.id, {
+        const editedId = editor.sample.id;
+        await update(editedId, {
           name: values.name,
           description: values.description,
           detected_blocks: values.detectedBlocks,
         });
-        toast.success(`Updated "${values.name}"`);
+        // This edit can rename the row, so any toast still naming it by its
+        // old name is now false: withdraw those before raising the new one.
+        dismissRecordToasts({ type: "markdown-sample", id: editedId });
+        recordToast.success(
+          { type: "markdown-sample", id: editedId, title: values.name },
+          `Updated "${values.name}"`,
+        );
         closeEditor();
       }
     } catch (err) {

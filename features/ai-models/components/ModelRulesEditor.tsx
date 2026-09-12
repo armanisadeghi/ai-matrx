@@ -14,7 +14,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 
 import { FullJsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
 import {
@@ -126,7 +126,10 @@ export default function ModelRulesEditor({
       await aiModelService.updateApi(api.id, {
         rules: envelope as unknown as Database["ai"]["Tables"]["api"]["Update"]["rules"],
       });
-      toast.success(`Family rules saved on ai.api "${api.name}"`);
+      recordToast.success(
+        { type: "ai.api", id: api.id, title: api.name },
+        `Family rules saved on ai.api "${api.name}"`,
+      );
       await afterRuleSave();
     },
     [api, afterRuleSave],

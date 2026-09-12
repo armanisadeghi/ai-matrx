@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/lib/toast";
+import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -248,7 +248,10 @@ export function ContextItemSettingsForm({
         }),
       ).unwrap();
       dispatch(listScopeTypeItems(item.scope_type_id));
-      toast.success(`Updated "${trimmedName}"`);
+      recordToast.success(
+        { type: "context_item", id: item.id, title: trimmedName },
+        `Updated "${trimmedName}"`,
+      );
       onSaved?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save");
@@ -269,6 +272,7 @@ export function ContextItemSettingsForm({
     setBusy(true);
     try {
       await dispatch(deleteContextItem(item.id)).unwrap();
+      dismissRecordToasts({ type: "context_item", id: item.id });
       dispatch(listScopeTypeItems(item.scope_type_id));
       toast.success(`Deleted "${item.display_name}"`);
       onDeleted?.();

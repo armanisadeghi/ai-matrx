@@ -83,7 +83,7 @@ import {
 import { checkGoogleListing } from "@/features/marketing/local/data";
 import { EndowmentAnalysisCard } from "@/features/marketing/local/EndowmentAnalysisCard";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -244,7 +244,10 @@ function BrandLocations({
       });
       setNewName("");
       onSelectLocation(created.id);
-      toast.success(`Location "${created.name}" created`);
+      recordToast.success(
+        { type: "business_location", id: created.id, title: created.name },
+        `Location "${created.name}" created`,
+      );
     } catch (error) {
       toast.error(
         error instanceof Error

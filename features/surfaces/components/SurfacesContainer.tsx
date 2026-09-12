@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/lib/toast";
+import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 
 import {
   SurfacesFilterBar,
@@ -245,6 +245,7 @@ export function SurfacesContainer() {
   const onDelete = async (row: SurfaceWithStats) => {
     try {
       await deleteSurface(row.name);
+      dismissRecordToasts({ type: "ui_surface", id: row.name });
       toast.success(`${row.name} deleted`);
       if (selectedName === row.name) setSelectedName(null);
       await load();
@@ -537,7 +538,10 @@ function NewClientDialog({
         description: description || null,
         sortOrder,
       });
-      toast.success(`Client ${name} created`);
+      recordToast.success(
+        { type: "ui_client", id: name, title: name },
+        `Client ${name} created`,
+      );
       onCreated();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Create failed");

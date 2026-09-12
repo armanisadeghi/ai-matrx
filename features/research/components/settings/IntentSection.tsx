@@ -13,7 +13,7 @@
 import { useEffect, useState } from "react";
 import { Compass, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useTopicContext } from "../../context/ResearchContext";
 import { useResearchApi } from "../../hooks/useResearchApi";
@@ -80,7 +80,10 @@ export function IntentSection({
         intent_key: intent.key,
         apply_quotas: true,
       });
-      toast.success(
+      recordToast.success(
+        // The record whose state changed is the TOPIC (the label in the
+        // sentence is the intent it was just set to, not the topic's name).
+        { type: "research_topic", id: topic.id },
         `Research intent set to "${intent.label}". Quotas updated to its package — adjust numbers after if needed.`,
       );
       setPending(null);

@@ -40,7 +40,7 @@ import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { whenNoLayerIsOpen } from "@/components/dialogs/confirm/deferred-intent";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -2450,7 +2450,10 @@ function BindingDraft({
               useLatest: true,
               workflowId: null,
             });
-            toast.info(`Setting the system answer to "${twin.name}" instead.`);
+            recordToast.info(
+              { type: "agent", id: twin.id, title: twin.name },
+              `Setting the system answer to "${twin.name}" instead.`,
+            );
             void doSave(twin.id);
           }}
           onCancel={() => setGlobalGuardOpen(false)}

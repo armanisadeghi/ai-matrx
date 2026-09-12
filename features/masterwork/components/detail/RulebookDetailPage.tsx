@@ -24,7 +24,7 @@ import {
   Workflow,
   Library,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";
@@ -1169,7 +1169,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       });
       try {
         await persist(next);
-        toast.success(`"${rule.name}" approved`);
+        recordToast.success(
+          { type: "rulebook_rule", id: rule.id, title: rule.name },
+          `"${rule.name}" approved`,
+        );
         return true;
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Could not approve");
@@ -1192,7 +1195,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       });
       try {
         await persist(next);
-        toast.success(`"${rule.name}" is back in your review queue`);
+        recordToast.success(
+          { type: "rulebook_rule", id: rule.id, title: rule.name },
+          `"${rule.name}" is back in your review queue`,
+        );
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Could not save");
       }
@@ -1248,10 +1254,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           : r,
       );
       await persist(next);
-      toast.success(`"${rule.name}" rejected`, {
-        description:
-          "The interviewer will rewrite it or drop it on their next turn.",
-      });
+      recordToast.success(
+        { type: "rulebook_rule", id: rule.id, title: rule.name },
+        `"${rule.name}" rejected`,
+        {
+          description:
+            "The interviewer will rewrite it or drop it on their next turn.",
+        },
+      );
     },
     [rulebook, persist],
   );
@@ -1265,9 +1275,11 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         r.id === rule.id ? { ...r, feedback: feedbackText } : r,
       );
       await persist(next);
-      toast.success(`Change request saved for "${rule.name}"`, {
-        description: "It is applied on the interviewer's next turn.",
-      });
+      recordToast.success(
+        { type: "rulebook_rule", id: rule.id, title: rule.name },
+        `Change request saved for "${rule.name}"`,
+        { description: "It is applied on the interviewer's next turn." },
+      );
     },
     [rulebook, persist],
   );

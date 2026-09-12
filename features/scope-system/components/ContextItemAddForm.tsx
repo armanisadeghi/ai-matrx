@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Field } from "@/components/official/Field";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   createContextItem,
@@ -257,7 +257,10 @@ export function ContextItemAddForm({
         ).unwrap();
       }
 
-      toast.success(`Added "${item.display_name}" to all ${labelPlural}`);
+      recordToast.success(
+        { type: "context_item", id: item.id, title: item.display_name },
+        `Added "${item.display_name}" to all ${labelPlural}`,
+      );
 
       if (keepOpen) {
         resetFields();

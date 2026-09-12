@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
@@ -48,7 +48,11 @@ export function DealStageFlow({ deal, pipeline, onChanged }: Props) {
         if (!ok) return;
       }
       await moveDealToStage({ dealId: deal.id, stageId });
-      if (target.outcome === "won") toast.success(`"${deal.name}" won`);
+      if (target.outcome === "won")
+        recordToast.success(
+          { type: "deal", id: deal.id, title: deal.name },
+          `"${deal.name}" won`,
+        );
       await onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not move the deal");

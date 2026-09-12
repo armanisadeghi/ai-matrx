@@ -40,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { saveScenario } from "@/features/proof-runs/api";
 import type {
@@ -389,9 +389,13 @@ export function ScenarioEditor({
     setSaving(true);
     try {
       const saved = await saveScenario(scenario);
-      toast.success(`Saved ${saved.label}`, {
-        description: `Runnable now as ${saved.check_slug}`,
-      });
+      recordToast.success(
+        // A scenario has no separate id — its slug is the stable key and the
+        // segment its own route is built from.
+        { type: "proof_scenario", id: saved.slug, title: saved.label },
+        `Saved ${saved.label}`,
+        { description: `Runnable now as ${saved.check_slug}` },
+      );
       onSaved(saved);
     } catch (err) {
       toast.error("Could not save the scenario", {

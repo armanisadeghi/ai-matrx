@@ -25,7 +25,7 @@
 
 import { useCallback, useState } from "react";
 import { FileText, Loader2, MoreVertical } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -89,7 +89,10 @@ export function CaptureItemActions({
     if (target === parentFolderId) return; // no-op
     try {
       await mutate.move(fileId, target);
-      toast.success(`Moved "${fileName}".`);
+      recordToast.success(
+        { type: "file", id: fileId, title: fileName },
+        `Moved "${fileName}".`,
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Move failed.");
     }
@@ -139,7 +142,11 @@ export function CaptureItemActions({
         onRename={() => setRenameOpen(true)}
         onShare={() => setShareOpen(true)}
         onMove={() => void handleMove()}
-        onDeleted={onDeleted}
+        onDeleted={(deletedId) => {
+          // The record is gone: withdraw anything still naming it.
+          dismissRecordToasts({ type: "file", id: deletedId });
+          onDeleted?.(deletedId);
+        }}
         extraMenuItems={
           canTranscribe ? (
             <DropdownMenuItem

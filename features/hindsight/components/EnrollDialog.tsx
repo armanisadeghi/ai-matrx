@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -347,7 +347,14 @@ export function EnrollDialog({
       return enroll(body);
     },
     onSuccess: (row) => {
-      toast.success(`Enrolled ${row.display_name} in Hindsight`);
+      recordToast.success(
+        {
+          type: "hindsight_enrollment",
+          id: row.id,
+          title: row.display_name,
+        },
+        `Enrolled ${row.display_name} in Hindsight`,
+      );
       queryClient.invalidateQueries({ queryKey: ["hindsight"] });
       onOpenChange(false);
     },

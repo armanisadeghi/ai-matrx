@@ -5,7 +5,7 @@ import { FilePlus, RefreshCw } from "lucide-react";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   createCodeFileThunk,
@@ -113,11 +113,17 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({ className }) => {
         }),
       ).unwrap();
       setCreateTarget(null);
-      toast.success(`Created ${name}`);
+      const createdRef = {
+        type: "code_file" as const,
+        id: codeFile.id,
+        title: name,
+      };
+      recordToast.success(createdRef, `Created ${name}`);
       try {
         await openFile(codeFile.id);
       } catch (error) {
-        toast.error(
+        recordToast.error(
+          createdRef,
           `Created ${name}, but couldn't open it: ${extractErrorMessage(error)}`,
         );
       }
@@ -174,7 +180,15 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({ className }) => {
           }),
         );
       }
-      toast.success(`Renamed to ${name}`);
+      const renamedRef = {
+        type: renameTarget.kind === "folder" ? "code_folder" : "code_file",
+        id: renameTarget.item.id,
+        title: name,
+      };
+      // The old name's toasts are now false sentences — withdraw them before
+      // the new one goes up.
+      dismissRecordToasts(renamedRef);
+      recordToast.success(renamedRef, `Renamed to ${name}`);
       setRenameTarget(null);
     } catch (error) {
       toast.error(`Rename failed: ${extractErrorMessage(error)}`);
@@ -193,6 +207,12 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({ className }) => {
         await dispatch(deleteCodeFileThunk(deleteTarget.item.id)).unwrap();
         dispatch(closeTab(libraryTabId(deleteTarget.item.id)));
       }
+      // The record is gone: withdraw every live toast still naming it before
+      // saying so. "Deleted X" has no route left, so it stays plain.
+      dismissRecordToasts({
+        type: deleteTarget.kind === "folder" ? "code_folder" : "code_file",
+        id: deleteTarget.item.id,
+      });
       toast.success(`Deleted ${deleteTarget.item.name}`);
       setDeleteTarget(null);
     } catch (error) {

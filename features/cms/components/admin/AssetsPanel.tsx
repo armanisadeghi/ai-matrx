@@ -16,7 +16,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SurfaceRuntimeProvider } from '@/features/surfaces/runtime/SurfaceRuntimeContext';
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from '@/features/surfaces/manifests/admin-knowledge.manifest';
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { fileHandler } from "@/features/files/handler/handler";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { AssetInUseError, CmsAssetService } from '../../services/cmsService';
@@ -141,7 +141,10 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                 height: primary?.height ?? null,
             });
             toast.dismiss(tid);
-            toast.success(`Asset '${asset.file_name}' added to ${site?.name ?? 'site'}`);
+            recordToast.success(
+                { type: 'cms_asset', id: asset.id, title: asset.file_name },
+                `Asset '${asset.file_name}' added to ${site?.name ?? 'site'}`,
+            );
             refresh();
         } catch (err) {
             toast.dismiss(tid);
@@ -181,6 +184,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
             await CmsAssetService.deleteAsset(asset.id, force);
             setDeleteState(null);
             setAssets((prev) => prev.filter((a) => a.id !== asset.id));
+            dismissRecordToasts({ type: 'cms_asset', id: asset.id });
             toast.success(`Deleted '${asset.file_name}'${force ? ' (forced)' : ''}`);
         } catch (err) {
             if (err instanceof AssetInUseError) {

@@ -35,7 +35,7 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
@@ -230,6 +230,9 @@ export default function CollectionsPage() {
     setIsDeleting(true);
     try {
       await CmsCollectionService.deleteCollection(deleteTarget.id);
+      // The record is gone: withdraw any live toast still naming it before
+      // saying so. "Deleted X" itself has no route left, so it stays plain.
+      dismissRecordToasts({ type: "cms-collection", id: deleteTarget.id });
       toast.success(`Deleted "${deleteTarget.name}"`);
       setDeleteTarget(null);
       await refresh();
@@ -249,7 +252,14 @@ export default function CollectionsPage() {
         await CmsCollectionService.updateCollection(collection.id, {
           status: "active",
         });
-        toast.success(`Restored "${collection.name}"`);
+        recordToast.success(
+          {
+            type: "cms-collection",
+            id: collection.id,
+            title: collection.name,
+          },
+          `Restored "${collection.name}"`,
+        );
       } else {
         await CmsCollectionService.archiveCollection(collection.id);
         toast.success(`Archived "${collection.name}"`);

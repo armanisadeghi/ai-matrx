@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
@@ -120,7 +120,10 @@ export function EditItemDialog({
           return;
         }
       }
-      toast.success(`Updated ${item.key}.`);
+      recordToast.success(
+        { type: "system_context_item", id: item.id, title: item.key },
+        `Updated ${item.key}.`,
+      );
       await onSaved();
     } finally {
       setSaving(false);

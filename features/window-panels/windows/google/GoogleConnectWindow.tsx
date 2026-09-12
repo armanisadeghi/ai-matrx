@@ -30,7 +30,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { isGoogleAuthorizationActionDisabled } from "./authorizationReadiness";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/lib/toast";
+import { toast, recordToast } from "@/lib/toast";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import {
   isGoogleAuthorizationCancelled,
@@ -242,7 +242,14 @@ function GoogleConnectWindowBody({
       );
       await inventory.refetch();
       onFilesPicked?.([registered]);
-      toast.success(`${registered.name} is ready to use.`);
+      recordToast.success(
+        {
+          type: registered.resourceType,
+          id: registered.id,
+          title: registered.name,
+        },
+        `${registered.name} is ready to use.`,
+      );
     });
 
   return (

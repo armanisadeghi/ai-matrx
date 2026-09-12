@@ -13,7 +13,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "@/lib/toast";
+import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
@@ -78,15 +78,17 @@ export function useWorkflowRowActions({
       dbPatch: Parameters<typeof setWorkflowFlag>[1],
       revert: Partial<WorkflowBrowseRow>,
       failureMessage: string,
-    ) => {
+    ): Promise<boolean> => {
       patchRow(row.id, rowPatch);
       try {
         await setWorkflowFlag(row.id, dbPatch);
+        return true;
       } catch (err) {
         patchRow(row.id, revert);
         toast.error(failureMessage, {
           description: err instanceof Error ? err.message : undefined,
         });
+        return false;
       }
     },
     [patchRow],
@@ -109,13 +111,16 @@ export function useWorkflowRowActions({
     async (row: WorkflowBrowseRow, next: string) => {
       const trimmed = next.trim();
       if (!trimmed || trimmed === row.name) return;
-      await saveFlag(
+      const renamed = await saveFlag(
         row,
         { name: trimmed },
         { name: trimmed },
         { name: row.name },
         "Could not rename workflow",
       );
+      // The old name is no longer this workflow's: withdraw any toast still
+      // saying it — only once the rename actually held.
+      if (renamed) dismissRecordToasts({ type: "workflow", id: row.id });
     },
     [saveFlag],
   );
@@ -136,9 +141,13 @@ export function useWorkflowRowActions({
         const copy = await duplicateWorkflow(row.id);
         // A duplicate the user cannot reach is a dead end — the toast carries
         // the door to the copy that was just made.
-        toast.success(`Duplicated "${row.name}"`, {
-          action: toastDoor("workflow", copy.id),
-        });
+        recordToast.success(
+          // The toast is about the COPY (its door opens it); the source's
+          // name is quoted, never used as identity.
+          { type: "workflow", id: copy.id },
+          `Duplicated "${row.name}"`,
+          { action: toastDoor("workflow", copy.id) },
+        );
         refresh();
       } catch (err) {
         toast.error("Could not duplicate workflow", {
@@ -164,6 +173,7 @@ export function useWorkflowRowActions({
       if (!ok) return;
       try {
         await deleteWorkflow(row.id);
+        dismissRecordToasts({ type: "workflow", id: row.id });
         removeRow(row.id);
         toast.success(`Deleted "${row.name}"`);
       } catch (err) {

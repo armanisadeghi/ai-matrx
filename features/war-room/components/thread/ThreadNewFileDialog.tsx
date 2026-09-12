@@ -19,7 +19,7 @@
 
 import { useMemo, useState } from "react";
 import { FilePlus2, Loader2 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { toast, recordToast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import {
   Dialog,
@@ -136,9 +136,11 @@ export function ThreadNewFileDialog({
         }),
       );
       if (attached) {
-        toast.success(`Created ${fileName}`, {
-          action: toastDoor("file", fileId),
-        });
+        recordToast.success(
+          { type: "file", id: fileId, title: fileName },
+          `Created ${fileName}`,
+          { action: toastDoor("file", fileId) },
+        );
         reset();
         onOpenChange(false);
       }

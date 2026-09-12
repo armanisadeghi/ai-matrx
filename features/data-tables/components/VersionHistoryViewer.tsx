@@ -36,7 +36,7 @@ import {
   Undo2,
   User,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { recordToast, toast } from "@/lib/toast";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -164,7 +164,8 @@ export function VersionHistoryViewer({
         value: prev ?? null,
       });
       if (isServiceFailure(result)) throw new Error(result.error);
-      toast.success(
+      recordToast.success(
+        { type: "row", id: rowId },
         `"${label(fieldName)}" reverted. This is recorded in history too.`,
       );
     });
