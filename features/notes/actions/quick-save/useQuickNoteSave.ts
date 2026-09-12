@@ -140,12 +140,15 @@ export function useQuickNoteSave({
     const isCreate = mode === "create";
     // Existing notes keep their authorized stored organization; an unrelated
     // active selection must never block an update or open a destination picker.
-    if (!isCreate && !selectedNoteForUpdate?.organization_id) {
-      throw new Error("The selected note has no persisted organization.");
+    let organizationId: string;
+    if (isCreate) {
+      organizationId = await ensureOrganizationContext({ organizationId: selectedOrganizationId });
+    } else {
+      if (!selectedNoteForUpdate?.organization_id) {
+        throw new Error("The selected note has no persisted organization.");
+      }
+      organizationId = selectedNoteForUpdate.organization_id;
     }
-    const organizationId = isCreate
-      ? await ensureOrganizationContext({ organizationId: selectedOrganizationId })
-      : selectedNoteForUpdate.organization_id;
     const label = isCreate
       ? `Note: ${noteName.trim() || "Quick Note"}`
       : `Note update: ${selectedNote?.label || "note"}`;

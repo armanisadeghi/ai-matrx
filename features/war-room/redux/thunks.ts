@@ -1016,9 +1016,6 @@ export const addNoteToThread =
     inFlightThreadOps.add(key);
     try {
       const context = selectThreadEffectiveContext(threadId, roomId)(getState());
-      if (!context.organizationId) {
-        throw new Error("This thread is missing its resource organization. Reopen or reload the thread, then try again.");
-      }
       const capturedOrganizationId = requireOrganizationContext(context.organizationId);
       const note = await createNote({
         content: content ?? "",
