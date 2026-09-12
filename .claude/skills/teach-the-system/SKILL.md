@@ -252,3 +252,18 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 7) The review wizard has no class-level action: 400 drafts meant 400 clicks, done
   by a script walking the product's own wizard with a decisions file written after reading every
   statement (logged as a cheat). Class-level review ("reject every course-logistics draft") is a gap.
+- 2026-09-12 — (trial 12) A Rulebook's free-text DESCRIPTION is a smuggling channel. The desk built from
+  88 approved dispositions still opened with one question and refused to advise — because the run quoted
+  the description back to itself as "the doctrine" and derived its deliverables from it. Before you credit
+  a Rulebook for a behaviour, read the run's own report and see which text it is actually obeying.
+- 2026-09-12 — (trial 12) The Understudy could not rebuild, for any Rulebook, because an automated write
+  declared `actor_tier=code` without naming a system and the provenance CHECK refused it — and the browser
+  caught the 500 and wrote it to the console. Two lessons: a fire-and-forget "poke" is a silent-failure
+  machine unless the surface shows the staleness it causes; and when a stand-in's behaviour disagrees with
+  the page's counters, read the built definition's own metadata before believing either.
+- 2026-09-12 — (trial 12) Approve/reject every draft one at a time through the wizard and the loop is
+  cheap to script, but check the counts in the database afterwards — the wizard's last card can be left
+  undecided and "reached last" is not "all decided".
+- 2026-09-12 — (trial 12) A run's report that opens with its own PRE-EXECUTION PROTOCOL, a rule
+  cross-reference table and a self-audit is not a deliverable, it is homework. Judge what the person is
+  shown, not what the agent produced.
