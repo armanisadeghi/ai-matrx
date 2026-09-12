@@ -10,7 +10,8 @@
     "PROVABLY not the same capability, and it must say why in `reason`.",
     "A WRAPPER is not a twin: a local function that BINDS the package function's options (unit, style, fallback) and delegates in a line or two is the sanctioned adapter, and needs no entry. A re-implemented BODY is a twin, always.",
     "",
-    "Register: /projects/npm-package-extraction/DUPLICATION-CENSUS.md (common-docs)."
+    "Register: /projects/npm-package-extraction/DUPLICATION-CENSUS.md (common-docs).",
+    "A SHAPE rule (`shapeWhy` + `shapeAllow` + `shapeCensus` on a row) catches the same capability under an UNREGISTERED name, or with no name at all. `shapeAllow` = provably NOT this capability, silent. `shapeCensus` = pre-existing bodies that ARE it and are not collapsed yet: loud every run, shrink-only, and a stale entry fails the guard."
   ],
   "twins": [
     {
@@ -152,7 +153,470 @@
       "name": "formatDurationMs",
       "package": "@ai-matrx/kit/format",
       "why": "THE UNIT LAW: the fleet's ~35 duration twins variously took milliseconds, seconds and minutes behind an identical `formatDuration(n)` signature, so kit ships formatDurationMs / formatDurationSeconds / formatDurationMinutes and NO bare `formatDuration`. Two host copies had already re-grown under this exact name (observational-memory format.ts, marketing crawl-session-panels.tsx) and were deleted 2026-09-07. A local `formatDuration` that BINDS unit+style+fallback and delegates is an adapter, not a twin; a local `formatDurationMs` is always a twin.",
-      "allow": []
+      "shapeWhy": "A millisecond count becoming a unit string is this capability whatever it is called. The name lane read GREEN on all four formatDuration* exports while aidream's dashboard carried SEVEN bodies under the private names fmtMs and fmtMsSummary, each with its own rounding, and 115 more files in this repo turned ms into `2.3s` / `1.5m` / `3m ago` inline. Pattern and its proof: scripts/duration-shape.mjs. Plain time arithmetic can never match \u2014 the rule requires a DIVISION, MODULO or THRESHOLD COMPARISON against a time base PAIRED with a duration unit label, so a timeout budget (30 * 1000), an API seconds field and a rate denominator all stay untouched. `shapeCensus` below is the pre-existing census, not an exemption: it is reported every run and is ratcheted shrink-only \u2014 a stale entry FAILS the guard.",
+      "allow": [],
+      "shapeCensus": [
+        {
+          "file": "app/(admin)/administration/compute/sandbox-infra/page.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(admin)/administration/database/components/enhanced-sql-editor.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(core)/podcast/studio/run-d/_components/RunView.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(dev)/demos/api-tests/agent/AgentTestClient.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(dev)/demos/api-tests/matrx-ai/agent-demo/AgentDemoClient.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(dev)/demos/api-tests/matrx-ai/conversation-demo/ConversationDemoClient.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(dev)/demos/api-tests/matrx-ai/dynamic-api/DynamicApiClient.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(dev)/demos/api-tests/tool-testing/components/ResultsPanel.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(dev)/demos/local-tools/_lib/InstanceSelectorModal.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(dev)/demos/local-tools/_lib/useMatrxLocal.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(dev)/demos/local-tools/scraper/page.dev.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(dev)/demos/tests/google-apis/pagespeed/components/MetricsOverview.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(dev)/demos/tool-viz/in-action/page.dev.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "app/(transitional)/local/page.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "components/admin/controls/LargeIndicator.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "components/admin/controls/MediumIndicator.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "components/admin/debug/TokenStatusDebug.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "components/admin/query-history/query-history-overlay.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "components/admin/server-logs/CoolifyLogViewer.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "components/admin/state-analyzer/execution-inspector/ExecutionInstanceInspector.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "components/image/cloud/CloudImageList.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "components/mardown-display/blocks/data-events/FunctionResultBlock.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/admin/error-inspector/ErrorInspectorWindow.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/admin/relationships/components/ExposureAuditClient.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/administration/batch/components/presentation.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/administration/canonicalization/components/CanonicalizationOverview.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/administration/canonicalization/hooks/useAuditStore.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/administration/database-admin/workbench/QueryBlock.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/administration/database-admin/workbench/WorkbenchClient.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/administration/kg-cost/components/KgCostDashboard.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/agent-apps/format.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/agent-apps/route/AgentAppOverviewContent.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/agent-connections/coding-sessions/captureGap.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/agents/components/conversation-history/ConversationHistorySidebar.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/agents/components/debug/StreamDebugPanel.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/agents/components/messages-display/assistant/ProviderRetryCard.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/agents/components/run-controls/panels/BackendTargetPanel.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/agents/components/run-controls/panels/shared.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/agents/components/undo-history/UndoHistoryOverlay.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/agents/redux/execution-system/thunks/run-ai-stream.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/ai-models/components/ProviderSyncDashboard.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/assists/quiet.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/canvas/leaderboard/CanvasLeaderboard.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/canvas/social/ScoreSubmissionDialog.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/code/editor/EditorToolbar.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/content-ir/admin/KindIncidentsTab.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/education/assessment/components/AssessmentHome.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/education/notes/EduNotesHome.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/education/onboard/components/elapsed.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/education/study/utils/summarizeSessionAttempts.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/flashcards/components/home/FlashcardsHome.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/flashcards/fast-fire/components/FastFireTimerBar.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/hr/tasks/urgency.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/html-pages/components/HtmlPageGridView.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/image-studio/components/ImageStudioShell.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/kg-suggestions/components/KgSuggestionRowItem.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/kg-suggestions/components/manager/SuggestionsTable.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/legal/wc/pd-ratings/CaPdCalculatorClient.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/legal/wc/pd-ratings/CasesListClient.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/mandates/admin/MandateTestBench.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/mandates/admin/TryItNowPanel.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/mandates/authoring/draft.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/marketing/competitors/landscapeBrief.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/marketing/components/crawls/CrawlScheduleCard.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/marketing/components/crawls/SiteCommandFeed.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/marketing/pagespeed/format.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/marketing/seo/audit/checks.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/marketing/seo/run-console/GazetteerPlaceDetectionConsole.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/marketing/seo/run-console/SituationalRefreshConsole.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/masterwork/components/masterworks/MasterworksPage.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/masterwork/encore/EncoreRunPage.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/masterwork/home/MasterworkHomePage.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/masterwork/record/format.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/notes/components/NoteDraftRecoveryBanner.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/notes/components/NoteSaveFailureBanner.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/notes/components/NoteSidebar.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/organizations/components/OrgPrivacyTab.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/organizations/types.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/page-extraction/data-review/ExtractionCatalogClient.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/pdf/utils/inactivity.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/podcasts/studio/components/RunTruthInspector.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/pricing/components/UsageLimitDialog.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/projects/types.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/proof-runs/components/ProofRunsClient.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/rag/components/library/KnowledgeAssetPanel.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/rag/components/library/LibraryPage.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/research/components/overview/live-pipeline/LivePipelineActivity.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/research/components/overview/live-pipeline/stageMeta.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/research/components/overview/pipeline-graph/LastRunSummary.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/research/components/tasks/TasksView.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/resource-manager/resource-picker/ConversationReferencePicker.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/review-walk/components/TurnDiagnosis.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/tool-call-visualization/admin/ToolUiComponentGenerator.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/tool-call-visualization/admin/ToolUiIncidentViewer.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/tool-call-visualization/grouping/foldAgentWork.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/transcript-studio/components/StudioSidebar.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/transcript-studio/components/scribe/AssistantAgentBar.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/transcript-studio/components/settings/IntervalSlider.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/transcription-cleanup/components/CleanupSessionList.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/transcripts/service/audioStorageService.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/voice-agent/components/VoiceDebugPanel.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/war-room/service/warRoomRecentActivity.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/window-panels/windows/code/CodeFileManagerWindow.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/workflow-runtime/bakeoff/dense/PlanLedger.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/workflow-runtime/bakeoff/reimagine-2/FocusWindow.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/workflow-runtime/bakeoff/sharp-2/PlanColumn.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/workflow-runtime/interrupt/interrupt-view.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "features/workflow-runtime/redux/workflow-runs.slice.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "hooks/sandbox/use-time-remaining.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "lib/entity-list/columns.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "lib/guided-setup/components/GuidedChecklist.tsx",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "lib/python-client.ts",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        },
+        {
+          "file": "scripts/validate.mjs",
+          "reason": "Pre-existing duration body, censused 2026-09-11 when the duration SHAPE lane was added. NOT an exemption: it belongs to @ai-matrx/kit/format and awaits the fleet-wide duration collapse campaign. Remove this entry when the file is collapsed."
+        }
+      ]
     },
     {
       "name": "formatDurationSeconds",
