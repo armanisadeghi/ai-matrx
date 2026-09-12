@@ -5,6 +5,7 @@ REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 FIXTURE="$REPO/scripts/fixtures/dd154-preapply-catalog.json"
 MIGRATION="$REPO/migrations/dd154_org_assignment_ddl_prevention.sql"
 EXPECTED_MIGRATION_SHA256=01d4323bbf7442160a67abbf2a1fc0dde2bf6e5086295c0f6d0e4f0a56fead5d
+GUIDANCE_DRAFT="$REPO/scripts/migration-drafts/dd155_org_assignment_guidance.sql"
 MODE=${DD154_PG_MODE:-native}
 PG_BIN=${DD154_PG_BIN:-}
 RUN_DIR=$(mktemp -d /tmp/dd154-pg17-review.XXXXXX)
@@ -36,12 +37,14 @@ cleanup() {
   cp "$LOG" /tmp/dd154-review-postgres.log 2>/dev/null || true
   cp "$RUN_DIR/mapped.out" /tmp/dd154-review-mapped.out 2>/dev/null || true
   cp "$RUN_DIR/original.out" /tmp/dd154-review-original.out 2>/dev/null || true
+  cp "$RUN_DIR/dd155.out" /tmp/dd154-review-dd155.out 2>/dev/null || true
   rm -rf "$RUN_DIR"
 }
 trap cleanup EXIT
 
 [[ -f $FIXTURE ]] || fail "checked-in pre-apply catalog fixture is missing: $FIXTURE"
 [[ -f $MIGRATION ]] || fail "applied DD154 migration is missing: $MIGRATION"
+[[ -f $GUIDANCE_DRAFT ]] || fail "DD155 guidance draft is missing: $GUIDANCE_DRAFT"
 [[ $(shasum -a 256 "$MIGRATION" | awk '{print $1}') == "$EXPECTED_MIGRATION_SHA256" ]] || fail "applied DD154 migration checksum does not match the immutable ledger subject"
 
 case "$MODE" in
@@ -274,6 +277,89 @@ if ! grep -q '^event|fixture_guard_owner|f|O|CREATE TABLE,ALTER TABLE,CREATE FUN
   echo 'FAIL metadata: event binding not preserved/extended exactly' | tee -a "$RESULTS"; cat "$RUN_DIR/after.tsv" | tee -a "$RESULTS"; exit 1
 fi
 echo 'PASS metadata: both function owners/security/config/ACL preserved; event owner/enabled preserved and CREATE TRIGGER added' | tee -a "$RESULTS"
+
+# DD155 is intentionally a separate prepared migration. It must run against the
+# DD154 result, retain guard metadata, remove both stale recommendations, and
+# leave the existing enforcement matrix below untouched.
+"${PSQL[@]}" -AtF '|' -c "
+SELECT r.rolname,p.prosecdef,coalesce(array_to_string(p.proconfig,','),''),coalesce(array_to_string(p.proacl::text[],','),'')
+FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
+WHERE p.oid='platform._ddl_guard()'::regprocedure" > "$RUN_DIR/dd155-before.tsv"
+"${PSQL[@]}" -Atc "SELECT encode(digest(convert_to(pg_get_functiondef('platform._ddl_guard()'::regprocedure), 'UTF8'), 'sha256'), 'hex')" > "$RUN_DIR/dd155-fixture-source.sha256"
+echo "DD155 fixture input source hash: $(cat "$RUN_DIR/dd155-fixture-source.sha256")" | tee -a "$RESULTS"
+node - "$GUIDANCE_DRAFT" "$RUN_DIR/dd155-fixture-source.sha256" "$RUN_DIR/dd155-mapped.sql" <<'NODE'
+const fs = require('fs');
+const [draft, fixtureHashFile, mapped] = process.argv.slice(2);
+const liveHash = 'd619ea4bd180b16a7a3ad7cf4f563552a783cc502040826fe328610661ac8a68';
+const fixtureHash = fs.readFileSync(fixtureHashFile, 'utf8').trim();
+if (!/^[0-9a-f]{64}$/.test(fixtureHash)) throw new Error('DD155 fixture source hash is malformed');
+const source = fs.readFileSync(draft, 'utf8');
+if (source.split(liveHash).length !== 2) throw new Error('DD155 draft must contain the reviewed live source hash exactly once');
+const output = source.replace(liveHash, fixtureHash);
+if (output.replace(fixtureHash, liveHash) !== source) throw new Error('DD155 fixture mapping changed bytes beyond the source-hash precondition');
+fs.writeFileSync(mapped, output);
+console.log('PASS DD155 fixture mapping: only the live source-hash precondition was adapted to the isolated PG17 fixture');
+NODE
+run_file "$RUN_DIR/dd155-mapped.sql" >"$RUN_DIR/dd155.out" 2>&1
+"${PSQL[@]}" -AtF '|' -c "
+SELECT r.rolname,p.prosecdef,coalesce(array_to_string(p.proconfig,','),''),coalesce(array_to_string(p.proacl::text[],','),'')
+FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
+WHERE p.oid='platform._ddl_guard()'::regprocedure" > "$RUN_DIR/dd155-after.tsv"
+if ! diff -u "$RUN_DIR/dd155-before.tsv" "$RUN_DIR/dd155-after.tsv" >> "$RESULTS"; then
+  echo 'FAIL DD155 metadata: ddl_guard owner/security/config/ACL changed' | tee -a "$RESULTS"; exit 1
+fi
+
+"${PSQL[@]}" <<'SQL' | tee -a "$RESULTS"
+DO $dd155_hint$
+DECLARE
+  v_hint text;
+  v_old_hint constant text := $old_hint$NO NULL ORG (owner ruling 2026-08-21, db-rules §2/§6e). NULL is not a scope: system/global content belongs to the system org (matrx-system, 39c38960-d30c-4840-b0c1-c9960de95582, iam.system_orgs.global_readable), and user content falls back to the creator's personal org. Declare organization_id uuid NOT NULL REFERENCES iam.organizations(id) and attach the backstop (public._stamp_org_default or platform.inherit_org_from_parent) in this same migration.$old_hint$;
+  v_new_hint constant text := $new_hint$Declare organization_id uuid NOT NULL REFERENCES iam.organizations(id). The initiating operation must provide its organization_id explicitly; no resolver, default, trigger, backstop, or assignment may choose it.$new_hint$;
+BEGIN
+  PERFORM set_config('matrx.provisioner', '1', true);
+  BEGIN
+    CREATE TABLE public.dd155_null_at_birth (
+      organization_id uuid,
+      created_by uuid,
+      created_at timestamptz,
+      updated_at timestamptz
+    );
+    RAISE EXCEPTION 'DD155 hint probe unexpectedly allowed nullable organization_id at birth';
+  EXCEPTION WHEN check_violation THEN
+    GET STACKED DIAGNOSTICS v_hint = PG_EXCEPTION_HINT;
+    IF v_hint IS DISTINCT FROM v_new_hint OR position(v_old_hint IN coalesce(v_hint, '')) > 0 THEN
+      RAISE EXCEPTION 'DD155 hint retained stale guidance: %', v_hint;
+    END IF;
+  END;
+END
+$dd155_hint$;
+
+SELECT set_config('matrx.provisioner', '1', false);
+CREATE TABLE public.dd155_nullable_log_probe (
+  organization_id uuid NOT NULL,
+  created_by uuid,
+  created_at timestamptz,
+  updated_at timestamptz
+);
+ALTER TABLE public.dd155_nullable_log_probe ALTER COLUMN organization_id DROP NOT NULL;
+DO $dd155_log$
+DECLARE
+  v_detail text;
+  v_old_detail constant text := $old_detail$NO NULL ORG (owner ruling 2026-08-21): this entity-looking table still allows organization_id IS NULL. NULL is not a scope -- system/global content belongs to the system org (matrx-system 39c38960-d30c-4840-b0c1-c9960de95582), user content to the creator's personal org. Flip it NOT NULL and attach the backstop in ONE migration. (db-rules §2/§6e.)$old_detail$;
+  v_new_detail constant text := $new_detail$NO NULL ORG (owner ruling 2026-08-21): this entity-looking table still allows organization_id IS NULL. Declare organization_id NOT NULL. The initiating operation must provide its organization_id explicitly; no resolver, default, trigger, backstop, or assignment may choose it. (db-rules §2/§6e.)$new_detail$;
+BEGIN
+  SELECT detail INTO v_detail
+  FROM platform.ddl_guard_log
+  WHERE rule = 'nullable_org' AND object_ref = 'public.dd155_nullable_log_probe'
+  ORDER BY ctid DESC LIMIT 1;
+  IF v_detail IS DISTINCT FROM v_new_detail OR position(v_old_detail IN coalesce(v_detail, '')) > 0 THEN
+    RAISE EXCEPTION 'DD155 nullable_org log retained stale guidance: %', v_detail;
+  END IF;
+END
+$dd155_log$;
+DROP TABLE public.dd155_nullable_log_probe;
+SQL
+echo 'PASS DD155 guidance: stale NULL-at-birth hint and nullable_org detail fail exact assertions; repaired initiating-operation guidance passes' | tee -a "$RESULTS"
 
 "${PSQL[@]}" <<'SQL' | tee -a "$RESULTS"
 CREATE TEMP TABLE review_results(label text PRIMARY KEY, expected text NOT NULL, observed text NOT NULL, pass boolean NOT NULL);

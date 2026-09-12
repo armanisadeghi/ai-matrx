@@ -1530,6 +1530,11 @@ function saveShapeInstanceItem(ctx: MessageActionContext): MenuItem {
         const saved = await saveKindInstancesFromMessage({
           text,
           organizationId: selectEffectiveOrganizationId(ctx.getState()),
+          // Provenance rides with the save (DD-131 slice 1): the record is
+          // HOMED in this conversation and carries a `produced_by` edge back
+          // to this message, exactly as the server store writes it.
+          conversationId: ctx.conversationId,
+          messageId: ctx.messageId,
         });
         const drifted = saved.filter((s) => s.validationStatus !== "passed");
         if (drifted.length > 0) {
@@ -1546,6 +1551,16 @@ function saveShapeInstanceItem(ctx: MessageActionContext): MenuItem {
           return;
         }
         const first = saved[0];
+        const unlinked = saved.filter((entry) => entry.provenanceWarning);
+        if (unlinked.length > 0) {
+          // The rows landed but their link back to this message did not.
+          // Never silent — the first sentence the database gave us is shown.
+          toast.warning(
+            `Saved ${saved.length} instance${saved.length === 1 ? "" : "s"}, but the link back to this message was not written`,
+            { id: toastId, description: unlinked[0].provenanceWarning ?? "" },
+          );
+          return;
+        }
         toast.success(
           saved.length === 1
             ? first.title

@@ -364,6 +364,14 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Change Log
 
+- `2026-09-12` — **The approval header names WHO is proposing the change.**
+  `ApprovalChange` gains an optional `actor` field; `dispatch-surface-write.thunk.ts`
+  passes `proposal.actorLabel` through instead of burying it only in the Details
+  prose. `<ApprovalCard>` renders it in the always-visible eyebrow (`"{actor} ·
+  {verb}"`, e.g. `"Badass Agent · Update"`) so a user deciding whether to apply a
+  change sees who wants it without expanding Details. Producers with no distinct
+  actor (the War Room tools) are unaffected — the eyebrow falls back to the plain
+  verb label.
 - 2026-08-29 — C9 adoption: `BottomSheet`/`TabbedBottomSheet`, `EditableLabel`, `SegmentedControl`, `ScoreRing`, and `useScrollFade` now import from `@ai-matrx/design-system` 0.2.0 (npm); the local originals under `components/official/` and `components/ui/segmented-control.tsx` are deleted. Behavior identical (verbatim ports; host keeps the glass/pb-safe/matrx-scroll-fade CSS contracts in `app/globals.css`).
 - `2026-08-28` — **The agent-card gallery can replay recent real calls safely.**
   `/demos/agent-cards` now switches between the complete fixture matrix and

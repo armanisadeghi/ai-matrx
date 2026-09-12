@@ -101,6 +101,26 @@ const SURFACE_DEFAULTS = {
 /** The scopes this surface serves. Org-wide FIRST — it is the default. */
 const RECORD_SCOPES = ["orgs", "mine"] as const;
 
+/**
+ * 🚨 THE LANDING RULE — a first screen never opens on a scope that structurally
+ * cannot hold the viewer's rows.
+ *
+ * "My Orgs" means "organizations you belong to", and `readableOrganizations()`
+ * excludes PERSONAL organizations (they have no teammates). So for a user whose
+ * only organization is their own personal one — which is every brand-new
+ * account, and was `test@test.com` in Test's Org — the default scope is empty
+ * FOREVER: `My Orgs 0` beside `Mine 7`, with an empty state saying nothing had
+ * been produced, seconds after they pressed Save in chat (V-42 §3.2, root cause
+ * measured 2026-09-12: `iam.organizations.is_personal = true`).
+ *
+ * The scope SEMANTICS are the platform's and are not touched here — the counts
+ * were right, the landing was wrong. So exactly once, before the person has
+ * touched the scope tabs, the screen lands on the scope that actually holds
+ * rows. The tabs show which one is active and what each holds, so nothing is
+ * hidden — and the moment the user picks a scope themselves, this never fires
+ * again and their choice stands even when it is empty.
+ */
+
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -115,6 +135,8 @@ export default function KindRecordsTable({
 
   const [fields] = useState<SchemaField[]>(() => schemaFields(emittedJsonSchema));
   const [scope, setScope] = useState<ListScope>(() => makeScope("orgs"));
+  /** True once the landing rule has run or the person picked a scope. */
+  const scopeSettled = useRef(false);
   const [search, setSearch] = useState("");
   const [confirmation, setConfirmation] = useState<ConfirmationFilter>("all");
   const [writer, setWriter] = useState<WriterFilter>("all");
@@ -224,6 +246,15 @@ export default function KindRecordsTable({
       setNames(resolvedNames);
       setScopeCounts(scopes);
       setArchiveCounts(archives);
+
+      // THE LANDING RULE — once, on the first counts this screen ever reads.
+      if (!scopeSettled.current) {
+        scopeSettled.current = true;
+        if (scope.kind === "orgs" && scopes.orgs === 0 && scopes.mine > 0) {
+          setScope(makeScope("mine"));
+          setPage(1);
+        }
+      }
     }
 
     run()
@@ -431,6 +462,21 @@ export default function KindRecordsTable({
 
   const archivedElsewhere = archiveCounts.archived ?? 0;
 
+  /**
+   * THE OTHER-SCOPE RULE: a list may not say "nothing has been produced" while
+   * it can see rows sitting one tab away. When the visible scope is empty and
+   * the other one is not, the empty state names the number and offers the one
+   * click that reaches it.
+   */
+  const otherScope: { kind: "mine" | "orgs"; label: string; count: number } | null =
+    scope.kind === "mine"
+      ? (scopeCounts?.orgs ?? 0) > 0
+        ? { kind: "orgs", label: "My Orgs", count: scopeCounts?.orgs ?? 0 }
+        : null
+      : (scopeCounts?.mine ?? 0) > 0
+        ? { kind: "mine", label: "Mine", count: scopeCounts?.mine ?? 0 }
+        : null;
+
   return (
     <div className="flex min-h-0 flex-col gap-3">
       {/* The moment a person's edit made them the record's guarantor. */}
@@ -475,6 +521,9 @@ export default function KindRecordsTable({
           scopes={[...RECORD_SCOPES]}
           counts={counts}
           onChange={(next) => {
+            // A scope the person picked is theirs — the landing rule must
+            // never move them off it, even when it holds nothing.
+            scopeSettled.current = true;
             setScope(next);
             setPage(1);
             setSelectedIds([]);
@@ -684,12 +733,31 @@ export default function KindRecordsTable({
                     </Button>
                   ),
                 }
-              : {
-                  icon: <CircleDashed className="h-5 w-5" />,
-                  title: `No ${label} records here`,
-                  description:
-                    "Nothing matches this scope and these filters. Records land here when an agent produces one, or when you save one from the shape's Test tab.",
-                }
+              : otherScope
+                ? {
+                    icon: <CircleDashed className="h-5 w-5" />,
+                    title: `Nothing under this scope — ${otherScope.count} ${label} record${otherScope.count === 1 ? "" : "s"} in ${otherScope.label}`,
+                    description: `This scope holds none of your ${label} records, but ${otherScope.label} does. Nothing is missing and nothing was lost — they are one click away.`,
+                    action: (
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          scopeSettled.current = true;
+                          setScope(makeScope(otherScope.kind));
+                          setPage(1);
+                          setSelectedIds([]);
+                        }}
+                      >
+                        Show {otherScope.label}
+                      </Button>
+                    ),
+                  }
+                : {
+                    icon: <CircleDashed className="h-5 w-5" />,
+                    title: `No ${label} records here`,
+                    description:
+                      "Nothing matches this scope and these filters. Records land here when an agent produces one, or when you save one from the shape's Test tab.",
+                  }
         }
       />
 

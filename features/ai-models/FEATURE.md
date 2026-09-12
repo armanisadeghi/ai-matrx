@@ -74,6 +74,8 @@ must obey.
 
 ## Change log
 
+- **2026-09-12** — Settings Vocabulary now uses the shared `MatrxDataTable` over a complete local `ai.setting` read, ordered by key/id and paged at 25. The parent remains the only owner of the selected detail editor and CRUD callbacks; loading failure exposes Retry. Phone cards make the setting-name door and row actions explicit, while system-delete protection remains intact.
+
 - **2026-09-12** — Providers now use the shared `MatrxDataTable` over a complete local `ai.provider` read. The table defaults to 25 local rows per page and preserves provider selection, URL-driven detail opening, mobile cards, outbound links, and the system-provider delete lock. The parent editor owns row opening: the package detail panel is disabled to prevent double opening, and mobile card names explicitly open that same editor.
 
 - **2026-09-11** — Provider Sync's dashboard mount loader no longer asks its parent to

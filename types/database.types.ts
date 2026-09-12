@@ -63131,6 +63131,8 @@ export type Database = {
       create_entity_table: {
         Args: {
           p_category: boolean
+          p_data_class?: Database["platform"]["Enums"]["data_class"]
+          p_default_list_scope?: Database["platform"]["Enums"]["list_scope"]
           p_fields: string[]
           p_gin_jsonb: boolean
           p_label: string
@@ -66407,6 +66409,16 @@ export type Database = {
           p_status?: string
         }
         Returns: string
+      }
+      admin_tool_refetch_all_time: {
+        Args: never
+        Returns: unknown[]
+        SetofOptions: {
+          from: "*"
+          to: "mv_tool_refetch_summary"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       admin_unregistered_pairs: {
         Args: never
@@ -91992,6 +92004,72 @@ export type Database = {
           updated_by?: string | null
           uri_match_mode?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      credential_mutation_receipts: {
+        Row: {
+          actor_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
+          mutation_id: string
+          operation: string
+          organization_id: string
+          principal_id: string
+          principal_type: string
+          result_field_id: string | null
+          result_item_id: string | null
+          result_value_version: number | null
+          target_field_id: string | null
+          target_item_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actor_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          mutation_id: string
+          operation: string
+          organization_id: string
+          principal_id: string
+          principal_type: string
+          result_field_id?: string | null
+          result_item_id?: string | null
+          result_value_version?: number | null
+          target_field_id?: string | null
+          target_item_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          mutation_id?: string
+          operation?: string
+          organization_id?: string
+          principal_id?: string
+          principal_type?: string
+          result_field_id?: string | null
+          result_item_id?: string | null
+          result_value_version?: number | null
+          target_field_id?: string | null
+          target_item_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: []
       }

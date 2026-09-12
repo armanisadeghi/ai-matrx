@@ -83,6 +83,11 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
       ? change.title
       : capitalize(change.entity);
   const eyebrow = `${meta.label} ${change.entity}`;
+  const actor = change.actor?.trim();
+  // The always-visible header names WHO proposed the change (never only in
+  // the collapsed Details) — falls back to the plain verb label when a
+  // producer has no distinct actor (e.g. the War Room tools).
+  const headerEyebrow = actor ? `${actor} · ${meta.label}` : meta.label;
   const autoNoun = change.autoApprove?.noun;
   // AgentCardShell dims when `pending` is true — pass true only once resolved
   // (matches AskCard / BatchAskCard; inverted here was blocking all clicks).
@@ -214,7 +219,7 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
     <AgentCardShell
       tone={meta.tone}
       icon={meta.Icon}
-      eyebrow={meta.label}
+      eyebrow={headerEyebrow}
       title={headline}
       titleInline
       headerAction={
