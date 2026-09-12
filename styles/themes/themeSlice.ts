@@ -35,8 +35,11 @@ const themeSlice = createSlice({
     name: "theme",
     initialState,
     reducers: {
-        toggleMode: (state) => {
-            state.mode = state.mode === "light" ? "dark" : "light";
+        // The caller supplies the current painted mode. A reducer cannot read
+        // the DOM, and deriving from the stored preference would make System
+        // ambiguous. The result is always an explicit user override.
+        toggleMode: (state, action: PayloadAction<ResolvedThemeMode>) => {
+            state.mode = action.payload === "dark" ? "light" : "dark";
         },
         setMode: (state, action: PayloadAction<ThemeMode>) => {
             state.mode = action.payload;
@@ -61,7 +64,7 @@ export default themeSlice.reducer;
 //
 // `themePolicy` makes the slice a first-class participant in the unified sync
 // engine. It:
-//   - broadcasts setMode/toggleMode across tabs in <20ms
+//   - broadcasts setMode/toggleMode (with its resolved source) across tabs in <20ms
 //   - persists `mode` to localStorage (key `matrx:theme`) synchronously
 //   - pre-paints `.dark` class + `data-theme` attribute before first paint via
 //     `<SyncBootScript />`, honouring OS `prefers-color-scheme` on first visit
