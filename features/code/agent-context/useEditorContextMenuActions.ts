@@ -1,12 +1,15 @@
 "use client";
 
+import { tabToFileIdentity } from "../utils/fileIdentity";
+
 import { useEffect, type MutableRefObject } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import type { StandaloneCodeEditor } from "../editor/MonacoEditor";
 import type { EditorFile } from "../types";
-import { editorSelectionKey, editorTabKey } from "./editorContextEntries";
+import { editorSelectionKey, tabPayload } from "./editorContextEntries";
+import { setRightOpen } from "../redux/codeWorkspaceSlice";
 
 interface UseEditorContextMenuActionsOptions {
   editorRef: MutableRefObject<StandaloneCodeEditor | null>;
@@ -39,8 +42,8 @@ interface UseEditorContextMenuActionsOptions {
  * Adds Monaco right-click context-menu actions for AI workflows:
  *
  *   - "Send selection to chat"   (push editor.selection.<id> to instanceContext)
- *   - "Send file to chat"        (push editor.tab.<id> to instanceContext)
- *   - "Ask AI in floating window…"  (open AgentRunWindow seeded with selection)
+ *   - "Send file to chat"        (push editor.pinnedTab.<id> to instanceContext)
+ *   - "Ask AI in floating window…"  (open AgentRunWindow with the selected agent)
  *
  * All actions are no-ops when their preconditions aren't met (e.g. no
  * selection). Disposables are torn down on unmount or when the editor /
@@ -97,6 +100,7 @@ export function useEditorContextMenuActions({
         contextMenuOrder: 1.1,
         precondition: "editorHasSelection",
         run: () => {
+          dispatch(setRightOpen(true));
           if (!conversationId) {
             notify?.({
               type: "error",
@@ -114,6 +118,7 @@ export function useEditorContextMenuActions({
               conversationId,
               key: editorSelectionKey(activeTab.id),
               value: {
+                identity: tabToFileIdentity(activeTab),
                 id: activeTab.id,
                 path: activeTab.path,
                 name: activeTab.name,
@@ -146,6 +151,7 @@ export function useEditorContextMenuActions({
         contextMenuGroupId: "ai",
         contextMenuOrder: 1.2,
         run: () => {
+          dispatch(setRightOpen(true));
           if (!conversationId) {
             notify?.({
               type: "error",
@@ -156,19 +162,13 @@ export function useEditorContextMenuActions({
           dispatch(
             setContextEntry({
               conversationId,
-              key: editorTabKey(activeTab.id),
+              key: `editor.pinnedTab.${activeTab.id}`,
               value: {
-                id: activeTab.id,
-                path: activeTab.path,
-                name: activeTab.name,
-                language: activeTab.language,
-                content: activeTab.content,
-                pristineContent: activeTab.pristineContent,
-                dirty: !!activeTab.dirty,
-                remoteUpdatedAt: activeTab.remoteUpdatedAt,
+                ...tabPayload(activeTab),
+                capturedAt: new Date().toISOString(),
               },
               type: "json",
-              label: `Editor: ${activeTab.name}`,
+              label: `Attached file: ${activeTab.name}`,
             }),
           );
           notify?.({

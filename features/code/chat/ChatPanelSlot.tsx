@@ -154,11 +154,13 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
   // agent-apps editor) pass their own pathname so forks stay in-route.
   const buildConversationUrl = useMemo(() => {
     if (!agentId) return undefined;
-    return (conversationId: string) =>
-      `${basePath}?agentId=${encodeURIComponent(agentId)}&conversationId=${encodeURIComponent(
-        conversationId,
-      )}`;
-  }, [agentId, basePath]);
+    return (conversationId: string) => {
+      const next = new URLSearchParams(searchParams.toString());
+      next.set("agentId", agentId);
+      next.set("conversationId", conversationId);
+      return `${basePath}?${next.toString()}`;
+    };
+  }, [agentId, basePath, searchParams]);
 
   return (
     <div className={`flex h-full min-h-0 flex-col ${className ?? ""}`}>

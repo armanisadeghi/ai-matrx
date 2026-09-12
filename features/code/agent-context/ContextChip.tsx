@@ -98,6 +98,11 @@ export const ContextChip: React.FC<ContextChipProps> = ({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-label="Editor context"
+        aria-expanded={open}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") setOpen(false);
+        }}
         title={`${includedCount} of ${tabs.length} editor tabs in context`}
         className={cn(
           "flex h-6 items-center gap-1 rounded-sm border px-1.5 text-[10px]",
@@ -112,7 +117,12 @@ export const ContextChip: React.FC<ContextChipProps> = ({
         </span>
       </button>
       {open && (
-        <div className="absolute right-0 top-7 z-30 min-w-[260px] max-w-[420px] rounded-md border border-neutral-300 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-950">
+        <div
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setOpen(false);
+          }}
+          className="absolute right-0 top-7 z-30 min-w-[260px] max-w-[420px] rounded-md border border-neutral-300 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-950"
+        >
           <div className="flex items-center justify-between border-b border-neutral-200 px-2 py-1.5 dark:border-neutral-800">
             <span className="text-[11px] font-semibold text-neutral-700 dark:text-neutral-200">
               Editor context
@@ -134,6 +144,10 @@ export const ContextChip: React.FC<ContextChipProps> = ({
               </button>
             </div>
           </div>
+          <p className="px-2 py-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+            The active file includes unsaved text. Other included tabs share
+            their names and locations. Uncheck a file to exclude it.
+          </p>
           <ul className="max-h-[280px] overflow-y-auto py-1">
             {tabs.map((tab) => {
               const enabled = !disabledSet.has(tab.id);
@@ -142,6 +156,8 @@ export const ContextChip: React.FC<ContextChipProps> = ({
                   <button
                     type="button"
                     onClick={() => toggleTab(tab.id)}
+                    aria-pressed={enabled}
+                    title={tab.path}
                     className="flex w-full items-center gap-1.5 px-2 py-1 text-left text-[12px] hover:bg-neutral-100 dark:hover:bg-neutral-800/70"
                   >
                     {enabled ? (
@@ -158,6 +174,9 @@ export const ContextChip: React.FC<ContextChipProps> = ({
                     />
                     <span className="min-w-0 flex-1 truncate">
                       {tab.name}
+                      <span className="block truncate text-[10px] text-neutral-500 dark:text-neutral-400">
+                        {tab.path}
+                      </span>
                       {tab.dirty && (
                         <span className="ml-1 text-[10px] text-amber-500">
                           •

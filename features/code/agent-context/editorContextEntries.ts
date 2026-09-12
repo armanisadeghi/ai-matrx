@@ -7,6 +7,7 @@ import {
 } from "../redux/diagnosticsSlice";
 import type { EditorFile } from "../types";
 import { isPreviewTab } from "../types";
+import { tabToFileIdentity } from "../utils/fileIdentity";
 
 /**
  * Editor → Agent Context Bridge
@@ -48,6 +49,8 @@ export const editorSelectionKey = (tabId: string) =>
 
 export interface EditorTabsSummary {
   tabs: Array<{
+    identity: ReturnType<typeof tabToFileIdentity>;
+    readOnly: boolean;
     id: string;
     path: string;
     name: string;
@@ -58,6 +61,8 @@ export interface EditorTabsSummary {
 }
 
 export interface EditorTabContextValue {
+  identity: ReturnType<typeof tabToFileIdentity>;
+  readOnly: boolean;
   id: string;
   path: string;
   name: string;
@@ -69,6 +74,8 @@ export interface EditorTabContextValue {
 }
 
 export interface EditorActiveFileValue {
+  identity: ReturnType<typeof tabToFileIdentity>;
+  readOnly: boolean;
   id: string;
   path: string;
   name: string;
@@ -120,10 +127,12 @@ function summarizeTab(tab: EditorFile) {
     name: tab.name,
     language: tab.language,
     dirty: !!tab.dirty,
+    identity: tabToFileIdentity(tab),
+    readOnly: !!tab.readOnly || isPreviewTab(tab.kind),
   };
 }
 
-function tabPayload(tab: EditorFile): EditorTabContextValue {
+export function tabPayload(tab: EditorFile): EditorTabContextValue {
   return {
     id: tab.id,
     path: tab.path,
@@ -133,6 +142,8 @@ function tabPayload(tab: EditorFile): EditorTabContextValue {
     pristineContent: tab.pristineContent,
     dirty: !!tab.dirty,
     remoteUpdatedAt: tab.remoteUpdatedAt,
+    identity: tabToFileIdentity(tab),
+    readOnly: !!tab.readOnly,
   };
 }
 
@@ -152,16 +163,8 @@ function tabPayload(tab: EditorFile): EditorTabContextValue {
  *     agent knows which images/PDFs the user has on screen.
  */
 export const selectEditorContextEntries = createSelector(
-  [
-    selectCodeTabs,
-    selectRecentTabIds,
-    selectAllDiagnostics,
-  ],
-  (
-    tabsState,
-    recentTabIds,
-    diagnosticsByTabId,
-  ): EditorContextEntryInput[] => {
+  [selectCodeTabs, selectRecentTabIds, selectAllDiagnostics],
+  (tabsState, recentTabIds, diagnosticsByTabId): EditorContextEntryInput[] => {
     const entries: EditorContextEntryInput[] = [];
     const allTabs = tabsState.order
       .map((id) => tabsState.byId[id])
@@ -193,13 +196,7 @@ export const selectEditorContextEntries = createSelector(
     if (activeTab) {
       entries.push({
         key: EDITOR_ACTIVE_FILE_KEY,
-        value: {
-          id: activeTab.id,
-          path: activeTab.path,
-          name: activeTab.name,
-          language: activeTab.language,
-          dirty: !!activeTab.dirty,
-        } satisfies EditorActiveFileValue,
+        value: summarizeTab(activeTab) satisfies EditorActiveFileValue,
         label: "Active editor file",
         type: "json",
       });
@@ -255,8 +252,11 @@ export const selectEditorContextEntries = createSelector(
           // we can only resolve metadata that lives in the id. The id
           // shape is `<filesystemId>:<path>`; split once and fall back to
           // the basename for `name`.
-          const colon = id.indexOf(":");
-          const path = colon === -1 ? id : id.slice(colon + 1);
+          // Adapter IDs may themselves contain colons (sandbox:<uuid>).
+          // Only recover an actual absolute path; a closed Library UUID
+          // cannot tell us its former display path and must not masquerade as one.
+          const colon = id.indexOf(":/");
+          const path = colon === -1 ? "" : id.slice(colon + 1);
           const name = path.split("/").pop() ?? path;
           return {
             id,
@@ -305,9 +305,8 @@ export const selectEditorContextEntries = createSelector(
  *
  * Used by `useSyncEditorContext` after reading the disabled set from Redux
  * so the user's per-conversation include/exclude toggles take effect on
- * the next dispatch. Note: only `editor.tabs` (summary) and
- * `editor.tab.<id>` (active payload) are filtered — workspace-level
- * entries always ship.
+ * the next dispatch. File metadata, buffers, recent entries and diagnostics
+ * all honor the exclusion; unrelated context is preserved.
  */
 export function filterDisabledTabs(
   entries: EditorContextEntryInput[],
@@ -324,9 +323,25 @@ export function filterDisabledTabs(
         value: {
           ...summary,
           tabs: summary.tabs.filter((t) => !disabled.has(t.id)),
+          activeId:
+            summary.activeId && disabled.has(summary.activeId)
+              ? null
+              : summary.activeId,
         },
       });
       continue;
+    }
+    if (entry.key === EDITOR_RECENT_FILES_KEY) {
+      out.push({
+        ...entry,
+        value: (entry.value as EditorRecentFileValue[]).filter(
+          (file) => !disabled.has(file.id),
+        ),
+      });
+      continue;
+    }
+    if (entry.key.startsWith("editor.selection.")) {
+      if (disabled.has(entry.key.slice("editor.selection.".length))) continue;
     }
     if (entry.key === EDITOR_ACTIVE_FILE_KEY) {
       const active = entry.value as EditorActiveFileValue | null;

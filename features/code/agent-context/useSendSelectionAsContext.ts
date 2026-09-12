@@ -1,5 +1,7 @@
 "use client";
 
+import { tabToFileIdentity } from "../utils/fileIdentity";
+
 import { useCallback, type MutableRefObject } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
@@ -9,6 +11,7 @@ import { isPreviewTab } from "../types";
 import { editorSelectionKey } from "./editorContextEntries";
 
 export interface SelectionContextValue {
+  identity: ReturnType<typeof tabToFileIdentity>;
   id: string;
   path: string;
   name: string;
@@ -90,6 +93,7 @@ export function useSendSelectionAsContext(
       return false;
     }
     const value: SelectionContextValue = {
+      identity: tabToFileIdentity(activeTab),
       id: activeTab.id,
       path: activeTab.path,
       name: activeTab.name,

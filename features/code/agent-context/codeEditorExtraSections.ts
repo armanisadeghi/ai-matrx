@@ -8,6 +8,7 @@
 import {
   AlignLeft,
   Command,
+  MessageSquarePlus,
   Navigation,
   Search,
   TextSelect,
@@ -41,6 +42,29 @@ export function createCodeEditorExtraSections(
   const { getEditor, hasSelection = false } = config;
 
   return [
+    {
+      id: "code-chat-context",
+      label: "Chat context",
+      anchor: "after-clipboard",
+      items: [
+        {
+          kind: "item",
+          id: "attach-file-to-code-chat",
+          label: "Attach file to chat",
+          icon: MessageSquarePlus,
+          onSelect: () => runMonacoAction(getEditor, "matrx.ai.sendFileToChat"),
+        },
+        {
+          kind: "item",
+          id: "attach-selection-to-code-chat",
+          label: "Attach selection to chat",
+          icon: TextSelect,
+          disabled: !hasSelection,
+          onSelect: () =>
+            runMonacoAction(getEditor, "matrx.ai.sendSelectionToChat"),
+        },
+      ],
+    },
     {
       id: "code-editor-ops",
       label: "Editor",
