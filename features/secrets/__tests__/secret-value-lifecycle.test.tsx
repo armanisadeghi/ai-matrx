@@ -239,7 +239,7 @@ describe("useFieldSecret operation lifecycle", () => {
     expect(latest.allowed).toBe(false);
   });
 
-  test("invalidates a deferred copy when the authenticated account changes", async () => {
+  test("synchronously invalidates a deferred copy in the same auth-event batch", async () => {
     const oldValue = deferred<{ value: string }>();
     revealVaultField.mockReturnValueOnce(oldValue.promise);
     let copying!: Promise<void>;
@@ -248,8 +248,6 @@ describe("useFieldSecret operation lifecycle", () => {
     });
     await act(async () => {
       authStateListener?.("SIGNED_OUT");
-    });
-    await act(async () => {
       oldValue.resolve({ value: "old plaintext" });
       await copying;
     });

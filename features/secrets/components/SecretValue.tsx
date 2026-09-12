@@ -82,12 +82,19 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
   // where an old plaintext or pending operation still belonged to a new row.
   const identity = JSON.stringify([
     item.id,
+    item.user_id,
+    item.organization_id,
+    item.access_mode,
+    item.status,
+    item.definition_version,
+    item.updated_at,
     field.id,
     field.field_key,
     field.value_version,
     field.handling,
     field.execution_purpose,
     field.is_active,
+    field.updated_at,
     item.capabilities.can_use,
     item.capabilities.can_reveal,
     item.capabilities.can_edit,
@@ -102,15 +109,18 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
   const workingIdentity = useRef<string | null>(null);
   const copiedIdentity = useRef<string | null>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  if (identityRef.current !== identity) {
-    identityRef.current = identity;
+  const invalidateOperations = () => {
     operationGeneration.current += 1;
     heldIdentity.current = null;
     workingIdentity.current = null;
     copiedIdentity.current = null;
     if (copiedTimer.current) clearTimeout(copiedTimer.current);
     copiedTimer.current = null;
+  };
+
+  if (identityRef.current !== identity) {
+    identityRef.current = identity;
+    invalidateOperations();
   }
 
   type Operation = { generation: number; identity: string };
@@ -130,12 +140,7 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
     setWorking(false);
   };
   const clear = () => {
-    operationGeneration.current += 1;
-    heldIdentity.current = null;
-    workingIdentity.current = null;
-    copiedIdentity.current = null;
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
-    copiedTimer.current = null;
+    invalidateOperations();
     held.clear();
     setWorking(false);
     setCopied(false);
@@ -164,9 +169,7 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
     mounted.current = true;
     return () => {
       mounted.current = false;
-      operationGeneration.current += 1;
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
-      copiedTimer.current = null;
+      invalidateOperations();
     };
   }, []);
 
@@ -175,6 +178,10 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
       data: { subscription },
     } = createClient().auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        // Auth events revoke authority before React has a chance to schedule
+        // the rerender that clears this component's old props.
+        invalidateOperations();
+        held.clear();
         setAuthGeneration((generation) => generation + 1);
       }
     });
