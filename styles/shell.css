@@ -1099,6 +1099,10 @@ button.shell-nav-flyout-item {
 .settings-route-menu-tree { display: flex; flex-direction: column; gap: 0.125rem; }
 .settings-route-menu-node-icon { width: 0.875rem; height: 0.875rem; }
 .settings-route-menu-empty { padding: 1rem 0.5rem; color: var(--muted-foreground); font-size: 0.75rem; }
+.settings-route-menu-results { display: flex; flex-direction: column; gap: 0.125rem; }
+.settings-route-menu-result { align-items: flex-start; }
+.settings-route-menu-result-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; }
+.settings-route-menu-description { overflow: hidden; color: var(--muted-foreground); font-size: 0.6875rem; text-overflow: ellipsis; white-space: nowrap; }
 
 .shell-mobile-sheet .settings-route-menu {
   padding: 0.5rem 0.75rem 1rem;

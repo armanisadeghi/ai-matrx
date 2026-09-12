@@ -22,13 +22,15 @@ import {
   withAncestors,
 } from "@/components/official/settings/tree/types";
 import { useSettingsTree } from "@/features/settings/universal/useSettingsTree";
+import { useSettingsControlSearch } from "@/features/settings/hooks/useSettingsSearch";
 import {
   ROUTE_MENU_ICON_SIZE,
   ROUTE_MENU_ICON_STROKE_WIDTH,
   ROUTE_MENU_NAV_ITEM_CLASS,
 } from "@/features/shell/constants/route-menu-style";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { SETTINGS_BASE, tabIdToHref, urlToTabId } from "../route-shell/routing";
+import { isUserSettingsPath } from "../route-shell/settings-route-path";
 
 type SettingsRouteMenuProps = { expanded: boolean };
 
@@ -39,21 +41,29 @@ type SettingsRouteMenuProps = { expanded: boolean };
  * registry reader beside the route page.
  */
 export default function SettingsRouteMenu(_: SettingsRouteMenuProps) {
-  const isMobile = useIsMobile();
+  const isRouteSheet = useMediaQuery("(max-width: 1023px)");
   const isAdmin = useAppSelector(selectIsAdmin);
   const { nodes } = useSettingsTree(isAdmin);
   const pathname = usePathname() ?? SETTINGS_BASE;
   const activeTabId = activeIdFromPath(pathname);
 
-  return isMobile ? (
-    <SettingsMobileMenu nodes={nodes} activeTabId={activeTabId} />
+  return isRouteSheet ? (
+    <SettingsMobileMenu
+      nodes={nodes}
+      activeTabId={activeTabId}
+      isAdmin={isAdmin}
+    />
   ) : (
-    <SettingsDesktopMenu nodes={nodes} activeTabId={activeTabId} />
+    <SettingsDesktopMenu
+      nodes={nodes}
+      activeTabId={activeTabId}
+      isAdmin={isAdmin}
+    />
   );
 }
 
 function activeIdFromPath(pathname: string): string | null {
-  if (!pathname.startsWith(SETTINGS_BASE)) return null;
+  if (!isUserSettingsPath(pathname)) return null;
   const rest = pathname.slice(SETTINGS_BASE.length).replace(/^\//, "");
   return rest ? urlToTabId(rest.split("/").filter(Boolean)) : null;
 }
@@ -61,11 +71,14 @@ function activeIdFromPath(pathname: string): string | null {
 function SettingsDesktopMenu({
   nodes,
   activeTabId,
+  isAdmin,
 }: {
   nodes: SettingsTreeNode[];
   activeTabId: string | null;
+  isAdmin: boolean;
 }) {
   const [query, setQuery] = useState("");
+  const controlResults = useSettingsControlSearch(query, isAdmin);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const matches = query ? searchTree(nodes, query) : null;
   const visible = matches ? withAncestors(nodes, matches) : null;
@@ -118,6 +131,9 @@ function SettingsDesktopMenu({
         ) : null}
       </div>
       <div className="settings-route-menu-tree">
+        {controlResults.length > 0 ? (
+          <SettingsControlSearchResults results={controlResults} />
+        ) : null}
         {visible?.size === 0 ? (
           <p className="settings-route-menu-empty">No settings match.</p>
         ) : (
@@ -214,11 +230,15 @@ function DesktopTreeRow({
 function SettingsMobileMenu({
   nodes,
   activeTabId,
+  isAdmin,
 }: {
   nodes: SettingsTreeNode[];
   activeTabId: string | null;
+  isAdmin: boolean;
 }) {
   const [parentId, setParentId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const controlResults = useSettingsControlSearch(query, isAdmin);
   const parent = parentId ? findNode(nodes, parentId) : null;
   const shown = parent?.children ?? nodes;
 
@@ -244,37 +264,66 @@ function SettingsMobileMenu({
           <span className="settings-route-menu-label">Settings</span>
         </Link>
       )}
-      {shown.map((node) => {
-        const hasChildren = Boolean(node.children?.length);
-        const Icon = node.icon;
-        if (hasChildren) {
+      <div className="settings-route-menu-search">
+        <Search aria-hidden className="settings-route-menu-search-icon" />
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search settings"
+          aria-label="Search settings"
+        />
+        {query ? (
+          <button
+            type="button"
+            data-keep-mobile-menu-open
+            className="settings-route-menu-clear"
+            onClick={() => setQuery("")}
+            aria-label="Clear search"
+          >
+            <X aria-hidden />
+          </button>
+        ) : null}
+      </div>
+      {query ? (
+        controlResults.length > 0 ? (
+          <SettingsControlSearchResults results={controlResults} />
+        ) : (
+          <p className="settings-route-menu-empty">No settings match.</p>
+        )
+      ) : (
+        shown.map((node) => {
+          const hasChildren = Boolean(node.children?.length);
+          const Icon = node.icon;
+          if (hasChildren) {
+            return (
+              <button
+                key={node.id}
+                type="button"
+                data-keep-mobile-menu-open
+                className={cn(
+                  ROUTE_MENU_NAV_ITEM_CLASS,
+                  "settings-route-menu-folder",
+                )}
+                onClick={() => setParentId(node.id)}
+              >
+                <span className="shell-nav-icon">
+                  {Icon ? <Icon /> : <Settings />}
+                </span>
+                <span className="settings-route-menu-label">{node.label}</span>
+                <ChevronRight className="ml-auto" aria-hidden />
+              </button>
+            );
+          }
           return (
-            <button
+            <SettingsMenuLink
               key={node.id}
-              type="button"
-              data-keep-mobile-menu-open
-              className={cn(
-                ROUTE_MENU_NAV_ITEM_CLASS,
-                "settings-route-menu-folder",
-              )}
-              onClick={() => setParentId(node.id)}
-            >
-              <span className="shell-nav-icon">
-                {Icon ? <Icon /> : <Settings />}
-              </span>
-              <span className="settings-route-menu-label">{node.label}</span>
-              <ChevronRight className="ml-auto" aria-hidden />
-            </button>
+              node={node}
+              active={node.id === activeTabId}
+            />
           );
-        }
-        return (
-          <SettingsMenuLink
-            key={node.id}
-            node={node}
-            active={node.id === activeTabId}
-          />
-        );
-      })}
+        })
+      )}
     </div>
   );
 }
@@ -289,7 +338,6 @@ function SettingsMenuLink({
   depth?: number;
 }) {
   const Icon = node.icon;
-  const { pending } = useLinkStatus();
   return (
     <Link
       href={tabIdToHref(SETTINGS_BASE, node.id)}
@@ -298,15 +346,63 @@ function SettingsMenuLink({
       className={cn(ROUTE_MENU_NAV_ITEM_CLASS, active && "shell-active-pill")}
       style={{ paddingLeft: `${0.5 + depth * 0.75 + 1.25}rem` }}
     >
+      <SettingsMenuLinkContent icon={Icon} label={node.label} />
+    </Link>
+  );
+}
+
+function SettingsMenuLinkContent({
+  icon: Icon,
+  label,
+  description,
+}: {
+  icon?: SettingsTreeNode["icon"];
+  label: string;
+  description?: string;
+}) {
+  const { pending } = useLinkStatus();
+  return (
+    <>
       <span className="shell-nav-icon">{Icon ? <Icon /> : <Settings />}</span>
-      <span className="settings-route-menu-label">{node.label}</span>
+      <span className="settings-route-menu-result-copy">
+        <span className="settings-route-menu-label">{label}</span>
+        {description ? (
+          <span className="settings-route-menu-description">{description}</span>
+        ) : null}
+      </span>
       {pending ? (
         <Loader2
           className="ml-auto animate-spin"
-          aria-label={`Opening ${node.label}`}
+          aria-label={`Opening ${label}`}
         />
       ) : null}
-    </Link>
+    </>
+  );
+}
+
+function SettingsControlSearchResults({
+  results,
+}: {
+  results: ReturnType<typeof useSettingsControlSearch>;
+}) {
+  return (
+    <div className="settings-route-menu-results" aria-label="Setting results">
+      {results.map((result) => (
+        <Link
+          key={result.id}
+          href={result.href}
+          className={cn(
+            ROUTE_MENU_NAV_ITEM_CLASS,
+            "settings-route-menu-result",
+          )}
+        >
+          <SettingsMenuLinkContent
+            label={result.label}
+            description={result.description}
+          />
+        </Link>
+      ))}
+    </div>
   );
 }
 

@@ -30,6 +30,7 @@ import type { BaseReduxState } from "@/types/reduxTypes";
 // CJS flag — also read by next.config.js to alias Sidebar/etc. to stubs.
 import { FORCE_EXCLUDE_SIDEMENU } from "@/features/shell/build-flags.js";
 import { SettingsRouteProvider } from "@/features/settings/route-shell/SettingsRouteProvider";
+import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -53,15 +54,14 @@ export default function AppShell({
   pathname,
   sidebarExpanded,
 }: AppShellProps) {
+  const settingsRoute = isUserSettingsPath(pathname);
   return (
     <Providers initialReduxState={initialReduxState}>
-      <SettingsRouteProvider active={pathname.startsWith("/user-settings")}>
+      <SettingsRouteProvider active={settingsRoute}>
         <div
           className="shell-root"
           data-pathname={pathname}
-          {...(pathname.startsWith("/user-settings")
-            ? { "data-settings-route": "" }
-            : {})}
+          {...(settingsRoute ? { "data-settings-route": "" } : {})}
           {...(FORCE_EXCLUDE_SIDEMENU ? { "data-no-sidebar": "" } : {})}
         >
           <input

@@ -16,6 +16,7 @@
 // RouteModeNav.
 
 import { AGENT_RUN_PATH_PATTERN } from "@/features/agents/components/shell/agent-run-route";
+import { USER_SETTINGS_PATH_PATTERN } from "@/features/settings/route-shell/settings-route-path";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
 
 export interface RouteMenuEntry {
@@ -32,7 +33,7 @@ export interface RouteMenuEntry {
 
 export const routeMenuRegistry: RouteMenuEntry[] = [
   {
-    pathPattern: /^\/user-settings(?:\/|$)/,
+    pathPattern: USER_SETTINGS_PATH_PATTERN,
     iconName: "Settings",
     label: "Settings",
     importFn: () => import("@/features/settings/route-menu/SettingsRouteMenu"),

@@ -21,6 +21,7 @@ import ShellIcon from "../ShellIcon";
 import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
 import MobileSheetNavLink from "./MobileSheetNavLink";
 import AdminMobileMenuItem from "../sidebar/admin-menu/AdminMobileMenuItem";
+import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 
 interface MobileNavigationDrawerProps {
   items: ShellNavItem[];
@@ -146,6 +147,8 @@ export default function MobileNavigationDrawer({
   const [query, setQuery] = useState("");
   const navActions = useNavActions();
   const navPanelActions = useNavPanelActions();
+  const pathname = usePathname() ?? "";
+  const settingsRoute = isUserSettingsPath(pathname);
 
   const allItems = [...items, settingsItem];
   const activeGroup = allItems.find(
@@ -339,8 +342,12 @@ export default function MobileNavigationDrawer({
     </div>
   );
 
-  const title = query.trim() ? "Search" : (activeGroup?.label ?? "Menu");
-  const showBack = Boolean(activeGroup) && !query.trim();
+  // The settings Large Route supplies its own control search in the routed
+  // menu. Ignore any global-menu query while that route is active so its
+  // hidden main-nav search view cannot take over the sheet.
+  const activeQuery = settingsRoute ? "" : query;
+  const title = activeQuery.trim() ? "Search" : (activeGroup?.label ?? "Menu");
+  const showBack = Boolean(activeGroup) && !activeQuery.trim();
 
   return (
     <BottomSheet
@@ -372,7 +379,7 @@ export default function MobileNavigationDrawer({
         />
       </div>
 
-      {!activeGroup ? (
+      {!activeGroup && !settingsRoute ? (
         <div className="shell-mobile-search-wrap">
           <Search aria-hidden="true" />
           <input
@@ -390,9 +397,9 @@ export default function MobileNavigationDrawer({
           <MobileRouteMenuSlot />
           <div
             className="shell-mobile-view"
-            key={query.trim() ? "search" : (activeGroupId ?? "root")}
+            key={activeQuery.trim() ? "search" : (activeGroupId ?? "root")}
           >
-            {query.trim()
+            {activeQuery.trim()
               ? renderSearch()
               : activeGroup
                 ? renderGroup(activeGroup)
