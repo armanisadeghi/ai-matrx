@@ -168,7 +168,9 @@ export function AssistantTurnGroup({
               // group's trailing bar below owns chrome for the whole turn,
               // so Copy / Speak / Print can aggregate across iterations.
               hideActionBar={true}
-              deferColdMarkdown={deferColdMarkdown}
+              // Paint the final answer immediately; older iterations can
+              // settle above it without delaying the newest readable text.
+              deferColdMarkdown={deferColdMarkdown && idx < members.length - 1}
             />
           </AgentWorkMemberScope>
         ))}

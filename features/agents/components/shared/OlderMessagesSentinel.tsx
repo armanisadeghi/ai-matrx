@@ -88,6 +88,7 @@ export function OlderMessagesSentinel({
     visibleGroupLimitOverride ?? visibleGroupLimit;
 
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const upwardIntentRef = useRef(false);
 
   // Latest-value refs let the IO callback read current flags without
   // forcing the observer to tear down on every flag change.
@@ -146,6 +147,7 @@ export function OlderMessagesSentinel({
     advanceOlderHistory.current = () => {
       const scrollEl = scrollRef.current;
       if (!scrollEl) return;
+      if (!upwardIntentRef.current) return;
       if (disabledRef.current) return;
       if (loadingRef.current) return;
       // A prior reveal/load hasn't been position-compensated yet — wait.
@@ -217,14 +219,65 @@ export function OlderMessagesSentinel({
   useEffect(() => {
     const scrollEl = scrollRef.current;
     if (!scrollEl) return undefined;
+    upwardIntentRef.current = false;
+    pendingAnchor.current = null;
+    let pointerDown = false;
+    let touchY: number | undefined;
+    let previousTop = scrollEl.scrollTop;
 
     const pump = () => {
       if (scrollEl.scrollTop > PREFETCH_BAND_PX) return;
       advanceOlderHistory.current();
     };
+    const direction = (upward: boolean) => {
+      upwardIntentRef.current = upward;
+      if (upward) pump();
+    };
+    const wheel = (event: WheelEvent) => {
+      if (event.deltaY !== 0) direction(event.deltaY < 0);
+    };
+    const touchStart = (event: TouchEvent) => { touchY = event.touches[0]?.clientY; };
+    const touchMove = (event: TouchEvent) => {
+      const nextY = event.touches[0]?.clientY;
+      if (nextY !== undefined && touchY !== undefined && nextY !== touchY) {
+        direction(nextY > touchY);
+      }
+      touchY = nextY;
+    };
+    const keyDown = (event: KeyboardEvent) => {
+      if (event.target instanceof Element && event.target.closest("input, textarea, [contenteditable='true']")) return;
+      if (["ArrowUp", "PageUp", "Home"].includes(event.key) || (event.key === " " && event.shiftKey)) direction(true);
+      if (["ArrowDown", "PageDown", "End"].includes(event.key) || (event.key === " " && !event.shiftKey)) direction(false);
+    };
+    const pointerStart = () => { pointerDown = true; previousTop = scrollEl.scrollTop; };
+    const pointerEnd = () => { pointerDown = false; };
+    const scroll = () => {
+      // Native scrollbar dragging is intent; layout/scrollTo events are not.
+      if (pointerDown && scrollEl.scrollTop !== previousTop) {
+        upwardIntentRef.current = scrollEl.scrollTop < previousTop;
+      }
+      previousTop = scrollEl.scrollTop;
+      pump();
+    };
 
-    scrollEl.addEventListener("scroll", pump, { passive: true });
-    return () => scrollEl.removeEventListener("scroll", pump);
+    scrollEl.addEventListener("wheel", wheel, { passive: true });
+    scrollEl.addEventListener("touchstart", touchStart, { passive: true });
+    scrollEl.addEventListener("touchmove", touchMove, { passive: true });
+    scrollEl.addEventListener("keydown", keyDown);
+    scrollEl.addEventListener("pointerdown", pointerStart);
+    window.addEventListener("pointerup", pointerEnd);
+    window.addEventListener("pointercancel", pointerEnd);
+    scrollEl.addEventListener("scroll", scroll, { passive: true });
+    return () => {
+      scrollEl.removeEventListener("wheel", wheel);
+      scrollEl.removeEventListener("touchstart", touchStart);
+      scrollEl.removeEventListener("touchmove", touchMove);
+      scrollEl.removeEventListener("keydown", keyDown);
+      scrollEl.removeEventListener("pointerdown", pointerStart);
+      window.removeEventListener("pointerup", pointerEnd);
+      window.removeEventListener("pointercancel", pointerEnd);
+      scrollEl.removeEventListener("scroll", scroll);
+    };
   }, [conversationId, scrollRef]);
 
   // Scroll-anchor restore. Runs synchronously after the prepend reducer's

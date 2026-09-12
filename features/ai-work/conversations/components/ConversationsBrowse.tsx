@@ -8,17 +8,24 @@
 
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { CaptureGapAlertConnected } from "@/features/agent-connections/coding-sessions/CaptureGapAlert";
+import { AiWorkDestinationNavigation } from "../../components/AiWorkDestinationNavigation";
 import { conversationListConfig } from "../listConfig";
 import type { ConversationBrowseRow } from "../types";
 import { ConversationAudienceFilter } from "./ConversationAudienceFilter";
 import { SyncStateIndicator } from "./SyncStatePanel";
 
-export function ConversationsBrowse() {
+export function ConversationsBrowse({
+  embedded = false,
+}: {
+  embedded?: boolean;
+}) {
   return (
     <EntityListPage<ConversationBrowseRow>
       config={conversationListConfig}
+      clearsShellHeader={!embedded}
       notice={(list) => (
         <div className="space-y-1.5">
+          {embedded && <AiWorkDestinationNavigation list={list} />}
           {/*
             This inbox is where a capture outage is actually FELT — an empty or
             stale list here is indistinguishable from a quiet day unless the

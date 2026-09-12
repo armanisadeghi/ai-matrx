@@ -19,16 +19,12 @@ import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsks
 import { ServerOperationBanner } from "@/features/agents/runtime-reconnect/ServerOperationBanner";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectHasMoreOlderMessages,
-  selectIsLoadingOlderMessages,
-  selectMessageCount,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import {
   revealOlderGroups,
   setVisibleGroupLimit,
 } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { loadOlderMessages } from "@/features/agents/redux/execution-system/thunks/load-older-messages.thunk";
+import { selectStreamPhase } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlice";
 
 import { cn } from "@/lib/utils";
@@ -54,7 +50,6 @@ const CHAT_AUTO_VISIBLE_GROUPS = 6;
 const CHAT_REVEAL_STEP_GROUPS = 2;
 const CHAT_OLDER_PAGE_SIZE = 8;
 const CHAT_SETTLE_REVEAL_DELAY_MS = 180;
-const CHAT_COLD_HISTORY_UNLOCK_DELAY_MS = 4800;
 
 interface ChatVisibleGroupWindow {
   displayId: string;
@@ -186,10 +181,7 @@ export function AgentConversationColumn({
   // first message lands. `selectMessageCount` returns a primitive (number),
   // so re-renders are cheap.
   const messageCount = useAppSelector(selectMessageCount(displayId));
-  const hasMoreOlder = useAppSelector(selectHasMoreOlderMessages(displayId));
-  const isLoadingOlder = useAppSelector(
-    selectIsLoadingOlderMessages(displayId),
-  );
+  const streamPhase = useAppSelector(selectStreamPhase(displayId));
   const showLanding = !!landingContent && messageCount === 0;
   const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
   const chatVisibleGroupLimit =
@@ -200,33 +192,16 @@ export function AgentConversationColumn({
     deferColdMarkdown && coldHistoryUnlockedDisplayId !== displayId;
   const isColdBottomSurface =
     deferColdMarkdown && messageCount > 0 && !showLanding;
-  const shouldPinColdScroll = isColdBottomSurface && isColdHistoryRevealLocked;
+  const isLiveRequest =
+    streamPhase !== "idle" && streamPhase !== "complete";
+  const shouldPinColdScroll =
+    isColdBottomSurface && isColdHistoryRevealLocked && !isLiveRequest;
 
   const pinColdTranscriptToBottom = useCallback(() => {
     const scrollEl = scrollRef.current;
     if (!scrollEl) return;
     scrollEl.scrollTo({ top: scrollEl.scrollHeight });
   }, []);
-
-  // Volatile values the reveal chain READS but must never RE-ARM on. Keeping
-  // them in refs is load-bearing: when they were effect deps, any change to
-  // messageCount / isLoadingOlder / hasMoreOlder during the ~5s reveal window
-  // tore down the pending unlock timer, and the re-run bailed at
-  // `didAutoRevealRef` without rescheduling it. The cold lock then stayed on
-  // FOREVER — which left `pinColdTranscriptToBottom`'s ResizeObserver armed
-  // for the life of the conversation (every content resize yanked the
-  // transcript to the bottom: expanding a "Worked for 26s" fold, every
-  // streamed token) and kept OlderMessagesSentinel permanently disabled.
-  const hasMoreOlderRef = useRef(hasMoreOlder);
-  const isLoadingOlderRef = useRef(isLoadingOlder);
-  const messageCountRef = useRef(messageCount);
-  // Refreshed in an effect (never during render) so the reveal chain reads the
-  // latest values without those values being effect deps that would re-arm it.
-  useEffect(() => {
-    hasMoreOlderRef.current = hasMoreOlder;
-    isLoadingOlderRef.current = isLoadingOlder;
-    messageCountRef.current = messageCount;
-  });
 
   const hasMessages = messageCount > 0;
 
@@ -244,7 +219,6 @@ export function AgentConversationColumn({
         limit: CHAT_INITIAL_VISIBLE_GROUPS,
       }),
     );
-    let unlockTimer = 0;
     const timer = window.setTimeout(() => {
       setChatVisibleGroupWindow((current) => ({
         displayId,
@@ -259,27 +233,19 @@ export function AgentConversationColumn({
           count: CHAT_AUTO_VISIBLE_GROUPS - CHAT_INITIAL_VISIBLE_GROUPS,
         }),
       );
-      if (
-        hasMoreOlderRef.current &&
-        !isLoadingOlderRef.current &&
-        messageCountRef.current < CHAT_AUTO_VISIBLE_GROUPS
-      ) {
-        void dispatch(
-          loadOlderMessages({
-            conversationId: displayId,
-            pageSize: CHAT_OLDER_PAGE_SIZE,
-          }),
-        );
-      }
-      unlockTimer = window.setTimeout(() => {
-        setColdHistoryUnlockedDisplayId(displayId);
-      }, CHAT_COLD_HISTORY_UNLOCK_DELAY_MS);
     }, CHAT_SETTLE_REVEAL_DELAY_MS);
     return () => {
       window.clearTimeout(timer);
-      if (unlockTimer) window.clearTimeout(unlockTimer);
     };
   }, [deferColdMarkdown, dispatch, displayId, hasMessages]);
+
+  // A newly submitted or resumed live request owns its own reading position.
+  // Cold-history anchoring is only for rendering an already-persisted
+  // transcript; it must never reassert itself after the request settles.
+  useEffect(() => {
+    if (!deferColdMarkdown || !hasMessages || !isLiveRequest) return;
+    setColdHistoryUnlockedDisplayId(displayId);
+  }, [deferColdMarkdown, displayId, hasMessages, isLiveRequest]);
 
   useLayoutEffect(() => {
     if (!shouldPinColdScroll) return undefined;
@@ -294,15 +260,38 @@ export function AgentConversationColumn({
     observer.observe(scrollEl);
     observer.observe(contentEl);
 
-    // THE BRAKE: the instant the user works against the pin, it is released
-    // for good. Nothing in this surface may ever fight a deliberate scroll —
-    // not during cold load, not mid-stream. This is a hard release (never a
-    // "re-pin when they come back"), and it is deliberately redundant with the
-    // timer above so a stalled unlock can never trap the user again.
+    // THE BRAKE: a deliberate attempt to read upward, or an interaction with
+    // the transcript, releases the pin for this visit. Scrolling downward is
+    // intentionally not a release: async cold rendering above must not pull a
+    // newest-message view away from the bottom.
     const release = () => setColdHistoryUnlockedDisplayId(displayId);
-    scrollEl.addEventListener("wheel", release, { passive: true });
-    scrollEl.addEventListener("touchmove", release, { passive: true });
-    scrollEl.addEventListener("keydown", release);
+    const releaseOnUpwardWheel = (event: WheelEvent) => {
+      if (event.deltaY < 0) release();
+    };
+    let touchStartY: number | null = null;
+    const rememberTouchStart = (event: TouchEvent) => {
+      touchStartY = event.touches[0]?.clientY ?? null;
+    };
+    const releaseOnUpwardTouch = (event: TouchEvent) => {
+      const currentY = event.touches[0]?.clientY;
+      if (touchStartY !== null && currentY !== undefined && currentY > touchStartY) {
+        release();
+      }
+    };
+    const releaseOnUpwardKey = (event: KeyboardEvent) => {
+      if (
+        event.key === "ArrowUp" ||
+        event.key === "PageUp" ||
+        event.key === "Home" ||
+        (event.key === " " && event.shiftKey)
+      ) {
+        release();
+      }
+    };
+    scrollEl.addEventListener("wheel", releaseOnUpwardWheel, { passive: true });
+    scrollEl.addEventListener("touchstart", rememberTouchStart, { passive: true });
+    scrollEl.addEventListener("touchmove", releaseOnUpwardTouch, { passive: true });
+    scrollEl.addEventListener("keydown", releaseOnUpwardKey);
     // Any pointerdown inside the transcript is a deliberate interaction —
     // scrollbar drag, text selection, or clicking a "Worked for 26s" fold open.
     // Every one of those must win over the pin, so none of them can be
@@ -311,9 +300,10 @@ export function AgentConversationColumn({
 
     return () => {
       observer.disconnect();
-      scrollEl.removeEventListener("wheel", release);
-      scrollEl.removeEventListener("touchmove", release);
-      scrollEl.removeEventListener("keydown", release);
+      scrollEl.removeEventListener("wheel", releaseOnUpwardWheel);
+      scrollEl.removeEventListener("touchstart", rememberTouchStart);
+      scrollEl.removeEventListener("touchmove", releaseOnUpwardTouch);
+      scrollEl.removeEventListener("keydown", releaseOnUpwardKey);
       scrollEl.removeEventListener("pointerdown", release);
     };
   }, [
@@ -440,7 +430,7 @@ export function AgentConversationColumn({
                 surfaceKey={surfaceKey}
                 scrollRef={scrollRef}
                 deferColdMarkdown={deferColdMarkdown}
-                bottomPinned={isColdBottomSurface}
+                bottomPinned={shouldPinColdScroll}
                 fallbackVisibleGroupLimit={
                   deferColdMarkdown
                     ? (chatVisibleGroupLimit ?? CHAT_INITIAL_VISIBLE_GROUPS)

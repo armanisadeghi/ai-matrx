@@ -2,7 +2,7 @@
 
 **Status:** `active` — the production overview, the canonical conversation table (honest default, full server-side sort/filter, URL state, provenance-labeled detail, sync visibility), direct work associations, truthful connections surface, a provider transcript with real tool activity that goes LIVE while its coding session runs, the `/work/new` composer with real AI Matrx execution, and Saved Requests are live; provider execution (certification-gated) and unified automation remain planned. Historical Claude sync is live in the Matrx Local desktop app and honestly doored from here.
 **Tier:** `1`
-**Last updated:** `2026-09-01`
+**Last updated:** `2026-09-11`
 
 ---
 
@@ -18,7 +18,7 @@ Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/arm
 
 **Routes**
 
-- `/work` — truthful directory of the capabilities a user can use now.
+- `/work` — compact AI Work navigation plus the canonical conversation workspace. Its only count comes from that list controller's filtered, server-reported total; all other destinations remain unnumbered until their own complete readers exist.
 - `/work/new` — the eight-step composer: destination, request, expert system, skills, context, home, timing, review. Live destinations: AI Matrx, and **Claude Code on my Mac** (2026-08-17) — selectable only when the user's own Matrx Local engine answers `available` over the per-user Broadcast bridge channel AND at least one approved folder exists; runs on the user's own installed Claude Code + subscription login and mirrors into a canonical conversation at turn boundaries (`lib/matrxLocalRuntime.ts`).
 - `/work/requests` — the caller's own Saved Requests; open reloads the composer at `/work/new?request=<id>`.
 - `/work/conversations` — the canonical entity-list table over every accessible conversation (`lib/entity-list`): every column sorts AND filters server-side, true scope counts, URL-backed scope/search/filters/sort/page, THE THREE BUCKETS at the top (AI chats · External app runs · Internal Matrx runs, each with a true count and a second cut inside it), and a compact sync indicator.
@@ -34,7 +34,8 @@ Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/arm
 - `compose/components/HomeStep.tsx` — pre-launch Task / War Room picks over the canonical picker.
 - `compose/components/ComposerSection.tsx` — one numbered step.
 - `compose/components/SavedRequestsList.tsx` — mine-scoped Saved Requests with open/delete doors.
-- `components/AiWorkOverview.tsx` — doors to live chat, provider conversations, projects, tasks, War Rooms, skills, connections, and schedules.
+- `components/AiWorkOverview.tsx` — compact signed-in home that embeds the canonical conversation workspace without a second scroll owner or a duplicate header.
+- `components/AiWorkDestinationNavigation.tsx` — merges `AI_WORK_DOOR_GROUPS` with the canonical AI Work shell children, preserving destination availability/external metadata and attaching the conversation count only from `EntityListController`.
 - `conversations/components/ConversationsBrowse.tsx` — `/work/conversations`: `<EntityListPage config={conversationListConfig}/>` plus the two things this surface owes above the table (the audience door and the sync indicator).
 - `conversations/components/ConversationAudienceFilter.tsx` — **AI chats / External app runs / Internal Matrx runs** (+ All), each with a TRUE count from the facets query, then the second cut inside the chosen bucket (which app for chats and external runs; which run type for internal runs) with bucket-scoped counts. Writes the ordinary `audience` filter, then `source_app` / `conversation_type`, so it can never disagree with the column header or the Filters panel.
 - `conversations/components/ConversationProvenancePanel.tsx` — every displayed field grouped by the system that produced it (coding provider / AI Matrx / sync layer), with `title_source` stated beside the title. Rendered by BOTH the provider transcript and the AI Matrx detail view.
@@ -214,6 +215,8 @@ Compose and Saved Requests shipped 2026-08-15 (TASK-005). Open work, in the plan
 ---
 
 ## Change log
+
+- `2026-09-11` — Rebuilt `/work` around the substantive canonical conversation workspace. The compact destination strip derives every AI Work door from `AI_WORK_DOOR_GROUPS` and the shell children; only the controller's real filtered conversation total appears, while destinations without complete data intentionally remain unnumbered.
 
 - `2026-09-07` — Claude (Fable): **three buckets, unmasked accounts, pins that show.** (1) `/work/conversations` top control is now AI chats · External app runs · Internal Matrx runs (+ All) with a second cut inside each bucket; the bucket is derived once, server-side (`public.cvx_audience` in `migrations/cvx_list_scoped_audience.sql`, applied + ledgered) and exposed as the `audience` filter/facet plus bucket-scoped `audience_source_app` / `audience_conversation_type` facets. The `HUMAN_`/`MACHINE_CONVERSATION_TYPES` split and its `conversation_type` default are gone. (2) The provider account on `/work/connections` and the Provider account column show the FULL email/org id — Matrx Local stopped masking (`a***n@t***.com`) at the source and the server label bound widened to 320; the ~900 already-delivered masked rows were backfilled by proven account-key match. (3) Root cause of "my Claude Code pins don't show": the server bridge mirrored `is_pinned` into the frozen `chat.conversation.is_favorite` column while this list reads `platform.user_entity_state`; the bridge now upserts the canonical row (aidream `orm_store.set_user_favorite`, guarded by a failing-then-passing test) and the 171 already-delivered pins were backfilled. Matrx Local also now honors the machine's canonical sidebar ledger for title/titleSource/isArchived instead of the freshest raw record.
 - `2026-09-08` — Codex: gated the app-wide messaging mount on exact Redux/Supabase-session user agreement, preventing account-transition gaps from calling self-guarded DM RPCs with another user's id on `/work/conversations` or any other route.

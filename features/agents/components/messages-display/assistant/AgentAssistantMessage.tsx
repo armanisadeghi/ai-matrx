@@ -30,7 +30,7 @@
  * DB-loaded turn:    messageId set, isStreamActive=false (no requestId).
  */
 
-import { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import { startTransition, useCallback, useMemo, useState, useEffect, useRef } from "react";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useDebugContext } from "@/hooks/useDebugContext";
@@ -157,7 +157,7 @@ export function AgentAssistantMessage({
   useEffect(() => {
     if (!shouldDeferColdMarkdown || !messageId) return undefined;
     const timer = window.setTimeout(() => {
-      setColdMarkdownSettledMessageId(messageId);
+      startTransition(() => setColdMarkdownSettledMessageId(messageId));
     }, 140);
     return () => window.clearTimeout(timer);
   }, [shouldDeferColdMarkdown, messageId]);

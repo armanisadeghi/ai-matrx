@@ -83,7 +83,10 @@ describe("OlderMessagesSentinel automatic fetching", () => {
   function frame() { act(() => { jest.advanceTimersByTime(20); }); }
   function reachTop() {
     scrollRef.current!.scrollTop = 0;
-    act(() => intersect());
+    act(() => {
+      scrollRef.current!.dispatchEvent(new WheelEvent("wheel", { deltaY: -100 }));
+      intersect();
+    });
   }
   function land(start: number, end: number) {
     act(() => { store.dispatch(setOlderLoading({ conversationId, loading: true })); });
@@ -141,6 +144,25 @@ describe("OlderMessagesSentinel automatic fetching", () => {
     render(); reachTop();
     act(() => { scrollRef.current!.dispatchEvent(new Event("scroll")); intersect(); });
     frame();
+    expect(loadOlderMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it("never fetches on initial intersection, programmatic scrolling or cold unlock without upward intent", () => {
+    scrollRef.current!.scrollTop = 0;
+    render(true);
+    act(() => intersect());
+    render(false); frame();
+    act(() => { scrollRef.current!.dispatchEvent(new Event("scroll")); });
+    frame();
+    expect(loadOlderMessages).not.toHaveBeenCalled();
+    reachTop();
+    expect(loadOlderMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it("cancels continued fetching when the user scrolls downward during a request", () => {
+    render(); reachTop();
+    act(() => { scrollRef.current!.dispatchEvent(new WheelEvent("wheel", { deltaY: 100 })); });
+    land(20, 28);
     expect(loadOlderMessages).toHaveBeenCalledTimes(1);
   });
 });
