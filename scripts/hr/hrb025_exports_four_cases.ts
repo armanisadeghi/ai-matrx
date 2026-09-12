@@ -22,10 +22,14 @@
  */
 
 import {
+  armHrMockLane,
   serveFromFixtures,
-  HR_MOCK_ENABLED,
+  hrMockEnabled,
   type HrFixtureCase,
 } from "../../features/hr/mock/transport";
+
+// The mock lane is armed in code by the script that needs it (USD-5: never an env var).
+armHrMockLane();
 import { HR_EXPORT_HISTORY_FIXTURES } from "../../features/hr/exports/mock/history";
 import type {
   ExportFormat,
@@ -78,11 +82,11 @@ function errorBody(
 function main(): number {
   rec(
     "0 preconditions",
-    "NEXT_PUBLIC_HR_MOCK=1 is set",
-    HR_MOCK_ENABLED,
-    HR_MOCK_ENABLED ? "mock transport active" : "NOT SET — this would prove nothing.",
+    "the mock lane is armed (armHrMockLane)",
+    hrMockEnabled(),
+    hrMockEnabled() ? "mock transport active" : "NOT ARMED — this would prove nothing.",
   );
-  if (!HR_MOCK_ENABLED) {
+  if (!hrMockEnabled()) {
     report();
     return 1;
   }

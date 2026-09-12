@@ -14,12 +14,12 @@
  * to each call site.
  */
 
-import { HR_MOCK_ENABLED, type HrFixtureCase } from "@/features/hr/mock/transport";
+import { hrMockEnabled, type HrFixtureCase } from "@/features/hr/mock/transport";
 
 const CASES: ReadonlySet<string> = new Set(["happy", "empty", "error", "edge"]);
 
 export function mockCaseFromParam(value: string | string[] | undefined): HrFixtureCase | undefined {
-  if (!HR_MOCK_ENABLED) return undefined;
+  if (!hrMockEnabled()) return undefined;
   const raw = Array.isArray(value) ? value[0] : value;
   if (!raw || !CASES.has(raw)) return undefined;
   return raw as HrFixtureCase;
@@ -43,7 +43,7 @@ export function mockCaseFromParam(value: string | string[] | undefined): HrFixtu
 export function mockEmploymentIdFromParam(
   value: string | string[] | undefined,
 ): string | undefined {
-  if (!HR_MOCK_ENABLED) return undefined;
+  if (!hrMockEnabled()) return undefined;
   const raw = Array.isArray(value) ? value[0] : value;
   return raw && raw.trim() !== "" ? raw : undefined;
 }

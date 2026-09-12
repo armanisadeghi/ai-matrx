@@ -35,11 +35,30 @@ export type { HrFixture, HrFixtureCase, HrOperationId };
 export { HR_OPERATION_IDS };
 
 /**
- * The flag is read in exactly ONE place. SPEC-CONTRACTS §6.3 names this variable, so it is spelled
- * as the frozen spec spells it; the platform's env-vars-are-values-not-toggles rule is satisfied by
- * there being a single read and no `??` fallback chain.
+ * THE MOCK LANE IS ARMED IN CODE, NEVER BY THE ENVIRONMENT.
+ *
+ * SPEC-CONTRACTS §6.3 named `NEXT_PUBLIC_HR_MOCK=1`. That was a boolean read out of the
+ * environment — the exact class Arman banned on 2026-09-10 (USD-5: "Never an env var. Env values
+ * are only for secrets, not for controlling behavior."). Production never set it, so the lane is
+ * OFF here at production's value (env-vars-are-values-not-toggles.md, remediation step 1: the
+ * conversion changes no behaviour). It is not a feature knob either: a platform setting that
+ * swaps every browser onto fixtures is a test seam wearing a settings UI, and the lane exists
+ * precisely so a fixture walk can run with no server and no database.
+ *
+ * The ONLY way to arm it is `armHrMockLane()` from a fixture script (`scripts/hr/*`, the
+ * non-browser contract check) before the first request. Nothing in app code calls it.
  */
-export const HR_MOCK_ENABLED = process.env.NEXT_PUBLIC_HR_MOCK === "1";
+const HR_MOCK_LANE = { armed: false };
+
+/** Fixture scripts only. Arms the mock transport for this process. */
+export function armHrMockLane(): void {
+  HR_MOCK_LANE.armed = true;
+}
+
+/** Whether HR requests are answered from the §6.4 fixtures instead of the server. */
+export function hrMockEnabled(): boolean {
+  return HR_MOCK_LANE.armed;
+}
 
 /** Which case the mock should serve. Defaults to `happy`. */
 export type HrMockCaseSelector = HrFixtureCase | undefined;

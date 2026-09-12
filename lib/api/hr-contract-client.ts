@@ -32,7 +32,7 @@ import {
 } from "@/lib/python-client";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import {
-  HR_MOCK_ENABLED,
+  hrMockEnabled,
   serveFromFixtures,
   type HrFixtureCase,
 } from "@/features/hr/mock/transport";
@@ -187,7 +187,7 @@ function tryMock<T>(
   path: string,
   opts?: HrRequestOptions,
 ): { data: T; meta: ResponseMeta } | null {
-  if (!HR_MOCK_ENABLED) return null;
+  if (!hrMockEnabled()) return null;
   const served = serveFromFixtures(method, path, opts?.mockCase);
   if (!served) return null;
   if (served.status >= 400) {
