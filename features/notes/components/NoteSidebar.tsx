@@ -498,21 +498,20 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   }, [groupBy, filteredNotes, activeTabId, allNotes, searchQuery]);
 
   // Get group labels for display
-  const getGroupLabel = useCallback(
-    (key: string): string => {
-      if (key === "__all__") return "All Notes";
-      if (key === "__none__" || key === "Unassigned") return "Unassigned";
-      if (groupBy === "folder" || groupBy === "default") return groupedNotes.get(key)?.[0]?.folder_name || "Uncategorized";
-      // Scope keys are already human-readable: "Department: SEO"
-      if (groupBy === "scope") return key;
-      // For org/project/task, the key is a UUID — show context name if matching
-      if (groupBy === "organization" && orgName) return orgName;
-      if (groupBy === "project" && projName) return projName;
-      if (groupBy === "task" && taskName) return taskName;
-      return key.slice(0, 8) + "...";
-    },
-    [groupBy, orgName, projName, taskName],
-  );
+  function getGroupLabel(key: string): string {
+    if (key === "__all__") return "All Notes";
+    if (key === "__none__" || key === "Unassigned") return "Unassigned";
+    if (groupBy === "folder" || groupBy === "default") {
+      return groupedNotes.get(key)?.[0]?.folder_name || "Uncategorized";
+    }
+    // Scope keys are already human-readable: "Department: SEO"
+    if (groupBy === "scope") return key;
+    // For org/project/task, the key is a UUID — show context name if matching
+    if (groupBy === "organization" && orgName) return orgName;
+    if (groupBy === "project" && projName) return projName;
+    if (groupBy === "task" && taskName) return taskName;
+    return key.slice(0, 8) + "...";
+  }
 
   // Ordered group keys
   const groupKeys = useMemo(() => {
