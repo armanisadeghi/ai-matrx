@@ -47,15 +47,34 @@ export function reviewLaneLabel(row: ReviewQueueRow): string {
   return nestedString(origin, "agent_label") ?? REVIEW_LANE_UNLABELLED;
 }
 
-/** Free-text notes an agent left on the row, when it left any. */
-export function reviewMetadataNotes(row: ReviewQueueRow): string | null {
-  const metadata = metadataObject(row);
-  const notes = nestedString(metadata, "notes");
-  const verificationNotes = nestedString(
-    nestedObject(nestedObject(metadata, "triage"), "verification"),
-    "notes",
-  );
-  return [notes, verificationNotes].filter(Boolean).join(" ") || null;
+/**
+ * Every string an agent wrote anywhere in `metadata`, as one blob. The bag is
+ * free-form — measured 2026-09-11: 200+ distinct top-level keys across 732
+ * rows, with notes under `notes`, `verification_notes` (an array),
+ * `triage.verification.notes`, `resubmit_reason`, `open_question`, … — so a
+ * curated key list is the wrong class of fix: the row that matched only in
+ * `metadata.verification_notes` was invisible to search until this walked the
+ * whole value. Keys are skipped on purpose: a search for "notes" should not
+ * match every row that HAS notes.
+ */
+export function reviewMetadataText(row: ReviewQueueRow): string {
+  const parts: string[] = [];
+  const walk = (value: unknown): void => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed) parts.push(trimmed);
+      return;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) walk(item);
+      return;
+    }
+    if (isJsonObject(value)) {
+      for (const item of Object.values(value)) walk(item);
+    }
+  };
+  walk(row.metadata);
+  return parts.join(" ");
 }
 
 /**
@@ -67,7 +86,6 @@ export function reviewSearchText(
   row: ReviewQueueRow,
   names: { domain: string; feature: string },
 ): string {
-  const origin = nestedObject(metadataObject(row), "origin");
   return [
     row.title,
     row.instructions,
@@ -77,9 +95,7 @@ export function reviewSearchText(
     names.feature,
     row.feedback ?? "",
     reviewLaneLabel(row),
-    nestedString(origin, "thread_id") ?? "",
-    nestedString(origin, "branch") ?? "",
-    reviewMetadataNotes(row) ?? "",
+    reviewMetadataText(row),
   ]
     .filter(Boolean)
     .join(" ");
