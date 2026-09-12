@@ -26,7 +26,7 @@ export default async function FastFireToolPage({
       <div className="h-full overflow-hidden bg-textured">
         {/* One scroll owner for setup and scoreboard. The header offset keeps
             their first interactive controls below the AppShell glass. */}
-        <div className="scroll-page-end-space h-full overflow-y-auto">
+        <div className="h-full overflow-y-auto">
           <FastFireClient setId={set ?? null} />
         </div>
       </div>
