@@ -37,6 +37,10 @@ import {
 import { listRegisteredNamespaces } from "@/features/surfaces/config/namespace-registry";
 import { readAllRows } from "@ai-matrx/data/db";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import {
+  apiSyncedFrom,
+  type MirrorSyncProvenance,
+} from "@/features/surfaces/services/sync-provenance";
 import type {
   BrokenMapping,
   SurfaceAgentRole,
@@ -103,9 +107,20 @@ type SyncSurfaceValue = SurfaceValue & { groupKey?: string };
 /** SurfaceWriteTarget projected onto the DB's `group_key` column name. */
 type SyncSurfaceWriteTarget = SurfaceWriteTarget & { groupKey?: string };
 
+/**
+ * PROVENANCE ON EVERY MIRROR WRITE.
+ *
+ * The four mirror tables carry `synced_by` / `synced_from` (migration
+ * `ui_surface_mirror_provenance.sql`). Every row this service writes stamps
+ * BOTH — on insert and on the conflict-update alike, because a row whose
+ * provenance is only set at creation lies the moment a later sync touches it.
+ * The values come from the CALLER (`applyManifestSync`'s `provenance` option),
+ * never from anything guessed in here: see `sync-provenance.ts`.
+ */
 function manifestRowFor(
   surfaceName: string,
   v: SyncSurfaceValue,
+  provenance: MirrorSyncProvenance,
 ): UiSurfaceValueInsert {
   return {
     surface_name: surfaceName,
@@ -118,6 +133,8 @@ function manifestRowFor(
     auto_context: v.autoContext ?? true,
     sort_order: v.sortOrder ?? 1000,
     group_key: v.groupKey ?? v.group ?? "general",
+    synced_by: provenance.syncedBy,
+    synced_from: provenance.syncedFrom,
   };
 }
 
@@ -184,8 +201,11 @@ function diffSurfaceValue(
 function manifestRoleRowFor(
   surfaceName: string,
   r: SurfaceAgentRole,
+  provenance: MirrorSyncProvenance,
 ): UiSurfaceAgentRoleInsert {
   return {
+    synced_by: provenance.syncedBy,
+    synced_from: provenance.syncedFrom,
     surface_name: surfaceName,
     name: r.name,
     label: r.label,

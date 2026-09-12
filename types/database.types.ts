@@ -62236,6 +62236,10 @@ export type Database = {
         }
         Returns: Json
       }
+      knob_scope_rows: {
+        Args: { p_kind: string; p_organization_id: string }
+        Returns: Json
+      }
       lifecycle_archive_candidates: {
         Args: {
           p_entity_token: string
