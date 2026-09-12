@@ -1,8 +1,8 @@
 "use client";
 
 import { ListTree } from "lucide-react";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
 import { marketingRoutes } from "@/features/marketing/lib/routes";

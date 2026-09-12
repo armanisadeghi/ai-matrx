@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import type { BacklinkLensKey } from "@/features/marketing/components/backlinks/lib/vocab";
 import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks-types";
 import {

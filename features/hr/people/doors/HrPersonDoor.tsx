@@ -41,7 +41,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import DataRowWindow from "@/components/official/matrx-data-table/DataRowWindow.dynamic";
+import { DataRowWindow } from "@/components/official/MatrxDataTableHost";
 import { cn } from "@/lib/utils";
 
 import { hrEmployeeHref, type HrOrgRef } from "../../routes";

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ai-matrx/design-system";
-import GenericTablePagination from "@/components/generic-table/GenericTablePagination";
+import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,7 +56,7 @@ import { MOBILE_TABLE_FROZEN_SECOND } from "@/components/official/mobile-table/m
 import { parseCapabilities } from "../capabilities/parse";
 import { isContentType, type ContentType } from "../capabilities/types";
 import { applyAiModelFilters, sortAiModels } from "../utils/filterUtils";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { aiProviderHref } from "../doors";
 import {
   ProviderPriceCell,

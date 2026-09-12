@@ -24,13 +24,13 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/lib/toast";
 import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import {
   isUuidValue,
   tokenFromColumnName,
 } from "@/components/official/entity-ref/doors";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";

@@ -11,8 +11,8 @@
 import { useState } from "react";
 import { ShieldCheck, TriangleAlert } from "lucide-react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { cn } from "@/styles/themes/utils";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useBacklinkAnchorsFull } from "@/features/marketing/data/backlinks-hooks";

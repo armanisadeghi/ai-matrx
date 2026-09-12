@@ -66,7 +66,7 @@ import {
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 
 // ---------------------------------------------------------------------------
 // Constants

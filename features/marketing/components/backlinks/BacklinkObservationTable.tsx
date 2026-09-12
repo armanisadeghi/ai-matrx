@@ -21,9 +21,9 @@ import {
   Unlink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
-import type { MatrxDataTableRecordControls } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type { MatrxDataTableRecordControls } from "@ai-matrx/design-system/data-table/types";
 import {
   DateCell,
   headerWithTooltip,

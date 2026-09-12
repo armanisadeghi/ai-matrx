@@ -29,8 +29,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { CheckCheck, PanelRightOpen } from "lucide-react";
 
-import { DataRowWindow } from "@/components/official/matrx-data-table/DataRowWindow";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { DataRowWindow } from "@ai-matrx/design-system/data-table/data-row-window";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   CONTEXT_MENU_ENTITY_KEY,
@@ -43,7 +43,7 @@ import {
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@/components/ui/button";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";

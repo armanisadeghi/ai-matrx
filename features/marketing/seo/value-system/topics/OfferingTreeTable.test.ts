@@ -1,7 +1,7 @@
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import {
   destinationSiblingOrder,
   processOfferingTreeRows,

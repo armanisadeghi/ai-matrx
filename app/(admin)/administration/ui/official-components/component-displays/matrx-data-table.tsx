@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Database, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   MatrxColumnDef,
   MatrxDataTableToolbar,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import type { ComponentEntry } from "../parts/component-list";
 
 interface ComponentDisplayProps {

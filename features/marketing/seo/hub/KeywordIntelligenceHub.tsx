@@ -26,7 +26,7 @@ import {
   Scale,
   Search,
 } from "lucide-react";
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import { useSites } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";

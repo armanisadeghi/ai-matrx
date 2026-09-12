@@ -34,12 +34,12 @@ import {
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   ColumnFiltersState,
   MatrxColumnDef,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { useOpenGscWhyScoreWindow } from "@/features/overlays/openers/gscWhyScoreWindow";

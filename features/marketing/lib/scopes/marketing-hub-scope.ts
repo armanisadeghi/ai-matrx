@@ -15,7 +15,7 @@
 import type {
   ColumnFiltersState,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import type {
   MarketingNavEntry,
   MarketingNavPillar,

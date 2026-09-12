@@ -658,7 +658,7 @@ judgments are removed rather than silently transplanted to a different offering.
 
 ## Related features
 
-- Depends on `components/official/matrx-data-table`, `features/shell`, `features/organizations`, and the browser Supabase client.
+- Depends on `@ai-matrx/design-system/data-table`, `features/shell`, `features/organizations`, and the browser Supabase client.
 - The Marketing command-only transport lives in `features/marketing/crawler`; persisted Marketing reads never depend on it.
 - CMS and later marketing workspaces build on the same `web.site` / `web.page` identities.
 - Architecture: `docs/MARKETING_SITE_PLATFORM_PLAN.md` and `docs/MARKETING_SITE_ROUTE_ARCHITECTURE.md`.

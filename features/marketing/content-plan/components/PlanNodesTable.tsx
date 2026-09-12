@@ -53,12 +53,12 @@ import { UnresolvedEntityRef } from "@/features/access-gate/components/Unresolve
 import { useAccessStates } from "@/features/access-gate/hooks/useAccessStates";
 import { getKeywordPhrasesByIds } from "@/features/marketing/seo/keyword/data";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
-import { filterAndSortRows } from "@/components/official/matrx-data-table/filter-engine";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { filterAndSortRows } from "@ai-matrx/design-system/data-table/filter-engine";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import {
   keyFieldsAiVariant,
   webLocation,

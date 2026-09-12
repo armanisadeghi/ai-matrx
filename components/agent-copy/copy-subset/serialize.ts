@@ -12,7 +12,7 @@ import {
   rowsToCsvFromColumns,
   rowsToMarkdownTable,
   rowsToRecordsFromColumns,
-} from "@/components/official/matrx-data-table/tableCopy";
+} from "@ai-matrx/design-system/data-table/copy-helpers";
 import {
   toMatrxColumn,
   type CopySubsetColumn,

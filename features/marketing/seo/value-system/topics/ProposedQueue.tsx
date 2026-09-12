@@ -21,7 +21,7 @@
 
 import { Check, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import type { GscBreakdownRow } from "@/features/marketing/search-console/types";

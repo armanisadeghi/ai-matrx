@@ -6,12 +6,12 @@ import type {
   ColumnFilterValue,
   ColumnFiltersState,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import type { MarketingTableStateOptions } from "@/features/marketing/types";
 import {
   decodeLayeredFilterRules,
   encodeLayeredFilterRules,
-} from "@/components/official/matrx-data-table/layered-filters";
+} from "@ai-matrx/design-system/data-table/layered-filters";
 
 const PAGE_SIZE_OPTIONS = new Set([10, 25, 50, 100, 250]);
 

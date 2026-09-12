@@ -14,6 +14,20 @@ import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface"
 import { toast } from "@/lib/toast";
 
 const WindowPanel = dynamic(() => import("@/features/window-panels/WindowPanel").then((module) => module.WindowPanel), { ssr: false });
+
+// The sole Next dynamic front door for package-owned row windows. Its callers
+// preserve the existing open-on-demand behavior without reintroducing a host implementation.
+export const DataRowWindow = dynamic(
+  () =>
+    import("@ai-matrx/design-system/data-table/data-row-window").then(
+      (module) => module.DataRowWindow,
+    ),
+  { ssr: false, loading: () => null },
+);
+export type {
+  DataRowWindowProps,
+  DataRowWindowTab,
+} from "@ai-matrx/design-system/data-table/data-row-window";
 function TableWindowPanel(props: TableWindowPanelProps) {
   return <WindowPanel {...props} />;
 }

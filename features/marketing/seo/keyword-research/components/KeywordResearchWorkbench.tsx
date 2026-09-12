@@ -24,11 +24,11 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   MatrxColumnDef,
   MatrxDataTableMobileCardControls,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { Checkbox } from "@/components/ui/checkbox";

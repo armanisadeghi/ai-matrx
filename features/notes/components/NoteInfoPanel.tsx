@@ -45,7 +45,7 @@ import { CreateFolderDialog } from "./CreateFolderDialog";
 import { createFolder } from "../service/notesService";
 import { notesEditorManifest } from "@/features/surfaces/manifests/notes-editor.manifest";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 
 interface NoteInfoPanelProps {

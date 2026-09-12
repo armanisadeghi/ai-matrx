@@ -29,11 +29,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { CheckCheck } from "lucide-react";
 
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

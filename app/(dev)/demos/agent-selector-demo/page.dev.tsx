@@ -21,7 +21,7 @@ import {
   type RightPanel,
 } from "@ai-matrx/agents/catalog/react";
 import type { AgentSummary } from "@ai-matrx/agents/catalog";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import {
   Drawer,
   DrawerTrigger,

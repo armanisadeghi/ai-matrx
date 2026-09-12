@@ -38,13 +38,13 @@
 import { useMemo, useState } from "react";
 import { ArrowUpRight, Check, Loader2, Pencil } from "lucide-react";
 
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useCompetitorMenu } from "./competitor-actions";
 import type {
   CellEditsMap,
   MatrxColumnDef,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

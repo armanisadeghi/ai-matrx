@@ -21,7 +21,7 @@
 
 import Link from "next/link";
 
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { cn } from "@/styles/themes/utils";
 import {
   buildGscMetricColumns,

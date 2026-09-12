@@ -15,7 +15,7 @@
  * `alwaysAvailable: false` contract every consuming manifest declares.
  */
 
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 
 /** Search + per-column filters, or undefined on the unfiltered default view. */
 export function tableFilterValues(

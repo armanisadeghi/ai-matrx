@@ -22,8 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DiffViewer } from "@ai-matrx/diff/react";
 import { useToast } from "@/components/ui/use-toast";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { createClient } from "@/utils/supabase/client";
@@ -33,7 +33,7 @@ import {
   catalogEntryHref,
   catalogKindHref,
 } from "@/features/admin/applications/constants";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import { buildApplicationsTimeline } from "@/features/admin/applications/history/buildTimeline";
 import type { ApplicationsHistoryEntry } from "@/features/admin/applications/history/types";

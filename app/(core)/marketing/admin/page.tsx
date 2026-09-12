@@ -1351,7 +1351,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       name: "MatrxDataTable",
-      filePath: "components/official/matrx-data-table/MatrxDataTable.tsx",
+      filePath: "@ai-matrx/design-system/data-table/MatrxDataTable.tsx",
       description: "Canonical dense table in controlled direct-query mode.",
       tier: "official",
     },

@@ -57,7 +57,7 @@ import {
   organizationDisplayName,
 } from "../utils/organizationNames";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 import {
   useOpenCitation,

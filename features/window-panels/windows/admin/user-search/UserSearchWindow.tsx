@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { Loader2, Search, UserRound } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@/components/ui/button";
 import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
 import {

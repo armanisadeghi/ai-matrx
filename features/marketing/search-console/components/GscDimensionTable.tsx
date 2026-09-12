@@ -31,11 +31,11 @@ import { trackPage } from "@/features/marketing/search-console/data-launch";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   CellEditsMap,
   ColumnFilterValue,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import {
   setGscKeywordClass,
   type GscClassRuling,
@@ -44,7 +44,7 @@ import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import {
   humanLines,
   webLocation,

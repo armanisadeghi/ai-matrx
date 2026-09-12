@@ -75,7 +75,7 @@ import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 
 // ─── Curated scenario scripts ───────────────────────────────────────────────
 // The surrounding "around" content for a turn — intro markdown the agent

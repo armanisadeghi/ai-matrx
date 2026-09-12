@@ -18,8 +18,8 @@ import { Copy, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import type { AssetColumn } from "@/features/content-ir/registry/shape-doctor";
 import type { KindBoardRow } from "@/features/content-ir/admin/kind-detail-types";
 import {

@@ -9,7 +9,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
 import type { GscKeywordValueRow } from "@/features/marketing/search-console/data-insights";

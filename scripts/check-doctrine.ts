@@ -273,7 +273,7 @@ function scanMarketingTables(args: Args, file: string, report: Report): void {
     if (pattern.test(after)) {
       report.marketingRawTables.push({
         file,
-        detail: `${detail} — use components/official/matrx-data-table`,
+        detail: `${detail} — use @ai-matrx/design-system/data-table`,
       });
     }
   }

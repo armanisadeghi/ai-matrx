@@ -17,7 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import {
   bulkDismissAssists,
   bulkSnoozeAssists,

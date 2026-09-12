@@ -19,7 +19,7 @@ import {
   releaseCopySubsetSession,
 } from "@/components/agent-copy/copy-subset/session";
 import type { CopySubsetColumn } from "@/components/agent-copy/copy-subset/types";
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 
 type Model = {
   id: string;

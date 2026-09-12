@@ -74,6 +74,10 @@ const config: Config = {
         // rule, same reason as agents/matrx above.
         "^@ai-matrx/associations/(core|react)$":
             "<rootDir>/node_modules/@ai-matrx/associations/dist/$1/index.js",
+        // design-system's data-table public entry is likewise a directory
+        // target in dist, while its leaf subpaths remain files.
+        "^@ai-matrx/design-system/data-table$":
+            "<rootDir>/node_modules/@ai-matrx/design-system/dist/data-table/index.js",
         "^@ai-matrx/([^/]+)/(.+)$":
             "<rootDir>/node_modules/@ai-matrx/$1/dist/$2.js",
         // BARE specifiers for the packages that ship `exports` but NO `main`

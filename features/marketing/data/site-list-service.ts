@@ -5,7 +5,7 @@
 import type {
   ColumnFilterValue,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import type { EntityListService } from "@/lib/entity-list/config";
 import type {
   EntityFilterValue,

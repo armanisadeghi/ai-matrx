@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { MatrxDataTableMobileCardControls } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableMobileCardControls } from "@ai-matrx/design-system/data-table/types";
 import {
   SiteConnectionChips,
   SiteIdentityMark,

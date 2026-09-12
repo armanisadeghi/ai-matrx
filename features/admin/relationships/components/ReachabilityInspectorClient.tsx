@@ -24,7 +24,7 @@ import { createClient } from "@/utils/supabase/client";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import {

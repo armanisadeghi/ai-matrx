@@ -28,7 +28,7 @@ On the individual room page `/war-room/[id]` (session 3):
 - Feature doc (read first): `features/war-room/FEATURE.md`. Admin map: `/war-room/admin`.
 - Header recipe: `.claude/skills/core-route-headers/SKILL.md` + `features/shell/components/header/variants/USAGE.md`. **Invoke the `core-route-headers` skill before touching any header.**
 - Templates to consume, not hand-roll: `features/shell/components/header/templates/EntityModeHeader` (the `[id]`-route pattern: back + name dropdown + mode nav + declarative actions, mobile → one `…` bottom drawer). Reference consumer: `/schedules/[id]`.
-- Canonical table: `components/official/matrx-data-table/MatrxDataTable.tsx` (mobile scroll + frozen first column come free).
+- Canonical table: `@ai-matrx/design-system/data-table` (mobile scroll + frozen first column come free).
 - Room page entry: `app/(core)/war-room/[id]/page.tsx` → `features/war-room/components/room/WarRoomShell.tsx` (the header + body live here).
 - List page (the finished reference for how the room page should end up): `features/war-room/components/all/WarRoomAllView.tsx`.
 - Thread search internals: `features/war-room/components/room/ThreadSearchBox.tsx` + `features/war-room/hooks/useThreadSearch.ts` (title-only today).

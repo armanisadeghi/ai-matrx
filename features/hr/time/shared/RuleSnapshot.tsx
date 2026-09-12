@@ -18,7 +18,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-import { DataRowWindow } from "@/components/official/matrx-data-table/DataRowWindow";
+import { DataRowWindow } from "@ai-matrx/design-system/data-table/data-row-window";
 import { ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWithCapture";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";

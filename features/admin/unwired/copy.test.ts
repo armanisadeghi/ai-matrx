@@ -1,4 +1,4 @@
-import { buildRowAgentInput, buildViewAgentInput } from "@/components/official/matrx-data-table/tableCopy";
+import { buildRowAgentInput, buildViewAgentInput } from "@ai-matrx/design-system/data-table/copy-helpers";
 import type { UnwiredFinding, UnwiredReport } from "@/scripts/unwired/types";
 import { buildUnwiredCopyConfig } from "./copy";
 

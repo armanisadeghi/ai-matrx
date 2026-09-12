@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   User,
 } from "lucide-react";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatRelativeTime } from "@/utils/datetime";
 import { cn } from "@/lib/utils";
 import type { ExpertStatus, PartyListRow } from "../types";

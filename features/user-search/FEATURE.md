@@ -58,7 +58,7 @@ User Search is the canonical account-selection control. It keeps inline typing i
 
 ## Related features
 
-- Depends on: `features/window-panels`, `components/official/matrx-data-table`, `features/admin/users`.
+- Depends on: `features/window-panels`, `@ai-matrx/design-system/data-table`, `features/admin/users`.
 - Depended on by: admin-level management and bulk email, organization membership/admin/email/invitations, task assignment, shared-knowledge access and curator assignment, resource sharing, and direct messaging.
 
 ---

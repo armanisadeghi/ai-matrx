@@ -61,7 +61,7 @@ import {
 } from "@/features/agents/utils/scope-mapping";
 import type { SurfaceValue } from "@/features/surfaces/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 
 // ---------------------------------------------------------------------------
 // Sample-scope seeding

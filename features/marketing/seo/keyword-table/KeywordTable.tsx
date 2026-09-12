@@ -38,14 +38,14 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SearchX } from "lucide-react";
 
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import type {
   ColumnFiltersState,
   MatrxColumnDef,
   MatrxDataTableEmptyState,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import { toast } from "@/lib/toast";
 import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";

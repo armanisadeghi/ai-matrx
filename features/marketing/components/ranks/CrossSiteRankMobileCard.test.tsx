@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import type { MatrxDataTableMobileCardControls } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableMobileCardControls } from "@ai-matrx/design-system/data-table/types";
 import type { CrossSiteRankRow } from "./cross-site-data";
 import { CrossSiteRankMobileCard } from "./CrossSiteRankMobileCard";
 

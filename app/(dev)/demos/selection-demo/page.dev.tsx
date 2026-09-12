@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { HierarchyTree } from "@/features/agent-context/components/hierarchy-selection/HierarchyTree";
 import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
 import { HierarchyPills } from "@/features/agent-context/components/hierarchy-selection/HierarchyPills";

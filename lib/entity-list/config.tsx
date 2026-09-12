@@ -22,7 +22,7 @@ import type { SourceFeature } from "@/features/agents/types/instance.types";
 import type {
   MatrxDataTableCopyConfig,
   MatrxDataTableMobileCardControls,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import type { EntityColumnSpec } from "./columns";
 import type { EntityListFailure } from "./failure";
 import type {

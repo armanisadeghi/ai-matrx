@@ -21,7 +21,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";

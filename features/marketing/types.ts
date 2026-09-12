@@ -1,5 +1,5 @@
 import type { Database, Json } from "@/types/database.types";
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 
 type WebTables = Database["web"]["Tables"];
 type WebViews = Database["web"]["Views"];

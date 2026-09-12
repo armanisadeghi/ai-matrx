@@ -14,7 +14,7 @@
 
 import { createKeywordValueWorkbenchScope } from "@/features/surfaces/manifests/keyword-value-workbench.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import type { MarketingSiteBaseValues } from "@/features/marketing/lib/scopes/site-surface-base";
 import type { ValueReviewRow } from "@/features/marketing/seo/value-system/types";
 import type { MeaningHealthRow } from "@/features/marketing/seo/value-system/data";

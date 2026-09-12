@@ -30,12 +30,12 @@
 //     the only per-account record that ships in full is the ONE account the
 //     admin focused via `?user=<id>`.
 
-import { isColumnFilterActive } from "@/components/official/matrx-data-table/filter-engine";
+import { isColumnFilterActive } from "@ai-matrx/design-system/data-table/filter-engine";
 import type {
   ColumnFiltersState,
   ColumnFilterValue,
   SortState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import {
   ADMIN_USERS_ROSTER_SAMPLE_LIMIT,
   createAdminUsersScope,

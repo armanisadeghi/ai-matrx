@@ -21,8 +21,8 @@ import { AlertTriangle } from "lucide-react";
 
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatLocalDate } from "../../shared/format";
 import type { PayPeriodRow, PayPeriodState } from "../../api/types";
 import { PERIOD_STATE_LABEL, rowProgressSentence } from "../periodStateMachine";

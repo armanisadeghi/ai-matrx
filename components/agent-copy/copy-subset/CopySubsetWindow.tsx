@@ -30,16 +30,16 @@ import {
 
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { writeClipboard } from "@/components/agent-copy/clipboard";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import {
   getCellValue,
   stringifyCellValue,
-} from "@/components/official/matrx-data-table/filter-engine";
-import type { LayeredFilterField } from "@/components/official/matrx-data-table/layered-filters";
+} from "@ai-matrx/design-system/data-table/filter-engine";
+import type { LayeredFilterField } from "@ai-matrx/design-system/data-table/layered-filters";
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";

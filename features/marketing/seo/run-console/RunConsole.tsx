@@ -82,8 +82,8 @@ import {
   buildRunConsoleScope,
   runConsoleSurfaceName,
 } from "./run-console-scope";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import type { ConsoleSiteRow, RunConsoleScope, RunOutcome } from "./types";
 import type { RunPlacementRow } from "./data";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";

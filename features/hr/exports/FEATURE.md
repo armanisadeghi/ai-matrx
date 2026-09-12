@@ -185,7 +185,7 @@ Row → `getExportArtifact` (E-23) returns the URL envelope → bytes are stream
 
 - Depends on: `features/hr/time/periods` (L3 — period reads, `StateBadge`), `features/hr/shared`
   (L1 — `useHrContext`), `features/files` (byte download), `features/assists` (`AssistStrip`),
-  `components/official/matrx-data-table`, `components/official/item`.
+  `@ai-matrx/design-system/data-table`, `components/official/item`.
 - Cross-links: `features/hr/time/FEATURE.md`, `lib/api/hr-contract-client.ts`.
 - Spec: `common-docs/projects/hr-domain/specs/SPEC-CONTRACTS.md` §3.5 / §4 ·
   `SPEC-UI-IA.md` rows 32–33 · `readiness/R-L12-L13-L14-READINESS.md` §2, T13-1…T13-5.

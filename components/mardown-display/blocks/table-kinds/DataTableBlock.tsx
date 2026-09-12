@@ -23,7 +23,7 @@
  *    frozen-first-column recipe with its three documented CSS traps.
  *  - EXPORT — `blocks/json/json-tabular-utils.ts` (`rowsToCsv`, `rowsToNdjson`,
  *    `rowsToXlsx`, `downloadText`), the existing export builders.
- *  - MARKDOWN — `components/official/matrx-data-table/tableCopy.ts`
+ *  - MARKDOWN — `@ai-matrx/design-system/data-table/tableCopy.ts`
  *    (`rowsToMarkdownTable`), and the Copy-for-AI envelope is that file's
  *    `buildViewAgentInput` + `buildAgentPayload`. No second envelope shape.
  *  - "OPEN BIG" — routes to `TableViewerWindow` through its own opener; this
@@ -115,8 +115,8 @@ import {
   rowsToNdjson,
   rowsToXlsx,
 } from "@/components/mardown-display/blocks/json/json-tabular-utils";
-import { rowsToMarkdownTable } from "@/components/official/matrx-data-table/tableCopy";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { rowsToMarkdownTable } from "@ai-matrx/design-system/data-table/copy-helpers";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useOpenTableViewerWindow } from "@/features/overlays/openers/tableViewerWindow";

@@ -12,7 +12,7 @@
 
 import { createMarketingSiteKeywordsScope } from "@/features/surfaces/manifests/marketing-site-keywords.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import type { MarketingSiteBaseValues } from "@/features/marketing/lib/scopes/site-surface-base";
 import { projectKeywordPerformanceRow } from "@/features/marketing/seo/keyword-research/format";
 import type { SiteKeywordPerformanceRow } from "@/features/marketing/seo/keyword-research/types";

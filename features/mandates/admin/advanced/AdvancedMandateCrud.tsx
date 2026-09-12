@@ -13,11 +13,11 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { AlertTriangle, Plus, RefreshCw, Trash2 } from "lucide-react";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   CellEditsMap,
   MatrxColumnDef,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import { tokenFromColumnName } from "@/components/official/entity-ref/doors";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Button } from "@/components/ui/button";

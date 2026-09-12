@@ -24,7 +24,7 @@
  * WHAT TO USE INSTEAD
  *   one control owns one parameter        → `useUrlState` + a codec
  *   a cluster of values moving together   → `useMirroredUrlState`
- *   a MatrxDataTable                      → `lib/data-table/useTableUrlState`
+ *   a MatrxDataTable                      → `@ai-matrx/design-system/data-table/url-state`
  *
  * Loud, ADVISORY, never blocking (exit 0 always, per the scream-never-block
  * rule). Pre-existing forks are listed so the number can come down deliberately
@@ -110,7 +110,7 @@ console.log(
     `   Use lib/url-state instead:\n` +
     `     one control, one param      → useUrlState + a codec\n` +
     `     a cluster moving together   → useMirroredUrlState\n` +
-    `     a MatrxDataTable            → lib/data-table/useTableUrlState\n`,
+    `     a MatrxDataTable            → @ai-matrx/design-system/data-table/url-state\n`,
 );
 for (const file of [...files].sort()) {
   const hits = findings.filter((f) => f.file === file);

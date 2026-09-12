@@ -23,8 +23,8 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
@@ -52,7 +52,7 @@ import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/Ma
 import { BrandEditorDialog } from "@/features/marketing/components/brands/BrandEditorDialog";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import {
   MetricNavigation,

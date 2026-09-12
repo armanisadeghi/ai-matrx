@@ -21,12 +21,12 @@ import {
   XCircle,
 } from "lucide-react";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
-import DataRowWindow from "@/components/official/matrx-data-table/DataRowWindow.dynamic";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { DataRowWindow } from "@/components/official/MatrxDataTableHost";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useDeepLinkParam } from "@/components/official/deep-link/useDeepLinkParam";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";

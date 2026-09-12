@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { EDUCATION_LIBRARY_COLUMNS } from "../../library/columns";
 import { EducationLibraryCards } from "../../library/components/EducationLibraryCards";

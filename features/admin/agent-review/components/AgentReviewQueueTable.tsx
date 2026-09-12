@@ -5,10 +5,10 @@ import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ExternalLink, Link2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
-import { nextQueryState } from "@/components/official/matrx-data-table/query-control";
-import { useTableUrlState } from "@/lib/data-table/useTableUrlState";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { nextQueryState } from "@ai-matrx/design-system/data-table/query-control";
+import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import { enumUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,7 @@ import {
   reviewLaneLabel,
   reviewSearchText,
 } from "@/features/admin/agent-review/row-text";
-import { matchesTableSearch } from "@/components/official/matrx-data-table/filter-engine";
+import { matchesTableSearch } from "@ai-matrx/design-system/data-table/filter-engine";
 import { useShare } from "@/features/sharing/hooks/useShare";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";

@@ -79,7 +79,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import FeedbackDetailDialog from "./FeedbackDetailDialog";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import {
   AdminUserDoorControls,
   AdminUserRef,

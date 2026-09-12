@@ -46,7 +46,7 @@ import {
   isUuidValue,
   tokenFromColumnName,
 } from "@/components/official/entity-ref/doors";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   createItemDetailScope,

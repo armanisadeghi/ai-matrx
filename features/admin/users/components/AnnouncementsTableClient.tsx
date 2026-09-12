@@ -27,8 +27,8 @@ import {
   deleteAnnouncement,
 } from "@/actions/feedback.actions";
 import type { SystemAnnouncement } from "@/types/feedback.types";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAnnouncementMenuSection } from "./announcement-menu-section";

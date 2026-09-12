@@ -32,7 +32,7 @@ import {
   Users,
 } from "lucide-react";
 
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { ItemContextMenu, ItemMenu } from "@/components/official/item/ItemMenu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

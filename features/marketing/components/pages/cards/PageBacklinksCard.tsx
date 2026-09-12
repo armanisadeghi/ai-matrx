@@ -12,7 +12,7 @@ import Link from "next/link";
 import { BrainCircuit, ExternalLink, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import DataRowWindow from "@/components/official/matrx-data-table/DataRowWindow.dynamic";
+import { DataRowWindow } from "@/components/official/MatrxDataTableHost";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {

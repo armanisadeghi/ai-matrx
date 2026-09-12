@@ -907,7 +907,7 @@ its dismiss-layer race — the input "flashed and disappeared").
   checkbox column + bulk bar ("Set class: Money/Educational/Brand/
   Unclassified"), writing through the SAME `setGscKeywordClass` RPC as the
   single-cell edit. Edit affordance (MSR-08): `EditableTableCell` (official
-  component, `components/official/matrx-data-table/`) now renders a permanent
+  component, `@ai-matrx/design-system/data-table`) now renders a permanent
   `ChevronDown` beside a `"select"`-type cell's value — every `editable:
 "select"` column app-wide, not forked per-surface. Context menu (MSR-01):
   `resolveContextOnOpen` returns `CONTEXT_MENU_ENTITY_KEY` (a `seo_keyword`/

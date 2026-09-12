@@ -39,7 +39,7 @@ Full doctrine, the inventory pass, and the smell list:
   | non-blocking preview | `hasPeek` (`features/organizations/peek/kinds-list.ts`) + `<ResourcePeekHost>` |
   | record actions | the entity's action registry, e.g. `features/agents/browse/agentActionRegistry.tsx`; `components/official/item/` |
   | a list page | `<EntityListPage config={…} />` — `lib/entity-list/` |
-  | a table | `MatrxDataTable` — `components/official/matrx-data-table/` |
+  | a table | `MatrxDataTable` — `@ai-matrx/design-system/data-table` |
   | open beside the work | `features/overlays/openers/` + `features/window-panels/` |
 - **Reference implementation:** `features/mandates/admin/MandatesConsole.tsx`.
 

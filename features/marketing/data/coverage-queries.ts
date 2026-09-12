@@ -7,7 +7,7 @@
  * under it are computed from one set of rows and cannot disagree.
  */
 
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import type {
   CoverageMentionRow,
   CoveragePagedResult,

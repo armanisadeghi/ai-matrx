@@ -22,8 +22,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import MatrxDataTable from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatElapsed } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 import { relativeTime } from "@/lib/entity-list/columns";
 import { ListX } from "lucide-react";

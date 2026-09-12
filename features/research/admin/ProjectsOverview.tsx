@@ -20,7 +20,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import type { Json } from "@/types/database.types";
 import type { ResearchTemplate } from "../types";
 import { AGENT_CONFIG_KEYS } from "./types";

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { MatrxDataTableMobileCardControls } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableMobileCardControls } from "@ai-matrx/design-system/data-table/types";
 import { formatCompactDate } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { cn } from "@/lib/utils";

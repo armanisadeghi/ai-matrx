@@ -27,7 +27,7 @@ import {
   Save,
   Settings2,
 } from "lucide-react";
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";

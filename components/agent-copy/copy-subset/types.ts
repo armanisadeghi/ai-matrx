@@ -21,7 +21,7 @@ import type {
   ColumnFilterKind,
   MatrxColumnDef,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 
 /** Output formats. `ai` = the caller's existing for-AI serialization. */
 export type CopySubsetFormat = "ai" | "markdown" | "csv" | "json";

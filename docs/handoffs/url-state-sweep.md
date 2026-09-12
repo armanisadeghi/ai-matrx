@@ -124,7 +124,7 @@ Pick by **shape**. Never hand-roll `history.pushState`.
 ```
 one control owns one parameter      →  useUrlState(key, codec)
 a cluster moving together           →  useMirroredUrlState({ parse, toParams, isSame, textKeys })
-a MatrxDataTable                    →  lib/data-table/useTableUrlState
+a MatrxDataTable                    →  @ai-matrx/design-system/data-table/url-state
 a bespoke grid                      →  compose useMirroredUrlState
 ```
 

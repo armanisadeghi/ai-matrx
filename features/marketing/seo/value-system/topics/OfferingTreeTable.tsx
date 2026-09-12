@@ -16,14 +16,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   CellEditsMap,
   MatrxColumnDef,
   MatrxDataTableHierarchyMove,
   MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
-import { filterAndSortRows } from "@/components/official/matrx-data-table/filter-engine";
+} from "@ai-matrx/design-system/data-table/types";
+import { filterAndSortRows } from "@ai-matrx/design-system/data-table/filter-engine";
 import { cn } from "@/styles/themes/utils";
 import { isJsonObject } from "@/types/json";
 import { formatCount } from "@/features/marketing/search-console/types";

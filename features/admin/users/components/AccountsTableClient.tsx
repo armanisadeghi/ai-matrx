@@ -46,10 +46,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import { filterAndSortRows } from "@/components/official/matrx-data-table/filter-engine";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
-import { useTableUrlState } from "@/lib/data-table/useTableUrlState";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { filterAndSortRows } from "@ai-matrx/design-system/data-table/filter-engine";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_USERS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-users.manifest";

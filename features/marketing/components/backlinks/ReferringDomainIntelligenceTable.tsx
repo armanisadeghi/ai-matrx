@@ -22,8 +22,8 @@ import {
   buildReferringDomainMenuSection,
   type ReferringDomainMenuRow,
 } from "@/features/marketing/components/backlinks/referring-domain-actions";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@/components/ui/button";
 import {
   humanizeAssessmentValue,

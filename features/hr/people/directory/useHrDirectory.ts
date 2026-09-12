@@ -31,7 +31,7 @@ import type {
   ColumnFiltersState,
   MatrxDataTableQueryState,
   SortState,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import {
   commitUrlParams,
   useUrlSearchParams,

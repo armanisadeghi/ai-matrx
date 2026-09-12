@@ -1,4 +1,4 @@
-import type { MatrxDataTableCopyConfig } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table/types";
 import {
   DETECTOR_TITLES,
   type UnwiredFinding,

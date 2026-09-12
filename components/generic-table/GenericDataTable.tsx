@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import StructuredSectionCard from "@/components/official/StructuredSectionCard";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import GenericTablePagination from "./GenericTablePagination";
+import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
 
 export interface ColumnConfig<T> {
     key: string;

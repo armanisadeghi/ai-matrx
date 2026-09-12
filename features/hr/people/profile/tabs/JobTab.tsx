@@ -31,7 +31,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRightLeft, ExternalLink, Pencil } from "lucide-react";
 
-import DataRowWindow from "@/components/official/matrx-data-table/DataRowWindow.dynamic";
+import { DataRowWindow } from "@/components/official/MatrxDataTableHost";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

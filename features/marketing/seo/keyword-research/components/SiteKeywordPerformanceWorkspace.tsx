@@ -22,11 +22,11 @@ import {
   archiveKeywords,
   restoreKeywords,
 } from "@/features/marketing/seo/keyword-research/data/queries";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   CellEditsMap,
   MatrxColumnDef,
-} from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";

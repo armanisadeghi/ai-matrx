@@ -1,4 +1,4 @@
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import {
   buildStoredSeoMetrics,
   parseStoredSeoMetrics,

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
-import GenericTablePagination from "@/components/generic-table/GenericTablePagination";
+import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
 import {
   AlertDialog,
   AlertDialogAction,

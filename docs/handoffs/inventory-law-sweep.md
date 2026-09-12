@@ -573,7 +573,7 @@ are now deleted.**
 - [ ] **The two `editable` name columns — INVESTIGATED, and the answer is NOT
       "drop in an `EntityRef`".** `MatrxDataTable` already owns a door
       mechanism: a column takes `href?: (row) => string | undefined`
-      (`components/official/matrx-data-table/types.ts:77`), the shell wraps the
+      (`@ai-matrx/design-system/data-table/types:77`), the shell wraps the
       cell display in a `<Link>` when it resolves (`MatrxDataTable.tsx:735,770`),
       and `EditableTableCell` **forces `editTrigger: "pencil"` whenever an
       `href` is present** (`EditableTableCell.tsx:110`) so the link and the

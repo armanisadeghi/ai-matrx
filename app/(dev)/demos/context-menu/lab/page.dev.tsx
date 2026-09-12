@@ -114,7 +114,7 @@ import type { SurfaceManifest } from "@/features/surfaces/types";
 import { supabase } from "@/utils/supabase/client";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { entityTokenForAgentScope } from "@/features/agent-shortcuts/constants";
 import { Button } from "@/components/ui/button";

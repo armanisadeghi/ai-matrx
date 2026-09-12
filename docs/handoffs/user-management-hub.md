@@ -19,7 +19,7 @@ vision: []
 ## Resources
 
 - Hub: `app/(admin)/administration/users/` (tabs in `UsersAdminLayoutClient.tsx`). Super-admin gating inherited from `app/(admin)/layout.tsx`.
-- Canonical table: `components/official/matrx-data-table/MatrxDataTable.tsx` (sort/filter, Copy-for-AI, `rowActions`, `detail` side panel, `fk.href`). Exemplars: everything in `features/admin/users/components/`, plus `features/admin/relationships/components/EntityTypesClient.tsx`.
+- Canonical table: `@ai-matrx/design-system/data-table` (sort/filter, Copy-for-AI, `rowActions`, `detail` side panel, `fk.href`). Exemplars: everything in `features/admin/users/components/`, plus `features/admin/relationships/components/EntityTypesClient.tsx`.
 - Admin RPCs (protected resource — invoke the `protected-resources` skill first): `admin_list`, `admin_promote`, `admin_update`, `admin_revoke`. API: `app/api/admin/admins/*`.
 - Test: `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/administration/users`.
 

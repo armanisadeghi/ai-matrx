@@ -2,7 +2,7 @@
 
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { MatrxDataTableProps } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableProps } from "@ai-matrx/design-system/data-table/types";
 import type { AdminUserRow } from "../types";
 import { AccountsTableClient } from "./AccountsTableClient";
 
@@ -18,7 +18,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock(
-  "@/components/official/matrx-data-table/MatrxDataTable",
+  "@ai-matrx/design-system/data-table",
   () => ({
     MatrxDataTable: (props: MatrxDataTableProps<AdminUserRow>) => {
       mockTableProps = props;

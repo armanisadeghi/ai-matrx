@@ -15,7 +15,7 @@
 // derives the table columns, the column picker, the panel's sort options, and
 // the default hidden set from that one registry.
 
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 /**
  * A date column's finite value set is "how recently", not "which exact

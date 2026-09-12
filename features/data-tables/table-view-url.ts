@@ -7,7 +7,7 @@
  * user's own decisions instead of only the route. A view that exists solely in
  * component state is a view that cannot be shared, bookmarked, or returned to.
  *
- * Parameter names match `lib/data-table/useTableUrlState` on purpose — `q`,
+ * Parameter names match `@ai-matrx/design-system/data-table/url-state` on purpose — `q`,
  * `sort`, `f`, `p`, `ps` mean the same thing on every table surface in the app.
  * A second vocabulary for the same five concepts would be a small betrayal of
  * every user who learned the first one.

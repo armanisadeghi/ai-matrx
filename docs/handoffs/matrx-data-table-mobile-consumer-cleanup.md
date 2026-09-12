@@ -16,9 +16,9 @@ vision: []
 
 ## Resources
 
-- Shared table: `components/official/matrx-data-table/MatrxDataTable.tsx`
+- Shared table: `@ai-matrx/design-system/data-table`
 - Bespoke-table mobile recipe: `components/official/mobile-table/mobileTable.ts`
-- Shared contract: `components/official/matrx-data-table/FEATURE.md`
+- Shared contract: `@ai-matrx/design-system/data-table`
 - Mobile skill: `.claude/skills/ios-mobile-first/SKILL.md`
 - Existing copy fleet: `docs/handoffs/agent-copy-everywhere.md`
 - Patrol: P3 in `../common-docs/systems/improvement/pattern-patrols/PATROL_REGISTRY.md`
@@ -36,7 +36,7 @@ vision: []
 
 ## Done
 
-- Shared `MatrxDataTable` scrolls the whole phone row, keeps its persistent toolbar on one line, and hides over-data chevrons below `sm` — see `components/official/matrx-data-table/`.
+- Shared `MatrxDataTable` scrolls the whole phone row, keeps its persistent toolbar on one line, and hides over-data chevrons below `sm` — see `@ai-matrx/design-system/data-table`.
 - Shared bespoke-table recipe contains no phone/tablet sticky positioning, including through the historical `MOBILE_TABLE_FROZEN*` exports — see `components/official/mobile-table/mobileTable.ts`.
 - Brands removes duplicate header copy, bounds the identity cell, compresses Add on phones, and uses canonical row-action buttons — see `features/marketing/components/brands/BrandsPortfolio.tsx`.
 - Local Browser proof at 390×844 measured Search and Add on the same 44 px row, a 224 px rendered identity cell, 359 px of usable horizontal table travel, static first header/body cells, hidden mobile edge controls, and reachable Status/Actions after scrolling. Desktop 1440×900 retained the full Add label and a non-overflowing table; the console stayed error-free.

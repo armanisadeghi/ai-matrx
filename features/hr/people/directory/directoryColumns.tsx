@@ -29,7 +29,7 @@
 // departments exist" from the current page would make the facet list a function
 // of the page you are on — the exact defect `lib/entity-list` was built to end.
 
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { hrPeopleHref, hrStructureFocusHref, type HrOrgRef } from "../../routes";
 import {

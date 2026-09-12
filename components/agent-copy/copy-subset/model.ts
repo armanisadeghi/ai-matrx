@@ -8,9 +8,9 @@
 import {
   countActiveColumnFilters,
   filterAndSortRows,
-} from "@/components/official/matrx-data-table/filter-engine";
-import { completeLayeredFilterRules } from "@/components/official/matrx-data-table/layered-filters";
-import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
+} from "@ai-matrx/design-system/data-table/filter-engine";
+import { completeLayeredFilterRules } from "@ai-matrx/design-system/data-table/layered-filters";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import type { CopySubsetSession } from "@/components/agent-copy/copy-subset/session";
 import { serializeCopySubset } from "@/components/agent-copy/copy-subset/serialize";
 import {

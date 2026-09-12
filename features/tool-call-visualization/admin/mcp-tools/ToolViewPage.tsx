@@ -30,7 +30,7 @@ import { ToolTestSamplesViewer } from "@/features/tool-call-visualization/admin/
 import { RegistryTab } from "@/features/tool-registry/tools-admin/components/RegistryTab";
 import { Network } from "lucide-react";
 import { SourceKindBadge } from "./source-kind-badge";
-import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { mcpServerHref } from "@/features/tool-registry/doors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
