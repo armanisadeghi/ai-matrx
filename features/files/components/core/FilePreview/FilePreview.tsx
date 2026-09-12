@@ -290,19 +290,29 @@ export function FilePreview({
     existingPdfExtraction,
   ]);
 
+  // Deep links can create a partial Redux record before the canonical render
+  // fields arrive. The record's presence is not proof that its empty
+  // fileName/mimeType values are authoritative; rendering them as a generic
+  // unsupported file produces a false failure until hydration finishes.
+  if (
+    ensure.status === "loading" ||
+    (!file && ensure.status === "idle")
+  ) {
+    return (
+      <div
+        role="status"
+        aria-label="Loading file preview"
+        className={cn(
+          "flex h-full w-full items-center justify-center bg-muted/20",
+          className,
+        )}
+      >
+        <div className="h-6 w-40 animate-pulse rounded bg-muted" />
+      </div>
+    );
+  }
+
   if (!file) {
-    if (ensure.status === "loading" || ensure.status === "idle") {
-      return (
-        <div
-          className={cn(
-            "flex h-full w-full items-center justify-center text-sm text-muted-foreground",
-            className,
-          )}
-        >
-          Loading…
-        </div>
-      );
-    }
     // The row didn't hydrate. That is one of four things — denied, deleted,
     // never existed, or a signed-out session — and this surface cannot tell
     // them apart, so it must not pick one. The gate asks the platform, names
