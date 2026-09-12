@@ -90,8 +90,8 @@ function RowActions({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete &quot;{item.key}&quot;?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the setting &quot;{item.key}&quot;
-              from the canonical settings vocabulary. This cannot be undone.
+              This will remove the setting &quot;{item.key}&quot;
+              from the active settings vocabulary.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
