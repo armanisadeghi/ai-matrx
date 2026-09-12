@@ -191,14 +191,19 @@ shown yet", never a throw.
 
 ## Scrolling — one scroller, never two
 
-The page is scrolled by the admin layout's `<main>`; every table lays out at its
-content height (no bounded-height wrapper). The "scroll inside a scroll" Arman
-saw on 2026-09-12 was the shell: with the global alarm banner up, `.shell-main`
-reserves the banner's height as `padding-top` but `.h-page` (the admin page
-root) was `100dvh − header`, so every admin page overflowed the shell by the
-banner's height and scrolled twice. Fixed for the whole class in
-`app/globals.css` (`.h-page` / `.min-h-page` / `.max-h-page` now subtract
-`--shell-alarm-h`).
+The page is scrolled by `ClientAdminLayout`'s inner `<main>`; every table lays
+out at its content height (no bounded-height wrapper). The outer `.shell-main`
+is explicitly `overflow-y: hidden` for `/administration/*`, so it can never
+become a second wheel target behind the admin page. Tables may scroll
+horizontally when their columns are wider than the viewport, but never
+vertically.
+
+The "scroll inside a scroll" Arman saw on 2026-09-12 first exposed itself when
+the global alarm banner was up: `.shell-main` reserves the banner's height as
+`padding-top` while `.h-page` had been `100dvh − header`, making the two nested
+`<main>` elements independently scrollable. The height utilities now also
+subtract `--shell-alarm-h`, but that arithmetic is no longer the ownership
+boundary—the admin shell itself is structurally non-scrollable.
 
 ## Files
 
@@ -246,6 +251,12 @@ Registered in `features/admin/constants/admin-categories.ts` +
 
 ## Change Log
 
+- **2026-09-12 (scroll ownership follow-up)** — Reproduced production with two
+  nested vertical scroll owners (`.shell-main`: 1,430px content in a 1,264px
+  viewport; the admin page `<main>`: 3,479px content in 1,264px). Made the
+  outer admin shell structurally non-scrollable; `ClientAdminLayout` is now the
+  sole page scroller regardless of alarm height, while tables retain horizontal
+  overflow only. Browser-verified on the real spend data at localhost.
 - **2026-09-12 (evening)** — THE EXPLORER. `admin_spend_breakdown` (any window,
   eleven dimensions, filters that compose, seven signals, top requests), five
   `platform.spend_explorer.*` knobs, the page rebuilt as headline → explorer →

@@ -1484,6 +1484,12 @@ main[data-public-main] {
 }
 .shell-root[data-pathname^="/administration"] .shell-main {
   margin-top: 0;
+  /* ClientAdminLayout owns the admin page's vertical scroll. Keeping this
+     outer shell scrollable creates two wheel targets whenever fixed shell
+     chrome (for example the global schedule alarm) changes the available
+     height. Tables only expose horizontal overflow; they must never appear to
+     trap page scrolling because the shell is moving behind the page scroller. */
+  overflow-y: hidden;
 }
 
 /* Ultra-thin auto-hiding scrollbar (global for shell) */
