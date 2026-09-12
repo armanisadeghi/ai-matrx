@@ -549,7 +549,7 @@ export default function AdminSandboxManagementPage() {
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
               </div>
             )}
-            <Table>
+            <Table wrapperClassName="phone-stack">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8"></TableHead>
@@ -579,14 +579,14 @@ export default function AdminSandboxManagementPage() {
                           setExpandedRow(isExpanded ? null : instance.id)
                         }
                       >
-                        <TableCell className="w-8 px-2">
+                        <TableCell className="w-8 px-2" data-phone="inline">
                           {isExpanded ? (
                             <ChevronDown className="w-4 h-4 text-muted-foreground" />
                           ) : (
                             <ChevronRight className="w-4 h-4 text-muted-foreground" />
                           )}
                         </TableCell>
-                        <TableCell className="font-mono text-xs">
+                        <TableCell className="font-mono text-xs" data-phone="lead">
                           {instance.user_id === viewerUserId ? (
                             <AppLink
                               href={`/sandbox/${instance.id}`}
@@ -604,27 +604,28 @@ export default function AdminSandboxManagementPage() {
                         </TableCell>
                         <TableCell
                           className="max-w-[160px] text-xs"
+                          data-label="User"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {/* The owner is a real user — reach their admin
                               surfaces instead of printing 8 hex characters. */}
                           <AdminUserRef userId={instance.user_id} />
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-phone="inline">
                           <Badge variant={statusConfig.variant}>
                             {statusConfig.label}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell className="text-xs text-muted-foreground" data-label="Created" data-phone="inline">
                           {formatSandboxTimestamp(instance.created_at)}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell className="text-xs text-muted-foreground" data-label="Expires" data-phone="inline">
                           {formatSandboxTimestamp(instance.expires_at)}
                         </TableCell>
-                        <TableCell className="text-xs font-mono">
+                        <TableCell className="text-xs font-mono" data-label="Tier" data-phone="inline">
                           {instance.tier ?? "--"}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right" data-phone="actions">
                           <div
                             className="flex items-center justify-end gap-1"
                             onClick={(e) => e.stopPropagation()}

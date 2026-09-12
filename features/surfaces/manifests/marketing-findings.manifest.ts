@@ -330,7 +330,7 @@ export const marketingFindingsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-findings",
   readiness: "verified",
   label: "Marketing Findings Register",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/findings",
+  urlPattern: "/marketing/[brandId]/seo/[siteId]/findings",
   inheritsFrom: "matrx-user/marketing-site",
   groups,
   intro: `<surface_intro>

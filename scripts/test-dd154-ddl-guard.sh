@@ -6,6 +6,8 @@ FIXTURE="$REPO/scripts/fixtures/dd154-preapply-catalog.json"
 MIGRATION="$REPO/migrations/dd154_org_assignment_ddl_prevention.sql"
 EXPECTED_MIGRATION_SHA256=01d4323bbf7442160a67abbf2a1fc0dde2bf6e5086295c0f6d0e4f0a56fead5d
 GUIDANCE_DRAFT="$REPO/scripts/migration-drafts/dd155_org_assignment_guidance.sql"
+GUIDANCE_MIGRATION="$REPO/migrations/dd155_org_assignment_guidance.sql"
+EXPECTED_GUIDANCE_SHA256=f6531d457d6e33710ff659cde95ef65e2b47dd65ea280735a673c3a928dd332e
 MODE=${DD154_PG_MODE:-native}
 PG_BIN=${DD154_PG_BIN:-}
 RUN_DIR=$(mktemp -d /tmp/dd154-pg17-review.XXXXXX)
@@ -44,7 +46,15 @@ trap cleanup EXIT
 
 [[ -f $FIXTURE ]] || fail "checked-in pre-apply catalog fixture is missing: $FIXTURE"
 [[ -f $MIGRATION ]] || fail "applied DD154 migration is missing: $MIGRATION"
-[[ -f $GUIDANCE_DRAFT ]] || fail "DD155 guidance draft is missing: $GUIDANCE_DRAFT"
+GUIDANCE_CANDIDATES=()
+[[ -f $GUIDANCE_DRAFT ]] && GUIDANCE_CANDIDATES+=("$GUIDANCE_DRAFT")
+[[ -f $GUIDANCE_MIGRATION ]] && GUIDANCE_CANDIDATES+=("$GUIDANCE_MIGRATION")
+case ${#GUIDANCE_CANDIDATES[@]} in
+  1) GUIDANCE_SQL=${GUIDANCE_CANDIDATES[0]} ;;
+  0) fail "DD155 guidance is missing from both lifecycle locations: $GUIDANCE_DRAFT and $GUIDANCE_MIGRATION" ;;
+  *) fail "DD155 guidance exists in both lifecycle locations; retain exactly one authoritative file: $GUIDANCE_DRAFT or $GUIDANCE_MIGRATION" ;;
+esac
+[[ $(shasum -a 256 "$GUIDANCE_SQL" | awk '{print $1}') == "$EXPECTED_GUIDANCE_SHA256" ]] || fail "DD155 guidance checksum does not match the reviewed bytes: $GUIDANCE_SQL"
 [[ $(shasum -a 256 "$MIGRATION" | awk '{print $1}') == "$EXPECTED_MIGRATION_SHA256" ]] || fail "applied DD154 migration checksum does not match the immutable ledger subject"
 
 case "$MODE" in
@@ -287,14 +297,14 @@ FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
 WHERE p.oid='platform._ddl_guard()'::regprocedure" > "$RUN_DIR/dd155-before.tsv"
 "${PSQL[@]}" -Atc "SELECT encode(digest(convert_to(pg_get_functiondef('platform._ddl_guard()'::regprocedure), 'UTF8'), 'sha256'), 'hex')" > "$RUN_DIR/dd155-fixture-source.sha256"
 echo "DD155 fixture input source hash: $(cat "$RUN_DIR/dd155-fixture-source.sha256")" | tee -a "$RESULTS"
-node - "$GUIDANCE_DRAFT" "$RUN_DIR/dd155-fixture-source.sha256" "$RUN_DIR/dd155-mapped.sql" <<'NODE'
+node - "$GUIDANCE_SQL" "$RUN_DIR/dd155-fixture-source.sha256" "$RUN_DIR/dd155-mapped.sql" <<'NODE'
 const fs = require('fs');
-const [draft, fixtureHashFile, mapped] = process.argv.slice(2);
+const [guidance, fixtureHashFile, mapped] = process.argv.slice(2);
 const liveHash = 'd619ea4bd180b16a7a3ad7cf4f563552a783cc502040826fe328610661ac8a68';
 const fixtureHash = fs.readFileSync(fixtureHashFile, 'utf8').trim();
 if (!/^[0-9a-f]{64}$/.test(fixtureHash)) throw new Error('DD155 fixture source hash is malformed');
-const source = fs.readFileSync(draft, 'utf8');
-if (source.split(liveHash).length !== 2) throw new Error('DD155 draft must contain the reviewed live source hash exactly once');
+const source = fs.readFileSync(guidance, 'utf8');
+if (source.split(liveHash).length !== 2) throw new Error('DD155 guidance must contain the reviewed live source hash exactly once');
 const output = source.replace(liveHash, fixtureHash);
 if (output.replace(fixtureHash, liveHash) !== source) throw new Error('DD155 fixture mapping changed bytes beyond the source-hash precondition');
 fs.writeFileSync(mapped, output);

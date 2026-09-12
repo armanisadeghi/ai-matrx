@@ -120,7 +120,7 @@ export const marketingSitePagesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site-pages",
   readiness: "verified",
   label: "Marketing Pages Registry",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/pages",
+  urlPattern: "/marketing/[brandId]/websites/[siteId]/pages",
   inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
 You are on the canonical page registry of a managed website: one row per canonical URL, with observed snapshot evidence (title, word count), deterministic health verdicts (SERP metadata, social card, indexability), sitemap membership, and 28-day Google Search Console performance. The user comes here to triage which pages need work and to jump into a single page's workspace.

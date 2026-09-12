@@ -51852,6 +51852,10 @@ export type Database = {
         Args: { p_id: string; p_token: string }
         Returns: Record<string, unknown>
       }
+      _door_target_lock: {
+        Args: { p_id: string; p_token: string }
+        Returns: boolean
+      }
       _door_ttl_minutes: { Args: { p_org: string }; Returns: number }
       _fk_check13: {
         Args: never
@@ -59841,6 +59845,7 @@ export type Database = {
           description: string
           kind: string
           precedence: number
+          scope_row_identity: string
           scope_schema: string | null
           scope_table: string | null
         }
@@ -59848,6 +59853,7 @@ export type Database = {
           description: string
           kind: string
           precedence: number
+          scope_row_identity?: string
           scope_schema?: string | null
           scope_table?: string | null
         }
@@ -59855,6 +59861,7 @@ export type Database = {
           description?: string
           kind?: string
           precedence?: number
+          scope_row_identity?: string
           scope_schema?: string | null
           scope_table?: string | null
         }

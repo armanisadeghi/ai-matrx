@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
     try {
         const { theme } = await request.json();
 
-        if (!theme || typeof theme !== 'string') {
+        if (theme !== 'light' && theme !== 'dark') {
             return NextResponse.json(
                 { success: false, message: 'Invalid theme value' },
                 { status: 400 }

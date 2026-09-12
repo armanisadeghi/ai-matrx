@@ -192,4 +192,56 @@ describe("applyPrePaintDescriptors", () => {
             });
         }
     });
+
+    it.each([
+        [true, "dark"],
+        [false, "light"],
+    ])("resolves the stored system preference to %s before paint", (prefersDark, expected) => {
+        const original = window.matchMedia;
+        Object.defineProperty(window, "matchMedia", {
+            value: () => ({ matches: prefersDark } as MediaQueryList),
+            configurable: true,
+            writable: true,
+        });
+        try {
+            const descriptors: PrePaintDescriptor[] = [
+                {
+                    kind: "classToggle",
+                    target: "html",
+                    className: "dark",
+                    fromKey: "mode",
+                    whenEquals: "dark",
+                    systemValue: "system",
+                    systemFallback: {
+                        mediaQuery: "(prefers-color-scheme: dark)",
+                        applyWhenMatches: true,
+                    },
+                },
+                {
+                    kind: "attribute",
+                    target: "html",
+                    attribute: "data-theme",
+                    fromKey: "mode",
+                    allowed: ["light", "dark", "system"],
+                    default: "dark",
+                    systemValue: "system",
+                    systemFallback: {
+                        mediaQuery: "(prefers-color-scheme: dark)",
+                        applyWhenMatches: true,
+                        whenMatchesValue: "dark",
+                        whenDoesNotMatchValue: "light",
+                    },
+                },
+            ];
+            applyPrePaintDescriptors(descriptors, { mode: "system" });
+            expect(document.documentElement.classList.contains("dark")).toBe(prefersDark);
+            expect(document.documentElement.getAttribute("data-theme")).toBe(expected);
+        } finally {
+            Object.defineProperty(window, "matchMedia", {
+                value: original,
+                configurable: true,
+                writable: true,
+            });
+        }
+    });
 });

@@ -214,7 +214,7 @@ export const marketingAuditManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-audit",
   readiness: "verified",
   label: "Marketing Site Audit",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/audit",
+  urlPattern: "/marketing/[brandId]/seo/[siteId]/audit",
   inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
 You are on the site audit dashboard of a managed website: a site-wide rollup of every canonical page's stored audit results — indexability verdicts, pass rates for SERP metadata, social cards, headings, and URL quality, the most common issues, and the worst pages. Read the inherited brand_context and site_context first for the client and site framing.

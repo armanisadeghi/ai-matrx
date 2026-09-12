@@ -9910,6 +9910,22 @@
         "operationId": "create_item_vault_items_post",
         "parameters": [
           {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          },
+          {
             "name": "X-Organization-Id",
             "in": "header",
             "required": true,
@@ -10175,6 +10191,22 @@
             }
           },
           {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          },
+          {
             "name": "X-Organization-Id",
             "in": "header",
             "required": true,
@@ -10364,6 +10396,22 @@
             "schema": {
               "type": "string",
               "title": "Field Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
             }
           },
           {
@@ -92813,6 +92861,11 @@
             "type": "integer",
             "title": "Offset"
           },
+          "scanned_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Scanned Count"
+          },
           "filter_summary": {
             "type": "string",
             "title": "Filter Summary"
@@ -92826,6 +92879,7 @@
           "total",
           "limit",
           "offset",
+          "scanned_count",
           "filter_summary"
         ],
         "title": "AppLogListResponse"

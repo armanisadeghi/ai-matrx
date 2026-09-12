@@ -44,14 +44,21 @@ function Tile({
 
 export function TotalsStrip({ data }: { data: SpendBreakdown }) {
   const t = data.totals;
-  const perHour = t.hours > 0 ? t.cost / t.hours : 0;
+  // A slice filtered to one hour or one day spans that, not the whole window;
+  // dividing by the window's hours would caption a $27 hour as "$0.57 per hour".
+  const sliceHours = data.filters.hour ? 1 : data.filters.day ? 24 : t.hours;
+  const perHour = sliceHours > 0 ? t.cost / sliceHours : 0;
   const cached = t.tokensIn + t.tokensCached > 0 ? t.tokensCached / (t.tokensIn + t.tokensCached) : 0;
   return (
     <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
       <Tile
         label="Window total"
         value={usd(t.cost)}
-        hint={`${usd(perHour)} per hour · ${count(t.paidExecutions)} paid executions`}
+        hint={
+          data.filters.hour
+            ? `one hour · ${count(t.paidExecutions)} paid executions`
+            : `${usd(perHour)} per hour · ${count(t.paidExecutions)} paid executions`
+        }
       />
       <Tile
         label="Manual"

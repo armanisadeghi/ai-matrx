@@ -150,7 +150,7 @@ function SettingsMenuLinkContent({ icon: Icon, label, description, location }: {
   return <>
     <span className="shell-nav-icon">{Icon ? <Icon /> : <Settings />}</span>
     <span className="settings-route-menu-result-copy"><span className="settings-route-menu-label">{label}</span>{location ? <span className="settings-route-menu-location">{location}</span> : description ? <span className="settings-route-menu-description">{description}</span> : null}</span>
-    {pending ? <Loader2 className="ml-auto animate-spin" aria-label={`Opening ${label}`} /> : null}
+    {pending ? <Loader2 className="ml-auto h-4 w-4 shrink-0 animate-spin" aria-label={`Opening ${label}`} /> : null}
   </>;
 }
 

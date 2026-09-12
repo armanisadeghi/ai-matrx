@@ -25,6 +25,11 @@ type BoundaryResult = {
   data: ReturnedRow[] | null;
   error: { message: string } | null;
 };
+type BoundaryCall = { method: string; args: unknown[] };
+type RecordingBoundary = {
+  client: SupabaseClient<Database>;
+  calls: BoundaryCall[];
+};
 
 const row = (id: string, path: string, org = organizationId) =>
   ({
@@ -33,16 +38,41 @@ const row = (id: string, path: string, org = organizationId) =>
     organization_id: org,
   }) as Database["admin"]["Tables"]["feature_docs"]["Row"];
 
-/** An awaitable chain returning the same { data, error } shape as PostgREST. */
-function boundaryClient(result: BoundaryResult): SupabaseClient<Database> {
+/** An awaitable PostgREST boundary that records every query contract. */
+function boundaryClient(result: BoundaryResult): RecordingBoundary {
+  const calls: BoundaryCall[] = [];
+  const record = (method: string, ...args: unknown[]): void => {
+    calls.push({ method, args });
+  };
   const query = {
-    insert: () => query,
-    update: () => query,
-    delete: () => query,
-    select: () => query,
-    eq: () => query,
-    order: () => query,
-    range: () => query,
+    insert: (value: unknown) => {
+      record("insert", value);
+      return query;
+    },
+    update: (value: unknown) => {
+      record("update", value);
+      return query;
+    },
+    delete: () => {
+      record("delete");
+      return query;
+    },
+    select: (columns: unknown) => {
+      record("select", columns);
+      return query;
+    },
+    eq: (column: unknown, value: unknown) => {
+      record("eq", column, value);
+      return query;
+    },
+    order: (column: unknown, options: unknown) => {
+      record("order", column, options);
+      return query;
+    },
+    range: (from: unknown, to: unknown) => {
+      record("range", from, to);
+      return query;
+    },
     then: <TResult1 = BoundaryResult, TResult2 = never>(
       onfulfilled?:
         ((value: BoundaryResult) => TResult1 | PromiseLike<TResult1>) | null,
@@ -51,8 +81,43 @@ function boundaryClient(result: BoundaryResult): SupabaseClient<Database> {
     ) => Promise.resolve(result).then(onfulfilled, onrejected),
   };
   return {
-    schema: () => ({ from: () => query }),
-  } as unknown as SupabaseClient<Database>;
+    client: {
+      schema: (schema: string) => {
+        record("schema", schema);
+        return {
+          from: (table: string) => {
+            record("from", table);
+            return query;
+          },
+        };
+      },
+    } as unknown as SupabaseClient<Database>,
+    calls,
+  };
+}
+
+function assertBoundaryCalls(
+  boundary: RecordingBoundary,
+  mutation: "insert" | "update" | "delete",
+  predicates: Array<[string, string]>,
+): void {
+  assert.deepEqual(boundary.calls[0], { method: "schema", args: ["admin"] });
+  assert.deepEqual(boundary.calls[1], {
+    method: "from",
+    args: ["feature_docs"],
+  });
+  assert.equal(boundary.calls[2]?.method, mutation);
+  assert.deepEqual(
+    boundary.calls.slice(3, -1),
+    predicates.map(([column, value]) => ({
+      method: "eq",
+      args: [column, value],
+    })),
+  );
+  assert.deepEqual(boundary.calls.at(-1), {
+    method: "select",
+    args: ["id,path,organization_id"],
+  });
 }
 
 function testAdmission(): void {
@@ -102,26 +167,64 @@ async function testStoreBoundary(): Promise<void> {
     path: exact.path,
     content: "# title",
   } as Database["admin"]["Tables"]["feature_docs"]["Insert"];
-  const positive = createFeatureDocsStore(
-    boundaryClient({ data: [exact], error: null }),
-  );
-  assert.equal((await positive.insert(insertValue)).id, exact.id);
-  assert.equal(
-    (await positive.update(exact.id, organizationId, { title: "new" })).id,
-    exact.id,
-  );
-  assert.equal(
-    (await positive.softDelete(exact.id, organizationId, exact.path)).id,
-    exact.id,
-  );
-  assert.equal(
-    (await positive.delete(exact.id, organizationId, exact.path)).id,
-    exact.id,
-  );
+  const inventoryBoundary = boundaryClient({ data: [exact], error: null });
+  const inventory = createFeatureDocsStore(inventoryBoundary.client);
+  assert.deepEqual(await inventory.list(organizationId), [exact]);
+  assert.deepEqual(inventoryBoundary.calls, [
+    { method: "schema", args: ["admin"] },
+    { method: "from", args: ["feature_docs"] },
+    { method: "select", args: ["*"] },
+    { method: "eq", args: ["organization_id", organizationId] },
+    { method: "order", args: ["id", { ascending: true }] },
+    { method: "range", args: [0, 999] },
+  ]);
 
-  const zero = createFeatureDocsStore(
-    boundaryClient({ data: [], error: null }),
+  const insertBoundary = boundaryClient({ data: [exact], error: null });
+  const insertStore = createFeatureDocsStore(insertBoundary.client);
+  assert.equal((await insertStore.insert(insertValue)).id, exact.id);
+  assertBoundaryCalls(insertBoundary, "insert", []);
+  assert.deepEqual(insertBoundary.calls[2], {
+    method: "insert",
+    args: [insertValue],
+  });
+
+  const updateBoundary = boundaryClient({ data: [exact], error: null });
+  const updateStore = createFeatureDocsStore(updateBoundary.client);
+  assert.equal(
+    (await updateStore.update(exact.id, organizationId, { title: "new" })).id,
+    exact.id,
   );
+  assertBoundaryCalls(updateBoundary, "update", [
+    ["id", exact.id],
+    ["organization_id", organizationId],
+  ]);
+
+  const softDeleteBoundary = boundaryClient({ data: [exact], error: null });
+  const softDeleteStore = createFeatureDocsStore(softDeleteBoundary.client);
+  assert.equal(
+    (await softDeleteStore.softDelete(exact.id, organizationId, exact.path)).id,
+    exact.id,
+  );
+  assertBoundaryCalls(softDeleteBoundary, "update", [
+    ["id", exact.id],
+    ["path", exact.path],
+    ["organization_id", organizationId],
+  ]);
+
+  const deleteBoundary = boundaryClient({ data: [exact], error: null });
+  const deleteStore = createFeatureDocsStore(deleteBoundary.client);
+  assert.equal(
+    (await deleteStore.delete(exact.id, organizationId, exact.path)).id,
+    exact.id,
+  );
+  assertBoundaryCalls(deleteBoundary, "delete", [
+    ["id", exact.id],
+    ["path", exact.path],
+    ["organization_id", organizationId],
+  ]);
+
+  const zeroBoundary = boundaryClient({ data: [], error: null });
+  const zero = createFeatureDocsStore(zeroBoundary.client);
   await assert.rejects(() => zero.insert(insertValue), /received 0/);
   await assert.rejects(
     () => zero.update(exact.id, organizationId, { title: "new" }),
@@ -136,9 +239,11 @@ async function testStoreBoundary(): Promise<void> {
     /received 0/,
   );
 
-  const dbError = createFeatureDocsStore(
-    boundaryClient({ data: null, error: { message: "probe" } }),
-  );
+  const errorBoundary = boundaryClient({
+    data: null,
+    error: { message: "probe" },
+  });
+  const dbError = createFeatureDocsStore(errorBoundary.client);
   await assert.rejects(() => dbError.insert(insertValue), /insert: probe/);
   await assert.rejects(
     () => dbError.update(exact.id, organizationId, { title: "new" }),
@@ -286,9 +391,11 @@ async function testProductionWriteContract(): Promise<void> {
     "the admitted organization remains immutable while a write is pending",
   );
 
-  const metaError = createFeatureDocsStore(
-    boundaryClient({ data: null, error: { message: "probe" } }),
-  );
+  const metaBoundary = boundaryClient({
+    data: null,
+    error: { message: "probe" },
+  });
+  const metaError = createFeatureDocsStore(metaBoundary.client);
   await assert.rejects(
     () =>
       refreshFeatureDocSyncMetadata(

@@ -391,7 +391,7 @@ export const marketingBacklinksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-backlinks",
   readiness: "verified",
   label: "Marketing Backlinks",
-  urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/backlinks",
+  urlPattern: "/marketing/[brandId]/seo/[siteId]/backlinks",
   inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
 You are on the backlink intelligence workspace of a managed website: provider discovery PLUS first-party source-page capture and analysis. The brand_context and site_context values give you the client and website framing; read them first.

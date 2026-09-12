@@ -180,7 +180,7 @@ export const marketingBrandManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-brand",
   readiness: "verified",
   label: "Marketing Brand Cockpit",
-  urlPattern: "/marketing/brands/[brandId]",
+  urlPattern: "/marketing/[brandId]",
   intro: `<surface_intro>
 You are on the Marketing brand cockpit: one client company (the brand) with its managed websites, social properties, confirmed business facts, and brand asset library — the ground-truth dossier every downstream marketing surface builds on. Read brand_context first: it is the compact XML snapshot of everything confirmed about this client.
 The load-bearing rule here is ownership of truth: confirmed facts, assets, and properties are HUMAN-owned. Machine discovery only writes candidates to the review inbox (pending_review_count); a human promotes them to confirmed rows. You PROPOSE — draft profile text, recommend confirmations, flag gaps — you never fabricate a fact, invent an asset, or treat an unconfirmed guess as truth.

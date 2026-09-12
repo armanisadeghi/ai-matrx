@@ -40955,6 +40955,8 @@ export interface components {
             limit: number;
             /** Offset */
             offset: number;
+            /** Scanned Count */
+            scanned_count: number;
             /** Filter Summary */
             filter_summary: string;
         };
@@ -123927,6 +123929,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
+                "Idempotency-Key"?: string | null;
                 "X-Organization-Id": string;
             };
             path?: never;
@@ -124098,6 +124101,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
+                "Idempotency-Key"?: string | null;
                 "X-Organization-Id": string;
             };
             path: {
@@ -124205,6 +124209,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
+                "Idempotency-Key"?: string | null;
                 "X-Organization-Id": string;
             };
             path: {

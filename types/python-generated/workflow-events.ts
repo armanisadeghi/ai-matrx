@@ -262,6 +262,8 @@ export interface NodeEmittedEvent {
   kind: string | null;
   kind_ok: boolean | null;
   metadata: Record<string, unknown> | null;
+  empty_values: string[];
+  empty_notice: string | null;
 }
 
 export interface NodeCostEvent {

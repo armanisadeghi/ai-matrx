@@ -2,7 +2,6 @@
 
 import { Palette, Sun } from "lucide-react";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
-import { SettingsSegmented } from "@/components/official/settings/primitives/SettingsSegmented";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
@@ -42,9 +41,9 @@ export default function AppearanceTab() {
       />
 
       <SettingsSection title="Theme" icon={Sun}>
-        <SettingsSegmented<ThemeMode>
+        <SettingsSelect<ThemeMode>
           label="Color mode"
-          description="Applies before first paint — synced across tabs."
+          description="Use your device setting, light, or dark. Applies before first paint and syncs across tabs."
           value={mode}
           onValueChange={setMode}
           options={THEME_MODE_OPTIONS}

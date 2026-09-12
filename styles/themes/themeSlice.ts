@@ -12,7 +12,16 @@ import {
     type RehydrateAction,
 } from "@/lib/sync/engine/rehydrate";
 
-export type ThemeMode = "light" | "dark";
+/** Stored preference. Consumers that paint UI use ResolvedThemeMode instead. */
+export type ThemeMode = "light" | "dark" | "system";
+export type ResolvedThemeMode = "light" | "dark";
+
+export function resolveThemeMode(mode: ThemeMode): ResolvedThemeMode {
+    if (mode !== "system") return mode;
+    return typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+}
 
 export interface ThemeState {
     mode: ThemeMode;
@@ -38,7 +47,7 @@ const themeSlice = createSlice({
         b.addCase(REHYDRATE_ACTION_TYPE, (state, action: RehydrateAction) => {
             if (action.payload.sliceName !== "theme") return;
             const next = action.payload.state as Partial<ThemeState> | undefined;
-            if (next?.mode === "light" || next?.mode === "dark") {
+            if (next?.mode === "light" || next?.mode === "dark" || next?.mode === "system") {
                 state.mode = next.mode;
             }
         });
@@ -75,10 +84,8 @@ export const themePolicy = definePolicy<ThemeState>({
     partialize: ["mode"],
     serialize: (state) => ({ mode: state.mode }),
     deserialize: (raw) => {
-        if (raw && typeof raw === "object" && (raw as { mode?: unknown }).mode === "light") {
-            return { mode: "light" };
-        }
-        return { mode: "dark" };
+        const mode = raw && typeof raw === "object" ? (raw as { mode?: unknown }).mode : undefined;
+        return { mode: mode === "light" || mode === "dark" || mode === "system" ? mode : "dark" };
     },
     prePaint: [
         {
@@ -87,6 +94,7 @@ export const themePolicy = definePolicy<ThemeState>({
             className: "dark",
             fromKey: "mode",
             whenEquals: "dark",
+            systemValue: "system",
             systemFallback: {
                 mediaQuery: "(prefers-color-scheme: dark)",
                 applyWhenMatches: true,
@@ -97,12 +105,14 @@ export const themePolicy = definePolicy<ThemeState>({
             target: "html",
             attribute: "data-theme",
             fromKey: "mode",
-            allowed: ["light", "dark"],
+            allowed: ["light", "dark", "system"],
             default: "dark",
+            systemValue: "system",
             systemFallback: {
                 mediaQuery: "(prefers-color-scheme: dark)",
                 applyWhenMatches: true,
                 whenMatchesValue: "dark",
+                whenDoesNotMatchValue: "light",
             },
         },
     ],
@@ -122,7 +132,7 @@ export const themePolicy = definePolicy<ThemeState>({
 // Fire-and-forget: cookie write failing is not a user-visible error — the
 // localStorage mirror still paints correctly next boot via the existing
 // `SyncBootScript` fallback path (see `app/layout.tsx` comments).
-export function writeThemeCookie(mode: ThemeMode): void {
+export function writeThemeCookie(mode: ResolvedThemeMode): void {
     if (typeof window === "undefined") return;
     void fetch("/api/set-theme", {
         method: "POST",
