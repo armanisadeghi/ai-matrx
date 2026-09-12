@@ -1,0 +1,17 @@
+{
+  "_law": "THIS LIST ONLY SHRINKS. A feature here may stay unfiled (taxonomy_node_id null) for the stated reason; a NEW unfiled feature fails check:settings-ladder-ui and must never be added here.",
+  "_why": "Migration 0631 (aidream/db/migrations/0631_feature_knob_taxonomy_mapping.sql) deliberately left the commerce.* namespaces unmapped: there is no commerce domain in platform.taxonomy_node and the vocabulary law forbids an agent coining one. Naming that domain is Arman's call; the settings UI shows these under 'Not filed under a domain yet' until then.",
+  "_baselined": "2026-09-11",
+  "entries": [
+    { "feature": "commerce.intake", "reason": "no commerce domain in the registry — Arman names it (0631 header)" },
+    { "feature": "commerce.labels", "reason": "no commerce domain in the registry — Arman names it (0631 header)" },
+    { "feature": "commerce.market", "reason": "no commerce domain in the registry — Arman names it (0631 header)" },
+    { "feature": "commerce.pipeline", "reason": "no commerce domain in the registry — Arman names it (0631 header)" },
+    { "feature": "commerce.print_orders", "reason": "no commerce domain in the registry — Arman names it (0631 header)" },
+    { "feature": "commerce.printer_certification", "reason": "no commerce domain in the registry — Arman names it (0631 header)" },
+    { "feature": "commerce.publish", "reason": "no commerce domain in the registry — Arman names it (0631 header)" },
+    { "feature": "commerce.quota", "reason": "no commerce domain in the registry — Arman names it (0631 header)" },
+    { "feature": "commerce.research", "reason": "no commerce domain in the registry — Arman names it (0631 header)" },
+    { "feature": "commerce.valuation", "reason": "no commerce domain in the registry — Arman names it (0631 header)" }
+  ]
+}

@@ -672,6 +672,64 @@ jobs:
         run: pnpm check:realtime-publication
 
   # ---------------------------------------------------------------------------
+  # settings-guards — two of the five Unified Settings Platform guards
+  # (common-docs/projects/unified-settings-platform/EXECUTION.md § LANE C).
+  # `check:settings-env-toggles` is static: a behavioural env var read in a
+  # boolean shape (Arman 2026-09-10: "Never an env var. Env values are only for
+  # secrets, not for controlling behavior."), baseline-ratcheted, anything NEW
+  # fails. `check:settings-unregistered` grades every resolvable knob read in
+  # this repo AND aidream against the LIVE platform.feature_knob registry — a
+  # read whose key has no row RAISES at run time by design. It needs the
+  # secret (registry) and the aidream checkout (most read sites live there);
+  # absent either, secrets-preflight stamps UNMEASURED and the job is SKIPPED,
+  # never green. The other three (orphans, hardcoded, ladder-ui) run in
+  # `pnpm check:settings` / the release gates and carry tracked backlogs.
+  # Falsifiability: scripts/settings-guards/FEATURE.md carries the planted red
+  # run and the green run for each.
+  # ---------------------------------------------------------------------------
+  settings-guards:
+    name: settings guards (env toggles; unregistered reads — UNMEASURED without the secret + aidream)
+    runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.supabase == 'true' && needs.secrets-preflight.outputs.aidream_repo == 'true'
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      AIDREAM_DIR: ${{ github.workspace }}/aidream
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out aidream (the other half of the knob-read census)
+        uses: actions/checkout@v4
+        with:
+          repository: AI-Matrix-Engine/aidream
+          path: aidream
+          token: ${{ secrets.AIDREAM_REPO_TOKEN }}
+          sparse-checkout: |
+            aidream
+            packages
+            services
+            core
+            common
+            apps
+            scripts
+          sparse-checkout-cone-mode: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: The env-toggle guard can still fail (self-test)
+        run: pnpm check:settings-env-toggles --self-test && exit 1 || test $? -eq 1
+      - name: No NEW behavioural env toggle (baseline only shrinks)
+        run: pnpm check:settings-env-toggles
+      - name: The unregistered-read guard can still fail (self-test)
+        run: pnpm check:settings-unregistered --self-test && exit 1 || test $? -eq 1
+      - name: Every resolvable knob read names a live registry row
+        run: pnpm check:settings-unregistered
+
+  # ---------------------------------------------------------------------------
   # type-check — `next.config.js` sets `ignoreBuildErrors: true`, so a green
   # build proves NOTHING about types and Vercel will happily deploy a repo full
   # of type errors. `pnpm type-check` is the only type gate this repo has.
