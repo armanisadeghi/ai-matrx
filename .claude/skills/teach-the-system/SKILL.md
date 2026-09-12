@@ -1,3 +1,12 @@
+---
+name: teach-the-system
+type: Skill
+title: "teach-the-system — teach the platform one body of expertise until it breaks, fix it, continue"
+description: "Trial protocol for teaching AI Matrx a real expert's knowledge as a non-technical user, running it until the platform breaks, fixing the platform, and reporting what improved. Use when asked to distil a book, guide, or expert into a Masterwork, test whether the system can capture a human skill, or run an expertise trial. NOT for building a feature you already know is missing (use build-sub-feature)."
+tags: [masterwork, distillation, expertise, trial, platform-testing, doctrine]
+timestamp: 2026-09-11T16:30:00Z
+---
+
 <!-- SYNCED COPY — do not edit here.
      Canonical: common-docs/skills/teach-the-system/SKILL.md
      This file is distributed to every consuming repo by
@@ -235,6 +244,22 @@ lines by relocating trial-specific detail into the trial's register.
 - 2026-09-12 — (trial 9) The platform's Audition already takes a real reference and a vanilla arm; the
   newsroom exam is its strongest use (the published article IS the reference). Seal the reference before
   the run; never let the desk or the vanilla arm see anything dated after the sources.
+- 2026-09-12 — (trial 8) A registry the code owns must never be re-typed by hand in the database: the
+  durable-run table's CHECK constraint listed 10 operations while the code's census listed 13, and 56
+  live calls died at their first INSERT with every code-side guard green (W66). When you add a lane,
+  grep the DB for the enum twin (`pg_get_constraintdef`) and add a guard that diffs the migration
+  against the code.
+- 2026-09-12 — (trial 8) The frontend contract regenerates from PRODUCTION from a cloud container:
+  `node scripts/sync-types.mjs --live --fast --url https://server.app.matrxserver.com` (`--fast` skips
+  the Supabase type step that needs a credential, `--url` replaces the default localhost). Commit only
+  the halves whose new required fields your tests can carry; file the rest for its lane.
+- 2026-09-12 — (trial 8) When the deploy train stops, read `main`'s own CI before blaming the deploy
+  agent: a commit that resolves the runtime stage AT IMPORT turned every stage-less process red
+  (pytest collection, the mandate generator, the scanners) and the train with it. Fix the class on
+  your branch (a stage-free probe for import-time gates), port the other regressions, comment once.
+- 2026-09-12 — (trial 8) Review bots and CI on a PR find `main`'s fresh regressions as often as yours:
+  sort every red check by "does my diff touch it", fix and port what is small, and write ONE
+  standing-down comment for the rest — never a second comment for the same red.
 - 2026-09-12 — Arman: this can't become "a couple of little books". Most expertise lives in a
   person's head or in their past work, not in a book — the interview lane and the body-of-work
   lane are first-class subject classes, not fallbacks (see §1). He's also flagged for a while that
