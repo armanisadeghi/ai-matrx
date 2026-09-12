@@ -252,10 +252,21 @@ Registered in `features/admin/constants/admin-categories.ts` +
 
 ## Known gaps this feature NAMES but does not fix
 
-- Twelve cost sources measure nothing (the folded "Every cost source" section
-  lists each with its last write). Closing any of them is work in the system
-  that spends the money, not here. Largest by likely value: Resend email,
-  TTS/STT, the search/SEO data APIs, hosting.
+- Cost sources that still measure nothing (the folded "Every cost source"
+  section lists each with its last write). Closing any of them is work in the
+  system that spends the money, not here. Remaining: Resend email, hosting and
+  infrastructure, Lulu print fulfilment (captured per order, just not in this
+  ledger), and the handful of tables whose cost column has never been written.
+  **Closed 2026-09-12:** the search/SEO data APIs and Twilio SMS, then speech,
+  page extraction, document cleaning and knowledge-graph sweeps — see the change
+  log entries below.
+- **Two speech paths remain genuinely unmeasured.** The Meet note-taker's
+  live transcription runs on LiveKit Inference (Deepgram Nova-3) inside the
+  LiveKit worker process — LiveKit bills it, there is no `ai.offering` for it,
+  and no row reaches this ledger. The resumable per-page document cleaner also
+  still writes no cost: its runner returns a bare dict across the matrx-rag
+  package seam, so the cleaner's spend cannot reach the document row without
+  changing that protocol. Both scream where they happen; neither is silent.
 - **Shared logins collapse attribution.** Every developer agent signs into the
   UI as `admin@admin.com` (the repo's own instruction), so all agent-driven
   testing lands on one person and one organization ("AI Matrx"). The explorer
@@ -271,6 +282,75 @@ Registered in `features/admin/constants/admin-categories.ts` +
 
 ## Change Log
 
+- **2026-09-12 (speech, docproc, sweeps — and the silent-zero class)** — Four
+  declared gaps closed, and the defect class underneath all of them.
+
+  **The class: an unknown cost was recorded as a believable $0.** The AI layer
+  is deliberately honest — `UsageTotals.total_cost` is `None` whenever any call
+  in a run could not be priced from the catalog, and `TokenUsage.calculate_cost()`
+  is `None` when an offering has no pricing row. Every consumer then wrote the
+  same line, `totals.total_cost or 0`, which converted that honest "unknown" into
+  a number indistinguishable from genuinely free work: 139 zero-cost
+  `internal_agent_run` rows and 5 zero-cost `audio_transcription` rows in the
+  live 30-day window. Two shared builders now replace that line everywhere
+  (`cost_meters_from_totals` / `cost_meters_from_usage` in matrx-ai): they record
+  the catalog-known subtotal as a floor, add an explicit `unpriced_calls` meter,
+  and scream with the model whose pricing row is missing. Guard proven
+  failing-then-passing.
+
+  **Speech was never unmeasured — the registry was wrong.** STT and TTS are
+  priced by the AI catalog like any other model (per audio-second or per
+  character `ai.offering` pricing) and already settle as `global_execution` rows.
+  3,364 transcriptions over 29,819 audio seconds cost $0.38 since 2026-07-15, and
+  that is correct, not a broken meter: $0.046/hour against Groq
+  whisper-large-v3-turbo's $0.04/hour list price (verified live against the
+  warmed catalog — a 3-second clip billed at Groq's 10-second minimum priced at
+  $0.000111111). No speech-price knob table was created: the catalog is the one
+  pricing path, and a second one would be the defect this work exists to remove.
+
+  **Page extraction had two bugs stacked.** The chunk executor read the run's
+  cost as `usage.get("cost")` against a `{"by_model", "total"}` dict — a key that
+  does not exist — so every extraction reported $0 regardless; and the run settle
+  never persisted the total it was handed. Both fixed; the run's real spend now
+  lands on `page_extraction_runs.total_cost` and as a `usd` meter on the primary
+  ledger.
+
+  **Document cleaning and derive runs.** The whole-document cleaner's cost now
+  writes to `processed_documents.clean_content_cost_usd`; the section-summary and
+  synthetic-QA derive runners now carry their spend to
+  `derive_runs.cost_usd`. The runners that still cannot (they return
+  `chunks_written` only, across a package seam) leave the column untouched rather
+  than stamping a fabricated 0, and say so loudly.
+
+  **Knowledge-graph sweeps.** Every sweep model call already lands on the primary
+  ledger as an `internal_agent_run` execution; the sweep-level `cost_usd` roll-up
+  is now fed by the corrected tally. All 62 live rows predate this and made zero
+  model calls, so their $0 is a measured zero.
+
+- **2026-09-12 (external API spend)** — Closed the two remaining per-call gaps.
+  aidream now records every SerpAPI, Brave, DataForSEO and Twilio SMS call on
+  the primary ledger as its own `runtime.global_execution` row (`type` utility,
+  `link_kind` `external_api`, `context.agent_run_label` `"<provider>:<operation>"`),
+  through ONE primitive (`aidream/services/runtime/external_api_cost.py`) reusing
+  the existing `track_utility_execution` spine — no second cost path. Wiring is
+  three observer registrations at the three transports every caller already
+  funnels through, not per-call-site instrumentation. Unit prices are
+  `platform.feature_knob` rows under feature `platform.external_api_prices`
+  (`serpapi_search_usd` 0.025, `brave_search_usd` 0.005, `dataforseo_serp_usd`
+  0.002, `dataforseo_keyword_usd` 0.05, `google_cse_query_usd` 0.005,
+  `twilio_sms_segment_usd` 0.0083 — agent-set from each provider's public price
+  list, review due 2026-10-27); DataForSEO's own reported per-response `cost`
+  wins over the knob, and a price we cannot resolve records the call UNPRICED
+  with a screaming log line rather than as $0. Twilio's `num_segments` /
+  `price` / `price_unit` now land on `communication.sms_messages`. Registry rows
+  updated: `unmeasured.search_apis` became `search.global_execution` (overlap,
+  inside the headline) and `communication.sms_messages` moved from gap to
+  additive. Live-verified 2026-09-12 on brsgrqvjdzwihsvnfqkf as
+  admin@admin.com: one real Brave search recorded $0.00500000 and one real
+  SerpAPI search $0.02500000, both completed against admin's Workspace
+  (`scripts/_verify_external_api_cost_ledger.py` in aidream). Twilio's price
+  capture is proven by a forcing-function test against a mocked provider
+  response and is NOT yet verified against a live send.
 - **2026-09-12 (scroll ownership follow-up)** — Reproduced production with two
   nested vertical scroll owners (`.shell-main`: 1,430px content in a 1,264px
   viewport; the admin page `<main>`: 3,479px content in 1,264px). Made the
