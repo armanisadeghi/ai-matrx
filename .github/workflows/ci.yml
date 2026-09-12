@@ -522,6 +522,89 @@ jobs:
         run: pnpm check:soft-delete-cascade:strict
 
   # ---------------------------------------------------------------------------
+  # soft-delete-unique — a unique index that counts rows the user cannot see
+  # (B-18 / Q84, 2026-09-11). `deleted_at IS NULL` means live and every screen
+  # filters on it, so a removed row is invisible everywhere a person can look. A
+  # unique index without `WHERE deleted_at IS NULL` still counts it: remove
+  # "Region", create "Region" again, and the database refuses, naming a row
+  # nobody can find, with no way out from the UI.
+  #
+  # Measured RED on the live database three times in rolled-back transactions
+  # (create X -> set deleted_at -> create X again): unique_type_per_org,
+  # idx_scope_unique_top, idx_scope_unique_nested. All three fixed by
+  # migrations/soft_delete_partial_unique_indexes_context.sql.
+  #
+  # This is a RATCHET, not a verdict on the 254 indexes already like this: many
+  # are deliberate (an idempotency key or a provider handle must stay unique
+  # forever). The census is frozen in scripts/soft-delete-unique-baseline.json and
+  # only ever shrinks -- --update-baseline REFUSES to add an entry, so a finding
+  # cannot be silenced by editing the file.
+  #
+  # Falsifiability proven 2026-09-12: dropping one real live entry
+  # (hr.department:department_name_unique_per_org) from the census made the strict
+  # run exit 1 naming that index and its definition; restoring it went green, and
+  # --update-baseline refused to re-add it.
+  # ---------------------------------------------------------------------------
+  soft-delete-unique:
+    name: no new unique index counts removed rows (UNMEASURED without the secret)
+    runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.supabase == 'true'
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # Same gating as the job above: absent credentials SKIP, an unreachable
+      # database under --strict fails red rather than reading as a pass.
+      - name: A removed thing does not keep holding its name
+        run: pnpm check:soft-delete-unique:strict
+
+  # ---------------------------------------------------------------------------
+  # client-hard-delete — a client path that DESTROYS a row in a registered
+  # soft-deletable entity table (DD-119, 2026-09-12). Deleting a task from /tasks
+  # issued `DELETE FROM workspace.tasks` from the browser: the task AND its
+  # subtask were gone from the table, under a dialog that said "This cannot be
+  # undone", while deleting a chat on the same afternoon was a soft delete that
+  # promised recovery. Two halves, both needed: the live trigger that refuses a
+  # client DELETE, and a source scan for the next `.delete()` that goes around it.
+  #
+  # Credential-gated, and UNMEASURED is a hard fail, for the same reason as the
+  # job above: the soft-deletable population is read live, and a gate that cannot
+  # reach its dependency fails rather than degrading into a pass.
+  #
+  # Falsifiability proven 2026-09-12: with taskService.ts put back to `.delete()`
+  # it reported `new client hard delete ... workspace.tasks` and exited 1; with
+  # the soft-delete door restored it exited 0.
+  # ---------------------------------------------------------------------------
+  client-hard-delete:
+    name: a client never destroys a soft-deletable row (UNMEASURED without the secret)
+    runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.supabase == 'true'
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Removing a thing from a client is a soft delete, never a destroyed row
+        run: pnpm check:client-hard-delete:strict
+
+  # ---------------------------------------------------------------------------
   # realtime-publication — a `postgres_changes` binding on a table that is NOT in
   # the `supabase_realtime` publication joins, reports SUBSCRIBED, and delivers
   # nothing, forever, with no error anywhere. That has shipped FOUR times:

@@ -496,11 +496,15 @@ export const hierarchyService = {
   },
 
   // ─── Delete entity ──────────────────────────────────────────────
+  // Soft delete, never a hard one: a task is a registered soft-deletable entity
+  // and the database refuses a client DELETE (DD-119, db-rules §8). Its subtasks
+  // follow through the declared cascade edge.
   async deleteTask(id: string): Promise<void> {
     const { error } = await workspaceDb(supabase)
       .from("tasks")
-      .delete()
-      .eq("id", id);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("deleted_at", null);
     if (error) throw error;
   },
 

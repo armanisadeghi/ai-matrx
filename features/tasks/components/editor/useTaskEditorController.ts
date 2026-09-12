@@ -115,7 +115,6 @@ export function useTaskEditorController(taskId: string) {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Effective values — draft overlay over the persisted task. Tolerates a
   // not-yet-loaded task (callers gate on `task` before rendering chrome/body).
@@ -159,12 +158,10 @@ export function useTaskEditorController(taskId: string) {
     dispatch(clearTaskEdit(taskId));
   };
 
-  const handleDelete = () => {
+  // One door: the thunk asks the question (naming the task and its subtasks) and
+  // performs the soft delete. DD-119.
+  const handleDelete = async () => {
     if (isDeleting) return;
-    setDeleteConfirmOpen(true);
-  };
-
-  const confirmDelete = async () => {
     setIsDeleting(true);
     try {
       await dispatch(
@@ -173,10 +170,9 @@ export function useTaskEditorController(taskId: string) {
           projectId: task?.project_id ?? "__unassigned__",
         }),
       ).unwrap();
-      setDeleteConfirmOpen(false);
     } catch (error) {
       console.error("Error deleting task:", error);
-      toast.error("Could not delete task");
+      toast.error("Could not move the task to the trash");
     } finally {
       setIsDeleting(false);
     }
@@ -209,8 +205,5 @@ export function useTaskEditorController(taskId: string) {
     handleDiscard,
     handleDelete,
     handleToggleComplete,
-    deleteConfirmOpen,
-    setDeleteConfirmOpen,
-    confirmDelete,
   };
 }

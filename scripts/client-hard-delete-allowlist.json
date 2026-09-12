@@ -1,0 +1,227 @@
+{
+  "why": "THE CENSUS, not an exemption. Every entry is a client path that DESTROYS a row in a registered soft-deletable entity table - the exact defect DD-119 closed for workspace.tasks (db-rules FEATURE.md sections 8 and 8a). They are listed so the gate can fail on NEW offenders instead of being ignored, and every entry is work somebody owns. Remove an entry the moment its path moves to a soft delete; a stale entry FAILS the gate too.",
+  "measured": "2026-09-12, matrx-frontend, against the live soft-deletable population on brsgrqvjdzwihsvnfqkf.",
+  "serverLane": "app/api/** is deliberately not scanned: those routes run as service_role, the lane that IS allowed to destroy a row. Its .delete() calls are outside this census.",
+  "entries": [
+    {
+      "file": "components/admin/ContentBlocksManager.tsx",
+      "table": "platform.categories",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the platform lane."
+    },
+    {
+      "file": "components/admin/ContentBlocksManager.tsx",
+      "table": "skill.render_definition",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the skill lane."
+    },
+    {
+      "file": "components/markdown-studio/user-samples-service.ts",
+      "table": "users.user_markdown_samples",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the users lane."
+    },
+    {
+      "file": "features/agent-apps/services/auto-create-draft.ts",
+      "table": "app.definition_version",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the app lane."
+    },
+    {
+      "file": "features/agent-comparison/service/comparisonSetsService.ts",
+      "table": "agent.cmp_comparison_entries",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the agent lane."
+    },
+    {
+      "file": "features/agent-comparison/service/comparisonSetsService.ts",
+      "table": "agent.cmp_comparison_sets",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the agent lane."
+    },
+    {
+      "file": "features/agent-connections/redux/skl/thunks.ts",
+      "table": "skill.render_definition",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the skill lane."
+    },
+    {
+      "file": "features/agent-context/redux/organizationsSlice.ts",
+      "table": "workspace.projects",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workspace lane."
+    },
+    {
+      "file": "features/agent-context/redux/projectsSlice.ts",
+      "table": "workspace.projects",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workspace lane."
+    },
+    {
+      "file": "features/agent-context/service/hierarchyService.ts",
+      "table": "workspace.projects",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workspace lane."
+    },
+    {
+      "file": "features/agents/redux/agent-apps/thunks.ts",
+      "table": "app.definition",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the app lane."
+    },
+    {
+      "file": "features/agents/ui-first-tools/service/agent-plan.service.ts",
+      "table": "chat.agent_plan",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the chat lane."
+    },
+    {
+      "file": "features/agents/ui-first-tools/service/agent-task.service.ts",
+      "table": "chat.agent_task",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the chat lane."
+    },
+    {
+      "file": "features/agents/ui-first-tools/service/user-todo.service.ts",
+      "table": "chat.user_todo",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the chat lane."
+    },
+    {
+      "file": "features/ai-models/service.ts",
+      "table": "ai.model_definition",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the ai lane."
+    },
+    {
+      "file": "features/audio/services/audioChunkJournal.ts",
+      "table": "transcripts.studio_recording_chunks",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the transcripts lane."
+    },
+    {
+      "file": "features/canvas/services/canvasItemsService.ts",
+      "table": "canvas.canvas_items",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the canvas lane."
+    },
+    {
+      "file": "features/data-tables/document-service.ts",
+      "table": "workbench.udt_documents",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workbench lane."
+    },
+    {
+      "file": "features/data-tables/workbook-service.ts",
+      "table": "workbench.udt_workbooks",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workbench lane."
+    },
+    {
+      "file": "features/education/study/service/planService.ts",
+      "table": "education.study_plan_block",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the education lane."
+    },
+    {
+      "file": "features/education/study/service/planService.ts",
+      "table": "education.study_plan_day",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the education lane."
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/code-files.ts",
+      "table": "code.code_files",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the code lane."
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/notes.ts",
+      "table": "workbench.notes",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workbench lane."
+    },
+    {
+      "file": "features/marketing/change-tracking/data.ts",
+      "table": "seo.change_set",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the seo lane."
+    },
+    {
+      "file": "features/memory/service/memoryService.ts",
+      "table": "users.user_memory",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the users lane."
+    },
+    {
+      "file": "features/message-templates/services/message-templates-service.ts",
+      "table": "agent.message_template",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the agent lane."
+    },
+    {
+      "file": "features/notes/service/notesService.ts",
+      "table": "workbench.note_folders",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workbench lane."
+    },
+    {
+      "file": "features/notes/service/notesService.ts",
+      "table": "workbench.notes",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workbench lane."
+    },
+    {
+      "file": "features/podcasts/service.ts",
+      "table": "podcast.pc_episodes",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the podcast lane."
+    },
+    {
+      "file": "features/podcasts/service.ts",
+      "table": "podcast.pc_shows",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the podcast lane."
+    },
+    {
+      "file": "features/podcasts/studio/runs/service.ts",
+      "table": "podcast.pc_studio_runs",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the podcast lane."
+    },
+    {
+      "file": "features/projects/service.ts",
+      "table": "workspace.projects",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workspace lane."
+    },
+    {
+      "file": "features/research/admin/service.ts",
+      "table": "research.rs_template",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the research lane."
+    },
+    {
+      "file": "features/research/components/landing/TopicList.tsx",
+      "table": "research.rs_topic",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the research lane."
+    },
+    {
+      "file": "features/research/service.ts",
+      "table": "research.rs_keyword",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the research lane."
+    },
+    {
+      "file": "features/research/service.ts",
+      "table": "research.rs_tag",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the research lane."
+    },
+    {
+      "file": "features/surfaces/services/manifest-sync.service.ts",
+      "table": "ui.ui_surface_agent_pref",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the ui lane."
+    },
+    {
+      "file": "features/surfaces/services/surface-config.service.ts",
+      "table": "ui.ui_surface_agent_pref",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the ui lane."
+    },
+    {
+      "file": "features/tasks/services/projectService.ts",
+      "table": "workspace.projects",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the workspace lane."
+    },
+    {
+      "file": "features/tool-call-visualization/admin/McpToolsManager.tsx",
+      "table": "tool.definition",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the tool lane."
+    },
+    {
+      "file": "features/transcript-studio/service/studioService.ts",
+      "table": "transcripts.studio_recording_segments",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the transcripts lane."
+    },
+    {
+      "file": "features/transcripts/service/transcriptsService.ts",
+      "table": "transcripts.transcripts",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the transcripts lane."
+    },
+    {
+      "file": "hooks/canvas/useCanvasLike.ts",
+      "table": "canvas.canvas_likes",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the canvas lane."
+    },
+    {
+      "file": "lib/services/agent-apps-admin-service.ts",
+      "table": "platform.categories",
+      "note": "Census 2026-09-12 (DD-119): destroys a row in a soft-deletable entity table. Owner: the platform lane."
+    }
+  ]
+}

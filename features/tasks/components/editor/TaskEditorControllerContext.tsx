@@ -5,12 +5,13 @@
 // header/footer SLOTS, which are siblings of the body but still descendants of
 // this provider, so context reaches them even across the WindowPanel portal).
 //
-// The provider also renders THE single delete ConfirmDialog for the subtree, so
-// no matter how many units mount, there is exactly one (the dead-X / double-
-// dialog class is structurally impossible).
+// 🚨 It used to render this subtree's own delete ConfirmDialog, whose text
+// ("This cannot be undone") described a hard DELETE that no longer exists. The
+// question now lives in `deleteTaskThunk` — the ONE door every delete control
+// goes through — so there is exactly one dialog for the whole feature, and its
+// words match what the database actually does (DD-119).
 
 import { createContext, useContext } from "react";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { TaskEditorController } from "./useTaskEditorController";
 
 const TaskEditorControllerCtx = createContext<TaskEditorController | null>(null);
@@ -35,18 +36,6 @@ export function TaskEditorControllerProvider({
   return (
     <TaskEditorControllerCtx.Provider value={value}>
       {children}
-      <ConfirmDialog
-        open={value.deleteConfirmOpen}
-        onOpenChange={(open) => {
-          if (!open && !value.isDeleting) value.setDeleteConfirmOpen(false);
-        }}
-        title="Delete task"
-        description="Delete this task? This cannot be undone."
-        confirmLabel="Delete"
-        variant="destructive"
-        busy={value.isDeleting}
-        onConfirm={value.confirmDelete}
-      />
     </TaskEditorControllerCtx.Provider>
   );
 }
