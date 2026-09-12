@@ -667,8 +667,8 @@ function main() {
     );
     for (const n of narrowed.slice(0, 25)) {
       console.log(
-        `    ${n.file}:${n.line}  ${n.fn}()  ${n.extras.join(" ")}` +
-          `  →  ${n.reachedBy[0]}${n.reachedBy.length > 1 ? ` +${n.reachedBy.length - 1}` : ""}`,
+        `    ${n.file}:${n.line}  ${n.fn}()  ${n.extras.join(" ")}\n` +
+          `        reached from  ${n.reachedBy}`,
       );
     }
     if (narrowed.length > 25)

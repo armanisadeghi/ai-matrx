@@ -154,6 +154,7 @@
     "check:media-durability:strict": "tsx scripts/media-durability/check-media-durability.ts --strict",
     "check:access-errors": "tsx scripts/access-errors/check-access-errors.ts",
     "check:access-errors:write": "tsx scripts/access-errors/check-access-errors.ts --write",
+    "check:access-errors:self-test": "tsx scripts/access-errors/narrowed-read.self-test.ts",
     "check:dead-ends": "tsx scripts/dead-ends/check-dead-ends.ts",
     "check:dead-ends:write": "tsx scripts/dead-ends/check-dead-ends.ts --write",
     "check:dead-ends:strict": "tsx scripts/dead-ends/check-dead-ends.ts --strict",
