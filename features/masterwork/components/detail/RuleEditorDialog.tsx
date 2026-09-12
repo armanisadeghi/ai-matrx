@@ -132,25 +132,37 @@ function RuleEditorForm({
       }),
     [initial?.id, isNew, persistedEntry?.data, rulebookVersion],
   );
-  const wasOpen = useRef(open);
-  const [name, setName] = useState(stagedDraft?.name ?? initial?.name ?? "");
+  /**
+   * WHAT A REMOUNT STARTS FROM. This form is REMOUNTED, not reopened, on every
+   * `draftRevision` bump and whenever the page mounts it already open — and
+   * `wasOpen` used to be seeded with `open`, so the restore effect below never
+   * ran on such a mount. The persisted draft was then ignored at first render
+   * AND at restore, the live rule's values took the screen, and the persist
+   * effect immediately wrote them over the Expert's saved draft (Bugbot on
+   * e1b62ed0). So the persisted draft is part of the INITIAL state, and
+   * `wasOpen` starts false so a mount that starts open restores like any other
+   * opening.
+   */
+  const restoredFields = stagedDraft ?? persistedDraft?.fields;
+  const wasOpen = useRef(false);
+  const [name, setName] = useState(restoredFields?.name ?? initial?.name ?? "");
   const [statement, setStatement] = useState(
-    stagedDraft?.statement ?? initial?.statement ?? "",
+    restoredFields?.statement ?? initial?.statement ?? "",
   );
   const [rationale, setRationale] = useState(
-    stagedDraft?.rationale ?? initial?.rationale ?? "",
+    restoredFields?.rationale ?? initial?.rationale ?? "",
   );
   const [detection, setDetection] = useState(
-    stagedDraft?.detection ?? initial?.detection ?? "",
+    restoredFields?.detection ?? initial?.detection ?? "",
   );
   const [quote, setQuote] = useState(
-    stagedDraft?.quote ?? initial?.quote ?? "",
+    restoredFields?.quote ?? initial?.quote ?? "",
   );
   const [severity, setSeverity] = useState<RuleSeverity>(
-    stagedDraft?.severity ?? initial?.severity ?? "major",
+    restoredFields?.severity ?? initial?.severity ?? "major",
   );
   const [section, setSection] = useState(
-    stagedDraft?.section ??
+    restoredFields?.section ??
       initial?.section ??
       defaultSection ??
       sectionCodes[0] ??
@@ -169,8 +181,10 @@ function RuleEditorForm({
    * silently threw away everything typed into "When:" and "Next:" and put the
    * live rule's values back.
    */
-  const [policy, setPolicy] = useState<RulePolicyFieldValues>(() =>
-    initial ? rulePolicyFieldsFromRule(initial) : EMPTY_RULE_POLICY_FIELDS,
+  const [policy, setPolicy] = useState<RulePolicyFieldValues>(
+    () =>
+      persistedDraft?.policy ??
+      (initial ? rulePolicyFieldsFromRule(initial) : EMPTY_RULE_POLICY_FIELDS),
   );
   const [saving, setSaving] = useState(false);
   const [beforeTidy, setBeforeTidy] =
