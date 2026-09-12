@@ -1009,7 +1009,7 @@ the deploy train once the file is committed) applies it, then re-checks `pnpm ch
 "RLS planner traps" = 0 and resolves the 21 open `57014` system_error rows from 02:05 UTC.** Interim: matrx-frontend commit `7d9d1e64ad` routes
 `useEnsureCloudFile` metadata reads through the server's `/files/{id}` boundary, which sidesteps the
 browser RLS plan — a routing change, not the fix; the direct PostgREST read stays trapped until the
-migration lands.
+migration lands. **Live check 2026-09-12 05:50 UTC on the exact failing route:** the page loads, no `useEnsureCloudFile` error, and file metadata comes through the server boundary — but `features/pdf-extractor/studio/hooks/usePdfStudioDocs.ts:173` still does ONE direct PostgREST read of `files.files` (40 ids, `id, deleted_at`), 145 ms at idle as the admin, i.e. still on the trapped plan; only the migration closes it.
 
 ### D262 — seven `organization_id NOT NULL` tables have NO org backstop: an org-forgetting write returns 500 (2026-08-26)
 
