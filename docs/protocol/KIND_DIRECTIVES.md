@@ -442,7 +442,11 @@ Every `side_effect` class obeys this, whichever noun it names.
   *programmed* to apply" and "a model *said* it, so it happened". Layers:
   `matrx_actions` (agent) · `client.apply_policy` (surface) · `user.apply_policy` (user).
   `POST /directives/execute` and `POST /directives/confirm` are *user*-proposed and bypass
-  the gate by design — a human clicked.
+  the gate by design — a human clicked. 🚨 **A confirm MUST send `conversation_id`**: it is
+  the idempotency NAMESPACE (below), and a REST `AppContext` carries no conversation, so
+  without it the key falls through to a per-request uuid — a second Approve of the same
+  proposal writes a second row and `already_applied` becomes unreachable on the one path a
+  human actually takes. (Live defect, V-19, 2026-09-12.)
 - 🚨 **THE AGENT RUNG IS THE ORGANIZATION'S TO GRANT** (2026-09-12). An agent config
   reaching `auto` — `apply_policy: "auto"`, `auto_apply: true`, an `allow` list, or the
   agent-declared `matrx_actions.directive` path — takes effect ONLY inside an organization
@@ -485,7 +489,10 @@ Every `side_effect` class obeys this, whichever noun it names.
   re-send and an unconfirmed proposal all rendered identically, and a user who sent one
   request twice saw two identical cards for one project (walk K-1, 2026-09-12). The
   frontend synthesizes ONE `directive_receipt` render block per receipt and prints
-  `message` verbatim.
+  `message` verbatim. **The confirm path carries the same words in its RESPONSE**
+  (`DirectiveConfirmResult.message` + `receipts[*].message`), because it is REST and
+  streams no receipt at all; the approve card turns into the receipt in place rather than
+  vanishing behind a toast.
 - **Warn, never fatal.** A failed apply warns with a fault tag; the delivered AI response
   always stands.
 
@@ -628,6 +635,9 @@ you are reading this because you want to import the shim somewhere else: the ans
 
 ## Change Log
 
+- **2026-09-12 (round 1) — The confirm path too.** `DirectiveConfirmResult.message`; and
+  `conversation_id` threaded into the confirm so the auto path and the confirm path key
+  identically — the confirm path had been deduping on a per-request uuid, i.e. not at all.
 - **2026-09-12 — The receipt says what happened, and silent auto-apply became the
   organization's choice (DD-118).** `message` added to every outcome-bearing
   `directive_apply.*` receipt, composed only by `receipt_words.py`; a
