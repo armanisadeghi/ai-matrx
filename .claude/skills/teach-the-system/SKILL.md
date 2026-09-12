@@ -27,6 +27,21 @@ a subject so you inherit the fixes instead of re-hitting them.
 cost you an hour, goes into this file in the same session (§7). A trial that ends without a skill
 edit either learned nothing or lost it.
 
+## 0. The mandate every trial is measured against
+
+🚨 Read `common-docs/projects/expert-book-challenge/MANDATE.md` (Arman, 2026-09-12, `authority: owner`)
+before choosing a subject, and answer its seven checks in your register before you build: which acquisition
+**modality** you add; whether the knowledge is genuinely **tacit** (if the expert could have written it down,
+you are working on the cheap half); whether the output is **executable** (rubrics, checklists, if-then rules,
+decision trees, annotated exemplars — never prose a desk must re-interpret); whether every atom carries
+**provenance** and opens to it; **how you resist consensus collapse**; whether the expert can **validate in
+their own modality**; and whether the platform can now execute something **previously inexpressible**.
+
+🚨 The trap with a name: **pooling**. Fitting several experts — or several sittings of one expert — into one
+merged model, one averaged verdict, or one consensus rulebook destroys exactly what the mandate calls the
+principal source of value. Keep per-expert or per-school profiles as the unit, be able to show a minority
+position that survived, and never resolve a disagreement by averaging.
+
 ## 1. Choose the subject — the opposite of what computers are good at
 
 REQUIRED before anything else: write the subject choice into your trial register (§3) with the
