@@ -56,8 +56,8 @@ work:
    IN-scope list, the BOUNDARY list (systems touched only at the seam where their data enters
    this cluster), and the OUT list — each with a one-line reason. Where you are genuinely unsure
    which side of the boundary something falls on, ask as a closed choice with your
-   recommendation first (AskUserQuestion fits — an unresolved conflict, `CFL-003`, see the stamp at
-   5b; batch everything into one round).
+   recommendation first, in plain numbered chat text — **never a structured question picker**
+   (Arman ruled 2026-09-12); batch everything into one round.
 3. **Wait for his yes / corrections.** Only then go autonomous. Do not make him wait while you
    run a full census first — this confirmation is cheap and prevents converging the wrong scope.
 
@@ -166,13 +166,6 @@ line on what he will see, and any state needed to see it meaningfully (which sit
 login surface, a row that must exist). Include the UNVERIFIABLE "only you can test" items here —
 each with the URL where he can test it and what to look for.
 
-> 🚨 **UNRESOLVED CONFLICT — `CFL-003`. Do not build against this section until Arman rules.**
-> **This document says:** the structured question picker (AskUserQuestion) fits closed questions, recommended option first (here and in Phase 0).
-> **[`build-sub-feature`](/skills/build-sub-feature/SKILL.md), [`grilling`](/skills/grilling/SKILL.md), matrx-frontend's `ui-bakeoff` skill, and `aidream/CLAUDE.md` say:** ask in plain chat, never the question tool or a multiple-choice UI, because it blocks free-form replies. matrx-frontend's `vision-to-fleet` sides with this document.
-> **Why it matters:** with a picker, Arman chooses from fixed options; in plain chat he can answer "3 yes, 4 no because…" and add context nobody asked for.
-> **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
-> Register: [`/operations/conflicts.md`](/operations/conflicts.md) · `CFL-003`
-
 ### 5b. The interview — empty the ledger
 
 Bring the ledger to Arman in **batches of 3–4 questions** and keep going until it is empty.
@@ -190,8 +183,9 @@ was a symptom of it. "I need to see this in a UI first" is a legitimate answer: 
 deferral WITH the URL he needs, never as an open question.
 
 Run the ledger through the `grilling` skill (question shape, recommendations, rounds): the ledger
-is the tree, and a ledger question that depends on another open one waits a round. AskUserQuestion
-fits closed questions — recommended option first, labeled "(Recommended)" (conflicted: `CFL-003`).
+is the tree, and a ledger question that depends on another open one waits a round. Deliver every
+round as plain numbered chat text — **never a structured question picker** (Arman ruled 2026-09-12) —
+with the recommended option first, labeled "(Recommended)".
 
 After EVERY batch, before asking the next one:
 

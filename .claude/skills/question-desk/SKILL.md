@@ -95,8 +95,8 @@ Open with one sentence: *"I have N questions to ask you and M things to tell you
 "things to tell you" first, briefly — decisions the desk made in his name under delegation and
 rows closed because the answer already existed (he should see the laziness that was caught).
 
-Then the rounds, each one plain numbered chat text (delivery is conflicted — `CFL-003` in the
-[conflict register](/operations/conflicts.md) — so plain text until he rules):
+Then the rounds, each one plain numbered chat text — **never a structured question picker**
+(Arman ruled 2026-09-12):
 
 - **One complex question per round**, or up to five quick ones. Order by weight: the answer that
   unblocks the most agents goes first. A question whose answer depends on another open one waits.

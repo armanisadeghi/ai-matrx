@@ -21,16 +21,9 @@ This isn't greenfield. It's an addition to something live, so the surrounding sy
 
 **Not this skill:** whole-feature audits or overhauls (`feature-deep-dive`), greenfield standalone features, pure bug fixes, or trivial copy/style tweaks.
 
-> 🚨 **UNRESOLVED CONFLICT — `CFL-003`. Do not build against this section until Arman rules.**
-> **This document says:** ask interview questions in plain chat text, never through a structured question picker, because a picker blocks free-form replies.
-> **[`doc-convergence`](/skills/doc-convergence/SKILL.md) and matrx-frontend's `vision-to-fleet` skill say:** the structured question picker (AskUserQuestion) is an acceptable way to ask closed questions. [`grilling`](/skills/grilling/SKILL.md), `ui-bakeoff`, and `aidream/CLAUDE.md` side with this document.
-> **Why it matters:** with a picker, Arman chooses from fixed options; in plain chat he can answer "3 yes, 4 no because…" and add context nobody asked for.
-> **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
-> Register: [`/operations/conflicts.md`](/operations/conflicts.md) · `CFL-003`
-
 ## Step 1 — Interview: nail the spec before touching code
 
-If the invocation already includes a description, treat it as the overview and interview only for the gaps. Ask in plain chat text — never a structured question picker; it blocks free-form replies.
+If the invocation already includes a description, treat it as the overview and interview only for the gaps. Ask in plain numbered chat text — **never a structured question picker** (Arman ruled 2026-09-12); a picker blocks free-form replies.
 
 Interview per the `grilling` skill (prune, frontier rounds, a recommendation on every closed question, skips ship as defaults). Specific here: round 1 holds only what exploration cannot answer. Send it, and **start exploring in the same turn**; do not wait for the answers. Say "exploring now — you can step away." Questions that come out of exploration join the next round. Stop when the frontier is empty.
 

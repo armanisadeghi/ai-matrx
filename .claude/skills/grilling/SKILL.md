@@ -45,13 +45,6 @@ plan — then challenge his assumptions too, still never ask facts.
   a running subagent wait. If he can step away while you explore, say so.
 - **Number continuously across rounds** (round 2 starts at Q5), so "5 yes" is never ambiguous.
 
-> 🚨 **UNRESOLVED CONFLICT — `CFL-003`. Do not build against this section until Arman rules.**
-> **This document says:** deliver questions as plain numbered chat text.
-> **[`doc-convergence`](/skills/doc-convergence/SKILL.md) and matrx-frontend's `vision-to-fleet` skill say:** the structured question picker (AskUserQuestion) is an acceptable way to ask closed questions. [`build-sub-feature`](/skills/build-sub-feature/SKILL.md), matrx-frontend's `ui-bakeoff`, and `aidream/CLAUDE.md` side with this document.
-> **Why it matters:** with a picker, Arman chooses from fixed options; in plain chat he can answer "3 yes, 4 no because…" and add context nobody asked for.
-> **Your move:** bring Arman these two readings and the consequence, get his ruling, then build.
-> Register: [`/operations/conflicts.md`](/operations/conflicts.md) · `CFL-003`
-
 ## 3. Question shape — exactly this
 
 **Q<n> — <title>.** 2–3 plain sentences of background: no doc references, codenames, item IDs, or
@@ -63,7 +56,7 @@ emojis. Then the question, in one sentence.
   diagram of what actually happens, OR a throwaway prototype (Artifact or demo route) labeled
   PROTOTYPE. A question he cannot answer from what you gave him is a defect in the question — and often
   a sign the PATH is broken, which is the real finding.
-- **Delivery:** plain numbered chat text (conflicted: `CFL-003`, stamp above).
+- **Delivery:** plain numbered chat text — **never a structured question picker** (Arman ruled 2026-09-12).
 
 Every round ends with:
 `Decided (override by number): D1 … · D2 …` / `Anything you skip ships with my recommendation.` /

@@ -96,7 +96,9 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    only, never as proof of non-adoption. **The ratchet:**
    a lane that discovers its task is bigger than briefed escalates the SHAPE (a ruling, a split,
    a lane up) — it never quietly shrinks the scope. Briefs, report statuses, the two-verdict
-   review, and the bounded fix loop: `subagent-dispatch`.
+   review, the bounded fix loop, and the two rules that lose work outright — never end a turn while a
+   background subagent is still running, and commit each unit as it lands rather than at the end:
+   `subagent-dispatch` §1.
 3. **Nothing flips on the builder's word.** A builder owes fresh evidence for every claim before
    handoff — that is the FLOOR. The BAR is independent, zero-authorship verification against the
    SPEC, on the deployed surface, with real identities driving real doors: verifiers try to BREAK

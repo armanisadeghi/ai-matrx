@@ -37,6 +37,17 @@ Templates: [implementer-brief.md](implementer-brief.md) · [verifier-brief.md](v
 - **Name the lane; record the agent id** — fix rounds resume it via SendMessage.
 - **Parallel is the default when ownership is disjoint** (frozen contract + exclusive paths).
   Overlapping files or an unfrozen interface → serialize, or freeze the interface first.
+- 🚨 **NEVER END YOUR TURN WHILE A BACKGROUND SUBAGENT IS RUNNING.** A completion notice has no idle
+  parent to wake: the agent finishes, its report lands nowhere, and the work is silently orphaned —
+  you find out only when someone asks days later. So either **dispatch foreground, one at a time**, or
+  keep the turn alive (a Monitor/until-loop timer) until every child has reported. (2026-09-10: three
+  background runners were stalled this way and a day of eval work was lost.) Backgrounding is for a
+  session that is going to keep working anyway, never a way to hand off and stop.
+- 🚨 **Every dispatch commits and pushes each unit of work as it finishes, never all at the end.** An
+  agent can die mid-run — a spend limit, a kill, a crash — and everything it never pushed is gone with
+  no trail back to the task, which is already checked off. Say it in the brief
+  ([shared-checkout](/policies/shared-checkout.md) rule 1); two agents were killed by a spend limit on
+  2026-09-10 and took their unpushed work with them.
 - **More than 3 dispatches in one session → keep a ledger file** (task, agent id, status, commits,
   rulings). In a campaign the register IS the ledger. After compaction trust the ledger + `git log`,
   never recollection — re-dispatching finished work is the costliest failure.
