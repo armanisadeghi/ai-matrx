@@ -1,20 +1,15 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowUpDown, ExternalLink, FileText, RefreshCw } from "lucide-react";
+import { ExternalLink, FileText, RefreshCw } from "lucide-react";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -39,9 +34,6 @@ import {
   matchesPathFilter,
 } from "@/features/feature-docs/utils/path-filter";
 
-type SortField = "path" | "title" | "area" | "slug" | "synced_at" | "version";
-type SortDirection = "asc" | "desc";
-
 interface ColumnFilters {
   pathInclude: string;
   pathExclude: string;
@@ -62,27 +54,127 @@ const EMPTY_FILTERS: ColumnFilters = {
   version: "",
 };
 
-function SortIcon({
-  field,
-  sortField,
-  sortDirection,
-}: {
-  field: SortField;
-  sortField: SortField;
-  sortDirection: SortDirection;
-}) {
-  if (sortField !== field) return null;
-  return (
-    <span className="text-[10px] text-muted-foreground">
-      {sortDirection === "asc" ? "↑" : "↓"}
-    </span>
-  );
-}
-
 export interface FeatureDocsTableProps {
   zone: FeatureDocZone;
   dotDir?: FeatureDocDotDir;
 }
+
+export function filterFeatureDocRows(
+  rows: FeatureDocListRow[],
+  zone: FeatureDocZone,
+  dotDir: FeatureDocDotDir | undefined,
+  filters: ColumnFilters,
+) {
+  const pathRules = buildPathFilterRules(
+    filters.pathInclude,
+    filters.pathExclude,
+  );
+  const titleQuery = filters.title.trim().toLowerCase();
+  const slugQuery = filters.slug.trim().toLowerCase();
+  const versionQuery = filters.version.trim();
+
+  return rows.filter((row) => {
+    if (!pathMatchesZone(row.path, zone, dotDir)) return false;
+    if (!matchesPathFilter(row.path, pathRules)) return false;
+    if (filters.area !== "all" && (row.area ?? "") !== filters.area) {
+      return false;
+    }
+    if (titleQuery && !(row.title ?? "").toLowerCase().includes(titleQuery)) {
+      return false;
+    }
+    if (slugQuery && !(row.slug ?? "").toLowerCase().includes(slugQuery)) {
+      return false;
+    }
+    if (filters.synced === "synced" && !row.synced_at) return false;
+    if (filters.synced === "never" && row.synced_at) return false;
+    if (versionQuery && !String(row.version).includes(versionQuery)) {
+      return false;
+    }
+    return true;
+  });
+}
+
+const columns: MatrxColumnDef<FeatureDocListRow>[] = [
+  {
+    id: "path",
+    accessorKey: "path",
+    header: "Path",
+    label: "Path",
+    sortValue: (row) => row.path,
+    filter: false,
+    cell: (row) => (
+      <span className="block max-w-[280px] truncate font-mono text-xs">
+        {row.path}
+      </span>
+    ),
+  },
+  {
+    id: "title",
+    accessorKey: "title",
+    header: "Title",
+    label: "Title",
+    sortValue: (row) => row.title ?? "",
+    filter: false,
+    cell: (row) => (
+      <span className="block max-w-[200px] truncate text-sm">
+        {row.title ?? "—"}
+      </span>
+    ),
+  },
+  {
+    id: "area",
+    accessorKey: "area",
+    header: "Area",
+    label: "Area",
+    sortValue: (row) => row.area ?? "",
+    filter: false,
+    cell: (row) =>
+      row.area ? (
+        <Badge variant="outline" className="text-[10px]">
+          {row.area}
+        </Badge>
+      ) : (
+        "—"
+      ),
+  },
+  {
+    id: "slug",
+    accessorKey: "slug",
+    header: "Slug",
+    label: "Slug",
+    sortValue: (row) => row.slug ?? "",
+    filter: false,
+    cell: (row) => <span className="font-mono text-xs">{row.slug ?? "—"}</span>,
+  },
+  {
+    id: "synced_at",
+    accessorKey: "synced_at",
+    header: "Synced",
+    label: "Synced",
+    sortValue: (row) => row.synced_at ?? "",
+    filter: false,
+    cell: (row) =>
+      row.synced_at ? (
+        <span
+          className="whitespace-nowrap text-xs text-muted-foreground"
+          title={formatAbsoluteDate(row.synced_at)}
+        >
+          {formatRelativeTime(row.synced_at)}
+        </span>
+      ) : (
+        "—"
+      ),
+  },
+  {
+    id: "version",
+    accessorKey: "version",
+    header: "Ver",
+    label: "Version",
+    sortValue: (row) => String(row.version),
+    filter: false,
+    cell: (row) => <span className="text-xs tabular-nums">{row.version}</span>,
+  },
+];
 
 export default function FeatureDocsTable({
   zone,
@@ -91,107 +183,42 @@ export default function FeatureDocsTable({
   const [rows, setRows] = useState<FeatureDocListRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<SortField>("path");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [filters, setFilters] = useState<ColumnFilters>(EMPTY_FILTERS);
 
-  const load = useCallback(async () => {
+  async function load() {
     setLoading(true);
     setError(null);
     try {
-      const data = await listFeatureDocs();
-      setRows(data);
-    } catch (err) {
+      setRows(await listFeatureDocs());
+    } catch (caught) {
       setError(
-        err instanceof Error ? err.message : "Failed to load feature docs",
+        caught instanceof Error
+          ? caught.message
+          : "Failed to load feature docs",
       );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, []);
 
-  const zoneRows = useMemo(
-    () => rows.filter((row) => pathMatchesZone(row.path, zone, dotDir)),
-    [rows, zone, dotDir],
+  const zoneRows = rows.filter((row) =>
+    pathMatchesZone(row.path, zone, dotDir),
   );
+  const filteredRows = filterFeatureDocRows(rows, zone, dotDir, filters);
+  const areaOptions = [
+    ...new Set(zoneRows.flatMap((row) => (row.area ? [row.area] : []))),
+  ].sort();
 
-  const areaOptions = useMemo(() => {
-    const set = new Set<string>();
-    for (const row of zoneRows) {
-      if (row.area) set.add(row.area);
-    }
-    return [...set].sort();
-  }, [zoneRows]);
-
-  const pathRules = useMemo(
-    () => buildPathFilterRules(filters.pathInclude, filters.pathExclude),
-    [filters.pathInclude, filters.pathExclude],
-  );
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-  };
-
-  const updateFilter = <K extends keyof ColumnFilters>(
+  function updateFilter<K extends keyof ColumnFilters>(
     key: K,
     value: ColumnFilters[K],
-  ) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const filtered = useMemo(() => {
-    const titleQ = filters.title.trim().toLowerCase();
-    const slugQ = filters.slug.trim().toLowerCase();
-    const versionQ = filters.version.trim();
-
-    let list = zoneRows.filter((row) => {
-      if (!matchesPathFilter(row.path, pathRules)) return false;
-
-      if (filters.area !== "all" && (row.area ?? "") !== filters.area) {
-        return false;
-      }
-
-      if (titleQ && !(row.title ?? "").toLowerCase().includes(titleQ)) {
-        return false;
-      }
-
-      if (slugQ && !(row.slug ?? "").toLowerCase().includes(slugQ)) {
-        return false;
-      }
-
-      if (filters.synced === "synced" && !row.synced_at) return false;
-      if (filters.synced === "never" && row.synced_at) return false;
-
-      if (versionQ) {
-        const v = String(row.version);
-        if (!v.includes(versionQ)) return false;
-      }
-
-      return true;
-    });
-
-    list = [...list].sort((a, b) => {
-      const av = a[sortField];
-      const bv = b[sortField];
-      const aStr = av == null ? "" : String(av);
-      const bStr = bv == null ? "" : String(bv);
-      const cmp = aStr.localeCompare(bStr, undefined, { sensitivity: "base" });
-      return sortDirection === "asc" ? cmp : -cmp;
-    });
-
-    return list;
-  }, [zoneRows, pathRules, filters, sortField, sortDirection]);
-
-  const clearFilters = () => setFilters(EMPTY_FILTERS);
+  ) {
+    setFilters((current) => ({ ...current, [key]: value }));
+  }
 
   if (loading && rows.length === 0) {
     return (
@@ -202,297 +229,158 @@ export default function FeatureDocsTable({
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border shrink-0">
-        <Badge variant="secondary" className="text-xs">
-          {filtered.length} / {zoneRows.length}
-        </Badge>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs"
-          onClick={clearFilters}
-        >
-          Clear filters
-        </Button>
-        <div className="flex-1" />
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7"
-          onClick={() => void load()}
-        >
-          <RefreshCw className="h-3.5 w-3.5 mr-1" />
-          Refresh
-        </Button>
-      </div>
-
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {error && (
-        <div className="px-4 py-2 text-sm text-destructive border-b border-border">
+        <div className="border-b border-border px-4 py-2 text-sm text-destructive">
           {error}
         </div>
       )}
-
-      <ScrollArea className="flex-1">
-        {/* Phone reflow: THE PHONE-STACK TABLE (app/globals.css). */}
-        <Table wrapperClassName="phone-stack">
-          <TableHeader className="sticky top-0 bg-background z-10">
-            <TableRow>
-              <TableHead className="min-w-[220px] align-top">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 text-xs font-semibold hover:text-primary mb-1"
-                  onClick={() => handleSort("path")}
+      <MatrxDataTable<FeatureDocListRow>
+        data={filteredRows}
+        columns={columns}
+        getRowId={(row) => row.id}
+        defaultSort={{ id: "path", direction: "asc" }}
+        isFetching={loading && rows.length > 0}
+        pageSize={0}
+        emptyState={{
+          title: "No docs in this zone match your filters.",
+        }}
+        toolbar={{
+          search: false,
+          leading: (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                {filteredRows.length} / {zoneRows.length}
+              </Badge>
+              <Input
+                value={filters.pathInclude}
+                onChange={(event) =>
+                  updateFilter("pathInclude", event.target.value)
+                }
+                placeholder="Include: features/**, **/FEATURE.md"
+                className="h-8 w-60 font-mono text-xs"
+                aria-label="Include paths"
+              />
+              <Input
+                value={filters.pathExclude}
+                onChange={(event) =>
+                  updateFilter("pathExclude", event.target.value)
+                }
+                placeholder="Exclude: **/README.md, !docs/**"
+                className="h-8 w-60 font-mono text-xs"
+                aria-label="Exclude paths"
+              />
+              <Input
+                value={filters.title}
+                onChange={(event) => updateFilter("title", event.target.value)}
+                placeholder="Filter title…"
+                className="h-8 w-40 text-xs"
+                aria-label="Filter title"
+              />
+              <Select
+                value={filters.area}
+                onValueChange={(value) => updateFilter("area", value)}
+              >
+                <SelectTrigger
+                  className="h-8 w-32 text-xs"
+                  aria-label="Filter area"
                 >
-                  Path
-                  <ArrowUpDown className="h-3 w-3" />
-                  <SortIcon
-                    field="path"
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                  />
-                </button>
-                <div className="space-y-1">
-                  <Input
-                    value={filters.pathInclude}
-                    onChange={(e) =>
-                      updateFilter("pathInclude", e.target.value)
-                    }
-                    placeholder="Include: features/**, **/FEATURE.md"
-                    className="h-7 text-[11px] font-mono"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <Input
-                    value={filters.pathExclude}
-                    onChange={(e) =>
-                      updateFilter("pathExclude", e.target.value)
-                    }
-                    placeholder="Exclude: **/README.md, !docs/**"
-                    className="h-7 text-[11px] font-mono"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-              </TableHead>
-
-              <TableHead className="min-w-[160px] align-top">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 text-xs font-semibold hover:text-primary mb-1"
-                  onClick={() => handleSort("title")}
+                  <SelectValue placeholder="All areas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All areas</SelectItem>
+                  {areaOptions.map((area) => (
+                    <SelectItem key={area} value={area}>
+                      {area}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                value={filters.slug}
+                onChange={(event) => updateFilter("slug", event.target.value)}
+                placeholder="Filter slug…"
+                className="h-8 w-36 font-mono text-xs"
+                aria-label="Filter slug"
+              />
+              <Select
+                value={filters.synced}
+                onValueChange={(value) =>
+                  updateFilter("synced", value as ColumnFilters["synced"])
+                }
+              >
+                <SelectTrigger
+                  className="h-8 w-32 text-xs"
+                  aria-label="Filter sync state"
                 >
-                  Title
-                  <ArrowUpDown className="h-3 w-3" />
-                  <SortIcon
-                    field="title"
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                  />
-                </button>
-                <Input
-                  value={filters.title}
-                  onChange={(e) => updateFilter("title", e.target.value)}
-                  placeholder="Filter title…"
-                  className="h-7 text-xs"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </TableHead>
-
-              <TableHead className="min-w-[120px] align-top">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 text-xs font-semibold hover:text-primary mb-1"
-                  onClick={() => handleSort("area")}
-                >
-                  Area
-                  <ArrowUpDown className="h-3 w-3" />
-                  <SortIcon
-                    field="area"
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                  />
-                </button>
-                <Select
-                  value={filters.area}
-                  onValueChange={(v) => updateFilter("area", v)}
-                >
-                  <SelectTrigger
-                    className="h-7 text-xs"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    {areaOptions.map((area) => (
-                      <SelectItem key={area} value={area}>
-                        {area}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TableHead>
-
-              <TableHead className="min-w-[120px] align-top">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 text-xs font-semibold hover:text-primary mb-1"
-                  onClick={() => handleSort("slug")}
-                >
-                  Slug
-                  <ArrowUpDown className="h-3 w-3" />
-                  <SortIcon
-                    field="slug"
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                  />
-                </button>
-                <Input
-                  value={filters.slug}
-                  onChange={(e) => updateFilter("slug", e.target.value)}
-                  placeholder="Filter slug…"
-                  className="h-7 text-xs font-mono"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </TableHead>
-
-              <TableHead className="min-w-[100px] align-top">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 text-xs font-semibold hover:text-primary mb-1"
-                  onClick={() => handleSort("synced_at")}
-                >
-                  Synced
-                  <ArrowUpDown className="h-3 w-3" />
-                  <SortIcon
-                    field="synced_at"
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                  />
-                </button>
-                <Select
-                  value={filters.synced}
-                  onValueChange={(v) =>
-                    updateFilter("synced", v as ColumnFilters["synced"])
-                  }
-                >
-                  <SelectTrigger
-                    className="h-7 text-xs"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="synced">Synced</SelectItem>
-                    <SelectItem value="never">Never synced</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TableHead>
-
-              <TableHead className="min-w-[72px] align-top">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 text-xs font-semibold hover:text-primary mb-1"
-                  onClick={() => handleSort("version")}
-                >
-                  Ver
-                  <ArrowUpDown className="h-3 w-3" />
-                  <SortIcon
-                    field="version"
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                  />
-                </button>
-                <Input
-                  value={filters.version}
-                  onChange={(e) => updateFilter("version", e.target.value)}
-                  placeholder="e.g. 2"
-                  className="h-7 text-xs tabular-nums"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </TableHead>
-
-              <TableHead className="w-[72px] align-top pt-6" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell
-                  className="font-mono text-xs max-w-[280px] truncate"
-                  data-phone="lead"
-                >
-                  {row.path}
-                </TableCell>
-                <TableCell
-                  className="text-sm max-w-[200px] truncate"
-                  data-label="Title"
-                  data-phone="inline"
-                >
-                  {row.title ?? "—"}
-                </TableCell>
-                <TableCell className="text-xs" data-label="Area" data-phone="inline">
-                  {row.area ? (
-                    <Badge variant="outline" className="text-[10px]">
-                      {row.area}
-                    </Badge>
-                  ) : (
-                    "—"
-                  )}
-                </TableCell>
-                <TableCell
-                  className="font-mono text-xs"
-                  data-label="Slug"
-                  data-phone="inline"
-                >
-                  {row.slug ?? "—"}
-                </TableCell>
-                <TableCell
-                  className="text-xs text-muted-foreground whitespace-nowrap"
-                  data-label="Synced"
-                  data-phone="inline"
-                >
-                  {row.synced_at ? (
-                    <span title={formatAbsoluteDate(row.synced_at)}>
-                      {formatRelativeTime(row.synced_at)}
-                    </span>
-                  ) : (
-                    "—"
-                  )}
-                </TableCell>
-                <TableCell
-                  className="text-xs tabular-nums"
-                  data-label="Ver"
-                  data-phone="inline"
-                >
-                  {row.version}
-                </TableCell>
-                <TableCell data-phone="actions">
-                  <Link
-                    href={featureDocViewHref(row.path)}
-                    target="_blank"
-                    className="inline-flex items-center gap-1 text-xs text-primary "
-                  >
-                    <FileText className="h-3 w-3" />
-                    Open
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-center text-sm text-muted-foreground py-8"
-                >
-                  No docs in this zone match your filters.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </ScrollArea>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All sync states</SelectItem>
+                  <SelectItem value="synced">Synced</SelectItem>
+                  <SelectItem value="never">Never synced</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                value={filters.version}
+                onChange={(event) =>
+                  updateFilter("version", event.target.value)
+                }
+                placeholder="Version…"
+                className="h-8 w-24 text-xs tabular-nums"
+                aria-label="Filter version"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => setFilters(EMPTY_FILTERS)}
+              >
+                Clear filters
+              </Button>
+            </div>
+          ),
+          actions: (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8"
+              onClick={() => void load()}
+            >
+              <RefreshCw className="mr-1 h-3.5 w-3.5" />
+              Refresh
+            </Button>
+          ),
+        }}
+        rowActions={(row) => (
+          <Link
+            href={featureDocViewHref(row.path)}
+            target="_blank"
+            className="inline-flex items-center gap-1 text-xs text-primary"
+          >
+            <FileText className="h-3 w-3" />
+            Open
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+        )}
+        mobileCards={(row, _index, controls) => (
+          <article className="space-y-2 rounded-md border border-border p-3 text-sm">
+            <p className="break-all font-mono text-xs">{row.path}</p>
+            <p>{row.title ?? "—"}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <span>{row.area ?? "No area"}</span>
+              <span>{row.slug ?? "No slug"}</span>
+              <span>
+                {row.synced_at
+                  ? formatRelativeTime(row.synced_at)
+                  : "Never synced"}
+              </span>
+              <span>v{row.version}</span>
+            </div>
+            {controls.actions}
+          </article>
+        )}
+      />
     </div>
   );
 }

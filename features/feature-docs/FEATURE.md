@@ -1,0 +1,39 @@
+# Feature Docs
+
+**Status:** active  
+**Tier:** 2  
+**Last updated:** 2026-09-12
+
+## Purpose
+
+Super-admin documentation routes browse the active feature-document registry without changing its source records.
+
+## Entry points
+
+- `/administration/documentation/feature-docs/codebase` — repository markdown outside `docs/` and configured dot-directories.
+- `/administration/documentation/feature-docs/docs` — markdown under `docs/`.
+- `/administration/documentation/feature-docs/dotdirs/[slug]` — markdown in one configured tooling directory.
+- `features/feature-docs/service.ts` — `listFeatureDocs()` reads the complete active `admin.feature_docs` list in path-ordered chunks.
+
+## Key flows
+
+1. `FeatureDocsTable` loads the full source list through `listFeatureDocs()` and displays any error above the table.
+2. It applies zone and dot-directory restriction before include/exclude glob rules, title, area, slug, sync-state, and version filters.
+3. `MatrxDataTable` owns local sorting and responsive table/card presentation with `pageSize={0}`, preserving the full-list view.
+4. The explicit **Open** action resolves `featureDocViewHref(path)` and opens the document viewer in a new tab.
+
+## Invariants
+
+- Source paging belongs only to `listFeatureDocs`; the renderer does not add remote pagination or scroll fetching.
+- Zone/dot-directory restriction is evaluated before every local filter, so one route cannot expose another route's documents.
+- The explicit document door remains available on desktop and mobile cards.
+
+## Doctrine compliance
+
+- Components: `@ai-matrx/design-system/data-table` owns canonical table layout, sorting, and responsive cards; existing `Input`, `Select`, `Button`, and `Badge` provide the route-specific filter controls.
+- Services: `listFeatureDocs()` remains the sole list source.
+- No new platform primitive was introduced.
+
+## Change log
+
+- 2026-09-12: Replaced the bespoke Feature Docs renderer with `MatrxDataTable`, preserving full-list local filtering, sorting, refresh/error behavior, mobile presentation, and document navigation.
