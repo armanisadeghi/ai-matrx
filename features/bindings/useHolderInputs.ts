@@ -100,7 +100,11 @@ export function useHolderInputs(holder: HolderRef): HolderInputs {
     if (form.status === "error") {
       return {
         status: "error",
-        message: `The workflow's inputs could not be read: ${form.message}`,
+        // FIX-Q8 — SAME CLASS as the mandate input surface. `describeRunFormFailure`
+        // already produced a complete sentence with its remedy; gluing it behind a
+        // prefix of ours is exactly what printed "…could not be read: HTTP 400" at
+        // a person. The door's words are carried whole.
+        message: form.message,
         targets: [],
         contextKeys: EMPTY_KEYS,
       };

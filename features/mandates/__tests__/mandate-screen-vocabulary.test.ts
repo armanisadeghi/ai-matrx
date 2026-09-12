@@ -715,6 +715,44 @@ describe("no mandate screen renders the declaration's own field names", () => {
 });
 
 /**
+ * ── A SCREEN SAYS WHAT RESOLUTION DOES, NEVER WHAT EVERY CALL SITE DOES ──────
+ *
+ * 🚨 THE DEFECT (2026-09-12). `workflow.step_intelligence` sat "Holder missing"
+ * on `/administration/mandates/workflow.step_intelligence` under the banner
+ * "nothing runs when this Mandate is called" — and every workflow run
+ * completed. Its seven step nodes carried the key as a bare label at the
+ * executor and resolved nothing, so no Holder was consulted and nothing
+ * refused. No screen can see every call site in the platform; the one thing
+ * it CAN state is the mandate system's own guarantee: resolving an unheld
+ * Mandate REFUSES. The server's sentences now say exactly that
+ * (aidream `services/mandates/coverage.py`, "THE SENTENCE LAW FOR RED"), the
+ * runtime gate records the label shape (`mandate_carried_unresolved`), and
+ * this sweep refuses the every-call-site claim in any rendered mandate copy.
+ */
+describe("a mandate screen never claims what every call site does", () => {
+  const EVERY_CALL_SITE_CLAIM = /nothing runs|every run of (it|this)|cannot run\.|nothing is run/i;
+
+  it("has no 'nothing runs' / 'every run of it' copy anywhere a mandate screen renders", () => {
+    const offences: string[] = [];
+    for (const file of SWEPT_TREES.flatMap(sourceFilesUnder)) {
+      const lines = stripComments(readFileSync(file, "utf8")).split("\n");
+      lines.forEach((line, index) => {
+        if (EVERY_CALL_SITE_CLAIM.test(line) && looksLikeCopy(line)) {
+          offences.push(`${relative(REPO_ROOT, file)}:${index + 1}: ${line.trim()}`);
+        }
+      });
+    }
+    expect(offences).toEqual([]);
+  });
+
+  it("the red banner title is the status word alone; the consequence is the server's", () => {
+    const { RED_TITLE } = require("@/features/mandates/workspace/MandateCoverageAlert");
+    const { RED_WORD } = require("@/features/mandates/coverage");
+    expect(RED_TITLE).toBe(RED_WORD);
+  });
+});
+
+/**
  * ── ONE FACT, ONE WORD: THE `red` COVERAGE STATE ─────────────────────────────
  *
  * 🚨 THE DEFECT (FIX-R17, the split FIX-R11 flagged and nothing owned). A
@@ -766,5 +804,74 @@ describe("the red coverage state has exactly one human word", () => {
       }
     }
     expect(offences).toEqual([]);
+  });
+});
+
+/**
+ * ── AND NO TRANSPORT CODE EVER REACHES A PERSON ──────────────────────────────
+ *
+ * 🚨 FIX-Q8 (2026-09-11). The same machinery, pointed at a different defect,
+ * because it is the same shape: a string a mandate screen renders that no
+ * reader can act on. Read verbatim off `/administration/mandates/{key}`:
+ *
+ *     "The job's inputs could not be read: HTTP 400"
+ *
+ * and, three inches below it, a bare "HTTP 400" where the input surface should
+ * have been. V-PARITY/UX F4 closed that on the served run form one surface
+ * over; the one-binding workspace still shipped it, which is precisely why a
+ * fix without a census does not hold.
+ *
+ * A status code is for a log and for `error.status`, never for prose. The
+ * honest sentence for a status lives in `bareStatusSentence()`, and the reader
+ * that chooses it is `describeDoorRefusal()`; a component that hand-assembles
+ * a message out of a number has bypassed both.
+ */
+const TRANSPORT_CODE_IN_PROSE =
+  /\bHTTP\s*\$?\{?\s*\d{3}|\bHTTP\s*\$\{/i;
+
+/**
+ * Prose that legitimately names the protocol without printing a status at a
+ * person. Verbatim, same rule as every allow-list in this file.
+ */
+const TRANSPORT_ALLOWED: readonly string[] = [];
+
+describe("no mandate screen prints a bare transport code (FIX-Q8)", () => {
+  it("sweeps the rendered copy of every mandate-screen component", () => {
+    const offenders: string[] = [];
+    for (const file of [
+      ...SWEPT_TREES.flatMap(sourceFilesUnder),
+      ...SWEPT_FILES.map((f) => join(REPO_ROOT, f)),
+    ]) {
+      const source = readFileSync(file, "utf8");
+      for (const { line, text } of copyStringsOf(source)) {
+        if (!looksLikeCopy(text)) continue;
+        if (TRANSPORT_ALLOWED.some((a) => text.includes(a))) continue;
+        if (!TRANSPORT_CODE_IN_PROSE.test(text)) continue;
+        offenders.push(`${relative(REPO_ROOT, file)}:${line} — "${text}"`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("would still catch the exact string the walker read", () => {
+    // RED-THEN-GREEN, kept executable: the line as it shipped, and the
+    // template that produced it.
+    const shipped = "The job's inputs could not be read: HTTP 400";
+    expect(looksLikeCopy(shipped)).toBe(true);
+    expect(TRANSPORT_CODE_IN_PROSE.test(shipped)).toBe(true);
+
+    const template = "The job's inputs could not be read: HTTP ${status}";
+    expect(TRANSPORT_CODE_IN_PROSE.test(template)).toBe(true);
+  });
+
+  it("does not fire on a header name, a version, or a sentence about the web", () => {
+    const notOffences = [
+      "Accept: application/json is sent on every request",
+      "This job offers nothing yet. Describe its inputs in the INPUT section",
+      "Reading what this job offers…",
+    ];
+    for (const text of notOffences) {
+      expect(TRANSPORT_CODE_IN_PROSE.test(text)).toBe(false);
+    }
   });
 });

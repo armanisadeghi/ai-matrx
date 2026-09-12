@@ -200,7 +200,18 @@ export function mandateRefusalHeadline(failure: MandateRunFailure): string {
   if (failure.status === 422) return "Refused — the values this run sent";
   if (failure.status === 404) return "Refused — no job by that key";
   if (failure.status === 403) return "Refused — you may not run this";
-  if (failure.status != null) return `Refused — HTTP ${failure.status}`;
+  if (failure.status === 401) return "Refused — sign in again";
+  if (failure.status === 429) return "Refused — too many runs just now";
+  // 🚨 NEVER THE NUMBER (FIX-Q8, found by the transport-code sweep). This read
+  // "Refused — HTTP 502" at a person, which names nothing they can act on and
+  // is the same class as "The job's inputs could not be read: HTTP 400". A
+  // headline says WHAT happened in this product's words; the status still
+  // rides `failure.status` for code, and the server's own sentence prints
+  // directly beneath this line.
+  if (failure.status != null && failure.status >= 500) {
+    return "The server broke while running this";
+  }
+  if (failure.status != null) return "Refused — the server would not run this";
   return "The run never reached the server";
 }
 

@@ -39,13 +39,27 @@ export interface OfferedInventoryColumnProps {
   consumedBy: ReadonlyMap<string, string[]>;
   /** Values the platform delivers automatically — shown, never hidden (P8). */
   pinnedContext: readonly string[];
-  /** One sentence naming where this inventory came from. PROSE ONLY — a
-   * provision's key is a slug and rides `sourceSlug`'s mono chip (W10-2). */
+  /** One sentence naming where this inventory came from — or, in `error`, why
+   * it could not be read. PROSE ONLY: a provision's key is a slug and rides
+   * `sourceSlug`'s mono chip (W10-2), and a failure sentence arrives already
+   * complete with its remedy (`describeInputSurfaceFailure`), so it is printed
+   * verbatim and never glued into a prefix. */
   sourceLine: string;
   /** The provision key behind the sentence, when there is one. */
   sourceSlug?: string | null;
-  /** Honest words for an offer that is still loading or genuinely empty. */
-  status?: "loading" | "ready";
+  /**
+   * Honest words for an offer that is still loading, genuinely empty, or that
+   * COULD NOT BE READ.
+   *
+   * 🚨 `error` exists because it was missing (FIX-Q8). The workspace passed
+   * `offerPending ? "loading" : "ready"`, so a failed read landed here as
+   * "ready" with zero values and this column printed *"This job offers nothing
+   * yet. Describe its inputs in the INPUT section above"* underneath a header
+   * saying the inputs could not be read. Two answers to one question on one
+   * screen. In `error` the column makes exactly ONE statement, and it is the
+   * door's.
+   */
+  status?: "loading" | "ready" | "error";
   emptyRemedy?: string;
 }
 
@@ -81,14 +95,19 @@ export function OfferedInventoryColumn({
             </span>
           ) : null}
         </div>
-        <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-          {sourceLine}
-          {sourceSlug ? (
-            <code className="ml-1 rounded bg-muted px-1 py-px font-mono text-[10.5px]">
-              {sourceSlug}
-            </code>
-          ) : null}
-        </p>
+        {/* In `error` the sentence is the failure, and it belongs in the BODY
+            where the contradicting empty-state copy used to sit — printing it
+            here too would put the same sentence on the screen twice. */}
+        {status === "error" ? null : (
+          <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+            {sourceLine}
+            {sourceSlug ? (
+              <code className="ml-1 rounded bg-muted px-1 py-px font-mono text-[10.5px]">
+                {sourceSlug}
+              </code>
+            ) : null}
+          </p>
+        )}
         {/* P1 — the rail is CAPPED so both inventories stay on screen together
             (V2 G4: 27 values used to stretch the workspace to 4,502px). A
             scrollbar alone would be a silent limit, so the count says it. */}
@@ -99,7 +118,18 @@ export function OfferedInventoryColumn({
         ) : null}
       </header>
 
-      {status === "loading" ? (
+      {status === "error" ? (
+        /* 🚨 THE ONE STATEMENT. Not the empty state — nothing was read, so
+           "offers nothing" is not a fact anyone here holds — and not a second
+           opinion of our own: the door's sentence already carries its reason
+           and its remedy, and it is printed exactly as it arrived. */
+        <p
+          data-testid="offered-inventory-unreadable"
+          className="px-3 py-6 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400"
+        >
+          {sourceLine}
+        </p>
+      ) : status === "loading" ? (
         <p className="px-3 py-6 text-[11.5px] text-muted-foreground">
           Reading what this job offers…
         </p>
