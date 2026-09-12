@@ -51939,6 +51939,10 @@ export type Database = {
           resource_org_id: string
         }[]
       }
+      _dd171_containment_filter: {
+        Args: { p_alias: string; p_has_vis: boolean; p_joiner: string }
+        Returns: string
+      }
       _door_min_chars: { Args: { p_org: string }; Returns: number }
       _door_target: {
         Args: { p_id: string; p_token: string }
