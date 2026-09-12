@@ -480,6 +480,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
             !isPreviewTab(activeTab?.kind) &&
             !activeTabReadOnly
           }
+          activeTabReadOnly={activeTabReadOnly}
           lastSavedAt={activeTab?.lastSavedAt}
           onFormatDocument={
             activeTab &&

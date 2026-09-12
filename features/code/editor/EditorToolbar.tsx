@@ -26,6 +26,7 @@ interface EditorToolbarProps {
   hasDirtyActiveTab?: boolean;
   /** Whether there's an active tab at all (disables save when false). */
   hasActiveTab?: boolean;
+  activeTabReadOnly?: boolean;
   /** ISO string of the active tab's last successful save during this
    *  session, surfaced as a "Saved 12s ago" indicator. */
   lastSavedAt?: string;
@@ -62,6 +63,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onSaveActiveTab,
   hasDirtyActiveTab = false,
   hasActiveTab = false,
+  activeTabReadOnly = false,
   lastSavedAt,
   onFormatDocument,
   onSendSelectionAsContext,
@@ -94,7 +96,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
               ? "Save (\u2318S)"
               : hasActiveTab
                 ? "All changes saved"
-                : "No file open"
+                : activeTabReadOnly ? "Read-only comparison" : "No file open"
           }
           onClick={onSaveActiveTab}
         />

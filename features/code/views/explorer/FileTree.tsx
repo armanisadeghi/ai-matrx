@@ -87,7 +87,14 @@ const FileTreeBody: React.FC<{
     const activePath = activeTab.path;
     const revealKey = `${activeTab.id}:${activePath}`;
     if (lastRevealedTabRef.current === revealKey) return;
+    const firstObservation = lastRevealedTabRef.current === null;
     lastRevealedTabRef.current = revealKey;
+    // Mounting Explorer after an explicit folder navigation must not undo
+    // that navigation merely because an older editor tab is still active.
+    // Subsequent tab activations still reveal their files normally.
+    if (firstObservation &&
+        normalizeExplorerPath(rootPath) !== normalizeExplorerPath(filesystem.rootPath) &&
+        !isPathWithinRoot(activePath, rootPath)) return;
 
     // A path outside the adapter's default worktree (for example `/tmp`) is
     // still a legitimate sandbox file. Reveal it from `/`; otherwise restore
