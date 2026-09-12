@@ -104,6 +104,8 @@ Two paths:
 
 ## Sandbox runtime contract (summary)
 
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/infrastructure/sandboxes/STATE.md — read it before touching this feature in ANY repo.
+
 `/code` runs against three orchestrator tiers via the same adapter interface:
 
 - **Mock** — in-memory; demos.
@@ -142,6 +144,7 @@ container.
 - **Persisted file creation has one path.** The Code panel header, empty state, and `My Files` / folder context menus all dispatch `createCodeFileThunk`, derive Monaco language from the complete filename map, and immediately open the created file. Unknown extensions remain valid and open as plaintext.
 - **Sandbox routes have a 300s `maxDuration` ceiling on Vercel Pro** — see the 2026-04-26 maxDuration correction in [`SYSTEM_STATE.md`](./SYSTEM_STATE.md). Long-running operations must talk to the orchestrator directly, bypassing the Vercel proxy.
 - **Sandbox creation requires one explicit organization at every boundary.** `useSandboxCreate`, `useSandboxInstances`, `SandboxesPanel`, `POST /api/sandbox`, and the orchestrator all refuse absence; a stale request whose organization differs from live app context is refused before HTTP.
+- **Image update confirmation is an explicit interruption grant.** The Code client sends `interrupt_attached_sessions=true` only after the owner confirms. The Next proxy forwards that flag without weakening the orchestrator's idle-only default. A `busy_deferred` 409 is expected, non-red control flow; every other failure is captured once at the migration API boundary with its HTTP status, machine status, and structured payload before the derived toast is shown.
 - **PTY terminates at the sandbox orchestrator, never Next.js.** `SandboxProcessAdapter.openPty()` mints an existing sandbox-scoped `pty` token through `/api/sandbox/[id]/access-tokens`, then dials the returned `ws_base` directly. The daemon wire is raw text input/raw binary output; JSON is client-only resize/signal control. Plain Ctrl-C is captured explicitly and sends the PTY's `SIGINT` control frame so browser/app shortcuts and terminal line-discipline differences cannot swallow process interruption; the buffered fallback still consumes ETX, and Ctrl-Shift-C remains copy. `TerminalTab` stays on a visible buffered fallback when mint/connect fails; a 200 SSE response with zero events is an error, never success.
 
 ---
@@ -156,6 +159,7 @@ container.
 
 ## Change log
 
+- `2026-09-12` — Fixed the Code page's impossible image-update gate: a confirmed owner update now explicitly permits idle PTY/watch attachments while the orchestrator still fences new calls and refuses executing work. Expected `busy_deferred` responses are informational; actionable failures retain structured status/reason evidence in the Error Inspector and do not create a second context-free toast record.
 - `2026-09-12` — Monaco now forwards the canonical context-menu trigger handlers and positioning ref to its editor shell, including while Monaco initializes. The disabled native Monaco menu therefore opens the existing `CodeWorkspaceContextMenu` rather than leaving right-click inert; a component regression test dispatches the slotted event and proves it reaches the shell.
 - `2026-09-12` — Added Source Control repository attachments through canonical conversation context. Editor context now carries Library/source identity and read-only state, honors exclusions across recent files and selections, removes stale automatic entries after remount, and keeps explicit file attachments separate from active-tab synchronization. Chat continuation links preserve sandbox, repository, file and panel URL state. Context controls show file locations and explain active-buffer versus metadata-only inclusion.
 - `2026-09-11` — Follow-up UI audit added a mobile Code-pane selector, removed the phone minimap, exposed Search/Run scope, corrected Run folder rescanning, and made Ports failures truthful and captured. Remaining findings: [`audits/2026-09-11-ui-audit.md`](./audits/2026-09-11-ui-audit.md).

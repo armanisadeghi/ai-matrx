@@ -50,18 +50,30 @@ function busyDeferredMigration(
 }
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const lookup = await lookupSandboxAndOrchestrator(id);
   if (lookup.ok === false) {
-    return NextResponse.json({ error: lookup.error }, { status: lookup.status });
+    return NextResponse.json(
+      { error: lookup.error },
+      { status: lookup.status },
+    );
   }
 
   let response: Response;
+  const interruptAttachedSessions =
+    request.nextUrl.searchParams.get("interrupt_attached_sessions") === "true";
+  const migrationUrl = new URL(
+    `/sandboxes/${lookup.sandboxId}/migrate`,
+    lookup.orchestrator.url,
+  );
+  if (interruptAttachedSessions) {
+    migrationUrl.searchParams.set("interrupt_attached_sessions", "true");
+  }
   try {
-    response = await fetch(`${lookup.orchestrator.url}/sandboxes/${lookup.sandboxId}/migrate`, {
+    response = await fetch(migrationUrl.toString(), {
       method: "POST",
       headers: orchestratorJsonHeaders(lookup.orchestrator),
       // Migration drains and replaces a live container, then waits for its
@@ -92,7 +104,10 @@ export async function POST(
   }
   if (response.status === 404 || response.status === 405) {
     return NextResponse.json(
-      { error: "This sandbox manager does not support in-place image updates yet." },
+      {
+        error:
+          "This sandbox manager does not support in-place image updates yet.",
+      },
       { status: 501 },
     );
   }
@@ -103,8 +118,7 @@ export async function POST(
   if (busyDeferred) {
     return NextResponse.json(
       {
-        error:
-          "Sandbox is still in use. Wait for an idle gap before retrying. No update was made.",
+        error: `Sandbox update deferred: ${busyDeferred.reason}. No update was made.`,
         status: busyDeferred.status,
         details: busyDeferred,
       },
@@ -113,7 +127,11 @@ export async function POST(
   }
   if (!response.ok) {
     return NextResponse.json(
-      { error: "Sandbox image update failed", upstream_status: response.status, details: payload },
+      {
+        error: "Sandbox image update failed",
+        upstream_status: response.status,
+        details: payload,
+      },
       { status: response.status >= 500 ? 502 : response.status },
     );
   }
@@ -127,7 +145,10 @@ export async function POST(
     )
   ) {
     return NextResponse.json(
-      { error: "Sandbox manager returned an update result for a different sandbox." },
+      {
+        error:
+          "Sandbox manager returned an update result for a different sandbox.",
+      },
       { status: 502 },
     );
   }

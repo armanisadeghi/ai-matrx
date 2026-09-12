@@ -47,8 +47,7 @@ test.each([
 
   expect(response.status).toBe(409);
   expect(await response.json()).toEqual({
-    error:
-      "Sandbox is still in use. Wait for an idle gap before retrying. No update was made.",
+    error: `Sandbox update deferred: ${reason}. No update was made.`,
     status: "busy_deferred",
     details: {
       status: "busy_deferred",
@@ -79,4 +78,29 @@ test("keeps an unknown upstream failure on the existing error path", async () =>
     upstream_status: 502,
     details: failure,
   });
+});
+
+test("forwards a confirmed attached-session interruption explicitly", async () => {
+  const upstream = jest
+    .spyOn(global, "fetch")
+    .mockResolvedValue(
+      new Response(
+        JSON.stringify({ status: "migrated", sandbox_id: "sbx-1" }),
+        { status: 200 },
+      ),
+    );
+
+  const response = await POST(
+    new NextRequest(
+      "https://app.example.test/api/sandbox/row-1/migrate?interrupt_attached_sessions=true",
+      { method: "POST" },
+    ),
+    params,
+  );
+
+  expect(response.status).toBe(200);
+  expect(upstream).toHaveBeenCalledWith(
+    "https://hosted.example.test/sandboxes/sbx-1/migrate?interrupt_attached_sessions=true",
+    expect.objectContaining({ method: "POST" }),
+  );
 });
