@@ -695,6 +695,65 @@
       "package": "@ai-matrx/design-system",
       "why": "THE ARCHIVED-ITEMS LAW's card-list control (design-system 0.14.0): the one-click \"Archived (N)\" reveal, closed by default, with `countLabel` for a capped/absent count and `keepWhileOpen` for a surface whose open state IS the archive view. Proven in Transcript Studio, lived at components/official/ArchivedDisclosure.tsx, deleted 2026-09-10 when the package took it — the law says the control is the same primitive everywhere, and a second home for half of it was the defect. Fourteen surfaces (masterwork ×4, pdf-extractor ×2, pdf scanner, page-extraction, canvas, hr fields, whatsapp-clone, organizations, agent templates, transcript-studio) import it from the package.",
       "allow": []
+    },
+    {
+      "name": "MatrxDataTable",
+      "package": "@ai-matrx/design-system/data-table",
+      "why": "The canonical data-table body moved to design-system 0.15.1. The host's former full renderer must be deleted during the package cutover; consumers import the public package subpath directly.",
+      "allow": []
+    },
+    {
+      "name": "DataRowInspector",
+      "package": "@ai-matrx/design-system/data-table/data-row-inspector",
+      "why": "The table row inspector is package-owned with the table detail contract.",
+      "allow": []
+    },
+    {
+      "name": "DataRowWindow",
+      "package": "@ai-matrx/design-system/data-table/data-row-window",
+      "why": "The row window is package-owned. The sole permitted host definition is the Next dynamic boundary that delegates directly to the package export.",
+      "allow": [
+        {
+          "file": "components/official/MatrxDataTableHost.tsx",
+          "reason": "The one app-owned Next dynamic boundary. It delegates to @ai-matrx/design-system/data-table/data-row-window and contains no table or window behavior."
+        }
+      ]
+    },
+    {
+      "name": "MatrxUuidCell",
+      "package": "@ai-matrx/design-system/data-table/uuid-cell",
+      "why": "The UUID cell's copy and record-door behavior moved with the canonical table package.",
+      "allow": []
+    },
+    {
+      "name": "GenericTablePagination",
+      "package": "@ai-matrx/design-system/data-table/pagination",
+      "why": "Canonical table pagination, including the local-only All loaded sentinel, lives in design-system.",
+      "allow": []
+    },
+    {
+      "name": "useTableUrlState",
+      "package": "@ai-matrx/design-system/data-table/url-state",
+      "why": "The namespaced table URL-state contract moved to the table package.",
+      "allow": []
+    },
+    {
+      "name": "filterAndSortRows",
+      "package": "@ai-matrx/design-system/data-table/filter-engine",
+      "why": "Canonical local table filtering and sorting moved to the table package.",
+      "allow": []
+    },
+    {
+      "name": "completeLayeredFilterRules",
+      "package": "@ai-matrx/design-system/data-table/layered-filters",
+      "why": "The table's complete-rule normalizer moved to the table package.",
+      "allow": []
+    },
+    {
+      "name": "nextQueryState",
+      "package": "@ai-matrx/design-system/data-table/query-control",
+      "why": "Controlled table query-state transitions moved to the table package.",
+      "allow": []
     }
   ]
 }
