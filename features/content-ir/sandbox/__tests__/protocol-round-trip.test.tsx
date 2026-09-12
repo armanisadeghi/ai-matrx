@@ -578,6 +578,20 @@ describe("the action relay: the host's own runAction, exactly once", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+describe("dispose", () => {
+    it("unmounting the host tears the frame's React root down over the port", async () => {
+        const h = await stand();
+        expect(h.record.unmounts).toBe(0);
+        await act(async () => {
+            h.root.unmount();
+            await settle();
+        });
+        live = live.filter((r) => r !== h.root);
+        expect(h.record.unmounts).toBe(1);
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 describe("the error relay: a frame failure files on the author's own queue", () => {
     it("relays a render throw as an incident, with the sandbox named in the sentence", async () => {
         const h = await stand();
@@ -607,6 +621,22 @@ describe("the error relay: a frame failure files on the author's own queue", () 
         });
         const incident = (reportKindComponentIncident as jest.Mock).mock.calls[0][0];
         expect(incident.errorType).toBe("transform_error");
+    });
+
+    it("keeps a compile_error distinct too — the author needs to know which of the two failed", async () => {
+        const h = await stand();
+        await act(async () => {
+            h.port.postMessage({
+                type: "matrx:sandbox:error",
+                instanceId: h.posted[0].data.instanceId,
+                errorType: "compile_error",
+                message: "the component body did not compile inside the sandbox",
+            });
+            await settle();
+        });
+        const incident = (reportKindComponentIncident as jest.Mock).mock.calls[0][0];
+        expect(incident.errorType).toBe("compile_error");
+        expect(incident.message).toContain("did not compile");
     });
 
     it("maps an error type it does not recognise onto render_throw, never onto the invented one", async () => {

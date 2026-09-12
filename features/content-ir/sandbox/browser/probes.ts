@@ -130,5 +130,12 @@ export const ISOLATION_SOURCE = String.raw`() => {
   probe("document.cookie", () => { void document.cookie; });
   probe("localStorage", () => { window.localStorage.setItem("matrx-probe", "1"); });
   out["isSubFrame"] = String(window.parent !== window.self);
+  // THE TWO ORIGINS, measured rather than assumed. They are NOT the same
+  // thing inside a sandboxed frame and the difference is load-bearing: the
+  // frame-side origin check compares the SERVED origin, and a code comment
+  // that named the wrong one stood in this repo until S6.
+  out["location.origin"] = String(location.origin);
+  out["self.origin"] = String(self.origin);
+  out["url.origin"] = String(new URL(location.href).origin);
   return out;
 }`;
