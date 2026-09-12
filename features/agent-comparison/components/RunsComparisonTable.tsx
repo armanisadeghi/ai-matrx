@@ -19,9 +19,9 @@ import { createSelector } from "@reduxjs/toolkit";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import type { ActiveRequest } from "@/features/agents/types/request.types";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   addUsageTotals,
-  fmtBytes,
   fmtCost,
   fmtMs,
   fmtTokens,
@@ -644,13 +644,13 @@ const SECTIONS: MetricSection[] = [
       {
         label: "Accumulated text",
         pick: (s) => s.clientAccumulatedBytes,
-        format: fmtBytes,
+        format: formatFileSize,
         direction: "lower",
       },
       {
         label: "Total payload",
         pick: (s) => s.clientTotalPayloadBytes,
-        format: fmtBytes,
+        format: formatFileSize,
         direction: "lower",
       },
     ],

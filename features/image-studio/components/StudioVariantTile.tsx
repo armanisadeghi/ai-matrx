@@ -19,7 +19,8 @@ import {
 import { cn } from "@/lib/utils";
 import type { ImageFit, ImagePosition, ProcessedVariant } from "../types";
 import { getPresetById } from "../presets";
-import { formatBytes, formatDimensions } from "../utils/format-bytes";
+import { formatDimensions } from "../utils/format-dimensions";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { downloadSingleVariant } from "../utils/download-bundle";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
@@ -219,7 +220,7 @@ export function StudioVariantTile({
               {variant.format}
             </span>
             <span className="font-mono text-[10px] text-muted-foreground">
-              {formatBytes(variant.size)}
+              {formatFileSize(variant.size)}
             </span>
             <span
               className="flex items-center gap-0.5 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium capitalize"

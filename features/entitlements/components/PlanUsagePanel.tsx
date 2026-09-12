@@ -22,20 +22,14 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowUpRight, Infinity as InfinityIcon, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { fetchPlanStatus, type PlanDimension, type PlanStatus } from "../plan-service";
 import { CAPABILITY_REGISTRY, isCapability } from "../registry";
 
 /** Bytes get human units; everything else is a plain count. */
 function formatValue(capability: string, value: number): string {
   if (capability.endsWith("_bytes")) {
-    const units = ["B", "KB", "MB", "GB", "TB"];
-    let v = value;
-    let u = 0;
-    while (v >= 1024 && u < units.length - 1) {
-      v /= 1024;
-      u += 1;
-    }
-    return `${v % 1 === 0 ? v : v.toFixed(1)} ${units[u]}`;
+    return formatFileSize(value);
   }
   return value.toLocaleString();
 }

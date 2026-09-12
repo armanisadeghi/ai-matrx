@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { IconUpload } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { UploadedFileResult } from "./types";
 
 const mainVariant = {
@@ -104,7 +105,7 @@ export const FileUpload = ({
                       layout
                       className="rounded-lg px-2 py-1 w-fit flex-shrink-0 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-white shadow-input"
                     >
-                      {(file.size / (1024 * 1024)).toFixed(2)} MB
+                      {formatFileSize(file.size)}
                     </motion.p>
                   </div>
 
@@ -308,11 +309,10 @@ export const MultiFileUpload = ({
                       className="rounded-lg px-2 py-1 w-fit flex-shrink-0 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-white shadow-input"
                     >
                       {isFile(file)
-                        ? (file.size / (1024 * 1024)).toFixed(2)
+                        ? formatFileSize(file.size)
                         : file.details?.size
-                          ? (file.details.size / (1024 * 1024)).toFixed(2)
-                          : "?"}{" "}
-                      MB
+                          ? formatFileSize(file.details.size)
+                          : "?"}
                     </motion.p>
                   </div>
 
@@ -491,11 +491,10 @@ export const MiniFileUpload = ({
                   </p>
                   <span className="text-neutral-500 dark:text-neutral-400 text-xs ml-2">
                     {isFile(file)
-                      ? (file.size / (1024 * 1024)).toFixed(1)
+                      ? formatFileSize(file.size)
                       : file.details?.size
-                        ? (file.details.size / (1024 * 1024)).toFixed(1)
-                        : "?"}{" "}
-                    MB
+                        ? formatFileSize(file.details.size)
+                        : "?"}
                   </span>
                 </div>
               </motion.div>
@@ -645,7 +644,7 @@ export const MultiFileUploadWithSpinner = ({
                       layout
                       className="rounded-lg px-2 py-1 w-fit flex-shrink-0 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-white shadow-input"
                     >
-                      {(file.size / (1024 * 1024)).toFixed(2)} MB
+                      {formatFileSize(file.size)}
                     </motion.p>
                   </div>
                   <div className="flex text-sm md:flex-row flex-col items-start md:items-center w-full mt-2 justify-between text-neutral-600 dark:text-neutral-400">

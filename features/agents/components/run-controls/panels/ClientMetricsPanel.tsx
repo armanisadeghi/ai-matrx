@@ -11,11 +11,11 @@
 
 import { useMemo } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   EmptyStats,
   StatRow,
   StatSection,
-  fmtBytes,
   fmtMs,
   makeSelectLastConversationRequest,
   makeSelectRequestById,
@@ -75,9 +75,9 @@ export function ClientMetricsPanel({
       <StatSection title="Payload">
         <StatRow
           label="Accumulated text"
-          value={fmtBytes(metrics.accumulatedTextBytes)}
+          value={formatFileSize(metrics.accumulatedTextBytes)}
         />
-        <StatRow label="Total" value={fmtBytes(metrics.totalPayloadBytes)} />
+        <StatRow label="Total" value={formatFileSize(metrics.totalPayloadBytes)} />
       </StatSection>
 
       <StatSection title="Event counts">

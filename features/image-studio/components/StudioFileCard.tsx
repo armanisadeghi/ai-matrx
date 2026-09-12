@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ImageMetadata, StudioSourceFile } from "../types";
-import { formatBytes, formatDimensions } from "../utils/format-bytes";
+import { formatDimensions } from "../utils/format-dimensions";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
     StudioVariantTile,
     VariantTileGrid,
@@ -221,7 +222,7 @@ export function StudioFileCard({
                         </span>
                         <span>·</span>
                         <span className="font-mono whitespace-nowrap">
-                            {formatBytes(file.size)}
+                            {formatFileSize(file.size)}
                         </span>
                         <SourceSaveIndicator file={file} />
                     </div>

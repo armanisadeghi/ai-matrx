@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 type ProbeState =
   | { status: "idle" }
@@ -32,22 +33,6 @@ type ProbeState =
   | { status: "cors" };
 
 export type UrlProbeMode = "health" | "head";
-
-/** Human-readable byte size (also used by catalog tables). */
-export function formatBytes(bytes: number | null | undefined): string {
-  if (bytes === null || bytes === undefined || !Number.isFinite(bytes)) {
-    return "—";
-  }
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ["KB", "MB", "GB", "TB"] as const;
-  let value = bytes / 1024;
-  let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit += 1;
-  }
-  return `${value >= 100 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`;
-}
 
 /**
  * Standalone probe used by fields AND by activation gates (kind table
@@ -81,7 +66,7 @@ export async function probeUrl(
         httpStatus: res.status,
         detail:
           mode === "head" && length
-            ? `${formatBytes(Number(length))} reported`
+            ? `${formatFileSize(Number(length))} reported`
             : undefined,
       };
     }

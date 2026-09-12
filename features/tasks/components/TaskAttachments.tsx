@@ -14,16 +14,10 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import * as taskService from "@/features/tasks/services/taskService";
 import type { TaskAttachment } from "@/features/tasks/services/taskService";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 interface TaskAttachmentsProps {
   taskId: string;
-}
-
-function formatBytes(bytes: number | null): string {
-  if (!bytes) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1048576).toFixed(1)} MB`;
 }
 
 function getFileIcon(fileType: string | null) {
@@ -152,7 +146,7 @@ export default function TaskAttachments({ taskId }: TaskAttachmentsProps) {
                 />
                 {attachment.file_size && (
                   <span className="text-xs text-muted-foreground/60">
-                    {formatBytes(attachment.file_size)}
+                    {formatFileSize(attachment.file_size, { fallback: "" })}
                   </span>
                 )}
               </div>

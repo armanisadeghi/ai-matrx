@@ -37,13 +37,24 @@
 #   ./scripts/release.sh --dry-run    # preview without changes
 #   ./scripts/release.sh --no-migrate # skip applying FE migrations
 #   ./scripts/release.sh --no-gates   # skip advisory quality gates after push
+#   ./scripts/release.sh --no-watch   # do not wait for the Vercel rollout
+#       → prints UNWATCHED (never green); the outcome stays unknown
 #   ./scripts/release.sh --target admin --message "new admin panel"
 #       → commit "release-admin: vX.Y.Z - new admin panel" (deploys ONLY
 #         manage.aimatrx.com; --target demos / all likewise)
 #
-# This script talks to git only (and optionally the co-located aidream migration
-# applier). It never calls Vercel. Deploy is: one atomic push of branch + tag to
-# origin/main; Vercel/GitHub handle the rest.
+# Deploy is: one atomic push of branch + tag to origin/main; Vercel/GitHub take
+# it from there. The push is NOT the release — so after pushing, the script
+# WATCHES the rollout and reports what actually happened
+# (scripts/release-outcome.sh, THE RELEASE-BANNER TRUTH LAW). Green appears only
+# when the pushed commit reached READY on every Vercel project it targets AND
+# that deployment is the one the live domain serves; a skipped, ERRORed,
+# CANCELED, timed-out, or unverifiable rollout prints a loud non-green box with
+# the project, the state, the Vercel URL and the remedy, and exits non-zero.
+# Until 2026-09-11 this script printed its green "Released" box unconditionally
+# the line after `git push` returned 0 and never called Vercel at all, so a dead
+# rollout and a live one looked identical to the deploy agent reading it.
+# `--no-watch` skips the wait; it prints UNWATCHED, never green.
 #
 # Production builds ONLY run for commits whose message starts with a release
 # prefix (vercel.json ignoreCommand → scripts/vercel-ignore-build.sh). Plain
@@ -192,6 +203,7 @@ CUSTOM_MESSAGE=""
 DRY_RUN=false
 NO_MIGRATE=false
 NO_GATES=false
+NO_WATCH=false
 SHIP_MODE=false
 # --ship: the ONLY content the release commit may carry besides the version
 # files. Filled from the arguments after `--`. See THE RELEASE-COMMIT CONTENT LAW.
@@ -217,6 +229,7 @@ while [[ $# -gt 0 ]]; do
         --dry-run) DRY_RUN=true; shift ;;
         --no-migrate) NO_MIGRATE=true; shift ;;
         --no-gates) NO_GATES=true; shift ;;
+        --no-watch) NO_WATCH=true; shift ;;
         --target)
             [[ -n "${2:-}" ]] || fail "--target requires an argument (main|admin|demos|all)."
             case "$2" in
@@ -232,7 +245,7 @@ while [[ $# -gt 0 ]]; do
             shift
             SHIP_PATHS=("$@")
             break ;;
-        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --target, --dry-run, --no-migrate, --no-gates, or -- <paths you own>." ;;
+        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --target, --dry-run, --no-migrate, --no-gates, --no-watch, or -- <paths you own>." ;;
     esac
 done
 
@@ -252,6 +265,12 @@ fi
 # dry-run preview use the same primitive the self-test exercised.
 # shellcheck source=scripts/release-stage.sh
 source "$SCRIPT_DIR/release-stage.sh"
+
+# THE RELEASE-BANNER TRUTH LAW lives in one file too: the banner after the push
+# reports the ROLLOUT, not the push. Sourced here so the post-push report and
+# its self-test use the same primitive.
+# shellcheck source=scripts/release-outcome.sh
+source "$SCRIPT_DIR/release-outcome.sh"
 
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 [[ "$CURRENT_BRANCH" == "$BRANCH" ]] \
@@ -705,14 +724,39 @@ EOF
 )"
 fi
 
-# ── Done ─────────────────────────────────────────────────────────────────────
+# ── Outcome (THE RELEASE-BANNER TRUTH LAW — scripts/release-outcome.sh) ──────
+# The push is not the release. Until 2026-09-11 the green "Released" box was
+# printed right here, unconditionally, and this script never called Vercel — so
+# an ERRORed, CANCELED or ignore-script-skipped rollout printed exactly what a
+# live one printed. Now the rollout is watched and the banner reports it.
+PUSHED_SHA="$(git rev-parse HEAD)"
 echo ""
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}  Released ${PROJECT_NAME} ${NEW_VERSION}${NC}"
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-echo -e "  GitHub:  ${CYAN}https://github.com/${GITHUB_REPO}${NC}"
-echo ""
+echo -e "  GitHub:  ${CYAN}https://github.com/${GITHUB_REPO}/commit/${PUSHED_SHA}${NC}"
+
+RELEASE_OUTCOME_RC=0
+if $NO_WATCH; then
+    echo ""
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${YELLOW}  UNWATCHED — pushed v${NEW_VERSION}; the rollout was NOT checked.${NC}"
+    echo -e "${YELLOW}  --no-watch was passed, so this run makes NO claim that the${NC}"
+    echo -e "${YELLOW}  build succeeded or that anything is live.${NC}"
+    echo -e "${YELLOW}  Commit: ${PUSHED_SHA}${NC}"
+    echo -e "${YELLOW}  Check it: bash scripts/release-outcome.sh --report ${TARGET} \"${COMMIT_MSG}\" ${PUSHED_SHA}${NC}"
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    RELEASE_OUTCOME_RC=3
+else
+    # The guard proves itself failing-then-passing before it is believed — same
+    # contract as the release-stage self-test above. No network, ~1s.
+    info "Proving the release-outcome banner (self-test)..."
+    if bash "$SCRIPT_DIR/release-outcome.sh" --self-test >/dev/null 2>&1; then
+        ok "release-outcome self-test passed (old unconditional banner reproduced, then gated)."
+    else
+        bash "$SCRIPT_DIR/release-outcome.sh" --self-test || true
+        warn "release-outcome self-test FAILED — the banner below cannot be trusted; verify the deployment by hand."
+    fi
+    release_outcome_report "$TARGET" "$COMMIT_MSG" "$PUSHED_SHA" "$NEW_VERSION" || RELEASE_OUTCOME_RC=$?
+fi
 
 # ── Advisory quality gates (post-push — never block the ship) ────────────────
 # These post-push gates cannot stop a release; the fail-closed Pattern Patrol
@@ -735,3 +779,26 @@ if [[ "${SOURCE_ATTRIBUTION_FAILED:-false}" == "true" ]]; then
     echo -e "${RED}Fix them and they stop nagging: pnpm check:source-attribution${NC}" >&2
     echo "" >&2
 fi
+
+# ── The last word is the rollout, not the push ───────────────────────────────
+# The advisory gates above can scroll the outcome box off screen, and the reader
+# of this script is an agent that reads the tail. So the verdict is repeated
+# here and carried in the exit code: a release whose build did not reach
+# production must not exit 0. The ERR trap is cleared first — its "No version
+# was committed, tagged, or pushed" box would be a lie (all three happened).
+trap - ERR
+case "$RELEASE_OUTCOME_RC" in
+    0) ;;  # READY + serving on every targeted project; the green box stands.
+    2)
+        echo -e "${YELLOW}REMINDER: v${NEW_VERSION} (${PUSHED_SHA:0:10}) was pushed but its rollout is UNVERIFIED — no Vercel credential.${NC}" >&2
+        echo -e "${YELLOW}  \`vercel login\`, or export VERCEL_TOKEN, then: bash scripts/release-outcome.sh --report ${TARGET} \"${COMMIT_MSG}\" ${PUSHED_SHA}${NC}" >&2
+        echo "" >&2 ;;
+    3)
+        echo -e "${YELLOW}REMINDER: v${NEW_VERSION} (${PUSHED_SHA:0:10}) was pushed UNWATCHED (--no-watch). Nothing here claims it is live.${NC}" >&2
+        echo "" >&2 ;;
+    *)
+        echo -e "${RED}ROLLOUT FAILED: v${NEW_VERSION} (${PUSHED_SHA:0:10}) was pushed and tagged, but it is NOT live — see the red box above.${NC}" >&2
+        echo -e "${RED}Users are still on the previous build. Fix the build and release again.${NC}" >&2
+        echo "" >&2
+        exit 1 ;;
+esac

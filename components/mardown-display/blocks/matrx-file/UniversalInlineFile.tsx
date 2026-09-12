@@ -27,6 +27,7 @@ import { Download, ExternalLink, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFile } from "@/features/files/handler/hooks/useFile";
 import { useMediaResolution } from "@ai-matrx/media/core";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { FileIcon } from "@ai-matrx/media/react";
@@ -253,7 +254,7 @@ function FileCard({
         </p>
         {sizeBytes != null && (
           <p className="text-xs text-muted-foreground">
-            {formatBytes(sizeBytes)}
+            {formatFileSize(sizeBytes)}
           </p>
         )}
       </div>
@@ -288,17 +289,5 @@ function InlineSkeleton() {
 // same contract — the `response-content-disposition` filename when present,
 // else the last path segment ONLY when it looks like a real name, never a
 // UUID id. C9 collapse, adopting @ai-matrx/data 0.4.1.
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ["KB", "MB", "GB"];
-  let v = bytes / 1024;
-  let i = 0;
-  while (v >= 1024 && i < units.length - 1) {
-    v /= 1024;
-    i++;
-  }
-  return `${v.toFixed(1)} ${units[i]}`;
-}
 
 export default UniversalInlineFile;

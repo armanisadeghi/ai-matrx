@@ -25,6 +25,8 @@
  * features/files/upload/tusUpload.ts) — never merge the two.
  */
 
+import { formatFileSize } from "@ai-matrx/kit/format";
+
 const DB_NAME = "mtx-capture-journal";
 const DB_VERSION = 1;
 const CHUNKS_STORE = "chunks";
@@ -83,8 +85,8 @@ export class StorageQuotaError extends Error {
   constructor(availableBytes: number | null, requiredBytes: number) {
     super(
       `[chunk-journal] not enough storage to record safely — need at least ` +
-        `${Math.round(requiredBytes / (1024 * 1024))} MiB free, ` +
-        `${availableBytes === null ? "available space unknown" : `~${Math.round(availableBytes / (1024 * 1024))} MiB available`}. ` +
+        `${formatFileSize(requiredBytes)} free, ` +
+        `${availableBytes === null ? "available space unknown" : `~${formatFileSize(availableBytes)} available`}. ` +
         `Free up space and try again.`,
     );
     this.name = "StorageQuotaError";

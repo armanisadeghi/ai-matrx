@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -981,8 +982,8 @@ const RawStorageView = ({ storage }: { storage: UseLocalStorageManager }) => {
         </div>
         {storageSize && (
           <div className="text-sm text-muted-foreground">
-            Storage: {(storageSize.used / 1024).toFixed(2)}KB /
-            {(storageSize.remaining / 1024).toFixed(2)}KB remaining
+            Storage: {formatFileSize(storageSize.used)} /
+            {formatFileSize(storageSize.remaining)} remaining
           </div>
         )}
       </div>
@@ -1476,10 +1477,10 @@ export function LocalStorageAdmin() {
       {storageSize && (
         <div className="mb-4 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Storage Usage: {(storageSize.used / 1024).toFixed(2)}KB
+            Storage Usage: {formatFileSize(storageSize.used)}
           </div>
           <div className="text-sm text-muted-foreground">
-            Remaining: {(storageSize.remaining / 1024).toFixed(2)}KB
+            Remaining: {formatFileSize(storageSize.remaining)}
           </div>
           <div
             className="w-32 h-2 bg-secondary rounded-full overflow-hidden"

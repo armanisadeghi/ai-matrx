@@ -48,7 +48,7 @@ import {
   rpcErrorMessage,
 } from "@/features/admin/shared/admin-rpc-errors";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
-import { formatBytes } from "@/features/admin/shared/UrlProbeField";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { probeArtifactUrl } from "@/features/admin/applications/catalogs/resolver";
 import type { ArtifactProbeResult } from "@/features/admin/applications/catalogs/resolver";
 import {
@@ -299,7 +299,7 @@ export function CatalogKindTable({
         align: "right",
         cell: (row) => (
           <span className="font-mono text-xs">
-            {formatBytes(row.artifact_size_bytes)}
+            {formatFileSize(row.artifact_size_bytes)}
           </span>
         ),
         width: 120,

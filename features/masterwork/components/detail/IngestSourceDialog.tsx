@@ -23,6 +23,7 @@ import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 /**
  * "Add rules from a source" — the plop-in-a-book / talk-it-out flow. Two ways
@@ -138,13 +139,6 @@ export function describeMissingIngestParts({
 }: Pick<IngestSummary, "failedChunks" | "skippedWords">): string | null {
   if (failedChunks === 0) return null;
   return `Not all of it could be read: ${failedChunks} ${failedChunks === 1 ? "part" : "parts"} of your source (about ${skippedWords} words) failed even after being split smaller, so the rules from ${failedChunks === 1 ? "that part are" : "those parts are"} missing — paste ${failedChunks === 1 ? "it" : "them"} again on ${failedChunks === 1 ? "its" : "their"} own.`;
-}
-
-/** Human size — a 3 KB file reading "0.0 MB" looks like a broken upload. */
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 const SHAPE_OPTIONS: {
@@ -463,7 +457,7 @@ export function IngestSourceDialog({
                         {file.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatSize(file.size)}
+                        {formatFileSize(file.size)}
                       </p>
                     </div>
                     <Button

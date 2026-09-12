@@ -43,6 +43,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
@@ -1322,7 +1323,7 @@ function FsTree({
         )}
         {!node.isDir && typeof node.size === "number" && (
           <span className="text-[10px] text-muted-foreground ml-auto pr-1">
-            {formatBytes(node.size)}
+            {formatFileSize(node.size)}
           </span>
         )}
       </div>
@@ -1340,13 +1341,6 @@ function FsTree({
         ))}
     </div>
   );
-}
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
-  return `${(n / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
 /** Tri-state status for a single readiness card. */

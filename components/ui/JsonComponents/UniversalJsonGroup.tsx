@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Save,
@@ -126,15 +127,10 @@ const safeCalculateJsonMetrics = (data: object | string): JsonMetrics => {
       return 1 + Math.max(0, ...Object.values(obj).map(getDepth));
     };
 
-    const formatSize = (str: string): string => {
-      const bytes = new Blob([str]).size;
-      return bytes < 1024 ? `${bytes}B` : `${(bytes / 1024).toFixed(1)}KB`;
-    };
-
     return {
       keys: countKeys(parsed),
       depth: getDepth(parsed),
-      size: formatSize(stringified),
+      size: formatFileSize(new Blob([stringified]).size),
     };
   } catch (error) {
     console.warn("Error calculating metrics:", error);

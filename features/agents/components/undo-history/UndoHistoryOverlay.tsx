@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   Undo2,
   Redo2,
@@ -72,12 +73,6 @@ function formatTimestamp(ts: number): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function previewValue(entry: UndoEntry): ReactNode {
@@ -189,7 +184,7 @@ export function UndoHistoryOverlay({
           Edit History
         </span>
       }
-      description={`${agentName ?? "Agent"} — ${past.length} undo / ${future.length} redo (${formatBytes(totalBytes)})`}
+      description={`${agentName ?? "Agent"} — ${past.length} undo / ${future.length} redo (${formatFileSize(totalBytes)})`}
       expandButtonLabel="Edit history"
       position="right"
       defaultSize={32}

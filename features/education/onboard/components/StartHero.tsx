@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
@@ -350,7 +351,7 @@ function InputPanel({
                   {props.file.name}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {(props.file.size / 1024).toFixed(0)} KB · click to change
+                  {formatFileSize(props.file.size)} · click to change
                 </p>
                 <FileSupportNote file={props.file} />
               </>

@@ -25,6 +25,7 @@ import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { filesDb } from "@/features/files/filesDb";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 /** Source kinds we can pop into a floating window panel from the decision UI. */
 export type SourceOpenableKind = "note";
@@ -93,18 +94,6 @@ function formatDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? null : d.toLocaleString();
-}
-
-function humanSize(bytes: number | null | undefined): string | null {
-  if (bytes == null) return null;
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let n = bytes;
-  let i = 0;
-  while (n >= 1024 && i < units.length - 1) {
-    n /= 1024;
-    i++;
-  }
-  return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
 /**
@@ -601,8 +590,9 @@ async function loadFile(id: string): Promise<SourcePreviewDoc> {
   if (data) {
     doc.title = data.file_name?.trim() || "File";
     if (data.mime_type) doc.meta.push({ label: "Type", value: data.mime_type });
-    const size = humanSize(data.size_bytes);
-    if (size) doc.meta.push({ label: "Size", value: size });
+    if (data.size_bytes != null) {
+      doc.meta.push({ label: "Size", value: formatFileSize(data.size_bytes) });
+    }
     const added = formatDate(data.created_at);
     if (added) doc.meta.push({ label: "Added", value: added });
   }

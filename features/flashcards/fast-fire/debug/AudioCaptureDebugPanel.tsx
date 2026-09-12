@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 function fmtSec(s: number): string {
   return `${s.toFixed(2)}s`;
@@ -63,7 +64,7 @@ export function AudioCaptureDebugPanel({ className }: { className?: string }) {
         <Stat label="Rate" value={`${snap.sampleRate || 0} Hz`} />
         <Stat
           label="Memory"
-          value={`${(snap.bufferBytes / 1024 / 1024).toFixed(1)} MB`}
+          value={formatFileSize(snap.bufferBytes)}
         />
       </div>
 

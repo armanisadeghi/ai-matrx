@@ -15,6 +15,7 @@ import { build } from "esbuild";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFile, writeFile } from "node:fs/promises";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // features/files/cache/service-worker → repo root: 4 levels up.
@@ -46,7 +47,7 @@ async function main(): Promise<void> {
     await writeFile(OUT, stamped, "utf8");
     // eslint-disable-next-line no-console
     console.log(
-        `✓ blob-sw.js (${(stamped.length / 1024).toFixed(1)} KB) → ${OUT}`,
+        `✓ blob-sw.js (${formatFileSize(stamped.length)}) → ${OUT}`,
     );
 }
 

@@ -19,6 +19,7 @@
     "check:parse:advisory": "node scripts/check-parse.mjs --advisory",
     "check:parse:self-test": "node scripts/check-parse.mjs --self-test",
     "check:ship-stage:self-test": "bash scripts/release-stage.sh --self-test",
+    "check:release-outcome:self-test": "bash scripts/release-outcome.sh --self-test",
     "measure:strict": "tsx scripts/measure-strict-flags.ts",
     "start": "next start",
     "lint": "eslint .",
@@ -207,6 +208,7 @@
     "check:agent-list-reads": "tsx scripts/check-agent-list-reads.ts",
     "check:agent-list-reads:self-test": "tsx scripts/check-agent-list-reads.ts --self-test",
     "test:release-fail-forward": "node --test scripts/release-fail-forward.test.mjs",
+    "test:release-outcome": "node --test scripts/release-outcome.test.mjs",
     "test:preview-install-guard": "node --test scripts/preview-install-guard.test.mjs",
     "check:agent-links": "tsx scripts/check-agent-links.ts",
     "check:agent-links:self-test": "tsx scripts/check-agent-links.ts --self-test",
@@ -340,7 +342,11 @@
     "route-manifest:generate": "tsx scripts/generate-route-manifest.ts",
     "check:route-manifest": "tsx scripts/check-route-manifest.ts",
     "check:route-manifest:strict": "tsx scripts/check-route-manifest.ts --strict",
-    "route-manifest:sync": "tsx scripts/sync-route-manifest.ts"
+    "route-manifest:sync": "tsx scripts/sync-route-manifest.ts",
+    "check:record-toasts": "tsx scripts/check-record-toasts.ts",
+    "check:record-toasts:strict": "tsx scripts/check-record-toasts.ts --strict",
+    "check:record-toasts:update": "tsx scripts/check-record-toasts.ts --update",
+    "check:record-toasts:self-test": "tsx scripts/check-record-toasts.ts --self-test"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",

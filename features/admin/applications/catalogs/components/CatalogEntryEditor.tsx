@@ -58,10 +58,8 @@ import {
   isConflictError,
   rpcErrorMessage,
 } from "@/features/admin/shared/admin-rpc-errors";
-import {
-  UrlProbeField,
-  formatBytes,
-} from "@/features/admin/shared/UrlProbeField";
+import { UrlProbeField } from "@/features/admin/shared/UrlProbeField";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { probeArtifactUrl } from "@/features/admin/applications/catalogs/resolver";
 import type { ArtifactProbeResult } from "@/features/admin/applications/catalogs/resolver";
 import { CatalogHistoryPanel } from "@/features/admin/applications/catalogs/components/CatalogHistoryPanel";
@@ -757,7 +755,7 @@ export function CatalogEntryEditor({
             ) : artifactSizeBytes.trim().length > 0 &&
               Number.isInteger(Number(artifactSizeBytes.trim())) ? (
               <p className="text-xs text-muted-foreground">
-                {formatBytes(Number(artifactSizeBytes.trim()))}
+                {formatFileSize(Number(artifactSizeBytes.trim()))}
               </p>
             ) : null}
           </div>

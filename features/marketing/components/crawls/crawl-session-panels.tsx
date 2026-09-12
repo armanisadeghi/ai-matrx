@@ -9,7 +9,7 @@ import { isJsonRecord } from "@/features/marketing/types";
 import type { Json } from "@/types/database.types";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name.
-import { formatDurationMs } from "@ai-matrx/kit/format";
+import { formatDurationMs, formatFileSize } from "@ai-matrx/kit/format";
 
 /** A zero-length crawl is an UNMEASURED crawl here, not "0ms". */
 function crawlDuration(value: number): string {
@@ -23,15 +23,6 @@ const RENDER_MODE_LABELS: Record<string, string> = {
   browser_always: "Browser every page",
   browser_with_screenshot: "Browser + screenshots",
 };
-
-/** A missing/garbled size reads "—", never a confident "0 B" (media 0.4.0). */
-function formatBytes(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value) || value < 0) return "—";
-  if (value <= 0) return "0 B";
-  if (value < 1024) return `${value} B`;
-  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function boolLabel(value: unknown): string {
   return value === true ? "Yes" : value === false ? "No" : "—";
@@ -170,7 +161,7 @@ export function CrawlRunStatsPanel({ stats }: { stats: Json }) {
           },
           {
             label: "Bytes downloaded",
-            value: formatBytes(jsonNumber(stats, ["bytes_downloaded"])),
+            value: formatFileSize(jsonNumber(stats, ["bytes_downloaded"])),
           },
           {
             label: "Limit reached",

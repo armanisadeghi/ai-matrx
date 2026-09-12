@@ -28,6 +28,7 @@ import rehypePrism from "rehype-prism-plus";
 import "katex/dist/katex.min.css";
 import { cn } from "@/lib/utils";
 import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 
 export interface MarkdownPreviewProps {
@@ -128,7 +129,7 @@ export function MarkdownPreview({
       <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/20 px-3 py-1 text-xs shrink-0">
         <span className="text-muted-foreground">
           {truncated
-            ? `Preview limited to first ${(maxBytes / 1024 / 1024).toFixed(0)}MB.`
+            ? `Preview limited to first ${formatFileSize(maxBytes)}.`
             : `Markdown · ${content.length.toLocaleString()} characters`}
         </span>
         <button

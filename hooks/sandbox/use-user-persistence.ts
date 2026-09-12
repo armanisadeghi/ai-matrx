@@ -164,21 +164,6 @@ export function useUserPersistence(
   return { ...state, refresh: fetchOnce, deleteVolume };
 }
 
-/**
- * Format `current_size_bytes` for human display ("1.3 GB", "212 MB", "—").
- * Returns "—" when bytes is null/undefined so the UI doesn't claim "0 B"
- * on tiers that haven't reported yet.
- */
-export function formatPersistenceSize(
-  bytes: number | null | undefined,
-): string {
-  if (bytes == null || !Number.isFinite(bytes)) return "—";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
-
 /** Pluck the entry for a single tier — convenience for create dialogs. */
 export function findTierInfo(
   info: UserPersistenceResponse | null,

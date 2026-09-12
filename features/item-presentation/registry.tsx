@@ -38,6 +38,7 @@ import {
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { EnrichedItem, ItemType, KnownItemType } from "./types";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 export interface ItemTypeConfig {
   /** Stable key — the enum value. */
@@ -124,6 +125,7 @@ export type ItemOpenKind =
   | { kind: "table" }
   | { kind: "workbook" }
   | { kind: "document" }
+  | { kind: "conversation" }
   | { kind: "message" }
   | { kind: "email" };
 
@@ -647,18 +649,12 @@ async function enrichFile(
       about: clip(r.mime_type, 60),
       details: [
         typeof r.size_bytes === "number"
-          ? { label: "Size", value: formatBytes(r.size_bytes) }
+          ? { label: "Size", value: formatFileSize(r.size_bytes) }
           : null,
       ].filter(Boolean) as EnrichedItem["details"],
     }),
     "files",
   );
-}
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 /** The neutral fallback for an unrecognized / missing type. Never null. */
