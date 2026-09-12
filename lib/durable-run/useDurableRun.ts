@@ -54,6 +54,8 @@ import type { ForeignStreamConsumer } from "@/features/agents/redux/execution-sy
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import type { LiveRunProgressItem } from "@/features/agents/components/live-run/LiveRunProgress";
 import { callApi } from "@/lib/api/call-api";
+import type { ApiCallError } from "@/lib/api/call-api";
+import { isStreamTransportLost } from "@/lib/api/errors";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -67,6 +69,80 @@ import type { paths } from "@/types/python-generated/api-types";
  * asking — a stale receipt should not make a fresh page load do work.
  */
 const POINTER_MAX_AGE_MS = 60 * 60 * 1000;
+
+/**
+ * 🚨 A LOST STREAM IS NEVER A FAILED RUN.
+ *
+ * Every durable run streams with `detach_on_disconnect=True`: killing the
+ * socket stops DELIVERY, never the work. And the live replay channel
+ * (`aidream/services/durable_runs.py`) is per-PROCESS, while the API runs many
+ * worker processes — so a rejoin routed to any worker but the one executing the
+ * run finds no channel and answers with the durable ROW, which mid-run says
+ * `processing`.
+ *
+ * Both of those used to print a failure here. On 2026-09-12 03:10 a Rulebook
+ * ingest (run 4587e534-316c-4db1-af3a-02241f7b551f) lost its socket at exactly
+ * +60s, rejoined at 03:11:47, got a `processing` snapshot, and told the person
+ * "This run stopped before it finished — nothing was saved. You can start it
+ * again." The row went `completed` at 03:15:15 with 115 rules and `error` NULL;
+ * the person, believing it dead, paid for a second full distillation.
+ *
+ * So: the only thing that may produce a failure sentence is the ROW's own
+ * terminal status. Everything else reconnects.
+ */
+export const STREAM_LOST_MESSAGE =
+  "Lost the live view — the run is still going on the server. Reconnecting…";
+
+/** First reconnect wait; doubles per attempt up to the cap. */
+const RECONNECT_BASE_DELAY_MS = 1_500;
+const RECONNECT_MAX_DELAY_MS = 15_000;
+/**
+ * Safety net only. A row whose heartbeat stops is flipped to `failed` by the
+ * server after a 5-minute lease, so the loop normally ends on server truth —
+ * this is what stops an abandoned tab asking forever.
+ */
+const RECONNECT_GIVE_UP_MS = 15 * 60 * 1000;
+/** Consecutive rejoins that could not even reach the run before we give up. */
+const RECONNECT_MAX_UNREACHABLE = 5;
+
+/** Durable-row statuses that mean the work is still in flight. */
+const IN_FLIGHT_STATUSES = new Set([
+  "pending",
+  "queued",
+  "processing",
+  "running",
+  "started",
+  "in_progress",
+]);
+
+/** Durable-row statuses that mean the run is over WITHOUT a result. */
+const FAILED_STATUSES = new Set([
+  "failed",
+  "cancelled",
+  "canceled",
+  "abandoned",
+  "timed_out",
+  "expired",
+  "error",
+]);
+
+function waitFor(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve();
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    function onAbort(): void {
+      clearTimeout(timer);
+      resolve();
+    }
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
 
 /**
  * How one domain's runs speak on the wire. Everything domain-specific about a
@@ -366,6 +442,25 @@ export function useDurableRun<TResult>(
     undefined,
   );
 
+  // ── Reconnect plumbing (see STREAM_LOST_MESSAGE) ─────────────────────────
+  // `statusRef` / `runIdRef` are the SYNCHRONOUS truth the reconnect loop
+  // reads between awaits; React state lags a render behind and a loop that
+  // asked it would re-ask a run that already settled.
+  const statusRef = useRef<DurableRunStatus>("idle");
+  /** Read the live status through a call — a bare ref read gets narrowed by
+   *  control flow to whatever this function last wrote, which is the opposite
+   *  of the point: the STREAM handler writes it between awaits. */
+  const currentStatus = useCallback((): DurableRunStatus => statusRef.current, []);
+  const runIdRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
+  const reconnectAbortRef = useRef<AbortController | null>(null);
+  const reconnectingRef = useRef(false);
+  /** Set below; `handleEvent` reaches the loop through this. */
+  const startReconnectRef = useRef<((runId: string) => void) | null>(null);
+  useEffect(() => {
+    statusRef.current = state.status;
+  });
+
   // ── Live adoption plumbing (only used when `live` is set) ────────────────
   // Retention discipline (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md): the
   // fetch is aborted BEFORE the adopted row is reaped — an orphaned stream
@@ -436,6 +531,7 @@ export function useDurableRun<TResult>(
           payload?.message ||
           "The run failed on the server.";
         clearPointer(wire, key);
+        statusRef.current = "error";
         setState((prev) => ({
           ...prev,
           status: "error",
@@ -458,6 +554,7 @@ export function useDurableRun<TResult>(
       // The durable row now exists — remember the receipt before anything else.
       if (name === wire.runStartedEvent && typeof data.run_id === "string") {
         const runId = data.run_id;
+        runIdRef.current = runId;
         setState((prev) => ({ ...prev, runId }));
         if (!ctx.rejoin) {
           writePointer(wire, key, {
@@ -482,6 +579,7 @@ export function useDurableRun<TResult>(
         if (pointer) writePointer(wire, key, { ...pointer, settled: true });
         if (parsed === null || parsed === undefined) {
           clearPointer(wire, key);
+          statusRef.current = "error";
           setState((prev) => ({
             ...prev,
             status: "error",
@@ -490,6 +588,7 @@ export function useDurableRun<TResult>(
           }));
           return;
         }
+        statusRef.current = "done";
         setState((prev) => ({
           ...prev,
           status: "done",
@@ -508,30 +607,47 @@ export function useDurableRun<TResult>(
         return;
       }
 
-      // The durable snapshot a rejoin gets once the run is over. It carries the
-      // SAME result document the live final event carries, so a reload lands on
-      // the finished answer instead of on an empty screen.
+      // The durable snapshot a rejoin gets. It carries the SAME result document
+      // the live final event carries, so a reload lands on the finished answer
+      // instead of on an empty screen.
+      //
+      // 🚨 A SNAPSHOT IS NOT A VERDICT — see STREAM_LOST_MESSAGE. A rejoin that
+      // lands on a worker not executing the run gets the ROW, and mid-run the
+      // row says `processing`. Only a TERMINAL row status may end the run here.
       if (name === wire.snapshotEvent) {
         const status = typeof data.status === "string" ? data.status : null;
         if (status === "completed") {
           settleResult(resultOf(data, "snapshot"));
           return;
         }
+        const snapshotRunId =
+          typeof data.run_id === "string" ? data.run_id : runIdRef.current;
+        if (status && IN_FLIGHT_STATUSES.has(status) && snapshotRunId) {
+          // Still working on the server. Say that, keep the receipt, and keep
+          // asking — never offer "start it again" over a live run.
+          startReconnectRef.current?.(snapshotRunId);
+          return;
+        }
         clearPointer(wire, key);
+        statusRef.current = "error";
         setState((prev) => ({
           ...prev,
           status: "error",
           stage: null,
           error:
             durableRunErrorMessage(data.error) ??
-            wire.unfinishedMessage ??
-            "This run did not finish.",
+            (status && FAILED_STATUSES.has(status)
+              ? (wire.unfinishedMessage ?? "This run did not finish.")
+              : // An unrecognized status is not a licence to claim nothing was
+                // saved — say exactly what the server said.
+                `This run ended without a recorded result (the server reported "${status ?? "unknown"}").`),
         }));
         return;
       }
 
       if (name === wire.failedEvent) {
         clearPointer(wire, key);
+        statusRef.current = "error";
         setState((prev) => ({
           ...prev,
           status: "error",
@@ -547,6 +663,7 @@ export function useDurableRun<TResult>(
       // Say so plainly — it is not an error, and re-issuing would be fenced by
       // the run's lease anyway.
       if (wire.inProgressEvent && name === wire.inProgressEvent) {
+        statusRef.current = "running";
         setState((prev) => ({
           ...prev,
           status: "running",
@@ -568,6 +685,119 @@ export function useDurableRun<TResult>(
     [],
   );
 
+  /**
+   * THE HONEST RECONNECT. Entered whenever DELIVERY was lost but the run was
+   * not: a dropped socket, a stream that ended with no terminal event, or a
+   * rejoin snapshot that still says the row is in flight.
+   *
+   * It re-opens the rejoin endpoint for the SAME run id until the row reaches a
+   * terminal state — completed settles the result exactly as the live path
+   * would, failed/cancelled settles the row's own error. Nothing in here may
+   * invent a verdict.
+   *
+   * It is not `createTransportLossReattacher`
+   * (`features/agents/runtime-reconnect`): that one is a 4-attempt toast loop
+   * for an adopted CHAT stream and gives up long before a 4-minute
+   * distillation lands. This loop's exit condition is server truth.
+   */
+  const stopReconnect = useCallback(() => {
+    reconnectAbortRef.current?.abort();
+    reconnectAbortRef.current = null;
+    reconnectingRef.current = false;
+  }, []);
+
+  const startReconnect = useCallback(
+    (runId: string) => {
+      if (reconnectingRef.current || !mountedRef.current) return;
+      const { wire, key, scopeOverrides: defaultScopeOverrides } =
+        optionsRef.current;
+      reconnectingRef.current = true;
+      const controller = new AbortController();
+      reconnectAbortRef.current = controller;
+      const { signal } = controller;
+      const pointer = readPointer(wire, key);
+      const scopeOverrides =
+        pointer?.scopeOverrides ??
+        pendingScopeOverridesRef.current ??
+        defaultScopeOverrides;
+
+      runIdRef.current = runId;
+      statusRef.current = "rejoining";
+      setState((prev) => ({
+        ...prev,
+        status: "rejoining",
+        runId,
+        error: null,
+        stage: STREAM_LOST_MESSAGE,
+        stages:
+          prev.stages[prev.stages.length - 1] === STREAM_LOST_MESSAGE
+            ? prev.stages
+            : [...prev.stages, STREAM_LOST_MESSAGE],
+      }));
+
+      void (async () => {
+        const deadline = Date.now() + RECONNECT_GIVE_UP_MS;
+        let delayMs = RECONNECT_BASE_DELAY_MS;
+        let unreachable = 0;
+        try {
+          while (!signal.aborted && mountedRef.current) {
+            await waitFor(delayMs, signal);
+            if (signal.aborted || !mountedRef.current) return;
+            let failure: ApiCallError | null = null;
+            await rejoinDurableRun({
+              dispatch,
+              wire,
+              ...(scopeOverrides ? { scopeOverrides } : {}),
+              runId,
+              streamOptions: streamOptions((event) =>
+                handleEvent(event, { rejoin: true }),
+              ),
+              onUnreachable: (_message, error) => {
+                failure = error ?? null;
+              },
+            });
+            if (signal.aborted || !mountedRef.current) return;
+            const now = currentStatus();
+            if (now === "done" || now === "error") return;
+            unreachable = failure ? unreachable + 1 : 0;
+            const giveUp =
+              unreachable >= RECONNECT_MAX_UNREACHABLE ||
+              Date.now() > deadline;
+            if (giveUp) {
+              // Loud, and still never a lie: we do not know that it failed, so
+              // we do not say it did.
+              captureError({
+                source: "durable-run",
+                relation: wire.relation,
+                message: `Gave up reconnecting to ${wire.relation} run ${runId}`,
+                userMessage: "Lost contact with a background run.",
+                raw: { runId, key, unreachable },
+              });
+              statusRef.current = "error";
+              setState((prev) => ({
+                ...prev,
+                status: "error",
+                stage: null,
+                error:
+                  "Lost contact with this run. It may still be finishing on the server — reload this page to pick it up before starting another one.",
+              }));
+              return;
+            }
+            delayMs = Math.min(delayMs * 2, RECONNECT_MAX_DELAY_MS);
+          }
+        } finally {
+          if (reconnectAbortRef.current === controller)
+            reconnectAbortRef.current = null;
+          reconnectingRef.current = false;
+        }
+      })();
+    },
+    [currentStatus, dispatch, handleEvent, streamOptions],
+  );
+  useEffect(() => {
+    startReconnectRef.current = startReconnect;
+  }, [startReconnect]);
+
   const launch = useCallback(
     async (
       body: Record<string, unknown>,
@@ -586,7 +816,10 @@ export function useDurableRun<TResult>(
       pendingScopeOverridesRef.current = scopeOverrides;
       // A new launch retires the previous receipt; the new one lands with the
       // new run's id.
+      stopReconnect();
       clearPointer(wire, key);
+      runIdRef.current = null;
+      statusRef.current = "running";
       setState({
         ...initialState<TResult>(),
         status: "running",
@@ -606,7 +839,15 @@ export function useDurableRun<TResult>(
         if (response.error) throw new Error(response.error.message);
       } catch (error) {
         // A transport failure does NOT mean the run died — it detaches and
-        // keeps going server-side, and the pointer we wrote will rejoin it.
+        // keeps going server-side. Once the run has announced its id we can ask
+        // the server what actually happened, so we do that instead of printing
+        // a verdict we do not have.
+        if (currentStatus() === "done") return;
+        if (runIdRef.current) {
+          startReconnectRef.current?.(runIdRef.current);
+          return;
+        }
+        statusRef.current = "error";
         setState((prev) =>
           prev.status === "done"
             ? prev
@@ -621,6 +862,12 @@ export function useDurableRun<TResult>(
       }
       // The stream ended without a result and without an error event: the row
       // is the only truth left, and the pointer is how we ask for it.
+      if (currentStatus() !== "running") return;
+      if (runIdRef.current) {
+        startReconnectRef.current?.(runIdRef.current);
+        return;
+      }
+      statusRef.current = "error";
       setState((prev) =>
         prev.status === "running"
           ? {
@@ -632,7 +879,7 @@ export function useDurableRun<TResult>(
           : prev,
       );
     },
-    [dispatch, handleEvent, streamOptions],
+    [currentStatus, dispatch, handleEvent, streamOptions],
   );
 
   // ── The durable half: rejoin whatever was still running when we arrived ──
@@ -650,6 +897,8 @@ export function useDurableRun<TResult>(
     // A settled pointer is a finished ANSWER being restored, not a run being
     // rejoined: the form stays usable while its result comes back, and the
     // user never sees a spinner for work that is already done.
+    runIdRef.current = pointer.runId;
+    statusRef.current = pointer.settled ? "idle" : "rejoining";
     setState({
       ...initialState<TResult>(),
       status: pointer.settled ? "idle" : "rejoining",
@@ -665,8 +914,15 @@ export function useDurableRun<TResult>(
       streamOptions: streamOptions((event) =>
         handleEvent(event, { rejoin: true }),
       ),
-      onUnreachable: (message) => {
+      onUnreachable: (message, error) => {
+        // A dropped socket while picking an UNFINISHED run back up is delivery
+        // failing again, not the run failing. Keep asking.
+        if (!pointer.settled && isStreamTransportLost(error)) {
+          startReconnectRef.current?.(pointer.runId);
+          return;
+        }
         clearPointer(wire, key);
+        statusRef.current = "idle";
         setState(initialState<TResult>());
         // Loud, but not in the user's face: nothing was lost that they can act
         // on, and a tool that opens with a red error nobody caused is worse.
@@ -682,17 +938,31 @@ export function useDurableRun<TResult>(
   }, [dispatch, handleEvent, streamOptions]);
 
   const reset = useCallback(() => {
+    stopReconnect();
+    runIdRef.current = null;
+    statusRef.current = "idle";
     setState(initialState<TResult>());
-  }, []);
+  }, [stopReconnect]);
 
   const fail = useCallback((message: string) => {
+    stopReconnect();
+    statusRef.current = "error";
     setState((prev) => ({
       ...prev,
       status: "error",
       stage: null,
       error: message,
     }));
-  }, []);
+  }, [stopReconnect]);
+
+  // Nothing may keep asking the server on behalf of a screen that is gone.
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+      stopReconnect();
+    },
+    [stopReconnect],
+  );
 
   // THE FLOATING LAW: a live run streams into the floating window — never a
   // block above the surface's own content, and never a spinner. No-op when the
@@ -798,7 +1068,7 @@ async function rejoinDurableRun({
   streamOptions:
     | { onStreamEvent: (event: TypedStreamEvent) => void }
     | { consumeStream: ForeignStreamConsumer; signal: AbortSignal };
-  onUnreachable: (message: string) => void;
+  onUnreachable: (message: string, error?: ApiCallError) => void;
 }): Promise<void> {
   try {
     const response = await dispatch(
@@ -812,7 +1082,7 @@ async function rejoinDurableRun({
       }),
     );
     if (response.error) {
-      onUnreachable(response.error.message);
+      onUnreachable(response.error.message, response.error);
     }
   } catch (error) {
     onUnreachable(
