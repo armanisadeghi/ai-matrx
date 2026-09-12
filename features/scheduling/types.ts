@@ -61,10 +61,60 @@ export type AuthMode = "ask" | "auto";
 
 // ── DB row shapes (snake_case, matches Supabase) ───────────────────────────
 
+/**
+ * What the repeat guard writes under `sch_task.metadata.auto_suspended` when
+ * it switches a schedule off (aidream `matrx_scheduler/repeat_guard.py`), and
+ * what the admin restore adds under `restored` when a person puts it back
+ * (aidream `services/scheduling/admin.py`). Every field is optional because
+ * the block is written by a server the client does not version-lock with.
+ */
+export interface AutoSuspendedBlock {
+  source?: string;
+  at?: string;
+  run_id?: string;
+  failure_signature?: string;
+  consecutive_failures?: number;
+  reason?: string;
+  /** Present when the guard overrode a human approval — in those words. */
+  overriding_approval?: string;
+  override_notice?: string;
+  /** Present only on history entries: who re-enabled it and what that restored. */
+  restored?: {
+    at?: string;
+    by?: string | null;
+    restored_approval?: string | null;
+  };
+}
+
+/**
+ * The parts of `sch_task.metadata` the UI reads. `approval` / `approved_*`
+ * are the recorded human approval of a system schedule
+ * (common-docs/policies/no-unapproved-schedules.md); the rest is the guard's
+ * suspension record and its history.
+ */
+export interface SchTaskMetadata {
+  auto_suspended?: AutoSuspendedBlock;
+  auto_suspended_history?: AutoSuspendedBlock[];
+  approval?: string;
+  approved_by?: string;
+  approved_at?: string;
+  approved_interval?: string;
+  handler_gate_pending?: unknown;
+}
+
+/**
+ * `agent` = a user's scheduled agent run (editable at /schedules/[id]/edit).
+ * `tool` = a registered platform system job (cadence/args/enablement are
+ * controlled from the System jobs console; enabling goes through the admin
+ * PATCH, never the user PATCH, which refuses non-agent kinds).
+ */
+export type SchedulableKind = "agent" | "tool";
+
 export interface SchTaskRow {
   id: string;
   user_id: string;
-  kind: "agent";
+  kind: SchedulableKind;
+  metadata: Record<string, unknown> | null;
   title: string;
   description: string | null;
   queue: string;
@@ -146,7 +196,9 @@ export type OutputRef = {
 export interface AgendaTask {
   id: string;
   userId: string;
-  kind: "agent";
+  kind: SchedulableKind;
+  /** Parsed `sch_task.metadata` — suspension record + recorded approval. */
+  metadata: SchTaskMetadata;
   title: string;
   description: string | null;
   queue: string;

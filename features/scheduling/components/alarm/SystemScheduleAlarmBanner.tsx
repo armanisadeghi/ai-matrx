@@ -220,7 +220,7 @@ export default function SystemScheduleAlarmBanner() {
                   {/* THE DOOR LAW: every schedule named here opens — the record
                       route is where re-enabling lives. */}
                   <EntityRef
-                    token="scheduled_task"
+                    token="sch_task"
                     id={item.taskId}
                     name={item.title}
                     href={item.href}

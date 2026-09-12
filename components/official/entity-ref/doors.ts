@@ -179,6 +179,9 @@ const NOUN_ALIASES: Record<string, string> = {
   organisation: "organization",
   bot: "agent",
   workflow_definition: "workflow",
+  // scheduler.sch_task — the scheduler's own sentences say "scheduled task".
+  schedule: "sch_task",
+  scheduled_task: "sch_task",
 };
 
 /** A word as it appears in prose → a candidate entity token. */
@@ -204,13 +207,20 @@ function nounToToken(word: string): string {
  */
 export function tokenFromPrecedingWords(preceding: string): string | null {
   const words = preceding.trim().split(/\s+/).filter(Boolean).slice(-4);
+  // The compound ending at the id first, longest first ("scheduled task" →
+  // `sch_task`, "agent version" → `agent_version`). A bare noun that is ALSO a
+  // token must not win over the compound it closes: "scheduled task <id>"
+  // resolved to `task` and minted a door onto /tasks/<a schedule id> — the
+  // wrong record, which reads as a fact and is a lie (2026-09-11).
+  for (let len = words.length; len >= 2; len--) {
+    const joined = words.slice(-len).map(nounToToken).filter(Boolean).join("_");
+    const phrase = NOUN_ALIASES[joined] ?? joined;
+    if (phrase && hasAnyDoor(phrase)) return phrase;
+  }
+  // Then the nearest single noun that opens.
   for (let i = words.length - 1; i >= 0; i--) {
-    // Nearest noun first, then the compound it may be part of
-    // ("agent version" → `agent_version` before falling back to `version`).
     const single = nounToToken(words[i]);
     if (single && hasAnyDoor(single)) return single;
-    const phrase = words.slice(i).map(nounToToken).filter(Boolean).join("_");
-    if (phrase && phrase !== single && hasAnyDoor(phrase)) return phrase;
   }
   return null;
 }

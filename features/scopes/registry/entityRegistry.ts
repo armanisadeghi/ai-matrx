@@ -32,6 +32,7 @@ import {
   BookOpen,
   BrainCircuit,
   Boxes,
+  CalendarClock,
   Building2,
   Contact,
   Database,
@@ -452,6 +453,16 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: ListTodo,
     labelPlural: "Tasks",
     hrefFor: (id) => `/tasks/${id}`,
+  },
+  // A scheduled task (scheduler.sch_task) — a user's scheduled agent run or a
+  // platform system job. The record route is where re-enabling lives; without
+  // this door every alarm, refusal and guard sentence naming one was a dead
+  // end (2026-09-11), and prose saying "scheduled task <id>" minted a link to
+  // /tasks/<id> — the wrong record.
+  sch_task: {
+    Icon: CalendarClock,
+    labelPlural: "Schedules",
+    hrefFor: (id) => `/schedules/${id}`,
   },
   war_room: {
     Icon: UsersRound,
