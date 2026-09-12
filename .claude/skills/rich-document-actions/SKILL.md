@@ -246,7 +246,7 @@ The shape is `{ overlayId, data, instanceId }` — **not** `{ component, props }
 
 - `pnpm type-check` and `pnpm eslint features/rich-document/ <your-files>` — must be clean (the feature itself carries zero errors; pre-existing react-compiler warnings in unrelated files are not yours to fix here).
 - Browser: render the surface, open the ⋯ menu — confirm the multi-layer hierarchy, that source-incompatible actions are hidden, and that a submenu expands. For a **remote** surface: confirm the body is chrome-free and the header bar opens a menu that operates on the body's live content. For **context menu**: DevTools Network shows no context-menu chunk until first right-click; during an active stream the native browser menu shows instead.
-- Auto-login for testing: `/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/<route>`.
+- Auto-login for testing (nonce handshake, two steps): `openssl rand -hex 16 > .dev-login-nonce`, then `/api/dev-login?nonce=<that value>&next=/<route>`.
 
 ---
 

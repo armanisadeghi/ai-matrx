@@ -47,7 +47,7 @@ Every rule here was verified live on 2026-08-09 against production and localhost
 
 - **Canonical admin credentials:** `AI_ADMIN_USERNAME="admin@admin.com"` and `AI_ADMIN_PASSWORD="<see AI_ADMIN_PASSWORD in .env>"`.
 - **Form login:** open `/login` and use those values. The session persists in that browser profile and hydrates client data pages more reliably.
-- **Dev auto-login (localhost only):** set both admin variables plus `DEV_LOGIN_TOKEN`, then open `http://localhost:<port>/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/<route>`. Redirects 307 when a session exists.
+- **Dev auto-login (localhost only) — the nonce handshake, the ONLY way in.** Two steps, and no credential ever enters a URL: (1) in a shell in this checkout run `openssl rand -hex 16 > .dev-login-nonce` (gitignored); (2) open `http://localhost:<port>/api/dev-login?nonce=<that value>&next=/<route>`. Redirects 307. The file is consumed by that one request — match or mismatch — so the nonce is worthless by the time anything logs it. The old `?token=$DEV_LOGIN_TOKEN` path was REMOVED (it now 401s with this recipe): a durable credential in a URL lands in browser history, dev-server logs and agent transcripts, and leaked exactly that way on 2026-08-31 and again on 2026-09-11.
 
 ### No org is off-limits — verify the site the task NAMES
 

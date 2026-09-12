@@ -41,7 +41,7 @@ Criteria numbering matches `phase-3-plan.md` §3.
 
 ## 3. Manual browser checklist
 
-Run against `pnpm dev` with the auto-login URL `http://localhost:3000/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/sync-demo/preferences` (lands signed-in on the preferences demo).
+Run against `pnpm dev`, signing in with the nonce handshake: `openssl rand -hex 16 > .dev-login-nonce`, then `http://localhost:3000/api/dev-login?nonce=<that value>&next=/sync-demo/preferences` (lands signed-in on the preferences demo).
 
 ### 3.1 Server-decoupling sanity
 

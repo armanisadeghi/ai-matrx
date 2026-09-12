@@ -22,7 +22,7 @@ vision: [.claude/skills/core-route-headers/SKILL.md, .claude/skills/ios-mobile-f
 - **Primitives — consume, never hand-roll:** `features/shell/components/header/templates/` → `EntityModeHeader` ([id] routes), `CrumbTrailHeader` (drill-downs), `MobilePanelShell` (any multi-pane route: pass the existing desktop layout verbatim + `main` + `panels`; a non-navigation in-panel action closes the drawer with `useMobilePanelClose()`). `@ai-matrx/design-system/data-table` handles mobile table scroll for every consumer; a table that must stay bespoke consumes `components/official/mobile-table/mobileTable.ts` (`MOBILE_TABLE_FROZEN`) — never a hand-copied class string.
 - **CSS trap, do not rediscover:** `app/globals.css` has an UNLAYERED mobile block (`@media max-width:768px`) with `* { max-width:100% }` and `table { display:block; overflow-x:auto; max-width:100% }`. Unlayered CSS beats Tailwind's layered utilities (so `max-w-none` as a class cannot win) and the TABLE element is the scroller, not its container. Also a base `w-full` outranks `max-sm:w-max` — write width rules mobile-first.
 - Audits (keep at zero): `pnpm check:page-headers`; `grep -rln "calc(100dvh\|calc(100vh\|h-screen\|h-page" "app/(core)" --include="*.tsx"`.
-- Verify: dev server + `/api/dev-login?token=<DEV_LOGIN_TOKEN>&next=/<route>`, at 375 AND 1280.
+- Verify: dev server + the nonce handshake (`openssl rand -hex 16 > .dev-login-nonce`, then `/api/dev-login?nonce=<that value>&next=/<route>`), at 375 AND 1280.
 
 ## Remaining work
 
