@@ -2,7 +2,7 @@
 
 **Status:** `active` — both features in production
 **Tier:** `2`
-**Last updated:** `2026-09-11`
+**Last updated:** `2026-09-12`
 
 > Combined doc. **Projects and Tasks are first-class _containers_** (like orgs and scopes): nearly every resource table carries both a `project_id` and a `task_id` column, so "what belongs to this project/task" is a direct FK query — the same shape as the org workspace's `organization_id`. Tasks nest under projects (`project_id`) and under each other (`parent_task_id`). They share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
@@ -150,6 +150,12 @@ Three channels, all frontend-side because ALL delivery infra (Resend email in `l
 Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tasks-world-class.md).
 
 ## Change log
+
+- `2026-09-12` — **Terminal task content has one scroll owner.** The desktop
+  editor body and mobile task-detail body scroll above their bottom action bars,
+  which remain in normal flex flow rather than fixed overlays. The responsive
+  contract test now rejects outer-shell clearance or a second terminal scroll
+  region before the S8 live geometry matrix runs.
 
 - `2026-09-12` — **Task copy actions use one borderless dropdown trigger.** List, table,
   row, and schedule-style task surfaces now compose the shared `CopyButtons` unified
