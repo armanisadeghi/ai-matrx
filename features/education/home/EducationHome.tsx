@@ -138,17 +138,77 @@ const BLOCKS: HomeBlock[] = [
  */
 function toolNavigation(snapshot: EducationSnapshot): MetricNavigationItem[] {
   const toolBySlug = new Map(EDU_TOOLS.map((tool) => [tool.slug, tool]));
+  const libraryMetric = new Map<string, { value: number; description: string }>(
+    [
+      [
+        "flashcards",
+        {
+          value: snapshot.library.bySubtype.flashcards ?? 0,
+          description: "Flashcard artifacts you own",
+        },
+      ],
+      [
+        "quizzes",
+        {
+          value: snapshot.library.bySubtype.quiz ?? 0,
+          description: "Quiz artifacts you own",
+        },
+      ],
+      [
+        "practice-tests",
+        {
+          value: snapshot.library.bySubtype.practice_test ?? 0,
+          description: "Practice-test artifacts you own",
+        },
+      ],
+      [
+        "audio-study",
+        {
+          value: snapshot.library.bySubtype.audio ?? 0,
+          description: "Audio study artifacts you own",
+        },
+      ],
+      [
+        "mind-maps",
+        {
+          value: snapshot.library.bySubtype.mind_map ?? 0,
+          description: "Mind-map artifacts you own",
+        },
+      ],
+      [
+        "memory",
+        {
+          value: snapshot.library.bySubtype.memory_aid ?? 0,
+          description: "Memory-aid artifacts you own",
+        },
+      ],
+      [
+        "summaries",
+        {
+          value: snapshot.library.bySubtype.summary ?? 0,
+          description: "Summary artifacts you own",
+        },
+      ],
+      [
+        "notes",
+        {
+          value: snapshot.library.bySubtype.notes ?? 0,
+          description: "Study notes you own",
+        },
+      ],
+    ],
+  );
   return EDU_TOOL_NAV.map((entry) => {
     const tool = toolBySlug.get(entry.slug);
-    const isLibrary = entry.slug === "flashcards";
     const isKits = entry.slug === "kits";
-    const laneState = isLibrary
+    const metric = libraryMetric.get(entry.slug);
+    const laneState = metric
       ? snapshot.availability.library.state
       : isKits
         ? snapshot.availability.kits.state
         : "ready";
-    const value = isLibrary
-      ? snapshot.library.byKind.fc_set
+    const value = metric
+      ? metric.value
       : isKits
         ? snapshot.kits.total
         : undefined;
@@ -160,8 +220,8 @@ function toolNavigation(snapshot: EducationSnapshot): MetricNavigationItem[] {
       description:
         value === undefined
           ? entry.description
-          : isLibrary
-            ? "Flashcard artifacts you own"
+          : metric
+            ? metric.description
             : "Study kits you own",
       ...(value !== undefined ? { value, state: laneState } : {}),
       availability:
@@ -264,6 +324,18 @@ export function EducationHome() {
         )
         .sort((a, b) => b.signal - a.signal)
     : [];
+  const recent = blocks.find(({ block }) => block.id === "recent");
+  const study = blocks.filter(
+    ({ block }) => block.id === "study-today" || block.id === "due-by-mode",
+  );
+  const kits = blocks.filter(({ block }) => block.id === "kits");
+  const otherBlocks = blocks.filter(
+    ({ block }) =>
+      block.id !== "recent" &&
+      block.id !== "study-today" &&
+      block.id !== "due-by-mode" &&
+      block.id !== "kits",
+  );
 
   return (
     <main className="h-full overflow-y-auto bg-textured pb-safe">
@@ -283,7 +355,16 @@ export function EducationHome() {
               snapshot={snapshot}
               onRetry={() => setReloadKey((key) => key + 1)}
             />
-            {blocks.map(({ block }) => block.render(snapshot))}
+            {recent?.block.render(snapshot)}
+            <div className="grid gap-5 xl:grid-cols-2">
+              <div className="flex flex-col gap-5">
+                {study.map(({ block }) => block.render(snapshot))}
+                {otherBlocks.map(({ block }) => block.render(snapshot))}
+              </div>
+              <div className="flex flex-col gap-5">
+                {kits.map(({ block }) => block.render(snapshot))}
+              </div>
+            </div>
           </>
         )}
       </div>

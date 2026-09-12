@@ -11,9 +11,18 @@
 // second definition of "how well do I know this" anywhere on this page.
 
 import Link from "next/link";
-import { ArrowRight, LayoutGrid, Rows3 } from "lucide-react";
+import {
+  ArrowRight,
+  LayoutGrid,
+  MoreHorizontal,
+  Rows3,
+  TableProperties,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
+import { EDUCATION_LIBRARY_COLUMNS } from "../../library/columns";
 import { EducationLibraryCards } from "../../library/components/EducationLibraryCards";
 import { EducationLibraryRows } from "../../library/components/EducationLibraryRows";
 import { educationLibraryHref } from "../../library/types";
@@ -22,9 +31,15 @@ import type { EducationSnapshot } from "../types";
 
 export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
   const { prefs, setView } = useListViewPrefs("education-home-recent", {
-    view: "cards",
+    view: "table",
   });
-  const view = prefs.view === "rows" ? "rows" : "cards";
+  const view =
+    prefs.view === "cards" || prefs.view === "rows" || prefs.view === "table"
+      ? prefs.view
+      : "table";
+  const tableColumns = EDUCATION_LIBRARY_COLUMNS.filter((column) =>
+    ["title", "kind", "size", "progress", "due", "updated"].includes(column.id),
+  ).map((column) => column.column);
 
   return (
     <section>
@@ -33,12 +48,22 @@ export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
           Recently created
         </h2>
         <div className="flex items-center gap-1">
-          <div className="hidden items-center rounded-md border border-border p-0.5 sm:flex">
+          <div className="flex items-center rounded-md border border-border p-0.5">
+            <Button
+              type="button"
+              size="icon"
+              variant={view === "table" ? "secondary" : "ghost"}
+              className="h-11 w-11 sm:h-8 sm:w-8"
+              aria-label="Show recent study items as a table"
+              onClick={() => setView("table")}
+            >
+              <TableProperties className="h-4 w-4" />
+            </Button>
             <Button
               type="button"
               size="icon"
               variant={view === "cards" ? "secondary" : "ghost"}
-              className="h-8 w-8"
+              className="h-11 w-11 sm:h-8 sm:w-8"
               aria-label="Show recent study items as cards"
               onClick={() => setView("cards")}
             >
@@ -48,7 +73,7 @@ export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
               type="button"
               size="icon"
               variant={view === "rows" ? "secondary" : "ghost"}
-              className="h-8 w-8"
+              className="h-11 w-11 sm:h-8 sm:w-8"
               aria-label="Show recent study items as rows"
               onClick={() => setView("rows")}
             >
@@ -64,7 +89,42 @@ export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
           </Link>
         </div>
       </div>
-      {view === "rows" ? (
+      {view === "table" ? (
+        <MatrxDataTable
+          data={snapshot.library.recent}
+          columns={tableColumns}
+          getRowId={(row) => row.id}
+          pageSize={0}
+          zebra
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Find recent study items…",
+          }}
+          rowActions={(row) => (
+            <ItemMenu config={educationLibraryMenuFor(row)} align="end">
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10"
+                aria-label={`Actions for ${row.title}`}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </ItemMenu>
+          )}
+          mobileCards={(row) => (
+            <EducationLibraryRows
+              rows={[row]}
+              density="comfortable"
+              showShared={false}
+              menuFor={educationLibraryMenuFor}
+              hrefFor={educationLibraryHref}
+            />
+          )}
+          emptyState={{ title: "No recent study items" }}
+        />
+      ) : view === "rows" ? (
         <EducationLibraryRows
           rows={snapshot.library.recent}
           density="comfortable"
