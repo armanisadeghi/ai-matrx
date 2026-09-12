@@ -14,7 +14,7 @@ export default function TermsOfServicePage() {
       <article className="prose prose-neutral mx-auto max-w-3xl px-4 py-8 dark:prose-invert sm:px-6 sm:py-12">
         <h1>Terms of Service</h1>
         <p>
-          <strong>Last updated:</strong> August 11, 2026
+          <strong>Last updated:</strong> September 12, 2026
         </p>
         <p>
           AI Matrx is a technology product owned and operated by{" "}
@@ -52,12 +52,16 @@ export default function TermsOfServicePage() {
           results you request.
         </p>
         <p>
-          If you connect a third-party service, including Google Workspace, you
-          authorize AI Matrx to access that service only within the permissions
-          you approve and only to provide the feature you choose. You are
-          responsible for having the necessary rights to the content and
-          accounts you connect. You can disconnect Google access from AI Matrx
-          or your Google Account settings. Our{" "}
+          If you connect a third-party service, including Google Workspace or a
+          seller-owned marketplace account, you authorize AI Matrx to access
+          that service only within the permissions you approve and only to
+          provide the feature you choose. You are responsible for having the
+          necessary rights to the content and accounts you connect. For Amazon,
+          AI Matrx acts as a solution provider for your authorized selling
+          account; AI Matrx is not the seller and does not create or change a
+          listing except through a feature you direct. You can disconnect a
+          connected service from AI Matrx and, where supported, from that
+          provider&rsquo;s own account settings. Our{" "}
           <Link href="/privacy-policy">Privacy Policy</Link> explains how we
           handle connected data.
         </p>

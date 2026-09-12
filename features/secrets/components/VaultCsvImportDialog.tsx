@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FileUp, Loader2, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import {
   hasAmbiguousCsvMapping,
   isPossibleDuplicateRow,
   parseCsvFile,
+  prepareCsvImportRow,
   runCsvImportCommands,
   suggestedCsvMapping,
   toCsvImportCommand,
@@ -122,6 +123,9 @@ export function VaultCsvImportDialog({
   const [createDuplicateRows, setCreateDuplicateRows] = useState<Set<number>>(
     new Set(),
   );
+  const [skipInvalidRows, setSkipInvalidRows] = useState<Set<number>>(
+    new Set(),
+  );
   const [result, setResult] = useState<CsvImportOutcome | null>(null);
   const [otpItems, setOtpItems] = useState<{ id: string; title: string }[]>([]);
 
@@ -136,6 +140,7 @@ export function VaultCsvImportDialog({
     setUnavailable(null);
     setEnableBrowserFill(false);
     setCreateDuplicateRows(new Set());
+    setSkipInvalidRows(new Set());
     if (!preserveResult) {
       setResult(null);
       setOtpItems([]);
@@ -228,6 +233,41 @@ export function VaultCsvImportDialog({
         );
     }
   };
+  const preparedRows = useMemo(() => {
+    if (!preview || !limitsRef.current || !previewActor.current) return [];
+    return preview.rows.map((row) =>
+      prepareCsvImportRow({
+        source,
+        preview,
+        row,
+        mapping,
+        principal,
+        expectedActor: previewActor.current!,
+        rowId: `preview-${row.rowNumber}`,
+        limits: limitsRef.current!,
+        browserFillEnabled: enableBrowserFill,
+        existingItems,
+        skipPossibleDuplicate: !createDuplicateRows.has(row.rowNumber),
+      }),
+    );
+  }, [
+    createDuplicateRows,
+    enableBrowserFill,
+    existingItems,
+    mapping,
+    preview,
+    principal,
+    source,
+  ]);
+  const selectedInvalidRows = preparedRows.filter(
+    (prepared, index) =>
+      prepared.status === "invalid" &&
+      !skipInvalidRows.has(preview?.rows[index]?.rowNumber ?? -1),
+  );
+  const firstInvalidDiagnostic = selectedInvalidRows.find(
+    (prepared): prepared is Extract<typeof prepared, { status: "invalid" }> =>
+      prepared.status === "invalid",
+  )?.diagnostic;
   const importRows = async (retry = false) => {
     const limits = limitsRef.current;
     if (!preview || !limits) return;
@@ -235,6 +275,10 @@ export function VaultCsvImportDialog({
       setError(
         "Map each title, username, password, notes, and OTP column once before importing.",
       );
+      return;
+    }
+    if (!retry && selectedInvalidRows.length > 0) {
+      setError(firstInvalidDiagnostic ?? "Review invalid rows.");
       return;
     }
     setRunning(true);
@@ -256,7 +300,7 @@ export function VaultCsvImportDialog({
       const commands = retry
         ? frozenCommands.current
         : preview.rows.map((row) => {
-            const command = toCsvImportCommand({
+            const prepared = prepareCsvImportRow({
               source,
               preview,
               row,
@@ -266,16 +310,11 @@ export function VaultCsvImportDialog({
               rowId: crypto.randomUUID(),
               limits,
               browserFillEnabled: enableBrowserFill,
-            });
-            if (!command) return null;
-            return isPossibleDuplicateRow(
-              row,
-              preview,
-              mapping,
               existingItems,
-            ) && !createDuplicateRows.has(row.rowNumber)
-              ? null
-              : command;
+              skipPossibleDuplicate: !createDuplicateRows.has(row.rowNumber),
+            });
+            if (prepared.status === "invalid") return null;
+            return prepared.status === "ready" ? prepared.command : null;
           });
       if (!retry) {
         frozenCommands.current = commands;
@@ -333,9 +372,12 @@ export function VaultCsvImportDialog({
           skipped: (retry ? (previous?.skipped ?? 0) : 0) + outcome.skipped,
           failed: outcome.failed,
           cancelled: outcome.cancelled,
+          definitive: outcome.definitive,
           progressCursor: outcome.progressCursor,
         }));
-        if (outcome.progressCursor === commands.length) {
+        if (outcome.definitive) {
+          clearSensitiveDraft(true);
+        } else if (outcome.progressCursor === commands.length) {
           clearSensitiveDraft(true);
         }
       }
@@ -431,6 +473,39 @@ export function VaultCsvImportDialog({
                   ? `${unsupportedRows} non-login, passkey, or attachment rows are unsupported by CSV and will be skipped.`
                   : ""}
               </p>
+              {preparedRows.map((prepared, index) => {
+                if (prepared.status !== "invalid") return null;
+                const row = preview.rows[index];
+                if (!row) return null;
+                const skipped = skipInvalidRows.has(row.rowNumber);
+                return (
+                  <div
+                    key={`invalid-${row.rowNumber}`}
+                    className="flex items-center justify-between gap-2 rounded-md border border-destructive/40 p-2 text-xs text-destructive"
+                  >
+                    <span>
+                      {skipped
+                        ? `Row ${row.rowNumber} will be skipped.`
+                        : prepared.diagnostic}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setSkipInvalidRows((current) => {
+                          const next = new Set(current);
+                          if (skipped) next.delete(row.rowNumber);
+                          else next.add(row.rowNumber);
+                          return next;
+                        })
+                      }
+                    >
+                      {skipped ? "Review row" : "Skip row"}
+                    </Button>
+                  </div>
+                );
+              })}
               <div className="grid gap-2 sm:grid-cols-2">
                 {preview.headers.map((header, index) => (
                   <div
@@ -518,8 +593,8 @@ export function VaultCsvImportDialog({
                 />
                 <span>
                   Enable browser fill only for imported logins that have a
-                  username, password, and HTTPS destination. Matching
-                  destinations become visible credential metadata.
+                  username, password, and HTTPS or loopback destination.
+                  Matching destinations become visible credential metadata.
                 </span>
               </label>
             </div>

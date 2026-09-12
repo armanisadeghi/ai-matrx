@@ -74,6 +74,8 @@ must obey.
 
 ## Change log
 
+- **2026-09-12** — Providers now use the shared `MatrxDataTable` over a complete local `ai.provider` read. The table defaults to 25 local rows per page and preserves provider selection, URL-driven detail opening, mobile cards, outbound links, and the system-provider delete lock. The parent editor owns row opening: the package detail panel is disabled to prevent double opening, and mobile card names explicitly open that same editor.
+
 - **2026-09-11** — Provider Sync's dashboard mount loader no longer asks its parent to
   reload. The parent skeleton is first-load-only, so explicit refreshes after writes keep the
   dashboard mounted instead of creating an unbounded mount → parent reload → unmount loop.

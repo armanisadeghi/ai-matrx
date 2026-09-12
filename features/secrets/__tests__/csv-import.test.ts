@@ -4,6 +4,7 @@ import {
   parseCsvText,
   runCsvImportCommands,
   safeDestination,
+  prepareCsvImportRow,
   suggestedCsvMapping,
   toCsvImportCommand,
   type CsvImportCommand,
@@ -145,6 +146,7 @@ describe("Vault CSV import", () => {
       skipped: 0,
       failed: 0,
       cancelled: true,
+      definitive: false,
       progressCursor: 1,
     });
   });
@@ -198,6 +200,78 @@ describe("Vault CSV import", () => {
     ]);
   });
 
+  test("keeps profile columns encrypted instead of misclassifying them as files", () => {
+    const preview = parseCsvText("name,profile\nExample,private", limits);
+    const row = preview.rows[0];
+    if (!row) throw new Error("test fixture did not parse a row");
+    const prepared = prepareCsvImportRow({
+      source: "generic",
+      preview,
+      row,
+      mapping: suggestedCsvMapping(preview.headers),
+      principal: { type: "user" },
+      expectedActor: actor,
+      rowId: "00000000-0000-4000-8000-000000000003",
+      limits,
+    });
+    expect(row.issue).toBeUndefined();
+    expect(prepared).toMatchObject({
+      status: "ready",
+      command: {
+        body: {
+          fields: expect.arrayContaining([
+            expect.objectContaining({
+              field_key: "import_column_2",
+              value: "private",
+            }),
+          ]),
+        },
+      },
+    });
+  });
+
+  test("refuses normalized rows over the configured limit before dispatch", () => {
+    const preview = parseCsvText("name,password\nExample,secret", limits);
+    const row = preview.rows[0];
+    if (!row) throw new Error("test fixture did not parse a row");
+    expect(
+      prepareCsvImportRow({
+        source: "generic",
+        preview,
+        row,
+        mapping: suggestedCsvMapping(preview.headers),
+        principal: { type: "user" },
+        expectedActor: actor,
+        rowId: "00000000-0000-4000-8000-000000000004",
+        limits: { ...limits, maxPlaintextFieldBytes: 4 },
+      }),
+    ).toEqual({
+      status: "invalid",
+      diagnostic: "Row 2 exceeds this organization’s encrypted field limit.",
+    });
+  });
+
+  test("refuses normalized rows over the configured request body limit", () => {
+    const preview = parseCsvText("name,password\nExample,secret", limits);
+    const row = preview.rows[0];
+    if (!row) throw new Error("test fixture did not parse a row");
+    expect(
+      prepareCsvImportRow({
+        source: "generic",
+        preview,
+        row,
+        mapping: suggestedCsvMapping(preview.headers),
+        principal: { type: "user" },
+        expectedActor: actor,
+        rowId: "00000000-0000-4000-8000-000000000005",
+        limits: { ...limits, maxRequestBodyBytes: 32 },
+      }),
+    ).toEqual({
+      status: "invalid",
+      diagnostic: "Row 2 exceeds this organization’s request size limit.",
+    });
+  });
+
   test("requires username, password, HTTPS, and opt-in before browser fill", () => {
     const preview = parseCsvText(
       "name,username,password,url\nExample,user,secret,https://example.test/path",
@@ -238,5 +312,20 @@ describe("Vault CSV import", () => {
         browserFillEnabled: true,
       })?.body,
     ).toMatchObject({ browser_fill_enabled: false });
+    const local = parseCsvText(
+      "name,username,password,url\nLocal,user,secret,http://localhost:3000/login",
+      limits,
+    );
+    const localRow = local.rows[0];
+    if (!localRow) throw new Error("test fixture did not parse a row");
+    expect(
+      toCsvImportCommand({
+        ...common,
+        preview: local,
+        row: localRow,
+        mapping: suggestedCsvMapping(local.headers),
+        browserFillEnabled: true,
+      })?.body.browser_fill_enabled,
+    ).toBe(true);
   });
 });

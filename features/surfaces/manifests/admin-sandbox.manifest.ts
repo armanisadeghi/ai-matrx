@@ -191,7 +191,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "accessible_sandbox_instances",
     label: "Accessible sandbox instances",
     description:
-      "The current page of sandbox instances (up to 100) the current account is authorized to access and that match the status filter, each with { id, sandbox_id, user_id, status, created_at, expires_at, tier, container_id, ttl_seconds, hot_path, cold_path }. Bindable rather than auto-context. Empty array when none match.",
+      "All sandbox instances the current account is authorized to access and that match the status filter, each with { id, sandbox_id, user_id, status, created_at, expires_at, tier, container_id, ttl_seconds, hot_path, cold_path }. Bindable rather than auto-context. Empty array when none match.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 6000,

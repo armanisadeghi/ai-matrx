@@ -397,6 +397,69 @@ window.__SNAP__ = function () {
   return sections.length;
 };
 
+/**
+ * SETTLE-BEFORE-CAPTURE (B-49). The sweep already waits for heights
+ * (__SETTLED__), the theme transition (3 s) and two whole-pixel snaps, and
+ * that was enough for 139 of 139 bodies on the day of the S5 sweep — but a
+ * later run of \`check:kind-sandbox-parity\` flaked once (schema_fix_card,
+ * 40 % different, then 8/8 clean three runs straight): the fixed sample is
+ * captured with a much shorter path than a full sweep, so a body whose CSS
+ * keeps something moving after the theme wait (an \`animate-pulse\` badge, a
+ * \`transition-all\` row, a font swap-in) can still be mid-transition at the
+ * exact millisecond \`Page.captureScreenshot\` fires. This does not change
+ * what a body IS allowed to look like — it only makes sure both columns are
+ * captured after they have stopped changing, the same discipline the 3 s
+ * theme wait already applies to color, extended to layout/opacity too.
+ *
+ * Three checks, in order, each with its own small bound so a body that
+ * genuinely never stops (a permanent \`animate-pulse\` loader) cannot hang the
+ * sweep — it falls through to capture at the bound like every other timeout
+ * in this file:
+ *   1. \`document.fonts.ready\` — a face still swapping in moves every glyph's
+ *      width, which moves every line break after it (bounded: already a
+ *      resolved/rejecting promise or the browser's own timeout).
+ *   2. two \`requestAnimationFrame\` ticks — lets layout/paint catch up with
+ *      whatever \`__SNAP__\`'s height write and the theme-class toggle just
+ *      queued, mirroring the two-rAF idiom this file's own comments describe
+ *      for the cross-origin frame's self-measurement.
+ *   3. no RUNNING, FINITE-duration Web Animation on the case root — polled at
+ *      50 ms up to \`maxMs\` (default 1500 ms, comfortably past the app's
+ *      longest named one-shot, the 900 ms "beat" B-45 diagnosed). An
+ *      INFINITE-iteration animation (\`animate-pulse\`, a permanent skeleton)
+ *      is excluded on purpose: it never finishes, and a body that pulses
+ *      forever is a real product state, not a capture-timing accident — same
+ *      \`canonicalization_map_board\` reasoning B-45 already recorded, made
+ *      into a guard here instead of a one-off explanation there.
+ */
+window.__CAPTURE_SETTLE__ = async function (rootSelector, maxMs) {
+  var start = Date.now();
+  var bound = maxMs || 1500;
+  var until = start + bound;
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  } catch (e) { /* a font-load rejection is not a reason to fail the capture */ }
+  await new Promise(function (r) {
+    requestAnimationFrame(function () { requestAnimationFrame(r); });
+  });
+  function stillRunning() {
+    var root = rootSelector ? document.querySelector(rootSelector) : document.body;
+    if (!root || !root.getAnimations) return false;
+    try {
+      return root.getAnimations({ subtree: true }).some(function (a) {
+        if (a.playState !== "running") return false;
+        var timing = a.effect && a.effect.getTiming ? a.effect.getTiming() : null;
+        return !!timing && timing.iterations !== Infinity;
+      });
+    } catch (e) {
+      return false;
+    }
+  }
+  while (stillRunning() && Date.now() < until) {
+    await new Promise(function (r) { setTimeout(r, 50); });
+  }
+  return Date.now() - start;
+};
+
 window.__SET_THEME__ = function (dark) {
   document.documentElement.classList.toggle("dark", !!dark);
   var tokens = rootTokens();
@@ -536,6 +599,24 @@ async function runBatch(
             // the whole-pixel snap is re-taken for this theme.
             await page.evaluate("window.__SNAP__()").catch(() => undefined);
             await new Promise((r) => setTimeout(r, 300));
+            // SETTLE-BEFORE-CAPTURE (B-49), once for the whole page, ONE beat
+            // before the per-case loop starts — not per case. An earlier
+            // version of this fix called it once per column per case, which
+            // stretches the LATER cases in a batch further from the snap
+            // moment than the earlier ones (each settle call, even a fast
+            // one, is more time for an unrelated async re-render to land) and
+            // made the flake WORSE, not better (measured: every one of 6
+            // back-to-back runs failed, mostly in the second half of the
+            // batch, vs 0 of 9 on the unmodified sweep run the same way).
+            // Settling the root ONCE keeps every case in the batch the same
+            // distance from the snap it is measured and shot against.
+            const settleMs = await page
+                .evaluate<number>('window.__CAPTURE_SETTLE__("body", 1500)')
+                .catch(() => -1);
+            if (process.env.PARITY_DEBUG) {
+                // eslint-disable-next-line no-console
+                console.log(`    settle[${theme}] ${settleMs}ms`);
+            }
             for (let i = 0; i < cases.length; i++) {
                 const rects = await page.evaluate<{ off: Rect; on: Rect }>(
                     `window.__RECTS__(${i})`,

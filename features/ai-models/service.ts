@@ -744,14 +744,18 @@ export const aiModelService = {
    *  `fetchProviders()` above shares this complete generated row contract;
    *  its read-only consumers simply use fewer fields. */
   async fetchAllProviders(): Promise<AiProvider[]> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("provider")
-      .select("*")
-      .is("deleted_at", null)
-      .order("name", { ascending: true });
-    if (error) throw error;
-    return data.map(parseProvider);
+    const rows = await readAllRows<AiProviderRow>(
+      ({ from, to }) => supabase
+        .schema("ai")
+        .from("provider")
+        .select("*", { count: "exact" })
+        .is("deleted_at", null)
+        .order("name", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+      { label: "ai.provider" },
+    );
+    return rows.map(parseProvider);
   },
 
   async createProvider(payload: AiProviderInsert): Promise<AiProvider> {
