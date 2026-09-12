@@ -43039,6 +43039,7 @@ export interface components {
              */
             result_kind: "keywords.facet_backfill";
             refreshed?: components["schemas"]["QueueRefreshResult"] | null;
+            click_tail?: components["schemas"]["ClickTailResult"] | null;
             /**
              * Claimed
              * @default 0
@@ -43084,6 +43085,11 @@ export interface components {
              * @default 0
              */
             queue_deferred?: number;
+            /**
+             * Queue Tail Pending
+             * @default 0
+             */
+            queue_tail_pending?: number;
             /**
              * Pending Clicks
              * @default 0
@@ -49968,6 +49974,46 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.clicksend.com";
+        };
+        /**
+         * ClickTailResult
+         * @description What the second, low-priority enqueue pass measured and did (0645).
+         *
+         *     ``candidates`` is the whole click tail still outside the queue BEFORE this
+         *     pass, so ``candidates - enqueued`` is exactly what the ceiling held back —
+         *     the exclusion can never be silent.
+         */
+        ClickTailResult: {
+            /**
+             * Candidates
+             * @default 0
+             */
+            candidates?: number;
+            /**
+             * Enqueued
+             * @default 0
+             */
+            enqueued?: number;
+            /**
+             * Revived
+             * @default 0
+             */
+            revived?: number;
+            /**
+             * Tail Window Days
+             * @default 0
+             */
+            tail_window_days?: number;
+            /**
+             * Ceiling Reached
+             * @default false
+             */
+            ceiling_reached?: boolean;
+            /**
+             * Ceiling
+             * @default 0
+             */
+            ceiling?: number;
         };
         /**
          * ClientContext

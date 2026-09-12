@@ -97024,6 +97024,16 @@
               }
             ]
           },
+          "click_tail": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClickTailResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "claimed": {
             "type": "integer",
             "title": "Claimed",
@@ -97067,6 +97077,11 @@
           "queue_deferred": {
             "type": "integer",
             "title": "Queue Deferred",
+            "default": 0
+          },
+          "queue_tail_pending": {
+            "type": "integer",
+            "title": "Queue Tail Pending",
             "default": 0
           },
           "pending_clicks": {
@@ -113464,6 +113479,44 @@
           "indicator"
         ],
         "title": "ClickSendServiceStatus"
+      },
+      "ClickTailResult": {
+        "properties": {
+          "candidates": {
+            "type": "integer",
+            "title": "Candidates",
+            "default": 0
+          },
+          "enqueued": {
+            "type": "integer",
+            "title": "Enqueued",
+            "default": 0
+          },
+          "revived": {
+            "type": "integer",
+            "title": "Revived",
+            "default": 0
+          },
+          "tail_window_days": {
+            "type": "integer",
+            "title": "Tail Window Days",
+            "default": 0
+          },
+          "ceiling_reached": {
+            "type": "boolean",
+            "title": "Ceiling Reached",
+            "default": false
+          },
+          "ceiling": {
+            "type": "integer",
+            "title": "Ceiling",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ClickTailResult",
+        "description": "What the second, low-priority enqueue pass measured and did (0645).\n\n``candidates`` is the whole click tail still outside the queue BEFORE this\npass, so ``candidates - enqueued`` is exactly what the ceiling held back —\nthe exclusion can never be silent."
       },
       "ClientContext": {
         "properties": {
