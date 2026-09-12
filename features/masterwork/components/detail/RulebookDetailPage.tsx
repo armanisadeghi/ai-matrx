@@ -89,6 +89,11 @@ import {
   fetchDistillationApproaches,
   type DistillationApproach,
 } from "@/features/masterwork/browse/approaches";
+import {
+  resolveApproachLane,
+  toIngestLane,
+  type IngestLane,
+} from "@/features/masterwork/browse/approachLane";
 import { RulebookInputsSection } from "./RulebookInputsSection";
 import { ConductorPanel } from "@/features/masterwork/conduct/ConductorPanel";
 import { RulebookVersionHistory } from "./RulebookVersionHistory";
@@ -578,12 +583,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // param existed (2026-08-19) those three enabled Approaches dead-ended on a
   // bare detail page — the mechanical cause of exemplar's zero rules.
   const ingestParam = searchParams.get("ingest");
-  const ingestLane =
-    ingestParam === "source" ||
-    ingestParam === "exemplar" ||
-    ingestParam === "file"
-      ? ingestParam
-      : null;
+  // The lane names come from ONE list (`browse/approachLane.ts`) so a registry
+  // row, a deep link, and the dialog can never disagree about what lanes
+  // exist — the drift that left `timeline` with a live card and no capture UI.
+  const ingestLane = toIngestLane(ingestParam);
   useEffect(() => {
     if (ingestLane) setIngestOpen(true);
   }, [ingestLane]);
@@ -593,9 +596,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // the param stays the deep-link entry and the twin is the in-page one, and
   // `launchApproach` is the ONE place that maps a registry row to a lane.
   const [approachPickerOpen, setApproachPickerOpen] = useState(false);
-  const [requestedIngestLane, setRequestedIngestLane] = useState<
-    "source" | "exemplar" | "file" | null
-  >(null);
+  const [requestedIngestLane, setRequestedIngestLane] =
+    useState<IngestLane | null>(null);
   const [dumpRequested, setDumpRequested] = useState(false);
   const [chatImportTab, setChatImportTab] = useState<"upload" | "matrx">(
     searchParams.get("tab") === "matrx" ? "matrx" : "upload",
@@ -622,51 +624,55 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
    * the picker and a pasted URL can never drift apart; `launch_href` covers an
    * Approach whose lane is its own page (the Vision Interview, the Oracle tap).
    *
-   * NO DEAD ENDS: an Approach the picker cannot map still goes somewhere — its
-   * own canonical deep link on this Rulebook — rather than doing nothing.
+   * NO DEAD ENDS, AND NOTHING FAILS SILENTLY: the mapping itself lives in the
+   * pure `resolveApproachLane` (so one list of lanes serves the registry, the
+   * deep links and the dialog), and a row it cannot map is SAID OUT LOUD.
+   * Until 2026-09-12 an unmapped row was pushed at its own query string
+   * instead — a URL nothing read, which is how the live `timeline` card landed
+   * Experts on a bare, empty Rulebook with no error and no capture UI.
    */
   const launchApproach = useCallback(
     (approach: DistillationApproach) => {
-      if (approach.launchHref) {
-        router.push(approach.launchHref);
+      const lane = resolveApproachLane(approach);
+      if (!lane) {
+        console.error(
+          `[masterwork] the Approach "${approach.key}" has no lane in the product: ` +
+            `intake_query=${JSON.stringify(approach.intakeQuery)} launch_href=${approach.launchHref}`,
+        );
+        toast.error(
+          `“${approach.label}” has no way in yet — nothing on this page can take it. ` +
+            "Pick another way to add rules; this has been logged as a defect.",
+        );
         return;
       }
-      const q = approach.intakeQuery;
-      if (q.interview === "1") {
-        setInterviewTarget({ newNonce: Date.now() });
-        setInterviewOpen(true);
-        return;
+      switch (lane.kind) {
+        case "href":
+          router.push(lane.href);
+          return;
+        case "interview":
+          setInterviewTarget({ newNonce: Date.now() });
+          setInterviewOpen(true);
+          return;
+        case "ingest":
+          setRequestedIngestLane(lane.lane);
+          setIngestOpen(true);
+          return;
+        case "body_of_work":
+          setCorpusOpen(true);
+          return;
+        case "chatImport":
+          setChatImportTab(lane.tab);
+          setChatImportOpen(true);
+          return;
+        case "dump":
+          setDumpRequested(true);
+          return;
+        case "conduct":
+          setConductorOpen(true);
+          return;
       }
-      if (
-        q.ingest === "source" ||
-        q.ingest === "exemplar" ||
-        q.ingest === "file"
-      ) {
-        setRequestedIngestLane(q.ingest);
-        setIngestOpen(true);
-        return;
-      }
-      if (q.body_of_work === "1") {
-        setCorpusOpen(true);
-        return;
-      }
-      if (q.chatImport === "1") {
-        setChatImportTab(q.tab === "matrx" ? "matrx" : "upload");
-        setChatImportOpen(true);
-        return;
-      }
-      if (q.dump === "1") {
-        setDumpRequested(true);
-        return;
-      }
-      if (q.conduct === "1") {
-        setConductorOpen(true);
-        return;
-      }
-      const params = new URLSearchParams(q).toString();
-      router.push(`/masterwork/${rulebookId}${params ? `?${params}` : ""}`);
     },
-    [router, rulebookId],
+    [router],
   );
 
   // Composer seed for the Scout panel — set when a recording distillation
